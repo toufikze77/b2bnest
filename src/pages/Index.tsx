@@ -11,6 +11,8 @@ import Footer from "@/components/Footer";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import SearchResults from "@/components/SearchResults";
 import ProvisionalServicesSlideshow from "@/components/ProvisionalServicesSlideshow";
+import AIDocumentAssistant from "@/components/AIDocumentAssistant";
+import { Template } from "@/types/template";
 
 const IndexContent = () => {
   const { searchQuery, searchResults, performSearch } = useSearch();
@@ -19,6 +21,12 @@ const IndexContent = () => {
 
   const handleSearch = (query: string) => {
     performSearch(query);
+  };
+
+  const handleTemplateSelect = (template: Template) => {
+    // Scroll to template or show template details
+    console.log('Selected template:', template.title);
+    // You can implement navigation to template details or preview here
   };
 
   // Show search results if there's a search query, otherwise show popular templates
@@ -68,6 +76,9 @@ const IndexContent = () => {
 
       <CTASection />
       <Footer />
+
+      {/* AI Document Assistant - Always visible */}
+      <AIDocumentAssistant onTemplateSelect={handleTemplateSelect} />
     </div>
   );
 };
