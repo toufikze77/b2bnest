@@ -1,14 +1,17 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Sparkles, FileText, X, MessageCircle, Zap } from 'lucide-react';
+import { Sparkles, X, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { templateService } from '@/services/templateService';
 import { aiDocumentService } from '@/services/aiDocumentService';
 import { Template } from '@/types/template';
+import ChatMessage from './assistant/ChatMessage';
+import TypingIndicator from './assistant/TypingIndicator';
+import QuickSuggestions from './assistant/QuickSuggestions';
+import ChatInput from './assistant/ChatInput';
+import AssistantFloatingButton from './assistant/AssistantFloatingButton';
 
 interface Message {
   id: string;
@@ -36,6 +39,15 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const quickSuggestions = [
+    "I need an NDA for a new partnership",
+    "Help me find invoice templates for my startup",
+    "What documents do I need for hiring employees?",
+    "I'm starting a business, what's essential?",
+    "Show me free legal templates",
+    "I need comprehensive contracts"
+  ];
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -104,13 +116,6 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
   const handleTemplateClick = (template: Template) => {
     onTemplateSelect?.(template);
     
@@ -128,31 +133,8 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
     setInputValue(action);
   };
 
-  const quickSuggestions = [
-    "I need an NDA for a new partnership",
-    "Help me find invoice templates for my startup",
-    "What documents do I need for hiring employees?",
-    "I'm starting a business, what's essential?",
-    "Show me free legal templates",
-    "I need comprehensive contracts"
-  ];
-
   if (!isOpen) {
-    return (
-      <div className="fixed bottom-6 right-6 z-50">
-        <Button
-          onClick={() => setIsOpen(true)}
-          className="h-14 w-14 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
-          size="lg"
-        >
-          <Sparkles className="h-6 w-6" />
-        </Button>
-        <div className="absolute -top-2 -right-2 w-4 h-4 bg-green-500 rounded-full animate-pulse"></div>
-        <div className="absolute -bottom-12 right-0 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 hover:opacity-100 transition-opacity">
-          AI Assistant
-        </div>
-      </div>
-    );
+    return <AssistantFloatingButton onClick={() => setIsOpen(true)} />;
   }
 
   return (
@@ -187,149 +169,32 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-4">
               {messages.map((message) => (
-                <div
+                <ChatMessage
                   key={message.id}
-                  className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[85%] p-3 rounded-lg ${
-                      message.type === 'user'
-                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
-                        : 'bg-gray-50 text-gray-900 border'
-                    }`}
-                  >
-                    <div className="flex items-start gap-2">
-                      {message.type === 'assistant' && (
-                        <div className="p-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full">
-                          <Bot className="h-3 w-3 text-white" />
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <p className="text-sm leading-relaxed">{message.content}</p>
-                        
-                        {message.templates && message.templates.length > 0 && (
-                          <div className="mt-3 space-y-2">
-                            {message.templates.map((template) => (
-                              <div
-                                key={template.id}
-                                className="p-3 bg-white rounded-lg border cursor-pointer hover:shadow-lg hover:border-blue-300 transition-all duration-200"
-                                onClick={() => handleTemplateClick(template)}
-                              >
-                                <div className="flex items-center gap-2 mb-2">
-                                  <FileText className="h-4 w-4 text-blue-600" />
-                                  <span className="font-medium text-sm text-gray-900">
-                                    {template.title}
-                                  </span>
-                                  {template.featured && (
-                                    <Badge className="bg-yellow-100 text-yellow-800 text-xs">
-                                      Featured
-                                    </Badge>
-                                  )}
-                                </div>
-                                <p className="text-xs text-gray-600 mb-2">
-                                  {template.description.substring(0, 100)}...
-                                </p>
-                                <div className="flex items-center justify-between">
-                                  <div className="flex gap-1">
-                                    <Badge variant="secondary" className="text-xs">
-                                      {template.category.name}
-                                    </Badge>
-                                    <Badge variant="outline" className="text-xs">
-                                      {template.difficulty}
-                                    </Badge>
-                                  </div>
-                                  <span className="text-sm font-semibold text-green-600">
-                                    {template.price === 0 ? 'Free' : `$${template.price}`}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {message.quickActions && message.quickActions.length > 0 && (
-                          <div className="mt-3">
-                            <p className="text-xs text-gray-600 mb-2">Quick actions:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {message.quickActions.map((action, index) => (
-                                <button
-                                  key={index}
-                                  onClick={() => handleQuickAction(action)}
-                                  className="text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2 py-1 hover:bg-blue-100 transition-colors"
-                                >
-                                  {action}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                  message={message}
+                  onTemplateClick={handleTemplateClick}
+                  onQuickActionClick={handleQuickAction}
+                />
               ))}
               
-              {isTyping && (
-                <div className="flex justify-start">
-                  <div className="bg-gray-50 border p-3 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <div className="p-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full">
-                        <Bot className="h-3 w-3 text-white" />
-                      </div>
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                      </div>
-                      <span className="text-xs text-gray-500">AI is thinking...</span>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {isTyping && <TypingIndicator />}
             </div>
             <div ref={messagesEndRef} />
           </ScrollArea>
 
           {messages.length === 1 && (
-            <div className="p-4 border-t bg-gradient-to-r from-blue-50 to-purple-50">
-              <p className="text-xs text-gray-600 mb-2 font-medium">Try asking me:</p>
-              <div className="grid grid-cols-1 gap-1">
-                {quickSuggestions.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setInputValue(suggestion)}
-                    className="text-xs bg-white border rounded-lg px-3 py-2 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:border-blue-300 transition-all duration-200 text-left"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <QuickSuggestions
+              suggestions={quickSuggestions}
+              onSuggestionClick={setInputValue}
+            />
           )}
 
-          <div className="p-4 border-t bg-white">
-            <div className="flex gap-2">
-              <Input
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ask me about business documents..."
-                className="flex-1 border-gray-300 focus:border-blue-500"
-                disabled={isTyping}
-              />
-              <Button
-                onClick={handleSendMessage}
-                size="sm"
-                disabled={!inputValue.trim() || isTyping}
-                className="px-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-            <p className="text-xs text-gray-500 mt-1 text-center">
-              AI Assistant • Always learning, always helping
-            </p>
-          </div>
+          <ChatInput
+            value={inputValue}
+            onChange={setInputValue}
+            onSend={handleSendMessage}
+            disabled={isTyping}
+          />
         </CardContent>
       </Card>
     </div>
