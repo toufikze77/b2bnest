@@ -1,7 +1,10 @@
 
 import { FileText } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Footer = () => {
+  const navigate = useNavigate();
+
   return (
     <footer className="bg-gray-900 text-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
@@ -38,10 +41,38 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Company</h4>
             <ul className="space-y-2 text-gray-400">
-              <li>About Us</li>
-              <li>Privacy Policy</li>
-              <li>Terms of Service</li>
-              <li>Blog</li>
+              <li>
+                <button 
+                  onClick={() => navigate('/about')}
+                  className="hover:text-white transition-colors"
+                >
+                  About Us
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => navigate('/privacy')}
+                  className="hover:text-white transition-colors"
+                >
+                  Privacy Policy
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => navigate('/terms')}
+                  className="hover:text-white transition-colors"
+                >
+                  Terms of Service
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => navigate('/blog')}
+                  className="hover:text-white transition-colors"
+                >
+                  Blog
+                </button>
+              </li>
             </ul>
           </div>
         </div>

@@ -28,6 +28,12 @@ const Header = () => {
             <Button variant="ghost" onClick={() => navigate('/')}>
               Home
             </Button>
+            <Button variant="ghost" onClick={() => navigate('/about')}>
+              About
+            </Button>
+            <Button variant="ghost" onClick={() => navigate('/blog')}>
+              Blog
+            </Button>
           </nav>
           <div className="flex items-center space-x-4">
             {user ? (
