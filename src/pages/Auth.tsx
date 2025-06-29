@@ -79,7 +79,7 @@ const Auth = () => {
             <div className="bg-blue-600 p-2 rounded-lg">
               <FileText className="h-6 w-6 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">BizDocHub</h1>
+            <h1 className="text-2xl font-bold text-gray-900">B2BNest</h1>
           </div>
           <p className="text-gray-600">
             {isLogin ? 'Welcome back!' : 'Join thousands of businesses'}

@@ -11,7 +11,7 @@ const Footer = () => {
               <div className="bg-blue-600 p-2 rounded-lg">
                 <FileText className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold">BizDocHub</span>
+              <span className="text-xl font-bold">B2BNest</span>
             </div>
             <p className="text-gray-400">
               Professional business forms and documents for modern companies.
@@ -46,7 +46,7 @@ const Footer = () => {
           </div>
         </div>
         <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-          <p>&copy; 2024 BizDocHub. All rights reserved.</p>
+          <p>&copy; 2024 B2BNest. All rights reserved.</p>
         </div>
       </div>
     </footer>
