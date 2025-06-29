@@ -1,16 +1,25 @@
+
 import React, { useState } from 'react';
-import { Calculator, Upload, Plus } from 'lucide-react';
+import { Calculator, Upload, Plus, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from '@/components/ui/use-toast';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
+import { documentService } from '@/services/documentService';
 
 const FinancialForms = () => {
+  const { user } = useAuth();
+  const { canUpload, loading: roleLoading } = useUserRole();
   const [uploadMode, setUploadMode] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -28,11 +37,74 @@ const FinancialForms = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Submitting financial document:', formData);
-    // TODO: Implement actual upload logic
+    
+    if (!canUpload) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to upload documents.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setUploading(true);
+    
+    try {
+      const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(Boolean);
+      
+      await documentService.uploadDocument({
+        title: formData.title,
+        description: formData.description,
+        category: 'financial',
+        subcategory: formData.subcategory,
+        tags: tagsArray,
+        price: formData.price ? parseFloat(formData.price) : 0,
+        file_name: formData.file?.name,
+        file_size: formData.file?.size
+      });
+
+      toast({
+        title: "Document Uploaded",
+        description: "Your financial document has been uploaded successfully."
+      });
+
+      // Reset form
+      setFormData({
+        title: '',
+        description: '',
+        subcategory: '',
+        tags: '',
+        price: '',
+        file: null
+      });
+      setUploadMode(false);
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload Failed",
+        description: "Failed to upload document. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
+    }
   };
+
+  if (roleLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50">
+        <Header />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-center">
+            <div className="text-lg">Loading...</div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50">
@@ -50,18 +122,38 @@ const FinancialForms = () => {
             </div>
           </div>
           
-          <div className="flex gap-4">
-            <Button 
-              onClick={() => setUploadMode(!uploadMode)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Upload New Document
-            </Button>
-          </div>
+          {!user && (
+            <Alert className="mb-6">
+              <Lock className="h-4 w-4" />
+              <AlertDescription>
+                Please sign in to view and access financial documents.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {user && !canUpload && (
+            <Alert className="mb-6">
+              <Lock className="h-4 w-4" />
+              <AlertDescription>
+                You don't have permission to upload documents. Contact the administrator for access.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {canUpload && (
+            <div className="flex gap-4">
+              <Button 
+                onClick={() => setUploadMode(!uploadMode)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Upload New Document
+              </Button>
+            </div>
+          )}
         </div>
 
-        {uploadMode && (
+        {uploadMode && canUpload && (
           <Card className="mb-8">
             <CardHeader>
               <CardTitle>Upload Financial Document</CardTitle>
@@ -161,8 +253,12 @@ const FinancialForms = () => {
                 </div>
 
                 <div className="flex gap-4">
-                  <Button type="submit" className="flex-1">Upload Document</Button>
-                  <Button type="button" variant="outline" onClick={() => setUploadMode(false)}>Cancel</Button>
+                  <Button type="submit" className="flex-1" disabled={uploading}>
+                    {uploading ? 'Uploading...' : 'Upload Document'}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setUploadMode(false)}>
+                    Cancel
+                  </Button>
                 </div>
               </form>
             </CardContent>
