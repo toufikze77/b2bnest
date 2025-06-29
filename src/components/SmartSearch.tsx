@@ -80,6 +80,13 @@ const SmartSearch = ({ onSearch, placeholder = "Search forms and documents...", 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleCategoryToggle = (categoryId: string) => {
+    const newCategories = filters.categories.includes(categoryId)
+      ? filters.categories.filter(id => id !== categoryId)
+      : [...filters.categories, categoryId];
+    setFilters({ categories: newCategories });
+  };
+
   return (
     <div className="relative w-full max-w-2xl mx-auto">
       <div className="relative">
@@ -182,18 +189,18 @@ const SmartSearch = ({ onSearch, placeholder = "Search forms and documents...", 
                 <label className="text-sm font-medium text-gray-700 mb-2 block">Category</label>
                 <div className="flex flex-wrap gap-2">
                   <Badge
-                    variant={filters.category === '' ? 'default' : 'outline'}
+                    variant={filters.categories.length === 0 ? 'default' : 'outline'}
                     className="cursor-pointer"
-                    onClick={() => setFilters({ category: '' })}
+                    onClick={() => setFilters({ categories: [] })}
                   >
                     All
                   </Badge>
                   {categories.map((category) => (
                     <Badge
                       key={category}
-                      variant={filters.category === category ? 'default' : 'outline'}
+                      variant={filters.categories.includes(category) ? 'default' : 'outline'}
                       className="cursor-pointer"
-                      onClick={() => setFilters({ category: filters.category === category ? '' : category })}
+                      onClick={() => handleCategoryToggle(category)}
                     >
                       {category}
                     </Badge>
@@ -242,7 +249,7 @@ const SmartSearch = ({ onSearch, placeholder = "Search forms and documents...", 
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setFilters({ category: '', rating: 0, downloads: 0, tags: [] })}
+                  onClick={() => setFilters({ categories: [], rating: 0, tags: [] })}
                 >
                   Clear Filters
                 </Button>
