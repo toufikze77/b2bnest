@@ -166,39 +166,42 @@ const IndexContent = () => {
           </p>
           
           {/* Smart Search Bar */}
-          <div className="mb-12">
+          <div className="mb-8">
             <SmartSearch onSearch={handleSearch} />
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-blue-600 mb-2">500+</div>
-              <div className="text-gray-600">Document Templates</div>
+          {/* Search Results - Show immediately below search bar */}
+          {showSearchResults && (
+            <div className="mb-16">
+              <SearchResults 
+                results={resultsToShow} 
+                searchQuery={searchQuery}
+              />
             </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-green-600 mb-2">50K+</div>
-              <div className="text-gray-600">Downloads</div>
+          )}
+
+          {/* Stats - Only show when not searching */}
+          {!showSearchResults && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+              <div className="text-center">
+                <div className="text-4xl font-bold text-blue-600 mb-2">500+</div>
+                <div className="text-gray-600">Document Templates</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-green-600 mb-2">50K+</div>
+                <div className="text-gray-600">Downloads</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-purple-600 mb-2">4.8★</div>
+                <div className="text-gray-600">Average Rating</div>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-purple-600 mb-2">4.8★</div>
-              <div className="text-gray-600">Average Rating</div>
-            </div>
-          </div>
+          )}
         </div>
       </section>
 
-      {/* Search Results or Categories */}
-      {showSearchResults ? (
-        <section className="py-16 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto">
-            <SearchResults 
-              results={resultsToShow} 
-              searchQuery={searchQuery}
-            />
-          </div>
-        </section>
-      ) : (
+      {/* Categories and Popular Forms - Only show when not searching */}
+      {!showSearchResults && (
         <>
           {/* Categories */}
           <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
