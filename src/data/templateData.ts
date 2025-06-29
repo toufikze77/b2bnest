@@ -1,0 +1,306 @@
+
+import { Template, TemplateCategory, TemplateLicense } from '@/types/template';
+
+export const templateLicenses: TemplateLicense[] = [
+  {
+    type: 'Free',
+    name: 'Creative Commons',
+    description: 'Free for personal and commercial use with attribution',
+    personalUse: true,
+    commercialUse: true,
+    resaleRights: false,
+    modificationRights: true,
+    distributionRights: true,
+    creditsRequired: true
+  },
+  {
+    type: 'Premium',
+    name: 'Royalty-Free License',
+    description: 'Full commercial rights without attribution required',
+    personalUse: true,
+    commercialUse: true,
+    resaleRights: false,
+    modificationRights: true,
+    distributionRights: false,
+    creditsRequired: false
+  },
+  {
+    type: 'Enterprise',
+    name: 'Extended Commercial License',
+    description: 'Full rights including resale and distribution',
+    personalUse: true,
+    commercialUse: true,
+    resaleRights: true,
+    modificationRights: true,
+    distributionRights: true,
+    creditsRequired: false
+  }
+];
+
+export const templateCategories: TemplateCategory[] = [
+  {
+    id: 'legal',
+    name: 'Legal Documents',
+    description: 'Contracts, agreements, and legal forms',
+    icon: 'FileText',
+    color: 'bg-blue-500',
+    subcategories: ['Contracts', 'NDAs', 'Terms of Service', 'Privacy Policies', 'Employment Law']
+  },
+  {
+    id: 'hr',
+    name: 'Human Resources',
+    description: 'Employee forms and HR documents',
+    icon: 'Users',
+    color: 'bg-green-500',
+    subcategories: ['Onboarding', 'Performance Reviews', 'Job Descriptions', 'Policies', 'Training']
+  },
+  {
+    id: 'finance',
+    name: 'Financial Forms',
+    description: 'Invoices, receipts, and financial documents',
+    icon: 'Calculator',
+    color: 'bg-purple-500',
+    subcategories: ['Invoices', 'Receipts', 'Budgets', 'Reports', 'Tax Forms']
+  },
+  {
+    id: 'marketing',
+    name: 'Marketing Materials',
+    description: 'Brochures, flyers, and marketing templates',
+    icon: 'Megaphone',
+    color: 'bg-pink-500',
+    subcategories: ['Brochures', 'Social Media', 'Email Templates', 'Presentations', 'Banners']
+  },
+  {
+    id: 'operations',
+    name: 'Operations',
+    description: 'Business operations and workflow forms',
+    icon: 'Briefcase',
+    color: 'bg-orange-500',
+    subcategories: ['SOPs', 'Checklists', 'Reports', 'Planning', 'Quality Control']
+  }
+];
+
+export const sampleTemplates: Template[] = [
+  {
+    id: '1',
+    title: 'Comprehensive Non-Disclosure Agreement (NDA)',
+    description: 'Professional NDA template with mutual confidentiality clauses, suitable for business partnerships, employee agreements, and vendor relationships.',
+    category: templateCategories[0],
+    subcategory: 'NDAs',
+    tags: ['Contract', 'Confidentiality', 'Business', 'Legal', 'Professional'],
+    
+    fileType: 'DOCX',
+    fileSize: '125 KB',
+    fileName: 'comprehensive-nda-template.docx',
+    fileUrl: '/templates/legal/comprehensive-nda-template.docx',
+    previewUrl: '/previews/legal/comprehensive-nda-preview.pdf',
+    thumbnailUrl: '/thumbnails/legal/nda-thumb.jpg',
+    
+    license: templateLicenses[1],
+    price: 19.99,
+    currency: 'USD',
+    isRoyaltyFree: true,
+    canResell: false,
+    commercialUse: true,
+    
+    author: 'Legal Templates Pro',
+    version: '2.1',
+    lastUpdated: '2024-01-15',
+    downloads: 2150,
+    rating: 4.8,
+    reviewCount: 89,
+    
+    featured: true,
+    trending: true,
+    isNew: false,
+    difficulty: 'Intermediate',
+    
+    softwareRequired: ['Microsoft Word 2016+', 'Google Docs'],
+    instructions: 'Fill in the highlighted sections with your specific information. Review all clauses carefully before signing.'
+  },
+  {
+    id: '2',
+    title: 'Employee Onboarding Checklist & Forms Bundle',
+    description: 'Complete onboarding package including welcome checklist, tax forms, policy acknowledgments, and training schedules.',
+    category: templateCategories[1],
+    subcategory: 'Onboarding',
+    tags: ['HR', 'Onboarding', 'Checklist', 'New Employee', 'Bundle'],
+    
+    fileType: 'ZIP',
+    fileSize: '2.3 MB',
+    fileName: 'employee-onboarding-bundle.zip',
+    fileUrl: '/templates/hr/employee-onboarding-bundle.zip',
+    previewUrl: '/previews/hr/onboarding-preview.pdf',
+    thumbnailUrl: '/thumbnails/hr/onboarding-thumb.jpg',
+    
+    license: templateLicenses[0],
+    price: 0,
+    currency: 'USD',
+    isRoyaltyFree: true,
+    canResell: false,
+    commercialUse: true,
+    
+    author: 'HR Solutions Inc',
+    version: '3.0',
+    lastUpdated: '2024-02-01',
+    downloads: 3420,
+    rating: 4.9,
+    reviewCount: 156,
+    
+    featured: true,
+    trending: false,
+    isNew: true,
+    difficulty: 'Beginner',
+    
+    softwareRequired: ['Microsoft Office Suite', 'PDF Reader'],
+    instructions: 'Extract all files and customize company-specific information in each document.'
+  },
+  {
+    id: '3',
+    title: 'Professional Invoice Template with Tax Calculations',
+    description: 'Modern invoice template with automatic tax calculations, payment terms, and professional branding options.',
+    category: templateCategories[2],
+    subcategory: 'Invoices',
+    tags: ['Invoice', 'Billing', 'Finance', 'Professional', 'Tax'],
+    
+    fileType: 'XLSX',
+    fileSize: '180 KB',
+    fileName: 'professional-invoice-template.xlsx',
+    fileUrl: '/templates/finance/professional-invoice-template.xlsx',
+    previewUrl: '/previews/finance/invoice-preview.pdf',
+    thumbnailUrl: '/thumbnails/finance/invoice-thumb.jpg',
+    
+    license: templateLicenses[1],
+    price: 12.99,
+    currency: 'USD',
+    isRoyaltyFree: true,
+    canResell: false,
+    commercialUse: true,
+    
+    author: 'Finance Pro Templates',
+    version: '1.5',
+    lastUpdated: '2024-01-28',
+    downloads: 1890,
+    rating: 4.7,
+    reviewCount: 78,
+    
+    featured: false,
+    trending: true,
+    isNew: false,
+    difficulty: 'Beginner',
+    
+    softwareRequired: ['Microsoft Excel 2019+', 'Google Sheets'],
+    instructions: 'Enter your business details in the designated fields. Formulas are pre-configured for automatic calculations.'
+  },
+  {
+    id: '4',
+    title: 'Social Media Content Calendar Template',
+    description: 'Complete social media planning template with content ideas, posting schedule, and analytics tracking.',
+    category: templateCategories[3],
+    subcategory: 'Social Media',
+    tags: ['Social Media', 'Marketing', 'Content', 'Planning', 'Calendar'],
+    
+    fileType: 'XLSX',
+    fileSize: '95 KB',
+    fileName: 'social-media-calendar.xlsx',
+    fileUrl: '/templates/marketing/social-media-calendar.xlsx',
+    previewUrl: '/previews/marketing/social-calendar-preview.pdf',
+    thumbnailUrl: '/thumbnails/marketing/social-thumb.jpg',
+    
+    license: templateLicenses[2],
+    price: 29.99,
+    currency: 'USD',
+    isRoyaltyFree: true,
+    canResell: true,
+    commercialUse: true,
+    
+    author: 'Marketing Masters',
+    version: '2.0',
+    lastUpdated: '2024-02-10',
+    downloads: 965,
+    rating: 4.6,
+    reviewCount: 42,
+    
+    featured: false,
+    trending: false,
+    isNew: true,
+    difficulty: 'Intermediate',
+    
+    softwareRequired: ['Microsoft Excel', 'Google Sheets'],
+    instructions: 'Customize the calendar with your brand colors and content themes. Use the analytics section to track performance.'
+  },
+  {
+    id: '5',
+    title: 'Business Plan Template - Comprehensive',
+    description: 'Complete business plan template with executive summary, market analysis, financial projections, and investor presentation.',
+    category: templateCategories[4],
+    subcategory: 'Planning',
+    tags: ['Business Plan', 'Strategy', 'Planning', 'Investors', 'Comprehensive'],
+    
+    fileType: 'ZIP',
+    fileSize: '4.2 MB',
+    fileName: 'comprehensive-business-plan.zip',
+    fileUrl: '/templates/operations/comprehensive-business-plan.zip',
+    previewUrl: '/previews/operations/business-plan-preview.pdf',
+    thumbnailUrl: '/thumbnails/operations/business-plan-thumb.jpg',
+    
+    license: templateLicenses[1],
+    price: 49.99,
+    currency: 'USD',
+    isRoyaltyFree: true,
+    canResell: false,
+    commercialUse: true,
+    
+    author: 'Business Strategy Experts',
+    version: '4.1',
+    lastUpdated: '2024-01-20',
+    downloads: 1256,
+    rating: 4.9,
+    reviewCount: 67,
+    
+    featured: true,
+    trending: false,
+    isNew: false,
+    difficulty: 'Advanced',
+    
+    softwareRequired: ['Microsoft Office Suite', 'Adobe Acrobat'],
+    instructions: 'Follow the step-by-step guide included. Each section has detailed instructions and examples.'
+  },
+  {
+    id: '6',
+    title: 'Service Agreement Contract Template',
+    description: 'Professional service agreement template for consultants, agencies, and service providers with payment terms and deliverables.',
+    category: templateCategories[0],
+    subcategory: 'Contracts',
+    tags: ['Contract', 'Service', 'Agreement', 'Professional', 'Consulting'],
+    
+    fileType: 'DOCX',
+    fileSize: '98 KB',
+    fileName: 'service-agreement-template.docx',
+    fileUrl: '/templates/legal/service-agreement-template.docx',
+    previewUrl: '/previews/legal/service-agreement-preview.pdf',
+    thumbnailUrl: '/thumbnails/legal/service-agreement-thumb.jpg',
+    
+    license: templateLicenses[0],
+    price: 0,
+    currency: 'USD',
+    isRoyaltyFree: true,
+    canResell: false,
+    commercialUse: true,
+    
+    author: 'Legal Forms Library',
+    version: '1.8',
+    lastUpdated: '2024-02-05',
+    downloads: 1680,
+    rating: 4.5,
+    reviewCount: 93,
+    
+    featured: false,
+    trending: false,
+    isNew: false,
+    difficulty: 'Intermediate',
+    
+    softwareRequired: ['Microsoft Word', 'Google Docs'],
+    instructions: 'Customize the service description, payment terms, and deliverables sections to match your specific needs.'
+  }
+];

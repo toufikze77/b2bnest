@@ -1,34 +1,18 @@
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
-
-interface SearchFilters {
-  category: string;
-  rating: number;
-  downloads: number;
-  tags: string[];
-}
-
-interface SearchResult {
-  id: number;
-  title: string;
-  category: string;
-  description: string;
-  downloads: number;
-  rating: number;
-  tags: string[];
-  relevanceScore?: number;
-}
+import { Template, TemplateFilter } from '@/types/template';
+import { templateService } from '@/services/templateService';
 
 interface SearchContextType {
   searchQuery: string;
-  searchResults: SearchResult[];
-  filters: SearchFilters;
+  searchResults: Template[];
+  filters: TemplateFilter;
   isSearching: boolean;
   suggestions: string[];
   recentSearches: string[];
   setSearchQuery: (query: string) => void;
-  setFilters: (filters: Partial<SearchFilters>) => void;
-  performSearch: (query: string, data: SearchResult[]) => void;
+  setFilters: (filters: Partial<TemplateFilter>) => void;
+  performSearch: (query: string) => void;
   clearSearch: () => void;
   addToRecentSearches: (query: string) => void;
 }
@@ -37,101 +21,43 @@ const SearchContext = createContext<SearchContextType | undefined>(undefined);
 
 export const SearchProvider = ({ children }: { children: React.ReactNode }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [filters, setFiltersState] = useState<SearchFilters>({
-    category: '',
+  const [searchResults, setSearchResults] = useState<Template[]>([]);
+  const [filters, setFiltersState] = useState<TemplateFilter>({
+    categories: [],
+    licenses: [],
+    priceRange: [0, 100],
+    fileTypes: [],
+    tags: [],
     rating: 0,
-    downloads: 0,
-    tags: []
+    isRoyaltyFree: undefined,
+    canResell: undefined,
+    featured: undefined,
+    trending: undefined
   });
   const [isSearching, setIsSearching] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
-  const setFilters = useCallback((newFilters: Partial<SearchFilters>) => {
-    setFiltersState(prev => ({ ...prev, ...newFilters }));
-  }, []);
+  const setFilters = useCallback((newFilters: Partial<TemplateFilter>) => {
+    const updatedFilters = { ...filters, ...newFilters };
+    setFiltersState(updatedFilters);
+    
+    // Re-run search with new filters
+    if (searchQuery) {
+      const results = templateService.searchTemplates(searchQuery, updatedFilters);
+      setSearchResults(results);
+    }
+  }, [filters, searchQuery]);
 
-  const calculateRelevanceScore = useCallback((item: SearchResult, query: string): number => {
-    let score = 0;
-    const queryLower = query.toLowerCase();
-    
-    // Title match (highest weight)
-    if (item.title.toLowerCase().includes(queryLower)) {
-      score += 10;
-      if (item.title.toLowerCase().startsWith(queryLower)) {
-        score += 5;
-      }
-    }
-    
-    // Description match
-    if (item.description.toLowerCase().includes(queryLower)) {
-      score += 5;
-    }
-    
-    // Tag matches
-    const matchingTags = item.tags.filter(tag => 
-      tag.toLowerCase().includes(queryLower)
-    ).length;
-    score += matchingTags * 3;
-    
-    // Category match
-    if (item.category.toLowerCase().includes(queryLower)) {
-      score += 4;
-    }
-    
-    // Popularity boost (based on downloads and rating)
-    score += (item.rating / 5) * 2;
-    score += Math.log10(item.downloads + 1) * 0.5;
-    
-    return score;
-  }, []);
-
-  const performSearch = useCallback((query: string, data: SearchResult[]) => {
+  const performSearch = useCallback((query: string) => {
     setIsSearching(true);
     
-    // Simulate search delay for realistic UX
     setTimeout(() => {
-      if (!query.trim()) {
-        setSearchResults(data);
-        setIsSearching(false);
-        return;
-      }
-
-      const queryLower = query.toLowerCase();
-      
-      // Filter and score results
-      let filtered = data.filter(item => {
-        // Text matching
-        const textMatch = 
-          item.title.toLowerCase().includes(queryLower) ||
-          item.description.toLowerCase().includes(queryLower) ||
-          item.category.toLowerCase().includes(queryLower) ||
-          item.tags.some(tag => tag.toLowerCase().includes(queryLower));
-
-        if (!textMatch) return false;
-
-        // Apply filters
-        if (filters.category && item.category !== filters.category) return false;
-        if (filters.rating && item.rating < filters.rating) return false;
-        if (filters.downloads && item.downloads < filters.downloads) return false;
-        if (filters.tags.length > 0 && !filters.tags.some(tag => 
-          item.tags.some(itemTag => itemTag.toLowerCase().includes(tag.toLowerCase()))
-        )) return false;
-
-        return true;
-      });
-
-      // Calculate relevance scores and sort
-      filtered = filtered.map(item => ({
-        ...item,
-        relevanceScore: calculateRelevanceScore(item, query)
-      })).sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0));
-
-      setSearchResults(filtered);
+      const results = templateService.searchTemplates(query, filters);
+      setSearchResults(results);
       setIsSearching(false);
     }, 300);
-  }, [filters, calculateRelevanceScore]);
+  }, [filters]);
 
   const clearSearch = useCallback(() => {
     setSearchQuery('');
@@ -157,7 +83,10 @@ export const SearchProvider = ({ children }: { children: React.ReactNode }) => {
         'Expense Report',
         'Legal Forms',
         'HR Documents',
-        'Financial Templates'
+        'Financial Templates',
+        'Social Media Calendar',
+        'Marketing Materials',
+        'Onboarding Checklist'
       ];
       
       const filtered = commonSuggestions.filter(suggestion =>

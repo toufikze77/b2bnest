@@ -10,6 +10,7 @@ import TestimonialsSection from "@/components/TestimonialsSection";
 import { SearchProvider, useSearch } from "@/contexts/SearchContext";
 import SmartSearch from "@/components/SmartSearch";
 import SearchResults from "@/components/SearchResults";
+import { templateService } from "@/services/templateService";
 
 const IndexContent = () => {
   const { user, signOut } = useAuth();
@@ -20,105 +21,16 @@ const IndexContent = () => {
     await signOut();
   };
 
-  const categories = [
-    {
-      id: "legal",
-      name: "Legal Documents",
-      icon: FileText,
-      color: "bg-blue-500",
-      count: 25,
-      description: "Contracts, agreements, and legal forms"
-    },
-    {
-      id: "hr",
-      name: "Human Resources",
-      icon: Users,
-      color: "bg-green-500",
-      count: 18,
-      description: "Employee forms and HR documents"
-    },
-    {
-      id: "finance",
-      name: "Financial Forms",
-      icon: Calculator,
-      color: "bg-purple-500",
-      count: 22,
-      description: "Invoices, receipts, and financial documents"
-    },
-    {
-      id: "operations",
-      name: "Operations",
-      icon: Briefcase,
-      color: "bg-orange-500",
-      count: 15,
-      description: "Business operations and workflow forms"
-    }
-  ];
-
-  const popularForms = [
-    {
-      id: 1,
-      title: "Non-Disclosure Agreement (NDA)",
-      category: "Legal",
-      description: "Protect confidential information in business relationships",
-      downloads: 1250,
-      rating: 4.8,
-      tags: ["Contract", "Confidentiality", "Business"]
-    },
-    {
-      id: 2,
-      title: "Employee Onboarding Checklist",
-      category: "HR",
-      description: "Comprehensive checklist for new employee integration",
-      downloads: 890,
-      rating: 4.9,
-      tags: ["HR", "Onboarding", "Checklist"]
-    },
-    {
-      id: 3,
-      title: "Invoice Template",
-      category: "Finance",
-      description: "Professional invoice template for service businesses",
-      downloads: 2100,
-      rating: 4.7,
-      tags: ["Invoice", "Billing", "Finance"]
-    },
-    {
-      id: 4,
-      title: "Business Plan Template",
-      category: "Operations",
-      description: "Comprehensive business plan structure and guidelines",
-      downloads: 1680,
-      rating: 4.9,
-      tags: ["Planning", "Strategy", "Business"]
-    },
-    {
-      id: 5,
-      title: "Service Agreement Contract",
-      category: "Legal",
-      description: "Standard service agreement for client engagements",
-      downloads: 950,
-      rating: 4.6,
-      tags: ["Contract", "Service", "Agreement"]
-    },
-    {
-      id: 6,
-      title: "Expense Report Form",
-      category: "Finance",
-      description: "Track and report business expenses efficiently",
-      downloads: 760,
-      rating: 4.5,
-      tags: ["Expenses", "Reports", "Finance"]
-    }
-  ];
+  const categories = templateService.getCategories();
+  const popularTemplates = templateService.getFeaturedTemplates();
 
   const handleSearch = (query: string) => {
-    performSearch(query, popularForms);
+    performSearch(query);
   };
 
-  // Show search results if there's a search query, otherwise show default content
+  // Show search results if there's a search query, otherwise show popular templates
   const showSearchResults = searchQuery.trim().length > 0;
-  const resultsToShow = showSearchResults ? searchResults : popularForms;
+  const resultsToShow = showSearchResults ? searchResults : popularTemplates;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -211,19 +123,19 @@ const IndexContent = () => {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {categories.map((category) => {
-                  const IconComponent = category.icon;
+                  const templateCount = templateService.getTemplatesByCategory(category.id).length;
                   return (
                     <Card key={category.id} className="hover:shadow-lg transition-shadow cursor-pointer group">
                       <CardHeader className="text-center pb-4">
                         <div className={`${category.color} w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform`}>
-                          <IconComponent className="h-8 w-8 text-white" />
+                          <FileText className="h-8 w-8 text-white" />
                         </div>
                         <CardTitle className="text-xl">{category.name}</CardTitle>
                         <CardDescription>{category.description}</CardDescription>
                       </CardHeader>
                       <CardContent className="text-center pt-0">
                         <Badge variant="secondary" className="text-sm">
-                          {category.count} forms
+                          {templateCount} templates
                         </Badge>
                       </CardContent>
                     </Card>
@@ -237,7 +149,7 @@ const IndexContent = () => {
           <section className="py-16 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
               <h3 className="text-3xl font-bold text-center text-gray-900 mb-12">
-                Popular Forms & Documents
+                Featured Templates
               </h3>
               <SearchResults 
                 results={resultsToShow} 
