@@ -10,6 +10,7 @@ import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import SearchResults from "@/components/SearchResults";
+import ProvisionalServicesSlideshow from "@/components/ProvisionalServicesSlideshow";
 
 const IndexContent = () => {
   const { searchQuery, searchResults, performSearch } = useSearch();
@@ -50,6 +51,9 @@ const IndexContent = () => {
           </div>
         </section>
       )}
+
+      {/* Provisional Services Slideshow - Only show when not searching */}
+      {!showSearchResults && <ProvisionalServicesSlideshow />}
 
       {/* Categories and Popular Forms - Only show when not searching */}
       {!showSearchResults && (
