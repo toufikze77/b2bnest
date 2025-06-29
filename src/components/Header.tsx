@@ -1,57 +1,135 @@
 
-import { FileText, LogOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
-import { useNavigate } from "react-router-dom";
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Building2, Menu, X, User, LogOut, Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const Header = () => {
-  const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
 
   const handleSignOut = async () => {
     await signOut();
+    navigate('/');
   };
+
+  const navigationItems = [
+    { label: 'Home', href: '/' },
+    { label: 'Business Tools', href: '/business-tools' },
+    { label: 'About', href: '/about' },
+    { label: 'Blog', href: '/blog' },
+  ];
 
   return (
     <header className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="bg-blue-600 p-2 rounded-lg">
-              <FileText className="h-6 w-6 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 cursor-pointer" onClick={() => navigate('/')}>
-              B2BNest
-            </h1>
-          </div>
-          <nav className="hidden md:flex items-center space-x-6">
-            <Button variant="ghost" onClick={() => navigate('/')}>
-              Home
-            </Button>
-            <Button variant="ghost" onClick={() => navigate('/about')}>
-              About
-            </Button>
-            <Button variant="ghost" onClick={() => navigate('/blog')}>
-              Blog
-            </Button>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2">
+            <Building2 className="h-8 w-8 text-blue-600" />
+            <span className="text-xl font-bold text-gray-900">B2BNest</span>
+          </Link>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-8">
+            {navigationItems.map((item) => (
+              <Link
+                key={item.href}
+                to={item.href}
+                className="text-gray-700 hover:text-blue-600 transition-colors"
+              >
+                {item.label}
+              </Link>
+            ))}
           </nav>
-          <div className="flex items-center space-x-4">
+
+          {/* Desktop Auth */}
+          <div className="hidden md:flex items-center gap-4">
             {user ? (
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-600">
-                  Welcome, {user.email}
-                </span>
-                <Button variant="outline" onClick={handleSignOut}>
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
-                </Button>
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    {user.email}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
-              <>
-                <Button variant="outline" onClick={() => navigate('/auth')}>Sign In</Button>
-                <Button onClick={() => navigate('/auth')}>Get Started</Button>
-              </>
+              <Button onClick={() => navigate('/auth')} size="sm">
+                Sign In
+              </Button>
             )}
+          </div>
+
+          {/* Mobile Navigation */}
+          <div className="md:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Menu className="h-4 w-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent>
+                <div className="flex flex-col space-y-4 mt-4">
+                  {navigationItems.map((item) => (
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      className="text-gray-700 hover:text-blue-600 transition-colors py-2"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                  <div className="pt-4 border-t">
+                    {user ? (
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-600">{user.email}</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate('/profile')}
+                          className="w-full"
+                        >
+                          <Settings className="h-4 w-4 mr-2" />
+                          Profile
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleSignOut}
+                          className="w-full"
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Sign Out
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button onClick={() => navigate('/auth')} size="sm" className="w-full">
+                        Sign In
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </div>
