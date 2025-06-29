@@ -13,6 +13,11 @@ import TermsOfService from "./pages/TermsOfService";
 import Blog from "./pages/Blog";
 import BusinessTools from "./pages/BusinessTools";
 import NotFound from "./pages/NotFound";
+import LegalDocuments from "./pages/categories/LegalDocuments";
+import HumanResources from "./pages/categories/HumanResources";
+import FinancialForms from "./pages/categories/FinancialForms";
+import MarketingMaterials from "./pages/categories/MarketingMaterials";
+import Operations from "./pages/categories/Operations";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +36,11 @@ const App = () => (
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/business-tools" element={<BusinessTools />} />
+            <Route path="/categories/legal" element={<LegalDocuments />} />
+            <Route path="/categories/hr" element={<HumanResources />} />
+            <Route path="/categories/finance" element={<FinancialForms />} />
+            <Route path="/categories/marketing" element={<MarketingMaterials />} />
+            <Route path="/categories/operations" element={<Operations />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
