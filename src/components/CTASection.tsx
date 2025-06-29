@@ -17,9 +17,12 @@ const CTASection = () => {
             Browse All Forms
           </Button>
           <Button size="lg" variant="outline" className="text-lg px-8 py-3 text-white border-white hover:bg-white hover:text-blue-600">
-            Start Free Trial
+            Start 14-Day Free Trial
           </Button>
         </div>
+        <p className="text-blue-100 text-sm mt-4">
+          No credit card required • Cancel anytime
+        </p>
       </div>
     </section>
   );
