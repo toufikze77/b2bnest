@@ -1,17 +1,20 @@
+
 import { useState } from "react";
-import { Search, FileText, Users, Calculator, Briefcase, Download, Eye, LogOut } from "lucide-react";
+import { FileText, Users, Calculator, Briefcase, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import TestimonialsSection from "@/components/TestimonialsSection";
+import { SearchProvider, useSearch } from "@/contexts/SearchContext";
+import SmartSearch from "@/components/SmartSearch";
+import SearchResults from "@/components/SearchResults";
 
-const Index = () => {
-  const [searchTerm, setSearchTerm] = useState("");
+const IndexContent = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { searchQuery, searchResults, performSearch } = useSearch();
 
   const handleSignOut = async () => {
     await signOut();
@@ -109,11 +112,13 @@ const Index = () => {
     }
   ];
 
-  const filteredForms = popularForms.filter(form =>
-    form.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    form.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    form.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const handleSearch = (query: string) => {
+    performSearch(query, popularForms);
+  };
+
+  // Show search results if there's a search query, otherwise show default content
+  const showSearchResults = searchQuery.trim().length > 0;
+  const resultsToShow = showSearchResults ? searchResults : popularForms;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -160,18 +165,9 @@ const Index = () => {
             Save time and ensure compliance with our comprehensive template library.
           </p>
           
-          {/* Search Bar */}
-          <div className="max-w-2xl mx-auto mb-12">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-              <Input
-                type="text"
-                placeholder="Search forms and documents..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 pr-4 py-4 text-lg rounded-xl border-2 border-gray-200 focus:border-blue-500 shadow-lg"
-              />
-            </div>
+          {/* Smart Search Bar */}
+          <div className="mb-12">
+            <SmartSearch onSearch={handleSearch} />
           </div>
 
           {/* Stats */}
@@ -192,91 +188,65 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <h3 className="text-3xl font-bold text-center text-gray-900 mb-12">
-            Browse by Category
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {categories.map((category) => {
-              const IconComponent = category.icon;
-              return (
-                <Card key={category.id} className="hover:shadow-lg transition-shadow cursor-pointer group">
-                  <CardHeader className="text-center pb-4">
-                    <div className={`${category.color} w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform`}>
-                      <IconComponent className="h-8 w-8 text-white" />
-                    </div>
-                    <CardTitle className="text-xl">{category.name}</CardTitle>
-                    <CardDescription>{category.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="text-center pt-0">
-                    <Badge variant="secondary" className="text-sm">
-                      {category.count} forms
-                    </Badge>
-                  </CardContent>
-                </Card>
-              );
-            })}
+      {/* Search Results or Categories */}
+      {showSearchResults ? (
+        <section className="py-16 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <SearchResults 
+              results={resultsToShow} 
+              searchQuery={searchQuery}
+            />
           </div>
-        </div>
-      </section>
+        </section>
+      ) : (
+        <>
+          {/* Categories */}
+          <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
+            <div className="max-w-7xl mx-auto">
+              <h3 className="text-3xl font-bold text-center text-gray-900 mb-12">
+                Browse by Category
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {categories.map((category) => {
+                  const IconComponent = category.icon;
+                  return (
+                    <Card key={category.id} className="hover:shadow-lg transition-shadow cursor-pointer group">
+                      <CardHeader className="text-center pb-4">
+                        <div className={`${category.color} w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform`}>
+                          <IconComponent className="h-8 w-8 text-white" />
+                        </div>
+                        <CardTitle className="text-xl">{category.name}</CardTitle>
+                        <CardDescription>{category.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent className="text-center pt-0">
+                        <Badge variant="secondary" className="text-sm">
+                          {category.count} forms
+                        </Badge>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
 
-      {/* Popular Forms */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <h3 className="text-3xl font-bold text-center text-gray-900 mb-12">
-            Popular Forms & Documents
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredForms.map((form) => (
-              <Card key={form.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg mb-2">{form.title}</CardTitle>
-                      <Badge variant="outline" className="mb-2">
-                        {form.category}
-                      </Badge>
-                    </div>
-                    <div className="text-right text-sm text-gray-500">
-                      ★ {form.rating}
-                    </div>
-                  </div>
-                  <CardDescription>{form.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-1 mb-4">
-                    {form.tags.map((tag, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500">
-                      {form.downloads.toLocaleString()} downloads
-                    </span>
-                    <div className="flex space-x-2">
-                      <Button size="sm" variant="outline">
-                        <Eye className="h-4 w-4 mr-1" />
-                        Preview
-                      </Button>
-                      <Button size="sm">
-                        <Download className="h-4 w-4 mr-1" />
-                        Use
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
+          {/* Popular Forms */}
+          <section className="py-16 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto">
+              <h3 className="text-3xl font-bold text-center text-gray-900 mb-12">
+                Popular Forms & Documents
+              </h3>
+              <SearchResults 
+                results={resultsToShow} 
+                searchQuery=""
+              />
+            </div>
+          </section>
+        </>
+      )}
 
-      {/* Testimonials Section */}
-      <TestimonialsSection />
+      {/* Testimonials Section - only show when not searching */}
+      {!showSearchResults && <TestimonialsSection />}
 
       {/* CTA Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-blue-600">
@@ -348,6 +318,14 @@ const Index = () => {
         </div>
       </footer>
     </div>
+  );
+};
+
+const Index = () => {
+  return (
+    <SearchProvider>
+      <IndexContent />
+    </SearchProvider>
   );
 };
 
