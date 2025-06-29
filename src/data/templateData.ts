@@ -1,4 +1,3 @@
-
 import { Template, TemplateCategory, TemplateLicense } from '@/types/template';
 
 export const templateLicenses: TemplateLicense[] = [
@@ -77,6 +76,14 @@ export const templateCategories: TemplateCategory[] = [
     icon: 'Briefcase',
     color: 'bg-orange-500',
     subcategories: ['SOPs', 'Checklists', 'Reports', 'Planning', 'Quality Control']
+  },
+  {
+    id: 'business-resources',
+    name: 'Business Resources',
+    description: 'Software and hardware referrals for business growth',
+    icon: 'Settings',
+    color: 'bg-indigo-500',
+    subcategories: ['Software Tools', 'Hardware Solutions', 'SaaS Platforms', 'Business Apps', 'Tech Reviews']
   }
 ];
 
@@ -302,5 +309,79 @@ export const sampleTemplates: Template[] = [
     
     softwareRequired: ['Microsoft Word', 'Google Docs'],
     instructions: 'Customize the service description, payment terms, and deliverables sections to match your specific needs.'
+  },
+  {
+    id: '7',
+    title: 'Essential Business Software Guide & Referral Directory',
+    description: 'Comprehensive guide to must-have business software with detailed comparisons, pricing, and exclusive referral links to top platforms.',
+    category: templateCategories[5],
+    subcategory: 'Software Tools',
+    tags: ['Software', 'Business Tools', 'Referrals', 'SaaS', 'Productivity'],
+    
+    fileType: 'PDF',
+    fileSize: '2.8 MB',
+    fileName: 'business-software-guide.pdf',
+    fileUrl: '/templates/business-resources/business-software-guide.pdf',
+    previewUrl: '/previews/business-resources/software-guide-preview.pdf',
+    thumbnailUrl: '/thumbnails/business-resources/software-thumb.jpg',
+    
+    license: templateLicenses[0],
+    price: 0,
+    currency: 'USD',
+    isRoyaltyFree: true,
+    canResell: false,
+    commercialUse: true,
+    
+    author: 'Business Tech Experts',
+    version: '1.0',
+    lastUpdated: '2024-02-15',
+    downloads: 1240,
+    rating: 4.7,
+    reviewCount: 85,
+    
+    featured: true,
+    trending: true,
+    isNew: true,
+    difficulty: 'Beginner',
+    
+    softwareRequired: ['PDF Reader'],
+    instructions: 'Use the referral links provided to get exclusive discounts on recommended software solutions.'
+  },
+  {
+    id: '8',
+    title: 'Hardware Procurement Checklist & Vendor Directory',
+    description: 'Complete guide for business hardware procurement including vendor comparisons, specifications, and trusted supplier referrals.',
+    category: templateCategories[5],
+    subcategory: 'Hardware Solutions',
+    tags: ['Hardware', 'Procurement', 'Business Equipment', 'Vendors', 'IT'],
+    
+    fileType: 'XLSX',
+    fileSize: '450 KB',
+    fileName: 'hardware-procurement-guide.xlsx',
+    fileUrl: '/templates/business-resources/hardware-procurement-guide.xlsx',
+    previewUrl: '/previews/business-resources/hardware-guide-preview.pdf',
+    thumbnailUrl: '/thumbnails/business-resources/hardware-thumb.jpg',
+    
+    license: templateLicenses[1],
+    price: 24.99,
+    currency: 'USD',
+    isRoyaltyFree: true,
+    canResell: false,
+    commercialUse: true,
+    
+    author: 'IT Procurement Specialists',
+    version: '2.0',
+    lastUpdated: '2024-02-12',
+    downloads: 678,
+    rating: 4.6,
+    reviewCount: 34,
+    
+    featured: false,
+    trending: true,
+    isNew: true,
+    difficulty: 'Intermediate',
+    
+    softwareRequired: ['Microsoft Excel', 'Google Sheets'],
+    instructions: 'Use the comparison sheets to evaluate vendors and contact recommended suppliers through provided referral links.'
   }
 ];
