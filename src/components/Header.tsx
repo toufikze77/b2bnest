@@ -1,3 +1,4 @@
+
 import { FileText, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,8 +20,18 @@ const Header = () => {
             <div className="bg-blue-600 p-2 rounded-lg">
               <FileText className="h-6 w-6 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">B2BNest</h1>
+            <h1 className="text-2xl font-bold text-gray-900 cursor-pointer" onClick={() => navigate('/')}>
+              B2BNest
+            </h1>
           </div>
+          <nav className="hidden md:flex items-center space-x-6">
+            <Button variant="ghost" onClick={() => navigate('/')}>
+              Home
+            </Button>
+            <Button variant="ghost" onClick={() => navigate('/fundraising')}>
+              Token Sale
+            </Button>
+          </nav>
           <div className="flex items-center space-x-4">
             {user ? (
               <div className="flex items-center space-x-4">
