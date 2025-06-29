@@ -28,9 +28,6 @@ const Header = () => {
             <Button variant="ghost" onClick={() => navigate('/')}>
               Home
             </Button>
-            <Button variant="ghost" onClick={() => navigate('/fundraising')}>
-              Token Sale
-            </Button>
           </nav>
           <div className="flex items-center space-x-4">
             {user ? (
