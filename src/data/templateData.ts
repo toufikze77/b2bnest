@@ -84,6 +84,22 @@ export const templateCategories: TemplateCategory[] = [
     icon: 'Settings',
     color: 'bg-indigo-500',
     subcategories: ['Software Tools', 'Hardware Solutions', 'SaaS Platforms', 'Business Apps', 'Tech Reviews']
+  },
+  {
+    id: 'project-management',
+    name: 'Project Management & Collaboration',
+    description: 'Project planning, team collaboration, and workflow management tools',
+    icon: 'Kanban',
+    color: 'bg-cyan-500',
+    subcategories: ['Project Planning', 'Team Collaboration', 'Task Management', 'Workflow Templates', 'Meeting Notes']
+  },
+  {
+    id: 'professional-services',
+    name: 'Professional Services',
+    description: 'Hire verified professionals - Available for yearly subscribers to list services',
+    icon: 'UserCheck',
+    color: 'bg-emerald-500',
+    subcategories: ['Consulting', 'Design Services', 'Development', 'Marketing Services', 'Legal Services']
   }
 ];
 
@@ -383,5 +399,79 @@ export const sampleTemplates: Template[] = [
     
     softwareRequired: ['Microsoft Excel', 'Google Sheets'],
     instructions: 'Use the comparison sheets to evaluate vendors and contact recommended suppliers through provided referral links.'
+  },
+  {
+    id: '9',
+    title: 'Comprehensive Project Management Dashboard Template',
+    description: 'All-in-one project management template with Gantt charts, task tracking, team assignments, and milestone management.',
+    category: templateCategories[6],
+    subcategory: 'Project Planning',
+    tags: ['Project Management', 'Dashboard', 'Team Collaboration', 'Planning', 'Tracking'],
+    
+    fileType: 'XLSX',
+    fileSize: '1.2 MB',
+    fileName: 'project-management-dashboard.xlsx',
+    fileUrl: '/templates/project-management/project-management-dashboard.xlsx',
+    previewUrl: '/previews/project-management/dashboard-preview.pdf',
+    thumbnailUrl: '/thumbnails/project-management/dashboard-thumb.jpg',
+    
+    license: templateLicenses[1],
+    price: 34.99,
+    currency: 'USD',
+    isRoyaltyFree: true,
+    canResell: false,
+    commercialUse: true,
+    
+    author: 'Project Pro Solutions',
+    version: '3.2',
+    lastUpdated: '2024-02-20',
+    downloads: 1456,
+    rating: 4.8,
+    reviewCount: 112,
+    
+    featured: true,
+    trending: true,
+    isNew: true,
+    difficulty: 'Advanced',
+    
+    softwareRequired: ['Microsoft Excel 2019+', 'Google Sheets'],
+    instructions: 'Customize project phases, assign team members, and track progress using the built-in formulas and charts.'
+  },
+  {
+    id: '10',
+    title: 'Professional Web Development Services - Premium Package',
+    description: 'Full-stack web development services including custom design, responsive development, and ongoing maintenance. Available from verified professional developer.',
+    category: templateCategories[7],
+    subcategory: 'Development',
+    tags: ['Web Development', 'Professional Service', 'Custom Design', 'Full-Stack', 'Maintenance'],
+    
+    fileType: 'PDF',
+    fileSize: '890 KB',
+    fileName: 'web-development-service-package.pdf',
+    fileUrl: '/templates/professional-services/web-development-package.pdf',
+    previewUrl: '/previews/professional-services/web-dev-preview.pdf',
+    thumbnailUrl: '/thumbnails/professional-services/web-dev-thumb.jpg',
+    
+    license: templateLicenses[2],
+    price: 2999.99,
+    currency: 'USD',
+    isRoyaltyFree: false,
+    canResell: false,
+    commercialUse: true,
+    
+    author: 'TechCraft Solutions (Verified Professional)',
+    version: '1.0',
+    lastUpdated: '2024-02-25',
+    downloads: 45,
+    rating: 5.0,
+    reviewCount: 8,
+    
+    featured: true,
+    trending: false,
+    isNew: true,
+    difficulty: 'Beginner',
+    
+    softwareRequired: ['PDF Reader'],
+    instructions: 'Contact the professional directly through the provided details. Service includes consultation, development, and 3 months support. Subject to terms and conditions for yearly subscribers.'
   }
 ];
