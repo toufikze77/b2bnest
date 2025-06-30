@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 
 const Footer = () => {
@@ -12,7 +11,7 @@ const Footer = () => {
             <div className="flex items-center space-x-3 mb-4">
               <div className="bg-blue-600 p-2 rounded-lg">
                 <img 
-                  src="/lovable-uploads/af76d3af-0648-4249-a4a0-9eb762d12230.png" 
+                  src="/lovable-uploads/aa259763-7418-4412-b5cb-ab9e2ca71f80.png" 
                   alt="B2BNest Logo" 
                   className="h-5 w-5 brightness-0 invert"
                 />

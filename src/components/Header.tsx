@@ -34,13 +34,12 @@ const Header = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center">
             <img 
-              src="/lovable-uploads/af76d3af-0648-4249-a4a0-9eb762d12230.png" 
+              src="/lovable-uploads/aa259763-7418-4412-b5cb-ab9e2ca71f80.png" 
               alt="B2BNest Logo" 
-              className="h-8 w-8"
+              className="h-12 w-auto"
             />
-            <span className="text-xl font-bold text-gray-900">B2BNest</span>
           </Link>
 
           {/* Desktop Navigation */}
