@@ -12,6 +12,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Blog from "./pages/Blog";
 import BusinessTools from "./pages/BusinessTools";
+import PLR from "./pages/PLR";
 import NotFound from "./pages/NotFound";
 import LegalDocuments from "./pages/categories/LegalDocuments";
 import HumanResources from "./pages/categories/HumanResources";
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/business-tools" element={<BusinessTools />} />
+            <Route path="/plr" element={<PLR />} />
             <Route path="/categories/legal" element={<LegalDocuments />} />
             <Route path="/categories/hr" element={<HumanResources />} />
             <Route path="/categories/finance" element={<FinancialForms />} />
