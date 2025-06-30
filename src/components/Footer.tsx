@@ -1,5 +1,4 @@
 
-import { FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Footer = () => {
@@ -12,7 +11,11 @@ const Footer = () => {
           <div>
             <div className="flex items-center space-x-3 mb-4">
               <div className="bg-blue-600 p-2 rounded-lg">
-                <FileText className="h-5 w-5 text-white" />
+                <img 
+                  src="/lovable-uploads/af76d3af-0648-4249-a4a0-9eb762d12230.png" 
+                  alt="B2BNest Logo" 
+                  className="h-5 w-5 brightness-0 invert"
+                />
               </div>
               <span className="text-xl font-bold">B2BNest</span>
             </div>

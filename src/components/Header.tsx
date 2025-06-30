@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Building2, Menu, X, User, LogOut, Settings } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -35,7 +35,11 @@ const Header = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <Building2 className="h-8 w-8 text-blue-600" />
+            <img 
+              src="/lovable-uploads/af76d3af-0648-4249-a4a0-9eb762d12230.png" 
+              alt="B2BNest Logo" 
+              className="h-8 w-8"
+            />
             <span className="text-xl font-bold text-gray-900">B2BNest</span>
           </Link>
 
