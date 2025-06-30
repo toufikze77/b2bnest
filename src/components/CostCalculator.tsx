@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Calculator, DollarSign, FileText, Users, Building } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -133,17 +132,18 @@ const CostCalculator = () => {
             </div>
 
             <div>
-              <Label htmlFor="state">State</Label>
+              <Label htmlFor="state">Location</Label>
               <Select value={state} onValueChange={setState}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select state" />
+                  <SelectValue placeholder="Select location" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ca">California</SelectItem>
                   <SelectItem value="ny">New York</SelectItem>
                   <SelectItem value="tx">Texas</SelectItem>
                   <SelectItem value="fl">Florida</SelectItem>
-                  <SelectItem value="other">Other State</SelectItem>
+                  <SelectItem value="uk">United Kingdom</SelectItem>
+                  <SelectItem value="other">Other State/Country</SelectItem>
                 </SelectContent>
               </Select>
             </div>
