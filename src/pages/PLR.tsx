@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Download, FileText, Video, Image, Headphones, Star, CheckCircle, ArrowRight, Users, Clock, DollarSign } from 'lucide-react';
+import { Download, FileText, Video, Image, Headphones, Star, CheckCircle, ArrowRight, Users, Clock, DollarSign, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -123,6 +123,67 @@ const PLR = () => {
             <Button variant="outline" size="lg" className="px-8 py-3">
               Learn About PLR
             </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Special Pricing Section */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-purple-600 to-blue-600">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl border-4 border-yellow-400">
+            <div className="flex items-center justify-center mb-4">
+              <Zap className="h-8 w-8 text-yellow-500 mr-2" />
+              <Badge className="bg-yellow-100 text-yellow-800 px-4 py-2 text-lg font-bold">
+                LIMITED TIME OFFER
+              </Badge>
+            </div>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Complete PLR Content Library
+            </h2>
+            <div className="mb-6">
+              <div className="text-6xl font-bold text-purple-600 mb-2">£489</div>
+              <div className="text-lg text-gray-600 line-through mb-2">Regular Price: £1,299</div>
+              <div className="text-xl text-green-600 font-semibold">Save £810 - One-Time Payment</div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 text-left">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <span>500+ eBooks & Articles</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <span>200+ Video Training Courses</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <span>1000+ Graphics & Templates</span>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <span>150+ Audio Tracks & Podcasts</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <span>Full Commercial Rights</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <span>Lifetime Access & Updates</span>
+                </div>
+              </div>
+            </div>
+
+            <Button size="lg" className="w-full md:w-auto px-12 py-4 text-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+              Get Complete Access Now - £489
+            </Button>
+            
+            <p className="text-sm text-gray-600 mt-4">
+              ⚡ Instant access • 30-day money-back guarantee • One-time payment only
+            </p>
           </div>
         </div>
       </section>
@@ -289,10 +350,10 @@ const PLR = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" variant="secondary" className="px-8 py-3">
-              Start Free Trial
+              Get Complete Access - £489
             </Button>
             <Button size="lg" variant="outline" className="px-8 py-3 text-white border-white hover:bg-white hover:text-blue-600">
-              View Pricing Plans
+              View Sample Content
             </Button>
           </div>
         </div>
