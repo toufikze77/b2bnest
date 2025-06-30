@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft } from 'lucide-react';
+import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -9,8 +9,9 @@ import BusinessSetupChecklist from '@/components/BusinessSetupChecklist';
 import ComplianceChecker from '@/components/ComplianceChecker';
 import BestPracticesGuide from '@/components/BestPracticesGuide';
 import IntegrationHub from '@/components/IntegrationHub';
+import BusinessResources from '@/components/BusinessResources';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources';
 
 const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
@@ -56,6 +57,14 @@ const BusinessTools = () => {
       icon: Zap,
       color: 'bg-purple-500',
       benefits: ['Streamline workflows', 'Automate processes', 'Boost productivity']
+    },
+    {
+      id: 'business-resources' as ToolType,
+      title: 'Business Resources',
+      description: 'Trusted referrals for banking, accounting, and business services',
+      icon: Building2,
+      color: 'bg-orange-500',
+      benefits: ['Vetted service providers', 'Compare options', 'Get recommendations']
     }
   ];
 
@@ -71,6 +80,8 @@ const BusinessTools = () => {
         return <BestPracticesGuide />;
       case 'integrations':
         return <IntegrationHub />;
+      case 'business-resources':
+        return <BusinessResources />;
       default:
         return (
           <div className="max-w-6xl mx-auto p-6">
