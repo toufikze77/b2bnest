@@ -1,4 +1,5 @@
 
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Play, Star, TrendingUp, Zap, Users, Share2, Target, Rocket } from 'lucide-react';
@@ -48,7 +49,7 @@ const VideoExplanation = () => {
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900">Revenue Sharing</h4>
-                  <p className="text-sm text-gray-600">First 1000 token holders earn 15% of platform revenue distributed quarterly</p>
+                  <p className="text-sm text-gray-600">First 1000 token holders share 20% of platform revenue distributed quarterly</p>
                 </div>
               </div>
 
@@ -58,7 +59,7 @@ const VideoExplanation = () => {
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900">Premium Features Access</h4>
-                  <p className="text-sm text-gray-600">First 1000 token holders get lifetime access to AI-powered document analysis and premium templates</p>
+                  <p className="text-sm text-gray-600">First 1000 token holders get one year access to AI-powered document analysis and premium templates</p>
                 </div>
               </div>
 
@@ -185,3 +186,4 @@ const VideoExplanation = () => {
 };
 
 export default VideoExplanation;
+
