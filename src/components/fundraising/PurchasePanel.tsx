@@ -21,15 +21,6 @@ const PurchasePanel = ({ presalePrice, tokenSymbol, minContribution, maxContribu
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="text-center space-y-4">
-          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <h3 className="font-semibold text-blue-900 mb-2">Investment Details</h3>
-            <div className="text-sm text-blue-800 space-y-1">
-              <p><strong>Token Price:</strong> {presalePrice} ETH</p>
-              <p><strong>Min Investment:</strong> {minContribution} ETH</p>
-              <p><strong>Max Investment:</strong> {maxContribution} ETH</p>
-            </div>
-          </div>
-          
           <div className="p-4 bg-green-50 rounded-lg border border-green-200">
             <p className="text-sm text-green-800 mb-3">
               Ready to invest in B2BNest? Visit our official presale on PinkFinance to purchase {tokenSymbol} tokens securely.
