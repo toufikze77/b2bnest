@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 interface InvoiceItem {
   id: string;
@@ -265,28 +265,25 @@ const InvoiceCreationSection = () => {
                     value={item.description}
                     onChange={(e) => updateItem(item.id, 'description', e.target.value)}
                     placeholder="Item description"
-                    size="sm"
                   />
                 </div>
                 <div className="col-span-2">
                   <Label className="text-xs">Quantity</Label>
                   <Input
                     type="number"
-                    value={item.quantity.toString()}
+                    value={item.quantity === 0 ? '' : item.quantity.toString()}
                     onChange={(e) => updateItem(item.id, 'quantity', parseInt(e.target.value) || 0)}
                     min="1"
-                    size="sm"
                   />
                 </div>
                 <div className="col-span-2">
                   <Label className="text-xs">Rate ($)</Label>
                   <Input
                     type="number"
-                    value={item.rate.toString()}
+                    value={item.rate === 0 ? '' : item.rate.toString()}
                     onChange={(e) => updateItem(item.id, 'rate', parseFloat(e.target.value) || 0)}
                     min="0"
                     step="0.01"
-                    size="sm"
                   />
                 </div>
                 <div className="col-span-2">
@@ -296,7 +293,6 @@ const InvoiceCreationSection = () => {
                     value={item.amount.toFixed(2)}
                     readOnly
                     className="bg-gray-50"
-                    size="sm"
                   />
                 </div>
                 <div className="col-span-1">
