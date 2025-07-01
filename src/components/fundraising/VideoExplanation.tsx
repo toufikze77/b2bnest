@@ -1,5 +1,3 @@
-
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Play, Star, TrendingUp, Zap, Users, Share2, Target, Rocket } from 'lucide-react';
@@ -75,8 +73,8 @@ const VideoExplanation = () => {
             </div>
 
             <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
-              <h4 className="font-semibold text-blue-900 mb-2">🚀 Limited Time Bonus</h4>
-              <p className="text-sm text-blue-800">First 500 investors receive an additional 20% bonus tokens!</p>
+              <h4 className="font-semibold text-blue-900 mb-2">🚀 Limited Time Airdrop</h4>
+              <p className="text-sm text-blue-800">First 500 investors receive an additional 10% token airdrop!</p>
             </div>
           </div>
         </div>
@@ -186,4 +184,3 @@ const VideoExplanation = () => {
 };
 
 export default VideoExplanation;
-
