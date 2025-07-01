@@ -272,7 +272,7 @@ const InvoiceCreationSection = () => {
                   <Label className="text-xs">Quantity</Label>
                   <Input
                     type="number"
-                    value={item.quantity}
+                    value={item.quantity.toString()}
                     onChange={(e) => updateItem(item.id, 'quantity', parseInt(e.target.value) || 0)}
                     min="1"
                     size="sm"
@@ -282,7 +282,7 @@ const InvoiceCreationSection = () => {
                   <Label className="text-xs">Rate ($)</Label>
                   <Input
                     type="number"
-                    value={item.rate}
+                    value={item.rate.toString()}
                     onChange={(e) => updateItem(item.id, 'rate', parseFloat(e.target.value) || 0)}
                     min="0"
                     step="0.01"
