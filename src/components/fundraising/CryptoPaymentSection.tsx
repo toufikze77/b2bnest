@@ -51,21 +51,6 @@ const CryptoPaymentSection = () => {
             </Button>
           </div>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div className="text-center p-3 bg-white rounded-lg border border-orange-200">
-            <h4 className="font-semibold text-orange-800 mb-2">For Crypto Veterans</h4>
-            <p className="text-xs text-gray-600">
-              Use your existing crypto wallet for quick and familiar transactions
-            </p>
-          </div>
-          <div className="text-center p-3 bg-white rounded-lg border border-orange-200">
-            <h4 className="font-semibold text-orange-800 mb-2">New to Crypto?</h4>
-            <p className="text-xs text-gray-600">
-              Step-by-step guidance to make your first crypto payment effortlessly
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   );
