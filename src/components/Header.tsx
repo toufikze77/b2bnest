@@ -33,13 +33,13 @@ const Header = () => {
   return (
     <header className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-32">
+        <div className="flex justify-between items-center h-48">
           {/* Logo */}
           <Link to="/" className="flex items-center">
             <img 
               src="/lovable-uploads/aa259763-7418-4412-b5cb-ab9e2ca71f80.png" 
               alt="B2BNest Logo" 
-              style={{ width: '250px', height: '100px' }}
+              style={{ width: '500px', height: '200px' }}
               className="object-contain"
             />
           </Link>
