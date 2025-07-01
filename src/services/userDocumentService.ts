@@ -70,11 +70,29 @@ export const userDocumentService = {
       throw new Error('User not authenticated');
     }
 
+    // First, get the current download count
+    const { data: currentData, error: fetchError } = await supabase
+      .from('user_documents')
+      .select('download_count')
+      .eq('user_id', user.id)
+      .eq('document_id', documentId)
+      .single();
+
+    if (fetchError) {
+      throw fetchError;
+    }
+
+    // Update the download count and last downloaded timestamp
     const { data, error } = await supabase
-      .rpc('increment_download_count', {
-        doc_id: documentId,
-        user_id: user.id
-      });
+      .from('user_documents')
+      .update({
+        download_count: (currentData?.download_count || 0) + 1,
+        last_downloaded_at: new Date().toISOString()
+      })
+      .eq('user_id', user.id)
+      .eq('document_id', documentId)
+      .select()
+      .single();
 
     if (error) {
       throw error;
