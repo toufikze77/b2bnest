@@ -1,7 +1,6 @@
 
 import { SearchProvider, useSearch } from "@/contexts/SearchContext";
 import { templateService } from "@/services/templateService";
-import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import StatsSection from "@/components/StatsSection";
 import CategoriesSection from "@/components/CategoriesSection";
@@ -37,8 +36,6 @@ const IndexContent = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <Header />
-      
       <HeroSection onSearch={handleSearch} />
 
       {/* Search Results - Show immediately below search bar */}
