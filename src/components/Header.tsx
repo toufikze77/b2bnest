@@ -1,77 +1,78 @@
-
-import React from 'react';
+import React, { useState } from 'react';
+import { Menu, X, User, LogOut, Settings, BarChart3 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, User, LogOut, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/useAuth';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useAuth } from '@/hooks/useAuth';
 
 const Header = () => {
-  const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
 
-  const navigationItems = [
-    { label: 'Home', href: '/' },
-    { label: 'Business Tools', href: '/business-tools' },
-    { label: 'PLR', href: '/plr' },
-    { label: 'Investor', href: '/fundraising' },
-    { label: 'About', href: '/about' },
-    { label: 'Blog', href: '/blog' },
-  ];
-
   return (
     <header className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-64">
+        <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center">
-            <img 
-              src="/lovable-uploads/aa259763-7418-4412-b5cb-ab9e2ca71f80.png" 
-              alt="B2BNest Logo" 
-              style={{ width: '250px', height: '250px' }}
-              className="object-contain"
-            />
+          <Link to="/" className="flex items-center space-x-2">
+            <div className="bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center font-bold">
+              B
+            </div>
+            <span className="text-xl font-bold text-gray-900">B2BNest</span>
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            {navigationItems.map((item) => (
-              <Link
-                key={item.href}
-                to={item.href}
-                className="text-gray-700 hover:text-blue-600 transition-colors"
-              >
-                {item.label}
-              </Link>
-            ))}
+            <Link to="/about" className="text-gray-700 hover:text-blue-600 transition-colors">
+              About
+            </Link>
+            <Link to="/business-tools" className="text-gray-700 hover:text-blue-600 transition-colors">
+              Business Tools
+            </Link>
+            <Link to="/blog" className="text-gray-700 hover:text-blue-600 transition-colors">
+              Blog
+            </Link>
+            <Link to="/fundraising" className="text-gray-700 hover:text-blue-600 transition-colors">
+              Fundraising
+            </Link>
           </nav>
 
-          {/* Desktop Auth */}
-          <div className="hidden md:flex items-center gap-4">
+          {/* User Menu / Auth Buttons */}
+          <div className="flex items-center space-x-4">
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <Button variant="ghost" className="flex items-center space-x-2 px-3">
                     <User className="h-4 w-4" />
-                    {user.email}
+                    <span className="hidden sm:inline truncate max-w-32">
+                      {user.email}
+                    </span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate('/profile')}>
-                    <Settings className="h-4 w-4 mr-2" />
-                    Profile
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard" className="flex items-center w-full">
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      Dashboard
+                    </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="h-4 w-4 mr-2" />
                     Sign Out
@@ -79,65 +80,88 @@ const Header = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button onClick={() => navigate('/auth')} size="sm">
-                Sign In
-              </Button>
+              <div className="flex items-center space-x-2">
+                <Link to="/auth">
+                  <Button variant="outline" size="sm">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/auth">
+                  <Button size="sm">
+                    Sign Up
+                  </Button>
+                </Link>
+              </div>
             )}
-          </div>
 
-          {/* Mobile Navigation */}
-          <div className="md:hidden">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Menu className="h-4 w-4" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent>
-                <div className="flex flex-col space-y-4 mt-4">
-                  {navigationItems.map((item) => (
-                    <Link
-                      key={item.href}
-                      to={item.href}
-                      className="text-gray-700 hover:text-blue-600 transition-colors py-2"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                  <div className="pt-4 border-t">
-                    {user ? (
-                      <div className="space-y-2">
-                        <p className="text-sm text-gray-600">{user.email}</p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate('/profile')}
-                          className="w-full"
-                        >
-                          <Settings className="h-4 w-4 mr-2" />
-                          Profile
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleSignOut}
-                          className="w-full"
-                        >
-                          <LogOut className="h-4 w-4 mr-2" />
-                          Sign Out
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button onClick={() => navigate('/auth')} size="sm" className="w-full">
-                        Sign In
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
+            {/* Mobile menu button */}
+            <button
+              className="md:hidden p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Navigation */}
+        {isMenuOpen && (
+          <div className="md:hidden py-4 border-t">
+            <div className="flex flex-col space-y-4">
+              <Link
+                to="/about"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                About
+              </Link>
+              <Link
+                to="/business-tools"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Business Tools
+              </Link>
+              <Link
+                to="/blog"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Blog
+              </Link>
+              <Link
+                to="/fundraising"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Fundraising
+              </Link>
+              {user && (
+                <>
+                  <hr className="my-2" />
+                  <Link
+                    to="/dashboard"
+                    className="text-gray-700 hover:text-blue-600 transition-colors px-2 flex items-center"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleSignOut();
+                      setIsMenuOpen(false);
+                    }}
+                    className="text-gray-700 hover:text-blue-600 transition-colors px-2 text-left flex items-center"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </header>
   );

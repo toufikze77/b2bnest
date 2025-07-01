@@ -1,11 +1,14 @@
-
-import React, { useState } from 'react';
-import { Download, Eye, Star, Crown, TrendingUp, Badge as BadgeIcon } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Download, Eye, Star, Crown, TrendingUp, Badge as BadgeIcon, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Template } from '@/types/template';
 import CheckoutModal from './checkout/CheckoutModal';
+import DocumentPreviewModal from './DocumentPreviewModal';
+import { userDocumentService } from '@/services/userDocumentService';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from '@/components/ui/use-toast';
 
 interface TemplateCardProps {
   template: Template;
@@ -15,7 +18,25 @@ interface TemplateCardProps {
 }
 
 const TemplateCard = ({ template, searchQuery = '', onPreview, onDownload }: TemplateCardProps) => {
+  const { user } = useAuth();
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      checkFavoriteStatus();
+    }
+  }, [user, template.id]);
+
+  const checkFavoriteStatus = async () => {
+    try {
+      const favoriteStatus = await userDocumentService.checkIfFavorite(template.id);
+      setIsFavorite(favoriteStatus);
+    } catch (error) {
+      console.error('Error checking favorite status:', error);
+    }
+  };
 
   const highlightText = (text: string, query: string) => {
     if (!query) return text;
@@ -56,9 +77,67 @@ const TemplateCard = ({ template, searchQuery = '', onPreview, onDownload }: Tem
     }
   };
 
-  const handlePaymentSuccess = (paymentData: any) => {
+  const handlePaymentSuccess = async (paymentData: any) => {
     console.log('Payment completed for template:', template.id, paymentData);
-    onDownload?.(template);
+    
+    try {
+      // Add to user's purchases
+      await userDocumentService.addPurchase(template.id);
+      toast({
+        title: "Purchase Successful",
+        description: "Document has been added to your library."
+      });
+      onDownload?.(template);
+    } catch (error) {
+      console.error('Error adding purchase:', error);
+      toast({
+        title: "Purchase Complete",
+        description: "Your payment was successful. You can now download the document.",
+        variant: "default"
+      });
+      onDownload?.(template);
+    }
+  };
+
+  const handlePreview = () => {
+    setIsPreviewOpen(true);
+    onPreview?.(template);
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!user) {
+      toast({
+        title: "Sign In Required",
+        description: "Please sign in to add favorites.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      if (isFavorite) {
+        await userDocumentService.removeFromFavorites(template.id);
+        setIsFavorite(false);
+        toast({
+          title: "Removed from Favorites",
+          description: "Template removed from your favorites."
+        });
+      } else {
+        await userDocumentService.addToFavorites(template.id);
+        setIsFavorite(true);
+        toast({
+          title: "Added to Favorites",
+          description: "Template added to your favorites."
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update favorites.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -83,6 +162,18 @@ const TemplateCard = ({ template, searchQuery = '', onPreview, onDownload }: Tem
               New
             </Badge>
           )}
+        </div>
+
+        {/* Favorite button */}
+        <div className="absolute top-3 left-3 z-10">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleToggleFavorite}
+            className={`p-2 h-8 w-8 ${isFavorite ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`}
+          >
+            <Heart className={`h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} />
+          </Button>
         </div>
 
         <CardHeader className="pb-3">
@@ -174,7 +265,7 @@ const TemplateCard = ({ template, searchQuery = '', onPreview, onDownload }: Tem
               size="sm" 
               variant="outline" 
               className="flex-1"
-              onClick={() => onPreview?.(template)}
+              onClick={handlePreview}
             >
               <Eye className="h-4 w-4 mr-1" />
               Preview
@@ -198,6 +289,15 @@ const TemplateCard = ({ template, searchQuery = '', onPreview, onDownload }: Tem
         currency={template.currency}
         itemName={template.title}
         onPaymentSuccess={handlePaymentSuccess}
+      />
+
+      <DocumentPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        template={template}
+        onDownload={handlePurchase}
+        onToggleFavorite={handleToggleFavorite}
+        isFavorite={isFavorite}
       />
     </>
   );

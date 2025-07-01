@@ -18,9 +18,11 @@ export type Database = {
           file_size: number | null
           file_url: string | null
           id: string
+          preview_url: string | null
           price: number | null
           subcategory: string | null
           tags: string[] | null
+          thumbnail_url: string | null
           title: string
           updated_at: string | null
           user_id: string
@@ -33,9 +35,11 @@ export type Database = {
           file_size?: number | null
           file_url?: string | null
           id?: string
+          preview_url?: string | null
           price?: number | null
           subcategory?: string | null
           tags?: string[] | null
+          thumbnail_url?: string | null
           title: string
           updated_at?: string | null
           user_id: string
@@ -48,9 +52,11 @@ export type Database = {
           file_size?: number | null
           file_url?: string | null
           id?: string
+          preview_url?: string | null
           price?: number | null
           subcategory?: string | null
           tags?: string[] | null
+          thumbnail_url?: string | null
           title?: string
           updated_at?: string | null
           user_id?: string
@@ -113,6 +119,70 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      user_documents: {
+        Row: {
+          document_id: string
+          download_count: number
+          id: string
+          last_downloaded_at: string | null
+          purchased_at: string
+          user_id: string
+        }
+        Insert: {
+          document_id: string
+          download_count?: number
+          id?: string
+          last_downloaded_at?: string | null
+          purchased_at?: string
+          user_id: string
+        }
+        Update: {
+          document_id?: string
+          download_count?: number
+          id?: string
+          last_downloaded_at?: string | null
+          purchased_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_documents_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_favorites: {
+        Row: {
+          created_at: string
+          document_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_favorites_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
