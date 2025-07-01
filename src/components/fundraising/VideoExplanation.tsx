@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Play, Star, TrendingUp, Zap, Users, Share2, Target, Rocket } from 'lucide-react';
+import { Play, Star, TrendingUp, Zap, Users, Share2, Target, Rocket, Bitcoin } from 'lucide-react';
 
 const VideoExplanation = () => {
   return (
@@ -76,6 +76,55 @@ const VideoExplanation = () => {
             <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
               <h4 className="font-semibold text-blue-900 mb-2">🚀 Limited Time Airdrop</h4>
               <p className="text-sm text-blue-800">First 500 investors receive an additional 10% token airdrop!</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Crypto Payment Acceptance Section */}
+        <div className="mt-8 p-6 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg border border-orange-200">
+          <div className="text-center mb-6">
+            <h3 className="text-2xl font-bold text-gray-900 mb-2 flex items-center justify-center">
+              <Bitcoin className="h-8 w-8 mr-3 text-orange-600" />
+              We Accept Crypto Payments
+            </h3>
+            <p className="text-lg font-semibold text-orange-800">Easy & Seamless Cryptocurrency Payments</p>
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-center text-gray-700 text-lg">
+              We accept crypto payments for our products and services, making it easy for crypto enthusiasts 
+              to use their digital currencies with us.
+            </p>
+            
+            <div className="bg-white p-4 rounded-lg border border-orange-300">
+              <p className="text-gray-700 text-center mb-4">
+                <strong>Whether you're a seasoned crypto enthusiast or new to the world of digital currencies,</strong> 
+                we've made it easy and seamless to pay with crypto.
+              </p>
+              
+              <div className="text-center">
+                <p className="text-sm text-gray-600 mb-2">
+                  <strong>How it works:</strong>
+                </p>
+                <p className="text-sm text-gray-600">
+                  Simply choose your preferred cryptocurrency at checkout and follow the instructions
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div className="text-center p-3 bg-white rounded-lg border border-orange-200">
+                <h4 className="font-semibold text-orange-800 mb-2">For Crypto Veterans</h4>
+                <p className="text-xs text-gray-600">
+                  Use your existing crypto wallet for quick and familiar transactions
+                </p>
+              </div>
+              <div className="text-center p-3 bg-white rounded-lg border border-orange-200">
+                <h4 className="font-semibold text-orange-800 mb-2">New to Crypto?</h4>
+                <p className="text-xs text-gray-600">
+                  Step-by-step guidance to make your first crypto payment effortlessly
+                </p>
+              </div>
             </div>
           </div>
         </div>
