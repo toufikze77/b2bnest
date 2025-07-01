@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 
 const Footer = () => {
@@ -9,15 +8,7 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="bg-blue-600 p-2 rounded-lg">
-                <img 
-                  src="/lovable-uploads/aa259763-7418-4412-b5cb-ab9e2ca71f80.png" 
-                  alt="B2BNest Logo" 
-                  style={{ width: '60px', height: '60px' }}
-                  className="object-contain brightness-0 invert"
-                />
-              </div>
+            <div className="mb-4">
               <span className="text-xl font-bold">B2BNest</span>
             </div>
             <p className="text-gray-400">
