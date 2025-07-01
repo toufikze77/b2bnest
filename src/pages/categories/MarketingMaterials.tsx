@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Megaphone, Upload, Plus, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/components/ui/use-toast';
-import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -95,7 +93,6 @@ const MarketingMaterials = () => {
   if (roleLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-pink-50">
-        <Header />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center">
             <div className="text-lg">Loading...</div>
@@ -108,8 +105,6 @@ const MarketingMaterials = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-pink-50">
-      <Header />
-      
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
