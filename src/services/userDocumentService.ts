@@ -71,15 +71,10 @@ export const userDocumentService = {
     }
 
     const { data, error } = await supabase
-      .from('user_documents')
-      .update({
-        download_count: supabase.sql`download_count + 1`,
-        last_downloaded_at: new Date().toISOString()
-      })
-      .eq('user_id', user.id)
-      .eq('document_id', documentId)
-      .select()
-      .single();
+      .rpc('increment_download_count', {
+        doc_id: documentId,
+        user_id: user.id
+      });
 
     if (error) {
       throw error;

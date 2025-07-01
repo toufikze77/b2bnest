@@ -43,7 +43,7 @@ const DocumentPreviewModal = ({
                   <Badge variant="secondary">{template.subcategory}</Badge>
                 )}
                 <Badge className="bg-green-100 text-green-800">
-                  {formatPrice(template.price, template.currency)}
+                  {formatPrice(template.price)}
                 </Badge>
               </div>
             </div>
@@ -124,7 +124,7 @@ const DocumentPreviewModal = ({
               onClick={() => onDownload?.(template)}
             >
               <Download className="h-4 w-4 mr-2" />
-              {template.price === 0 ? 'Download Free' : `Buy Now - ${formatPrice(template.price, template.currency)}`}
+              {template.price === 0 ? 'Download Free' : `Buy Now - ${formatPrice(template.price)}`}
             </Button>
             <Button
               variant="outline"
