@@ -23,7 +23,7 @@ const CostSummaryCard = ({ totalCost, requiredCost, optionalCost, businessType }
         <div className="space-y-4">
           <div className="p-4 bg-blue-50 rounded-lg">
             <div className="text-2xl font-bold text-blue-600">
-              ${totalCost.toLocaleString()}
+              £{totalCost.toLocaleString()}
             </div>
             <div className="text-sm text-blue-600">Total Estimated Cost</div>
           </div>
@@ -33,13 +33,13 @@ const CostSummaryCard = ({ totalCost, requiredCost, optionalCost, businessType }
               <div className="flex justify-between text-sm">
                 <span>Required Costs:</span>
                 <span className="font-semibold">
-                  ${requiredCost.toLocaleString()}
+                  £{requiredCost.toLocaleString()}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Optional Costs:</span>
                 <span className="font-semibold">
-                  ${optionalCost.toLocaleString()}
+                  £{optionalCost.toLocaleString()}
                 </span>
               </div>
             </div>

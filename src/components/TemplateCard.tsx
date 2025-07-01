@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Download, Eye, Star, Crown, TrendingUp, Badge as BadgeIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -33,7 +32,7 @@ const TemplateCard = ({ template, searchQuery = '', onPreview, onDownload }: Tem
 
   const formatPrice = (price: number, currency: string) => {
     if (price === 0) return 'Free';
-    return `$${price.toFixed(2)}`;
+    return `£${price.toFixed(2)}`;
   };
 
   const getLicenseBadgeColor = (licenseType: string) => {

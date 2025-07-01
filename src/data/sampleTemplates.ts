@@ -21,7 +21,7 @@ export const sampleTemplates: Template[] = [
     
     license: templateLicenses[1],
     price: 19.99,
-    currency: 'USD',
+    currency: 'GBP',
     isRoyaltyFree: true,
     canResell: false,
     commercialUse: true,
@@ -58,7 +58,7 @@ export const sampleTemplates: Template[] = [
     
     license: templateLicenses[0],
     price: 0,
-    currency: 'USD',
+    currency: 'GBP',
     isRoyaltyFree: true,
     canResell: false,
     commercialUse: true,
@@ -95,7 +95,7 @@ export const sampleTemplates: Template[] = [
     
     license: templateLicenses[1],
     price: 12.99,
-    currency: 'USD',
+    currency: 'GBP',
     isRoyaltyFree: true,
     canResell: false,
     commercialUse: true,
@@ -132,7 +132,7 @@ export const sampleTemplates: Template[] = [
     
     license: templateLicenses[2],
     price: 29.99,
-    currency: 'USD',
+    currency: 'GBP',
     isRoyaltyFree: true,
     canResell: true,
     commercialUse: true,
@@ -169,7 +169,7 @@ export const sampleTemplates: Template[] = [
     
     license: templateLicenses[1],
     price: 49.99,
-    currency: 'USD',
+    currency: 'GBP',
     isRoyaltyFree: true,
     canResell: false,
     commercialUse: true,
@@ -206,7 +206,7 @@ export const sampleTemplates: Template[] = [
     
     license: templateLicenses[0],
     price: 0,
-    currency: 'USD',
+    currency: 'GBP',
     isRoyaltyFree: true,
     canResell: false,
     commercialUse: true,
@@ -243,7 +243,7 @@ export const sampleTemplates: Template[] = [
     
     license: templateLicenses[0],
     price: 0,
-    currency: 'USD',
+    currency: 'GBP',
     isRoyaltyFree: true,
     canResell: false,
     commercialUse: true,
@@ -280,7 +280,7 @@ export const sampleTemplates: Template[] = [
     
     license: templateLicenses[1],
     price: 24.99,
-    currency: 'USD',
+    currency: 'GBP',
     isRoyaltyFree: true,
     canResell: false,
     commercialUse: true,
@@ -317,7 +317,7 @@ export const sampleTemplates: Template[] = [
     
     license: templateLicenses[1],
     price: 34.99,
-    currency: 'USD',
+    currency: 'GBP',
     isRoyaltyFree: true,
     canResell: false,
     commercialUse: true,
@@ -354,7 +354,7 @@ export const sampleTemplates: Template[] = [
     
     license: templateLicenses[2],
     price: 2999.99,
-    currency: 'USD',
+    currency: 'GBP',
     isRoyaltyFree: false,
     canResell: false,
     commercialUse: true,
