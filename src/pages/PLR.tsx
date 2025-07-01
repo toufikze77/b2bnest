@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Download, FileText, Video, Image, Headphones, Star, CheckCircle, ArrowRight, Users, Clock, DollarSign, Zap } from 'lucide-react';
+import { Download, FileText, Video, Image, Headphones, Star, CheckCircle, ArrowRight, Users, Clock, DollarSign, Zap, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -120,8 +119,12 @@ const PLR = () => {
             <Button size="lg" className="px-8 py-3">
               Browse Content Library
             </Button>
-            <Button variant="outline" size="lg" className="px-8 py-3">
-              Learn About PLR
+            <Button 
+              size="lg" 
+              className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-0"
+            >
+              <Eye className="h-5 w-5 mr-2" />
+              View Sample Content - FREE
             </Button>
           </div>
         </div>
@@ -352,8 +355,12 @@ const PLR = () => {
             <Button size="lg" variant="secondary" className="px-8 py-3">
               Get Complete Access - £489
             </Button>
-            <Button size="lg" variant="outline" className="px-8 py-3 text-white border-white hover:bg-white hover:text-blue-600">
-              View Sample Content
+            <Button 
+              size="lg" 
+              className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-0"
+            >
+              <Eye className="h-5 w-5 mr-2" />
+              View Sample Content - FREE
             </Button>
           </div>
         </div>
