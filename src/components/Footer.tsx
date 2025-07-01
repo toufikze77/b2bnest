@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 
 const Footer = () => {
@@ -13,8 +14,7 @@ const Footer = () => {
                 <img 
                   src="/lovable-uploads/aa259763-7418-4412-b5cb-ab9e2ca71f80.png" 
                   alt="B2BNest Logo" 
-                  style={{ width: '60px', height: 'auto' }}
-                  className="object-contain brightness-0 invert"
+                  className="h-8 w-auto object-contain brightness-0 invert"
                 />
               </div>
               <span className="text-xl font-bold">B2BNest</span>
