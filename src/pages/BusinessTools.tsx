@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home } from 'lucide-react';
+import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -86,17 +85,7 @@ const BusinessTools = () => {
         return (
           <div className="max-w-6xl mx-auto p-6">
             <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h1 className="text-3xl font-bold">Business Tools</h1>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/')}
-                  className="flex items-center gap-2"
-                >
-                  <Home className="h-4 w-4" />
-                  Go Back Home
-                </Button>
-              </div>
+              <h1 className="text-3xl font-bold mb-4">Business Tools</h1>
               <p className="text-gray-600 text-lg">
                 Comprehensive tools to help you start, manage, and grow your business with confidence.
               </p>
@@ -179,24 +168,14 @@ const BusinessTools = () => {
       {currentTool !== 'overview' && (
         <div className="sticky top-0 z-10 bg-white border-b">
           <div className="max-w-6xl mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <Button
-                variant="outline"
-                onClick={() => setCurrentTool('overview')}
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back to Tools
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => navigate('/')}
-                className="flex items-center gap-2"
-              >
-                <Home className="h-4 w-4" />
-                Go Back Home
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              onClick={() => setCurrentTool('overview')}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Tools
+            </Button>
           </div>
         </div>
       )}
