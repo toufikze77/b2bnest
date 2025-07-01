@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -100,4 +101,25 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Hide Lovable badge and any Lovable-injected elements */
+[data-lovable],
+[class*="lovable"],
+[id*="lovable"],
+iframe[src*="lovable"],
+div[style*="position: fixed"][style*="bottom"],
+div[style*="position: fixed"][style*="right"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Additional selectors for common badge patterns */
+.edit-badge,
+.lovable-badge,
+[aria-label*="Edit"],
+[title*="Edit"] {
+  display: none !important;
 }
