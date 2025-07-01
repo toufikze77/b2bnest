@@ -2,7 +2,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, Shield } from 'lucide-react';
-import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import CountdownTimer from '@/components/fundraising/CountdownTimer';
 import PresaleProgress from '@/components/fundraising/PresaleProgress';
@@ -29,8 +28,6 @@ const Fundraising = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <Header />
-      
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header Section */}
         <div className="text-center mb-12">
