@@ -48,7 +48,7 @@ const VideoExplanation = () => {
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900">Revenue Sharing</h4>
-                  <p className="text-sm text-gray-600">Earn 15% of platform revenue distributed quarterly to token holders</p>
+                  <p className="text-sm text-gray-600">First 1000 token holders earn 15% of platform revenue distributed quarterly</p>
                 </div>
               </div>
 
@@ -58,7 +58,7 @@ const VideoExplanation = () => {
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900">Premium Features Access</h4>
-                  <p className="text-sm text-gray-600">Lifetime access to AI-powered document analysis and premium templates</p>
+                  <p className="text-sm text-gray-600">First 1000 token holders get lifetime access to AI-powered document analysis and premium templates</p>
                 </div>
               </div>
 
