@@ -1,7 +1,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 
 interface PurchasePanelProps {
   presalePrice: string;
@@ -15,8 +15,8 @@ const PurchasePanel = ({ presalePrice, tokenSymbol, minContribution, maxContribu
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center">
-          <DollarSign className="h-5 w-5 mr-2" />
-          Purchase Tokens
+          <ExternalLink className="h-5 w-5 mr-2" />
+          Official Presale
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
