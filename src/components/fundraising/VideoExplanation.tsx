@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Play, Star, TrendingUp, Zap, Users, Share2, Target, Rocket, Bitcoin } from 'lucide-react';
+import { Play, Star, TrendingUp, Zap, Users, Share2, Target, Rocket, Bitcoin, Wallet } from 'lucide-react';
 
 const VideoExplanation = () => {
   return (
@@ -109,6 +109,23 @@ const VideoExplanation = () => {
                 <p className="text-sm text-gray-600">
                   Simply choose your preferred cryptocurrency at checkout and follow the instructions
                 </p>
+              </div>
+            </div>
+
+            {/* Solana Pay Option */}
+            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 rounded-lg border border-purple-200">
+              <div className="flex items-center justify-center mb-3">
+                <Wallet className="h-6 w-6 text-purple-600 mr-2" />
+                <h4 className="text-lg font-semibold text-purple-800">Solana Pay Available</h4>
+              </div>
+              <p className="text-center text-purple-700 text-sm mb-4">
+                Fast, low-cost payments with Solana blockchain technology
+              </p>
+              <div className="text-center">
+                <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+                  <Wallet className="h-4 w-4 mr-2" />
+                  Pay with Solana
+                </Button>
               </div>
             </div>
 
