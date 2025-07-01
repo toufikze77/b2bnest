@@ -12,6 +12,7 @@ import Footer from '@/components/Footer';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { documentService } from '@/services/documentService';
+import InvoiceCreationSection from '@/components/InvoiceCreationSection';
 
 const FinancialForms = () => {
   const { user } = useAuth();
@@ -147,6 +148,9 @@ const FinancialForms = () => {
             </div>
           )}
         </div>
+
+        {/* Invoice Creation Section - Show for all users */}
+        <InvoiceCreationSection />
 
         {uploadMode && canUpload && (
           <Card className="mb-8">
