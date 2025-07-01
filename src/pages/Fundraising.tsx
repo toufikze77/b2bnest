@@ -1,7 +1,7 @@
-
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Shield } from 'lucide-react';
+import { ExternalLink, Shield, Home } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Footer from '@/components/Footer';
 import CountdownTimer from '@/components/fundraising/CountdownTimer';
 import PresaleProgress from '@/components/fundraising/PresaleProgress';
@@ -11,6 +11,8 @@ import PresaleStats from '@/components/fundraising/PresaleStats';
 import VideoExplanation from '@/components/fundraising/VideoExplanation';
 
 const Fundraising = () => {
+  const navigate = useNavigate();
+  
   // Mock presale data
   const presaleData = {
     tokenName: 'B2BNest Token',
@@ -31,6 +33,16 @@ const Fundraising = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header Section */}
         <div className="text-center mb-12">
+          <div className="flex justify-end mb-4">
+            <Button
+              variant="outline"
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2"
+            >
+              <Home className="h-4 w-4" />
+              Go Back Home
+            </Button>
+          </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             {presaleData.tokenName} Presale
           </h1>
