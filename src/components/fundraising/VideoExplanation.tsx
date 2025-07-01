@@ -1,8 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Play } from 'lucide-react';
-import VideoTutorialSection from './VideoTutorialSection';
-import EarlyInvestorBenefits from './EarlyInvestorBenefits';
+import HowToInvestSection from './HowToInvestSection';
 import CryptoPaymentSection from './CryptoPaymentSection';
 import MarketExpansionSection from './MarketExpansionSection';
 import CommunitySection from './CommunitySection';
@@ -17,11 +16,7 @@ const VideoExplanation = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <VideoTutorialSection />
-          <EarlyInvestorBenefits />
-        </div>
-
+        <HowToInvestSection />
         <CryptoPaymentSection />
         <MarketExpansionSection />
         <CommunitySection />
