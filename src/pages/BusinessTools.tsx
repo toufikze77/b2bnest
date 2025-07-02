@@ -10,7 +10,7 @@ import ComplianceChecker from '@/components/ComplianceChecker';
 import BestPracticesGuide from '@/components/BestPracticesGuide';
 import IntegrationHub from '@/components/IntegrationHub';
 import BusinessResources from '@/components/BusinessResources';
-import InvoiceCreationSection from '@/components/InvoiceCreationSection';
+import QuoteInvoiceCreationSection from '@/components/QuoteInvoiceCreationSection';
 
 type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice';
 
@@ -92,7 +92,7 @@ const BusinessTools = () => {
       case 'business-resources':
         return <BusinessResources />;
       case 'quote-invoice':
-        return <InvoiceCreationSection />;
+        return <QuoteInvoiceCreationSection />;
       default:
         return (
           <div className="max-w-6xl mx-auto p-6">
