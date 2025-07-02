@@ -42,9 +42,6 @@ const Header = () => {
             <Link to="/about" className="text-gray-700 hover:text-blue-600 transition-colors">
               About
             </Link>
-            <Link to="/contact" className="text-gray-700 hover:text-blue-600 transition-colors">
-              Contact
-            </Link>
             <Link to="/business-tools" className="text-gray-700 hover:text-blue-600 transition-colors">
               Business Tools
             </Link>
@@ -52,7 +49,10 @@ const Header = () => {
               Blog
             </Link>
             <Link to="/fundraising" className="text-gray-700 hover:text-blue-600 transition-colors">
-              Fundraising
+              Invest
+            </Link>
+            <Link to="/contact" className="text-gray-700 hover:text-blue-600 transition-colors">
+              Contact
             </Link>
           </nav>
 
@@ -130,13 +130,6 @@ const Header = () => {
                 About
               </Link>
               <Link
-                to="/contact"
-                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Contact
-              </Link>
-              <Link
                 to="/business-tools"
                 className="text-gray-700 hover:text-blue-600 transition-colors px-2"
                 onClick={() => setIsMenuOpen(false)}
@@ -155,7 +148,14 @@ const Header = () => {
                 className="text-gray-700 hover:text-blue-600 transition-colors px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Fundraising
+                Invest
+              </Link>
+              <Link
+                to="/contact"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Contact
               </Link>
               {user && (
                 <>
