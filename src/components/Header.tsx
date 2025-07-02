@@ -30,7 +30,7 @@ const Header = () => {
             <img 
               src="/lovable-uploads/ac6d0f2a-e033-4bfc-b1e3-f5f14c1106e9.png" 
               alt="B2BNest Logo" 
-              className="w-20 h-20"
+              className="w-[500px] h-[500px]"
             />
           </Link>
 
