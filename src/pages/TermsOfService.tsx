@@ -1,5 +1,4 @@
 
-import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -49,7 +48,6 @@ const TermsOfService = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <Header />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-12">
@@ -94,7 +92,7 @@ const TermsOfService = () => {
             </p>
             <div className="space-y-2 text-gray-700">
               <p>Email: legal@b2bnest.com</p>
-              <p>Address: 123 Business Ave, Suite 100, Tech City, TC 12345</p>
+              <p>Address: 1 St Katharine's Way, London E1W 1UN</p>
               <p>Phone: (555) 123-4567</p>
             </div>
           </CardContent>
