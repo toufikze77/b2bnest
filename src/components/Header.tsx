@@ -27,9 +27,11 @@ const Header = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center font-bold">
-              B
-            </div>
+            <img 
+              src="/lovable-uploads/ac6d0f2a-e033-4bfc-b1e3-f5f14c1106e9.png" 
+              alt="B2BNest Logo" 
+              className="w-12 h-12"
+            />
             <span className="text-xl font-bold text-gray-900">B2BNest</span>
           </Link>
 
