@@ -15,6 +15,7 @@ import PLR from "@/pages/PLR";
 import NotFound from "@/pages/NotFound";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
+import AIShowcase from "@/pages/AIShowcase";
 import HumanResources from "@/pages/categories/HumanResources";
 import LegalDocuments from "@/pages/categories/LegalDocuments";
 import FinancialForms from "@/pages/categories/FinancialForms";
@@ -38,6 +39,7 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/business-tools" element={<BusinessTools />} />
+              <Route path="/ai-showcase" element={<AIShowcase />} />
               <Route path="/fundraising" element={<Fundraising />} />
               <Route path="/plr" element={<PLR />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
