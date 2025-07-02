@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home } from 'lucide-react';
+import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -10,8 +10,9 @@ import ComplianceChecker from '@/components/ComplianceChecker';
 import BestPracticesGuide from '@/components/BestPracticesGuide';
 import IntegrationHub from '@/components/IntegrationHub';
 import BusinessResources from '@/components/BusinessResources';
+import InvoiceCreationSection from '@/components/InvoiceCreationSection';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice';
 
 const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
@@ -65,6 +66,14 @@ const BusinessTools = () => {
       icon: Building2,
       color: 'bg-orange-500',
       benefits: ['Vetted service providers', 'Compare options', 'Get recommendations']
+    },
+    {
+      id: 'quote-invoice' as ToolType,
+      title: 'Quote & Invoice System',
+      description: 'Create professional quotes and invoices with auto-generated codes',
+      icon: FileText,
+      color: 'bg-indigo-500',
+      benefits: ['Professional templates', 'Auto-generated codes', 'Track payments']
     }
   ];
 
@@ -82,6 +91,8 @@ const BusinessTools = () => {
         return <IntegrationHub />;
       case 'business-resources':
         return <BusinessResources />;
+      case 'quote-invoice':
+        return <InvoiceCreationSection />;
       default:
         return (
           <div className="max-w-6xl mx-auto p-6">
