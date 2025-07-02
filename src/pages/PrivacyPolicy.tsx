@@ -61,7 +61,7 @@ const PrivacyPolicy = () => {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
           <p className="text-lg text-gray-600">
-            Last updated: December 29, 2024
+            Last updated: June 14, 2025
           </p>
         </div>
 
@@ -108,7 +108,6 @@ const PrivacyPolicy = () => {
             <div className="space-y-2 text-gray-700">
               <p>Email: privacy@b2bnest.com</p>
               <p>Address: 1 St Katharine's Way, London E1W 1UN</p>
-              <p>Phone: (555) 123-4567</p>
             </div>
           </CardContent>
         </Card>
