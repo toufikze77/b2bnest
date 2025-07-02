@@ -46,7 +46,7 @@ const Header = () => {
               Business Tools
             </Link>
             <Link to="/ai-showcase" className="text-gray-700 hover:text-blue-600 transition-colors">
-              AI Demo
+              AI
             </Link>
             <Link to="/blog" className="text-gray-700 hover:text-blue-600 transition-colors">
               Blog
@@ -144,7 +144,7 @@ const Header = () => {
                 className="text-gray-700 hover:text-blue-600 transition-colors px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
-                AI Demo
+                AI
               </Link>
               <Link
                 to="/blog"
