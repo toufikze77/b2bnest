@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Mail, MapPin, Phone } from 'lucide-react';
+import { Home, Mail, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,15 +21,8 @@ const Contact = () => {
       icon: MapPin,
       title: 'Address',
       description: 'Visit our office',
-      value: 'Coming Soon',
-      action: null,
-    },
-    {
-      icon: Phone,
-      title: 'Phone',
-      description: 'Give us a call',
-      value: 'Coming Soon',
-      action: null,
+      value: '1 St Katharine\'s Way, London E1W 1UN',
+      action: () => window.open('https://maps.google.com/?q=1+St+Katharine\'s+Way,+London+E1W+1UN'),
     },
   ];
 
