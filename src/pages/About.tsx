@@ -63,6 +63,14 @@ const About = () => {
                 Our mission is to simplify the complex world of business paperwork by providing comprehensive templates, 
                 forms, and documents that help companies operate more efficiently, maintain compliance, and focus on what they do best.
               </p>
+              <div className="mt-8 p-6 bg-blue-50 rounded-lg text-center">
+                <p className="text-lg text-gray-700 mb-2">
+                  <strong>Need help or have questions?</strong>
+                </p>
+                <p className="text-gray-600">
+                  Contact us at <a href="mailto:admin@b2bnest.online" className="text-blue-600 hover:underline font-medium">admin@b2bnest.online</a>
+                </p>
+              </div>
             </CardContent>
           </Card>
         </div>
