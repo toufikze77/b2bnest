@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, CreditCard } from 'lucide-react';
+import { loadScript, PayPalNamespace } from '@paypal/paypal-js';
 
 interface PayPalCheckoutProps {
   amount: number;
@@ -15,7 +16,7 @@ interface PayPalCheckoutProps {
 
 declare global {
   interface Window {
-    paypal?: any;
+    paypal?: PayPalNamespace;
   }
 }
 
@@ -32,30 +33,28 @@ const PayPalCheckout = ({
   const [error, setError] = React.useState<string | null>(null);
 
   useEffect(() => {
-    const loadPayPalScript = () => {
+    const loadPayPalScript = async () => {
       console.log('Loading PayPal script...');
-      if (window.paypal) {
-        console.log('PayPal already loaded');
-        initializePayPal();
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.src = 'https://www.paypal.com/sdk/js?client-id=sandbox&currency=GBP&components=buttons&debug=true';
-      script.async = true;
-      script.onload = () => {
-        console.log('PayPal script loaded successfully');
-        // Add a small delay to ensure PayPal is fully initialized
-        setTimeout(() => {
+      try {
+        const paypal = await loadScript({ 
+          clientId: "sandbox",
+          currency: "GBP",
+          components: "buttons",
+          debug: true
+        });
+        
+        if (paypal) {
+          console.log('PayPal script loaded successfully');
+          window.paypal = paypal;
           initializePayPal();
-        }, 100);
-      };
-      script.onerror = (error) => {
+        } else {
+          throw new Error('PayPal SDK failed to load');
+        }
+      } catch (error) {
         console.error('Failed to load PayPal script:', error);
         setError('Failed to load PayPal SDK');
         setIsLoading(false);
-      };
-      document.head.appendChild(script);
+      }
     };
 
     const initializePayPal = () => {
