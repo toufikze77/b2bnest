@@ -45,7 +45,10 @@ const PayPalCheckout = ({
       script.async = true;
       script.onload = () => {
         console.log('PayPal script loaded successfully');
-        initializePayPal();
+        // Add a small delay to ensure PayPal is fully initialized
+        setTimeout(() => {
+          initializePayPal();
+        }, 100);
       };
       script.onerror = (error) => {
         console.error('Failed to load PayPal script:', error);
@@ -57,8 +60,9 @@ const PayPalCheckout = ({
 
     const initializePayPal = () => {
       console.log('Initializing PayPal, window.paypal:', !!window.paypal);
-      if (!window.paypal || !paypalRef.current) {
-        console.error('PayPal SDK not available or ref not ready');
+      console.log('PayPal.Buttons available:', !!(window.paypal && window.paypal.Buttons));
+      if (!window.paypal || !window.paypal.Buttons || !paypalRef.current) {
+        console.error('PayPal SDK not fully available or ref not ready');
         setError('PayPal SDK not available');
         setIsLoading(false);
         return;
