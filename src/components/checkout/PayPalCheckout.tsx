@@ -56,15 +56,19 @@ const PayPalCheckout = ({
     };
 
     const initializePayPal = () => {
+      console.log('Initializing PayPal, window.paypal:', !!window.paypal);
       if (!window.paypal || !paypalRef.current) {
+        console.error('PayPal SDK not available or ref not ready');
         setError('PayPal SDK not available');
         setIsLoading(false);
         return;
       }
 
       try {
+        console.log('Creating PayPal buttons...');
         window.paypal.Buttons({
           createOrder: (data: any, actions: any) => {
+            console.log('Creating PayPal order...');
             return actions.order.create({
               purchase_units: [{
                 amount: {
@@ -77,6 +81,7 @@ const PayPalCheckout = ({
           },
           onApprove: async (data: any, actions: any) => {
             try {
+              console.log('PayPal payment approved, capturing...');
               const order = await actions.order.capture();
               console.log('PayPal payment successful:', order);
               onSuccess({
@@ -99,9 +104,14 @@ const PayPalCheckout = ({
             console.log('PayPal payment cancelled');
             onCancel();
           }
-        }).render(paypalRef.current);
-
-        setIsLoading(false);
+        }).render(paypalRef.current).then(() => {
+          console.log('PayPal buttons rendered successfully');
+          setIsLoading(false);
+        }).catch((error: any) => {
+          console.error('PayPal render error:', error);
+          setError('Failed to render PayPal buttons');
+          setIsLoading(false);
+        });
       } catch (error) {
         console.error('PayPal initialization error:', error);
         setError('Failed to initialize PayPal');
