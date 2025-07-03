@@ -41,7 +41,7 @@ const PayPalCheckout = ({
       }
 
       const script = document.createElement('script');
-      script.src = 'https://www.paypal.com/sdk/js?client-id=AQOxY2Z0_8hf62chNGkI8NVxl1h42QJC_tSBPAAM7_cHnUI3fNYdKNfOLiR5cvrv1Vs2YZ0f4zBx3hVz&currency=GBP&components=buttons';
+      script.src = 'https://www.paypal.com/sdk/js?client-id=sandbox&currency=GBP&components=buttons&debug=true';
       script.async = true;
       script.onload = () => {
         console.log('PayPal script loaded successfully');
