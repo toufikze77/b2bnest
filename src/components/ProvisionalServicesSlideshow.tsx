@@ -4,46 +4,61 @@ import { ChevronLeft, ChevronRight, FileText, Users, Shield, Clock, CheckCircle,
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-const services = [
+const projectShowcases = [
   {
     id: 1,
-    title: "Document Management",
-    description: "Comprehensive document creation, storage, and management solutions for your business needs.",
+    title: "E-Commerce Platform",
+    description: "Full-featured online store with inventory management, payment processing, and customer analytics dashboard.",
     icon: FileText,
-    features: ["Template Library", "Version Control", "Digital Signatures", "Secure Storage"],
-    image: "photo-1486312338219-ce68d2c6f44d"
+    features: ["Payment Integration", "Inventory Management", "Customer Analytics", "Mobile Responsive"],
+    image: "photo-1556742049-0cfed4f6a45d",
+    techStack: ["React", "Supabase", "Stripe", "Tailwind CSS"],
+    liveUrl: "https://ecommerce-demo.lovableproject.com",
+    category: "E-Commerce"
   },
   {
     id: 2,
-    title: "Team Collaboration",
-    description: "Enhanced collaboration tools to streamline your team's workflow and productivity.",
+    title: "SaaS Dashboard",
+    description: "Professional SaaS application with user management, subscription billing, and real-time analytics.",
     icon: Users,
-    features: ["Real-time Editing", "Team Comments", "Role-based Access", "Activity Tracking"],
-    image: "photo-1461749280684-dccba630e2f6"
+    features: ["User Authentication", "Subscription Management", "Real-time Analytics", "Team Collaboration"],
+    image: "photo-1551288049-bebda4e38f71",
+    techStack: ["React", "Supabase", "PayPal", "Charts"],
+    liveUrl: "https://saas-dashboard-demo.lovableproject.com",
+    category: "SaaS"
   },
   {
     id: 3,
-    title: "Compliance & Security",
-    description: "Enterprise-grade security and compliance features to protect your sensitive data.",
+    title: "Portfolio Website",
+    description: "Modern portfolio site with project showcases, contact forms, and blog functionality.",
     icon: Shield,
-    features: ["Data Encryption", "Audit Trails", "GDPR Compliance", "Access Controls"],
-    image: "photo-1518770660439-4636190af475"
+    features: ["Project Gallery", "Contact Integration", "Blog System", "SEO Optimized"],
+    image: "photo-1467232004584-a241de8bcf5d",
+    techStack: ["React", "Supabase", "Email API", "Responsive Design"],
+    liveUrl: "https://portfolio-demo.lovableproject.com",
+    category: "Portfolio"
   },
   {
     id: 4,
-    title: "Quick Setup Services",
-    description: "Fast deployment and setup services to get your business running in no time.",
+    title: "Restaurant Management",
+    description: "Complete restaurant solution with menu management, online ordering, and table reservations.",
     icon: Clock,
-    features: ["24-hour Setup", "Data Migration", "Training Sessions", "Support Integration"],
-    image: "photo-1488590528505-98d2b5aba04b"
+    features: ["Menu Management", "Online Ordering", "Table Reservations", "Staff Dashboard"],
+    image: "photo-1517248135467-4c7edcad34c4",
+    techStack: ["React", "Supabase", "Payment Gateway", "Real-time Updates"],
+    liveUrl: "https://restaurant-demo.lovableproject.com",
+    category: "Food & Beverage"
   },
   {
     id: 5,
-    title: "Quality Assurance",
-    description: "Professional quality assurance and validation services for all your business processes.",
+    title: "Learning Management System",
+    description: "Educational platform with course management, student tracking, and interactive assessments.",
     icon: CheckCircle,
-    features: ["Process Validation", "Quality Control", "Performance Testing", "Compliance Checks"],
-    image: "photo-1460925895917-afdab827c52f"
+    features: ["Course Creation", "Student Progress", "Interactive Quizzes", "Certification System"],
+    image: "photo-1522202176988-66273c2fd55f",
+    techStack: ["React", "Supabase", "Video Streaming", "Progress Tracking"],
+    liveUrl: "https://lms-demo.lovableproject.com",
+    category: "Education"
   }
 ];
 
@@ -55,19 +70,19 @@ const ProvisionalServicesSlideshow = () => {
     if (!isAutoPlaying) return;
 
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % services.length);
+      setCurrentSlide((prev) => (prev + 1) % projectShowcases.length);
     }, 5000);
 
     return () => clearInterval(interval);
   }, [isAutoPlaying]);
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % services.length);
+    setCurrentSlide((prev) => (prev + 1) % projectShowcases.length);
     setIsAutoPlaying(false);
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + services.length) % services.length);
+    setCurrentSlide((prev) => (prev - 1 + projectShowcases.length) % projectShowcases.length);
     setIsAutoPlaying(false);
   };
 
@@ -76,61 +91,84 @@ const ProvisionalServicesSlideshow = () => {
     setIsAutoPlaying(false);
   };
 
-  const currentService = services[currentSlide];
-  const IconComponent = currentService.icon;
+  const currentProject = projectShowcases[currentSlide];
+  const IconComponent = currentProject.icon;
 
   return (
     <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            Our Provisional Services
+            Professional Web Development Services - Premium Package
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Discover comprehensive business solutions designed to streamline your operations and boost productivity
+            Explore our premium Lovable project showcases - fully functional web applications built with modern technologies
           </p>
         </div>
 
         <div className="relative">
           <Card className="overflow-hidden shadow-2xl">
             <div className="grid md:grid-cols-2 gap-0">
-              {/* Image Section */}
+              {/* Project Preview Section */}
               <div className="relative h-64 md:h-96 bg-gradient-to-br from-blue-600 to-indigo-700">
                 <img
-                  src={`https://images.unsplash.com/${currentService.image}?w=800&h=600&fit=crop`}
-                  alt={currentService.title}
-                  className="absolute inset-0 w-full h-full object-cover opacity-20"
+                  src={`https://images.unsplash.com/${currentProject.image}?w=800&h=600&fit=crop`}
+                  alt={currentProject.title}
+                  className="absolute inset-0 w-full h-full object-cover opacity-30"
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center text-white">
                     <IconComponent className="h-16 w-16 mx-auto mb-4" />
-                    <h3 className="text-2xl font-bold">{currentService.title}</h3>
+                    <h3 className="text-2xl font-bold">{currentProject.title}</h3>
+                    <div className="mt-2 px-3 py-1 bg-white/20 rounded-full text-sm">
+                      {currentProject.category}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Content Section */}
+              {/* Project Details Section */}
               <CardContent className="p-6 md:p-8 flex flex-col justify-center">
                 <CardHeader className="p-0 mb-6">
-                  <CardTitle className="text-2xl mb-2">{currentService.title}</CardTitle>
+                  <CardTitle className="text-2xl mb-2">{currentProject.title}</CardTitle>
                   <CardDescription className="text-base">
-                    {currentService.description}
+                    {currentProject.description}
                   </CardDescription>
                 </CardHeader>
 
-                <div className="space-y-3">
-                  <h4 className="font-semibold text-gray-900 mb-3">Key Features:</h4>
-                  {currentService.features.map((feature, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <Star className="h-4 w-4 text-blue-600 fill-current" />
-                      <span className="text-gray-700">{feature}</span>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-3">Key Features:</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {currentProject.features.map((feature, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <Star className="h-4 w-4 text-blue-600 fill-current" />
+                          <span className="text-sm text-gray-700">{feature}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Tech Stack:</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {currentProject.techStack.map((tech, index) => (
+                        <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md">
+                          {tech}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
-                <Button className="mt-6 w-full md:w-auto">
-                  Learn More About {currentService.title}
-                </Button>
+                <div className="flex gap-3 mt-6">
+                  <Button className="flex-1" onClick={() => window.open(currentProject.liveUrl, '_blank')}>
+                    View Live Demo
+                  </Button>
+                  <Button variant="outline" className="flex-1">
+                    Get Similar Project
+                  </Button>
+                </div>
               </CardContent>
             </div>
           </Card>
@@ -157,7 +195,7 @@ const ProvisionalServicesSlideshow = () => {
 
         {/* Slide Indicators */}
         <div className="flex justify-center mt-8 space-x-2">
-          {services.map((_, index) => (
+          {projectShowcases.map((_, index) => (
             <button
               key={index}
               onClick={() => goToSlide(index)}
