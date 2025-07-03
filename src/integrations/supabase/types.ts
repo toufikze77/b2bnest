@@ -63,6 +63,72 @@ export type Database = {
         }
         Relationships: []
       }
+      invoices: {
+        Row: {
+          client_address: string | null
+          client_email: string | null
+          client_name: string | null
+          company_address: string | null
+          company_name: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          invoice_number: string
+          items: Json | null
+          logo_url: string | null
+          notes: string | null
+          status: string | null
+          subtotal: number | null
+          tax_amount: number | null
+          tax_rate: number | null
+          total_amount: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_address?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          company_address?: string | null
+          company_name?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          items?: Json | null
+          logo_url?: string | null
+          notes?: string | null
+          status?: string | null
+          subtotal?: number | null
+          tax_amount?: number | null
+          tax_rate?: number | null
+          total_amount?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_address?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          company_address?: string | null
+          company_name?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          items?: Json | null
+          logo_url?: string | null
+          notes?: string | null
+          status?: string | null
+          subtotal?: number | null
+          tax_amount?: number | null
+          tax_rate?: number | null
+          total_amount?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -117,6 +183,72 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      quotes: {
+        Row: {
+          client_address: string | null
+          client_email: string | null
+          client_name: string | null
+          company_address: string | null
+          company_name: string | null
+          created_at: string
+          id: string
+          items: Json | null
+          logo_url: string | null
+          notes: string | null
+          quote_number: string
+          status: string | null
+          subtotal: number | null
+          tax_amount: number | null
+          tax_rate: number | null
+          total_amount: number | null
+          updated_at: string
+          user_id: string
+          valid_until: string | null
+        }
+        Insert: {
+          client_address?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          company_address?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          items?: Json | null
+          logo_url?: string | null
+          notes?: string | null
+          quote_number: string
+          status?: string | null
+          subtotal?: number | null
+          tax_amount?: number | null
+          tax_rate?: number | null
+          total_amount?: number | null
+          updated_at?: string
+          user_id: string
+          valid_until?: string | null
+        }
+        Update: {
+          client_address?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          company_address?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          items?: Json | null
+          logo_url?: string | null
+          notes?: string | null
+          quote_number?: string
+          status?: string | null
+          subtotal?: number | null
+          tax_amount?: number | null
+          tax_rate?: number | null
+          total_amount?: number | null
+          updated_at?: string
+          user_id?: string
+          valid_until?: string | null
         }
         Relationships: []
       }
