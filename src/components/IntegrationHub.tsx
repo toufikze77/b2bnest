@@ -34,6 +34,17 @@ const IntegrationHub = () => {
       pricing: 'Free with Google account'
     },
     {
+      id: 'microsoft-365',
+      name: 'Microsoft Office 365',
+      description: 'Integrate with Word, Excel, PowerPoint, and OneDrive',
+      icon: '🏢',
+      category: 'Productivity',
+      connected: false,
+      features: ['Document editing', 'OneDrive sync', 'Teams integration', 'SharePoint access', 'Outlook email'],
+      setupComplexity: 'medium',
+      pricing: 'Starting at $6/month'
+    },
+    {
       id: 'slack',
       name: 'Slack',
       description: 'Get notifications and share documents in Slack channels',
@@ -87,6 +98,17 @@ const IntegrationHub = () => {
       features: ['Contact sync', 'Deal automation', 'Document tracking', 'Sales pipeline'],
       setupComplexity: 'complex',
       pricing: 'Free tier available'
+    },
+    {
+      id: 'azure',
+      name: 'Microsoft Azure',
+      description: 'Deploy and scale applications with Azure cloud services',
+      icon: '☁️',
+      category: 'Cloud Platform',
+      connected: false,
+      features: ['App deployment', 'Database hosting', 'API management', 'Identity services', 'Storage solutions'],
+      setupComplexity: 'complex',
+      pricing: 'Pay-as-you-go'
     }
   ]);
 
