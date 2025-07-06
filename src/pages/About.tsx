@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import VideoTutorialSection from "@/components/fundraising/VideoTutorialSection";
 
 const About = () => {
   const navigate = useNavigate();
@@ -125,6 +126,18 @@ const About = () => {
                   in all their documentation needs.
                 </p>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Video Section */}
+        <div className="mb-16">
+          <Card className="bg-white shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-3xl text-center">Learn More About B2BNest</CardTitle>
+            </CardHeader>
+            <CardContent className="p-8">
+              <VideoTutorialSection />
             </CardContent>
           </Card>
         </div>
