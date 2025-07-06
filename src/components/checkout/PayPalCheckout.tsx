@@ -60,10 +60,18 @@ const PayPalCheckout = ({
     const initializePayPal = () => {
       console.log('Initializing PayPal, window.paypal:', !!window.paypal);
       console.log('PayPal.Buttons available:', !!(window.paypal && window.paypal.Buttons));
-      if (!window.paypal || !window.paypal.Buttons || !paypalRef.current) {
-        console.error('PayPal SDK not fully available or ref not ready');
+      console.log('PayPal ref ready:', !!paypalRef.current);
+      
+      if (!window.paypal || !window.paypal.Buttons) {
+        console.error('PayPal SDK not available');
         setError('PayPal SDK not available');
         setIsLoading(false);
+        return;
+      }
+
+      if (!paypalRef.current) {
+        console.log('PayPal ref not ready, retrying in 100ms...');
+        setTimeout(initializePayPal, 100);
         return;
       }
 
