@@ -12,6 +12,7 @@ import SearchResults from "@/components/SearchResults";
 import ProvisionalServicesSlideshow from "@/components/ProvisionalServicesSlideshow";
 import AIDocumentAssistant from "@/components/AIDocumentAssistant";
 import AIInvestmentShowcase from "@/components/AIInvestmentShowcase";
+import BusinessToolsSection from "@/components/BusinessToolsSection";
 
 import { Template } from "@/types/template";
 
@@ -64,6 +65,9 @@ const IndexContent = () => {
 
       {/* Provisional Services Slideshow - Only show when not searching */}
       {!showSearchResults && <ProvisionalServicesSlideshow />}
+
+      {/* Business Tools Section - Only show when not searching */}
+      {!showSearchResults && <BusinessToolsSection />}
 
       {/* Categories and Popular Forms - Only show when not searching */}
       {!showSearchResults && (
