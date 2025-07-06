@@ -51,7 +51,7 @@ const HeroSection = ({ onSearch }: HeroSectionProps) => {
             href="https://twitter.com/b2bnest"
             target="_blank"
             rel="noopener noreferrer"
-            className="group relative bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:from-blue-600 hover:to-blue-700"
+            className="group relative bg-gradient-to-r from-gray-800 to-black text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:from-black hover:to-gray-900"
           >
             <span className="flex items-center gap-2">
               🐦 Follow @b2bnest
