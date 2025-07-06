@@ -48,6 +48,12 @@ const Header = () => {
             <Link to="/ai-showcase" className="text-gray-700 hover:text-blue-600 transition-colors">
               AI
             </Link>
+            <Link to="/whitepaper" className="text-gray-700 hover:text-blue-600 transition-colors">
+              Whitepaper
+            </Link>
+            <Link to="/tokenomics" className="text-gray-700 hover:text-blue-600 transition-colors">
+              Tokenomics
+            </Link>
             <Link to="/blog" className="text-gray-700 hover:text-blue-600 transition-colors">
               Blog
             </Link>
@@ -145,6 +151,20 @@ const Header = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 AI
+              </Link>
+              <Link
+                to="/whitepaper"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Whitepaper
+              </Link>
+              <Link
+                to="/tokenomics"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Tokenomics
               </Link>
               <Link
                 to="/blog"

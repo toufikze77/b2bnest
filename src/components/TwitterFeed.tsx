@@ -142,20 +142,16 @@ const TwitterFeed = () => {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2">
           <Twitter className="h-5 w-5 text-blue-500" />
-          {userInfo ? (
-            <div className="flex items-center gap-2">
-              {userInfo.profile_image_url && (
-                <img 
-                  src={userInfo.profile_image_url} 
-                  alt={userInfo.name}
-                  className="w-6 h-6 rounded-full"
-                />
-              )}
-              <span className="text-sm">@{userInfo.username}</span>
-            </div>
-          ) : (
-            'Latest Updates'
-          )}
+          <div className="flex items-center gap-2">
+            {userInfo?.profile_image_url && (
+              <img 
+                src={userInfo.profile_image_url} 
+                alt={userInfo.name}
+                className="w-6 h-6 rounded-full"
+              />
+            )}
+            <span className="text-sm">@b2bnest</span>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 max-h-96 overflow-y-auto">
@@ -178,7 +174,7 @@ const TwitterFeed = () => {
                 </div>
                 
                 <a
-                  href={`https://twitter.com/${userInfo?.username}/status/${tweet.id}`}
+                  href={`https://twitter.com/b2bnest/status/${tweet.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-500 hover:text-blue-700"
@@ -210,14 +206,14 @@ const TwitterFeed = () => {
         {userInfo && (
           <div className="pt-2 border-t">
             <a
-              href={`https://twitter.com/${userInfo.username}`}
+              href="https://twitter.com/b2bnest"
               target="_blank"
               rel="noopener noreferrer"
               className="block text-center"
             >
               <Button variant="outline" size="sm" className="w-full">
                 <Twitter className="h-4 w-4 mr-2" />
-                Follow on Twitter
+                Follow @b2bnest
               </Button>
             </a>
           </div>

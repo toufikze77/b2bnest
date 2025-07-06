@@ -16,6 +16,8 @@ import NotFound from "@/pages/NotFound";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
 import AIShowcase from "@/pages/AIShowcase";
+import Whitepaper from "@/pages/Whitepaper";
+import Tokenomics from "@/pages/Tokenomics";
 import HumanResources from "@/pages/categories/HumanResources";
 import LegalDocuments from "@/pages/categories/LegalDocuments";
 import FinancialForms from "@/pages/categories/FinancialForms";
@@ -41,6 +43,8 @@ function App() {
               <Route path="/business-tools" element={<BusinessTools />} />
               <Route path="/ai-showcase" element={<AIShowcase />} />
               <Route path="/fundraising" element={<Fundraising />} />
+              <Route path="/whitepaper" element={<Whitepaper />} />
+              <Route path="/tokenomics" element={<Tokenomics />} />
               <Route path="/plr" element={<PLR />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<TermsOfService />} />

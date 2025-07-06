@@ -86,8 +86,11 @@ function generateOAuthHeader(method: string, url: string): string {
 const BASE_URL = "https://api.x.com/2";
 
 async function getUserTweets() {
-  // First get user info to get the user ID
-  const userUrl = `${BASE_URL}/users/me`;
+  // Get tweets from @b2bnest specifically
+  const username = "b2bnest";
+  
+  // First get user info by username
+  const userUrl = `${BASE_URL}/users/by/username/${username}?user.fields=name,username,profile_image_url,public_metrics`;
   const userMethod = "GET";
   const userOauthHeader = generateOAuthHeader(userMethod, userUrl);
   
@@ -100,7 +103,7 @@ async function getUserTweets() {
   });
 
   if (!userResponse.ok) {
-    throw new Error(`Failed to get user info: ${userResponse.status}`);
+    throw new Error(`Failed to get user info for @${username}: ${userResponse.status}`);
   }
 
   const userData = await userResponse.json();
@@ -120,10 +123,19 @@ async function getUserTweets() {
   });
 
   if (!tweetsResponse.ok) {
-    throw new Error(`Failed to get tweets: ${tweetsResponse.status}`);
+    throw new Error(`Failed to get tweets for @${username}: ${tweetsResponse.status}`);
   }
 
-  return await tweetsResponse.json();
+  const tweetsData = await tweetsResponse.json();
+  
+  // Add the user data to the response for consistency
+  return {
+    ...tweetsData,
+    includes: {
+      ...tweetsData.includes,
+      users: [userData.data]
+    }
+  };
 }
 
 Deno.serve(async (req) => {
