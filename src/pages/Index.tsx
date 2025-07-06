@@ -11,7 +11,6 @@ import TestimonialsSection from "@/components/TestimonialsSection";
 import SearchResults from "@/components/SearchResults";
 import ProvisionalServicesSlideshow from "@/components/ProvisionalServicesSlideshow";
 import AIDocumentAssistant from "@/components/AIDocumentAssistant";
-import CRMSection from "@/components/CRMSection";
 import AIInvestmentShowcase from "@/components/AIInvestmentShowcase";
 
 import { Template } from "@/types/template";
@@ -73,9 +72,6 @@ const IndexContent = () => {
           <FeaturedTemplatesSection templates={resultsToShow} />
         </>
       )}
-
-      {/* CRM Section - Only show when not searching */}
-      {!showSearchResults && <CRMSection />}
 
       {/* Testimonials Section - only show when not searching */}
       {!showSearchResults && <TestimonialsSection />}

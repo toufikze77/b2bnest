@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare } from 'lucide-react';
+import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -12,8 +12,9 @@ import IntegrationHub from '@/components/IntegrationHub';
 import BusinessResources from '@/components/BusinessResources';
 import QuoteInvoiceCreationSection from '@/components/QuoteInvoiceCreationSection';
 import ProjectManagement from '@/components/ProjectManagement';
+import CRM from '@/components/CRM';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice' | 'project-management';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice' | 'project-management' | 'crm';
 
 const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
@@ -83,6 +84,14 @@ const BusinessTools = () => {
       icon: KanbanSquare,
       color: 'bg-teal-500',
       benefits: ['Kanban & List views', 'Task assignments', 'Progress tracking', 'Team collaboration']
+    },
+    {
+      id: 'crm' as ToolType,
+      title: 'Customer Relationship Management',
+      description: 'Manage leads, contacts, and sales pipeline efficiently',
+      icon: Users,
+      color: 'bg-pink-500',
+      benefits: ['Contact management', 'Sales pipeline', 'Lead tracking', 'Revenue forecasting']
     }
   ];
 
@@ -104,6 +113,8 @@ const BusinessTools = () => {
         return <QuoteInvoiceCreationSection />;
       case 'project-management':
         return <ProjectManagement />;
+      case 'crm':
+        return <CRM />;
       default:
         return (
           <div className="max-w-6xl mx-auto p-6">
