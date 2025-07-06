@@ -54,7 +54,7 @@ const HeroSection = ({ onSearch }: HeroSectionProps) => {
             className="group relative bg-gradient-to-r from-gray-800 to-black text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:from-black hover:to-gray-900"
           >
             <span className="flex items-center gap-2">
-              🐦 Follow @b2bnest
+              X Follow @b2bnest
             </span>
             <div className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </a>
