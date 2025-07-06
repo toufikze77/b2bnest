@@ -13,6 +13,7 @@ import ProvisionalServicesSlideshow from "@/components/ProvisionalServicesSlides
 import AIDocumentAssistant from "@/components/AIDocumentAssistant";
 import CRMSection from "@/components/CRMSection";
 import ProjectManagementSection from "@/components/ProjectManagementSection";
+import AIInvestmentShowcase from "@/components/AIInvestmentShowcase";
 import { Template } from "@/types/template";
 
 const IndexContent = () => {
@@ -58,6 +59,9 @@ const IndexContent = () => {
           </div>
         </section>
       )}
+
+      {/* AI Investment Showcase - Only show when not searching */}
+      {!showSearchResults && <AIInvestmentShowcase />}
 
       {/* Provisional Services Slideshow - Only show when not searching */}
       {!showSearchResults && <ProvisionalServicesSlideshow />}
