@@ -1,5 +1,6 @@
 
 import SmartSearch from "@/components/SmartSearch";
+import { Link } from "react-router-dom";
 
 interface HeroSectionProps {
   onSearch: (query: string) => void;
@@ -35,6 +36,15 @@ const HeroSection = ({ onSearch }: HeroSectionProps) => {
         
         {/* Quick Links */}
         <div className="flex justify-center gap-6 mb-8">
+          <Link
+            to="/business-tools"
+            className="group relative bg-gradient-to-r from-teal-500 to-teal-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:from-teal-600 hover:to-teal-700"
+          >
+            <span className="flex items-center gap-2">
+              🛠️ Business Tools
+            </span>
+            <div className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </Link>
           <a
             href="https://twitter.com/b2bnest"
             target="_blank"

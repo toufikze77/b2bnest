@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText } from 'lucide-react';
+import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -11,8 +11,9 @@ import BestPracticesGuide from '@/components/BestPracticesGuide';
 import IntegrationHub from '@/components/IntegrationHub';
 import BusinessResources from '@/components/BusinessResources';
 import QuoteInvoiceCreationSection from '@/components/QuoteInvoiceCreationSection';
+import ProjectManagement from '@/components/ProjectManagement';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice' | 'project-management';
 
 const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
@@ -74,6 +75,14 @@ const BusinessTools = () => {
       icon: FileText,
       color: 'bg-indigo-500',
       benefits: ['Professional templates', 'Auto-generated codes', 'Track payments']
+    },
+    {
+      id: 'project-management' as ToolType,
+      title: 'Project Management',
+      description: 'Organize tasks, track progress, and collaborate with your team',
+      icon: KanbanSquare,
+      color: 'bg-teal-500',
+      benefits: ['Kanban & List views', 'Task assignments', 'Progress tracking', 'Team collaboration']
     }
   ];
 
@@ -93,6 +102,8 @@ const BusinessTools = () => {
         return <BusinessResources />;
       case 'quote-invoice':
         return <QuoteInvoiceCreationSection />;
+      case 'project-management':
+        return <ProjectManagement />;
       default:
         return (
           <div className="max-w-6xl mx-auto p-6">

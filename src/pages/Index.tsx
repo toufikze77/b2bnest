@@ -12,7 +12,6 @@ import SearchResults from "@/components/SearchResults";
 import ProvisionalServicesSlideshow from "@/components/ProvisionalServicesSlideshow";
 import AIDocumentAssistant from "@/components/AIDocumentAssistant";
 import CRMSection from "@/components/CRMSection";
-import ProjectManagementSection from "@/components/ProjectManagementSection";
 import AIInvestmentShowcase from "@/components/AIInvestmentShowcase";
 
 import { Template } from "@/types/template";
@@ -77,9 +76,6 @@ const IndexContent = () => {
 
       {/* CRM Section - Only show when not searching */}
       {!showSearchResults && <CRMSection />}
-
-      {/* Project Management Section - Only show when not searching */}
-      {!showSearchResults && <ProjectManagementSection />}
 
       {/* Testimonials Section - only show when not searching */}
       {!showSearchResults && <TestimonialsSection />}
