@@ -37,7 +37,7 @@ const HeroSection = ({ onSearch }: HeroSectionProps) => {
         {/* Quick Links */}
         <div className="flex justify-center gap-6 mb-8">
           <a
-            href="https://linkedin.com/company/b2bnest"
+            href="https://www.linkedin.com/company/b2bnest/about/?viewAsMember=true"
             target="_blank"
             rel="noopener noreferrer"
             className="group relative bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:from-blue-700 hover:to-blue-800"
