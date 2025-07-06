@@ -2,14 +2,11 @@ import React from 'react';
 import { Coins, PieChart, TrendingUp, Lock, Users, Zap, Target, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
 const Tokenomics = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <Header />
-      
       <div className="pt-20 pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Hero Section */}
