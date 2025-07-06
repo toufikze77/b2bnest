@@ -14,7 +14,7 @@ import AIDocumentAssistant from "@/components/AIDocumentAssistant";
 import CRMSection from "@/components/CRMSection";
 import ProjectManagementSection from "@/components/ProjectManagementSection";
 import AIInvestmentShowcase from "@/components/AIInvestmentShowcase";
-import TwitterFeed from "@/components/TwitterFeed";
+
 import { Template } from "@/types/template";
 
 const IndexContent = () => {
@@ -37,66 +37,58 @@ const IndexContent = () => {
   const resultsToShow = showSearchResults ? searchResults : popularTemplates;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex">
-      {/* Main Content */}
-      <div className="flex-1">
-        <HeroSection onSearch={handleSearch} />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <HeroSection onSearch={handleSearch} />
 
-        {/* Search Results - Show immediately below search bar */}
-        {showSearchResults && (
-          <section className="px-4 sm:px-6 lg:px-8 mb-16">
-            <div className="max-w-7xl mx-auto">
-              <SearchResults 
-                results={resultsToShow} 
-                searchQuery={searchQuery}
-              />
-            </div>
-          </section>
-        )}
+      {/* Search Results - Show immediately below search bar */}
+      {showSearchResults && (
+        <section className="px-4 sm:px-6 lg:px-8 mb-16">
+          <div className="max-w-7xl mx-auto">
+            <SearchResults 
+              results={resultsToShow} 
+              searchQuery={searchQuery}
+            />
+          </div>
+        </section>
+      )}
 
-        {/* Stats - Only show when not searching */}
-        {!showSearchResults && (
-          <section className="px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto">
-              <StatsSection />
-            </div>
-          </section>
-        )}
+      {/* Stats - Only show when not searching */}
+      {!showSearchResults && (
+        <section className="px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <StatsSection />
+          </div>
+        </section>
+      )}
 
-        {/* AI Investment Showcase - Only show when not searching */}
-        {!showSearchResults && <AIInvestmentShowcase />}
+      {/* AI Investment Showcase - Only show when not searching */}
+      {!showSearchResults && <AIInvestmentShowcase />}
 
-        {/* Provisional Services Slideshow - Only show when not searching */}
-        {!showSearchResults && <ProvisionalServicesSlideshow />}
+      {/* Provisional Services Slideshow - Only show when not searching */}
+      {!showSearchResults && <ProvisionalServicesSlideshow />}
 
-        {/* Categories and Popular Forms - Only show when not searching */}
-        {!showSearchResults && (
-          <>
-            <CategoriesSection />
-            <FeaturedTemplatesSection templates={resultsToShow} />
-          </>
-        )}
+      {/* Categories and Popular Forms - Only show when not searching */}
+      {!showSearchResults && (
+        <>
+          <CategoriesSection />
+          <FeaturedTemplatesSection templates={resultsToShow} />
+        </>
+      )}
 
-        {/* CRM Section - Only show when not searching */}
-        {!showSearchResults && <CRMSection />}
+      {/* CRM Section - Only show when not searching */}
+      {!showSearchResults && <CRMSection />}
 
-        {/* Project Management Section - Only show when not searching */}
-        {!showSearchResults && <ProjectManagementSection />}
+      {/* Project Management Section - Only show when not searching */}
+      {!showSearchResults && <ProjectManagementSection />}
 
-        {/* Testimonials Section - only show when not searching */}
-        {!showSearchResults && <TestimonialsSection />}
+      {/* Testimonials Section - only show when not searching */}
+      {!showSearchResults && <TestimonialsSection />}
 
-        <CTASection />
-        <Footer />
+      <CTASection />
+      <Footer />
 
-        {/* AI Document Assistant - Always visible */}
-        <AIDocumentAssistant onTemplateSelect={handleTemplateSelect} />
-      </div>
-
-      {/* Twitter Feed Sidebar */}
-      <div className="w-80 p-4 hidden lg:block">
-        <TwitterFeed />
-      </div>
+      {/* AI Document Assistant - Always visible */}
+      <AIDocumentAssistant onTemplateSelect={handleTemplateSelect} />
     </div>
   );
 };

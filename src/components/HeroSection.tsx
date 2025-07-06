@@ -28,6 +28,26 @@ const HeroSection = ({ onSearch }: HeroSectionProps) => {
           </div>
         </div>
         
+        {/* Quick Links */}
+        <div className="flex justify-center gap-4 mb-8">
+          <a
+            href="https://twitter.com/b2bnest"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-blue-100 text-blue-800 px-4 py-2 rounded-full font-semibold hover:bg-blue-200 transition-colors"
+          >
+            🐦 Follow @b2bnest
+          </a>
+          <a
+            href="https://www.pinksale.finance/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-pink-100 text-pink-800 px-4 py-2 rounded-full font-semibold hover:bg-pink-200 transition-colors"
+          >
+            💎 Pinksale Launch
+          </a>
+        </div>
+        
         {/* Smart Search Bar */}
         <div className="mb-8">
           <SmartSearch onSearch={onSearch} />
