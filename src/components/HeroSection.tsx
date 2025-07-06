@@ -28,29 +28,35 @@ const HeroSection = ({ onSearch }: HeroSectionProps) => {
           </div>
         </div>
         
+        {/* Smart Search Bar */}
+        <div className="mb-8">
+          <SmartSearch onSearch={onSearch} />
+        </div>
+        
         {/* Quick Links */}
-        <div className="flex justify-center gap-4 mb-8">
+        <div className="flex justify-center gap-6 mb-8">
           <a
             href="https://twitter.com/b2bnest"
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-blue-100 text-blue-800 px-4 py-2 rounded-full font-semibold hover:bg-blue-200 transition-colors"
+            className="group relative bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:from-blue-600 hover:to-blue-700"
           >
-            🐦 Follow @b2bnest
+            <span className="flex items-center gap-2">
+              🐦 Follow @b2bnest
+            </span>
+            <div className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </a>
           <a
             href="https://www.pinksale.finance/"
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-pink-100 text-pink-800 px-4 py-2 rounded-full font-semibold hover:bg-pink-200 transition-colors"
+            className="group relative bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:from-pink-600 hover:to-purple-700"
           >
-            💎 Pinksale Launch
+            <span className="flex items-center gap-2">
+              💎 Pinksale Launch
+            </span>
+            <div className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </a>
-        </div>
-        
-        {/* Smart Search Bar */}
-        <div className="mb-8">
-          <SmartSearch onSearch={onSearch} />
         </div>
       </div>
     </section>
