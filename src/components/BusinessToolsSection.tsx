@@ -138,7 +138,7 @@ const BusinessToolsSection = () => {
 
         {/* Additional Tools */}
         <div className="bg-gradient-to-br from-white/80 to-purple-50/80 backdrop-blur-sm rounded-2xl p-8 mb-8 border border-purple-100/50 shadow-lg">
-          <h3 className="text-3xl font-bold text-center mb-2 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          <h3 className="text-3xl font-bold text-center mb-2 text-gray-900">
             ✨ Plus Many More Tools
           </h3>
           <p className="text-center text-gray-600 mb-8">Discover additional features to supercharge your business</p>
