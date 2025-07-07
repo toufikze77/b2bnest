@@ -137,18 +137,35 @@ const BusinessToolsSection = () => {
         </div>
 
         {/* Additional Tools */}
-        <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-8 mb-8">
-          <h3 className="text-2xl font-bold text-center mb-8">Plus Many More Tools</h3>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="bg-gradient-to-br from-white/80 to-purple-50/80 backdrop-blur-sm rounded-2xl p-8 mb-8 border border-purple-100/50 shadow-lg">
+          <h3 className="text-3xl font-bold text-center mb-2 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            ✨ Plus Many More Tools
+          </h3>
+          <p className="text-center text-gray-600 mb-8">Discover additional features to supercharge your business</p>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
             {additionalTools.map((tool, index) => {
               const Icon = tool.icon;
+              const colors = [
+                "from-blue-400 to-cyan-400",
+                "from-purple-400 to-pink-400", 
+                "from-green-400 to-emerald-400",
+                "from-orange-400 to-red-400",
+                "from-indigo-400 to-purple-400"
+              ];
+              const shadowColors = [
+                "shadow-blue-200",
+                "shadow-purple-200",
+                "shadow-green-200", 
+                "shadow-orange-200",
+                "shadow-indigo-200"
+              ];
               return (
-                <div key={index} className="text-center group">
-                  <div className="bg-gradient-to-br from-gray-100 to-gray-200 p-4 rounded-xl mb-3 group-hover:scale-105 transition-transform">
-                    <Icon className="h-6 w-6 text-gray-600 mx-auto" />
+                <div key={index} className="text-center group cursor-pointer">
+                  <div className={`bg-gradient-to-br ${colors[index % colors.length]} p-4 rounded-2xl mb-3 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 ${shadowColors[index % shadowColors.length]} shadow-lg group-hover:shadow-xl`}>
+                    <Icon className="h-7 w-7 text-white mx-auto drop-shadow-sm" />
                   </div>
-                  <h4 className="font-medium text-sm text-gray-900 mb-1">{tool.title}</h4>
-                  <p className="text-xs text-gray-500">{tool.count}</p>
+                  <h4 className="font-semibold text-sm text-gray-900 mb-1 group-hover:text-purple-700 transition-colors">{tool.title}</h4>
+                  <p className="text-xs text-gray-500 group-hover:text-gray-700 transition-colors">{tool.count}</p>
                 </div>
               );
             })}
