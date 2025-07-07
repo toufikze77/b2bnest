@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Brain, TrendingUp, Workflow, Calculator, MessageSquare, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AIBusinessAdvisor from "@/components/ai/AIBusinessAdvisor";
 import IntelligentAnalytics from "@/components/ai/IntelligentAnalytics";
@@ -47,9 +46,7 @@ const AIStudio = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <Header />
-      
+    <>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Hero Section */}
         <div className="text-center mb-12">
@@ -138,7 +135,7 @@ const AIStudio = () => {
       </main>
 
       <Footer />
-    </div>
+    </>
   );
 };
 
