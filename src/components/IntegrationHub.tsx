@@ -1,12 +1,14 @@
 
 import React, { useState } from 'react';
-import { ExternalLink, Settings, CheckCircle, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ExternalLink, Settings, CheckCircle, AlertCircle, Sparkles, Zap, Star } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Integration {
   id: string;
@@ -21,6 +23,8 @@ interface Integration {
 }
 
 const IntegrationHub = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [integrations, setIntegrations] = useState<Integration[]>([
     // Productivity & Office
     {
@@ -479,6 +483,17 @@ const IntegrationHub = () => {
   const { toast } = useToast();
 
   const handleConnect = async (integrationId: string) => {
+    // Check if user is authenticated
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to connect integrations",
+        variant: "destructive",
+      });
+      navigate('/auth');
+      return;
+    }
+
     setSelectedIntegration(integrationId);
     
     // Simulate connection process
@@ -565,14 +580,40 @@ const IntegrationHub = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6">
-      <div className="mb-8">
-        <div className="flex items-center gap-2 mb-4">
-          <Settings className="h-6 w-6 text-blue-600" />
-          <h2 className="text-2xl font-bold">Integration Hub</h2>
+      {/* Inspiring Header */}
+      <div className="text-center mb-12">
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <div className="relative">
+            <Sparkles className="h-8 w-8 text-primary animate-pulse" />
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-orange-400 to-pink-500 rounded-full animate-bounce"></div>
+          </div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-purple-600 to-pink-600 bg-clip-text text-transparent">
+            Integration Marketplace
+          </h1>
+          <div className="relative">
+            <Zap className="h-8 w-8 text-amber-500 animate-pulse" />
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full animate-bounce delay-150"></div>
+          </div>
         </div>
-        <p className="text-gray-600">
-          Connect our AI Platform with your favorite tools to streamline your workflow and automate business processes.
+        
+        <p className="text-xl text-muted-foreground mb-6 max-w-3xl mx-auto">
+          🚀 Supercharge your business with <span className="font-semibold text-primary">35+ powerful integrations</span>
         </p>
+        
+        <div className="flex flex-wrap items-center justify-center gap-6 text-sm">
+          <div className="flex items-center gap-2 bg-gradient-to-r from-green-50 to-emerald-50 px-4 py-2 rounded-full border border-green-200">
+            <Star className="h-4 w-4 text-green-600" />
+            <span className="text-green-700 font-medium">Zero Setup Fees</span>
+          </div>
+          <div className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-cyan-50 px-4 py-2 rounded-full border border-blue-200">
+            <Zap className="h-4 w-4 text-blue-600" />
+            <span className="text-blue-700 font-medium">Instant Connection</span>
+          </div>
+          <div className="flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 px-4 py-2 rounded-full border border-purple-200">
+            <Sparkles className="h-4 w-4 text-purple-600" />
+            <span className="text-purple-700 font-medium">Enterprise Ready</span>
+          </div>
+        </div>
       </div>
 
       {/* Webhook Configuration */}
@@ -606,48 +647,68 @@ const IntegrationHub = () => {
 
       {/* Integration Categories */}
       {categories.map(category => (
-        <div key={category} className="mb-8">
-          <h3 className="text-xl font-semibold mb-4">{category}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div key={category} className="mb-12">
+          <div className="flex items-center gap-3 mb-6">
+            <h3 className="text-2xl font-bold text-foreground">{category}</h3>
+            <Badge variant="secondary" className="text-xs px-3">
+              {integrations.filter(i => i.category === category).length} integrations
+            </Badge>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {integrations.filter(i => i.category === category).map((integration) => (
-              <Card key={integration.id} className="h-full">
-                <CardHeader>
+              <Card 
+                key={integration.id} 
+                className="group hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-background to-muted/30 hover:scale-[1.02] relative overflow-hidden"
+              >
+                {/* Gradient overlay for visual appeal */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                
+                <CardHeader className="relative">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{integration.icon}</span>
+                    <div className="flex items-center gap-4">
+                      <div className="text-3xl p-2 rounded-xl bg-gradient-to-br from-background to-muted border group-hover:scale-110 transition-transform duration-300">
+                        {integration.icon}
+                      </div>
                       <div>
-                        <CardTitle className="text-lg">{integration.name}</CardTitle>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge className={getComplexityColor(integration.setupComplexity)}>
+                        <CardTitle className="text-lg group-hover:text-primary transition-colors font-semibold">
+                          {integration.name}
+                        </CardTitle>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge className={`${getComplexityColor(integration.setupComplexity)} text-xs`}>
                             {integration.setupComplexity} setup
                           </Badge>
                           {integration.connected ? (
                             <CheckCircle className="h-4 w-4 text-green-600" />
                           ) : (
-                            <AlertCircle className="h-4 w-4 text-gray-400" />
+                            <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30"></div>
                           )}
                         </div>
                       </div>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 mb-4">{integration.description}</p>
+                <CardContent className="relative">
+                  <p className="text-muted-foreground mb-4 line-clamp-2">{integration.description}</p>
                   
                   <div className="mb-4">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Features:</p>
+                    <p className="text-sm font-medium text-foreground mb-2">✨ Key Features:</p>
                     <div className="flex flex-wrap gap-1">
-                      {integration.features.map((feature, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
+                      {integration.features.slice(0, 3).map((feature, index) => (
+                        <Badge key={index} variant="outline" className="text-xs bg-muted/50">
                           {feature}
                         </Badge>
                       ))}
+                      {integration.features.length > 3 && (
+                        <Badge variant="outline" className="text-xs bg-muted/50">
+                          +{integration.features.length - 3} more
+                        </Badge>
+                      )}
                     </div>
                   </div>
 
-                  <div className="mb-4">
-                    <p className="text-sm text-gray-600">
-                      <strong>Pricing:</strong> {integration.pricing}
+                  <div className="mb-6">
+                    <p className="text-sm text-muted-foreground">
+                      <span className="font-medium text-foreground">💰 Pricing:</span> {integration.pricing}
                     </p>
                   </div>
 
@@ -665,7 +726,7 @@ const IntegrationHub = () => {
                         <Button
                           variant="default"
                           size="sm"
-                          className="flex-1"
+                          className="flex-1 bg-gradient-to-r from-primary to-primary/80"
                         >
                           <Settings className="h-4 w-4 mr-2" />
                           Configure
@@ -675,14 +736,17 @@ const IntegrationHub = () => {
                       <Button
                         onClick={() => handleConnect(integration.id)}
                         disabled={selectedIntegration === integration.id}
-                        className="flex-1"
+                        className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-all"
                       >
                         {selectedIntegration === integration.id ? (
-                          "Connecting..."
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2"></div>
+                            Connecting...
+                          </>
                         ) : (
                           <>
-                            <ExternalLink className="h-4 w-4 mr-2" />
-                            Connect
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            Connect Now
                           </>
                         )}
                       </Button>
