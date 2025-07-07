@@ -146,18 +146,18 @@ const BusinessToolsSection = () => {
             {additionalTools.map((tool, index) => {
               const Icon = tool.icon;
               const colors = [
-                "from-blue-400 to-cyan-400",
-                "from-purple-400 to-pink-400", 
-                "from-green-400 to-emerald-400",
-                "from-orange-400 to-red-400",
-                "from-indigo-400 to-purple-400"
+                "from-slate-700 to-slate-800",
+                "from-gray-700 to-gray-800", 
+                "from-zinc-700 to-zinc-800",
+                "from-stone-700 to-stone-800",
+                "from-neutral-700 to-neutral-800"
               ];
               const shadowColors = [
-                "shadow-blue-200",
-                "shadow-purple-200",
-                "shadow-green-200", 
-                "shadow-orange-200",
-                "shadow-indigo-200"
+                "shadow-slate-300",
+                "shadow-gray-300",
+                "shadow-zinc-300", 
+                "shadow-stone-300",
+                "shadow-neutral-300"
               ];
               return (
                 <div key={index} className="text-center">

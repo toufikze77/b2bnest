@@ -51,18 +51,33 @@ const Header = () => {
             <Link to="/ai-showcase" className="text-gray-700 hover:text-blue-600 transition-colors">
               AI-Powered
             </Link>
-            <Link to="/whitepaper" className="text-gray-700 hover:text-blue-600 transition-colors">
-              Whitepaper
-            </Link>
-            <Link to="/tokenomics" className="text-gray-700 hover:text-blue-600 transition-colors">
-              Tokenomics
-            </Link>
             <Link to="/blog" className="text-gray-700 hover:text-blue-600 transition-colors">
               Blog
             </Link>
-            <Link to="/fundraising" className="text-gray-700 hover:text-blue-600 transition-colors">
-              Invest
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-gray-700 hover:text-blue-600 transition-colors px-3">
+                  Invest
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link to="/fundraising" className="w-full">
+                    Funding Round
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/whitepaper" className="w-full">
+                    Whitepaper
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/tokenomics" className="w-full">
+                    Tokenomics
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Link to="/contact" className="text-gray-700 hover:text-blue-600 transition-colors">
               Contact
             </Link>
@@ -143,33 +158,38 @@ const Header = () => {
                 AI-Powered
               </Link>
               <Link
-                to="/whitepaper"
-                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Whitepaper
-              </Link>
-              <Link
-                to="/tokenomics"
-                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Tokenomics
-              </Link>
-              <Link
                 to="/blog"
                 className="text-gray-700 hover:text-blue-600 transition-colors px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Blog
               </Link>
-              <Link
-                to="/fundraising"
-                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Invest
-              </Link>
+              <div className="px-2">
+                <div className="font-medium text-gray-900 mb-2">Invest</div>
+                <div className="pl-4 space-y-2">
+                  <Link
+                    to="/fundraising"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Funding Round
+                  </Link>
+                  <Link
+                    to="/whitepaper"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Whitepaper
+                  </Link>
+                  <Link
+                    to="/tokenomics"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Tokenomics
+                  </Link>
+                </div>
+              </div>
               <Link
                 to="/contact"
                 className="text-gray-700 hover:text-blue-600 transition-colors px-2"
