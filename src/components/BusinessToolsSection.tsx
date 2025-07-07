@@ -160,12 +160,12 @@ const BusinessToolsSection = () => {
                 "shadow-indigo-200"
               ];
               return (
-                <div key={index} className="text-center group cursor-pointer">
-                  <div className={`bg-gradient-to-br ${colors[index % colors.length]} p-4 rounded-2xl mb-3 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 ${shadowColors[index % shadowColors.length]} shadow-lg group-hover:shadow-xl`}>
+                <div key={index} className="text-center">
+                  <div className={`bg-gradient-to-br ${colors[index % colors.length]} p-4 rounded-2xl mb-3 ${shadowColors[index % shadowColors.length]} shadow-lg`}>
                     <Icon className="h-7 w-7 text-white mx-auto drop-shadow-sm" />
                   </div>
-                  <h4 className="font-semibold text-sm text-gray-900 mb-1 group-hover:text-purple-700 transition-colors">{tool.title}</h4>
-                  <p className="text-xs text-gray-500 group-hover:text-gray-700 transition-colors">{tool.count}</p>
+                  <h4 className="font-semibold text-sm text-gray-900 mb-1">{tool.title}</h4>
+                  <p className="text-xs text-gray-500">{tool.count}</p>
                 </div>
               );
             })}
