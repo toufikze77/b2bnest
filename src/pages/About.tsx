@@ -11,23 +11,23 @@ const About = () => {
   const values = [
     {
       icon: FileText,
-      title: "Quality Documentation",
-      description: "We provide professionally crafted business documents that meet industry standards and legal requirements."
+      title: "AI-Powered Automation",
+      description: "We provide intelligent automation tools that streamline business processes and enhance productivity."
     },
     {
       icon: Users,
       title: "Customer-Centric",
-      description: "Our platform is designed with businesses in mind, offering intuitive tools and exceptional support."
+      description: "Our platform is designed with businesses in mind, offering intuitive AI tools and exceptional automation support."
     },
     {
       icon: Shield,
       title: "Security First",
-      description: "We prioritize the security and confidentiality of your business documents and sensitive information."
+      description: "We prioritize the security and confidentiality of your business data and automated processes."
     },
     {
       icon: Award,
       title: "Excellence",
-      description: "We strive for excellence in everything we do, from document quality to customer service."
+      description: "We strive for excellence in everything we do, from AI automation quality to customer service."
     }
   ];
 
@@ -46,9 +46,9 @@ const About = () => {
               Go Back Home
             </Button>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-6">About B2BNest</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-6">About Our Platform</h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Empowering businesses with professional documentation solutions that streamline operations and ensure compliance.
+            Empowering businesses with AI-powered automation solutions that streamline operations and drive efficiency.
           </p>
         </div>
 
@@ -60,16 +60,16 @@ const About = () => {
             </CardHeader>
             <CardContent>
               <p className="text-lg text-gray-700 text-center max-w-4xl mx-auto">
-                At B2BNest, we believe that every business deserves access to high-quality, professional documentation. 
-                Our mission is to simplify the complex world of business paperwork by providing comprehensive templates, 
-                forms, and documents that help companies operate more efficiently, maintain compliance, and focus on what they do best.
+                At our AI-Powered Business Automation Platform, we believe that every business deserves access to intelligent automation tools. 
+                Our mission is to simplify complex business processes by providing AI-driven solutions, automation workflows, 
+                and intelligent tools that help companies operate more efficiently, reduce manual work, and focus on strategic growth.
               </p>
               <div className="mt-8 p-6 bg-blue-50 rounded-lg text-center">
                 <p className="text-lg text-gray-700 mb-2">
                   <strong>Need help or have questions?</strong>
                 </p>
                 <p className="text-gray-600">
-                  Contact us at <a href="mailto:admin@b2bnest.online" className="text-blue-600 hover:underline font-medium">admin@b2bnest.online</a>
+                  Contact us at <a href="mailto:admin@aiplatform.online" className="text-blue-600 hover:underline font-medium">admin@aiplatform.online</a>
                 </p>
               </div>
             </CardContent>
@@ -110,20 +110,19 @@ const About = () => {
             <CardContent>
               <div className="space-y-6 text-lg text-gray-700">
                 <p>
-                  Founded in 2024, B2BNest emerged from a simple observation: businesses spend countless hours 
-                  creating and recreating the same types of documents, often without the legal expertise or 
-                  design skills needed to make them truly professional.
+                  Founded in 2024, our AI-Powered Business Automation Platform emerged from a simple observation: businesses spend countless hours 
+                  on repetitive tasks and manual processes, often without the technical expertise or automation tools needed to optimize their operations.
                 </p>
                 <p>
-                  Our founders, experienced entrepreneurs and legal professionals, recognized the need for a 
-                  comprehensive platform that would democratize access to high-quality business documentation. 
+                  Our founders, experienced entrepreneurs and technology professionals, recognized the need for a 
+                  comprehensive platform that would democratize access to enterprise-grade AI automation. 
                   They envisioned a world where any business, regardless of size or industry, could access 
-                  the same caliber of documents used by Fortune 500 companies.
+                  the same caliber of automation tools used by Fortune 500 companies.
                 </p>
                 <p>
-                  Today, B2BNest serves thousands of businesses worldwide, from startups to established 
-                  enterprises, helping them streamline their operations and maintain professional standards 
-                  in all their documentation needs.
+                  Today, our platform serves thousands of businesses worldwide, from startups to established 
+                  enterprises, helping them automate workflows, leverage AI insights, and maintain competitive advantages 
+                  through intelligent automation.
                 </p>
               </div>
             </CardContent>
@@ -134,7 +133,7 @@ const About = () => {
         <div className="mb-16">
           <Card className="bg-white shadow-lg">
             <CardHeader>
-              <CardTitle className="text-3xl text-center">Learn More About B2BNest</CardTitle>
+              <CardTitle className="text-3xl text-center">Learn More About Our Platform</CardTitle>
             </CardHeader>
             <CardContent className="p-8">
               <VideoTutorialSection />
@@ -148,9 +147,9 @@ const About = () => {
           <Card className="bg-white shadow-lg">
             <CardContent className="p-8">
               <p className="text-lg text-gray-700 text-center max-w-4xl mx-auto">
-                We're committed to continuously improving our platform, expanding our template library, 
-                and providing exceptional support to help your business succeed. Your success is our success, 
-                and we're here to support you every step of the way.
+                We're committed to continuously improving our AI automation platform, expanding our intelligent tools, 
+                and providing exceptional support to help your business thrive. Your success is our success, 
+                and we're here to support you every step of your automation journey.
               </p>
             </CardContent>
           </Card>

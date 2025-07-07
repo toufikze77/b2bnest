@@ -8,7 +8,7 @@ const AIInvestmentShowcase = () => {
         {/* Header */}
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-white mb-6">
-            Why Investors Back <span className="text-cyan-400">B2BNest</span>
+            Why Investors Back <span className="text-cyan-400">Our AI Platform</span>
           </h2>
           <p className="text-xl text-gray-200 max-w-3xl mx-auto">
             Early-stage AI startup disrupting the $50B+ business automation market with 
@@ -98,7 +98,7 @@ const AIInvestmentShowcase = () => {
                   <div className="text-white font-semibold mb-2">Experienced Team</div>
                   <div className="text-gray-300 text-sm">
                     Founding team with 15+ years combined experience at Google, Microsoft, and Y Combinator startups. 
-                    Proven track record of building and scaling B2B SaaS products.
+                    Proven track record of building and scaling AI automation SaaS products.
                   </div>
                 </div>
               </div>

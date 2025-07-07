@@ -61,7 +61,7 @@ const WorkflowBuilder = () => {
       industry: 'Finance'
     },
     {
-      name: "HR Document Management",
+      name: "HR Process Automation",
       description: "Streamlined employee document generation and tracking",
       steps: [
         { type: 'trigger', name: 'New Hire', description: 'When employee is added' },

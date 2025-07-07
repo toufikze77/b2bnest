@@ -23,7 +23,7 @@ const PurchasePanel = ({ presalePrice, tokenSymbol, minContribution, maxContribu
         <div className="text-center space-y-4">
           <div className="p-4 bg-green-50 rounded-lg border border-green-200">
             <p className="text-sm text-green-800 mb-3">
-              Ready to invest in B2BNest? Visit our official presale on PinkFinance to purchase {tokenSymbol} tokens securely.
+              Ready to invest in our AI Platform? Visit our official presale on PinkFinance to purchase {tokenSymbol} tokens securely.
             </p>
             <Button asChild className="w-full" size="lg">
               <a href="https://www.pinksale.finance" target="_blank" rel="noopener noreferrer">

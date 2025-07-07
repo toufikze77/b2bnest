@@ -31,7 +31,7 @@ const Blog = () => {
     {
       id: 3,
       title: "Digital Transformation: Modernizing Your Document Workflow",
-      excerpt: "Learn how to transition from paper-based processes to digital document management systems that improve efficiency and reduce costs.",
+      excerpt: "Learn how to transition from manual processes to AI-powered automation systems that improve efficiency and reduce operational costs.",
       author: "Emily Rodriguez",
       date: "December 22, 2024",
       category: "Technology",
@@ -87,7 +87,7 @@ const Blog = () => {
               Go Back Home
             </Button>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-6">B2BNest Blog</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-6">AI Automation Blog</h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Stay informed with the latest insights, tips, and trends in business documentation, 
             compliance, and operational efficiency.

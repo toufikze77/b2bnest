@@ -20,7 +20,7 @@ const SolanaPayCheckout = ({
   onError,
   onCancel
 }: SolanaPayCheckoutProps) => {
-  const [walletAddress] = useState('B2BNestSolanaWalletAddress123456789'); // Replace with actual wallet
+  const [walletAddress] = useState('AIPlatformSolanaWalletAddress123456789'); // Replace with actual wallet
   const [solanaAmount, setSolanaAmount] = useState<number>(0);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [copied, setCopied] = useState(false);

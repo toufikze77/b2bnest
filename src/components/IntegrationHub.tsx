@@ -60,7 +60,7 @@ const IntegrationHub = () => {
       name: 'DocuSign',
       description: 'Send documents for electronic signature',
       icon: '✍️',
-      category: 'Document Management',
+      category: 'AI Automation',
       connected: false,
       features: ['E-signature workflow', 'Template automation', 'Signing status tracking', 'Document storage'],
       setupComplexity: 'medium',
@@ -69,7 +69,7 @@ const IntegrationHub = () => {
     {
       id: 'zapier',
       name: 'Zapier',
-      description: 'Automate workflows between B2BNest and 3000+ other apps',
+      description: 'Automate workflows between our AI Platform and 3000+ other apps',
       icon: '⚡',
       category: 'Automation',
       connected: false,
@@ -173,7 +173,7 @@ const IntegrationHub = () => {
         body: JSON.stringify({
           event: "test",
           timestamp: new Date().toISOString(),
-          message: "Test webhook from B2BNest Integration Hub"
+          message: "Test webhook from AI Platform Integration Hub"
         }),
       });
 
@@ -209,7 +209,7 @@ const IntegrationHub = () => {
           <h2 className="text-2xl font-bold">Integration Hub</h2>
         </div>
         <p className="text-gray-600">
-          Connect B2BNest with your favorite tools to streamline your workflow and automate document processes.
+          Connect our AI Platform with your favorite tools to streamline your workflow and automate business processes.
         </p>
       </div>
 

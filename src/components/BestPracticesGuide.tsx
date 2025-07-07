@@ -28,7 +28,7 @@ const BestPracticesGuide = () => {
         id: 'document-organization',
         title: 'Organize Legal Documents Systematically',
         description: 'Maintain a structured filing system for all business documents',
-        category: 'Document Management',
+        category: 'AI Automation',
         difficulty: 'beginner',
         impact: 'high',
         timeToImplement: '2-3 hours',

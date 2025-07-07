@@ -37,7 +37,7 @@ const HeroSection = ({ onSearch }: HeroSectionProps) => {
         {/* Quick Links */}
         <div className="flex justify-center gap-6 mb-8">
           <a
-            href="https://www.linkedin.com/company/b2bnest/about/?viewAsMember=true"
+            href="https://www.linkedin.com/company/aiplatform/about/?viewAsMember=true"
             target="_blank"
             rel="noopener noreferrer"
             className="group relative bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:from-blue-700 hover:to-blue-800"
@@ -48,13 +48,13 @@ const HeroSection = ({ onSearch }: HeroSectionProps) => {
             <div className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </a>
           <a
-            href="https://twitter.com/b2bnest"
+            href="https://twitter.com/aiplatform"
             target="_blank"
             rel="noopener noreferrer"
             className="group relative bg-gradient-to-r from-gray-800 to-black text-white px-4 py-2 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:from-black hover:to-gray-900"
           >
             <span className="flex items-center gap-2">
-              X @b2bnest
+              X @aiplatform
             </span>
             <div className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </a>

@@ -14,8 +14,8 @@ const Contact = () => {
       icon: Mail,
       title: 'Email',
       description: 'Send us an email',
-      value: 'admin@b2bnest.online',
-      action: () => window.open('mailto:admin@b2bnest.online'),
+      value: 'admin@aiplatform.online',
+      action: () => window.open('mailto:admin@aiplatform.online'),
     },
     {
       icon: MapPin,

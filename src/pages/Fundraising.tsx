@@ -15,8 +15,8 @@ const Fundraising = () => {
   
   // Mock presale data
   const presaleData = {
-    tokenName: 'B2BNest Token',
-    tokenSymbol: 'B2BN',
+    tokenName: 'AI Platform Token',
+    tokenSymbol: 'AIPT',
     totalSupply: '100,000,000',
     presalePrice: '0.0001',
     currentRaised: '245.8',
@@ -47,7 +47,7 @@ const Fundraising = () => {
             {presaleData.tokenName} Presale
           </h1>
           <p className="text-xl text-gray-600 mb-6">
-            Join the future of B2B document management platform
+            Join the future of AI-powered business automation platform
           </p>
           <div className="flex items-center justify-center space-x-2 mb-8">
             <Badge variant="secondary" className="bg-green-100 text-green-800">
@@ -114,7 +114,7 @@ const Fundraising = () => {
           <h3 className="font-semibold text-yellow-800 mb-2">Important Disclaimer</h3>
           <p className="text-sm text-yellow-700">
             Cryptocurrency investments are subject to high market risk. Please make your investments cautiously. 
-            B2BNest will not be responsible for your investment losses. The information provided is not investment advice.
+            Our AI-Powered Business Automation Platform will not be responsible for your investment losses. The information provided is not investment advice.
             Always do your own research before investing.
           </p>
         </div>

@@ -30,7 +30,7 @@ const AIShowcase = () => {
             AI-Powered Document Intelligence
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Revolutionary browser-based AI that transforms document management with zero licensing costs, 
+            Revolutionary browser-based AI that transforms business automation with zero licensing costs, 
             complete data privacy, and instant ROI for businesses of all sizes.
           </p>
         </div>
@@ -44,7 +44,7 @@ const AIShowcase = () => {
             </CardHeader>
             <CardContent className="text-center">
               <p className="text-gray-600 mb-4">
-                Only B2B platform offering enterprise-grade AI document processing without external dependencies
+                Only business platform offering enterprise-grade AI automation processing without external dependencies
               </p>
               <div className="text-2xl font-bold text-blue-600">100%</div>
               <div className="text-sm text-gray-500">Unique positioning</div>
@@ -181,10 +181,10 @@ const AIShowcase = () => {
         <Card className="mt-12 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
           <CardContent className="p-8 text-center">
             <h3 className="text-2xl font-bold mb-4">
-              Ready to invest in the future of B2B document management?
+              Ready to invest in the future of AI-powered business automation?
             </h3>
             <p className="text-lg mb-6 opacity-90">
-              This AI technology gives B2BNest an unbeatable competitive advantage with zero ongoing costs and maximum enterprise appeal.
+              This AI technology gives our platform an unbeatable competitive advantage with zero ongoing costs and maximum enterprise appeal.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/fundraising">

@@ -13,7 +13,7 @@ const EarlyInvestorBenefits = () => {
           </div>
           <div>
             <h4 className="font-semibold text-gray-900">Exclusive Presale Price</h4>
-            <p className="text-sm text-gray-600">Get B2BN tokens at 0.0001 ETH - 50% lower than public launch price</p>
+            <p className="text-sm text-gray-600">Get AIPT tokens at 0.0001 ETH - 50% lower than public launch price</p>
           </div>
         </div>
 

@@ -19,7 +19,7 @@ const CommunitySection = () => {
             Help Us Spread the Word
           </h4>
           <ul className="text-sm text-gray-700 space-y-2">
-            <li>• Share B2BNest with your business network</li>
+            <li>• Share our AI Platform with your business network</li>
             <li>• Promote our platform on social media</li>
             <li>• Refer colleagues to our free trial</li>
             <li>• Join our community discussions</li>
@@ -39,7 +39,7 @@ const CommunitySection = () => {
 
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600 mb-4">
-          By investing in B2BNest, you're not just buying tokens - you're becoming part of a revolutionary platform 
+          By investing in our AI-Powered Business Automation Platform, you're not just buying tokens - you're becoming part of a revolutionary platform 
           that's transforming how businesses handle documents and operations.
         </p>
         <div className="space-y-2">
