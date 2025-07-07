@@ -113,7 +113,11 @@ const Header = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            ) : null}
+            ) : (
+              <Button asChild variant="default" className="hidden md:inline-flex">
+                <Link to="/auth">Sign In</Link>
+              </Button>
+            )}
 
             {/* Mobile menu button */}
             <button
@@ -197,7 +201,7 @@ const Header = () => {
               >
                 Contact
               </Link>
-              {user && (
+              {user ? (
                 <>
                   <hr className="my-2" />
                   <Link
@@ -218,6 +222,18 @@ const Header = () => {
                     <LogOut className="h-4 w-4 mr-2" />
                     Sign Out
                   </button>
+                </>
+              ) : (
+                <>
+                  <hr className="my-2" />
+                  <Link
+                    to="/auth"
+                    className="text-blue-600 hover:text-blue-700 transition-colors px-2 font-medium flex items-center"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    Sign In
+                  </Link>
                 </>
               )}
             </div>

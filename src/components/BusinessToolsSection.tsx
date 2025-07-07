@@ -181,7 +181,9 @@ const BusinessToolsSection = () => {
             </Button>
           </Link>
           <p className="text-sm text-gray-500 mt-4">
-            Free to use • No credit card required • Start in minutes
+            <Link to="/auth" className="text-blue-600 hover:text-blue-700 underline">
+              Sign up free
+            </Link> to access all business tools • No credit card required • Start in minutes
           </p>
         </div>
       </div>

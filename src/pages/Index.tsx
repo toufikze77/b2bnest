@@ -1,6 +1,7 @@
 
 import { SearchProvider, useSearch } from "@/contexts/SearchContext";
 import { templateService } from "@/services/templateService";
+import { useAuth } from "@/hooks/useAuth";
 import HeroSection from "@/components/HeroSection";
 import StatsSection from "@/components/StatsSection";
 import CategoriesSection from "@/components/CategoriesSection";
