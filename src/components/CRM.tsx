@@ -21,7 +21,17 @@ import {
   Building,
   Target,
   Clock,
-  CheckCircle2
+  CheckCircle2,
+  Zap,
+  Bot,
+  BarChart3,
+  MessageSquare,
+  Settings,
+  Webhook,
+  Star,
+  Workflow,
+  ChartBar,
+  ExternalLink
 } from 'lucide-react';
 
 interface Contact {
@@ -308,9 +318,12 @@ const CRM = () => {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="contacts">Contacts</TabsTrigger>
           <TabsTrigger value="deals">Sales Pipeline</TabsTrigger>
+          <TabsTrigger value="marketing">Marketing</TabsTrigger>
+          <TabsTrigger value="integrations">Integrations</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
         
@@ -322,6 +335,339 @@ const CRM = () => {
           <DealsView />
         </TabsContent>
         
+        <TabsContent value="marketing" className="mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="w-5 h-5" />
+                  Email Marketing Automation
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 border rounded-lg hover:shadow-md cursor-pointer">
+                    <div className="flex items-center gap-2 mb-2">
+                      <ExternalLink className="w-4 h-4" />
+                      <span className="font-medium">Mailchimp</span>
+                    </div>
+                    <p className="text-sm text-gray-600">Email campaigns & automation</p>
+                    <Badge className="mt-2 bg-green-100 text-green-800">Connected</Badge>
+                  </div>
+                  <div className="p-4 border rounded-lg hover:shadow-md cursor-pointer">
+                    <div className="flex items-center gap-2 mb-2">
+                      <ExternalLink className="w-4 h-4" />
+                      <span className="font-medium">SendGrid</span>
+                    </div>
+                    <p className="text-sm text-gray-600">Transactional emails</p>
+                    <Badge className="mt-2 bg-yellow-100 text-yellow-800">Setup Required</Badge>
+                  </div>
+                </div>
+                <Button className="w-full">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Email Campaign
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="w-5 h-5" />
+                  Lead Scoring & Nurturing
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span>AI Lead Scoring</span>
+                    <Badge className="bg-blue-100 text-blue-800">Active</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Auto Nurturing Workflows</span>
+                    <Badge className="bg-green-100 text-green-800">5 Active</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>ZoomInfo Enrichment</span>
+                    <Badge className="bg-yellow-100 text-yellow-800">Setup Required</Badge>
+                  </div>
+                </div>
+                <Button className="w-full">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Configure Scoring Rules
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" />
+                  Chat & Engagement
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Bot className="w-4 h-4" />
+                      <span className="font-medium">AI Chatbot</span>
+                    </div>
+                    <p className="text-sm text-gray-600">OpenAI GPT-powered</p>
+                    <Badge className="mt-2 bg-green-100 text-green-800">Live</Badge>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <MessageSquare className="w-4 h-4" />
+                      <span className="font-medium">Live Chat</span>
+                    </div>
+                    <p className="text-sm text-gray-600">Intercom integration</p>
+                    <Badge className="mt-2 bg-yellow-100 text-yellow-800">Setup Required</Badge>
+                  </div>
+                </div>
+                <Button className="w-full">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Configure Chat Settings
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Phone className="w-5 h-5" />
+                  Communication Tracking
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span>Twilio SMS Integration</span>
+                    <Badge className="bg-green-100 text-green-800">Connected</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Call Tracking</span>
+                    <Badge className="bg-green-100 text-green-800">Active</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Email Logging (Gmail)</span>
+                    <Badge className="bg-yellow-100 text-yellow-800">Setup Required</Badge>
+                  </div>
+                </div>
+                <Button className="w-full">
+                  <Phone className="w-4 h-4 mr-2" />
+                  View Call Analytics
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="integrations" className="mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="w-5 h-5" />
+                  Workflow Automation
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="p-3 border rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-orange-500" />
+                      <span>Zapier</span>
+                    </div>
+                    <Badge className="bg-green-100 text-green-800">Connected</Badge>
+                  </div>
+                  <div className="p-3 border rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Workflow className="w-4 h-4 text-blue-500" />
+                      <span>Make (Integromat)</span>
+                    </div>
+                    <Badge className="bg-yellow-100 text-yellow-800">Available</Badge>
+                  </div>
+                  <div className="p-3 border rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Webhook className="w-4 h-4 text-purple-500" />
+                      <span>Webhooks</span>
+                    </div>
+                    <Badge className="bg-green-100 text-green-800">Active</Badge>
+                  </div>
+                </div>
+                <Button className="w-full">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create New Automation
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5" />
+                  Calendar & Productivity
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="p-3 border rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-blue-500" />
+                      <span>Google Calendar</span>
+                    </div>
+                    <Badge className="bg-green-100 text-green-800">Connected</Badge>
+                  </div>
+                  <div className="p-3 border rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-blue-700" />
+                      <span>Outlook Calendar</span>
+                    </div>
+                    <Badge className="bg-yellow-100 text-yellow-800">Available</Badge>
+                  </div>
+                  <div className="p-3 border rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Building className="w-4 h-4 text-green-500" />
+                      <span>Microsoft Teams</span>
+                    </div>
+                    <Badge className="bg-yellow-100 text-yellow-800">Available</Badge>
+                  </div>
+                </div>
+                <Button className="w-full">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Sync Calendar Events
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  Analytics & Tracking
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="p-3 border rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4 text-purple-500" />
+                      <span>Segment</span>
+                    </div>
+                    <Badge className="bg-green-100 text-green-800">Connected</Badge>
+                  </div>
+                  <div className="p-3 border rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4 text-orange-500" />
+                      <span>Mixpanel</span>
+                    </div>
+                    <Badge className="bg-yellow-100 text-yellow-800">Available</Badge>
+                  </div>
+                  <div className="p-3 border rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Target className="w-4 h-4 text-red-500" />
+                      <span>Google Analytics</span>
+                    </div>
+                    <Badge className="bg-green-100 text-green-800">Connected</Badge>
+                  </div>
+                </div>
+                <Button className="w-full">
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  View Event Analytics
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="reports" className="mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ChartBar className="w-5 h-5" />
+                  Advanced Reporting Tools
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="p-4 border rounded-lg hover:shadow-md cursor-pointer">
+                    <div className="flex items-center gap-2 mb-2">
+                      <ExternalLink className="w-4 h-4" />
+                      <span className="font-medium">Google Looker Studio</span>
+                    </div>
+                    <p className="text-sm text-gray-600">Interactive dashboards & reports</p>
+                    <Badge className="mt-2 bg-green-100 text-green-800">Connected</Badge>
+                  </div>
+                  <div className="p-4 border rounded-lg hover:shadow-md cursor-pointer">
+                    <div className="flex items-center gap-2 mb-2">
+                      <ExternalLink className="w-4 h-4" />
+                      <span className="font-medium">Metabase</span>
+                    </div>
+                    <p className="text-sm text-gray-600">Self-service business intelligence</p>
+                    <Badge className="mt-2 bg-yellow-100 text-yellow-800">Available</Badge>
+                  </div>
+                  <div className="p-4 border rounded-lg hover:shadow-md cursor-pointer">
+                    <div className="flex items-center gap-2 mb-2">
+                      <ExternalLink className="w-4 h-4" />
+                      <span className="font-medium">BigQuery</span>
+                    </div>
+                    <p className="text-sm text-gray-600">Data warehouse analytics</p>
+                    <Badge className="mt-2 bg-green-100 text-green-800">Connected</Badge>
+                  </div>
+                </div>
+                <Button className="w-full">
+                  <ChartBar className="w-4 h-4 mr-2" />
+                  Create Custom Report
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="w-5 h-5" />
+                  Sales Performance Metrics
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium">Lead Conversion Rate</span>
+                      <span className="text-2xl font-bold text-blue-600">24.5%</span>
+                    </div>
+                    <div className="w-full bg-blue-200 rounded-full h-2">
+                      <div className="bg-blue-600 h-2 rounded-full" style={{ width: '24.5%' }}></div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-3 bg-green-50 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium">Average Deal Size</span>
+                      <span className="text-2xl font-bold text-green-600">$32.5K</span>
+                    </div>
+                    <p className="text-sm text-green-700">↗ 12% vs last quarter</p>
+                  </div>
+
+                  <div className="p-3 bg-purple-50 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium">Sales Cycle Length</span>
+                      <span className="text-2xl font-bold text-purple-600">45 days</span>
+                    </div>
+                    <p className="text-sm text-purple-700">↘ 8% improvement</p>
+                  </div>
+                </div>
+                <Button className="w-full">
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  Export Detailed Report
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
         <TabsContent value="analytics" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
