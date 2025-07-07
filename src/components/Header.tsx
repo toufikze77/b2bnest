@@ -49,7 +49,7 @@ const Header = () => {
               AI Studio ✨
             </Link>
             <Link to="/ai-showcase" className="text-gray-700 hover:text-blue-600 transition-colors">
-              AI
+              AI-Powered
             </Link>
             <Link to="/whitepaper" className="text-gray-700 hover:text-blue-600 transition-colors">
               Whitepaper
@@ -153,7 +153,7 @@ const Header = () => {
                 className="text-gray-700 hover:text-blue-600 transition-colors px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
-                AI
+                AI-Powered
               </Link>
               <Link
                 to="/whitepaper"
