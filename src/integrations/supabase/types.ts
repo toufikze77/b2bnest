@@ -14,6 +14,108 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_conversations: {
+        Row: {
+          context: Json | null
+          conversation_type: string
+          created_at: string
+          id: string
+          messages: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          context?: Json | null
+          conversation_type: string
+          created_at?: string
+          id?: string
+          messages?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          context?: Json | null
+          conversation_type?: string
+          created_at?: string
+          id?: string
+          messages?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_workflows: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          industry_tags: string[] | null
+          is_active: boolean
+          name: string
+          updated_at: string
+          usage_count: number
+          user_id: string
+          workflow_steps: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          industry_tags?: string[] | null
+          is_active?: boolean
+          name: string
+          updated_at?: string
+          usage_count?: number
+          user_id: string
+          workflow_steps: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          industry_tags?: string[] | null
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+          usage_count?: number
+          user_id?: string
+          workflow_steps?: Json
+        }
+        Relationships: []
+      }
+      business_insights: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          data: Json
+          expires_at: string | null
+          generated_at: string
+          id: string
+          insight_type: string
+          user_id: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          data: Json
+          expires_at?: string | null
+          generated_at?: string
+          id?: string
+          insight_type: string
+          user_id: string
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          data?: Json
+          expires_at?: string | null
+          generated_at?: string
+          id?: string
+          insight_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           category: string
@@ -254,6 +356,39 @@ export type Database = {
           updated_at?: string
           user_id?: string
           valid_until?: string | null
+        }
+        Relationships: []
+      }
+      user_ai_preferences: {
+        Row: {
+          business_stage: string | null
+          created_at: string
+          id: string
+          industry: string | null
+          interaction_history: Json | null
+          preferred_ai_features: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_stage?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          interaction_history?: Json | null
+          preferred_ai_features?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_stage?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          interaction_history?: Json | null
+          preferred_ai_features?: string[] | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

@@ -16,6 +16,7 @@ import NotFound from "@/pages/NotFound";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
 import AIShowcase from "@/pages/AIShowcase";
+import AIStudio from "@/pages/AIStudio";
 import Whitepaper from "@/pages/Whitepaper";
 import Tokenomics from "@/pages/Tokenomics";
 import HumanResources from "@/pages/categories/HumanResources";
@@ -42,6 +43,7 @@ function App() {
               <Route path="/blog" element={<Blog />} />
               <Route path="/business-tools" element={<BusinessTools />} />
               <Route path="/ai-showcase" element={<AIShowcase />} />
+              <Route path="/ai-studio" element={<AIStudio />} />
               <Route path="/fundraising" element={<Fundraising />} />
               <Route path="/whitepaper" element={<Whitepaper />} />
               <Route path="/tokenomics" element={<Tokenomics />} />
