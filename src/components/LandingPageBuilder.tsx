@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Globe, Eye, Download, Palette, Layout, Settings, Zap } from 'lucide-react';
+import { Globe, Eye, Download, Palette, Layout, Settings, Zap, Upload, Image } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LandingPage {
   id: string;
@@ -25,6 +26,7 @@ interface LandingPage {
 
 const LandingPageBuilder = () => {
   const [pages, setPages] = useState<LandingPage[]>([]);
+  const [logoUploading, setLogoUploading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -104,6 +106,65 @@ const LandingPageBuilder = () => {
       title: "Landing Page Created",
       description: `Landing page "${page.title}" has been built.`
     });
+  };
+
+  const handleLogoUpload = async (file: File) => {
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please upload an image file (PNG, JPG, etc.)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "File Too Large",
+        description: "Please upload an image smaller than 2MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLogoUploading(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `logo-${Date.now()}.${fileExt}`;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('company-logos')
+        .upload(fileName, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('company-logos')
+        .getPublicUrl(fileName);
+
+      setFormData(prev => ({ ...prev, logo: publicUrl }));
+
+      toast({
+        title: "Logo Uploaded",
+        description: "Logo has been uploaded successfully"
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload Failed",
+        description: "Failed to upload logo. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLogoUploading(false);
+    }
   };
 
   const exportPage = (page: LandingPage) => {
@@ -303,13 +364,35 @@ const LandingPageBuilder = () => {
               </div>
 
               <div>
-                <Label htmlFor="logo">Logo URL</Label>
-                <Input
-                  id="logo"
-                  placeholder="https://example.com/logo.png"
-                  value={formData.logo}
-                  onChange={(e) => setFormData(prev => ({ ...prev, logo: e.target.value }))}
-                />
+                <Label htmlFor="logo">Company Logo</Label>
+                <div className="space-y-2">
+                  <Input
+                    id="logo-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleLogoUpload(file);
+                    }}
+                    disabled={logoUploading}
+                  />
+                  <div className="text-xs text-gray-500">
+                    Upload an image file (PNG, JPG, etc.) up to 2MB
+                  </div>
+                  {formData.logo && (
+                    <div className="flex items-center gap-2 p-2 bg-green-50 rounded border">
+                      <Image className="h-4 w-4 text-green-600" />
+                      <span className="text-sm text-green-800">Logo uploaded successfully</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setFormData(prev => ({ ...prev, logo: '' }))}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -350,10 +433,19 @@ const LandingPageBuilder = () => {
               <Button 
                 onClick={createPage} 
                 className="w-full"
-                disabled={pages.length >= 2}
+                disabled={pages.length >= 2 || logoUploading}
               >
-                <Globe className="h-4 w-4 mr-2" />
-                {pages.length >= 2 ? 'Limit Reached' : 'Create Landing Page'}
+                {logoUploading ? (
+                  <>
+                    <Upload className="h-4 w-4 mr-2 animate-spin" />
+                    Uploading Logo...
+                  </>
+                ) : (
+                  <>
+                    <Globe className="h-4 w-4 mr-2" />
+                    {pages.length >= 2 ? 'Limit Reached' : 'Create Landing Page'}
+                  </>
+                )}
               </Button>
             </div>
           </CardContent>
