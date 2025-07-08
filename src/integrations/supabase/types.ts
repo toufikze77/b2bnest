@@ -513,27 +513,66 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
+          company: string | null
+          connection_count: number | null
           created_at: string | null
           email: string | null
+          experience_years: number | null
           full_name: string | null
+          headline: string | null
           id: string
+          industry: string | null
+          is_public: boolean | null
+          linkedin_url: string | null
+          location: string | null
+          position: string | null
+          skills: string[] | null
+          twitter_url: string | null
           updated_at: string | null
+          website: string | null
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
+          company?: string | null
+          connection_count?: number | null
           created_at?: string | null
           email?: string | null
+          experience_years?: number | null
           full_name?: string | null
+          headline?: string | null
           id: string
+          industry?: string | null
+          is_public?: boolean | null
+          linkedin_url?: string | null
+          location?: string | null
+          position?: string | null
+          skills?: string[] | null
+          twitter_url?: string | null
           updated_at?: string | null
+          website?: string | null
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
+          company?: string | null
+          connection_count?: number | null
           created_at?: string | null
           email?: string | null
+          experience_years?: number | null
           full_name?: string | null
+          headline?: string | null
           id?: string
+          industry?: string | null
+          is_public?: boolean | null
+          linkedin_url?: string | null
+          location?: string | null
+          position?: string | null
+          skills?: string[] | null
+          twitter_url?: string | null
           updated_at?: string | null
+          website?: string | null
         }
         Relationships: []
       }
