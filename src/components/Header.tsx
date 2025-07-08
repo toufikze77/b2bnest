@@ -45,9 +45,6 @@ const Header = () => {
             <Link to="/business-tools" className="text-gray-700 hover:text-blue-600 transition-colors">
               Business Tools
             </Link>
-            <Link to="/ai-studio" className="text-gray-700 hover:text-blue-600 transition-colors font-medium bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-              AI Studio ✨
-            </Link>
             <Link to="/ai-showcase" className="text-gray-700 hover:text-blue-600 transition-colors">
               AI-Powered
             </Link>
@@ -56,9 +53,9 @@ const Header = () => {
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-gray-700 hover:text-blue-600 transition-colors px-3">
+                <span className="text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">
                   Invest
-                </Button>
+                </span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
