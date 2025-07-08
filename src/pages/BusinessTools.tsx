@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock } from 'lucide-react';
+import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -17,8 +17,9 @@ import TodoList from '@/components/TodoList';
 import BusinessNameGenerator from '@/components/BusinessNameGenerator';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
 import TimeTracker from '@/components/TimeTracker';
+import CashFlowTracker from '@/components/CashFlowTracker';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker';
 
 const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
@@ -56,6 +57,14 @@ const BusinessTools = () => {
       icon: Clock,
       color: 'bg-emerald-600',
       benefits: ['Project tracking', 'Real-time timer', 'Activity summaries']
+    },
+    {
+      id: 'cash-flow-tracker' as ToolType,
+      title: 'Cash Flow Tracker',
+      description: 'Monitor your business income and expenses',
+      icon: TrendingUp,
+      color: 'bg-green-600',
+      benefits: ['Income/expense tracking', 'Financial insights', 'Category analysis']
     },
     {
       id: 'cost-calculator' as ToolType,
@@ -141,6 +150,8 @@ const BusinessTools = () => {
         return <QRCodeGenerator />;
       case 'time-tracker':
         return <TimeTracker />;
+      case 'cash-flow-tracker':
+        return <CashFlowTracker />;
       case 'cost-calculator':
         return <CostCalculator />;
       case 'setup-checklist':
