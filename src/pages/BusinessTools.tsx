@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, Receipt, BarChart, File, Globe } from 'lucide-react';
+import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, Receipt, BarChart, File, Globe, CreditCard, Layout } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -24,8 +24,10 @@ import ROICalculator from '@/components/ROICalculator';
 import ContractGenerator from '@/components/ContractGenerator';
 import PrivacyPolicyGenerator from '@/components/PrivacyPolicyGenerator';
 import DocumentTemplateLibrary from '@/components/DocumentTemplateLibrary';
+import BusinessCardDesigner from '@/components/BusinessCardDesigner';
+import LandingPageBuilder from '@/components/LandingPageBuilder';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'invoice-generator' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'invoice-generator' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder';
 
 const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
@@ -119,6 +121,22 @@ const BusinessTools = () => {
       icon: File,
       color: 'bg-blue-700',
       benefits: ['Professional templates', 'Multiple categories', 'Ready to use']
+    },
+    {
+      id: 'business-card-designer' as ToolType,
+      title: 'Business Card Designer',
+      description: 'Create professional business cards with custom designs',
+      icon: CreditCard,
+      color: 'bg-pink-600',
+      benefits: ['Professional designs', 'Custom templates', 'Print-ready format']
+    },
+    {
+      id: 'landing-page-builder' as ToolType,
+      title: 'Landing Page Builder',
+      description: 'Build responsive landing pages with drag-and-drop',
+      icon: Layout,
+      color: 'bg-indigo-600',
+      benefits: ['Responsive design', 'Multiple templates', 'SEO optimized']
     },
     {
       id: 'cost-calculator' as ToolType,
@@ -218,6 +236,10 @@ const BusinessTools = () => {
         return <PrivacyPolicyGenerator />;
       case 'document-templates':
         return <DocumentTemplateLibrary />;
+      case 'business-card-designer':
+        return <BusinessCardDesigner />;
+      case 'landing-page-builder':
+        return <LandingPageBuilder />;
       case 'cost-calculator':
         return <CostCalculator />;
       case 'setup-checklist':
