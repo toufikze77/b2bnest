@@ -22,8 +22,8 @@ const PricingPlans = () => {
       description: 'Perfect for solopreneurs and small teams',
       icon: Zap,
       color: 'from-blue-500 to-cyan-500',
-      monthly: 0,
-      annual: 0,
+      monthly: 19,
+      annual: 15, // 20% discount
       userLimit: '1 user',
       features: [
         'AI Business Advisor',
@@ -101,13 +101,13 @@ const PricingPlans = () => {
 
   const getCurrentPlanBadge = (planId: string) => {
     if (!isPremium && planId === 'starter') {
-      return <Badge className="absolute -top-2 -right-2 bg-green-500">Current Plan</Badge>;
+      return <Badge className="absolute -top-1 -right-2 bg-green-500">Current Plan</Badge>;
     }
     if (isPremium && subscription_tier === 'Professional' && planId === 'professional') {
-      return <Badge className="absolute -top-2 -right-2 bg-green-500">Current Plan</Badge>;
+      return <Badge className="absolute -top-1 -right-2 bg-green-500">Current Plan</Badge>;
     }
     if (isPremium && subscription_tier === 'Enterprise' && planId === 'enterprise') {
-      return <Badge className="absolute -top-2 -right-2 bg-green-500">Current Plan</Badge>;
+      return <Badge className="absolute -top-1 -right-2 bg-green-500">Current Plan</Badge>;
     }
     return null;
   };
@@ -182,7 +182,7 @@ const PricingPlans = () => {
                 }`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                  <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10">
                     <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-1 text-sm font-semibold">
                       <Sparkles className="h-3 w-3 mr-1" />
                       Most Popular
