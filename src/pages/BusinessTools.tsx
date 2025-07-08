@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo } from 'lucide-react';
+import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -14,8 +14,11 @@ import QuoteInvoiceCreationSection from '@/components/QuoteInvoiceCreationSectio
 import ProjectManagement from '@/components/ProjectManagement';
 import CRM from '@/components/CRM';
 import TodoList from '@/components/TodoList';
+import BusinessNameGenerator from '@/components/BusinessNameGenerator';
+import QRCodeGenerator from '@/components/QRCodeGenerator';
+import TimeTracker from '@/components/TimeTracker';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice' | 'project-management' | 'crm' | 'todo-list';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker';
 
 const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
@@ -29,6 +32,30 @@ const BusinessTools = () => {
       icon: ListTodo,
       color: 'bg-green-600',
       benefits: ['Stay organized', 'Track progress', 'Boost productivity']
+    },
+    {
+      id: 'business-name-generator' as ToolType,
+      title: 'Business Name Generator',
+      description: 'Generate creative business names for your startup',
+      icon: Sparkles,
+      color: 'bg-purple-600',
+      benefits: ['Creative suggestions', 'Domain availability', 'Industry-specific names']
+    },
+    {
+      id: 'qr-code-generator' as ToolType,
+      title: 'QR Code Generator',
+      description: 'Create QR codes for websites, contacts, and more',
+      icon: QrCode,
+      color: 'bg-gray-600',
+      benefits: ['Multiple formats', 'Instant generation', 'Easy download']
+    },
+    {
+      id: 'time-tracker' as ToolType,
+      title: 'Time Tracker',
+      description: 'Track time spent on projects and tasks',
+      icon: Clock,
+      color: 'bg-emerald-600',
+      benefits: ['Project tracking', 'Real-time timer', 'Activity summaries']
     },
     {
       id: 'cost-calculator' as ToolType,
@@ -108,6 +135,12 @@ const BusinessTools = () => {
     switch (currentTool) {
       case 'todo-list':
         return <TodoList />;
+      case 'business-name-generator':
+        return <BusinessNameGenerator />;
+      case 'qr-code-generator':
+        return <QRCodeGenerator />;
+      case 'time-tracker':
+        return <TimeTracker />;
       case 'cost-calculator':
         return <CostCalculator />;
       case 'setup-checklist':
