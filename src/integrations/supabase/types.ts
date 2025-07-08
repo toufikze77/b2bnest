@@ -310,6 +310,80 @@ export type Database = {
         }
         Relationships: []
       }
+      forum_posts: {
+        Row: {
+          category: Database["public"]["Enums"]["business_category"]
+          content: string
+          created_at: string
+          id: string
+          is_pinned: boolean
+          last_reply_at: string | null
+          reply_count: number
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["business_category"]
+          content: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          last_reply_at?: string | null
+          reply_count?: number
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["business_category"]
+          content?: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          last_reply_at?: string | null
+          reply_count?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      forum_replies: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_replies_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_settings: {
         Row: {
           created_at: string
@@ -717,6 +791,17 @@ export type Database = {
     }
     Enums: {
       app_role: "owner" | "admin" | "moderator" | "user"
+      business_category:
+        | "startup"
+        | "marketing"
+        | "finance"
+        | "legal"
+        | "operations"
+        | "hr"
+        | "sales"
+        | "technology"
+        | "networking"
+        | "general"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -845,6 +930,18 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["owner", "admin", "moderator", "user"],
+      business_category: [
+        "startup",
+        "marketing",
+        "finance",
+        "legal",
+        "operations",
+        "hr",
+        "sales",
+        "technology",
+        "networking",
+        "general",
+      ],
     },
   },
 } as const

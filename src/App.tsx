@@ -9,7 +9,7 @@ import About from "@/pages/About";
 import Contact from "@/pages/Contact";
 import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
-import Blog from "@/pages/Blog";
+import Forum from "@/pages/Forum";
 import BusinessTools from "@/pages/BusinessTools";
 import Fundraising from "@/pages/Fundraising";
 import PLR from "@/pages/PLR";
@@ -43,7 +43,7 @@ function App() {
               <Route path="/contact" element={<Contact />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/blog" element={<Blog />} />
+              <Route path="/forum" element={<Forum />} />
               <Route path="/business-tools" element={<BusinessTools />} />
               <Route path="/ai-showcase" element={<AIShowcase />} />
               <Route path="/ai-studio" element={<AIStudio />} />

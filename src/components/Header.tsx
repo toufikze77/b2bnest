@@ -51,8 +51,8 @@ const Header = () => {
             <Link to="/ai-showcase" className="text-gray-700 hover:text-blue-600 transition-colors">
               AI-Powered
             </Link>
-            <Link to="/blog" className="text-gray-700 hover:text-blue-600 transition-colors">
-              Blog
+            <Link to="/forum" className="text-gray-700 hover:text-blue-600 transition-colors">
+              Forum
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -161,11 +161,11 @@ const Header = () => {
                 AI-Powered
               </Link>
               <Link
-                to="/blog"
+                to="/forum"
                 className="text-gray-700 hover:text-blue-600 transition-colors px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Blog
+                Forum
               </Link>
               <div className="px-2">
                 <div className="font-medium text-gray-900 mb-2">Invest</div>
