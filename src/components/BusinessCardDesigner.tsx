@@ -18,6 +18,7 @@ interface BusinessCard {
   phone: string;
   website: string;
   address: string;
+  logo: string;
   template: string;
   color: string;
   createdAt: Date;
@@ -33,6 +34,7 @@ const BusinessCardDesigner = () => {
     phone: '',
     website: '',
     address: '',
+    logo: '',
     template: 'modern',
     color: 'blue'
   });
@@ -81,6 +83,7 @@ const BusinessCardDesigner = () => {
       phone: formData.phone,
       website: formData.website,
       address: formData.address,
+      logo: formData.logo,
       template: formData.template,
       color: formData.color,
       createdAt: new Date()
@@ -95,6 +98,7 @@ const BusinessCardDesigner = () => {
       phone: '',
       website: '',
       address: '',
+      logo: '',
       template: 'modern',
       color: 'blue'
     });
@@ -248,6 +252,16 @@ This is a text representation. For actual printing, please use professional desi
                 />
               </div>
 
+              <div>
+                <Label htmlFor="logo">Logo URL</Label>
+                <Input
+                  id="logo"
+                  placeholder="https://example.com/logo.png"
+                  value={formData.logo}
+                  onChange={(e) => setFormData(prev => ({ ...prev, logo: e.target.value }))}
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Template</Label>
@@ -307,10 +321,17 @@ This is a text representation. For actual printing, please use professional desi
             <div className="aspect-[1.75/1] max-w-sm mx-auto">
               <div className={`w-full h-full p-4 border-2 rounded-lg ${getColorClass(formData.color)}`}>
                 <div className="h-full flex flex-col justify-between">
-                  <div>
-                    <h3 className="font-bold text-lg leading-tight">{formData.name || 'Your Name'}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{formData.title || 'Job Title'}</p>
-                    <p className="font-semibold">{formData.company || 'Company Name'}</p>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1">
+                      <h3 className="font-bold text-lg leading-tight">{formData.name || 'Your Name'}</h3>
+                      <p className="text-sm text-gray-600 mb-2">{formData.title || 'Job Title'}</p>
+                      <p className="font-semibold">{formData.company || 'Company Name'}</p>
+                    </div>
+                    {formData.logo && (
+                      <div className="w-12 h-12 border rounded overflow-hidden flex-shrink-0">
+                        <img src={formData.logo} alt="Logo" className="w-full h-full object-contain" />
+                      </div>
+                    )}
                   </div>
                   
                   <div className="text-xs space-y-1">
@@ -348,10 +369,17 @@ This is a text representation. For actual printing, please use professional desi
                 <div key={card.id} className="border rounded-lg p-4 bg-gray-50">
                   <div className={`aspect-[1.75/1] p-3 border-2 rounded-lg mb-3 ${getColorClass(card.color)}`}>
                     <div className="h-full flex flex-col justify-between text-xs">
-                      <div>
-                        <h4 className="font-bold">{card.name}</h4>
-                        <p className="text-gray-600">{card.title}</p>
-                        <p className="font-semibold">{card.company}</p>
+                      <div className="flex items-start gap-2">
+                        <div className="flex-1">
+                          <h4 className="font-bold">{card.name}</h4>
+                          <p className="text-gray-600">{card.title}</p>
+                          <p className="font-semibold">{card.company}</p>
+                        </div>
+                        {card.logo && (
+                          <div className="w-8 h-8 border rounded overflow-hidden flex-shrink-0">
+                            <img src={card.logo} alt="Logo" className="w-full h-full object-contain" />
+                          </div>
+                        )}
                       </div>
                       <div className="text-xs space-y-0.5">
                         {card.email && <p className="truncate">{card.email}</p>}

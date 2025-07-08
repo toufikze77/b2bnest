@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, Receipt, BarChart, File, Globe, CreditCard, Layout } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import CostCalculator from '@/components/CostCalculator';
 import BusinessSetupChecklist from '@/components/BusinessSetupChecklist';
@@ -31,6 +32,7 @@ type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance
 
 const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
+  const [filter, setFilter] = useState<'all' | 'free' | 'premium'>('all');
   const navigate = useNavigate();
 
   const tools = [
@@ -40,7 +42,8 @@ const BusinessTools = () => {
       description: 'Organize and track your tasks efficiently',
       icon: ListTodo,
       color: 'bg-green-600',
-      benefits: ['Stay organized', 'Track progress', 'Boost productivity']
+      benefits: ['Stay organized', 'Track progress', 'Boost productivity'],
+      isPremium: false
     },
     {
       id: 'business-name-generator' as ToolType,
@@ -48,7 +51,8 @@ const BusinessTools = () => {
       description: 'Generate creative business names for your startup',
       icon: Sparkles,
       color: 'bg-purple-600',
-      benefits: ['Creative suggestions', 'Domain availability', 'Industry-specific names']
+      benefits: ['Creative suggestions', 'Domain availability', 'Industry-specific names'],
+      isPremium: false
     },
     {
       id: 'qr-code-generator' as ToolType,
@@ -56,7 +60,8 @@ const BusinessTools = () => {
       description: 'Create QR codes for websites, contacts, and more',
       icon: QrCode,
       color: 'bg-gray-600',
-      benefits: ['Multiple formats', 'Instant generation', 'Easy download']
+      benefits: ['Multiple formats', 'Instant generation', 'Easy download'],
+      isPremium: false
     },
     {
       id: 'time-tracker' as ToolType,
@@ -64,7 +69,8 @@ const BusinessTools = () => {
       description: 'Track time spent on projects and tasks',
       icon: Clock,
       color: 'bg-emerald-600',
-      benefits: ['Project tracking', 'Real-time timer', 'Activity summaries']
+      benefits: ['Project tracking', 'Real-time timer', 'Activity summaries'],
+      isPremium: false
     },
     {
       id: 'cash-flow-tracker' as ToolType,
@@ -72,7 +78,8 @@ const BusinessTools = () => {
       description: 'Monitor your business income and expenses',
       icon: TrendingUp,
       color: 'bg-green-600',
-      benefits: ['Income/expense tracking', 'Financial insights', 'Category analysis']
+      benefits: ['Income/expense tracking', 'Financial insights', 'Category analysis'],
+      isPremium: false
     },
     {
       id: 'goal-tracker' as ToolType,
@@ -80,7 +87,8 @@ const BusinessTools = () => {
       description: 'Set and monitor your business milestones',
       icon: Target,
       color: 'bg-red-600',
-      benefits: ['Milestone tracking', 'Progress monitoring', 'Achievement insights']
+      benefits: ['Milestone tracking', 'Progress monitoring', 'Achievement insights'],
+      isPremium: false
     },
     {
       id: 'invoice-generator' as ToolType,
@@ -88,7 +96,8 @@ const BusinessTools = () => {
       description: 'Create professional invoices for clients',
       icon: Receipt,
       color: 'bg-blue-600',
-      benefits: ['Professional templates', 'Tax calculations', 'Client management']
+      benefits: ['Professional templates', 'Tax calculations', 'Client management'],
+      isPremium: false
     },
     {
       id: 'roi-calculator' as ToolType,
@@ -96,7 +105,8 @@ const BusinessTools = () => {
       description: 'Calculate return on investment for projects',
       icon: BarChart,
       color: 'bg-yellow-600',
-      benefits: ['Investment analysis', 'Performance tracking', 'Decision support']
+      benefits: ['Investment analysis', 'Performance tracking', 'Decision support'],
+      isPremium: false
     },
     {
       id: 'contract-generator' as ToolType,
@@ -104,7 +114,8 @@ const BusinessTools = () => {
       description: 'Generate professional contracts and agreements',
       icon: FileText,
       color: 'bg-purple-700',
-      benefits: ['Professional templates', 'Multiple contract types', 'Legal framework']
+      benefits: ['Professional templates', 'Multiple contract types', 'Legal framework'],
+      isPremium: false
     },
     {
       id: 'privacy-policy-generator' as ToolType,
@@ -112,7 +123,8 @@ const BusinessTools = () => {
       description: 'Create GDPR-compliant privacy policies',
       icon: Shield,
       color: 'bg-green-700',
-      benefits: ['GDPR compliant', 'Customizable sections', 'Legal protection']
+      benefits: ['GDPR compliant', 'Customizable sections', 'Legal protection'],
+      isPremium: false
     },
     {
       id: 'document-templates' as ToolType,
@@ -120,7 +132,8 @@ const BusinessTools = () => {
       description: 'Access professional business document templates',
       icon: File,
       color: 'bg-blue-700',
-      benefits: ['Professional templates', 'Multiple categories', 'Ready to use']
+      benefits: ['Professional templates', 'Multiple categories', 'Ready to use'],
+      isPremium: false
     },
     {
       id: 'business-card-designer' as ToolType,
@@ -128,7 +141,8 @@ const BusinessTools = () => {
       description: 'Create professional business cards with custom designs',
       icon: CreditCard,
       color: 'bg-pink-600',
-      benefits: ['Professional designs', 'Custom templates', 'Print-ready format']
+      benefits: ['Professional designs', 'Custom templates', 'Print-ready format'],
+      isPremium: false
     },
     {
       id: 'landing-page-builder' as ToolType,
@@ -136,7 +150,8 @@ const BusinessTools = () => {
       description: 'Build responsive landing pages with drag-and-drop',
       icon: Layout,
       color: 'bg-indigo-600',
-      benefits: ['Responsive design', 'Multiple templates', 'SEO optimized']
+      benefits: ['Responsive design', 'Multiple templates', 'SEO optimized'],
+      isPremium: false
     },
     {
       id: 'cost-calculator' as ToolType,
@@ -144,7 +159,8 @@ const BusinessTools = () => {
       description: 'Calculate setup costs for your business structure',
       icon: Calculator,
       color: 'bg-blue-500',
-      benefits: ['Accurate cost estimates', 'Compare business structures', 'Plan your budget']
+      benefits: ['Accurate cost estimates', 'Compare business structures', 'Plan your budget'],
+      isPremium: true
     },
     {
       id: 'setup-checklist' as ToolType,
@@ -152,7 +168,8 @@ const BusinessTools = () => {
       description: 'Step-by-step guide to starting your business',
       icon: CheckSquare,
       color: 'bg-green-500',
-      benefits: ['Never miss important steps', 'Track your progress', 'Organized workflow']
+      benefits: ['Never miss important steps', 'Track your progress', 'Organized workflow'],
+      isPremium: true
     },
     {
       id: 'compliance' as ToolType,
@@ -160,7 +177,8 @@ const BusinessTools = () => {
       description: 'Ensure your business meets all requirements',
       icon: Shield,
       color: 'bg-red-500',
-      benefits: ['Avoid penalties', 'Stay compliant', 'Industry-specific guidance']
+      benefits: ['Avoid penalties', 'Stay compliant', 'Industry-specific guidance'],
+      isPremium: true
     },
     {
       id: 'best-practices' as ToolType,
@@ -168,7 +186,8 @@ const BusinessTools = () => {
       description: 'Learn proven strategies for business success',
       icon: Lightbulb,
       color: 'bg-yellow-500',
-      benefits: ['Expert insights', 'Avoid common mistakes', 'Accelerate growth']
+      benefits: ['Expert insights', 'Avoid common mistakes', 'Accelerate growth'],
+      isPremium: true
     },
     {
       id: 'integrations' as ToolType,
@@ -176,7 +195,8 @@ const BusinessTools = () => {
       description: 'Connect with Google Workspace, Slack, DocuSign & more',
       icon: Zap,
       color: 'bg-purple-500',
-      benefits: ['Streamline workflows', 'Automate processes', 'Boost productivity']
+      benefits: ['Streamline workflows', 'Automate processes', 'Boost productivity'],
+      isPremium: true
     },
     {
       id: 'business-resources' as ToolType,
@@ -184,7 +204,8 @@ const BusinessTools = () => {
       description: 'Trusted referrals for banking, accounting, and business services',
       icon: Building2,
       color: 'bg-orange-500',
-      benefits: ['Vetted service providers', 'Compare options', 'Get recommendations']
+      benefits: ['Vetted service providers', 'Compare options', 'Get recommendations'],
+      isPremium: true
     },
     {
       id: 'quote-invoice' as ToolType,
@@ -192,7 +213,8 @@ const BusinessTools = () => {
       description: 'Create professional quotes and invoices with auto-generated codes',
       icon: FileText,
       color: 'bg-indigo-500',
-      benefits: ['Professional templates', 'Auto-generated codes', 'Track payments']
+      benefits: ['Professional templates', 'Auto-generated codes', 'Track payments'],
+      isPremium: true
     },
     {
       id: 'project-management' as ToolType,
@@ -200,7 +222,8 @@ const BusinessTools = () => {
       description: 'Organize tasks, track progress, and collaborate with your team',
       icon: KanbanSquare,
       color: 'bg-teal-500',
-      benefits: ['Kanban & List views', 'Task assignments', 'Progress tracking', 'Team collaboration']
+      benefits: ['Kanban & List views', 'Task assignments', 'Progress tracking', 'Team collaboration'],
+      isPremium: true
     },
     {
       id: 'crm' as ToolType,
@@ -208,9 +231,16 @@ const BusinessTools = () => {
       description: 'Manage leads, contacts, and sales pipeline efficiently',
       icon: Users,
       color: 'bg-pink-500',
-      benefits: ['Contact management', 'Sales pipeline', 'Lead tracking', 'Revenue forecasting']
+      benefits: ['Contact management', 'Sales pipeline', 'Lead tracking', 'Revenue forecasting'],
+      isPremium: true
     }
   ];
+
+  const filteredTools = tools.filter(tool => {
+    if (filter === 'free') return !tool.isPremium;
+    if (filter === 'premium') return tool.isPremium;
+    return true;
+  });
 
   const renderTool = () => {
     switch (currentTool) {
@@ -276,10 +306,34 @@ const BusinessTools = () => {
               <p className="text-gray-600 text-lg">
                 Comprehensive tools to help you start, manage, and grow your business with confidence.
               </p>
+              
+              <div className="flex gap-2 mt-4">
+                <Button
+                  variant={filter === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setFilter('all')}
+                >
+                  All Tools ({tools.length})
+                </Button>
+                <Button
+                  variant={filter === 'free' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setFilter('free')}
+                >
+                  Free Tools ({tools.filter(t => !t.isPremium).length})
+                </Button>
+                <Button
+                  variant={filter === 'premium' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setFilter('premium')}
+                >
+                  Premium Tools ({tools.filter(t => t.isPremium).length})
+                </Button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {tools.map((tool) => {
+              {filteredTools.map((tool) => {
                 const Icon = tool.icon;
                 return (
                   <Card 
@@ -292,7 +346,14 @@ const BusinessTools = () => {
                         <div className={`p-2 rounded-lg ${tool.color}`}>
                           <Icon className="h-6 w-6 text-white" />
                         </div>
-                        <CardTitle className="text-xl">{tool.title}</CardTitle>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <CardTitle className="text-xl">{tool.title}</CardTitle>
+                            {tool.isPremium && (
+                              <Badge variant="secondary" className="text-xs">Premium</Badge>
+                            )}
+                          </div>
+                        </div>
                       </div>
                       <p className="text-gray-600">{tool.description}</p>
                     </CardHeader>

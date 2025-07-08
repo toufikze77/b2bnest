@@ -17,6 +17,7 @@ interface LandingPage {
   subheadline: string;
   ctaText: string;
   ctaUrl: string;
+  logo: string;
   template: string;
   color: string;
   createdAt: Date;
@@ -31,6 +32,7 @@ const LandingPageBuilder = () => {
     subheadline: '',
     ctaText: '',
     ctaUrl: '',
+    logo: '',
     template: 'startup',
     color: 'blue'
   });
@@ -79,6 +81,7 @@ const LandingPageBuilder = () => {
       subheadline: formData.subheadline,
       ctaText: formData.ctaText || 'Get Started',
       ctaUrl: formData.ctaUrl,
+      logo: formData.logo,
       template: formData.template,
       color: formData.color,
       createdAt: new Date()
@@ -92,6 +95,7 @@ const LandingPageBuilder = () => {
       subheadline: '',
       ctaText: '',
       ctaUrl: '',
+      logo: '',
       template: 'startup',
       color: 'blue'
     });
@@ -119,7 +123,10 @@ const LandingPageBuilder = () => {
     <header class="bg-white shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div class="flex justify-between items-center">
-                <div class="text-2xl font-bold ${theme?.primary || 'text-blue-600'}">${page.title}</div>
+                <div class="flex items-center gap-3">
+                    ${page.logo ? `<img src="${page.logo}" alt="Logo" class="h-8 w-auto" />` : ''}
+                    <div class="text-2xl font-bold ${theme?.primary || 'text-blue-600'}">${page.title}</div>
+                </div>
                 <nav class="hidden md:flex space-x-8">
                     <a href="#features" class="text-gray-600 hover:text-gray-900">Features</a>
                     <a href="#pricing" class="text-gray-600 hover:text-gray-900">Pricing</a>
@@ -295,6 +302,16 @@ const LandingPageBuilder = () => {
                 </div>
               </div>
 
+              <div>
+                <Label htmlFor="logo">Logo URL</Label>
+                <Input
+                  id="logo"
+                  placeholder="https://example.com/logo.png"
+                  value={formData.logo}
+                  onChange={(e) => setFormData(prev => ({ ...prev, logo: e.target.value }))}
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Template</Label>
@@ -351,8 +368,15 @@ const LandingPageBuilder = () => {
             <div className="border rounded-lg bg-white overflow-hidden">
               <div className={`p-4 border-b ${getThemeClasses(formData.color).bg}`}>
                 <div className="flex justify-between items-center">
-                  <div className={`text-lg font-bold ${getThemeClasses(formData.color).primary}`}>
-                    {formData.title || 'Page Title'}
+                  <div className="flex items-center gap-2">
+                    {formData.logo && (
+                      <div className="w-6 h-6 border rounded overflow-hidden">
+                        <img src={formData.logo} alt="Logo" className="w-full h-full object-contain" />
+                      </div>
+                    )}
+                    <div className={`text-lg font-bold ${getThemeClasses(formData.color).primary}`}>
+                      {formData.title || 'Page Title'}
+                    </div>
                   </div>
                   <div className="text-xs text-gray-600">Navigation</div>
                 </div>
