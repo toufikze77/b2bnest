@@ -69,15 +69,6 @@ const HeroSection = ({ onSearch }: HeroSectionProps) => {
             </span>
             <div className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </a>
-          <Link
-            to="/ai-studio"
-            className="group relative bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-2 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:from-purple-600 hover:to-indigo-700"
-          >
-            <span className="flex items-center gap-2">
-              🧠 AI Studio
-            </span>
-            <div className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          </Link>
         </div>
       </div>
     </section>
