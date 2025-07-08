@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp } from 'lucide-react';
+import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, Receipt, BarChart } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -18,8 +18,11 @@ import BusinessNameGenerator from '@/components/BusinessNameGenerator';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
 import TimeTracker from '@/components/TimeTracker';
 import CashFlowTracker from '@/components/CashFlowTracker';
+import GoalTracker from '@/components/GoalTracker';
+import InvoiceGenerator from '@/components/InvoiceGenerator';
+import ROICalculator from '@/components/ROICalculator';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'invoice-generator' | 'roi-calculator';
 
 const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
@@ -65,6 +68,30 @@ const BusinessTools = () => {
       icon: TrendingUp,
       color: 'bg-green-600',
       benefits: ['Income/expense tracking', 'Financial insights', 'Category analysis']
+    },
+    {
+      id: 'goal-tracker' as ToolType,
+      title: 'Goal Tracker',
+      description: 'Set and monitor your business milestones',
+      icon: Target,
+      color: 'bg-red-600',
+      benefits: ['Milestone tracking', 'Progress monitoring', 'Achievement insights']
+    },
+    {
+      id: 'invoice-generator' as ToolType,
+      title: 'Invoice Generator',
+      description: 'Create professional invoices for clients',
+      icon: Receipt,
+      color: 'bg-blue-600',
+      benefits: ['Professional templates', 'Tax calculations', 'Client management']
+    },
+    {
+      id: 'roi-calculator' as ToolType,
+      title: 'ROI Calculator',
+      description: 'Calculate return on investment for projects',
+      icon: BarChart,
+      color: 'bg-yellow-600',
+      benefits: ['Investment analysis', 'Performance tracking', 'Decision support']
     },
     {
       id: 'cost-calculator' as ToolType,
@@ -152,6 +179,12 @@ const BusinessTools = () => {
         return <TimeTracker />;
       case 'cash-flow-tracker':
         return <CashFlowTracker />;
+      case 'goal-tracker':
+        return <GoalTracker />;
+      case 'invoice-generator':
+        return <InvoiceGenerator />;
+      case 'roi-calculator':
+        return <ROICalculator />;
       case 'cost-calculator':
         return <CostCalculator />;
       case 'setup-checklist':
