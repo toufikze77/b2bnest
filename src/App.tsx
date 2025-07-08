@@ -20,6 +20,7 @@ import AIShowcase from "@/pages/AIShowcase";
 import AIStudio from "@/pages/AIStudio";
 import Whitepaper from "@/pages/Whitepaper";
 import Tokenomics from "@/pages/Tokenomics";
+import Pricing from "@/pages/Pricing";
 import HumanResources from "@/pages/categories/HumanResources";
 import LegalDocuments from "@/pages/categories/LegalDocuments";
 import FinancialForms from "@/pages/categories/FinancialForms";
@@ -49,6 +50,7 @@ function App() {
               <Route path="/fundraising" element={<Fundraising />} />
               <Route path="/whitepaper" element={<Whitepaper />} />
               <Route path="/tokenomics" element={<Tokenomics />} />
+              <Route path="/pricing" element={<Pricing />} />
               <Route path="/plr" element={<PLR />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<TermsOfService />} />
