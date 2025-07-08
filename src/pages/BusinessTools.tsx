@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, Receipt, BarChart, File, Globe, CreditCard, Layout } from 'lucide-react';
+import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, Receipt, BarChart, File, Globe, CreditCard, Layout, Mail } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,8 +27,11 @@ import PrivacyPolicyGenerator from '@/components/PrivacyPolicyGenerator';
 import DocumentTemplateLibrary from '@/components/DocumentTemplateLibrary';
 import BusinessCardDesigner from '@/components/BusinessCardDesigner';
 import LandingPageBuilder from '@/components/LandingPageBuilder';
+import EmailSignatureGenerator from '@/components/EmailSignatureGenerator';
+import SocialMediaPostScheduler from '@/components/SocialMediaPostScheduler';
+import CustomerSurveyBuilder from '@/components/CustomerSurveyBuilder';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'invoice-generator' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'invoice-generator' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder';
 
 const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
@@ -154,6 +157,33 @@ const BusinessTools = () => {
       isPremium: false
     },
     {
+      id: 'email-signature-generator' as ToolType,
+      title: 'Email Signature Generator',
+      description: 'Create professional email signatures for business communications',
+      icon: Mail,
+      color: 'bg-orange-600',
+      benefits: ['Professional templates', 'HTML output', 'Brand consistency'],
+      isPremium: false
+    },
+    {
+      id: 'social-media-scheduler' as ToolType,
+      title: 'Social Media Post Scheduler',
+      description: 'Schedule and manage your social media posts across platforms',
+      icon: Users,
+      color: 'bg-cyan-600',
+      benefits: ['Multi-platform support', 'Content planning', 'Scheduling tools'],
+      isPremium: false
+    },
+    {
+      id: 'customer-survey-builder' as ToolType,
+      title: 'Customer Survey Builder',
+      description: 'Create and manage customer feedback surveys',
+      icon: BarChart,
+      color: 'bg-violet-600',
+      benefits: ['Custom questions', 'Response tracking', 'Analytics dashboard'],
+      isPremium: false
+    },
+    {
       id: 'cost-calculator' as ToolType,
       title: 'Cost Calculator',
       description: 'Calculate setup costs for your business structure',
@@ -270,6 +300,12 @@ const BusinessTools = () => {
         return <BusinessCardDesigner />;
       case 'landing-page-builder':
         return <LandingPageBuilder />;
+      case 'email-signature-generator':
+        return <EmailSignatureGenerator />;
+      case 'social-media-scheduler':
+        return <SocialMediaPostScheduler />;
+      case 'customer-survey-builder':
+        return <CustomerSurveyBuilder />;
       case 'cost-calculator':
         return <CostCalculator />;
       case 'setup-checklist':
