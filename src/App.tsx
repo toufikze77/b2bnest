@@ -9,13 +9,15 @@ import About from "@/pages/About";
 import Contact from "@/pages/Contact";
 import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
-import Forum from "@/pages/Forum";
+import BusinessSocial from "@/pages/BusinessSocial";
 import BusinessTools from "@/pages/BusinessTools";
 import Fundraising from "@/pages/Fundraising";
 import PLR from "@/pages/PLR";
 import NotFound from "@/pages/NotFound";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
+import ProfileSetup from "@/pages/ProfileSetup";
+import Forum from "@/pages/Forum";
 import AIShowcase from "@/pages/AIShowcase";
 import AIStudio from "@/pages/AIStudio";
 import Whitepaper from "@/pages/Whitepaper";
@@ -43,13 +45,15 @@ function App() {
               <Route path="/contact" element={<Contact />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/forum" element={<Forum />} />
+            <Route path="/business-social" element={<BusinessSocial />} />
+            <Route path="/profile-setup" element={<ProfileSetup />} />
               <Route path="/business-tools" element={<BusinessTools />} />
               <Route path="/ai-showcase" element={<AIShowcase />} />
               <Route path="/ai-studio" element={<AIStudio />} />
               <Route path="/fundraising" element={<Fundraising />} />
               <Route path="/whitepaper" element={<Whitepaper />} />
-              <Route path="/tokenomics" element={<Tokenomics />} />
+            <Route path="/tokenomics" element={<Tokenomics />} />
+            <Route path="/forum" element={<Forum />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/plr" element={<PLR />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />

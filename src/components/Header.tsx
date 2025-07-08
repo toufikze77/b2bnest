@@ -39,8 +39,8 @@ const Header = () => {
             <Link to="/" className="text-gray-700 hover:text-blue-600 transition-colors">
               Home
             </Link>
-            <Link to="/about" className="text-gray-700 hover:text-blue-600 transition-colors">
-              About
+            <Link to="/business-social" className="text-gray-700 hover:text-blue-600 transition-colors font-medium bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
+              Business Social ✨
             </Link>
             <Link to="/business-tools" className="text-gray-700 hover:text-blue-600 transition-colors">
               Business Tools
@@ -140,11 +140,11 @@ const Header = () => {
                 Home
               </Link>
               <Link
-                to="/about"
-                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
+                to="/business-social"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2 font-medium"
                 onClick={() => setIsMenuOpen(false)}
               >
-                About
+                Business Social ✨
               </Link>
               <Link
                 to="/business-tools"
