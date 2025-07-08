@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, Receipt, BarChart } from 'lucide-react';
+import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, Receipt, BarChart, File, Globe } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -21,8 +21,11 @@ import CashFlowTracker from '@/components/CashFlowTracker';
 import GoalTracker from '@/components/GoalTracker';
 import InvoiceGenerator from '@/components/InvoiceGenerator';
 import ROICalculator from '@/components/ROICalculator';
+import ContractGenerator from '@/components/ContractGenerator';
+import PrivacyPolicyGenerator from '@/components/PrivacyPolicyGenerator';
+import DocumentTemplateLibrary from '@/components/DocumentTemplateLibrary';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'invoice-generator' | 'roi-calculator';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'invoice-generator' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates';
 
 const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
@@ -92,6 +95,30 @@ const BusinessTools = () => {
       icon: BarChart,
       color: 'bg-yellow-600',
       benefits: ['Investment analysis', 'Performance tracking', 'Decision support']
+    },
+    {
+      id: 'contract-generator' as ToolType,
+      title: 'Contract Generator',
+      description: 'Generate professional contracts and agreements',
+      icon: FileText,
+      color: 'bg-purple-700',
+      benefits: ['Professional templates', 'Multiple contract types', 'Legal framework']
+    },
+    {
+      id: 'privacy-policy-generator' as ToolType,
+      title: 'Privacy Policy Generator',
+      description: 'Create GDPR-compliant privacy policies',
+      icon: Shield,
+      color: 'bg-green-700',
+      benefits: ['GDPR compliant', 'Customizable sections', 'Legal protection']
+    },
+    {
+      id: 'document-templates' as ToolType,
+      title: 'Document Template Library',
+      description: 'Access professional business document templates',
+      icon: File,
+      color: 'bg-blue-700',
+      benefits: ['Professional templates', 'Multiple categories', 'Ready to use']
     },
     {
       id: 'cost-calculator' as ToolType,
@@ -185,6 +212,12 @@ const BusinessTools = () => {
         return <InvoiceGenerator />;
       case 'roi-calculator':
         return <ROICalculator />;
+      case 'contract-generator':
+        return <ContractGenerator />;
+      case 'privacy-policy-generator':
+        return <PrivacyPolicyGenerator />;
+      case 'document-templates':
+        return <DocumentTemplateLibrary />;
       case 'cost-calculator':
         return <CostCalculator />;
       case 'setup-checklist':
