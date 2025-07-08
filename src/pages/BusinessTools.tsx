@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users } from 'lucide-react';
+import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -13,14 +13,23 @@ import BusinessResources from '@/components/BusinessResources';
 import QuoteInvoiceCreationSection from '@/components/QuoteInvoiceCreationSection';
 import ProjectManagement from '@/components/ProjectManagement';
 import CRM from '@/components/CRM';
+import TodoList from '@/components/TodoList';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice' | 'project-management' | 'crm';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice' | 'project-management' | 'crm' | 'todo-list';
 
 const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
   const navigate = useNavigate();
 
   const tools = [
+    {
+      id: 'todo-list' as ToolType,
+      title: 'To-Do List',
+      description: 'Organize and track your tasks efficiently',
+      icon: ListTodo,
+      color: 'bg-green-600',
+      benefits: ['Stay organized', 'Track progress', 'Boost productivity']
+    },
     {
       id: 'cost-calculator' as ToolType,
       title: 'Cost Calculator',
@@ -97,6 +106,8 @@ const BusinessTools = () => {
 
   const renderTool = () => {
     switch (currentTool) {
+      case 'todo-list':
+        return <TodoList />;
       case 'cost-calculator':
         return <CostCalculator />;
       case 'setup-checklist':
