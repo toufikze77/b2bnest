@@ -152,6 +152,81 @@ export type Database = {
         }
         Relationships: []
       }
+      companies: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          founded_year: number | null
+          id: string
+          industry: string | null
+          location: string | null
+          logo_url: string | null
+          name: string
+          size: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          founded_year?: number | null
+          id?: string
+          industry?: string | null
+          location?: string | null
+          logo_url?: string | null
+          name: string
+          size?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          founded_year?: number | null
+          id?: string
+          industry?: string | null
+          location?: string | null
+          logo_url?: string | null
+          name?: string
+          size?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      connections: {
+        Row: {
+          addressee_id: string
+          created_at: string
+          id: string
+          message: string | null
+          requester_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          addressee_id: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          requester_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          addressee_id?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          requester_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       crm_contacts: {
         Row: {
           company: string | null
@@ -480,6 +555,65 @@ export type Database = {
         }
         Relationships: []
       }
+      job_postings: {
+        Row: {
+          application_url: string | null
+          benefits: string[] | null
+          company_id: string | null
+          created_at: string
+          description: string
+          id: string
+          is_active: boolean | null
+          job_type: string | null
+          location: string | null
+          posted_by: string
+          requirements: string[] | null
+          salary_range: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          application_url?: string | null
+          benefits?: string[] | null
+          company_id?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          is_active?: boolean | null
+          job_type?: string | null
+          location?: string | null
+          posted_by: string
+          requirements?: string[] | null
+          salary_range?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          application_url?: string | null
+          benefits?: string[] | null
+          company_id?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          is_active?: boolean | null
+          job_type?: string | null
+          location?: string | null
+          posted_by?: string
+          requirements?: string[] | null
+          salary_range?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_postings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -509,6 +643,70 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      post_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_likes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -641,6 +839,59 @@ export type Database = {
           valid_until?: string | null
         }
         Relationships: []
+      }
+      social_posts: {
+        Row: {
+          comment_count: number | null
+          company_id: string | null
+          content: string
+          created_at: string
+          id: string
+          is_public: boolean | null
+          like_count: number | null
+          media_urls: string[] | null
+          post_type: string | null
+          share_count: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment_count?: number | null
+          company_id?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          like_count?: number | null
+          media_urls?: string[] | null
+          post_type?: string | null
+          share_count?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment_count?: number | null
+          company_id?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          like_count?: number | null
+          media_urls?: string[] | null
+          post_type?: string | null
+          share_count?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_posts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscribers: {
         Row: {
