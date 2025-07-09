@@ -1,31 +1,35 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { 
   Heart, 
   MessageCircle, 
   Share2, 
-  Plus, 
-  Briefcase, 
+  Calendar, 
   MapPin, 
   Users, 
-  Search,
-  TrendingUp,
-  Building2,
+  TrendingUp, 
   UserPlus,
+  Building,
+  Briefcase,
   Send,
+  Plus,
+  MoreHorizontal,
+  Edit,
+  Trash2,
   Image,
-  Globe,
-  Calendar
+  Building2,
+  Globe
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
+import { toast } from '@/hooks/use-toast';
 
 interface Profile {
   id: string;
@@ -63,37 +67,26 @@ interface PostComment {
 }
 
 const BusinessSocial = () => {
-  const [posts, setPosts] = useState<SocialPost[]>([]);
-  const [user, setUser] = useState<any>(null);
+  const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [posts, setPosts] = useState<SocialPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newPost, setNewPost] = useState('');
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
-  const [selectedPost, setSelectedPost] = useState<SocialPost | null>(null);
-  const [postComments, setPostComments] = useState<PostComment[]>([]);
-  const [newComment, setNewComment] = useState('');
+  const [newPost, setNewPost] = useState('');
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
-  const { toast } = useToast();
+  const [selectedPost, setSelectedPost] = useState<any>(null);
+  const [newComment, setNewComment] = useState('');
+  const [isEditPostOpen, setIsEditPostOpen] = useState(false);
+  const [editingPost, setEditingPost] = useState<any>(null);
+  const [editPostContent, setEditPostContent] = useState('');
+  const [postComments, setPostComments] = useState<PostComment[]>([]);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-      if (user) {
-        fetchProfile(user.id);
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-    });
-
+    if (user) {
+      fetchProfile(user.id);
+    }
     fetchPosts();
-
-    return () => subscription.unsubscribe();
-  }, []);
+  }, [user]);
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -197,6 +190,71 @@ const BusinessSocial = () => {
     }
   };
 
+  const editPost = async () => {
+    if (!user || !editPostContent.trim() || !editingPost) return;
+
+    try {
+      const { error } = await supabase
+        .from('social_posts')
+        .update({ content: editPostContent })
+        .eq('id', editingPost.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Your post has been updated!"
+      });
+
+      setEditPostContent('');
+      setIsEditPostOpen(false);
+      setEditingPost(null);
+      fetchPosts();
+    } catch (error) {
+      console.error('Error updating post:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update post.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deletePost = async (postId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('social_posts')
+        .delete()
+        .eq('id', postId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Your post has been deleted."
+      });
+
+      fetchPosts();
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete post.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const openEditPost = (post: any) => {
+    setEditingPost(post);
+    setEditPostContent(post.content);
+    setIsEditPostOpen(true);
+  };
+
   const toggleLike = async (postId: string, currentlyLiked: boolean) => {
     if (!user) {
       toast({
@@ -273,7 +331,7 @@ const BusinessSocial = () => {
 
       setNewComment('');
       fetchComments(selectedPost.id);
-      fetchPosts(); // Refresh to update comment count
+      fetchPosts();
     } catch (error) {
       console.error('Error creating comment:', error);
       toast({
@@ -481,31 +539,52 @@ const BusinessSocial = () => {
                 posts.map((post) => (
                   <Card key={post.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-6">
-                      {/* Post Header */}
-                      <div className="flex items-start gap-3 mb-4">
-                        <Avatar>
-                          <AvatarImage src={post.profiles?.avatar_url || ''} />
-                          <AvatarFallback>{getUserInitials(post.profiles)}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-semibold">
+                      {/* Post Header with Menu */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-start gap-3 flex-1">
+                          <Avatar>
+                            <AvatarImage src={post.profiles?.avatar_url || ''} />
+                            <AvatarFallback>{getUserInitials(post.profiles)}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-base">
                               {getUserDisplayName(post.profiles)}
                             </h4>
-                            {post.profiles?.headline && (
-                              <span className="text-gray-500 text-sm">• {post.profiles.headline}</span>
+                            {post.profiles?.company && post.profiles?.position && (
+                              <p className="text-gray-500 text-sm mb-1">
+                                {post.profiles.position} at {post.profiles.company}
+                              </p>
                             )}
-                          </div>
-                          {post.profiles?.company && (
-                            <p className="text-gray-500 text-sm mb-1">
-                              {post.profiles.position} at {post.profiles.company}
+                            <p className="text-gray-500 text-xs flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {formatDate(post.created_at)}
                             </p>
-                          )}
-                          <p className="text-gray-500 text-xs flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {formatDate(post.created_at)}
-                          </p>
+                          </div>
                         </div>
+                        
+                        {/* Post Menu - only show for user's own posts */}
+                        {user && post.user_id === user.id && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEditPost(post)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Post
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => deletePost(post.id)}
+                                className="text-red-600 focus:text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Post
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                       </div>
 
                       {/* Post Content */}
@@ -697,6 +776,39 @@ const BusinessSocial = () => {
                 </div>
               </>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Post Modal */}
+        <Dialog open={isEditPostOpen} onOpenChange={setIsEditPostOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit Post</DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <Textarea
+                placeholder="What's on your mind?"
+                value={editPostContent}
+                onChange={(e) => setEditPostContent(e.target.value)}
+                className="min-h-[120px] resize-none"
+                maxLength={5000}
+              />
+              
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">
+                  {editPostContent.length}/5000 characters
+                </span>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setIsEditPostOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={editPost} disabled={!editPostContent.trim()}>
+                    Update Post
+                  </Button>
+                </div>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
