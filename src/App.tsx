@@ -28,6 +28,8 @@ import LegalDocuments from "@/pages/categories/LegalDocuments";
 import FinancialForms from "@/pages/categories/FinancialForms";
 import MarketingMaterials from "@/pages/categories/MarketingMaterials";
 import Operations from "@/pages/categories/Operations";
+import CRMPage from "@/pages/CRMPage";
+import ProjectManagementPage from "@/pages/ProjectManagementPage";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +65,8 @@ function App() {
               <Route path="/categories/financial-forms" element={<FinancialForms />} />
               <Route path="/categories/marketing-materials" element={<MarketingMaterials />} />
               <Route path="/categories/operations" element={<Operations />} />
+              <Route path="/crm" element={<CRMPage />} />
+              <Route path="/project-management" element={<ProjectManagementPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <Toaster />

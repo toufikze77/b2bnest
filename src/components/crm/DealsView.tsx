@@ -2,21 +2,28 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
+// Updated interface to match database schema
 interface Deal {
   id: string;
   title: string;
-  value: number;
-  stage: 'prospecting' | 'qualification' | 'proposal' | 'negotiation' | 'closed';
-  contact: string;
-  probability: number;
-  closeDate: Date;
+  value: number | null;
+  stage: string | null;
+  contact_id: string | null;
+  probability: number | null;
+  close_date: string | null;
+  user_id: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 interface DealsViewProps {
   deals: Deal[];
+  onAddDeal?: (dealData: Partial<Deal>) => Promise<Deal | undefined>;
+  onRefresh?: () => Promise<void>;
 }
 
-const DealsView = ({ deals }: DealsViewProps) => {
+const DealsView = ({ deals, onAddDeal, onRefresh }: DealsViewProps) => {
   const stageColumns = [
     { id: 'prospecting', title: 'Prospecting', color: 'bg-gray-100' },
     { id: 'qualification', title: 'Qualification', color: 'bg-blue-100' },
@@ -42,15 +49,17 @@ const DealsView = ({ deals }: DealsViewProps) => {
                 <Card key={deal.id} className="cursor-pointer hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
                     <h4 className="font-medium mb-2">{deal.title}</h4>
-                    <p className="text-sm text-gray-600 mb-2">{deal.contact}</p>
+                    <p className="text-sm text-gray-600 mb-2">
+                      {deal.contact_id ? `Contact ID: ${deal.contact_id}` : 'No contact assigned'}
+                    </p>
                     <div className="flex justify-between items-center mb-2">
                       <span className="font-semibold text-green-600">
-                        ${deal.value.toLocaleString()}
+                        ${(deal.value || 0).toLocaleString()}
                       </span>
-                      <Badge variant="outline">{deal.probability}%</Badge>
+                      <Badge variant="outline">{deal.probability || 0}%</Badge>
                     </div>
                     <div className="text-xs text-gray-500">
-                      Close: {deal.closeDate.toLocaleDateString()}
+                      Close: {deal.close_date ? new Date(deal.close_date).toLocaleDateString() : 'No date set'}
                     </div>
                   </CardContent>
                 </Card>

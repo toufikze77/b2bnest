@@ -1,4 +1,4 @@
-
+import React from 'react';
 import { SearchProvider, useSearch } from "@/contexts/SearchContext";
 import { templateService } from "@/services/templateService";
 import HeroSection from "@/components/HeroSection";
@@ -13,7 +13,6 @@ import ProvisionalServicesSlideshow from "@/components/ProvisionalServicesSlides
 import AIDocumentAssistant from "@/components/AIDocumentAssistant";
 import AIInvestmentShowcase from "@/components/AIInvestmentShowcase";
 import BusinessToolsSection from "@/components/BusinessToolsSection";
-
 import { Template } from "@/types/template";
 
 const IndexContent = () => {

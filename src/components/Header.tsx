@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, User, LogOut, Settings, BarChart3 } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, BarChart3, Users, KanbanSquare } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -45,6 +45,27 @@ const Header = () => {
             <Link to="/business-tools" className="text-gray-700 hover:text-blue-600 transition-colors">
               Business Tools
             </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <span className="text-gray-700 hover:text-blue-600 transition-colors cursor-pointer font-medium bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
+                  Management ✨
+                </span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link to="/crm" className="w-full flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    CRM
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/project-management" className="w-full flex items-center gap-2">
+                    <KanbanSquare className="w-4 h-4" />
+                    Project Management
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Link to="/ai-studio" className="text-gray-700 hover:text-blue-600 transition-colors font-medium bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
               AI Studio ✨
             </Link>
@@ -153,6 +174,27 @@ const Header = () => {
               >
                 Business Tools
               </Link>
+              <div className="px-2">
+                <div className="font-medium text-gray-900 mb-2">Management ✨</div>
+                <div className="pl-4 space-y-2">
+                  <Link
+                    to="/crm"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center gap-2"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Users className="w-4 h-4" />
+                    CRM
+                  </Link>
+                  <Link
+                    to="/project-management"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center gap-2"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <KanbanSquare className="w-4 h-4" />
+                    Project Management
+                  </Link>
+                </div>
+              </div>
               <Link
                 to="/ai-showcase"
                 className="text-gray-700 hover:text-blue-600 transition-colors px-2"

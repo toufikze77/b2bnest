@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
+import SubscriptionUpgrade from './SubscriptionUpgrade';
 import { 
   Plus, 
   Calendar as CalendarIcon, 
@@ -69,7 +74,8 @@ import {
   Lightbulb,
   Rocket,
   HardDrive,
-  Cloud
+  Cloud,
+  Loader2
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -187,6 +193,10 @@ interface Integration {
 }
 
 const ProjectManagement = () => {
+  const { user } = useAuth();
+  const { canAccessFeature } = useSubscription();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<'kanban' | 'list' | 'calendar' | 'timeline'>('kanban');
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedProject, setSelectedProject] = useState('all');
@@ -194,6 +204,37 @@ const ProjectManagement = () => {
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showAutomationBuilder, setShowAutomationBuilder] = useState(false);
+
+  // Check if user can access Project Management features
+  const canAccessPM = canAccessFeature('project-management');
+
+  useEffect(() => {
+    if (user && canAccessPM) {
+      // Future: Load project data from database
+      setLoading(false);
+    } else {
+      setLoading(false);
+    }
+  }, [user, canAccessPM]);
+
+  if (!canAccessPM) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <SubscriptionUpgrade 
+          featureName="Project Management" 
+          onUpgrade={() => window.location.reload()}
+        />
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto p-6 flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin" />
+      </div>
+    );
+  }
 
   // Sample data with enhanced features
   const [projects, setProjects] = useState<Project[]>([

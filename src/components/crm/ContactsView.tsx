@@ -14,25 +14,33 @@ import {
   MoreHorizontal
 } from 'lucide-react';
 
+// Updated interface to match database schema
 interface Contact {
   id: string;
   name: string;
-  email: string;
-  phone: string;
-  company: string;
-  position: string;
-  status: 'lead' | 'prospect' | 'customer';
-  value: number;
-  lastContact: Date;
-  source: string;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
+  position: string | null;
+  status: string | null;
+  value: number | null;
+  last_contact: string | null;
+  source: string | null;
+  user_id: string;
+  notes: string | null;
+  tags: string[] | null;
+  created_at: string;
+  updated_at: string;
 }
 
 interface ContactsViewProps {
   contacts: Contact[];
   statusColors: Record<string, string>;
+  onAddContact?: (contactData: Partial<Contact>) => Promise<Contact | undefined>;
+  onRefresh?: () => Promise<void>;
 }
 
-const ContactsView = ({ contacts, statusColors }: ContactsViewProps) => {
+const ContactsView = ({ contacts, statusColors, onAddContact, onRefresh }: ContactsViewProps) => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -87,29 +95,37 @@ const ContactsView = ({ contacts, statusColors }: ContactsViewProps) => {
                       {contact.name.split(' ').map(n => n[0]).join('')}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
+                   <div>
                     <h3 className="font-semibold">{contact.name}</h3>
-                    <p className="text-sm text-gray-600">{contact.position} at {contact.company}</p>
+                    <p className="text-sm text-gray-600">
+                      {contact.position && contact.company ? `${contact.position} at ${contact.company}` : contact.position || contact.company || 'No company specified'}
+                    </p>
                     <div className="flex items-center gap-4 mt-2">
-                      <div className="flex items-center gap-1 text-sm text-gray-500">
-                        <Mail className="w-4 h-4" />
-                        {contact.email}
-                      </div>
-                      <div className="flex items-center gap-1 text-sm text-gray-500">
-                        <Phone className="w-4 h-4" />
-                        {contact.phone}
-                      </div>
+                      {contact.email && (
+                        <div className="flex items-center gap-1 text-sm text-gray-500">
+                          <Mail className="w-4 h-4" />
+                          {contact.email}
+                        </div>
+                      )}
+                      {contact.phone && (
+                        <div className="flex items-center gap-1 text-sm text-gray-500">
+                          <Phone className="w-4 h-4" />
+                          {contact.phone}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="font-semibold">${contact.value.toLocaleString()}</p>
+                    <p className="font-semibold">${(contact.value || 0).toLocaleString()}</p>
                     <p className="text-sm text-gray-500">Potential Value</p>
                   </div>
-                  <Badge className={`text-white ${statusColors[contact.status]}`}>
-                    {contact.status}
-                  </Badge>
+                  {contact.status && (
+                    <Badge className={`text-white ${statusColors[contact.status] || 'bg-gray-500'}`}>
+                      {contact.status}
+                    </Badge>
+                  )}
                   <Button variant="ghost" size="sm">
                     <MoreHorizontal className="w-4 h-4" />
                   </Button>
