@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface SubscriptionData {
@@ -11,6 +12,7 @@ export interface SubscriptionData {
 
 export const useSubscription = () => {
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
   const [subscription, setSubscription] = useState<SubscriptionData>({
     subscribed: false,
     subscription_tier: 'free',
@@ -80,8 +82,11 @@ export const useSubscription = () => {
     fetchSubscription();
   }, [user]);
 
-  const isPremium = subscription.subscribed && subscription.subscription_tier !== 'free';
+  const isPremium = isAdmin || (subscription.subscribed && subscription.subscription_tier !== 'free');
   const canAccessFeature = (featureId: string) => {
+    // Admin users have access to all features
+    if (isAdmin) return true;
+    
     // AI Business Advisor is free for everyone
     if (featureId === 'advisor') return true;
     
