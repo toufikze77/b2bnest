@@ -1,64 +1,138 @@
 
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, FileText, Users, Shield, Clock, CheckCircle, Star } from "lucide-react";
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  FileText, 
+  Users, 
+  Shield, 
+  Clock, 
+  CheckCircle, 
+  Star,
+  Kanban,
+  Target,
+  UserCheck,
+  BarChart3,
+  Calendar,
+  MessageSquare,
+  Briefcase,
+  TrendingUp,
+  Layers,
+  Zap
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const projectShowcases = [
   {
     id: 1,
-    title: "E-Commerce Platform",
-    description: "Full-featured online store with inventory management, payment processing, and customer analytics dashboard.",
-    icon: FileText,
-    features: ["Payment Integration", "Inventory Management", "Customer Analytics", "Mobile Responsive"],
-    image: "photo-1556742049-0cfed4f6a45d",
-    techStack: ["React", "Supabase", "Stripe", "Tailwind CSS"],
-    liveUrl: "https://ecommerce-demo.lovableproject.com",
-    category: "E-Commerce"
+    title: "Project Management Hub",
+    description: "Comprehensive project management platform with kanban boards, gantt charts, team collaboration, and automated workflows.",
+    icon: Kanban,
+    features: ["Kanban Boards", "Gantt Charts", "Team Collaboration", "Automated Workflows"],
+    image: "photo-1611224923853-80b023f02d71",
+    techStack: ["React", "Supabase", "Real-time Sync", "Drag & Drop"],
+    liveUrl: "https://project-management-demo.lovableproject.com",
+    category: "Project Management"
   },
   {
     id: 2,
-    title: "SaaS Dashboard",
-    description: "Professional SaaS application with user management, subscription billing, and real-time analytics.",
-    icon: Users,
-    features: ["User Authentication", "Subscription Management", "Real-time Analytics", "Team Collaboration"],
-    image: "photo-1551288049-bebda4e38f71",
-    techStack: ["React", "Supabase", "PayPal", "Charts"],
-    liveUrl: "https://saas-dashboard-demo.lovableproject.com",
-    category: "SaaS"
+    title: "CRM Sales Pipeline",
+    description: "Advanced CRM system for managing leads, deals, customer relationships, and sales performance analytics.",
+    icon: Target,
+    features: ["Lead Management", "Sales Pipeline", "Customer Analytics", "Revenue Forecasting"],
+    image: "photo-1460925895917-afdab827c52f",
+    techStack: ["React", "Supabase", "Analytics", "Email Integration"],
+    liveUrl: "https://crm-sales-demo.lovableproject.com",
+    category: "CRM & Sales"
   },
   {
     id: 3,
-    title: "Portfolio Website",
-    description: "Modern portfolio site with project showcases, contact forms, and blog functionality.",
-    icon: Shield,
-    features: ["Project Gallery", "Contact Integration", "Blog System", "SEO Optimized"],
-    image: "photo-1467232004584-a241de8bcf5d",
-    techStack: ["React", "Supabase", "Email API", "Responsive Design"],
-    liveUrl: "https://portfolio-demo.lovableproject.com",
-    category: "Portfolio"
+    title: "HR Management System",
+    description: "Complete HR solution for employee management, recruitment, performance tracking, and payroll processing.",
+    icon: UserCheck,
+    features: ["Employee Records", "Recruitment Portal", "Performance Reviews", "Payroll Integration"],
+    image: "photo-1521737711867-e3b97375f902",
+    techStack: ["React", "Supabase", "File Storage", "Notification System"],
+    liveUrl: "https://hr-management-demo.lovableproject.com",
+    category: "Human Resources"
   },
   {
     id: 4,
-    title: "Restaurant Management",
-    description: "Complete restaurant solution with menu management, online ordering, and table reservations.",
-    icon: Clock,
-    features: ["Menu Management", "Online Ordering", "Table Reservations", "Staff Dashboard"],
-    image: "photo-1517248135467-4c7edcad34c4",
-    techStack: ["React", "Supabase", "Payment Gateway", "Real-time Updates"],
-    liveUrl: "https://restaurant-demo.lovableproject.com",
-    category: "Food & Beverage"
+    title: "Marketing Campaign Manager",
+    description: "Integrated marketing platform for campaign management, social media scheduling, and performance analytics.",
+    icon: TrendingUp,
+    features: ["Campaign Planning", "Social Media Scheduler", "Analytics Dashboard", "Content Calendar"],
+    image: "photo-1432888622747-4eb9a8efeb07",
+    techStack: ["React", "Supabase", "Social APIs", "Chart Libraries"],
+    liveUrl: "https://marketing-manager-demo.lovableproject.com",
+    category: "Marketing"
   },
   {
     id: 5,
-    title: "Learning Management System",
-    description: "Educational platform with course management, student tracking, and interactive assessments.",
-    icon: CheckCircle,
-    features: ["Course Creation", "Student Progress", "Interactive Quizzes", "Certification System"],
-    image: "photo-1522202176988-66273c2fd55f",
-    techStack: ["React", "Supabase", "Video Streaming", "Progress Tracking"],
-    liveUrl: "https://lms-demo.lovableproject.com",
-    category: "Education"
+    title: "Customer Support Portal",
+    description: "Comprehensive support system with ticketing, knowledge base, live chat, and customer satisfaction tracking.",
+    icon: MessageSquare,
+    features: ["Ticket Management", "Knowledge Base", "Live Chat", "Customer Ratings"],
+    image: "photo-1553484771-371a605b060b",
+    techStack: ["React", "Supabase", "Real-time Chat", "Search Engine"],
+    liveUrl: "https://support-portal-demo.lovableproject.com",
+    category: "Customer Support"
+  },
+  {
+    id: 6,
+    title: "Event Management Platform",
+    description: "Full-featured event planning system with registration, scheduling, attendee management, and analytics.",
+    icon: Calendar,
+    features: ["Event Registration", "Schedule Management", "Attendee Tracking", "Event Analytics"],
+    image: "photo-1505236858219-8359eb29e329",
+    techStack: ["React", "Supabase", "Payment Processing", "QR Codes"],
+    liveUrl: "https://event-management-demo.lovableproject.com",
+    category: "Event Management"
+  },
+  {
+    id: 7,
+    title: "Financial Dashboard",
+    description: "Advanced financial management with budget tracking, expense monitoring, financial reporting, and forecasting.",
+    icon: BarChart3,
+    features: ["Budget Tracking", "Expense Management", "Financial Reports", "Forecasting Tools"],
+    image: "photo-1554224155-6726b3ff858f",
+    techStack: ["React", "Supabase", "Chart.js", "Export Tools"],
+    liveUrl: "https://financial-dashboard-demo.lovableproject.com",
+    category: "Finance"
+  },
+  {
+    id: 8,
+    title: "Inventory Control System",
+    description: "Smart inventory management with real-time tracking, automated reordering, and supplier management.",
+    icon: Layers,
+    features: ["Real-time Tracking", "Auto Reordering", "Supplier Management", "Barcode Scanning"],
+    image: "photo-1586528116311-ad8dd3c8310d",
+    techStack: ["React", "Supabase", "Barcode API", "Automation"],
+    liveUrl: "https://inventory-control-demo.lovableproject.com",
+    category: "Inventory"
+  },
+  {
+    id: 9,
+    title: "Workflow Automation Suite",
+    description: "Powerful automation platform for creating custom workflows, integrations, and business process automation.",
+    icon: Zap,
+    features: ["Workflow Builder", "API Integrations", "Process Automation", "Custom Triggers"],
+    image: "photo-1518186285589-2f7649de83e0",
+    techStack: ["React", "Supabase", "Webhook API", "Flow Builder"],
+    liveUrl: "https://workflow-automation-demo.lovableproject.com",
+    category: "Automation"
+  },
+  {
+    id: 10,
+    title: "Resource Planning Dashboard",
+    description: "Enterprise resource planning with resource allocation, capacity planning, and performance optimization.",
+    icon: Briefcase,
+    features: ["Resource Allocation", "Capacity Planning", "Performance Metrics", "Optimization Tools"],
+    image: "photo-1507003211169-0a1dd7228f2d",
+    techStack: ["React", "Supabase", "Advanced Analytics", "Planning Tools"],
+    liveUrl: "https://resource-planning-demo.lovableproject.com",
+    category: "Enterprise Planning"
   }
 ];
 
