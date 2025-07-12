@@ -39,16 +39,16 @@ const Header = () => {
             <Link to="/" className="text-gray-700 hover:text-blue-600 transition-colors">
               Home
             </Link>
-            <Link to="/business-social" className="text-gray-700 hover:text-blue-600 transition-colors font-medium bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-              Business Social ✨
+            <Link to="/business-social" className="text-gray-700 hover:text-blue-600 transition-colors">
+              Business Social
             </Link>
             <Link to="/business-tools" className="text-gray-700 hover:text-blue-600 transition-colors">
               Business Tools
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <span className="text-gray-700 hover:text-blue-600 transition-colors cursor-pointer font-medium bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-                  Management ✨
+                <span className="text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">
+                  Management
                 </span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -66,8 +66,8 @@ const Header = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Link to="/ai-studio" className="text-gray-700 hover:text-blue-600 transition-colors font-medium bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-              AI Studio ✨
+            <Link to="/ai-studio" className="text-gray-700 hover:text-blue-600 transition-colors">
+              AI Studio
             </Link>
             <Link to="/ai-showcase" className="text-gray-700 hover:text-blue-600 transition-colors">
               AI-Powered
@@ -162,10 +162,10 @@ const Header = () => {
               </Link>
               <Link
                 to="/business-social"
-                className="text-gray-700 hover:text-blue-600 transition-colors px-2 font-medium"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Business Social ✨
+                Business Social
               </Link>
               <Link
                 to="/business-tools"
@@ -175,7 +175,7 @@ const Header = () => {
                 Business Tools
               </Link>
               <div className="px-2">
-                <div className="font-medium text-gray-900 mb-2">Management ✨</div>
+                <div className="font-medium text-gray-900 mb-2">Management</div>
                 <div className="pl-4 space-y-2">
                   <Link
                     to="/crm"
@@ -195,6 +195,13 @@ const Header = () => {
                   </Link>
                 </div>
               </div>
+              <Link
+                to="/ai-studio"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                AI Studio
+              </Link>
               <Link
                 to="/ai-showcase"
                 className="text-gray-700 hover:text-blue-600 transition-colors px-2"
