@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { userDocumentService } from '@/services/userDocumentService';
 import { toast } from '@/components/ui/use-toast';
+import AccountSettings from '@/components/AccountSettings';
 
 const UserDashboard = () => {
   const { user } = useAuth();
@@ -173,9 +174,10 @@ const UserDashboard = () => {
 
         {/* Tabs for different sections */}
         <Tabs defaultValue="purchases" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="purchases">My Purchases</TabsTrigger>
             <TabsTrigger value="favorites">My Favorites</TabsTrigger>
+            <TabsTrigger value="settings">Account Settings</TabsTrigger>
           </TabsList>
           
           <TabsContent value="purchases" className="space-y-4">
@@ -297,6 +299,10 @@ const UserDashboard = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="settings" className="space-y-4">
+            <AccountSettings />
           </TabsContent>
         </Tabs>
       </div>
