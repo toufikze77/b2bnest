@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -145,17 +145,25 @@ const Auth = () => {
               </Button>
             </form>
 
-            <div className="mt-6 text-center">
+            <div className="mt-6 text-center space-y-2">
               <button
                 type="button"
                 onClick={() => setIsLogin(!isLogin)}
-                className="text-blue-600 hover:text-blue-700 text-sm"
+                className="text-blue-600 hover:text-blue-700 text-sm block w-full"
               >
                 {isLogin 
                   ? "Don't have an account? Sign up" 
                   : 'Already have an account? Sign in'
                 }
               </button>
+              {isLogin && (
+                <Link 
+                  to="/forgot-password" 
+                  className="text-blue-600 hover:text-blue-700 text-sm block"
+                >
+                  Forgot your password?
+                </Link>
+              )}
             </div>
 
             {!isLogin && (
