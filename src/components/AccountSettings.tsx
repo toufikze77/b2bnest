@@ -36,7 +36,7 @@ const AccountSettings = () => {
         .from('user_2fa_settings')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching 2FA settings:', error);
@@ -109,26 +109,34 @@ const AccountSettings = () => {
     setIsLoading2FA(true);
     
     try {
-      const { error } = await supabase.functions.invoke('send-2fa-code', {
-        body: {
-          email: user.email,
-          codeType: 'setup_2fa',
-          userId: user.id
-        }
-      });
+      // Generate a simple 6-digit code and store it locally for verification
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-      if (error) throw error;
+      // Store code in database
+      const { error: codeError } = await supabase
+        .from('user_2fa_codes')
+        .insert({
+          user_id: user.id,
+          code,
+          code_type: 'setup_2fa',
+          expires_at: expiresAt.toISOString()
+        });
 
+      if (codeError) throw codeError;
+
+      // Send code via browser notification or store for demo purposes
+      // For a production app, you'd integrate with a free email service
       setIsVerifying2FA(true);
       toast({
-        title: "Verification Code Sent",
-        description: "Check your email for the 6-digit verification code."
+        title: "Verification Code Generated",
+        description: `Your verification code is: ${code} (This is for demo - in production this would be sent via email)`
       });
     } catch (error) {
-      console.error('Error sending 2FA code:', error);
+      console.error('Error generating 2FA code:', error);
       toast({
-        title: "Error",
-        description: "Failed to send verification code. Please try again.",
+        title: "Error", 
+        description: "Failed to generate verification code. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -151,7 +159,7 @@ const AccountSettings = () => {
         .eq('code_type', 'setup_2fa')
         .eq('used', false)
         .gte('expires_at', new Date().toISOString())
-        .single();
+        .maybeSingle();
 
       if (codeError || !codeData) {
         toast({
@@ -341,7 +349,7 @@ const AccountSettings = () => {
             <div className="space-y-4 p-4 bg-muted rounded-lg">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Mail className="h-4 w-4" />
-                We've sent a verification code to {user.email}
+                Verification code generated (check the notification above)
               </div>
               
               <div className="space-y-2">
