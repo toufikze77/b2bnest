@@ -60,6 +60,7 @@ const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('🔥 Form submitted!', { isLogin, email, password, fullName });
+    console.log('🔥 Current auth state:', { showTwoFactor, twoFactorEmail, isVerification });
     setIsSubmitting(true);
 
     try {
