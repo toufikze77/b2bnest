@@ -78,7 +78,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       console.log('🔐 Starting sign-in process for:', email);
       
-      // First, try to authenticate the user to verify credentials
+      // Simple authentication without 2FA
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -89,30 +89,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return { error: authError };
       }
 
-      console.log('✅ Password authentication successful for user:', authData.user.id);
+      console.log('✅ Authentication successful for user:', authData.user.id);
       
-      // Check if this user has 2FA enabled (all users should have it enabled by default)
-      const { data: user2FAData, error: settingsError } = await supabase
-        .from('user_2fa_settings')
-        .select('is_enabled')
-        .eq('user_id', authData.user.id)
-        .single();
-
-      console.log('🔒 2FA settings check:', { user2FAData, settingsError });
-
-      // Since all users should have 2FA enabled, always require it
-      // Sign them out and require 2FA verification
-      await supabase.auth.signOut();
-      console.log('🚪 Signed out user to require 2FA');
-      
-      const { error: codeError } = await sendVerificationCode(email, 'login');
-      if (codeError) {
-        console.log('❌ Error sending verification code:', codeError);
-        return { error: codeError };
-      }
-      
-      console.log('📧 2FA code sent, requiring verification');
-      return { error: null, needs2FA: true, email };
+      // No 2FA - user is signed in
+      return { error: null };
     } catch (error) {
       console.log('❌ Unexpected error in signIn:', error);
       return { error };
