@@ -32,6 +32,7 @@ import MarketingMaterials from "@/pages/categories/MarketingMaterials";
 import Operations from "@/pages/categories/Operations";
 import CRMPage from "@/pages/CRMPage";
 import ProjectManagementPage from "@/pages/ProjectManagementPage";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -50,9 +51,9 @@ function App() {
               <Route path="/auth" element={<Auth />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/business-social" element={<BusinessSocial />} />
-            <Route path="/profile-setup" element={<ProfileSetup />} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/business-social" element={<ProtectedRoute><BusinessSocial /></ProtectedRoute>} />
+            <Route path="/profile-setup" element={<ProtectedRoute><ProfileSetup /></ProtectedRoute>} />
               <Route path="/business-tools" element={<BusinessTools />} />
               <Route path="/ai-showcase" element={<AIShowcase />} />
               <Route path="/ai-studio" element={<AIStudio />} />
@@ -69,8 +70,8 @@ function App() {
               <Route path="/categories/financial-forms" element={<FinancialForms />} />
               <Route path="/categories/marketing-materials" element={<MarketingMaterials />} />
               <Route path="/categories/operations" element={<Operations />} />
-              <Route path="/crm" element={<CRMPage />} />
-              <Route path="/project-management" element={<ProjectManagementPage />} />
+              <Route path="/crm" element={<ProtectedRoute><CRMPage /></ProtectedRoute>} />
+              <Route path="/project-management" element={<ProtectedRoute><ProjectManagementPage /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <Toaster />
