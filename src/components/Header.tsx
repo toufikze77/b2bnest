@@ -140,12 +140,12 @@ const Header = () => {
             ) : (
               <div className="flex items-center space-x-2">
                 <Link to="/auth">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="bg-primary/10 border-primary text-primary hover:bg-primary hover:text-primary-foreground">
                     Sign In
                   </Button>
                 </Link>
                 <Link to="/auth">
-                  <Button size="sm">
+                  <Button size="sm" className="bg-primary hover:bg-primary/90 animate-pulse">
                     Sign Up
                   </Button>
                 </Link>
