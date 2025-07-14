@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { FileText, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import TwoFactorAuth from '@/components/TwoFactorAuth';
 
 const Auth = () => {
@@ -33,6 +33,7 @@ const Auth = () => {
 
   // Show 2FA screen if needed
   console.log('🔒 Auth state check:', { showTwoFactor, twoFactorEmail, isVerification });
+  console.log('🔒 showTwoFactor type:', typeof showTwoFactor, 'value:', showTwoFactor);
   if (showTwoFactor) {
     console.log('🔒 Rendering TwoFactorAuth component');
     return (
