@@ -87,8 +87,8 @@ export const useSubscription = () => {
     // Admin users have access to all features
     if (isAdmin) return true;
     
-    // AI Business Advisor is free for everyone
-    if (featureId === 'advisor') return true;
+    // Free features available to all users
+    if (['advisor', 'crm', 'contacts', 'deals'].includes(featureId)) return true;
     
     // Other features require premium subscription
     return isPremium;

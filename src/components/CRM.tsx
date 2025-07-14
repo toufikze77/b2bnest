@@ -81,21 +81,37 @@ const CRM = () => {
     try {
       setLoading(true);
       
+      if (!user?.id) {
+        console.log('No user ID available for fetching CRM data');
+        return;
+      }
+
+      console.log('Fetching CRM data for user:', user.id);
+      
       // Fetch contacts
       const { data: contactsData, error: contactsError } = await supabase
         .from('crm_contacts')
         .select('*')
-        .eq('user_id', user?.id);
+        .eq('user_id', user.id);
 
-      if (contactsError) throw contactsError;
+      if (contactsError) {
+        console.error('Error fetching contacts:', contactsError);
+        throw contactsError;
+      }
 
       // Fetch deals
       const { data: dealsData, error: dealsError } = await supabase
         .from('crm_deals')
         .select('*')
-        .eq('user_id', user?.id);
+        .eq('user_id', user.id);
 
-      if (dealsError) throw dealsError;
+      if (dealsError) {
+        console.error('Error fetching deals:', dealsError);
+        throw dealsError;
+      }
+
+      console.log('Fetched contacts:', contactsData?.length || 0);
+      console.log('Fetched deals:', dealsData?.length || 0);
 
       setContacts(contactsData || []);
       setDeals(dealsData || []);
@@ -113,24 +129,38 @@ const CRM = () => {
 
   const addContact = async (contactData: Partial<Contact>) => {
     try {
+      console.log('Adding contact with data:', contactData);
+      
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+
+      const insertData = {
+        name: contactData.name || '',
+        email: contactData.email || null,
+        phone: contactData.phone || null,
+        company: contactData.company || null,
+        position: contactData.position || null,
+        status: contactData.status || 'lead',
+        value: contactData.value || 0,
+        source: contactData.source || null,
+        user_id: user.id
+      };
+
+      console.log('Insert data:', insertData);
+
       const { data, error } = await supabase
         .from('crm_contacts')
-        .insert({
-          name: contactData.name || '',
-          email: contactData.email,
-          phone: contactData.phone,
-          company: contactData.company,
-          position: contactData.position,
-          status: contactData.status || 'lead',
-          value: contactData.value || 0,
-          source: contactData.source,
-          user_id: user?.id
-        })
+        .insert(insertData)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
+      console.log('Contact added successfully:', data);
       setContacts(prev => [...prev, data]);
       toast({
         title: "Success",
@@ -141,7 +171,7 @@ const CRM = () => {
       console.error('Error adding contact:', error);
       toast({
         title: "Error",
-        description: "Failed to add contact. Please try again.",
+        description: `Failed to add contact: ${error.message}`,
         variant: "destructive"
       });
     }
@@ -149,23 +179,37 @@ const CRM = () => {
 
   const addDeal = async (dealData: Partial<Deal>) => {
     try {
+      console.log('Adding deal with data:', dealData);
+      
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+
+      const insertData = {
+        title: dealData.title || '',
+        value: dealData.value || 0,
+        stage: dealData.stage || 'prospecting',
+        contact_id: dealData.contact_id || null,
+        probability: dealData.probability || 50,
+        close_date: dealData.close_date || null,
+        notes: dealData.notes || null,
+        user_id: user.id
+      };
+
+      console.log('Insert deal data:', insertData);
+
       const { data, error } = await supabase
         .from('crm_deals')
-        .insert({
-          title: dealData.title || '',
-          value: dealData.value || 0,
-          stage: dealData.stage || 'prospecting',
-          contact_id: dealData.contact_id,
-          probability: dealData.probability || 50,
-          close_date: dealData.close_date,
-          notes: dealData.notes,
-          user_id: user?.id
-        })
+        .insert(insertData)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
+      console.log('Deal added successfully:', data);
       setDeals(prev => [...prev, data]);
       toast({
         title: "Success",
@@ -176,7 +220,7 @@ const CRM = () => {
       console.error('Error adding deal:', error);
       toast({
         title: "Error",
-        description: "Failed to add deal. Please try again.",
+        description: `Failed to add deal: ${error.message}`,
         variant: "destructive"
       });
     }
