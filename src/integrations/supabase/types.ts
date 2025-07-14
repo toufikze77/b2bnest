@@ -944,7 +944,7 @@ export type Database = {
           expires_at: string
           id: string
           used: boolean
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           code: string
@@ -953,7 +953,7 @@ export type Database = {
           expires_at?: string
           id?: string
           used?: boolean
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           code?: string
@@ -962,7 +962,7 @@ export type Database = {
           expires_at?: string
           id?: string
           used?: boolean
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
