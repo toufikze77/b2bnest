@@ -132,22 +132,38 @@ const CRM = () => {
       console.log('Adding contact with data:', contactData);
       
       if (!user?.id) {
-        throw new Error('User not authenticated');
+        console.error('No user ID available');
+        toast({
+          title: "Error",
+          description: "You must be logged in to add contacts",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Validate required fields
+      if (!contactData.name || contactData.name.trim() === '') {
+        toast({
+          title: "Error",
+          description: "Contact name is required",
+          variant: "destructive"
+        });
+        return;
       }
 
       const insertData = {
-        name: contactData.name || '',
-        email: contactData.email || null,
-        phone: contactData.phone || null,
-        company: contactData.company || null,
-        position: contactData.position || null,
+        name: contactData.name.trim(),
+        email: contactData.email?.trim() || null,
+        phone: contactData.phone?.trim() || null,
+        company: contactData.company?.trim() || null,
+        position: contactData.position?.trim() || null,
         status: contactData.status || 'lead',
         value: contactData.value || 0,
-        source: contactData.source || null,
+        source: contactData.source?.trim() || null,
         user_id: user.id
       };
 
-      console.log('Insert data:', insertData);
+      console.log('Insert contact data:', insertData);
 
       const { data, error } = await supabase
         .from('crm_contacts')
@@ -156,16 +172,28 @@ const CRM = () => {
         .single();
 
       if (error) {
-        console.error('Supabase error:', error);
-        throw error;
+        console.error('Supabase contact error:', error);
+        toast({
+          title: "Database Error",
+          description: error.message || "Failed to save contact to database",
+          variant: "destructive"
+        });
+        return;
       }
 
       console.log('Contact added successfully:', data);
+      
+      // Update local state
       setContacts(prev => [...prev, data]);
+      
+      // Refresh data to ensure consistency
+      await fetchCRMData();
+      
       toast({
         title: "Success",
         description: "Contact added successfully!"
       });
+      
       return data;
     } catch (error) {
       console.error('Error adding contact:', error);
@@ -182,17 +210,33 @@ const CRM = () => {
       console.log('Adding deal with data:', dealData);
       
       if (!user?.id) {
-        throw new Error('User not authenticated');
+        console.error('No user ID available');
+        toast({
+          title: "Error",
+          description: "You must be logged in to add deals",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Validate required fields
+      if (!dealData.title || dealData.title.trim() === '') {
+        toast({
+          title: "Error",
+          description: "Deal title is required",
+          variant: "destructive"
+        });
+        return;
       }
 
       const insertData = {
-        title: dealData.title || '',
+        title: dealData.title.trim(),
         value: dealData.value || 0,
         stage: dealData.stage || 'prospecting',
         contact_id: dealData.contact_id || null,
         probability: dealData.probability || 50,
         close_date: dealData.close_date || null,
-        notes: dealData.notes || null,
+        notes: dealData.notes?.trim() || null,
         user_id: user.id
       };
 
@@ -205,16 +249,28 @@ const CRM = () => {
         .single();
 
       if (error) {
-        console.error('Supabase error:', error);
-        throw error;
+        console.error('Supabase deal error:', error);
+        toast({
+          title: "Database Error",
+          description: error.message || "Failed to save deal to database",
+          variant: "destructive"
+        });
+        return;
       }
 
       console.log('Deal added successfully:', data);
+      
+      // Update local state
       setDeals(prev => [...prev, data]);
+      
+      // Refresh data to ensure consistency
+      await fetchCRMData();
+      
       toast({
         title: "Success",
         description: "Deal added successfully!"
       });
+      
       return data;
     } catch (error) {
       console.error('Error adding deal:', error);
