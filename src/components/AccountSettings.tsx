@@ -29,7 +29,12 @@ const AccountSettings = () => {
   }, [user]);
 
   const fetchUser2FASettings = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user found for 2FA settings fetch');
+      return;
+    }
+    
+    console.log('Fetching 2FA settings for user:', user.id);
     
     try {
       const { data, error } = await supabase
@@ -38,16 +43,32 @@ const AccountSettings = () => {
         .eq('user_id', user.id)
         .maybeSingle();
 
+      console.log('2FA settings fetch result:', { data, error });
+
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching 2FA settings:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load 2FA settings. Please refresh the page.",
+          variant: "destructive"
+        });
         return;
       }
 
       if (data) {
+        console.log('Setting 2FA enabled to:', data.is_enabled);
         setIs2FAEnabled(data.is_enabled);
+      } else {
+        console.log('No 2FA settings found, defaulting to disabled');
+        setIs2FAEnabled(false);
       }
     } catch (error) {
       console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load 2FA settings. Please refresh the page.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -104,8 +125,12 @@ const AccountSettings = () => {
   };
 
   const handleSend2FACode = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user found for 2FA code generation');
+      return;
+    }
     
+    console.log('Generating 2FA code for user:', user.id);
     setIsLoading2FA(true);
     
     try {
@@ -113,30 +138,39 @@ const AccountSettings = () => {
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
+      console.log('Inserting 2FA code:', { code, user_id: user.id, expires_at: expiresAt.toISOString() });
+
       // Store code in database
-      const { error: codeError } = await supabase
+      const { data: insertData, error: codeError } = await supabase
         .from('user_2fa_codes')
         .insert({
           user_id: user.id,
           code,
           code_type: 'setup_2fa',
           expires_at: expiresAt.toISOString()
-        });
+        })
+        .select();
 
-      if (codeError) throw codeError;
+      console.log('2FA code insert result:', { insertData, codeError });
+
+      if (codeError) {
+        console.error('Database error inserting 2FA code:', codeError);
+        throw codeError;
+      }
 
       // Send code via browser notification or store for demo purposes
       // For a production app, you'd integrate with a free email service
       setIsVerifying2FA(true);
       toast({
         title: "Verification Code Generated",
-        description: `Your verification code is: ${code} (This is for demo - in production this would be sent via email)`
+        description: `Your verification code is: ${code} (This is for demo - in production this would be sent via email)`,
+        duration: 10000
       });
     } catch (error) {
       console.error('Error generating 2FA code:', error);
       toast({
         title: "Error", 
-        description: "Failed to generate verification code. Please try again.",
+        description: `Failed to generate verification code: ${error.message}`,
         variant: "destructive"
       });
     } finally {
@@ -145,8 +179,12 @@ const AccountSettings = () => {
   };
 
   const handleVerify2FA = async () => {
-    if (!user || verificationCode.length !== 6) return;
+    if (!user || verificationCode.length !== 6) {
+      console.log('Invalid verification attempt:', { user: !!user, codeLength: verificationCode.length });
+      return;
+    }
     
+    console.log('Verifying 2FA code:', verificationCode, 'for user:', user.id);
     setIsLoading2FA(true);
     
     try {
@@ -161,7 +199,10 @@ const AccountSettings = () => {
         .gte('expires_at', new Date().toISOString())
         .maybeSingle();
 
+      console.log('Code verification result:', { codeData, codeError });
+
       if (codeError || !codeData) {
+        console.error('Code verification failed:', codeError);
         toast({
           title: "Error",
           description: "Invalid or expired verification code.",
@@ -171,21 +212,29 @@ const AccountSettings = () => {
       }
 
       // Mark code as used
-      await supabase
+      const { error: updateError } = await supabase
         .from('user_2fa_codes')
         .update({ used: true })
         .eq('id', codeData.id);
 
+      console.log('Code update result:', updateError);
+
       // Enable 2FA
-      const { error: settingsError } = await supabase
+      const { data: settingsData, error: settingsError } = await supabase
         .from('user_2fa_settings')
         .upsert({
           user_id: user.id,
           is_enabled: true,
           email_verified: true
-        });
+        })
+        .select();
 
-      if (settingsError) throw settingsError;
+      console.log('Settings upsert result:', { settingsData, settingsError });
+
+      if (settingsError) {
+        console.error('Settings update failed:', settingsError);
+        throw settingsError;
+      }
 
       setIs2FAEnabled(true);
       setIsVerifying2FA(false);
@@ -195,11 +244,14 @@ const AccountSettings = () => {
         title: "2FA Enabled",
         description: "Two-factor authentication has been successfully enabled."
       });
+
+      // Refresh the settings
+      fetchUser2FASettings();
     } catch (error) {
       console.error('Error verifying 2FA:', error);
       toast({
         title: "Error",
-        description: "Failed to enable 2FA. Please try again.",
+        description: `Failed to enable 2FA: ${error.message}`,
         variant: "destructive"
       });
     } finally {
