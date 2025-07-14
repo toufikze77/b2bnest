@@ -8,18 +8,52 @@ import { Label } from '@/components/ui/label';
 import { FileText, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/components/ui/use-toast';
+import TwoFactorAuth from '@/components/TwoFactorAuth';
 
 const Auth = () => {
-  const { user, signIn, signUp, loading } = useAuth();
+  const { user, signIn, signUp, loading, verify2FA, sendVerificationCode } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showTwoFactor, setShowTwoFactor] = useState(false);
+  const [twoFactorEmail, setTwoFactorEmail] = useState('');
+  const [isVerification, setIsVerification] = useState(false);
 
   // Redirect if already authenticated
   if (user && !loading) {
     return <Navigate to="/" replace />;
+  }
+
+  // Show 2FA screen if needed
+  if (showTwoFactor) {
+    return (
+      <TwoFactorAuth 
+        email={twoFactorEmail}
+        isVerification={isVerification}
+        onSuccess={() => {
+          setShowTwoFactor(false);
+          setTwoFactorEmail('');
+          setIsVerification(false);
+          if (isVerification) {
+            toast({
+              title: "Email Verified!",
+              description: "You can now sign in to your account."
+            });
+            setIsLogin(true);
+          } else {
+            // For login 2FA, user should be authenticated now
+            window.location.href = '/';
+          }
+        }}
+        onBack={() => {
+          setShowTwoFactor(false);
+          setTwoFactorEmail('');
+          setIsVerification(false);
+        }}
+      />
+    );
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,12 +62,20 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        const { error } = await signIn(email, password);
+        const { error, needs2FA, email: userEmail } = await signIn(email, password);
         if (error) {
           toast({
             title: "Sign In Failed",
             description: error.message,
             variant: "destructive"
+          });
+        } else if (needs2FA) {
+          setTwoFactorEmail(userEmail || email);
+          setIsVerification(false);
+          setShowTwoFactor(true);
+          toast({
+            title: "2FA Required",
+            description: "Please check your email for the verification code."
           });
         } else {
           toast({
@@ -51,17 +93,25 @@ const Auth = () => {
           return;
         }
         
-        const { error } = await signUp(email, password, fullName);
+        const { error, needsVerification } = await signUp(email, password, fullName);
         if (error) {
           toast({
             title: "Sign Up Failed",
             description: error.message,
             variant: "destructive"
           });
+        } else if (needsVerification) {
+          setTwoFactorEmail(email);
+          setIsVerification(true);
+          setShowTwoFactor(true);
+          toast({
+            title: "Verify Your Email",
+            description: "Please check your email for the verification code."
+          });
         } else {
           toast({
             title: "Account Created!",
-            description: "Please check your email to verify your account."
+            description: "You can now sign in to your account."
           });
         }
       }
