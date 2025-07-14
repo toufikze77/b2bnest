@@ -73,31 +73,45 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
+      console.log('🔐 Starting sign-in process for:', email);
+      
       // First, try to authenticate the user to verify credentials
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
-      if (authError) return { error: authError };
+      if (authError) {
+        console.log('❌ Auth error:', authError);
+        return { error: authError };
+      }
+
+      console.log('✅ Password authentication successful for user:', authData.user.id);
       
-      // If successful, check if this user has 2FA enabled
-      const { data: user2FAData } = await supabase
+      // Check if this user has 2FA enabled (all users should have it enabled by default)
+      const { data: user2FAData, error: settingsError } = await supabase
         .from('user_2fa_settings')
         .select('is_enabled')
         .eq('user_id', authData.user.id)
         .single();
 
-      // If 2FA is enabled, sign them out and require 2FA verification
-      if (user2FAData?.is_enabled) {
-        await supabase.auth.signOut();
-        await sendVerificationCode(email, 'login');
-        return { error: null, needs2FA: true, email };
+      console.log('🔒 2FA settings check:', { user2FAData, settingsError });
+
+      // Since all users should have 2FA enabled, always require it
+      // Sign them out and require 2FA verification
+      await supabase.auth.signOut();
+      console.log('🚪 Signed out user to require 2FA');
+      
+      const { error: codeError } = await sendVerificationCode(email, 'login');
+      if (codeError) {
+        console.log('❌ Error sending verification code:', codeError);
+        return { error: codeError };
       }
       
-      // If no 2FA required, they're already signed in
-      return { error: null };
+      console.log('📧 2FA code sent, requiring verification');
+      return { error: null, needs2FA: true, email };
     } catch (error) {
+      console.log('❌ Unexpected error in signIn:', error);
       return { error };
     }
   };
