@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { Shield, Mail, ArrowLeft } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface TwoFactorAuthProps {
   email: string;
@@ -15,6 +16,7 @@ interface TwoFactorAuthProps {
 }
 
 const TwoFactorAuth = ({ email, isVerification = false, onSuccess, onBack }: TwoFactorAuthProps) => {
+  const { verify2FA, sendVerificationCode } = useAuth();
   const [verificationCode, setVerificationCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
@@ -32,46 +34,18 @@ const TwoFactorAuth = ({ email, isVerification = false, onSuccess, onBack }: Two
     setIsLoading(true);
     
     try {
-      const codeType = isVerification ? 'email_verification' : 'login_2fa';
+      const { error } = await verify2FA(email, verificationCode, !isVerification);
       
-      // Verify the code in database
-      const { data: codeData, error: codeError } = await supabase
-        .from('user_2fa_codes')
-        .select('*')
-        .eq('code', verificationCode)
-        .eq('code_type', codeType)
-        .eq('used', false)
-        .gte('expires_at', new Date().toISOString())
-        .maybeSingle();
-
-      if (codeError || !codeData) {
+      if (error) {
         toast({
           title: "Invalid Code",
-          description: "The verification code is invalid or has expired.",
+          description: error.message || "The verification code is invalid or has expired.",
           variant: "destructive"
         });
         return;
       }
 
-      // Mark code as used
-      await supabase
-        .from('user_2fa_codes')
-        .update({ used: true })
-        .eq('id', codeData.id);
-
       if (isVerification) {
-        // For email verification, confirm the user
-        const { error: confirmError } = await supabase.auth.verifyOtp({
-          email,
-          token: verificationCode,
-          type: 'email'
-        });
-
-        if (confirmError) {
-          // If Supabase OTP fails, we still mark as verified in our system
-          console.log('Supabase OTP verification failed, but our code was valid:', confirmError);
-        }
-
         toast({
           title: "Email Verified!",
           description: "Your email has been successfully verified. You can now sign in.",
@@ -100,31 +74,8 @@ const TwoFactorAuth = ({ email, isVerification = false, onSuccess, onBack }: Two
     setIsResending(true);
     
     try {
-      const codeType = isVerification ? 'email_verification' : 'login_2fa';
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-      // Store new code in database
-      const { error: insertError } = await supabase
-        .from('user_2fa_codes')
-        .insert({
-          user_id: null, // We don't have user_id for email verification
-          code,
-          code_type: codeType,
-          expires_at: expiresAt.toISOString()
-        });
-
-      if (insertError) throw insertError;
-
-      // Send email via edge function
-      const { data, error } = await supabase.functions.invoke('send-2fa-email', {
-        body: {
-          email,
-          code,
-          type: isVerification ? 'verification' : 'login'
-        }
-      });
-
+      const { error, code } = await sendVerificationCode(email, isVerification ? 'verification' : 'login');
+      
       if (error) throw error;
 
       toast({
