@@ -1,7 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Mail, 
   Star, 
@@ -10,10 +15,76 @@ import {
   Plus,
   Settings,
   Bot,
-  ExternalLink
+  ExternalLink,
+  Send,
+  Users,
+  BarChart,
+  Zap
 } from 'lucide-react';
 
 const MarketingTab = () => {
+  const { toast } = useToast();
+  const [isCampaignDialogOpen, setIsCampaignDialogOpen] = useState(false);
+  const [isChatBotOpen, setIsChatBotOpen] = useState(false);
+  const [isLeadScoringOpen, setIsLeadScoringOpen] = useState(false);
+  const [campaignData, setCampaignData] = useState({
+    name: '',
+    subject: '',
+    content: '',
+    audience: 'all',
+    schedule: ''
+  });
+  const [chatMessages, setChatMessages] = useState([
+    { role: 'bot', message: 'Hello! I\'m your AI assistant. How can I help you with your CRM today?' }
+  ]);
+  const [newMessage, setNewMessage] = useState('');
+
+  const handleCreateCampaign = () => {
+    if (!campaignData.name || !campaignData.subject || !campaignData.content) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Simulate campaign creation
+    toast({
+      title: "Campaign Created",
+      description: `Email campaign "${campaignData.name}" has been created and scheduled!`
+    });
+    
+    setIsCampaignDialogOpen(false);
+    setCampaignData({ name: '', subject: '', content: '', audience: 'all', schedule: '' });
+  };
+
+  const handleSendMessage = () => {
+    if (!newMessage.trim()) return;
+
+    const userMessage = { role: 'user', message: newMessage };
+    setChatMessages(prev => [...prev, userMessage]);
+
+    // Simulate AI response
+    setTimeout(() => {
+      const botResponse = { 
+        role: 'bot', 
+        message: `I understand you're asking about "${newMessage}". As your AI assistant, I can help you with lead management, deal tracking, and customer insights. What specific aspect would you like to explore?`
+      };
+      setChatMessages(prev => [...prev, botResponse]);
+    }, 1000);
+
+    setNewMessage('');
+  };
+
+  const handleConfigureScoring = () => {
+    toast({
+      title: "Lead Scoring Updated",
+      description: "AI lead scoring rules have been configured successfully!"
+    });
+    setIsLeadScoringOpen(false);
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <Card>
@@ -42,10 +113,58 @@ const MarketingTab = () => {
               <Badge className="mt-2 bg-yellow-100 text-yellow-800">Setup Required</Badge>
             </div>
           </div>
-          <Button className="w-full">
-            <Plus className="w-4 h-4 mr-2" />
-            Create Email Campaign
-          </Button>
+          <Dialog open={isCampaignDialogOpen} onOpenChange={setIsCampaignDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="w-full">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Email Campaign
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Create Email Campaign</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <Input 
+                  placeholder="Campaign Name *" 
+                  value={campaignData.name}
+                  onChange={(e) => setCampaignData({ ...campaignData, name: e.target.value })}
+                />
+                <Input 
+                  placeholder="Email Subject *" 
+                  value={campaignData.subject}
+                  onChange={(e) => setCampaignData({ ...campaignData, subject: e.target.value })}
+                />
+                <Textarea 
+                  placeholder="Email Content *" 
+                  value={campaignData.content}
+                  onChange={(e) => setCampaignData({ ...campaignData, content: e.target.value })}
+                  rows={4}
+                />
+                <Select value={campaignData.audience} onValueChange={(value) => setCampaignData({ ...campaignData, audience: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Audience" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Contacts</SelectItem>
+                    <SelectItem value="leads">Leads Only</SelectItem>
+                    <SelectItem value="prospects">Prospects Only</SelectItem>
+                    <SelectItem value="customers">Customers Only</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input 
+                  placeholder="Schedule Date (optional)" 
+                  type="datetime-local" 
+                  value={campaignData.schedule}
+                  onChange={(e) => setCampaignData({ ...campaignData, schedule: e.target.value })}
+                />
+                <Button className="w-full" onClick={handleCreateCampaign}>
+                  <Send className="w-4 h-4 mr-2" />
+                  Create Campaign
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
 
@@ -71,10 +190,43 @@ const MarketingTab = () => {
               <Badge className="bg-yellow-100 text-yellow-800">Setup Required</Badge>
             </div>
           </div>
-          <Button className="w-full">
-            <Settings className="w-4 h-4 mr-2" />
-            Configure Scoring Rules
-          </Button>
+          <Dialog open={isLeadScoringOpen} onOpenChange={setIsLeadScoringOpen}>
+            <DialogTrigger asChild>
+              <Button className="w-full">
+                <Settings className="w-4 h-4 mr-2" />
+                Configure Scoring Rules
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Lead Scoring Configuration</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Email Activity</label>
+                    <Input placeholder="20 points" defaultValue="20" type="number" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Phone Contact</label>
+                    <Input placeholder="30 points" defaultValue="30" type="number" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Company Size</label>
+                    <Input placeholder="25 points" defaultValue="25" type="number" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Deal Value</label>
+                    <Input placeholder="40 points" defaultValue="40" type="number" />
+                  </div>
+                </div>
+                <Button className="w-full" onClick={handleConfigureScoring}>
+                  <Zap className="w-4 h-4 mr-2" />
+                  Update Scoring Rules
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
 
@@ -104,10 +256,45 @@ const MarketingTab = () => {
               <Badge className="mt-2 bg-yellow-100 text-yellow-800">Setup Required</Badge>
             </div>
           </div>
-          <Button className="w-full">
-            <Settings className="w-4 h-4 mr-2" />
-            Configure Chat Settings
-          </Button>
+          <Dialog open={isChatBotOpen} onOpenChange={setIsChatBotOpen}>
+            <DialogTrigger asChild>
+              <Button className="w-full">
+                <Bot className="w-4 h-4 mr-2" />
+                Open AI Chat
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>AI CRM Assistant</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="h-80 overflow-y-auto border rounded-lg p-4 bg-gray-50">
+                  {chatMessages.map((msg, index) => (
+                    <div key={index} className={`mb-4 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+                      <div className={`inline-block px-3 py-2 rounded-lg max-w-xs ${
+                        msg.role === 'user' 
+                          ? 'bg-blue-500 text-white' 
+                          : 'bg-white border'
+                      }`}>
+                        {msg.message}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="Ask your AI assistant..." 
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  />
+                  <Button onClick={handleSendMessage}>
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
 
