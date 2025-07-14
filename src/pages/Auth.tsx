@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,14 +21,20 @@ const Auth = () => {
   const [twoFactorEmail, setTwoFactorEmail] = useState('');
   const [isVerification, setIsVerification] = useState(false);
 
+  // Debug effect to track state changes
+  useEffect(() => {
+    console.log('🔒 State changed:', { showTwoFactor, twoFactorEmail, isVerification });
+  }, [showTwoFactor, twoFactorEmail, isVerification]);
+
   // Redirect if already authenticated
   if (user && !loading) {
     return <Navigate to="/" replace />;
   }
 
   // Show 2FA screen if needed
-  console.log('Auth state:', { showTwoFactor, twoFactorEmail, isVerification });
+  console.log('🔒 Auth state check:', { showTwoFactor, twoFactorEmail, isVerification });
   if (showTwoFactor) {
+    console.log('🔒 Rendering TwoFactorAuth component');
     return (
       <TwoFactorAuth 
         email={twoFactorEmail}
