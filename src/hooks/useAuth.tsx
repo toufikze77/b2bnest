@@ -121,31 +121,54 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const sendVerificationCode = async (email: string, type: 'verification' | 'login') => {
     try {
+      console.log('📧 Sending verification code:', { email, type });
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
       const codeType = type === 'verification' ? 'email_verification' : 'login_2fa';
+
+      // For login 2FA, try to get user ID by email from profiles table
+      let userId = null;
+      if (type === 'login') {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', email)
+          .single();
+        userId = profileData?.id || null;
+        console.log('🔍 Found user ID for login 2FA:', userId);
+      }
 
       // Store code in database
       const { error: insertError } = await supabase
         .from('user_2fa_codes')
         .insert({
-          user_id: null, // For email verification, we don't have user_id yet
+          user_id: userId, // Will be null for email verification, user ID for login 2FA
           code,
           code_type: codeType,
           expires_at: expiresAt.toISOString()
         });
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.log('❌ Error inserting 2FA code:', insertError);
+        throw insertError;
+      }
+
+      console.log('✅ 2FA code inserted successfully');
 
       // Send email via edge function
       const { error: emailError } = await supabase.functions.invoke('send-2fa-email', {
         body: { email, code, type }
       });
 
-      if (emailError) throw emailError;
+      if (emailError) {
+        console.log('❌ Error sending email:', emailError);
+        throw emailError;
+      }
 
+      console.log('📧 Email sent successfully');
       return { error: null, code }; // Return code for demo purposes only
     } catch (error) {
+      console.log('❌ Error in sendVerificationCode:', error);
       return { error };
     }
   };
