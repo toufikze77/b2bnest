@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/hooks/useAuth";
 import { Toaster } from "@/components/ui/toaster";
 import Header from "@/components/Header";
-import AuthBanner from "@/components/AuthBanner";
+
 import Index from "@/pages/Index";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
@@ -43,7 +43,6 @@ function App() {
         <Router>
           <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
             <Header />
-            <AuthBanner />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/about" element={<About />} />

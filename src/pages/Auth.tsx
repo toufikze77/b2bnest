@@ -27,6 +27,7 @@ const Auth = () => {
   }
 
   // Show 2FA screen if needed
+  console.log('Auth state:', { showTwoFactor, twoFactorEmail, isVerification });
   if (showTwoFactor) {
     return (
       <TwoFactorAuth 
@@ -70,6 +71,7 @@ const Auth = () => {
             variant: "destructive"
           });
         } else if (needs2FA) {
+          console.log('Setting 2FA state:', { userEmail, email });
           setTwoFactorEmail(userEmail || email);
           setIsVerification(false);
           setShowTwoFactor(true);
@@ -101,6 +103,7 @@ const Auth = () => {
             variant: "destructive"
           });
         } else if (needsVerification) {
+          console.log('Setting verification state:', { email });
           setTwoFactorEmail(email);
           setIsVerification(true);
           setShowTwoFactor(true);
