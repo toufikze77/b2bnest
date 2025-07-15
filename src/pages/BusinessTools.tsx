@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, BarChart, File, Globe, CreditCard, Layout, Mail } from 'lucide-react';
+import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, BarChart, File, Globe, CreditCard, Layout, Mail, Megaphone } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,8 +28,9 @@ import EmailSignatureGenerator from '@/components/EmailSignatureGenerator';
 import SocialMediaPostScheduler from '@/components/SocialMediaPostScheduler';
 import CustomerSurveyBuilder from '@/components/CustomerSurveyBuilder';
 import BusinessFinanceAssistant from '@/components/BusinessFinanceAssistant';
+import { AdvertisementSection } from '@/components/AdvertisementSection';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'premium-marketplace';
 
 const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
@@ -37,6 +38,15 @@ const BusinessTools = () => {
   const navigate = useNavigate();
 
   const tools = [
+    {
+      id: 'premium-marketplace' as ToolType,
+      title: 'Premium Marketplace',
+      description: 'Exclusive advertising space for yearly subscribers to showcase services and products',
+      icon: Megaphone,
+      color: 'bg-gradient-to-r from-amber-500 to-amber-600',
+      benefits: ['Yearly Subscriber Exclusive', 'Rich Content with Images', 'Contact Integration', 'Category Organization'],
+      isPremium: true
+    },
     {
       id: 'business-finance-assistant' as ToolType,
       title: 'Business Finance Assistant',
@@ -263,6 +273,8 @@ const BusinessTools = () => {
 
   const renderTool = () => {
     switch (currentTool) {
+      case 'premium-marketplace':
+        return <AdvertisementSection />;
       case 'business-finance-assistant':
         return <BusinessFinanceAssistant />;
       case 'todo-list':

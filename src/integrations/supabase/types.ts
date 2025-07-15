@@ -14,6 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
+      advertisement_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
+      advertisements: {
+        Row: {
+          category: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          currency: string | null
+          description: string
+          featured_until: string | null
+          id: string
+          image_urls: string[] | null
+          is_active: boolean
+          is_service: boolean
+          price: number | null
+          subcategory: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          view_count: number | null
+          website_url: string | null
+        }
+        Insert: {
+          category: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          currency?: string | null
+          description: string
+          featured_until?: string | null
+          id?: string
+          image_urls?: string[] | null
+          is_active?: boolean
+          is_service?: boolean
+          price?: number | null
+          subcategory?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          view_count?: number | null
+          website_url?: string | null
+        }
+        Update: {
+          category?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          currency?: string | null
+          description?: string
+          featured_until?: string | null
+          id?: string
+          image_urls?: string[] | null
+          is_active?: boolean
+          is_service?: boolean
+          price?: number | null
+          subcategory?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          view_count?: number | null
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       ai_conversations: {
         Row: {
           context: Json | null
