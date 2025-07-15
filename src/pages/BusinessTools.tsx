@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, Receipt, BarChart, File, Globe, CreditCard, Layout, Mail } from 'lucide-react';
+import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, BarChart, File, Globe, CreditCard, Layout, Mail } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +10,6 @@ import ComplianceChecker from '@/components/ComplianceChecker';
 import BestPracticesGuide from '@/components/BestPracticesGuide';
 import IntegrationHub from '@/components/IntegrationHub';
 import BusinessResources from '@/components/BusinessResources';
-import QuoteInvoiceCreationSection from '@/components/QuoteInvoiceCreationSection';
 import ProjectManagement from '@/components/ProjectManagement';
 import CRM from '@/components/CRM';
 import TodoList from '@/components/TodoList';
@@ -19,7 +18,6 @@ import QRCodeGenerator from '@/components/QRCodeGenerator';
 import TimeTracker from '@/components/TimeTracker';
 import CashFlowTracker from '@/components/CashFlowTracker';
 import GoalTracker from '@/components/GoalTracker';
-import InvoiceGenerator from '@/components/InvoiceGenerator';
 import ROICalculator from '@/components/ROICalculator';
 import ContractGenerator from '@/components/ContractGenerator';
 import PrivacyPolicyGenerator from '@/components/PrivacyPolicyGenerator';
@@ -31,7 +29,7 @@ import SocialMediaPostScheduler from '@/components/SocialMediaPostScheduler';
 import CustomerSurveyBuilder from '@/components/CustomerSurveyBuilder';
 import BusinessFinanceAssistant from '@/components/BusinessFinanceAssistant';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'invoice-generator' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant';
 
 const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
@@ -100,15 +98,6 @@ const BusinessTools = () => {
       icon: Target,
       color: 'bg-red-600',
       benefits: ['Milestone tracking', 'Progress monitoring', 'Achievement insights'],
-      isPremium: false
-    },
-    {
-      id: 'invoice-generator' as ToolType,
-      title: 'Invoice Generator',
-      description: 'Create professional invoices for clients',
-      icon: Receipt,
-      color: 'bg-blue-600',
-      benefits: ['Professional templates', 'Tax calculations', 'Client management'],
       isPremium: false
     },
     {
@@ -247,15 +236,6 @@ const BusinessTools = () => {
       isPremium: true
     },
     {
-      id: 'quote-invoice' as ToolType,
-      title: 'Quote & Invoice System',
-      description: 'Create professional quotes and invoices with auto-generated codes',
-      icon: FileText,
-      color: 'bg-indigo-500',
-      benefits: ['Professional templates', 'Auto-generated codes', 'Track payments'],
-      isPremium: true
-    },
-    {
       id: 'project-management' as ToolType,
       title: 'Project Management',
       description: 'Organize tasks, track progress, and collaborate with your team',
@@ -297,8 +277,6 @@ const BusinessTools = () => {
         return <CashFlowTracker />;
       case 'goal-tracker':
         return <GoalTracker />;
-      case 'invoice-generator':
-        return <InvoiceGenerator />;
       case 'roi-calculator':
         return <ROICalculator />;
       case 'contract-generator':
@@ -329,8 +307,6 @@ const BusinessTools = () => {
         return <IntegrationHub />;
       case 'business-resources':
         return <BusinessResources />;
-      case 'quote-invoice':
-        return <QuoteInvoiceCreationSection />;
       case 'project-management':
         return <ProjectManagement />;
       case 'crm':

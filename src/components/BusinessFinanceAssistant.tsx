@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Calculator, TrendingUp, PieChart, DollarSign, Receipt, FileText, Plus, Minus, Edit3, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calculator, TrendingUp, PieChart, DollarSign, Receipt, FileText, Plus, Minus, Edit3, Trash2, Quote, Upload, Image, X, Eye, Download, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface FinanceItem {
   id: string;
