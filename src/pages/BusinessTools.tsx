@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, Receipt, BarChart, File, Globe, CreditCard, Layout, Mail } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,8 +29,9 @@ import LandingPageBuilder from '@/components/LandingPageBuilder';
 import EmailSignatureGenerator from '@/components/EmailSignatureGenerator';
 import SocialMediaPostScheduler from '@/components/SocialMediaPostScheduler';
 import CustomerSurveyBuilder from '@/components/CustomerSurveyBuilder';
+import BusinessFinanceAssistant from '@/components/BusinessFinanceAssistant';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'invoice-generator' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'quote-invoice' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'invoice-generator' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant';
 
 const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
@@ -39,6 +39,15 @@ const BusinessTools = () => {
   const navigate = useNavigate();
 
   const tools = [
+    {
+      id: 'business-finance-assistant' as ToolType,
+      title: 'Business Finance Assistant',
+      description: 'Complete finance management with invoices, quotes, and financial tracking',
+      icon: Calculator,
+      color: 'bg-green-600',
+      benefits: ['Invoice & Quote Generation', 'Financial Dashboard', 'Client Management', 'Revenue Tracking'],
+      isPremium: false
+    },
     {
       id: 'todo-list' as ToolType,
       title: 'To-Do List',
@@ -274,6 +283,8 @@ const BusinessTools = () => {
 
   const renderTool = () => {
     switch (currentTool) {
+      case 'business-finance-assistant':
+        return <BusinessFinanceAssistant />;
       case 'todo-list':
         return <TodoList />;
       case 'business-name-generator':
