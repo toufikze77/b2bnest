@@ -337,23 +337,25 @@ const UserDashboard = () => {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleViewQuoteInvoice('quote')}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Quotes</CardTitle>
               <Quote className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalQuotes}</div>
+              <p className="text-xs text-muted-foreground">Click to manage</p>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleViewQuoteInvoice('invoice')}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Invoices</CardTitle>
               <Receipt className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalInvoices}</div>
+              <p className="text-xs text-muted-foreground">Click to manage</p>
             </CardContent>
           </Card>
           
@@ -380,10 +382,9 @@ const UserDashboard = () => {
 
         {/* Tabs for different sections */}
         <Tabs defaultValue="purchases" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="purchases">My Purchases</TabsTrigger>
             <TabsTrigger value="favorites">My Favorites</TabsTrigger>
-            <TabsTrigger value="quotes-invoices">Quotes & Invoices</TabsTrigger>
             <TabsTrigger value="settings">Account Settings</TabsTrigger>
           </TabsList>
           
@@ -506,174 +507,6 @@ const UserDashboard = () => {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="quotes-invoices" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Quotes Section */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Quote className="h-5 w-5" />
-                    Your Quotes
-                  </CardTitle>
-                  <CardDescription>
-                    Quotes you've created for clients
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {quotes.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <Quote className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <p>No quotes created yet.</p>
-                      <p className="text-sm">Go to Business Tools to create your first quote!</p>
-                    </div>
-                  ) : (
-                  <div className="space-y-3">
-                      {quotes.slice(0, 5).map((quote: any) => (
-                        <div key={quote.id} className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-semibold text-sm">{quote.quote_number}</h4>
-                                <Badge variant="outline" className="text-xs">{quote.status}</Badge>
-                              </div>
-                              <p className="text-sm text-gray-600">
-                                <strong>Client:</strong> {quote.client_name}
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                <strong>Total:</strong> {formatCurrency(quote.total_amount || 0, quote.currency || 'USD')}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                <strong>Created:</strong> {new Date(quote.created_at).toLocaleDateString()}
-                              </p>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => handleViewQuoteInvoice('quote')}
-                                title="View Quote"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDownloadQuoteInvoice(quote, 'quote');
-                                }}
-                                title="Download Quote"
-                              >
-                                <Download className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      {quotes.length > 5 && (
-                        <p className="text-sm text-gray-500 text-center mt-4">
-                          ... and {quotes.length - 5} more
-                        </p>
-                      )}
-                      <div className="mt-4 pt-4 border-t">
-                        <Button 
-                          className="w-full" 
-                          variant="outline"
-                          onClick={() => handleViewQuoteInvoice('quote')}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Create New Quote
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Invoices Section */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Receipt className="h-5 w-5" />
-                    Your Invoices
-                  </CardTitle>
-                  <CardDescription>
-                    Invoices you've created for clients
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {invoices.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <Receipt className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <p>No invoices created yet.</p>
-                      <p className="text-sm">Go to Business Tools to create your first invoice!</p>
-                    </div>
-                  ) : (
-                  <div className="space-y-3">
-                      {invoices.slice(0, 5).map((invoice: any) => (
-                        <div key={invoice.id} className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-semibold text-sm">{invoice.invoice_number}</h4>
-                                <Badge variant="outline" className="text-xs">{invoice.status}</Badge>
-                              </div>
-                              <p className="text-sm text-gray-600">
-                                <strong>Client:</strong> {invoice.client_name}
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                <strong>Total:</strong> {formatCurrency(invoice.total_amount || 0, invoice.currency || 'USD')}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                <strong>Created:</strong> {new Date(invoice.created_at).toLocaleDateString()}
-                              </p>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => handleViewQuoteInvoice('invoice')}
-                                title="View Invoice"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDownloadQuoteInvoice(invoice, 'invoice');
-                                }}
-                                title="Download Invoice"
-                              >
-                                <Download className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      {invoices.length > 5 && (
-                        <p className="text-sm text-gray-500 text-center mt-4">
-                          ... and {invoices.length - 5} more
-                        </p>
-                      )}
-                      <div className="mt-4 pt-4 border-t">
-                        <Button 
-                          className="w-full" 
-                          variant="outline"
-                          onClick={() => handleViewQuoteInvoice('invoice')}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Create New Invoice
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-4">
