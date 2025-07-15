@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, FileText, Calendar, User, DollarSign, Quote, Upload, Image, X } from 'lucide-react';
+import { Plus, FileText, Calendar, User, DollarSign, Quote, Upload, Image, X, Eye, Download, List, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -22,16 +22,25 @@ interface QuoteInvoiceItem {
 const QuoteInvoiceCreationSection = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'quote' | 'invoice'>('quote');
+  const [viewMode, setViewMode] = useState<'create' | 'list'>('create');
+  const [quotes, setQuotes] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const [documentData, setDocumentData] = useState({
     number: '',
     clientName: '',
     clientEmail: '',
     clientAddress: '',
+    companyName: '',
+    companyAddress: '',
     date: '',
     validUntil: '', // For quotes
     dueDate: '', // For invoices
     notes: '',
-    terms: 'Net 30'
+    terms: 'Net 30',
+    currency: 'USD',
+    vatEnabled: false,
+    vatRate: 0
   });
 
   const [items, setItems] = useState<QuoteInvoiceItem[]>([
@@ -72,9 +81,6 @@ const QuoteInvoiceCreationSection = () => {
     }
   };
 
-  const calculateTotal = () => {
-    return items.reduce((total, item) => total + item.amount, 0);
-  };
 
   const generateDocumentCode = (type: 'quote' | 'invoice') => {
     const date = new Date();
@@ -166,7 +172,69 @@ const QuoteInvoiceCreationSection = () => {
     }
   };
 
+  const loadDocuments = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const { data: quotesData, error: quotesError } = await supabase
+        .from('quotes')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      const { data: invoicesData, error: invoicesError } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (quotesError) throw quotesError;
+      if (invoicesError) throw invoicesError;
+
+      setQuotes(quotesData || []);
+      setInvoices(invoicesData || []);
+    } catch (error) {
+      console.error('Error loading documents:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load documents.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (user && viewMode === 'list') {
+      loadDocuments();
+    }
+  }, [user, viewMode]);
+
+  const calculateSubtotal = () => {
+    return items.reduce((total, item) => total + item.amount, 0);
+  };
+
+  const calculateVAT = () => {
+    if (!documentData.vatEnabled) return 0;
+    return calculateSubtotal() * (documentData.vatRate / 100);
+  };
+
+  const calculateTotal = () => {
+    return calculateSubtotal() + calculateVAT();
+  };
+
   const handleGenerate = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to create documents.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!documentData.clientName || !documentData.clientEmail) {
       toast({
         title: "Missing Information",
@@ -188,18 +256,54 @@ const QuoteInvoiceCreationSection = () => {
     setGenerating(true);
 
     try {
-      // Generate document code if not provided
-      if (!documentData.number) {
-        setDocumentData(prev => ({ ...prev, number: generateDocumentCode(activeTab) }));
-      }
+      const documentNumber = documentData.number || generateDocumentCode(activeTab);
+      const subtotal = calculateSubtotal();
+      const vatAmount = calculateVAT();
+      const total = calculateTotal();
 
-      // Simulate document generation
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const documentPayload = {
+        user_id: user.id,
+        company_name: documentData.companyName,
+        company_address: documentData.companyAddress,
+        client_name: documentData.clientName,
+        client_email: documentData.clientEmail,
+        client_address: documentData.clientAddress,
+        items: JSON.stringify(items),
+        subtotal,
+        tax_rate: documentData.vatEnabled ? documentData.vatRate : 0,
+        tax_amount: vatAmount,
+        total_amount: total,
+        notes: documentData.notes,
+        status: 'draft',
+        logo_url: logoUrl
+      };
+
+      if (activeTab === 'quote') {
+        const { error } = await supabase
+          .from('quotes')
+          .insert({
+            ...documentPayload,
+            quote_number: documentNumber,
+            valid_until: documentData.validUntil || null
+          });
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('invoices')
+          .insert({
+            ...documentPayload,
+            invoice_number: documentNumber,
+            due_date: documentData.dueDate || null
+          });
+        
+        if (error) throw error;
+      }
 
       const documentType = activeTab === 'quote' ? 'Quote' : 'Invoice';
       toast({
-        title: `${documentType} Generated`,
-        description: `${documentType} ${documentData.number || generateDocumentCode(activeTab)} has been created successfully.`,
+        title: `${documentType} Created`,
+        description: `${documentType} ${documentNumber} has been created successfully.`,
       });
 
       // Reset form
@@ -208,13 +312,24 @@ const QuoteInvoiceCreationSection = () => {
         clientName: '',
         clientEmail: '',
         clientAddress: '',
+        companyName: '',
+        companyAddress: '',
         date: '',
         validUntil: '',
         dueDate: '',
         notes: '',
-        terms: 'Net 30'
+        terms: 'Net 30',
+        currency: 'USD',
+        vatEnabled: false,
+        vatRate: 0
       });
       setItems([{ id: '1', description: '', quantity: 1, rate: 0, amount: 0 }]);
+      setLogoUrl(null);
+
+      // Refresh the list if we're viewing it
+      if (viewMode === 'list') {
+        loadDocuments();
+      }
 
     } catch (error) {
       console.error('Document generation error:', error);
@@ -228,21 +343,135 @@ const QuoteInvoiceCreationSection = () => {
     }
   };
 
+  const downloadDocument = (documentId: string, type: 'quote' | 'invoice') => {
+    // For now, just show a toast. In a real app, you'd generate a PDF
+    toast({
+      title: "Download Started",
+      description: `Downloading ${type} PDF...`,
+    });
+  };
+
+  const formatCurrency = (amount: number, currency: string = documentData.currency) => {
+    const currencyMap: { [key: string]: string } = {
+      'USD': '$',
+      'EUR': '€',
+      'GBP': '£',
+      'JPY': '¥',
+      'CAD': 'C$',
+      'AUD': 'A$',
+      'CHF': 'CHF ',
+      'CNY': '¥',
+      'INR': '₹'
+    };
+    
+    const symbol = currencyMap[currency] || currency + ' ';
+    return `${symbol}${amount.toFixed(2)}`;
+  };
+
   const currentDocumentType = activeTab === 'quote' ? 'Quote' : 'Invoice';
   const currentIcon = activeTab === 'quote' ? Quote : FileText;
   const CurrentIcon = currentIcon;
 
+  if (viewMode === 'list') {
+    return (
+      <Card className="mb-8">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm" onClick={() => setViewMode('create')}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Create
+              </Button>
+              <div>
+                <CardTitle className="text-xl">
+                  {activeTab === 'quote' ? 'Quotes' : 'Invoices'} List
+                </CardTitle>
+                <CardDescription>View and manage your documents</CardDescription>
+              </div>
+            </div>
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'quote' | 'invoice')}>
+              <TabsList>
+                <TabsTrigger value="quote">Quotes</TabsTrigger>
+                <TabsTrigger value="invoice">Invoices</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8">Loading...</div>
+          ) : (
+            <div className="space-y-4">
+              {(activeTab === 'quote' ? quotes : invoices).length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p>No {activeTab}s found. Create your first {activeTab}!</p>
+                </div>
+              ) : (
+                (activeTab === 'quote' ? quotes : invoices).map((doc: any) => (
+                  <div key={doc.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold">
+                            {activeTab === 'quote' ? doc.quote_number : doc.invoice_number}
+                          </h3>
+                          <span className="text-sm px-2 py-1 bg-gray-100 rounded">
+                            {doc.status}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          <p><strong>Client:</strong> {doc.client_name}</p>
+                          <p><strong>Total:</strong> {formatCurrency(doc.total_amount || 0)}</p>
+                          <p><strong>Created:</strong> {new Date(doc.created_at).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => downloadDocument(doc.id, activeTab)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => downloadDocument(doc.id, activeTab)}
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                          Download
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="mb-8">
       <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="bg-blue-500 w-10 h-10 rounded-full flex items-center justify-center">
-            <CurrentIcon className="h-5 w-5 text-white" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-blue-500 w-10 h-10 rounded-full flex items-center justify-center">
+              <CurrentIcon className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <CardTitle className="text-xl">Quote & Invoice Generator</CardTitle>
+              <CardDescription>Create professional quotes and invoices with custom codes</CardDescription>
+            </div>
           </div>
-          <div>
-            <CardTitle className="text-xl">Quote & Invoice Generator</CardTitle>
-            <CardDescription>Create professional quotes and invoices with custom codes</CardDescription>
-          </div>
+          <Button variant="outline" onClick={() => setViewMode('list')}>
+            <List className="h-4 w-4 mr-2" />
+            View All
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -261,7 +490,7 @@ const QuoteInvoiceCreationSection = () => {
 
           <TabsContent value={activeTab} className="space-y-6 mt-6">
             {/* Document Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <Label htmlFor="documentNumber">{currentDocumentType} Number</Label>
                 <Input
@@ -270,6 +499,25 @@ const QuoteInvoiceCreationSection = () => {
                   onChange={(e) => setDocumentData({...documentData, number: e.target.value})}
                   placeholder="Auto-generated if empty"
                 />
+              </div>
+              <div>
+                <Label htmlFor="currency">Currency</Label>
+                <Select value={documentData.currency} onValueChange={(value) => setDocumentData({...documentData, currency: value})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD ($)</SelectItem>
+                    <SelectItem value="EUR">EUR (€)</SelectItem>
+                    <SelectItem value="GBP">GBP (£)</SelectItem>
+                    <SelectItem value="JPY">JPY (¥)</SelectItem>
+                    <SelectItem value="CAD">CAD (C$)</SelectItem>
+                    <SelectItem value="AUD">AUD (A$)</SelectItem>
+                    <SelectItem value="CHF">CHF</SelectItem>
+                    <SelectItem value="CNY">CNY (¥)</SelectItem>
+                    <SelectItem value="INR">INR (₹)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="terms">Payment Terms</Label>
@@ -285,6 +533,35 @@ const QuoteInvoiceCreationSection = () => {
                     <SelectItem value="Due on Receipt">Due on Receipt</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            {/* Company Information */}
+            <div className="border rounded-lg p-4">
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                Company Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="companyName">Company Name</Label>
+                  <Input
+                    id="companyName"
+                    value={documentData.companyName}
+                    onChange={(e) => setDocumentData({...documentData, companyName: e.target.value})}
+                    placeholder="Your company name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="companyAddress">Company Address</Label>
+                  <Textarea
+                    id="companyAddress"
+                    value={documentData.companyAddress}
+                    onChange={(e) => setDocumentData({...documentData, companyAddress: e.target.value})}
+                    placeholder="Your company address"
+                    rows={2}
+                  />
+                </div>
               </div>
             </div>
 
@@ -461,7 +738,7 @@ const QuoteInvoiceCreationSection = () => {
                       />
                     </div>
                     <div className="col-span-2">
-                      <Label className="text-xs">Rate ($)</Label>
+                      <Label className="text-xs">Rate ({documentData.currency})</Label>
                       <Input
                         type="number"
                         value={item.rate === 0 ? '' : item.rate.toString()}
@@ -473,8 +750,8 @@ const QuoteInvoiceCreationSection = () => {
                     <div className="col-span-2">
                       <Label className="text-xs">Amount</Label>
                       <Input
-                        type="number"
-                        value={item.amount.toFixed(2)}
+                        type="text"
+                        value={formatCurrency(item.amount)}
                         readOnly
                         className="bg-gray-50"
                       />
@@ -496,10 +773,51 @@ const QuoteInvoiceCreationSection = () => {
                 ))}
               </div>
 
-              <div className="mt-4 pt-4 border-t">
+              <div className="mt-4 pt-4 border-t space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="font-semibold">Total:</span>
-                  <span className="text-xl font-bold">${calculateTotal().toFixed(2)}</span>
+                  <span>Subtotal:</span>
+                  <span>{formatCurrency(calculateSubtotal())}</span>
+                </div>
+                
+                {/* VAT/Tax Section */}
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="vatEnabled"
+                      checked={documentData.vatEnabled}
+                      onChange={(e) => setDocumentData({...documentData, vatEnabled: e.target.checked})}
+                      className="rounded"
+                    />
+                    <Label htmlFor="vatEnabled" className="text-sm">Enable VAT/Tax</Label>
+                  </div>
+                  {documentData.vatEnabled && (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={documentData.vatRate}
+                        onChange={(e) => setDocumentData({...documentData, vatRate: parseFloat(e.target.value) || 0})}
+                        placeholder="Rate %"
+                        className="w-20"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                      />
+                      <span className="text-sm">%</span>
+                    </div>
+                  )}
+                </div>
+                
+                {documentData.vatEnabled && (
+                  <div className="flex justify-between items-center">
+                    <span>VAT ({documentData.vatRate}%):</span>
+                    <span>{formatCurrency(calculateVAT())}</span>
+                  </div>
+                )}
+                
+                <div className="flex justify-between items-center text-lg font-semibold pt-2 border-t">
+                  <span>Total:</span>
+                  <span>{formatCurrency(calculateTotal())}</span>
                 </div>
               </div>
             </div>
