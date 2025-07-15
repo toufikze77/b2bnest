@@ -472,24 +472,27 @@ const BusinessSocial = () => {
               </CardContent>
             </Card>
 
-            {/* Quick Stats */}
+            {/* Trending Topics */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Network Stats</CardTitle>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Trending Topics
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Total Members</span>
-                    <Badge variant="secondary">10,000+</Badge>
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <h4 className="font-medium text-blue-900">#RemoteWork</h4>
+                    <p className="text-blue-700 text-sm">1,234 posts this week</p>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Active Today</span>
-                    <Badge variant="secondary">1,200+</Badge>
+                  <div className="p-3 bg-green-50 rounded-lg">
+                    <h4 className="font-medium text-green-900">#StartupLife</h4>
+                    <p className="text-green-700 text-sm">892 posts this week</p>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Companies</span>
-                    <Badge variant="secondary">500+</Badge>
+                  <div className="p-3 bg-purple-50 rounded-lg">
+                    <h4 className="font-medium text-purple-900">#TechTrends</h4>
+                    <p className="text-purple-700 text-sm">756 posts this week</p>
                   </div>
                 </div>
               </CardContent>
@@ -664,33 +667,7 @@ const BusinessSocial = () => {
 
           {/* Right Sidebar */}
           <div className="lg:col-span-1">
-            {/* Trending Topics */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Trending Topics
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="p-3 bg-blue-50 rounded-lg">
-                    <h4 className="font-medium text-blue-900">#RemoteWork</h4>
-                    <p className="text-blue-700 text-sm">1,234 posts this week</p>
-                  </div>
-                  <div className="p-3 bg-green-50 rounded-lg">
-                    <h4 className="font-medium text-green-900">#StartupLife</h4>
-                    <p className="text-green-700 text-sm">892 posts this week</p>
-                  </div>
-                  <div className="p-3 bg-purple-50 rounded-lg">
-                    <h4 className="font-medium text-purple-900">#TechTrends</h4>
-                    <p className="text-purple-700 text-sm">756 posts this week</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Premium Marketplace */}
+            {/* Premium Marketplace - Expanded */}
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
