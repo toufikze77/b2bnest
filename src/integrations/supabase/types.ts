@@ -753,6 +753,7 @@ export type Database = {
           company_address: string | null
           company_name: string | null
           created_at: string
+          currency: string | null
           due_date: string | null
           id: string
           invoice_number: string
@@ -774,6 +775,7 @@ export type Database = {
           company_address?: string | null
           company_name?: string | null
           created_at?: string
+          currency?: string | null
           due_date?: string | null
           id?: string
           invoice_number: string
@@ -795,6 +797,7 @@ export type Database = {
           company_address?: string | null
           company_name?: string | null
           created_at?: string
+          currency?: string | null
           due_date?: string | null
           id?: string
           invoice_number?: string
@@ -1130,6 +1133,7 @@ export type Database = {
           company_address: string | null
           company_name: string | null
           created_at: string
+          currency: string | null
           id: string
           items: Json | null
           logo_url: string | null
@@ -1151,6 +1155,7 @@ export type Database = {
           company_address?: string | null
           company_name?: string | null
           created_at?: string
+          currency?: string | null
           id?: string
           items?: Json | null
           logo_url?: string | null
@@ -1172,6 +1177,7 @@ export type Database = {
           company_address?: string | null
           company_name?: string | null
           created_at?: string
+          currency?: string | null
           id?: string
           items?: Json | null
           logo_url?: string | null
