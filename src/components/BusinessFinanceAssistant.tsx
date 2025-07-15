@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Download, Eye, Send, FileText, DollarSign, TrendingUp, Users, Package, Truck, Receipt, CreditCard, BarChart3, PieChart, Home, Building, Calendar, ShoppingCart, Banknote } from 'lucide-react';
 import { toast } from 'sonner';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
@@ -13,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import QuoteInvoiceCreationSection from '@/components/QuoteInvoiceCreationSection';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { Tables } from '@/integrations/supabase/types';
@@ -297,6 +300,84 @@ const BusinessFinanceAssistant = () => {
     toast.success("Outgoings schedule downloaded");
   };
 
+  // Generate PDF document from quote/invoice data
+  const generatePDF = async (doc: Quote | Invoice) => {
+    const docType = 'quote_number' in doc ? 'quote' : 'invoice';
+    const number = 'quote_number' in doc ? doc.quote_number : doc.invoice_number;
+    
+    // Create PDF
+    const pdf = new jsPDF();
+    
+    // Header
+    pdf.setFontSize(24);
+    pdf.text(docType.charAt(0).toUpperCase() + docType.slice(1), 20, 30);
+    
+    // Document info
+    pdf.setFontSize(12);
+    pdf.text(`${docType.charAt(0).toUpperCase() + docType.slice(1)} #: ${number}`, 20, 50);
+    pdf.text(`Date: ${new Date(doc.created_at).toLocaleDateString()}`, 20, 60);
+    pdf.text(`Status: ${doc.status}`, 20, 70);
+    
+    if ('valid_until' in doc && doc.valid_until) {
+      pdf.text(`Valid Until: ${new Date(doc.valid_until).toLocaleDateString()}`, 20, 80);
+    }
+    if ('due_date' in doc && doc.due_date) {
+      pdf.text(`Due Date: ${new Date(doc.due_date).toLocaleDateString()}`, 20, 80);
+    }
+    
+    // Company info
+    pdf.text('From:', 20, 100);
+    if (doc.company_name) pdf.text(doc.company_name, 20, 110);
+    if (doc.company_address) pdf.text(doc.company_address, 20, 120);
+    
+    // Client info
+    pdf.text('To:', 20, 140);
+    if (doc.client_name) pdf.text(doc.client_name, 20, 150);
+    if (doc.client_email) pdf.text(doc.client_email, 20, 160);
+    if (doc.client_address) pdf.text(doc.client_address, 20, 170);
+    
+    // Items table header
+    pdf.text('Items:', 20, 190);
+    pdf.text('Description', 20, 200);
+    pdf.text('Qty', 100, 200);
+    pdf.text('Rate', 130, 200);
+    pdf.text('Amount', 160, 200);
+    
+    // Items
+    let yPosition = 210;
+    if (doc.items && Array.isArray(doc.items)) {
+      doc.items.forEach((item: any) => {
+        pdf.text(item.description || '', 20, yPosition);
+        pdf.text(String(item.quantity || 0), 100, yPosition);
+        pdf.text(formatCurrency(item.rate || 0), 130, yPosition);
+        pdf.text(formatCurrency(item.amount || 0), 160, yPosition);
+        yPosition += 10;
+      });
+    }
+    
+    // Totals
+    yPosition += 10;
+    pdf.text(`Subtotal: ${formatCurrency(Number(doc.subtotal) || 0)}`, 130, yPosition);
+    if (doc.tax_rate && Number(doc.tax_rate) > 0) {
+      yPosition += 10;
+      pdf.text(`Tax (${doc.tax_rate}%): ${formatCurrency(Number(doc.tax_amount) || 0)}`, 130, yPosition);
+    }
+    yPosition += 10;
+    pdf.setFontSize(14);
+    pdf.text(`Total: ${formatCurrency(Number(doc.total_amount) || 0)}`, 130, yPosition);
+    
+    // Notes
+    if (doc.notes) {
+      yPosition += 20;
+      pdf.setFontSize(12);
+      pdf.text('Notes:', 20, yPosition);
+      const notes = pdf.splitTextToSize(doc.notes, 170);
+      pdf.text(notes, 20, yPosition + 10);
+    }
+    
+    return pdf;
+  };
+
   // Handle document view
   const handleViewDocument = (doc: Quote | Invoice) => {
     setSelectedDocument(doc);
@@ -309,10 +390,19 @@ const BusinessFinanceAssistant = () => {
     toast.success(`${docType.charAt(0).toUpperCase() + docType.slice(1)} ${number} sent successfully`);
   };
 
-  const handleDownloadDocument = (doc: Quote | Invoice) => {
-    const docType = 'quote_number' in doc ? 'quote' : 'invoice';
-    const number = 'quote_number' in doc ? doc.quote_number : doc.invoice_number;
-    toast.success(`${docType.charAt(0).toUpperCase() + docType.slice(1)} ${number} downloaded`);
+  const handleDownloadDocument = async (doc: Quote | Invoice) => {
+    try {
+      const docType = 'quote_number' in doc ? 'quote' : 'invoice';
+      const number = 'quote_number' in doc ? doc.quote_number : doc.invoice_number;
+      
+      const pdf = await generatePDF(doc);
+      pdf.save(`${docType}_${number}.pdf`);
+      
+      toast.success(`${docType.charAt(0).toUpperCase() + docType.slice(1)} ${number} downloaded as PDF`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF');
+    }
   };
 
   // CSV export helper
@@ -908,6 +998,153 @@ const BusinessFinanceAssistant = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Document Preview Modal */}
+      <Dialog open={isDocumentViewOpen} onOpenChange={setIsDocumentViewOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedDocument && 'quote_number' in selectedDocument 
+                ? `Quote ${selectedDocument.quote_number}`
+                : selectedDocument && 'invoice_number' in selectedDocument 
+                ? `Invoice ${selectedDocument.invoice_number}`
+                : 'Document Preview'
+              }
+            </DialogTitle>
+          </DialogHeader>
+          {selectedDocument && (
+            <div className="space-y-6 p-4">
+              {/* Document Header */}
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-semibold mb-2">From:</h3>
+                  {selectedDocument.company_name && <p className="font-medium">{selectedDocument.company_name}</p>}
+                  {selectedDocument.company_address && (
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">{selectedDocument.company_address}</p>
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-2">To:</h3>
+                  {selectedDocument.client_name && <p className="font-medium">{selectedDocument.client_name}</p>}
+                  {selectedDocument.client_email && <p className="text-sm">{selectedDocument.client_email}</p>}
+                  {selectedDocument.client_address && (
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">{selectedDocument.client_address}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Document Details */}
+              <div className="grid grid-cols-3 gap-4 border-t pt-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    {'quote_number' in selectedDocument ? 'Quote #' : 'Invoice #'}
+                  </p>
+                  <p className="font-medium">
+                    {'quote_number' in selectedDocument ? selectedDocument.quote_number : selectedDocument.invoice_number}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Date</p>
+                  <p className="font-medium">{new Date(selectedDocument.created_at).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Status</p>
+                  <Badge variant="outline">{selectedDocument.status}</Badge>
+                </div>
+              </div>
+
+              {/* Due Date / Valid Until */}
+              {'due_date' in selectedDocument && selectedDocument.due_date && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Due Date</p>
+                  <p className="font-medium">{new Date(selectedDocument.due_date).toLocaleDateString()}</p>
+                </div>
+              )}
+              {'valid_until' in selectedDocument && selectedDocument.valid_until && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Valid Until</p>
+                  <p className="font-medium">{new Date(selectedDocument.valid_until).toLocaleDateString()}</p>
+                </div>
+              )}
+
+              {/* Items Table */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold mb-4">Items</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2">Description</th>
+                        <th className="text-right p-2">Qty</th>
+                        <th className="text-right p-2">Rate</th>
+                        <th className="text-right p-2">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedDocument.items && Array.isArray(selectedDocument.items) ? (
+                        selectedDocument.items.map((item: any, index: number) => (
+                          <tr key={index} className="border-b">
+                            <td className="p-2">{item.description || 'N/A'}</td>
+                            <td className="text-right p-2">{item.quantity || 0}</td>
+                            <td className="text-right p-2">{formatCurrency(item.rate || 0)}</td>
+                            <td className="text-right p-2">{formatCurrency(item.amount || 0)}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={4} className="text-center p-4 text-muted-foreground">No items found</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Totals */}
+              <div className="border-t pt-4">
+                <div className="flex justify-end">
+                  <div className="w-64 space-y-2">
+                    <div className="flex justify-between">
+                      <span>Subtotal:</span>
+                      <span>{formatCurrency(Number(selectedDocument.subtotal) || 0)}</span>
+                    </div>
+                    {selectedDocument.tax_rate && Number(selectedDocument.tax_rate) > 0 && (
+                      <div className="flex justify-between">
+                        <span>Tax ({selectedDocument.tax_rate}%):</span>
+                        <span>{formatCurrency(Number(selectedDocument.tax_amount) || 0)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-semibold text-lg border-t pt-2">
+                      <span>Total:</span>
+                      <span>{formatCurrency(Number(selectedDocument.total_amount) || 0)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes */}
+              {selectedDocument.notes && (
+                <div className="border-t pt-4">
+                  <h3 className="font-semibold mb-2">Notes</h3>
+                  <p className="text-sm text-muted-foreground whitespace-pre-line">{selectedDocument.notes}</p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="border-t pt-4 flex justify-end gap-2">
+                <Button variant="outline" onClick={() => handleDownloadDocument(selectedDocument)}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download PDF
+                </Button>
+                <Button onClick={() => handleSendDocument(selectedDocument)}>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
