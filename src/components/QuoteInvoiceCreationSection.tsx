@@ -640,9 +640,9 @@ const QuoteInvoiceCreationSection = () => {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-50 bg-white border shadow-lg">
                     {Object.entries(CURRENCIES).map(([code, currency]) => (
-                      <SelectItem key={code} value={code}>
+                      <SelectItem key={code} value={code} className="hover:bg-gray-100">
                         {currency.symbol} {currency.name} ({code})
                       </SelectItem>
                     ))}
@@ -917,9 +917,9 @@ const QuoteInvoiceCreationSection = () => {
                       <SelectTrigger>
                         <SelectValue placeholder="Select VAT rate" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-50 bg-white border shadow-lg">
                         {Object.entries(VAT_RATES).map(([label, rate]) => (
-                          <SelectItem key={label} value={rate.toString()}>
+                          <SelectItem key={label} value={rate.toString()} className="hover:bg-gray-100">
                             {label}
                           </SelectItem>
                         ))}
