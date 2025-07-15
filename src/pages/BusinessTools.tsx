@@ -37,11 +37,18 @@ const BusinessTools = () => {
   const [filter, setFilter] = useState<'all' | 'free' | 'premium'>('all');
   const navigate = useNavigate();
   
-  // Handle URL parameters to set the current tool
+  // Handle URL parameters and location state to set the current tool
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const toolParam = urlParams.get('tool') as ToolType;
-    if (toolParam) {
+    
+    // Check for state from navigation
+    const locationState = window.history.state?.usr;
+    const selectedTool = locationState?.selectedTool;
+    
+    if (selectedTool) {
+      setCurrentTool(selectedTool);
+    } else if (toolParam) {
       setCurrentTool(toolParam);
     }
   }, []);

@@ -142,7 +142,11 @@ const UserDashboard = () => {
     }
   };
 
-  const handleDownloadQuoteInvoice = (document: any, type: 'quote' | 'invoice') => {
+  const handleViewQuoteInvoice = (type) => {
+    navigate('/business-tools', { state: { selectedTool: 'business-finance-assistant' } });
+  };
+
+  const handleDownloadQuoteInvoice = (document, type) => {
     try {
       const items = JSON.parse(document.items || '[]');
       const subtotal = document.subtotal || 0;
@@ -525,7 +529,7 @@ const UserDashboard = () => {
                       {quotes.slice(0, 5).map((quote: any) => (
                         <div key={quote.id} className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
                           <div className="flex items-center justify-between">
-                            <div className="flex-1" onClick={() => navigate('/business-tools?tool=business-finance-assistant')}>
+                            <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
                                 <h4 className="font-semibold text-sm">{quote.quote_number}</h4>
                                 <Badge variant="outline" className="text-xs">{quote.status}</Badge>
@@ -544,10 +548,7 @@ const UserDashboard = () => {
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate('/business-tools?tool=business-finance-assistant');
-                                }}
+                                onClick={() => handleViewQuoteInvoice('quote')}
                                 title="View Quote"
                               >
                                 <Eye className="h-4 w-4" />
@@ -576,7 +577,7 @@ const UserDashboard = () => {
                         <Button 
                           className="w-full" 
                           variant="outline"
-                          onClick={() => navigate('/business-tools?tool=business-finance-assistant')}
+                          onClick={() => handleViewQuoteInvoice('quote')}
                         >
                           <Plus className="h-4 w-4 mr-2" />
                           Create New Quote
@@ -610,7 +611,7 @@ const UserDashboard = () => {
                       {invoices.slice(0, 5).map((invoice: any) => (
                         <div key={invoice.id} className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
                           <div className="flex items-center justify-between">
-                            <div className="flex-1" onClick={() => navigate('/business-tools?tool=business-finance-assistant')}>
+                            <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
                                 <h4 className="font-semibold text-sm">{invoice.invoice_number}</h4>
                                 <Badge variant="outline" className="text-xs">{invoice.status}</Badge>
@@ -629,10 +630,7 @@ const UserDashboard = () => {
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate('/business-tools?tool=business-finance-assistant');
-                                }}
+                                onClick={() => handleViewQuoteInvoice('invoice')}
                                 title="View Invoice"
                               >
                                 <Eye className="h-4 w-4" />
@@ -661,7 +659,7 @@ const UserDashboard = () => {
                         <Button 
                           className="w-full" 
                           variant="outline"
-                          onClick={() => navigate('/business-tools?tool=business-finance-assistant')}
+                          onClick={() => handleViewQuoteInvoice('invoice')}
                         >
                           <Plus className="h-4 w-4 mr-2" />
                           Create New Invoice
