@@ -89,12 +89,6 @@ interface BankAccount {
   currency: string;
   isActive: boolean;
   lastSynced?: string;
-  // TrueLayer fields
-  account_id?: string;
-  provider_id?: string;
-  provider_name?: string;
-  available_balance?: number;
-  last_synced_at?: string;
 }
 
 interface BankTransaction {
@@ -195,21 +189,16 @@ const BusinessFinanceAssistant = () => {
     isActive: true
   });
 
-  // UK Banks for integration
-  const ukBanks = [
-    { id: 'hsbc', name: 'HSBC', logo: '🏦', status: 'available' },
-    { id: 'barclays', name: 'Barclays', logo: '🏦', status: 'available' },
-    { id: 'lloyds', name: 'Lloyds Banking Group', logo: '🏦', status: 'available' },
-    { id: 'natwest', name: 'NatWest', logo: '🏦', status: 'available' },
-    { id: 'santander', name: 'Santander UK', logo: '🏦', status: 'available' },
-    { id: 'halifax', name: 'Halifax', logo: '🏦', status: 'available' },
-    { id: 'tesco', name: 'Tesco Bank', logo: '🏦', status: 'available' },
-    { id: 'nationwide', name: 'Nationwide', logo: '🏦', status: 'available' },
-    { id: 'metro', name: 'Metro Bank', logo: '🏦', status: 'available' },
-    { id: 'monzo', name: 'Monzo', logo: '🏦', status: 'available' },
-    { id: 'starling', name: 'Starling Bank', logo: '🏦', status: 'available' },
-    { id: 'revolut', name: 'Revolut', logo: '🏦', status: 'available' }
+  // Supported statement formats
+  const supportedFormats = [
+    { id: 'csv', name: 'CSV', description: 'Comma-separated values', icon: '📊' },
+    { id: 'ofx', name: 'OFX', description: 'Open Financial Exchange', icon: '💾' },
+    { id: 'qif', name: 'QIF', description: 'Quicken Interchange Format', icon: '📁' },
+    { id: 'pdf', name: 'PDF', description: 'Bank statement PDF', icon: '📄' }
   ];
+
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Load bank accounts on component mount
   useEffect(() => {
@@ -225,60 +214,87 @@ const BusinessFinanceAssistant = () => {
       if (!error && accounts) {
         const mappedAccounts = accounts.map(acc => ({
           id: acc.id,
-          accountName: acc.provider_name,
+          accountName: acc.provider_name || acc.account_number,
           accountNumber: acc.account_number || '****',
           sortCode: acc.sort_code || '',
-          bankName: acc.provider_name,
+          bankName: acc.provider_name || 'Manual Entry',
           accountType: acc.account_type as 'current' | 'savings' | 'business',
           balance: acc.balance || 0,
           currency: acc.currency,
           isActive: acc.is_active,
-          lastSynced: acc.last_synced_at,
-          account_id: acc.account_id,
-          provider_id: acc.provider_id,
-          provider_name: acc.provider_name,
-          available_balance: acc.available_balance
+          lastSynced: acc.last_synced_at
         }));
         setBankAccounts(mappedAccounts);
       }
     };
 
-    // Handle authorization callback
-    const handleAuthCallback = async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get('code');
-      
-      if (code) {
-        try {
-          const { data, error } = await supabase.functions.invoke('truelayer-integration', {
-            body: { action: 'exchange-code', code },
-            method: 'POST'
-          });
-
-          if (error) throw error;
-
-          toast({
-            title: "Bank Connected Successfully",
-            description: `Connected ${data.accounts} bank accounts.`,
-          });
-
-          // Clean up URL and reload accounts
-          window.history.replaceState({}, document.title, window.location.pathname);
-          loadBankAccounts();
-        } catch (error) {
-          console.error('Auth callback error:', error);
-          toast({
-            title: "Connection Failed",
-            description: "Failed to complete bank connection.",
-            variant: "destructive"
-          });
-        }
-      }
-    };
-
     loadBankAccounts();
-    handleAuthCallback();
   }, [user]);
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const newFiles = Array.from(files).filter(file => {
+      const extension = file.name.split('.').pop()?.toLowerCase();
+      return ['csv', 'ofx', 'qif', 'pdf'].includes(extension || '');
+    });
+
+    if (newFiles.length === 0) {
+      toast({
+        title: "Invalid File Format",
+        description: "Please upload CSV, OFX, QIF, or PDF files only.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setUploadedFiles(prev => [...prev, ...newFiles]);
+    toast({
+      title: "Files Added",
+      description: `${newFiles.length} file(s) ready for processing.`,
+    });
+  };
+
+  const processStatements = async () => {
+    if (uploadedFiles.length === 0) {
+      toast({
+        title: "No Files",
+        description: "Please upload statement files first.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      // Process each file
+      for (const file of uploadedFiles) {
+        // Here you would implement actual file processing logic
+        // For now, we'll simulate the process
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      toast({
+        title: "Statements Processed",
+        description: `Successfully processed ${uploadedFiles.length} statement file(s).`,
+      });
+
+      setUploadedFiles([]);
+    } catch (error) {
+      toast({
+        title: "Processing Failed",
+        description: "Failed to process statement files.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
 
   const addItem = () => {
     const newItem: FinanceItem = {
@@ -550,94 +566,6 @@ const BusinessFinanceAssistant = () => {
     });
   };
 
-  const connectBankFeed = async (bankId: string) => {
-    setIsSyncing(true);
-    setSelectedBank(bankId);
-
-    try {
-      // Get auth URL from TrueLayer
-      const { data, error } = await supabase.functions.invoke('truelayer-integration', {
-        body: { action: 'get-auth-url', provider_id: bankId },
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (error) throw error;
-
-      // Redirect to TrueLayer auth page
-      window.location.href = data.auth_url;
-      
-    } catch (error) {
-      console.error('Bank connection error:', error);
-      toast({
-        title: "Connection Failed",
-        description: "Unable to connect to bank. Please try again.",
-        variant: "destructive"
-      });
-      setIsSyncing(false);
-      setSelectedBank('');
-    }
-  };
-
-  const syncBankAccount = async (accountId: string) => {
-    setIsSyncing(true);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('truelayer-integration', {
-        body: { action: 'sync-accounts' },
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (error) throw error;
-
-      // Refresh bank accounts from database
-      const { data: accounts, error: accountsError } = await supabase
-        .from('bank_accounts')
-        .select('*')
-        .eq('user_id', user?.id)
-        .eq('is_active', true);
-
-      if (!accountsError && accounts) {
-        const mappedAccounts = accounts.map(acc => ({
-          id: acc.id,
-          accountName: acc.provider_name,
-          accountNumber: acc.account_number || '****',
-          sortCode: acc.sort_code || '',
-          bankName: acc.provider_name,
-          accountType: acc.account_type as 'current' | 'savings' | 'business',
-          balance: acc.balance || 0,
-          currency: acc.currency,
-          isActive: acc.is_active,
-          lastSynced: acc.last_synced_at,
-          account_id: acc.account_id,
-          provider_id: acc.provider_id,
-          provider_name: acc.provider_name,
-          available_balance: acc.available_balance
-        }));
-        setBankAccounts(mappedAccounts);
-      }
-
-      toast({
-        title: "Account Synced",
-        description: `Synced ${data.synced_accounts} accounts successfully.`,
-      });
-      
-    } catch (error) {
-      console.error('Sync error:', error);
-      toast({
-        title: "Sync Failed",
-        description: "Unable to sync account. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSyncing(false);
-    }
-  };
 
   const getTotalRevenue = () => {
     return documents
@@ -1957,48 +1885,6 @@ const BusinessFinanceAssistant = () => {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Landmark className="h-5 w-5" />
-                    Connect Bank Feed
-                  </CardTitle>
-                  <CardDescription>Automatically import transactions from UK banks</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {ukBanks.map((bank) => (
-                      <div key={bank.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{bank.logo}</span>
-                          <div>
-                            <p className="font-medium">{bank.name}</p>
-                            <p className="text-sm text-gray-600">{bank.status}</p>
-                          </div>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => connectBankFeed(bank.id)}
-                          disabled={isSyncing && selectedBank === bank.id}
-                        >
-                          {isSyncing && selectedBank === bank.id ? (
-                            <>
-                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                              Connecting...
-                            </>
-                          ) : (
-                            <>
-                              <Landmark className="h-4 w-4 mr-2" />
-                              Connect
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -2031,15 +1917,7 @@ const BusinessFinanceAssistant = () => {
                             <p>Account: ***{account.accountNumber.slice(-4)} | Sort: {account.sortCode}</p>
                             <p className="flex items-center justify-between">
                               <span>Balance: £{account.balance.toFixed(2)}</span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => syncBankAccount(account.id)}
-                                disabled={isSyncing}
-                              >
-                                <RefreshCw className={`h-4 w-4 mr-1 ${isSyncing ? 'animate-spin' : ''}`} />
-                                Sync
-                              </Button>
+                              <span className="text-xs">Manual Entry</span>
                             </p>
                             {account.lastSynced && (
                               <p className="text-xs">
