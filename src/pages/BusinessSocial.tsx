@@ -26,7 +26,11 @@ import {
   Trash2,
   Image,
   Building2,
-  Globe
+  Globe,
+  Megaphone,
+  Star,
+  DollarSign,
+  Eye
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
@@ -66,10 +70,23 @@ interface PostComment {
   profiles?: Profile;
 }
 
+interface Advertisement {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  price?: number;
+  currency: string;
+  image_urls: string[];
+  view_count: number;
+  user_id: string;
+}
+
 const BusinessSocial = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [posts, setPosts] = useState<SocialPost[]>([]);
+  const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
   const [newPost, setNewPost] = useState('');
@@ -86,6 +103,7 @@ const BusinessSocial = () => {
       fetchProfile(user.id);
     }
     fetchPosts();
+    fetchAdvertisements();
   }, [user]);
 
   const fetchProfile = async (userId: string) => {
@@ -155,6 +173,22 @@ const BusinessSocial = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAdvertisements = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('advertisements')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(3);
+      
+      if (error) throw error;
+      setAdvertisements(data || []);
+    } catch (error) {
+      console.error('Error fetching advertisements:', error);
     }
   };
 
@@ -653,6 +687,76 @@ const BusinessSocial = () => {
                     <p className="text-purple-700 text-sm">756 posts this week</p>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Premium Marketplace */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Megaphone className="h-5 w-5 text-amber-600" />
+                  Premium Marketplace
+                  <Badge variant="secondary" className="ml-1">
+                    <Star className="h-3 w-3 mr-1" />
+                    Premium
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {advertisements.length > 0 ? (
+                  <div className="space-y-4">
+                    {advertisements.map((ad) => (
+                      <div key={ad.id} className="border rounded-lg p-3 hover:shadow-sm transition-shadow">
+                        <div className="flex items-start gap-3">
+                          {ad.image_urls.length > 0 && (
+                            <img
+                              src={ad.image_urls[0]}
+                              alt={ad.title}
+                              className="w-12 h-12 object-cover rounded"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm line-clamp-1">{ad.title}</h4>
+                            <p className="text-xs text-gray-500 mb-1">{ad.category}</p>
+                            <p className="text-xs text-gray-600 line-clamp-2">{ad.description}</p>
+                            <div className="flex items-center justify-between mt-2">
+                              {ad.price && (
+                                <div className="flex items-center gap-1 text-xs text-primary font-medium">
+                                  <DollarSign className="w-3 h-3" />
+                                  {ad.price} {ad.currency}
+                                </div>
+                              )}
+                              <div className="flex items-center gap-1 text-xs text-gray-400">
+                                <Eye className="w-3 h-3" />
+                                {ad.view_count}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="pt-2 border-t">
+                      <Link to="/business-tools">
+                        <Button variant="outline" size="sm" className="w-full">
+                          View All Marketplace
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <Megaphone className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500 mb-3">No premium ads yet</p>
+                    <Link to="/business-tools">
+                      <Button size="sm" variant="outline">
+                        Explore Marketplace
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
