@@ -37,13 +37,17 @@ interface FinanceDocument {
 }
 
 const BusinessFinanceAssistant = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'manage'>('dashboard');
   const [documentType, setDocumentType] = useState<'invoice' | 'quote'>('invoice');
   const [documents, setDocuments] = useState<FinanceDocument[]>([]);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
   
   const [formData, setFormData] = useState({
     clientName: '',
     clientEmail: '',
+    clientAddress: '',
     date: '',
     dueDate: '',
     validUntil: '',
@@ -139,6 +143,7 @@ const BusinessFinanceAssistant = () => {
     setFormData({
       clientName: '',
       clientEmail: '',
+      clientAddress: '',
       date: '',
       dueDate: '',
       validUntil: '',
@@ -175,6 +180,86 @@ const BusinessFinanceAssistant = () => {
 
   const getActiveQuotes = () => {
     return documents.filter(doc => doc.type === 'quote' && doc.status === 'draft').length;
+  };
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please select an image file (PNG, JPG, etc.)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "File Too Large",
+        description: "Please select an image smaller than 2MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLogoUploading(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/logo-${Date.now()}.${fileExt}`;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('company-logos')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('company-logos')
+        .getPublicUrl(fileName);
+
+      setLogoUrl(publicUrl);
+      toast({
+        title: "Logo Uploaded",
+        description: "Your company logo has been uploaded successfully!"
+      });
+
+    } catch (error) {
+      console.error('Logo upload error:', error);
+      toast({
+        title: "Upload Failed", 
+        description: "Failed to upload logo. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
+  const removeLogo = async () => {
+    if (!logoUrl || !user) return;
+
+    try {
+      // Extract filename from URL for deletion
+      const urlParts = logoUrl.split('/');
+      const fileName = `${user.id}/${urlParts[urlParts.length - 1]}`;
+      
+      await supabase.storage
+        .from('company-logos')
+        .remove([fileName]);
+
+      setLogoUrl(null);
+      toast({
+        title: "Logo Removed",
+        description: "Your company logo has been removed."
+      });
+    } catch (error) {
+      console.error('Logo removal error:', error);
+    }
   };
 
   return (
@@ -328,26 +413,110 @@ const BusinessFinanceAssistant = () => {
                   </Button>
                 </div>
 
-                {/* Client Information */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="clientName">Client Name *</Label>
-                    <Input
-                      id="clientName"
-                      value={formData.clientName}
-                      onChange={(e) => setFormData({...formData, clientName: e.target.value})}
-                      placeholder="Client or company name"
-                    />
+                {/* Company Logo Upload */}
+                <div className="border rounded-lg p-4">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <Image className="h-4 w-4" />
+                    Company Logo
+                  </h3>
+                  <div className="space-y-4">
+                    {logoUrl ? (
+                      <div className="flex items-center gap-4">
+                        <div className="relative">
+                          <img 
+                            src={logoUrl} 
+                            alt="Company Logo" 
+                            className="h-20 w-20 object-contain border rounded-lg bg-gray-50"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-600 mb-2">
+                            Logo uploaded successfully. This will appear on your {documentType}s.
+                          </p>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            onClick={removeLogo}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Remove Logo
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        <Image className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                        <div className="mb-4">
+                          <p className="text-sm text-gray-600 mb-2">
+                            Upload your company logo to appear on {documentType}s
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            PNG, JPG up to 2MB
+                          </p>
+                        </div>
+                        <div className="relative">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleLogoUpload}
+                            disabled={logoUploading || !user}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          />
+                          <Button 
+                            type="button" 
+                            variant="outline"
+                            disabled={logoUploading || !user}
+                            className="relative"
+                          >
+                            <Upload className="h-4 w-4 mr-2" />
+                            {logoUploading ? 'Uploading...' : 'Choose Logo'}
+                          </Button>
+                        </div>
+                        {!user && (
+                          <p className="text-xs text-amber-600 mt-2">
+                            Please sign in to upload a logo
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <Label htmlFor="clientEmail">Client Email *</Label>
-                    <Input
-                      id="clientEmail"
-                      type="email"
-                      value={formData.clientEmail}
-                      onChange={(e) => setFormData({...formData, clientEmail: e.target.value})}
-                      placeholder="client@example.com"
-                    />
+                </div>
+
+                {/* Client Information */}
+                <div className="border rounded-lg p-4">
+                  <h3 className="font-semibold mb-4">Client Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="clientName">Client Name *</Label>
+                      <Input
+                        id="clientName"
+                        value={formData.clientName}
+                        onChange={(e) => setFormData({...formData, clientName: e.target.value})}
+                        placeholder="Client or company name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="clientEmail">Client Email *</Label>
+                      <Input
+                        id="clientEmail"
+                        type="email"
+                        value={formData.clientEmail}
+                        onChange={(e) => setFormData({...formData, clientEmail: e.target.value})}
+                        placeholder="client@example.com"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="clientAddress">Client Address</Label>
+                      <Textarea
+                        id="clientAddress"
+                        value={formData.clientAddress}
+                        onChange={(e) => setFormData({...formData, clientAddress: e.target.value})}
+                        placeholder="Client's billing address"
+                        rows={3}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -518,13 +687,22 @@ const BusinessFinanceAssistant = () => {
                             </div>
                             <div className="flex items-center gap-2">
                               <Button variant="outline" size="sm">
-                                <Edit3 className="h-4 w-4 mr-1" />
-                                Edit
+                                <Eye className="h-4 w-4 mr-1" />
+                                View
+                              </Button>
+                              <Button variant="outline" size="sm">
+                                <Download className="h-4 w-4 mr-1" />
+                                Download
+                              </Button>
+                              <Button variant="outline" size="sm">
+                                <Send className="h-4 w-4 mr-1" />
+                                Send
                               </Button>
                               <Button 
                                 variant="outline" 
                                 size="sm"
                                 onClick={() => deleteDocument(doc.id)}
+                                className="text-red-600 hover:text-red-700"
                               >
                                 <Trash2 className="h-4 w-4 mr-1" />
                                 Delete
