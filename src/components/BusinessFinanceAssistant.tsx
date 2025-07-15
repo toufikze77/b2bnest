@@ -7,107 +7,19 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import QuoteInvoiceCreationSection from '@/components/QuoteInvoiceCreationSection';
-
-interface FinanceItem {
-  id: string;
-  description: string;
-  quantity: number;
-  rate: number;
-  amount: number;
-}
-
-interface FinanceDocument {
-  id: string;
-  type: 'invoice' | 'quote';
-  number: string;
-  clientName: string;
-  clientEmail: string;
-  date: string;
-  dueDate?: string;
-  validUntil?: string;
-  items: FinanceItem[];
-  total: number;
-  status: string;
-  notes: string;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  category: 'product' | 'service';
-  price: number;
-  cost: number;
-  stockQuantity?: number;
-  isActive: boolean;
-}
-
-interface Supplier {
-  id: string;
-  name: string;
-  contactPerson: string;
-  email: string;
-  phone: string;
-  address: string;
-  paymentTerms: string;
-  isActive: boolean;
-}
-
-interface Expense {
-  id: string;
-  supplierId?: string;
-  category: string;
-  description: string;
-  amount: number;
-  date: string;
-  status: 'pending' | 'approved' | 'paid';
-}
-
-interface Outgoing {
-  id: string;
-  supplierId?: string;
-  name: string;
-  category: string;
-  amount: number;
-  frequency: 'monthly' | 'quarterly' | 'annually';
-  nextPaymentDate: string;
-  isActive: boolean;
-}
-
-interface BankAccount {
-  id: string;
-  accountName?: string;
-  accountNumber: string;
-  sortCode?: string;
-  bankName?: string;
-  accountType: 'current' | 'savings' | 'business';
-  balance: number;
-  currency: string;
-  isActive: boolean;
-  lastSynced?: string;
-}
-
-interface BankTransaction {
-  id: string;
-  accountId: string;
-  date: string;
-  description: string;
-  amount: number;
-  type: 'credit' | 'debit';
-  category?: string;
-  reference?: string;
-  balance: number;
-}
+import DocumentList from '@/components/DocumentList';
+import { formatCurrency } from '@/utils/currencyUtils';
 
 const BusinessFinanceAssistant = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'manage' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'banking' | 'reports'>('dashboard');
-  const [documentType, setDocumentType] = useState<'invoice' | 'quote'>('invoice');
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'manage' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'banking' | 'reports' | 'analytics'>('dashboard');
+  const [documentType, setDocumentType] = useState<'invoice' | 'quote'>('quote');
   const [documents, setDocuments] = useState<FinanceDocument[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -258,9 +170,118 @@ const BusinessFinanceAssistant = () => {
 
   // Load data on component mount
   useEffect(() => {
-    loadBankAccounts();
-    loadBankTransactions();
+    if (user) {
+      fetchData();
+    }
   }, [user]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [quotesData, invoicesData, productsData, suppliersData, expensesData, outgoingsData] = await Promise.all([
+        fetchQuotes(),
+        fetchInvoices(),
+        fetchProducts(),
+        fetchSuppliers(),
+        fetchExpenses(),
+        fetchOutgoings()
+      ]);
+
+      setQuotes(quotesData || []);
+      setInvoices(invoicesData || []);
+      setProducts(productsData || []);
+      setSuppliers(suppliersData || []);
+      setExpenses(expensesData || []);
+      setOutgoings(outgoingsData || []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load data.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchQuotes = async () => {
+    const { data, error } = await supabase
+      .from('quotes')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching quotes:', error);
+      return [];
+    }
+    return data;
+  };
+
+  const fetchInvoices = async () => {
+    const { data, error } = await supabase
+      .from('invoices')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching invoices:', error);
+      return [];
+    }
+    return data;
+  };
+
+  const fetchProducts = async () => {
+    const { data, error } = await supabase
+      .from('products_services')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching products:', error);
+      return [];
+    }
+    return data;
+  };
+
+  const fetchSuppliers = async () => {
+    const { data, error } = await supabase
+      .from('suppliers')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching suppliers:', error);
+      return [];
+    }
+    return data;
+  };
+
+  const fetchExpenses = async () => {
+    const { data, error } = await supabase
+      .from('expenses')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching expenses:', error);
+      return [];
+    }
+    return data;
+  };
+
+  const fetchOutgoings = async () => {
+    const { data, error } = await supabase
+      .from('outgoings')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching outgoings:', error);
+      return [];
+    }
+    return data;
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -506,7 +527,7 @@ const BusinessFinanceAssistant = () => {
   const downloadCatalog = () => {
     const csvContent = "data:text/csv;charset=utf-8," + 
       "Name,Category,Price,Cost,Stock,Status\n" +
-      products.map(p => `${p.name},${p.category},${p.price},${p.cost || 0},${p.stockQuantity || 'N/A'},${p.isActive ? 'Active' : 'Inactive'}`).join("\n");
+      products.map(p => `${p.name},${p.category},${p.price},${p.cost || 0},${p.stockQuantity || 'N/A'}` + (p.isActive ? ',Active' : ',Inactive')).join("\n");
     
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -882,7 +903,6 @@ const BusinessFinanceAssistant = () => {
     }
   };
 
-
   const getTotalRevenue = () => {
     return documents
       .filter(doc => doc.type === 'invoice' && doc.status === 'paid')
@@ -988,6 +1008,238 @@ const BusinessFinanceAssistant = () => {
     }
   };
 
+  const handleViewQuotesInvoices = (type) => {
+    setDocumentType(type);
+    setViewingDocuments(true);
+  };
+
+  const handleDownloadDocument = (document, type) => {
+    try {
+      const items = JSON.parse(document.items || '[]');
+      const subtotal = document.subtotal || 0;
+      const taxAmount = document.tax_amount || 0;
+      const total = document.total_amount || 0;
+      const currency = document.currency || 'USD';
+      
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${type === 'quote' ? 'Quote' : 'Invoice'} ${type === 'quote' ? document.quote_number : document.invoice_number}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+            .header { display: flex; justify-content: space-between; margin-bottom: 40px; align-items: flex-start; }
+            .company-info h1 { margin: 0; color: #2563eb; font-size: 28px; }
+            .company-info p { margin: 5px 0; color: #666; }
+            .document-title { text-align: right; }
+            .document-title h2 { margin: 0; font-size: 2.5em; color: #374151; font-weight: bold; }
+            .document-title p { margin: 5px 0; font-size: 14px; }
+            .client-info { margin: 30px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; }
+            .client-info h3 { margin: 0 0 15px 0; color: #374151; }
+            .client-info p { margin: 3px 0; }
+            .items-table { width: 100%; border-collapse: collapse; margin: 30px 0; }
+            .items-table th, .items-table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+            .items-table th { background-color: #f1f5f9; font-weight: 600; color: #374151; }
+            .items-table .text-right { text-align: right; }
+            .items-table .text-center { text-align: center; }
+            .totals { margin: 30px 0; }
+            .totals-table { margin-left: auto; min-width: 300px; }
+            .totals-table td { padding: 8px 15px; border: none; }
+            .totals-table .subtotal-row { border-bottom: 1px solid #ddd; }
+            .totals-table .total-row { border-top: 2px solid #374151; font-weight: bold; font-size: 18px; }
+            .notes { margin: 40px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; }
+            .notes h3 { margin: 0 0 15px 0; color: #374151; }
+            .logo { max-height: 80px; margin-bottom: 15px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="company-info">
+              ${document.logo_url ? `<img src="${document.logo_url}" alt="Logo" class="logo">` : ''}
+              <h1>${document.company_name || 'Company Name'}</h1>
+              <p>${(document.company_address || '').replace(/\n/g, '<br>')}</p>
+            </div>
+            <div class="document-title">
+              <h2>${type === 'quote' ? 'QUOTE' : 'INVOICE'}</h2>
+              <p><strong>Number:</strong> ${type === 'quote' ? document.quote_number : document.invoice_number}</p>
+              <p><strong>Date:</strong> ${new Date(document.created_at).toLocaleDateString()}</p>
+              ${type === 'quote' && document.valid_until ? `<p><strong>Valid Until:</strong> ${new Date(document.valid_until).toLocaleDateString()}</p>` : ''}
+              ${type === 'invoice' && document.due_date ? `<p><strong>Due Date:</strong> ${new Date(document.due_date).toLocaleDateString()}</p>` : ''}
+            </div>
+          </div>
+          
+          <div class="client-info">
+            <h3>Bill To:</h3>
+            <p><strong>${document.client_name}</strong></p>
+            <p>${document.client_email}</p>
+            <p>${(document.client_address || '').replace(/\n/g, '<br>')}</p>
+          </div>
+          
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th class="text-center">Quantity</th>
+                <th class="text-right">Rate</th>
+                <th class="text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map((item) => `
+                <tr>
+                  <td>${item.description}</td>
+                  <td class="text-center">${item.quantity}</td>
+                  <td class="text-right">${formatCurrency(item.rate, currency)}</td>
+                  <td class="text-right">${formatCurrency(item.amount, currency)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          <div class="totals">
+            <table class="totals-table">
+              <tr class="subtotal-row">
+                <td>Subtotal:</td>
+                <td class="text-right">${formatCurrency(subtotal, currency)}</td>
+              </tr>
+              ${taxAmount > 0 ? `
+              <tr class="subtotal-row">
+                <td>Tax (${document.tax_rate}%):</td>
+                <td class="text-right">${formatCurrency(taxAmount, currency)}</td>
+              </tr>
+              ` : ''}
+              <tr class="total-row">
+                <td><strong>Total:</strong></td>
+                <td class="text-right"><strong>${formatCurrency(total, currency)}</strong></td>
+              </tr>
+            </table>
+          </div>
+          
+          ${document.notes ? `
+          <div class="notes">
+            <h3>Notes:</h3>
+            <p>${document.notes.replace(/\n/g, '<br>')}</p>
+          </div>
+          ` : ''}
+        </body>
+        </html>
+      `;
+
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${type}-${type === 'quote' ? document.quote_number : document.invoice_number}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Download Complete",
+        description: `${type === 'quote' ? 'Quote' : 'Invoice'} downloaded successfully.`,
+      });
+    } catch (error) {
+      console.error('Download error:', error);
+      toast({
+        title: "Download Failed",
+        description: "Failed to download document. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSendDocument = async (document, type) => {
+    setSendingDocument(document.id);
+    try {
+      // Here you would implement the actual sending logic
+      // For now, we'll just simulate it
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      toast({
+        title: "Document Sent",
+        description: `${type === 'quote' ? 'Quote' : 'Invoice'} sent successfully to ${document.client_email}.`,
+      });
+    } catch (error) {
+      console.error('Send error:', error);
+      toast({
+        title: "Send Failed",
+        description: "Failed to send document. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setSendingDocument(null);
+    }
+  };
+
+  const downloadCSV = (data, filename) => {
+    if (!data || data.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No data available to download.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => headers.map(header => `"${row[header] || ''}"`).join(',')
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    toast({
+      title: "Download Complete",
+      description: `${filename} downloaded successfully.`,
+    });
+  };
+
+  const [viewingDocuments, setViewingDocuments] = useState(false);
+  const [sendingDocument, setSendingDocument] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-lg">Loading Business Finance Assistant...</div>
+      </div>
+    );
+  }
+
+  if (viewingDocuments) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+        <DocumentList
+          activeTab={documentType}
+          quotes={quotes}
+          invoices={invoices}
+          loading={loading}
+          sendingDocument={sendingDocument}
+          onTabChange={(tab) => setDocumentType(tab)}
+          onBack={() => setViewingDocuments(false)}
+          onView={(id, type) => console.log('View document:', id, type)}
+          onDownload={handleDownloadDocument}
+          onSend={handleSendDocument}
+        />
+      </div>
+    );
+  }
+
+  const activeQuotes = quotes.filter(q => q.status === 'active' || q.status === 'sent').length;
+  const pendingInvoices = invoices.filter(i => i.status === 'pending').length;
+  const totalRevenue = invoices.reduce((sum, invoice) => sum + (invoice.total_amount || 0), 0);
+  const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+
   return (
     <div className="max-w-7xl mx-auto p-6">
       <div className="mb-8">
@@ -1001,7 +1253,7 @@ const BusinessFinanceAssistant = () => {
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
           <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <PieChart className="h-4 w-4" />
@@ -1039,11 +1291,18 @@ const BusinessFinanceAssistant = () => {
               <BarChart3 className="h-4 w-4" />
               Reports
             </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <Landmark className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6 mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-              <Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card 
+                className="cursor-pointer hover:shadow-lg transition-shadow" 
+                onClick={() => handleViewQuotesInvoices('quote')}
+              >
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
                     <DollarSign className="h-4 w-4 text-green-600" />
@@ -1056,7 +1315,10 @@ const BusinessFinanceAssistant = () => {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card 
+                className="cursor-pointer hover:shadow-lg transition-shadow" 
+                onClick={() => handleViewQuotesInvoices('invoice')}
+              >
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
                     <Receipt className="h-4 w-4 text-orange-600" />
@@ -1092,19 +1354,6 @@ const BusinessFinanceAssistant = () => {
                 <CardContent>
                   <div className="text-2xl font-bold">${getTotalExpenses().toFixed(2)}</div>
                   <p className="text-xs text-gray-600">YTD expenses</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <TrendingDown className="h-4 w-4 text-purple-600" />
-                    Annual Outgoings
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">${getTotalOutgoings().toFixed(2)}</div>
-                  <p className="text-xs text-gray-600">Projected annual</p>
                 </CardContent>
               </Card>
             </div>
@@ -2352,6 +2601,47 @@ const BusinessFinanceAssistant = () => {
                       ))}
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6 mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Monthly Revenue</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">{formatCurrency(totalRevenue, 'USD')}</div>
+                  <p className="text-sm text-gray-600">Total from invoices</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Monthly Expenses</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-red-600">{formatCurrency(totalExpenses, 'USD')}</div>
+                  <p className="text-sm text-gray-600">Total expenses</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Net Profit</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">{formatCurrency(totalRevenue - totalExpenses, 'USD')}</div>
+                  <p className="text-sm text-gray-600">Revenue - Expenses</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Total Quotes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{quotes.length}</div>
+                  <p className="text-sm text-gray-600">Active: {activeQuotes}</p>
                 </CardContent>
               </Card>
             </div>
