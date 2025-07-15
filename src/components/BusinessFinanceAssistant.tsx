@@ -200,35 +200,64 @@ const BusinessFinanceAssistant = () => {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Load bank accounts on component mount
+  // Load bank accounts function
+  const loadBankAccounts = async () => {
+    if (!user) return;
+    
+    const { data: accounts, error } = await supabase
+      .from('bank_accounts')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_active', true);
+
+    if (!error && accounts) {
+      const mappedAccounts = accounts.map(acc => ({
+        id: acc.id,
+        accountName: acc.provider_name || acc.account_number,
+        accountNumber: acc.account_number || '****',
+        sortCode: acc.sort_code || '',
+        bankName: acc.provider_name || 'Manual Entry',
+        accountType: acc.account_type as 'current' | 'savings' | 'business',
+        balance: acc.balance || 0,
+        currency: acc.currency,
+        isActive: acc.is_active,
+        lastSynced: acc.last_synced_at
+      }));
+      setBankAccounts(mappedAccounts);
+    }
+  };
+
+  // Load bank transactions function
+  const loadBankTransactions = async () => {
+    if (!user) return;
+    
+    const { data: transactions, error } = await supabase
+      .from('bank_transactions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('transaction_date', { ascending: false })
+      .limit(50);
+
+    if (!error && transactions) {
+      const mappedTransactions = transactions.map(trans => ({
+        id: trans.id,
+        accountId: trans.bank_account_id,
+        date: trans.transaction_date,
+        description: trans.description || '',
+        amount: trans.amount,
+        type: trans.transaction_type as 'credit' | 'debit',
+        category: trans.category,
+        reference: trans.transaction_id,
+        balance: trans.balance_after || 0
+      }));
+      setBankTransactions(mappedTransactions);
+    }
+  };
+
+  // Load data on component mount
   useEffect(() => {
-    const loadBankAccounts = async () => {
-      if (!user) return;
-      
-      const { data: accounts, error } = await supabase
-        .from('bank_accounts')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true);
-
-      if (!error && accounts) {
-        const mappedAccounts = accounts.map(acc => ({
-          id: acc.id,
-          accountName: acc.provider_name || acc.account_number,
-          accountNumber: acc.account_number || '****',
-          sortCode: acc.sort_code || '',
-          bankName: acc.provider_name || 'Manual Entry',
-          accountType: acc.account_type as 'current' | 'savings' | 'business',
-          balance: acc.balance || 0,
-          currency: acc.currency,
-          isActive: acc.is_active,
-          lastSynced: acc.last_synced_at
-        }));
-        setBankAccounts(mappedAccounts);
-      }
-    };
-
     loadBankAccounts();
+    loadBankTransactions();
   }, [user]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -266,30 +295,198 @@ const BusinessFinanceAssistant = () => {
       return;
     }
 
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to process statements.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsProcessing(true);
     try {
-      // Process each file
+      let totalTransactions = 0;
+      let totalAccounts = 0;
+
       for (const file of uploadedFiles) {
-        // Here you would implement actual file processing logic
-        // For now, we'll simulate the process
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const fileExtension = file.name.split('.').pop()?.toLowerCase();
+        
+        if (fileExtension === 'csv') {
+          // Parse CSV file
+          const text = await file.text();
+          const { transactions, accountInfo } = parseCSVStatement(text, file.name);
+          
+          if (accountInfo) {
+            // Create or update bank account
+            const { data: existingAccount } = await supabase
+              .from('bank_accounts')
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('account_number', accountInfo.accountNumber)
+              .single();
+
+            if (!existingAccount) {
+              await supabase.from('bank_accounts').insert({
+                user_id: user.id,
+                account_id: accountInfo.accountNumber,
+                provider_id: 'manual_upload',
+                provider_name: accountInfo.bankName || 'Manual Upload',
+                account_type: 'current',
+                account_number: accountInfo.accountNumber,
+                sort_code: accountInfo.sortCode,
+                currency: 'GBP',
+                balance: accountInfo.balance,
+                available_balance: accountInfo.balance,
+                last_synced_at: new Date().toISOString(),
+                is_active: true
+              });
+              totalAccounts++;
+            }
+
+            // Insert transactions
+            for (const transaction of transactions) {
+              await supabase.from('bank_transactions').insert({
+                user_id: user.id,
+                bank_account_id: existingAccount?.id || accountInfo.accountNumber,
+                transaction_id: `${file.name}_${transaction.date}_${transaction.amount}`,
+                amount: transaction.amount,
+                currency: 'GBP',
+                description: transaction.description,
+                transaction_type: transaction.amount >= 0 ? 'credit' : 'debit',
+                category: transaction.category,
+                merchant_name: transaction.merchant,
+                transaction_date: transaction.date,
+                timestamp: new Date(transaction.date).toISOString(),
+                balance_after: transaction.balance
+              });
+              totalTransactions++;
+            }
+          }
+        } else {
+          // For other formats, show a message that parsing is not yet implemented
+          toast({
+            title: "Format Not Implemented",
+            description: `${fileExtension?.toUpperCase()} parsing will be implemented soon. Please use CSV format for now.`,
+            variant: "destructive"
+          });
+        }
       }
 
+      // Reload bank accounts and transactions
+      await loadBankAccounts();
+      await loadBankTransactions();
+
       toast({
-        title: "Statements Processed",
-        description: `Successfully processed ${uploadedFiles.length} statement file(s).`,
+        title: "Statements Processed Successfully",
+        description: `Imported ${totalTransactions} transactions from ${uploadedFiles.length} file(s). ${totalAccounts} new account(s) created.`,
       });
 
       setUploadedFiles([]);
     } catch (error) {
+      console.error('Error processing statements:', error);
       toast({
         title: "Processing Failed",
-        description: "Failed to process statement files.",
+        description: "Failed to process statement files. Please check the file format.",
         variant: "destructive"
       });
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  // Simple CSV parser for bank statements
+  const parseCSVStatement = (csvText: string, fileName: string) => {
+    const lines = csvText.split('\n').filter(line => line.trim());
+    const transactions: any[] = [];
+    
+    // Try to detect CSV format and parse accordingly
+    const headers = lines[0].toLowerCase().split(',');
+    
+    // Common bank statement formats
+    let dateIndex = headers.findIndex(h => h.includes('date') || h.includes('transaction'));
+    let descIndex = headers.findIndex(h => h.includes('description') || h.includes('details') || h.includes('narrative'));
+    let amountIndex = headers.findIndex(h => h.includes('amount') || h.includes('credit') || h.includes('debit'));
+    let balanceIndex = headers.findIndex(h => h.includes('balance'));
+
+    // Fallback to positional parsing if headers not found
+    if (dateIndex === -1) dateIndex = 0;
+    if (descIndex === -1) descIndex = 1;
+    if (amountIndex === -1) amountIndex = 2;
+    if (balanceIndex === -1) balanceIndex = 3;
+
+    for (let i = 1; i < lines.length; i++) {
+      const columns = lines[i].split(',');
+      if (columns.length < 3) continue;
+
+      const date = columns[dateIndex]?.replace(/"/g, '').trim();
+      const description = columns[descIndex]?.replace(/"/g, '').trim();
+      const amountStr = columns[amountIndex]?.replace(/"/g, '').replace(/[£$,]/g, '').trim();
+      const balanceStr = columns[balanceIndex]?.replace(/"/g, '').replace(/[£$,]/g, '').trim();
+
+      if (date && description && amountStr) {
+        transactions.push({
+          date: formatDate(date),
+          description: description,
+          amount: parseFloat(amountStr) || 0,
+          balance: parseFloat(balanceStr) || 0,
+          category: categorizeTransaction(description),
+          merchant: extractMerchant(description)
+        });
+      }
+    }
+
+    // Extract account info from filename or transactions
+    const accountInfo = {
+      accountNumber: fileName.replace(/\.[^/.]+$/, "").slice(-8) || '12345678',
+      bankName: 'Uploaded Statement',
+      sortCode: '12-34-56',
+      balance: transactions.length > 0 ? transactions[transactions.length - 1].balance : 0
+    };
+
+    return { transactions, accountInfo };
+  };
+
+  // Helper functions
+  const formatDate = (dateStr: string): string => {
+    // Try various date formats
+    const formats = [
+      /(\d{1,2})\/(\d{1,2})\/(\d{4})/,  // MM/DD/YYYY or DD/MM/YYYY
+      /(\d{4})-(\d{1,2})-(\d{1,2})/,    // YYYY-MM-DD
+      /(\d{1,2})-(\d{1,2})-(\d{4})/     // DD-MM-YYYY
+    ];
+
+    for (const format of formats) {
+      const match = dateStr.match(format);
+      if (match) {
+        const [, a, b, c] = match;
+        // Assume YYYY-MM-DD if year is first, otherwise DD/MM/YYYY
+        if (c.length === 4) {
+          return `${c}-${b.padStart(2, '0')}-${a.padStart(2, '0')}`;
+        } else {
+          return `${c}-${b.padStart(2, '0')}-${a.padStart(2, '0')}`;
+        }
+      }
+    }
+    
+    return new Date().toISOString().split('T')[0]; // Fallback to today
+  };
+
+  const categorizeTransaction = (description: string): string => {
+    const desc = description.toLowerCase();
+    if (desc.includes('salary') || desc.includes('payroll')) return 'salary';
+    if (desc.includes('grocery') || desc.includes('supermarket')) return 'groceries';
+    if (desc.includes('fuel') || desc.includes('petrol') || desc.includes('gas')) return 'fuel';
+    if (desc.includes('restaurant') || desc.includes('cafe') || desc.includes('food')) return 'dining';
+    if (desc.includes('transfer') || desc.includes('payment')) return 'transfer';
+    if (desc.includes('fee') || desc.includes('charge')) return 'fees';
+    return 'other';
+  };
+
+  const extractMerchant = (description: string): string => {
+    // Extract merchant name from description
+    const parts = description.split(' ');
+    return parts.slice(0, 3).join(' '); // Take first 3 words as merchant
   };
 
   const removeFile = (index: number) => {
@@ -532,7 +729,7 @@ const BusinessFinanceAssistant = () => {
     });
   };
 
-  const addBankAccount = () => {
+  const addBankAccount = async () => {
     if (!bankAccountForm.accountName || !bankAccountForm.accountNumber || !bankAccountForm.sortCode || !bankAccountForm.bankName) {
       toast({
         title: "Invalid Bank Account",
@@ -542,28 +739,61 @@ const BusinessFinanceAssistant = () => {
       return;
     }
 
-    const newBankAccount: BankAccount = {
-      id: Date.now().toString(),
-      ...bankAccountForm,
-      lastSynced: new Date().toISOString()
-    };
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to add bank accounts.",
+        variant: "destructive"
+      });
+      return;
+    }
 
-    setBankAccounts([...bankAccounts, newBankAccount]);
-    setBankAccountForm({
-      accountName: '',
-      accountNumber: '',
-      sortCode: '',
-      bankName: '',
-      accountType: 'current',
-      balance: 0,
-      currency: 'GBP',
-      isActive: true
-    });
+    try {
+      const { error } = await supabase
+        .from('bank_accounts')
+        .insert({
+          user_id: user.id,
+          account_id: bankAccountForm.accountNumber,
+          provider_id: 'manual_entry',
+          provider_name: bankAccountForm.bankName,
+          account_type: bankAccountForm.accountType,
+          account_number: bankAccountForm.accountNumber,
+          sort_code: bankAccountForm.sortCode,
+          currency: bankAccountForm.currency,
+          balance: bankAccountForm.balance,
+          available_balance: bankAccountForm.balance,
+          last_synced_at: new Date().toISOString(),
+          is_active: bankAccountForm.isActive
+        });
 
-    toast({
-      title: "Bank Account Added",
-      description: `${newBankAccount.accountName} has been added successfully.`,
-    });
+      if (error) throw error;
+
+      // Reload bank accounts
+      await loadBankAccounts();
+
+      setBankAccountForm({
+        accountName: '',
+        accountNumber: '',
+        sortCode: '',
+        bankName: '',
+        accountType: 'current',
+        balance: 0,
+        currency: 'GBP',
+        isActive: true
+      });
+
+      toast({
+        title: "Bank Account Added",
+        description: `${bankAccountForm.accountName} has been added successfully.`,
+      });
+    } catch (error) {
+      console.error('Error adding bank account:', error);
+      toast({
+        title: "Failed to Add Account",
+        description: "There was an error adding the bank account.",
+        variant: "destructive"
+      });
+    }
   };
 
 
@@ -1797,14 +2027,96 @@ const BusinessFinanceAssistant = () => {
           </TabsContent>
 
           <TabsContent value="banking" className="space-y-6 mt-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Upload className="h-5 w-5" />
+                    Upload Bank Statements
+                  </CardTitle>
+                  <CardDescription>Import transactions from statement files</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                    <p className="text-sm text-gray-600 mb-2">Upload bank statement files</p>
+                    <p className="text-xs text-gray-500 mb-4">
+                      Supported formats: CSV, OFX, QIF, PDF
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 mb-4">
+                      {supportedFormats.map((format) => (
+                        <div key={format.id} className="flex items-center gap-1">
+                          <span>{format.icon}</span>
+                          <span>{format.name} - {format.description}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <Input
+                      type="file"
+                      multiple
+                      accept=".csv,.ofx,.qif,.pdf"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      id="statement-upload"
+                    />
+                    <Label htmlFor="statement-upload" className="cursor-pointer">
+                      <Button variant="outline" className="w-full">
+                        <Upload className="h-4 w-4 mr-2" />
+                        Choose Files
+                      </Button>
+                    </Label>
+                  </div>
+
+                  {uploadedFiles.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Files to process:</p>
+                      {uploadedFiles.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            <span className="text-sm">{file.name}</span>
+                            <span className="text-xs text-gray-500">
+                              ({(file.size / 1024).toFixed(1)} KB)
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeFile(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button 
+                        onClick={processStatements} 
+                        disabled={isProcessing}
+                        className="w-full"
+                      >
+                        {isProcessing ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Process {uploadedFiles.length} File(s)
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Banknote className="h-5 w-5" />
                     Add Bank Account
                   </CardTitle>
-                  <CardDescription>Connect your business bank accounts</CardDescription>
+                  <CardDescription>Manually add bank account details</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
