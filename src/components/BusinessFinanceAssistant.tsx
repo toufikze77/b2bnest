@@ -14,6 +14,24 @@ import { useAuth } from '@/hooks/useAuth';
 import QuoteInvoiceCreationSection from '@/components/QuoteInvoiceCreationSection';
 import DocumentList from '@/components/DocumentList';
 import { formatCurrency } from '@/utils/currencyUtils';
+import { Tables } from '@/integrations/supabase/types';
+
+// Type definitions
+type FinanceDocument = Tables<'quotes'> | Tables<'invoices'>;
+type Product = Tables<'products_services'>;
+type Supplier = Tables<'suppliers'>;
+type Expense = Tables<'expenses'>;
+type Outgoing = Tables<'outgoings'>;
+type BankAccount = Tables<'bank_accounts'>;
+type BankTransaction = Tables<'bank_transactions'>;
+
+interface FinanceItem {
+  id: string;
+  description: string;
+  quantity: number;
+  rate: number;
+  amount: number;
+}
 
 const BusinessFinanceAssistant = () => {
   const { user } = useAuth();
@@ -21,6 +39,8 @@ const BusinessFinanceAssistant = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'manage' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'banking' | 'reports' | 'analytics'>('dashboard');
   const [documentType, setDocumentType] = useState<'invoice' | 'quote'>('quote');
   const [documents, setDocuments] = useState<FinanceDocument[]>([]);
+  const [quotes, setQuotes] = useState<Tables<'quotes'>[]>([]);
+  const [invoices, setInvoices] = useState<Tables<'invoices'>[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -527,7 +547,7 @@ const BusinessFinanceAssistant = () => {
   const downloadCatalog = () => {
     const csvContent = "data:text/csv;charset=utf-8," + 
       "Name,Category,Price,Cost,Stock,Status\n" +
-      products.map(p => `${p.name},${p.category},${p.price},${p.cost || 0},${p.stockQuantity || 'N/A'}` + (p.isActive ? ',Active' : ',Inactive')).join("\n");
+      products.map(p => `${p.name},${p.category},${p.price},${p.cost || 0},${p.stock_quantity || 'N/A'}` + (p.is_active ? ',Active' : ',Inactive')).join("\n");
     
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -546,7 +566,7 @@ const BusinessFinanceAssistant = () => {
   const downloadSuppliers = () => {
     const csvContent = "data:text/csv;charset=utf-8," + 
       "Name,Contact Person,Email,Phone,Payment Terms,Status\n" +
-      suppliers.map(s => `${s.name},${s.contactPerson || ''},${s.email || ''},${s.phone || ''},${s.paymentTerms},${s.isActive ? 'Active' : 'Inactive'}`).join("\n");
+      suppliers.map(s => `${s.name},${s.contact_person || ''},${s.email || ''},${s.phone || ''},${s.payment_terms},${s.is_active ? 'Active' : 'Inactive'}`).join("\n");
     
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -565,7 +585,7 @@ const BusinessFinanceAssistant = () => {
   const downloadExpenses = () => {
     const csvContent = "data:text/csv;charset=utf-8," + 
       "Date,Description,Category,Amount,Supplier,Status\n" +
-      expenses.map(e => `${e.date},${e.description},${e.category},${e.amount},${e.supplierId || ''},${e.status}`).join("\n");
+      expenses.map(e => `${e.date},${e.description},${e.category},${e.amount},${e.supplier_id || ''},${e.status}`).join("\n");
     
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -584,7 +604,7 @@ const BusinessFinanceAssistant = () => {
   const downloadOutgoings = () => {
     const csvContent = "data:text/csv;charset=utf-8," + 
       "Name,Category,Amount,Frequency,Next Payment,Status\n" +
-      outgoings.map(o => `${o.name},${o.category},${o.amount},${o.frequency},${o.nextPaymentDate},${o.isActive ? 'Active' : 'Inactive'}`).join("\n");
+      outgoings.map(o => `${o.name},${o.category},${o.amount},${o.frequency},${o.next_payment_date},${o.is_active ? 'Active' : 'Inactive'}`).join("\n");
     
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -1185,7 +1205,7 @@ const BusinessFinanceAssistant = () => {
     const headers = Object.keys(data[0]);
     const csvContent = [
       headers.join(','),
-      ...data.map(row => headers.map(header => `"${row[header] || ''}"`).join(',')
+      ...data.map(row => headers.map(header => `"${row[header] || ''}"`).join(','))
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
