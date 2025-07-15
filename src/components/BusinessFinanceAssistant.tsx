@@ -503,6 +503,82 @@ const BusinessFinanceAssistant = () => {
     // Here you would typically send the document via email
   };
 
+  const downloadCatalog = () => {
+    const csvContent = "data:text/csv;charset=utf-8," + 
+      "Name,Category,Price,Cost,Stock,Status\n" +
+      products.map(p => `${p.name},${p.category},${p.price},${p.cost || 0},${p.stockQuantity || 'N/A'},${p.isActive ? 'Active' : 'Inactive'}`).join("\n");
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "products-catalog.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Download Complete",
+      description: "Products catalog downloaded as CSV file.",
+    });
+  };
+
+  const downloadSuppliers = () => {
+    const csvContent = "data:text/csv;charset=utf-8," + 
+      "Name,Contact Person,Email,Phone,Payment Terms,Status\n" +
+      suppliers.map(s => `${s.name},${s.contactPerson || ''},${s.email || ''},${s.phone || ''},${s.paymentTerms},${s.isActive ? 'Active' : 'Inactive'}`).join("\n");
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "suppliers-list.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Download Complete",
+      description: "Suppliers list downloaded as CSV file.",
+    });
+  };
+
+  const downloadExpenses = () => {
+    const csvContent = "data:text/csv;charset=utf-8," + 
+      "Date,Description,Category,Amount,Supplier,Status\n" +
+      expenses.map(e => `${e.date},${e.description},${e.category},${e.amount},${e.supplierId || ''},${e.status}`).join("\n");
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "expenses-report.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Download Complete",
+      description: "Expenses report downloaded as CSV file.",
+    });
+  };
+
+  const downloadOutgoings = () => {
+    const csvContent = "data:text/csv;charset=utf-8," + 
+      "Name,Category,Amount,Frequency,Next Payment,Status\n" +
+      outgoings.map(o => `${o.name},${o.category},${o.amount},${o.frequency},${o.nextPaymentDate},${o.isActive ? 'Active' : 'Inactive'}`).join("\n");
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "outgoings-schedule.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Download Complete",
+      description: "Outgoings schedule downloaded as CSV file.",
+    });
+  };
+
   const addItem = () => {
     const newItem: FinanceItem = {
       id: Date.now().toString(),
@@ -1317,9 +1393,20 @@ const BusinessFinanceAssistant = () => {
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle>Products & Services</CardTitle>
-                  <CardDescription>{products.length} items in catalog</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Products & Services</CardTitle>
+                    <CardDescription>{products.length} items in catalog</CardDescription>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={downloadCatalog}
+                    disabled={products.length === 0}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   {products.length === 0 ? (
@@ -1456,9 +1543,20 @@ const BusinessFinanceAssistant = () => {
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle>Suppliers</CardTitle>
-                  <CardDescription>{suppliers.length} suppliers in your network</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Suppliers</CardTitle>
+                    <CardDescription>{suppliers.length} suppliers in your network</CardDescription>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={downloadSuppliers}
+                    disabled={suppliers.length === 0}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   {suppliers.length === 0 ? (
@@ -1603,9 +1701,20 @@ const BusinessFinanceAssistant = () => {
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle>Recent Expenses</CardTitle>
-                  <CardDescription>{expenses.length} expenses recorded</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Recent Expenses</CardTitle>
+                    <CardDescription>{expenses.length} expenses recorded</CardDescription>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={downloadExpenses}
+                    disabled={expenses.length === 0}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   {expenses.length === 0 ? (
@@ -1755,9 +1864,20 @@ const BusinessFinanceAssistant = () => {
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle>Regular Outgoings</CardTitle>
-                  <CardDescription>{outgoings.length} recurring payments</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Regular Outgoings</CardTitle>
+                    <CardDescription>{outgoings.length} recurring payments</CardDescription>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={downloadOutgoings}
+                    disabled={outgoings.length === 0}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   {outgoings.length === 0 ? (
