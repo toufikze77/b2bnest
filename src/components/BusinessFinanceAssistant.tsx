@@ -710,11 +710,11 @@ const BusinessFinanceAssistant = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Document Type Selection */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="flex gap-4">
                   <Button
                     variant={documentType === 'invoice' ? 'default' : 'outline'}
                     onClick={() => setDocumentType('invoice')}
-                    className="h-12"
+                    className="h-12 flex-1"
                   >
                     <Receipt className="h-4 w-4 mr-2" />
                     Invoice
@@ -722,7 +722,7 @@ const BusinessFinanceAssistant = () => {
                   <Button
                     variant={documentType === 'quote' ? 'default' : 'outline'}
                     onClick={() => setDocumentType('quote')}
-                    className="h-12"
+                    className="h-12 flex-1"
                   >
                     <FileText className="h-4 w-4 mr-2" />
                     Quote
