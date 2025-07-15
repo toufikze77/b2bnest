@@ -39,7 +39,7 @@ interface FinanceItem {
 const BusinessFinanceAssistant = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'manage' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'banking' | 'reports' | 'analytics'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'quotes' | 'invoices' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'banking' | 'reports' | 'analytics'>('dashboard');
   const [documentType, setDocumentType] = useState<'invoice' | 'quote'>('quote');
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -358,7 +358,7 @@ const BusinessFinanceAssistant = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10">
+        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-11">
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <Home className="h-4 w-4" />
             Dashboard
@@ -367,9 +367,13 @@ const BusinessFinanceAssistant = () => {
             <Plus className="h-4 w-4" />
             Create
           </TabsTrigger>
-          <TabsTrigger value="manage" className="flex items-center gap-2">
+          <TabsTrigger value="quotes" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            Manage
+            Quotes
+          </TabsTrigger>
+          <TabsTrigger value="invoices" className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            Invoices
           </TabsTrigger>
           <TabsTrigger value="products" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
@@ -405,7 +409,7 @@ const BusinessFinanceAssistant = () => {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card 
               className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => setActiveTab('manage')}
+              onClick={() => setActiveTab('quotes')}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Active Quotes</CardTitle>
@@ -419,7 +423,7 @@ const BusinessFinanceAssistant = () => {
 
             <Card 
               className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => setActiveTab('manage')}
+              onClick={() => setActiveTab('invoices')}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Pending Invoices</CardTitle>
@@ -534,82 +538,82 @@ const BusinessFinanceAssistant = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="manage" className="space-y-6">
-          <div className="grid gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Quotes</CardTitle>
-                <CardDescription>Manage your quotes and proposals</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {quotes.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">No quotes found. Create your first quote to get started.</p>
-                  ) : (
-                    quotes.map((quote) => (
-                      <div key={quote.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex-1">
-                          <h3 className="font-medium">Quote {quote.quote_number}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {quote.client_name} • {formatCurrency(Number(quote.total_amount))} • {new Date(quote.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">{quote.status}</Badge>
-                          <Button size="sm" variant="outline" onClick={() => handleViewDocument(quote)}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleDownloadDocument(quote)}>
-                            <Download className="h-4 w-4" />
-                          </Button>
-                          <Button size="sm" onClick={() => handleSendDocument(quote)}>
-                            <Send className="h-4 w-4" />
-                          </Button>
-                        </div>
+        <TabsContent value="quotes" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Quotes</CardTitle>
+              <CardDescription>Manage your quotes and proposals</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {quotes.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No quotes found. Create your first quote to get started.</p>
+                ) : (
+                  quotes.map((quote) => (
+                    <div key={quote.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex-1">
+                        <h3 className="font-medium">Quote {quote.quote_number}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {quote.client_name} • {formatCurrency(Number(quote.total_amount))} • {new Date(quote.created_at).toLocaleDateString()}
+                        </p>
                       </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{quote.status}</Badge>
+                        <Button size="sm" variant="outline" onClick={() => handleViewDocument(quote)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleDownloadDocument(quote)}>
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" onClick={() => handleSendDocument(quote)}>
+                          <Send className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Invoices</CardTitle>
-                <CardDescription>Track and manage your invoices</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {invoices.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">No invoices found. Create your first invoice to get started.</p>
-                  ) : (
-                    invoices.map((invoice) => (
-                      <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex-1">
-                          <h3 className="font-medium">Invoice {invoice.invoice_number}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {invoice.client_name} • {formatCurrency(Number(invoice.total_amount))} • {new Date(invoice.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">{invoice.status}</Badge>
-                          <Button size="sm" variant="outline" onClick={() => handleViewDocument(invoice)}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleDownloadDocument(invoice)}>
-                            <Download className="h-4 w-4" />
-                          </Button>
-                          <Button size="sm" onClick={() => handleSendDocument(invoice)}>
-                            <Send className="h-4 w-4" />
-                          </Button>
-                        </div>
+        <TabsContent value="invoices" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Invoices</CardTitle>
+              <CardDescription>Track and manage your invoices</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {invoices.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No invoices found. Create your first invoice to get started.</p>
+                ) : (
+                  invoices.map((invoice) => (
+                    <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex-1">
+                        <h3 className="font-medium">Invoice {invoice.invoice_number}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {invoice.client_name} • {formatCurrency(Number(invoice.total_amount))} • {new Date(invoice.created_at).toLocaleDateString()}
+                        </p>
                       </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{invoice.status}</Badge>
+                        <Button size="sm" variant="outline" onClick={() => handleViewDocument(invoice)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleDownloadDocument(invoice)}>
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" onClick={() => handleSendDocument(invoice)}>
+                          <Send className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="products">
