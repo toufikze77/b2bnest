@@ -1328,7 +1328,6 @@ const BusinessFinanceAssistant = () => {
                         <SelectValue placeholder="Select supplier (optional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No supplier selected</SelectItem>
                         {suppliers.map((supplier) => (
                           <SelectItem key={supplier.id} value={supplier.id}>
                             {supplier.name}
@@ -1482,7 +1481,6 @@ const BusinessFinanceAssistant = () => {
                         <SelectValue placeholder="Select supplier (optional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No supplier selected</SelectItem>
                         {suppliers.map((supplier) => (
                           <SelectItem key={supplier.id} value={supplier.id}>
                             {supplier.name}
