@@ -26,6 +26,9 @@ const QuoteInvoiceCreationSection = () => {
   const [quotes, setQuotes] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [viewedDocument, setViewedDocument] = useState<any>(null);
+  const [sendingDocument, setSendingDocument] = useState<string | null>(null);
+  
   const [documentData, setDocumentData] = useState({
     number: '',
     clientName: '',
@@ -80,7 +83,6 @@ const QuoteInvoiceCreationSection = () => {
       setItems(items.filter(item => item.id !== id));
     }
   };
-
 
   const generateDocumentCode = (type: 'quote' | 'invoice') => {
     const date = new Date();
@@ -225,6 +227,212 @@ const QuoteInvoiceCreationSection = () => {
     return calculateSubtotal() + calculateVAT();
   };
 
+  const formatCurrency = (amount: number, currency: string = documentData.currency) => {
+    const currencyMap: { [key: string]: string } = {
+      'USD': '$',
+      'EUR': '€',
+      'GBP': '£',
+      'JPY': '¥',
+      'CAD': 'C$',
+      'AUD': 'A$',
+      'CHF': 'CHF ',
+      'CNY': '¥',
+      'INR': '₹'
+    };
+    
+    const symbol = currencyMap[currency] || currency + ' ';
+    return `${symbol}${amount.toFixed(2)}`;
+  };
+
+  const viewDocument = async (documentId: string, type: 'quote' | 'invoice') => {
+    try {
+      const { data, error } = await supabase
+        .from(type === 'quote' ? 'quotes' : 'invoices')
+        .select('*')
+        .eq('id', documentId)
+        .single();
+
+      if (error) throw error;
+
+      setViewedDocument({ ...data, type });
+    } catch (error) {
+      console.error('Error viewing document:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load document.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const downloadDocument = (document: any, type: 'quote' | 'invoice') => {
+    try {
+      const items = JSON.parse(document.items || '[]');
+      const subtotal = document.subtotal || 0;
+      const taxAmount = document.tax_amount || 0;
+      const total = document.total_amount || 0;
+      
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${type === 'quote' ? 'Quote' : 'Invoice'} ${type === 'quote' ? document.quote_number : document.invoice_number}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+            .header { display: flex; justify-content: space-between; margin-bottom: 40px; align-items: flex-start; }
+            .company-info h1 { margin: 0; color: #2563eb; font-size: 28px; }
+            .company-info p { margin: 5px 0; color: #666; }
+            .document-title { text-align: right; }
+            .document-title h2 { margin: 0; font-size: 2.5em; color: #374151; font-weight: bold; }
+            .document-title p { margin: 5px 0; font-size: 14px; }
+            .client-info { margin: 30px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; }
+            .client-info h3 { margin: 0 0 15px 0; color: #374151; }
+            .client-info p { margin: 3px 0; }
+            .items-table { width: 100%; border-collapse: collapse; margin: 30px 0; }
+            .items-table th, .items-table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+            .items-table th { background-color: #f1f5f9; font-weight: 600; color: #374151; }
+            .items-table .text-right { text-align: right; }
+            .items-table .text-center { text-align: center; }
+            .totals { margin: 30px 0; }
+            .totals-table { margin-left: auto; min-width: 300px; }
+            .totals-table td { padding: 8px 15px; border: none; }
+            .totals-table .subtotal-row { border-bottom: 1px solid #ddd; }
+            .totals-table .total-row { border-top: 2px solid #374151; font-weight: bold; font-size: 18px; }
+            .notes { margin: 40px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; }
+            .notes h3 { margin: 0 0 15px 0; color: #374151; }
+            .logo { max-height: 80px; margin-bottom: 15px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="company-info">
+              ${document.logo_url ? `<img src="${document.logo_url}" alt="Logo" class="logo">` : ''}
+              <h1>${document.company_name || 'Company Name'}</h1>
+              <p>${(document.company_address || '').replace(/\n/g, '<br>')}</p>
+            </div>
+            <div class="document-title">
+              <h2>${type === 'quote' ? 'QUOTE' : 'INVOICE'}</h2>
+              <p><strong>Number:</strong> ${type === 'quote' ? document.quote_number : document.invoice_number}</p>
+              <p><strong>Date:</strong> ${new Date(document.created_at).toLocaleDateString()}</p>
+              ${type === 'quote' && document.valid_until ? `<p><strong>Valid Until:</strong> ${new Date(document.valid_until).toLocaleDateString()}</p>` : ''}
+              ${type === 'invoice' && document.due_date ? `<p><strong>Due Date:</strong> ${new Date(document.due_date).toLocaleDateString()}</p>` : ''}
+            </div>
+          </div>
+          
+          <div class="client-info">
+            <h3>Bill To:</h3>
+            <p><strong>${document.client_name}</strong></p>
+            <p>${document.client_email}</p>
+            <p>${(document.client_address || '').replace(/\n/g, '<br>')}</p>
+          </div>
+          
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th class="text-center">Quantity</th>
+                <th class="text-right">Rate</th>
+                <th class="text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map((item: any) => `
+                <tr>
+                  <td>${item.description}</td>
+                  <td class="text-center">${item.quantity}</td>
+                  <td class="text-right">${formatCurrency(item.rate)}</td>
+                  <td class="text-right">${formatCurrency(item.amount)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          <div class="totals">
+            <table class="totals-table">
+              <tr class="subtotal-row">
+                <td>Subtotal:</td>
+                <td class="text-right">${formatCurrency(subtotal)}</td>
+              </tr>
+              ${taxAmount > 0 ? `
+              <tr class="subtotal-row">
+                <td>Tax (${document.tax_rate}%):</td>
+                <td class="text-right">${formatCurrency(taxAmount)}</td>
+              </tr>
+              ` : ''}
+              <tr class="total-row">
+                <td><strong>Total:</strong></td>
+                <td class="text-right"><strong>${formatCurrency(total)}</strong></td>
+              </tr>
+            </table>
+          </div>
+          
+          ${document.notes ? `
+          <div class="notes">
+            <h3>Notes:</h3>
+            <p>${document.notes.replace(/\n/g, '<br>')}</p>
+          </div>
+          ` : ''}
+        </body>
+        </html>
+      `;
+
+      // Create and download the file
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${type}-${type === 'quote' ? document.quote_number : document.invoice_number}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Download Complete",
+        description: `${type === 'quote' ? 'Quote' : 'Invoice'} downloaded successfully.`,
+      });
+    } catch (error) {
+      console.error('Download error:', error);
+      toast({
+        title: "Download Failed",
+        description: "Failed to download document. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const sendDocument = async (document: any, type: 'quote' | 'invoice') => {
+    if (!document.client_email) {
+      toast({
+        title: "No Email Address",
+        description: "Client email is required to send the document.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSendingDocument(document.id);
+
+    try {
+      // Simulate sending - in a real app, you'd call an edge function to send the email
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      toast({
+        title: "Document Sent",
+        description: `${type === 'quote' ? 'Quote' : 'Invoice'} sent to ${document.client_email}`,
+      });
+    } catch (error) {
+      console.error('Error sending document:', error);
+      toast({
+        title: "Send Failed",
+        description: "Failed to send document. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setSendingDocument(null);
+    }
+  };
+
   const handleGenerate = async () => {
     if (!user) {
       toast({
@@ -343,293 +551,9 @@ const QuoteInvoiceCreationSection = () => {
     }
   };
 
-  const [viewedDocument, setViewedDocument] = useState<any>(null);
-  const [sendingDocument, setSendingDocument] = useState<string | null>(null);
-
-  const viewDocument = async (documentId: string, type: 'quote' | 'invoice') => {
-    try {
-      const { data, error } = await supabase
-        .from(type === 'quote' ? 'quotes' : 'invoices')
-        .select('*')
-        .eq('id', documentId)
-        .single();
-
-      if (error) throw error;
-
-      setViewedDocument({ ...data, type });
-    } catch (error) {
-      console.error('Error viewing document:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load document.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const downloadDocument = (document: any, type: 'quote' | 'invoice') => {
-    // Generate HTML content for the document
-    const items = JSON.parse(document.items || '[]');
-    const subtotal = document.subtotal || 0;
-    const taxAmount = document.tax_amount || 0;
-    const total = document.total_amount || 0;
-    
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>${type === 'quote' ? 'Quote' : 'Invoice'} ${type === 'quote' ? document.quote_number : document.invoice_number}</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 40px; }
-          .header { display: flex; justify-content: space-between; margin-bottom: 40px; }
-          .company-info h1 { margin: 0; color: #2563eb; }
-          .document-title { text-align: right; }
-          .document-title h2 { margin: 0; font-size: 2em; color: #374151; }
-          .client-info { margin: 20px 0; }
-          .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-          .items-table th, .items-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          .items-table th { background-color: #f8f9fa; }
-          .totals { margin-top: 20px; text-align: right; }
-          .totals table { margin-left: auto; }
-          .totals td { padding: 5px 10px; }
-          .total-row { font-weight: bold; border-top: 2px solid #374151; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div class="company-info">
-            ${document.logo_url ? `<img src="${document.logo_url}" alt="Logo" style="max-height: 80px; margin-bottom: 10px;">` : ''}
-            <h1>${document.company_name || 'Company Name'}</h1>
-            <p>${(document.company_address || '').replace(/\n/g, '<br>')}</p>
-          </div>
-          <div class="document-title">
-            <h2>${type === 'quote' ? 'QUOTE' : 'INVOICE'}</h2>
-            <p><strong>Number:</strong> ${type === 'quote' ? document.quote_number : document.invoice_number}</p>
-            <p><strong>Date:</strong> ${new Date(document.created_at).toLocaleDateString()}</p>
-            ${type === 'quote' && document.valid_until ? `<p><strong>Valid Until:</strong> ${new Date(document.valid_until).toLocaleDateString()}</p>` : ''}
-            ${type === 'invoice' && document.due_date ? `<p><strong>Due Date:</strong> ${new Date(document.due_date).toLocaleDateString()}</p>` : ''}
-          </div>
-        </div>
-        
-        <div class="client-info">
-          <h3>Bill To:</h3>
-          <p><strong>${document.client_name}</strong></p>
-          <p>${document.client_email}</p>
-          <p>${(document.client_address || '').replace(/\n/g, '<br>')}</p>
-        </div>
-        
-        <table class="items-table">
-          <thead>
-            <tr>
-              <th>Description</th>
-              <th>Quantity</th>
-              <th>Rate</th>
-              <th>Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${items.map((item: any) => `
-              <tr>
-                <td>${item.description}</td>
-                <td>${item.quantity}</td>
-                <td>${formatCurrency(item.rate)}</td>
-                <td>${formatCurrency(item.amount)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-        
-        <div class="totals">
-          <table>
-            <tr>
-              <td>Subtotal:</td>
-              <td>${formatCurrency(subtotal)}</td>
-            </tr>
-            ${taxAmount > 0 ? `
-            <tr>
-              <td>Tax (${document.tax_rate}%):</td>
-              <td>${formatCurrency(taxAmount)}</td>
-            </tr>
-            ` : ''}
-            <tr class="total-row">
-              <td><strong>Total:</strong></td>
-              <td><strong>${formatCurrency(total)}</strong></td>
-            </tr>
-          </table>
-        </div>
-        
-        ${document.notes ? `
-        <div style="margin-top: 40px;">
-          <h3>Notes:</h3>
-          <p>${document.notes.replace(/\n/g, '<br>')}</p>
-        </div>
-        ` : ''}
-      </body>
-      </html>
-    `;
-
-    // Create and download the file
-    const blob = new Blob([htmlContent], { type: 'text/html' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${type}-${type === 'quote' ? document.quote_number : document.invoice_number}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-
-    toast({
-      title: "Download Complete",
-      description: `${type === 'quote' ? 'Quote' : 'Invoice'} downloaded successfully.`,
-    });
-  };
-
-  const sendDocument = async (document: any, type: 'quote' | 'invoice') => {
-    if (!document.client_email) {
-      toast({
-        title: "No Email Address",
-        description: "Client email is required to send the document.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setSendingDocument(document.id);
-
-    try {
-      // In a real app, you'd call an edge function to send the email
-      // For now, we'll simulate sending
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      toast({
-        title: "Document Sent",
-        description: `${type === 'quote' ? 'Quote' : 'Invoice'} sent to ${document.client_email}`,
-      });
-    } catch (error) {
-      console.error('Error sending document:', error);
-      toast({
-        title: "Send Failed",
-        description: "Failed to send document. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setSendingDocument(null);
-    }
-  };
-
-  const formatCurrency = (amount: number, currency: string = documentData.currency) => {
-    const currencyMap: { [key: string]: string } = {
-      'USD': '$',
-      'EUR': '€',
-      'GBP': '£',
-      'JPY': '¥',
-      'CAD': 'C$',
-      'AUD': 'A$',
-      'CHF': 'CHF ',
-      'CNY': '¥',
-      'INR': '₹'
-    };
-    
-    const symbol = currencyMap[currency] || currency + ' ';
-    return `${symbol}${amount.toFixed(2)}`;
-  };
-
   const currentDocumentType = activeTab === 'quote' ? 'Quote' : 'Invoice';
   const currentIcon = activeTab === 'quote' ? Quote : FileText;
   const CurrentIcon = currentIcon;
-
-  if (viewMode === 'list') {
-    return (
-      <Card className="mb-8">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" onClick={() => setViewMode('create')}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Create
-              </Button>
-              <div>
-                <CardTitle className="text-xl">
-                  {activeTab === 'quote' ? 'Quotes' : 'Invoices'} List
-                </CardTitle>
-                <CardDescription>View and manage your documents</CardDescription>
-              </div>
-            </div>
-            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'quote' | 'invoice')}>
-              <TabsList>
-                <TabsTrigger value="quote">Quotes</TabsTrigger>
-                <TabsTrigger value="invoice">Invoices</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-8">Loading...</div>
-          ) : (
-            <div className="space-y-4">
-              {(activeTab === 'quote' ? quotes : invoices).length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p>No {activeTab}s found. Create your first {activeTab}!</p>
-                </div>
-              ) : (
-                (activeTab === 'quote' ? quotes : invoices).map((doc: any) => (
-                  <div key={doc.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold">
-                            {activeTab === 'quote' ? doc.quote_number : doc.invoice_number}
-                          </h3>
-                          <span className="text-sm px-2 py-1 bg-gray-100 rounded">
-                            {doc.status}
-                          </span>
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          <p><strong>Client:</strong> {doc.client_name}</p>
-                          <p><strong>Total:</strong> {formatCurrency(doc.total_amount || 0)}</p>
-                          <p><strong>Created:</strong> {new Date(doc.created_at).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => viewDocument(doc.id, activeTab)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => downloadDocument(doc, activeTab)}
-                        >
-                          <Download className="h-4 w-4 mr-1" />
-                          Download
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => sendDocument(doc, activeTab)}
-                          disabled={sendingDocument === doc.id}
-                        >
-                          <Send className="h-4 w-4 mr-1" />
-                          {sendingDocument === doc.id ? 'Sending...' : 'Send'}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
 
   // Document Viewer Modal
   if (viewedDocument) {
@@ -780,6 +704,100 @@ const QuoteInvoiceCreationSection = () => {
     );
   }
 
+  // List View
+  if (viewMode === 'list') {
+    return (
+      <Card className="mb-8">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm" onClick={() => setViewMode('create')}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Create
+              </Button>
+              <div>
+                <CardTitle className="text-xl">
+                  {activeTab === 'quote' ? 'Quotes' : 'Invoices'} List
+                </CardTitle>
+                <CardDescription>View and manage your documents</CardDescription>
+              </div>
+            </div>
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'quote' | 'invoice')}>
+              <TabsList>
+                <TabsTrigger value="quote">Quotes</TabsTrigger>
+                <TabsTrigger value="invoice">Invoices</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8">Loading...</div>
+          ) : (
+            <div className="space-y-4">
+              {(activeTab === 'quote' ? quotes : invoices).length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p>No {activeTab}s found. Create your first {activeTab}!</p>
+                </div>
+              ) : (
+                (activeTab === 'quote' ? quotes : invoices).map((doc: any) => (
+                  <div key={doc.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold">
+                            {activeTab === 'quote' ? doc.quote_number : doc.invoice_number}
+                          </h3>
+                          <span className="text-sm px-2 py-1 bg-gray-100 rounded">
+                            {doc.status}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          <p><strong>Client:</strong> {doc.client_name}</p>
+                          <p><strong>Total:</strong> {formatCurrency(doc.total_amount || 0)}</p>
+                          <p><strong>Created:</strong> {new Date(doc.created_at).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => viewDocument(doc.id, activeTab)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => downloadDocument(doc, activeTab)}
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                          Download
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => sendDocument(doc, activeTab)}
+                          disabled={sendingDocument === doc.id}
+                        >
+                          <Send className="h-4 w-4 mr-1" />
+                          {sendingDocument === doc.id ? 'Sending...' : 'Send'}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Create/Edit View
   return (
     <Card className="mb-8">
       <CardHeader>
