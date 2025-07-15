@@ -209,6 +209,122 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_accounts: {
+        Row: {
+          account_id: string
+          account_number: string | null
+          account_type: string
+          available_balance: number | null
+          balance: number | null
+          created_at: string
+          currency: string
+          id: string
+          is_active: boolean
+          last_synced_at: string | null
+          provider_id: string
+          provider_name: string
+          sort_code: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          account_number?: string | null
+          account_type: string
+          available_balance?: number | null
+          balance?: number | null
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean
+          last_synced_at?: string | null
+          provider_id: string
+          provider_name: string
+          sort_code?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          account_number?: string | null
+          account_type?: string
+          available_balance?: number | null
+          balance?: number | null
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean
+          last_synced_at?: string | null
+          provider_id?: string
+          provider_name?: string
+          sort_code?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      bank_transactions: {
+        Row: {
+          amount: number
+          balance_after: number | null
+          bank_account_id: string
+          category: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          merchant_name: string | null
+          timestamp: string
+          transaction_date: string
+          transaction_id: string
+          transaction_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after?: number | null
+          bank_account_id: string
+          category?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          merchant_name?: string | null
+          timestamp: string
+          transaction_date: string
+          transaction_id: string
+          transaction_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number | null
+          bank_account_id?: string
+          category?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          merchant_name?: string | null
+          timestamp?: string
+          transaction_date?: string
+          transaction_id?: string
+          transaction_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_transactions_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_insights: {
         Row: {
           confidence_score: number | null

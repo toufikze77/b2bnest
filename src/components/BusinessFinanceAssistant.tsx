@@ -80,15 +80,21 @@ interface Outgoing {
 
 interface BankAccount {
   id: string;
-  accountName: string;
+  accountName?: string;
   accountNumber: string;
-  sortCode: string;
-  bankName: string;
+  sortCode?: string;
+  bankName?: string;
   accountType: 'current' | 'savings' | 'business';
   balance: number;
   currency: string;
   isActive: boolean;
   lastSynced?: string;
+  // TrueLayer fields
+  account_id?: string;
+  provider_id?: string;
+  provider_name?: string;
+  available_balance?: number;
+  last_synced_at?: string;
 }
 
 interface BankTransaction {
@@ -204,6 +210,75 @@ const BusinessFinanceAssistant = () => {
     { id: 'starling', name: 'Starling Bank', logo: '🏦', status: 'available' },
     { id: 'revolut', name: 'Revolut', logo: '🏦', status: 'available' }
   ];
+
+  // Load bank accounts on component mount
+  useEffect(() => {
+    const loadBankAccounts = async () => {
+      if (!user) return;
+      
+      const { data: accounts, error } = await supabase
+        .from('bank_accounts')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+
+      if (!error && accounts) {
+        const mappedAccounts = accounts.map(acc => ({
+          id: acc.id,
+          accountName: acc.provider_name,
+          accountNumber: acc.account_number || '****',
+          sortCode: acc.sort_code || '',
+          bankName: acc.provider_name,
+          accountType: acc.account_type as 'current' | 'savings' | 'business',
+          balance: acc.balance || 0,
+          currency: acc.currency,
+          isActive: acc.is_active,
+          lastSynced: acc.last_synced_at,
+          account_id: acc.account_id,
+          provider_id: acc.provider_id,
+          provider_name: acc.provider_name,
+          available_balance: acc.available_balance
+        }));
+        setBankAccounts(mappedAccounts);
+      }
+    };
+
+    // Handle authorization callback
+    const handleAuthCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      
+      if (code) {
+        try {
+          const { data, error } = await supabase.functions.invoke('truelayer-integration', {
+            body: { action: 'exchange-code', code },
+            method: 'POST'
+          });
+
+          if (error) throw error;
+
+          toast({
+            title: "Bank Connected Successfully",
+            description: `Connected ${data.accounts} bank accounts.`,
+          });
+
+          // Clean up URL and reload accounts
+          window.history.replaceState({}, document.title, window.location.pathname);
+          loadBankAccounts();
+        } catch (error) {
+          console.error('Auth callback error:', error);
+          toast({
+            title: "Connection Failed",
+            description: "Failed to complete bank connection.",
+            variant: "destructive"
+          });
+        }
+      }
+    };
+
+    loadBankAccounts();
+    handleAuthCallback();
+  }, [user]);
 
   const addItem = () => {
     const newItem: FinanceItem = {
@@ -479,77 +554,89 @@ const BusinessFinanceAssistant = () => {
     setIsSyncing(true);
     setSelectedBank(bankId);
 
-    // Simulate bank connection process
-    setTimeout(() => {
-      const bankName = ukBanks.find(bank => bank.id === bankId)?.name || 'Bank';
-      
-      // Create sample transactions for demo
-      const sampleTransactions: BankTransaction[] = [
-        {
-          id: Date.now().toString(),
-          accountId: Date.now().toString(),
-          date: new Date().toISOString().split('T')[0],
-          description: 'Direct Debit - Office Rent',
-          amount: -1200.00,
-          type: 'debit',
-          category: 'rent',
-          reference: 'DD123456',
-          balance: 8500.00
+    try {
+      // Get auth URL from TrueLayer
+      const { data, error } = await supabase.functions.invoke('truelayer-integration', {
+        body: { action: 'get-auth-url', provider_id: bankId },
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        {
-          id: (Date.now() + 1).toString(),
-          accountId: Date.now().toString(),
-          date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
-          description: 'Client Payment - Invoice #INV-001',
-          amount: 2500.00,
-          type: 'credit',
-          category: 'revenue',
-          reference: 'TRF001',
-          balance: 9700.00
-        },
-        {
-          id: (Date.now() + 2).toString(),
-          accountId: Date.now().toString(),
-          date: new Date(Date.now() - 172800000).toISOString().split('T')[0],
-          description: 'Card Payment - Office Supplies',
-          amount: -89.99,
-          type: 'debit',
-          category: 'office',
-          reference: 'CD123',
-          balance: 7200.00
-        }
-      ];
-
-      setBankTransactions(prev => [...prev, ...sampleTransactions]);
-      
-      toast({
-        title: "Bank Connected",
-        description: `Successfully connected to ${bankName} and synced transactions.`,
       });
+
+      if (error) throw error;
+
+      // Redirect to TrueLayer auth page
+      window.location.href = data.auth_url;
       
+    } catch (error) {
+      console.error('Bank connection error:', error);
+      toast({
+        title: "Connection Failed",
+        description: "Unable to connect to bank. Please try again.",
+        variant: "destructive"
+      });
       setIsSyncing(false);
       setSelectedBank('');
-    }, 3000);
+    }
   };
 
-  const syncBankAccount = (accountId: string) => {
+  const syncBankAccount = async (accountId: string) => {
     setIsSyncing(true);
     
-    // Simulate sync process
-    setTimeout(() => {
-      setBankAccounts(prev => prev.map(account => 
-        account.id === accountId 
-          ? { ...account, lastSynced: new Date().toISOString() }
-          : account
-      ));
-      
+    try {
+      const { data, error } = await supabase.functions.invoke('truelayer-integration', {
+        body: { action: 'sync-accounts' },
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (error) throw error;
+
+      // Refresh bank accounts from database
+      const { data: accounts, error: accountsError } = await supabase
+        .from('bank_accounts')
+        .select('*')
+        .eq('user_id', user?.id)
+        .eq('is_active', true);
+
+      if (!accountsError && accounts) {
+        const mappedAccounts = accounts.map(acc => ({
+          id: acc.id,
+          accountName: acc.provider_name,
+          accountNumber: acc.account_number || '****',
+          sortCode: acc.sort_code || '',
+          bankName: acc.provider_name,
+          accountType: acc.account_type as 'current' | 'savings' | 'business',
+          balance: acc.balance || 0,
+          currency: acc.currency,
+          isActive: acc.is_active,
+          lastSynced: acc.last_synced_at,
+          account_id: acc.account_id,
+          provider_id: acc.provider_id,
+          provider_name: acc.provider_name,
+          available_balance: acc.available_balance
+        }));
+        setBankAccounts(mappedAccounts);
+      }
+
       toast({
         title: "Account Synced",
-        description: "Latest transactions have been imported.",
+        description: `Synced ${data.synced_accounts} accounts successfully.`,
       });
       
+    } catch (error) {
+      console.error('Sync error:', error);
+      toast({
+        title: "Sync Failed",
+        description: "Unable to sync account. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
       setIsSyncing(false);
-    }, 2000);
+    }
   };
 
   const getTotalRevenue = () => {
