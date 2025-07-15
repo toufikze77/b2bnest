@@ -46,7 +46,7 @@ const BusinessTools = () => {
       icon: Calculator,
       color: 'bg-green-600',
       benefits: ['Invoice & Quote Generation', 'Financial Dashboard', 'Client Management', 'Revenue Tracking'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'todo-list' as ToolType,
