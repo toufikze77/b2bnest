@@ -1171,23 +1171,14 @@ const BusinessFinanceAssistant = () => {
                             PNG, JPG up to 2MB
                           </p>
                         </div>
-                        <div className="relative">
+                        <div>
                           <Input
                             type="file"
                             accept="image/*"
                             onChange={handleLogoUpload}
                             disabled={logoUploading || !user}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            className="cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/80"
                           />
-                          <Button 
-                            type="button" 
-                            variant="outline"
-                            disabled={logoUploading || !user}
-                            className="relative"
-                          >
-                            <Upload className="h-4 w-4 mr-2" />
-                            {logoUploading ? 'Uploading...' : 'Choose Logo'}
-                          </Button>
                         </div>
                         {!user && (
                           <p className="text-xs text-amber-600 mt-2">
