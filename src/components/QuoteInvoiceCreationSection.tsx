@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Plus, FileText, Calendar, User, DollarSign, Quote, Upload, Image, X, Eye, Download, List, ArrowLeft, Send, Mail } from 'lucide-react';
+import { Plus, FileText, User, DollarSign, Quote, Upload, Image, X, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,6 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { CURRENCIES, VAT_RATES, formatCurrency } from '@/utils/currencyUtils';
+import DocumentViewer from './DocumentViewer';
+import DocumentList from './DocumentList';
 
 interface QuoteInvoiceItem {
   id: string;
@@ -37,13 +41,14 @@ const QuoteInvoiceCreationSection = () => {
     companyName: '',
     companyAddress: '',
     date: '',
-    validUntil: '', // For quotes
-    dueDate: '', // For invoices
+    validUntil: '',
+    dueDate: '',
     notes: '',
     terms: 'Net 30',
     currency: 'USD',
     vatEnabled: false,
-    vatRate: 0
+    vatRate: 0,
+    vatLabel: 'No VAT'
   });
 
   const [items, setItems] = useState<QuoteInvoiceItem[]>([
@@ -98,7 +103,6 @@ const QuoteInvoiceCreationSection = () => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast({
         title: "Invalid File Type",
@@ -108,7 +112,6 @@ const QuoteInvoiceCreationSection = () => {
       return;
     }
 
-    // Validate file size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
       toast({
         title: "File Too Large",
@@ -124,7 +127,7 @@ const QuoteInvoiceCreationSection = () => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/logo-${Date.now()}.${fileExt}`;
 
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('company-logos')
         .upload(fileName, file);
 
@@ -156,7 +159,6 @@ const QuoteInvoiceCreationSection = () => {
     if (!logoUrl || !user) return;
 
     try {
-      // Extract filename from URL for deletion
       const urlParts = logoUrl.split('/');
       const fileName = `${user.id}/${urlParts[urlParts.length - 1]}`;
       
@@ -165,10 +167,6 @@ const QuoteInvoiceCreationSection = () => {
         .remove([fileName]);
 
       setLogoUrl(null);
-      toast({
-        title: "Logo Removed",
-        description: "Your company logo has been removed."
-      });
     } catch (error) {
       console.error('Logo removal error:', error);
     }
@@ -227,23 +225,6 @@ const QuoteInvoiceCreationSection = () => {
     return calculateSubtotal() + calculateVAT();
   };
 
-  const formatCurrency = (amount: number, currency: string = documentData.currency) => {
-    const currencyMap: { [key: string]: string } = {
-      'USD': '$',
-      'EUR': '€',
-      'GBP': '£',
-      'JPY': '¥',
-      'CAD': 'C$',
-      'AUD': 'A$',
-      'CHF': 'CHF ',
-      'CNY': '¥',
-      'INR': '₹'
-    };
-    
-    const symbol = currencyMap[currency] || currency + ' ';
-    return `${symbol}${amount.toFixed(2)}`;
-  };
-
   const viewDocument = async (documentId: string, type: 'quote' | 'invoice') => {
     try {
       const { data, error } = await supabase
@@ -271,6 +252,7 @@ const QuoteInvoiceCreationSection = () => {
       const subtotal = document.subtotal || 0;
       const taxAmount = document.tax_amount || 0;
       const total = document.total_amount || 0;
+      const currency = document.currency || 'USD';
       
       const htmlContent = `
         <!DOCTYPE html>
@@ -340,8 +322,8 @@ const QuoteInvoiceCreationSection = () => {
                 <tr>
                   <td>${item.description}</td>
                   <td class="text-center">${item.quantity}</td>
-                  <td class="text-right">${formatCurrency(item.rate)}</td>
-                  <td class="text-right">${formatCurrency(item.amount)}</td>
+                  <td class="text-right">${formatCurrency(item.rate, currency)}</td>
+                  <td class="text-right">${formatCurrency(item.amount, currency)}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -351,17 +333,17 @@ const QuoteInvoiceCreationSection = () => {
             <table class="totals-table">
               <tr class="subtotal-row">
                 <td>Subtotal:</td>
-                <td class="text-right">${formatCurrency(subtotal)}</td>
+                <td class="text-right">${formatCurrency(subtotal, currency)}</td>
               </tr>
               ${taxAmount > 0 ? `
               <tr class="subtotal-row">
                 <td>Tax (${document.tax_rate}%):</td>
-                <td class="text-right">${formatCurrency(taxAmount)}</td>
+                <td class="text-right">${formatCurrency(taxAmount, currency)}</td>
               </tr>
               ` : ''}
               <tr class="total-row">
                 <td><strong>Total:</strong></td>
-                <td class="text-right"><strong>${formatCurrency(total)}</strong></td>
+                <td class="text-right"><strong>${formatCurrency(total, currency)}</strong></td>
               </tr>
             </table>
           </div>
@@ -376,7 +358,6 @@ const QuoteInvoiceCreationSection = () => {
         </html>
       `;
 
-      // Create and download the file
       const blob = new Blob([htmlContent], { type: 'text/html' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -414,7 +395,6 @@ const QuoteInvoiceCreationSection = () => {
     setSendingDocument(document.id);
 
     try {
-      // Simulate sending - in a real app, you'd call an edge function to send the email
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       toast({
@@ -430,6 +410,27 @@ const QuoteInvoiceCreationSection = () => {
       });
     } finally {
       setSendingDocument(null);
+    }
+  };
+
+  const handleVATChange = (value: string) => {
+    const selectedLabel = Object.entries(VAT_RATES).find(([_, rate]) => rate.toString() === value)?.[0] || 'No VAT';
+    
+    if (value === 'custom') {
+      setDocumentData(prev => ({
+        ...prev,
+        vatEnabled: true,
+        vatRate: 0,
+        vatLabel: 'Custom Rate'
+      }));
+    } else {
+      const rate = parseFloat(value) * 100;
+      setDocumentData(prev => ({
+        ...prev,
+        vatEnabled: rate > 0,
+        vatRate: rate,
+        vatLabel: selectedLabel
+      }));
     }
   };
 
@@ -483,7 +484,8 @@ const QuoteInvoiceCreationSection = () => {
         total_amount: total,
         notes: documentData.notes,
         status: 'draft',
-        logo_url: logoUrl
+        logo_url: logoUrl,
+        currency: documentData.currency
       };
 
       if (activeTab === 'quote') {
@@ -529,12 +531,12 @@ const QuoteInvoiceCreationSection = () => {
         terms: 'Net 30',
         currency: 'USD',
         vatEnabled: false,
-        vatRate: 0
+        vatRate: 0,
+        vatLabel: 'No VAT'
       });
       setItems([{ id: '1', description: '', quantity: 1, rate: 0, amount: 0 }]);
       setLogoUrl(null);
 
-      // Refresh the list if we're viewing it
       if (viewMode === 'list') {
         loadDocuments();
       }
@@ -557,243 +559,32 @@ const QuoteInvoiceCreationSection = () => {
 
   // Document Viewer Modal
   if (viewedDocument) {
-    const items = JSON.parse(viewedDocument.items || '[]');
-    const subtotal = viewedDocument.subtotal || 0;
-    const taxAmount = viewedDocument.tax_amount || 0;
-    const total = viewedDocument.total_amount || 0;
-
     return (
-      <Card className="mb-8">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" onClick={() => setViewedDocument(null)}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to List
-              </Button>
-              <div>
-                <CardTitle className="text-xl">
-                  {viewedDocument.type === 'quote' ? 'Quote' : 'Invoice'} Preview
-                </CardTitle>
-                <CardDescription>
-                  {viewedDocument.type === 'quote' ? viewedDocument.quote_number : viewedDocument.invoice_number}
-                </CardDescription>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline"
-                onClick={() => downloadDocument(viewedDocument, viewedDocument.type)}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => sendDocument(viewedDocument, viewedDocument.type)}
-                disabled={sendingDocument === viewedDocument.id}
-              >
-                <Send className="h-4 w-4 mr-2" />
-                {sendingDocument === viewedDocument.id ? 'Sending...' : 'Send'}
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="bg-white border rounded-lg p-8 max-w-4xl mx-auto">
-            {/* Document Header */}
-            <div className="flex justify-between items-start mb-8">
-              <div className="flex-1">
-                {viewedDocument.logo_url && (
-                  <img 
-                    src={viewedDocument.logo_url} 
-                    alt="Company Logo" 
-                    className="h-16 mb-4 object-contain"
-                  />
-                )}
-                <h1 className="text-2xl font-bold text-blue-600 mb-2">
-                  {viewedDocument.company_name || 'Company Name'}
-                </h1>
-                <div className="text-gray-600 whitespace-pre-line">
-                  {viewedDocument.company_address}
-                </div>
-              </div>
-              <div className="text-right">
-                <h2 className="text-3xl font-bold text-gray-800 mb-2">
-                  {viewedDocument.type === 'quote' ? 'QUOTE' : 'INVOICE'}
-                </h2>
-                <div className="text-sm space-y-1">
-                  <p><strong>Number:</strong> {viewedDocument.type === 'quote' ? viewedDocument.quote_number : viewedDocument.invoice_number}</p>
-                  <p><strong>Date:</strong> {new Date(viewedDocument.created_at).toLocaleDateString()}</p>
-                  {viewedDocument.type === 'quote' && viewedDocument.valid_until && (
-                    <p><strong>Valid Until:</strong> {new Date(viewedDocument.valid_until).toLocaleDateString()}</p>
-                  )}
-                  {viewedDocument.type === 'invoice' && viewedDocument.due_date && (
-                    <p><strong>Due Date:</strong> {new Date(viewedDocument.due_date).toLocaleDateString()}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Client Information */}
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold mb-3">Bill To:</h3>
-              <div className="text-gray-700">
-                <p className="font-semibold">{viewedDocument.client_name}</p>
-                <p>{viewedDocument.client_email}</p>
-                <div className="whitespace-pre-line">{viewedDocument.client_address}</div>
-              </div>
-            </div>
-
-            {/* Items Table */}
-            <div className="mb-8">
-              <table className="w-full border-collapse border border-gray-300">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="border border-gray-300 px-4 py-2 text-left">Description</th>
-                    <th className="border border-gray-300 px-4 py-2 text-center">Quantity</th>
-                    <th className="border border-gray-300 px-4 py-2 text-right">Rate</th>
-                    <th className="border border-gray-300 px-4 py-2 text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item: any, index: number) => (
-                    <tr key={index}>
-                      <td className="border border-gray-300 px-4 py-2">{item.description}</td>
-                      <td className="border border-gray-300 px-4 py-2 text-center">{item.quantity}</td>
-                      <td className="border border-gray-300 px-4 py-2 text-right">{formatCurrency(item.rate)}</td>
-                      <td className="border border-gray-300 px-4 py-2 text-right">{formatCurrency(item.amount)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Totals */}
-            <div className="flex justify-end mb-8">
-              <div className="w-64">
-                <div className="flex justify-between py-2">
-                  <span>Subtotal:</span>
-                  <span>{formatCurrency(subtotal)}</span>
-                </div>
-                {taxAmount > 0 && (
-                  <div className="flex justify-between py-2">
-                    <span>Tax ({viewedDocument.tax_rate}%):</span>
-                    <span>{formatCurrency(taxAmount)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between py-2 border-t-2 border-gray-800 font-bold text-lg">
-                  <span>Total:</span>
-                  <span>{formatCurrency(total)}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Notes */}
-            {viewedDocument.notes && (
-              <div>
-                <h3 className="text-lg font-semibold mb-3">Notes:</h3>
-                <div className="text-gray-700 whitespace-pre-line bg-gray-50 p-4 rounded">
-                  {viewedDocument.notes}
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <DocumentViewer
+        document={viewedDocument}
+        onBack={() => setViewedDocument(null)}
+        onDownload={downloadDocument}
+        onSend={sendDocument}
+        sendingDocument={sendingDocument}
+      />
     );
   }
 
   // List View
   if (viewMode === 'list') {
     return (
-      <Card className="mb-8">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" onClick={() => setViewMode('create')}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Create
-              </Button>
-              <div>
-                <CardTitle className="text-xl">
-                  {activeTab === 'quote' ? 'Quotes' : 'Invoices'} List
-                </CardTitle>
-                <CardDescription>View and manage your documents</CardDescription>
-              </div>
-            </div>
-            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'quote' | 'invoice')}>
-              <TabsList>
-                <TabsTrigger value="quote">Quotes</TabsTrigger>
-                <TabsTrigger value="invoice">Invoices</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-8">Loading...</div>
-          ) : (
-            <div className="space-y-4">
-              {(activeTab === 'quote' ? quotes : invoices).length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p>No {activeTab}s found. Create your first {activeTab}!</p>
-                </div>
-              ) : (
-                (activeTab === 'quote' ? quotes : invoices).map((doc: any) => (
-                  <div key={doc.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold">
-                            {activeTab === 'quote' ? doc.quote_number : doc.invoice_number}
-                          </h3>
-                          <span className="text-sm px-2 py-1 bg-gray-100 rounded">
-                            {doc.status}
-                          </span>
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          <p><strong>Client:</strong> {doc.client_name}</p>
-                          <p><strong>Total:</strong> {formatCurrency(doc.total_amount || 0)}</p>
-                          <p><strong>Created:</strong> {new Date(doc.created_at).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => viewDocument(doc.id, activeTab)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => downloadDocument(doc, activeTab)}
-                        >
-                          <Download className="h-4 w-4 mr-1" />
-                          Download
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => sendDocument(doc, activeTab)}
-                          disabled={sendingDocument === doc.id}
-                        >
-                          <Send className="h-4 w-4 mr-1" />
-                          {sendingDocument === doc.id ? 'Sending...' : 'Send'}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <DocumentList
+        activeTab={activeTab}
+        quotes={quotes}
+        invoices={invoices}
+        loading={loading}
+        sendingDocument={sendingDocument}
+        onTabChange={setActiveTab}
+        onBack={() => setViewMode('create')}
+        onView={viewDocument}
+        onDownload={downloadDocument}
+        onSend={sendDocument}
+      />
     );
   }
 
@@ -850,15 +641,11 @@ const QuoteInvoiceCreationSection = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="USD">USD ($)</SelectItem>
-                    <SelectItem value="EUR">EUR (€)</SelectItem>
-                    <SelectItem value="GBP">GBP (£)</SelectItem>
-                    <SelectItem value="JPY">JPY (¥)</SelectItem>
-                    <SelectItem value="CAD">CAD (C$)</SelectItem>
-                    <SelectItem value="AUD">AUD (A$)</SelectItem>
-                    <SelectItem value="CHF">CHF</SelectItem>
-                    <SelectItem value="CNY">CNY (¥)</SelectItem>
-                    <SelectItem value="INR">INR (₹)</SelectItem>
+                    {Object.entries(CURRENCIES).map(([code, currency]) => (
+                      <SelectItem key={code} value={code}>
+                        {currency.symbol} {currency.name} ({code})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -1081,7 +868,7 @@ const QuoteInvoiceCreationSection = () => {
                       />
                     </div>
                     <div className="col-span-2">
-                      <Label className="text-xs">Rate ({documentData.currency})</Label>
+                      <Label className="text-xs">Rate ({CURRENCIES[documentData.currency as keyof typeof CURRENCIES].symbol})</Label>
                       <Input
                         type="number"
                         value={item.rate === 0 ? '' : item.rate.toString()}
@@ -1094,7 +881,7 @@ const QuoteInvoiceCreationSection = () => {
                       <Label className="text-xs">Amount</Label>
                       <Input
                         type="text"
-                        value={formatCurrency(item.amount)}
+                        value={formatCurrency(item.amount, documentData.currency)}
                         readOnly
                         className="bg-gray-50"
                       />
@@ -1119,22 +906,27 @@ const QuoteInvoiceCreationSection = () => {
               <div className="mt-4 pt-4 border-t space-y-2">
                 <div className="flex justify-between items-center">
                   <span>Subtotal:</span>
-                  <span>{formatCurrency(calculateSubtotal())}</span>
+                  <span>{formatCurrency(calculateSubtotal(), documentData.currency)}</span>
                 </div>
                 
                 {/* VAT/Tax Section */}
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="vatEnabled"
-                      checked={documentData.vatEnabled}
-                      onChange={(e) => setDocumentData({...documentData, vatEnabled: e.target.checked})}
-                      className="rounded"
-                    />
-                    <Label htmlFor="vatEnabled" className="text-sm">Enable VAT/Tax</Label>
+                  <div className="flex-1">
+                    <Label htmlFor="vatSelect">VAT/Tax Rate</Label>
+                    <Select onValueChange={handleVATChange} value={documentData.vatEnabled ? documentData.vatRate.toString() : '0'}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select VAT rate" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(VAT_RATES).map(([label, rate]) => (
+                          <SelectItem key={label} value={rate.toString()}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  {documentData.vatEnabled && (
+                  {documentData.vatLabel === 'Custom Rate' && (
                     <div className="flex items-center gap-2">
                       <Input
                         type="number"
@@ -1154,13 +946,13 @@ const QuoteInvoiceCreationSection = () => {
                 {documentData.vatEnabled && (
                   <div className="flex justify-between items-center">
                     <span>VAT ({documentData.vatRate}%):</span>
-                    <span>{formatCurrency(calculateVAT())}</span>
+                    <span>{formatCurrency(calculateVAT(), documentData.currency)}</span>
                   </div>
                 )}
                 
                 <div className="flex justify-between items-center text-lg font-semibold pt-2 border-t">
                   <span>Total:</span>
-                  <span>{formatCurrency(calculateTotal())}</span>
+                  <span>{formatCurrency(calculateTotal(), documentData.currency)}</span>
                 </div>
               </div>
             </div>
