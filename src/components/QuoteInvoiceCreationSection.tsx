@@ -546,9 +546,11 @@ const QuoteInvoiceCreationSection = () => {
       setItems([{ id: '1', description: '', quantity: 1, rate: 0, amount: 0 }]);
       setLogoUrl(null);
 
-      if (viewMode === 'list') {
-        loadDocuments();
-      }
+      // Always reload documents after creation
+      await loadDocuments();
+      
+      // Switch to list view to show the created document
+      setViewMode('list');
 
     } catch (error) {
       console.error('Document generation error:', error);
