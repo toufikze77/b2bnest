@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, TrendingUp, PieChart, DollarSign, Receipt, FileText, Plus, Minus, Edit3, Trash2, Quote, Upload, Image, X, Eye, Download, Send, Package, Users, CreditCard, TrendingDown, BarChart3, Building2, ShoppingCart, Star } from 'lucide-react';
+import { Calculator, TrendingUp, PieChart, DollarSign, Receipt, FileText, Plus, Minus, Edit3, Trash2, Quote, Upload, Image, X, Eye, Download, Send, Package, Users, CreditCard, TrendingDown, BarChart3, Building2, ShoppingCart, Star, Banknote, Landmark, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -78,15 +78,44 @@ interface Outgoing {
   isActive: boolean;
 }
 
+interface BankAccount {
+  id: string;
+  accountName: string;
+  accountNumber: string;
+  sortCode: string;
+  bankName: string;
+  accountType: 'current' | 'savings' | 'business';
+  balance: number;
+  currency: string;
+  isActive: boolean;
+  lastSynced?: string;
+}
+
+interface BankTransaction {
+  id: string;
+  accountId: string;
+  date: string;
+  description: string;
+  amount: number;
+  type: 'credit' | 'debit';
+  category?: string;
+  reference?: string;
+  balance: number;
+}
+
 const BusinessFinanceAssistant = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'manage' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'reports'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'manage' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'banking' | 'reports'>('dashboard');
   const [documentType, setDocumentType] = useState<'invoice' | 'quote'>('invoice');
   const [documents, setDocuments] = useState<FinanceDocument[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [outgoings, setOutgoings] = useState<Outgoing[]>([]);
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+  const [bankTransactions, setBankTransactions] = useState<BankTransaction[]>([]);
+  const [selectedBank, setSelectedBank] = useState<string>('');
+  const [isSyncing, setIsSyncing] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   
@@ -147,6 +176,34 @@ const BusinessFinanceAssistant = () => {
     nextPaymentDate: new Date().toISOString().split('T')[0],
     isActive: true
   });
+
+  // Bank account form state
+  const [bankAccountForm, setBankAccountForm] = useState({
+    accountName: '',
+    accountNumber: '',
+    sortCode: '',
+    bankName: '',
+    accountType: 'current' as 'current' | 'savings' | 'business',
+    balance: 0,
+    currency: 'GBP',
+    isActive: true
+  });
+
+  // UK Banks for integration
+  const ukBanks = [
+    { id: 'hsbc', name: 'HSBC', logo: '🏦', status: 'available' },
+    { id: 'barclays', name: 'Barclays', logo: '🏦', status: 'available' },
+    { id: 'lloyds', name: 'Lloyds Banking Group', logo: '🏦', status: 'available' },
+    { id: 'natwest', name: 'NatWest', logo: '🏦', status: 'available' },
+    { id: 'santander', name: 'Santander UK', logo: '🏦', status: 'available' },
+    { id: 'halifax', name: 'Halifax', logo: '🏦', status: 'available' },
+    { id: 'tesco', name: 'Tesco Bank', logo: '🏦', status: 'available' },
+    { id: 'nationwide', name: 'Nationwide', logo: '🏦', status: 'available' },
+    { id: 'metro', name: 'Metro Bank', logo: '🏦', status: 'available' },
+    { id: 'monzo', name: 'Monzo', logo: '🏦', status: 'available' },
+    { id: 'starling', name: 'Starling Bank', logo: '🏦', status: 'available' },
+    { id: 'revolut', name: 'Revolut', logo: '🏦', status: 'available' }
+  ];
 
   const addItem = () => {
     const newItem: FinanceItem = {
@@ -384,6 +441,117 @@ const BusinessFinanceAssistant = () => {
     });
   };
 
+  const addBankAccount = () => {
+    if (!bankAccountForm.accountName || !bankAccountForm.accountNumber || !bankAccountForm.sortCode || !bankAccountForm.bankName) {
+      toast({
+        title: "Invalid Bank Account",
+        description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const newBankAccount: BankAccount = {
+      id: Date.now().toString(),
+      ...bankAccountForm,
+      lastSynced: new Date().toISOString()
+    };
+
+    setBankAccounts([...bankAccounts, newBankAccount]);
+    setBankAccountForm({
+      accountName: '',
+      accountNumber: '',
+      sortCode: '',
+      bankName: '',
+      accountType: 'current',
+      balance: 0,
+      currency: 'GBP',
+      isActive: true
+    });
+
+    toast({
+      title: "Bank Account Added",
+      description: `${newBankAccount.accountName} has been added successfully.`,
+    });
+  };
+
+  const connectBankFeed = async (bankId: string) => {
+    setIsSyncing(true);
+    setSelectedBank(bankId);
+
+    // Simulate bank connection process
+    setTimeout(() => {
+      const bankName = ukBanks.find(bank => bank.id === bankId)?.name || 'Bank';
+      
+      // Create sample transactions for demo
+      const sampleTransactions: BankTransaction[] = [
+        {
+          id: Date.now().toString(),
+          accountId: Date.now().toString(),
+          date: new Date().toISOString().split('T')[0],
+          description: 'Direct Debit - Office Rent',
+          amount: -1200.00,
+          type: 'debit',
+          category: 'rent',
+          reference: 'DD123456',
+          balance: 8500.00
+        },
+        {
+          id: (Date.now() + 1).toString(),
+          accountId: Date.now().toString(),
+          date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+          description: 'Client Payment - Invoice #INV-001',
+          amount: 2500.00,
+          type: 'credit',
+          category: 'revenue',
+          reference: 'TRF001',
+          balance: 9700.00
+        },
+        {
+          id: (Date.now() + 2).toString(),
+          accountId: Date.now().toString(),
+          date: new Date(Date.now() - 172800000).toISOString().split('T')[0],
+          description: 'Card Payment - Office Supplies',
+          amount: -89.99,
+          type: 'debit',
+          category: 'office',
+          reference: 'CD123',
+          balance: 7200.00
+        }
+      ];
+
+      setBankTransactions(prev => [...prev, ...sampleTransactions]);
+      
+      toast({
+        title: "Bank Connected",
+        description: `Successfully connected to ${bankName} and synced transactions.`,
+      });
+      
+      setIsSyncing(false);
+      setSelectedBank('');
+    }, 3000);
+  };
+
+  const syncBankAccount = (accountId: string) => {
+    setIsSyncing(true);
+    
+    // Simulate sync process
+    setTimeout(() => {
+      setBankAccounts(prev => prev.map(account => 
+        account.id === accountId 
+          ? { ...account, lastSynced: new Date().toISOString() }
+          : account
+      ));
+      
+      toast({
+        title: "Account Synced",
+        description: "Latest transactions have been imported.",
+      });
+      
+      setIsSyncing(false);
+    }, 2000);
+  };
+
   const getTotalRevenue = () => {
     return documents
       .filter(doc => doc.type === 'invoice' && doc.status === 'paid')
@@ -531,6 +699,10 @@ const BusinessFinanceAssistant = () => {
             <TabsTrigger value="outgoings" className="flex items-center gap-2">
               <TrendingDown className="h-4 w-4" />
               Outgoings
+            </TabsTrigger>
+            <TabsTrigger value="banking" className="flex items-center gap-2">
+              <Banknote className="h-4 w-4" />
+              Banking
             </TabsTrigger>
             <TabsTrigger value="reports" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
@@ -1599,6 +1771,247 @@ const BusinessFinanceAssistant = () => {
                               {outgoing.isActive ? 'Active' : 'Inactive'}
                             </Badge>
                             <span className="font-medium">${outgoing.amount.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="banking" className="space-y-6 mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Banknote className="h-5 w-5" />
+                    Add Bank Account
+                  </CardTitle>
+                  <CardDescription>Connect your business bank accounts</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="accountName">Account Name *</Label>
+                    <Input
+                      id="accountName"
+                      value={bankAccountForm.accountName}
+                      onChange={(e) => setBankAccountForm({...bankAccountForm, accountName: e.target.value})}
+                      placeholder="e.g., Business Current Account"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="accountNumber">Account Number *</Label>
+                      <Input
+                        id="accountNumber"
+                        value={bankAccountForm.accountNumber}
+                        onChange={(e) => setBankAccountForm({...bankAccountForm, accountNumber: e.target.value})}
+                        placeholder="12345678"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="sortCode">Sort Code *</Label>
+                      <Input
+                        id="sortCode"
+                        value={bankAccountForm.sortCode}
+                        onChange={(e) => setBankAccountForm({...bankAccountForm, sortCode: e.target.value})}
+                        placeholder="12-34-56"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="bankName">Bank Name *</Label>
+                    <Input
+                      id="bankName"
+                      value={bankAccountForm.bankName}
+                      onChange={(e) => setBankAccountForm({...bankAccountForm, bankName: e.target.value})}
+                      placeholder="e.g., HSBC, Barclays"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="accountType">Account Type</Label>
+                      <Select 
+                        value={bankAccountForm.accountType} 
+                        onValueChange={(value: 'current' | 'savings' | 'business') => 
+                          setBankAccountForm({...bankAccountForm, accountType: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="current">Current Account</SelectItem>
+                          <SelectItem value="business">Business Account</SelectItem>
+                          <SelectItem value="savings">Savings Account</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="balance">Current Balance</Label>
+                      <Input
+                        id="balance"
+                        type="number"
+                        value={bankAccountForm.balance}
+                        onChange={(e) => setBankAccountForm({...bankAccountForm, balance: parseFloat(e.target.value) || 0})}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  <Button onClick={addBankAccount} className="w-full">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Bank Account
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Landmark className="h-5 w-5" />
+                    Connect Bank Feed
+                  </CardTitle>
+                  <CardDescription>Automatically import transactions from UK banks</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {ukBanks.map((bank) => (
+                      <div key={bank.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">{bank.logo}</span>
+                          <div>
+                            <p className="font-medium">{bank.name}</p>
+                            <p className="text-sm text-gray-600">{bank.status}</p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => connectBankFeed(bank.id)}
+                          disabled={isSyncing && selectedBank === bank.id}
+                        >
+                          {isSyncing && selectedBank === bank.id ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                              Connecting...
+                            </>
+                          ) : (
+                            <>
+                              <Landmark className="h-4 w-4 mr-2" />
+                              Connect
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Banknote className="h-5 w-5" />
+                    Bank Accounts
+                  </CardTitle>
+                  <CardDescription>Manage your connected accounts</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {bankAccounts.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Banknote className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>No bank accounts added yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {bankAccounts.map((account) => (
+                        <div key={account.id} className="p-4 border rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-medium">{account.accountName}</h4>
+                            <Badge variant={account.isActive ? "default" : "secondary"}>
+                              {account.isActive ? "Active" : "Inactive"}
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-gray-600 space-y-1">
+                            <p>{account.bankName}</p>
+                            <p>Account: ***{account.accountNumber.slice(-4)} | Sort: {account.sortCode}</p>
+                            <p className="flex items-center justify-between">
+                              <span>Balance: £{account.balance.toFixed(2)}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => syncBankAccount(account.id)}
+                                disabled={isSyncing}
+                              >
+                                <RefreshCw className={`h-4 w-4 mr-1 ${isSyncing ? 'animate-spin' : ''}`} />
+                                Sync
+                              </Button>
+                            </p>
+                            {account.lastSynced && (
+                              <p className="text-xs">
+                                Last synced: {new Date(account.lastSynced).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Receipt className="h-5 w-5" />
+                    Recent Transactions
+                  </CardTitle>
+                  <CardDescription>Latest bank transactions</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {bankTransactions.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Receipt className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>No transactions synced yet</p>
+                      <p className="text-xs mt-1">Connect a bank feed to see transactions</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {bankTransactions.slice(-10).reverse().map((transaction) => (
+                        <div key={transaction.id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                              transaction.type === 'credit' ? 'bg-green-100' : 'bg-red-100'
+                            }`}>
+                              {transaction.type === 'credit' ? (
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                              ) : (
+                                <AlertCircle className="h-4 w-4 text-red-600" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm">{transaction.description}</p>
+                              <p className="text-xs text-gray-600">
+                                {transaction.date} • {transaction.reference}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className={`font-medium ${
+                              transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {transaction.type === 'credit' ? '+' : '-'}£{Math.abs(transaction.amount).toFixed(2)}
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              Balance: £{transaction.balance.toFixed(2)}
+                            </p>
                           </div>
                         </div>
                       ))}
