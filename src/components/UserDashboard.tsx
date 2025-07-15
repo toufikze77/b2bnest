@@ -143,7 +143,11 @@ const UserDashboard = () => {
   };
 
   const handleViewQuoteInvoice = (type) => {
-    navigate('/business-tools', { state: { selectedTool: 'business-finance-assistant' } });
+    console.log('Navigating to business tools with type:', type);
+    navigate('/business-tools', { 
+      state: { selectedTool: 'business-finance-assistant' },
+      replace: false 
+    });
   };
 
   const handleDownloadQuoteInvoice = (document, type) => {
