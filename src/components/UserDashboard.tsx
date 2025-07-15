@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { Download, Heart, Calendar, BarChart3, FileText, Quote, Receipt } from 'lucide-react';
+import { Download, Heart, Calendar, BarChart3, FileText, Quote, Receipt, Eye, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +15,7 @@ import AccountSettings from '@/components/AccountSettings';
 
 const UserDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [purchases, setPurchases] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [quotes, setQuotes] = useState([]);
@@ -519,11 +521,11 @@ const UserDashboard = () => {
                       <p className="text-sm">Go to Business Tools to create your first quote!</p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                  <div className="space-y-3">
                       {quotes.slice(0, 5).map((quote: any) => (
-                        <div key={quote.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                        <div key={quote.id} className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
                           <div className="flex items-center justify-between">
-                            <div className="flex-1">
+                            <div className="flex-1" onClick={() => navigate('/business-tools')}>
                               <div className="flex items-center gap-2 mb-1">
                                 <h4 className="font-semibold text-sm">{quote.quote_number}</h4>
                                 <Badge variant="outline" className="text-xs">{quote.status}</Badge>
@@ -534,14 +536,34 @@ const UserDashboard = () => {
                               <p className="text-sm text-gray-600">
                                 <strong>Total:</strong> {formatCurrency(quote.total_amount || 0, quote.currency || 'USD')}
                               </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                <strong>Created:</strong> {new Date(quote.created_at).toLocaleDateString()}
+                              </p>
                             </div>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => handleDownloadQuoteInvoice(quote, 'quote')}
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate('/business-tools');
+                                }}
+                                title="View Quote"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownloadQuoteInvoice(quote, 'quote');
+                                }}
+                                title="Download Quote"
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -550,6 +572,16 @@ const UserDashboard = () => {
                           ... and {quotes.length - 5} more
                         </p>
                       )}
+                      <div className="mt-4 pt-4 border-t">
+                        <Button 
+                          className="w-full" 
+                          variant="outline"
+                          onClick={() => navigate('/business-tools')}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create New Quote
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </CardContent>
@@ -574,11 +606,11 @@ const UserDashboard = () => {
                       <p className="text-sm">Go to Business Tools to create your first invoice!</p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                  <div className="space-y-3">
                       {invoices.slice(0, 5).map((invoice: any) => (
-                        <div key={invoice.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                        <div key={invoice.id} className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
                           <div className="flex items-center justify-between">
-                            <div className="flex-1">
+                            <div className="flex-1" onClick={() => navigate('/business-tools')}>
                               <div className="flex items-center gap-2 mb-1">
                                 <h4 className="font-semibold text-sm">{invoice.invoice_number}</h4>
                                 <Badge variant="outline" className="text-xs">{invoice.status}</Badge>
@@ -589,14 +621,34 @@ const UserDashboard = () => {
                               <p className="text-sm text-gray-600">
                                 <strong>Total:</strong> {formatCurrency(invoice.total_amount || 0, invoice.currency || 'USD')}
                               </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                <strong>Created:</strong> {new Date(invoice.created_at).toLocaleDateString()}
+                              </p>
                             </div>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => handleDownloadQuoteInvoice(invoice, 'invoice')}
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate('/business-tools');
+                                }}
+                                title="View Invoice"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownloadQuoteInvoice(invoice, 'invoice');
+                                }}
+                                title="Download Invoice"
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -605,6 +657,16 @@ const UserDashboard = () => {
                           ... and {invoices.length - 5} more
                         </p>
                       )}
+                      <div className="mt-4 pt-4 border-t">
+                        <Button 
+                          className="w-full" 
+                          variant="outline"
+                          onClick={() => navigate('/business-tools')}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create New Invoice
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </CardContent>
