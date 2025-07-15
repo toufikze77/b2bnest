@@ -476,6 +476,33 @@ const BusinessFinanceAssistant = () => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const viewDocument = (doc: FinanceDocument) => {
+    // Open document in a new window/tab for viewing
+    toast({
+      title: "Document Viewer",
+      description: `Opening ${doc.type} ${doc.number} for viewing...`,
+    });
+    // Here you would typically open a PDF viewer or detailed view modal
+  };
+
+  const downloadDocument = (doc: FinanceDocument) => {
+    // Generate and download PDF
+    toast({
+      title: "Downloading Document",
+      description: `Preparing ${doc.type} ${doc.number} for download...`,
+    });
+    // Here you would typically generate a PDF and trigger download
+  };
+
+  const sendDocument = (doc: FinanceDocument) => {
+    // Send document via email
+    toast({
+      title: "Send Document",
+      description: `Sending ${doc.type} ${doc.number} to ${doc.clientEmail}...`,
+    });
+    // Here you would typically send the document via email
+  };
+
   const addItem = () => {
     const newItem: FinanceItem = {
       id: Date.now().toString(),
@@ -899,7 +926,7 @@ const BusinessFinanceAssistant = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <PieChart className="h-4 w-4" />
               Dashboard
@@ -1149,15 +1176,27 @@ const BusinessFinanceAssistant = () => {
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Button variant="outline" size="sm">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => viewDocument(doc)}
+                              >
                                 <Eye className="h-4 w-4 mr-1" />
                                 View
                               </Button>
-                              <Button variant="outline" size="sm">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => downloadDocument(doc)}
+                              >
                                 <Download className="h-4 w-4 mr-1" />
                                 Download
                               </Button>
-                              <Button variant="outline" size="sm">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => sendDocument(doc)}
+                              >
                                 <Send className="h-4 w-4 mr-1" />
                                 Send
                               </Button>
