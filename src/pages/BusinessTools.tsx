@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, BarChart, File, Globe, CreditCard, Layout, Mail, Megaphone } from 'lucide-react';
+import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, BarChart, File, Globe, CreditCard, Layout, Mail, Megaphone, Quote, Receipt, Eye, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -411,6 +411,65 @@ const BusinessTools = () => {
                   </Card>
                 );
               })}
+            </div>
+
+            {/* Quick Access to Quotes & Invoices */}
+            <div className="mt-12 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold mb-2">Quotes & Invoices</h2>
+                  <p className="text-gray-600">Quick access to view and manage your business documents</p>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => navigate('/dashboard')}
+                    className="flex items-center gap-2"
+                    variant="outline"
+                  >
+                    <Eye className="h-4 w-4" />
+                    View All Documents
+                  </Button>
+                  <Button
+                    onClick={() => setCurrentTool('business-finance-assistant')}
+                    className="flex items-center gap-2"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Create New
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/dashboard')}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-blue-100 p-2 rounded-lg">
+                        <Quote className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold">Manage Quotes</h3>
+                        <p className="text-sm text-gray-600">View, download, and send your quotes</p>
+                      </div>
+                      <Download className="h-4 w-4 text-gray-400" />
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/dashboard')}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-green-100 p-2 rounded-lg">
+                        <Receipt className="h-6 w-6 text-green-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold">Manage Invoices</h3>
+                        <p className="text-sm text-gray-600">View, download, and send your invoices</p>
+                      </div>
+                      <Download className="h-4 w-4 text-gray-400" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
             <div className="mt-12 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-8">
