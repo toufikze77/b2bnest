@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, BarChart, File, Globe, CreditCard, Layout, Mail, Megaphone, Quote, Receipt, Eye, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,15 @@ const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
   const [filter, setFilter] = useState<'all' | 'free' | 'premium'>('all');
   const navigate = useNavigate();
+  
+  // Handle URL parameters to set the current tool
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const toolParam = urlParams.get('tool') as ToolType;
+    if (toolParam) {
+      setCurrentTool(toolParam);
+    }
+  }, []);
 
   const tools = [
     {
