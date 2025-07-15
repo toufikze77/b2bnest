@@ -199,6 +199,7 @@ const BusinessFinanceAssistant = () => {
 
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedAccountForUpload, setSelectedAccountForUpload] = useState<string>('');
 
   // Load bank accounts function
   const loadBankAccounts = async () => {
@@ -286,10 +287,10 @@ const BusinessFinanceAssistant = () => {
   };
 
   const processStatements = async () => {
-    if (uploadedFiles.length === 0) {
+    if (uploadedFiles.length === 0 || !selectedAccountForUpload) {
       toast({
-        title: "No Files",
-        description: "Please upload statement files first.",
+        title: "Missing Information",
+        description: "Please upload statement files and select a bank account.",
         variant: "destructive"
       });
       return;
@@ -315,53 +316,41 @@ const BusinessFinanceAssistant = () => {
         if (fileExtension === 'csv') {
           // Parse CSV file
           const text = await file.text();
-          const { transactions, accountInfo } = parseCSVStatement(text, file.name);
+          const { transactions } = parseCSVStatement(text, file.name);
           
-          if (accountInfo) {
-            // Create or update bank account
-            const { data: existingAccount } = await supabase
-              .from('bank_accounts')
-              .select('id')
-              .eq('user_id', user.id)
-              .eq('account_number', accountInfo.accountNumber)
-              .single();
+          // Insert transactions linked to the selected bank account
+          for (const transaction of transactions) {
+            const { error } = await supabase.from('bank_transactions').insert({
+              user_id: user.id,
+              bank_account_id: selectedAccountForUpload,
+              transaction_id: `upload_${Date.now()}_${transaction.date}_${Math.abs(transaction.amount)}`,
+              amount: transaction.amount,
+              currency: 'GBP',
+              description: transaction.description,
+              transaction_type: transaction.amount >= 0 ? 'credit' : 'debit',
+              category: transaction.category,
+              merchant_name: transaction.merchant,
+              transaction_date: transaction.date,
+              timestamp: new Date(transaction.date).toISOString(),
+              balance_after: transaction.balance
+            });
 
-            if (!existingAccount) {
-              await supabase.from('bank_accounts').insert({
-                user_id: user.id,
-                account_id: accountInfo.accountNumber,
-                provider_id: 'manual_upload',
-                provider_name: accountInfo.bankName || 'Manual Upload',
-                account_type: 'current',
-                account_number: accountInfo.accountNumber,
-                sort_code: accountInfo.sortCode,
-                currency: 'GBP',
-                balance: accountInfo.balance,
-                available_balance: accountInfo.balance,
-                last_synced_at: new Date().toISOString(),
-                is_active: true
-              });
-              totalAccounts++;
-            }
-
-            // Insert transactions
-            for (const transaction of transactions) {
-              await supabase.from('bank_transactions').insert({
-                user_id: user.id,
-                bank_account_id: existingAccount?.id || accountInfo.accountNumber,
-                transaction_id: `${file.name}_${transaction.date}_${transaction.amount}`,
-                amount: transaction.amount,
-                currency: 'GBP',
-                description: transaction.description,
-                transaction_type: transaction.amount >= 0 ? 'credit' : 'debit',
-                category: transaction.category,
-                merchant_name: transaction.merchant,
-                transaction_date: transaction.date,
-                timestamp: new Date(transaction.date).toISOString(),
-                balance_after: transaction.balance
-              });
+            if (!error) {
               totalTransactions++;
             }
+          }
+
+          // Update the account balance with the latest transaction balance
+          if (transactions.length > 0) {
+            const latestBalance = transactions[transactions.length - 1].balance;
+            await supabase
+              .from('bank_accounts')
+              .update({ 
+                balance: latestBalance,
+                available_balance: latestBalance,
+                last_synced_at: new Date().toISOString()
+              })
+              .eq('id', selectedAccountForUpload);
           }
         } else {
           // For other formats, show a message that parsing is not yet implemented
@@ -379,10 +368,11 @@ const BusinessFinanceAssistant = () => {
 
       toast({
         title: "Statements Processed Successfully",
-        description: `Imported ${totalTransactions} transactions from ${uploadedFiles.length} file(s). ${totalAccounts} new account(s) created.`,
+        description: `Imported ${totalTransactions} transactions to the selected bank account.`,
       });
 
       setUploadedFiles([]);
+      setSelectedAccountForUpload('');
     } catch (error) {
       console.error('Error processing statements:', error);
       toast({
@@ -436,15 +426,7 @@ const BusinessFinanceAssistant = () => {
       }
     }
 
-    // Extract account info from filename or transactions
-    const accountInfo = {
-      accountNumber: fileName.replace(/\.[^/.]+$/, "").slice(-8) || '12345678',
-      bankName: 'Uploaded Statement',
-      sortCode: '12-34-56',
-      balance: transactions.length > 0 ? transactions[transactions.length - 1].balance : 0
-    };
-
-    return { transactions, accountInfo };
+    return { transactions };
   };
 
   // Helper functions
@@ -2051,20 +2033,34 @@ const BusinessFinanceAssistant = () => {
                         </div>
                       ))}
                     </div>
-                    <Input
-                      type="file"
-                      multiple
-                      accept=".csv,.ofx,.qif,.pdf"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                      id="statement-upload"
-                    />
-                    <Label htmlFor="statement-upload" className="cursor-pointer">
-                      <Button variant="outline" className="w-full">
-                        <Upload className="h-4 w-4 mr-2" />
-                        Choose Files
-                      </Button>
-                    </Label>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="accountSelect">Link to Bank Account *</Label>
+                        <Select value={selectedAccountForUpload} onValueChange={setSelectedAccountForUpload}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select bank account for these statements" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {bankAccounts.map((account) => (
+                              <SelectItem key={account.id} value={account.id}>
+                                {account.accountName} - {account.bankName} (***{account.accountNumber.slice(-4)})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div>
+                        <Input
+                          type="file"
+                          multiple
+                          accept=".csv,.ofx,.qif,.pdf"
+                          onChange={handleFileUpload}
+                          className="cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/80"
+                          id="statement-upload"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   {uploadedFiles.length > 0 && (
@@ -2090,7 +2086,7 @@ const BusinessFinanceAssistant = () => {
                       ))}
                       <Button 
                         onClick={processStatements} 
-                        disabled={isProcessing}
+                        disabled={isProcessing || !selectedAccountForUpload}
                         className="w-full"
                       >
                         {isProcessing ? (
