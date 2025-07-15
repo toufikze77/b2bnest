@@ -470,22 +470,31 @@ const QuoteInvoiceCreationSection = () => {
       const vatAmount = calculateVAT();
       const total = calculateTotal();
 
+      console.log('Generating document with data:', {
+        activeTab,
+        subtotal,
+        vatAmount,
+        total,
+        items,
+        documentData
+      });
+
       const documentPayload = {
         user_id: user.id,
-        company_name: documentData.companyName,
-        company_address: documentData.companyAddress,
+        company_name: documentData.companyName || null,
+        company_address: documentData.companyAddress || null,
         client_name: documentData.clientName,
         client_email: documentData.clientEmail,
-        client_address: documentData.clientAddress,
+        client_address: documentData.clientAddress || null,
         items: JSON.stringify(items),
-        subtotal,
-        tax_rate: documentData.vatEnabled ? documentData.vatRate : 0,
-        tax_amount: vatAmount,
-        total_amount: total,
-        notes: documentData.notes,
+        subtotal: Number(subtotal) || 0,
+        tax_rate: documentData.vatEnabled ? Number(documentData.vatRate) / 100 : 0,
+        tax_amount: Number(vatAmount) || 0,
+        total_amount: Number(total) || 0,
+        notes: documentData.notes || null,
         status: 'draft',
-        logo_url: logoUrl,
-        currency: documentData.currency
+        logo_url: logoUrl || null,
+        currency: documentData.currency || 'USD'
       };
 
       if (activeTab === 'quote') {
@@ -744,13 +753,15 @@ const QuoteInvoiceCreationSection = () => {
                         accept="image/*"
                         onChange={handleLogoUpload}
                         disabled={logoUploading || !user}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        id="logo-upload"
                       />
                       <Button 
                         type="button" 
                         variant="outline"
                         disabled={logoUploading || !user}
-                        className="relative"
+                        className="relative z-0"
+                        onClick={() => document.getElementById('logo-upload')?.click()}
                       >
                         <Upload className="h-4 w-4 mr-2" />
                         {logoUploading ? 'Uploading...' : 'Choose Logo'}
