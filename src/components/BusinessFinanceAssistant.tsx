@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Download, Eye, Send, FileText, DollarSign, TrendingUp, Users, Package, Truck, Receipt, CreditCard, BarChart3, PieChart, Home, Building, Calendar, ShoppingCart, Banknote } from 'lucide-react';
+import { Plus, Download, Eye, Send, FileText, DollarSign, TrendingUp, Users, Package, Truck, Receipt, CreditCard, BarChart3, PieChart, Home, Building, Calendar, ShoppingCart, Banknote, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import QuoteInvoiceCreationSection from '@/components/QuoteInvoiceCreationSection';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { Tables } from '@/integrations/supabase/types';
@@ -54,6 +54,52 @@ const BusinessFinanceAssistant = () => {
   const [bankTransactions, setBankTransactions] = useState<BankTransaction[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<Quote | Invoice | null>(null);
   const [isDocumentViewOpen, setIsDocumentViewOpen] = useState(false);
+  
+  // Add form states
+  const [showAddProduct, setShowAddProduct] = useState(false);
+  const [showAddSupplier, setShowAddSupplier] = useState(false);
+  const [showAddExpense, setShowAddExpense] = useState(false);
+  const [showAddOutgoing, setShowAddOutgoing] = useState(false);
+  
+  // Form data states
+  const [productForm, setProductForm] = useState({
+    name: '',
+    description: '',
+    category: '',
+    price: '',
+    cost: '',
+    stock_quantity: '',
+    is_active: true,
+    is_service: false
+  });
+  
+  const [supplierForm, setSupplierForm] = useState({
+    name: '',
+    contact_person: '',
+    email: '',
+    phone: '',
+    address: '',
+    website: '',
+    payment_terms: 'Net 30'
+  });
+  
+  const [expenseForm, setExpenseForm] = useState({
+    description: '',
+    category: '',
+    amount: '',
+    date: new Date().toISOString().split('T')[0],
+    supplier_id: '',
+    status: 'pending'
+  });
+  
+  const [outgoingForm, setOutgoingForm] = useState({
+    name: '',
+    category: '',
+    amount: '',
+    frequency: 'monthly',
+    next_payment_date: new Date().toISOString().split('T')[0],
+    supplier_id: ''
+  });
 
   // Sample import formats for banking
   const importFormats = [
@@ -430,6 +476,155 @@ const BusinessFinanceAssistant = () => {
     toast.success(`${filename} exported successfully`);
   };
 
+  // Add Product/Service
+  const handleAddProduct = async () => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('products_services')
+        .insert([{
+          user_id: user.id,
+          name: productForm.name,
+          description: productForm.description,
+          category: productForm.category,
+          price: parseFloat(productForm.price) || 0,
+          cost: parseFloat(productForm.cost) || 0,
+          stock_quantity: productForm.is_service ? null : parseInt(productForm.stock_quantity) || 0,
+          is_active: productForm.is_active
+        }]);
+
+      if (error) throw error;
+
+      toast.success(`${productForm.is_service ? 'Service' : 'Product'} added successfully`);
+      setShowAddProduct(false);
+      setProductForm({
+        name: '',
+        description: '',
+        category: '',
+        price: '',
+        cost: '',
+        stock_quantity: '',
+        is_active: true,
+        is_service: false
+      });
+      loadProducts();
+    } catch (error) {
+      console.error('Error adding product:', error);
+      toast.error('Failed to add product');
+    }
+  };
+
+  // Add Supplier
+  const handleAddSupplier = async () => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('suppliers')
+        .insert([{
+          user_id: user.id,
+          name: supplierForm.name,
+          contact_person: supplierForm.contact_person,
+          email: supplierForm.email,
+          phone: supplierForm.phone,
+          address: supplierForm.address,
+          website: supplierForm.website,
+          payment_terms: supplierForm.payment_terms
+        }]);
+
+      if (error) throw error;
+
+      toast.success('Supplier added successfully');
+      setShowAddSupplier(false);
+      setSupplierForm({
+        name: '',
+        contact_person: '',
+        email: '',
+        phone: '',
+        address: '',
+        website: '',
+        payment_terms: 'Net 30'
+      });
+      loadSuppliers();
+    } catch (error) {
+      console.error('Error adding supplier:', error);
+      toast.error('Failed to add supplier');
+    }
+  };
+
+  // Add Expense
+  const handleAddExpense = async () => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('expenses')
+        .insert([{
+          user_id: user.id,
+          description: expenseForm.description,
+          category: expenseForm.category,
+          amount: parseFloat(expenseForm.amount) || 0,
+          date: expenseForm.date,
+          supplier_id: expenseForm.supplier_id || null,
+          status: expenseForm.status
+        }]);
+
+      if (error) throw error;
+
+      toast.success('Expense added successfully');
+      setShowAddExpense(false);
+      setExpenseForm({
+        description: '',
+        category: '',
+        amount: '',
+        date: new Date().toISOString().split('T')[0],
+        supplier_id: '',
+        status: 'pending'
+      });
+      loadExpenses();
+    } catch (error) {
+      console.error('Error adding expense:', error);
+      toast.error('Failed to add expense');
+    }
+  };
+
+  // Add Outgoing
+  const handleAddOutgoing = async () => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('outgoings')
+        .insert([{
+          user_id: user.id,
+          name: outgoingForm.name,
+          category: outgoingForm.category,
+          amount: parseFloat(outgoingForm.amount) || 0,
+          frequency: outgoingForm.frequency,
+          next_payment_date: outgoingForm.next_payment_date,
+          supplier_id: outgoingForm.supplier_id || null
+        }]);
+
+      if (error) throw error;
+
+      toast.success('Recurring payment added successfully');
+      setShowAddOutgoing(false);
+      setOutgoingForm({
+        name: '',
+        category: '',
+        amount: '',
+        frequency: 'monthly',
+        next_payment_date: new Date().toISOString().split('T')[0],
+        supplier_id: ''
+      });
+      loadOutgoings();
+    } catch (error) {
+      console.error('Error adding outgoing:', error);
+      toast.error('Failed to add recurring payment');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -713,10 +908,116 @@ const BusinessFinanceAssistant = () => {
                 <CardTitle>Products & Services</CardTitle>
                 <CardDescription>Manage your product catalog and service offerings</CardDescription>
               </div>
-              <Button onClick={downloadCatalog} variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Download Catalog
-              </Button>
+              <div className="flex gap-2">
+                <Dialog open={showAddProduct} onOpenChange={setShowAddProduct}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Product/Service
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Add New {productForm.is_service ? 'Service' : 'Product'}</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="product-type">Type</Label>
+                          <Select 
+                            value={productForm.is_service ? 'service' : 'product'} 
+                            onValueChange={(value) => setProductForm({...productForm, is_service: value === 'service'})}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="product">Product</SelectItem>
+                              <SelectItem value="service">Service</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="product-name">Name *</Label>
+                          <Input
+                            id="product-name"
+                            value={productForm.name}
+                            onChange={(e) => setProductForm({...productForm, name: e.target.value})}
+                            placeholder="Product/Service name"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="product-category">Category *</Label>
+                          <Input
+                            id="product-category"
+                            value={productForm.category}
+                            onChange={(e) => setProductForm({...productForm, category: e.target.value})}
+                            placeholder="e.g., Software, Consulting, Hardware"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="product-price">Price *</Label>
+                          <Input
+                            id="product-price"
+                            type="number"
+                            step="0.01"
+                            value={productForm.price}
+                            onChange={(e) => setProductForm({...productForm, price: e.target.value})}
+                            placeholder="0.00"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="product-cost">Cost</Label>
+                          <Input
+                            id="product-cost"
+                            type="number"
+                            step="0.01"
+                            value={productForm.cost}
+                            onChange={(e) => setProductForm({...productForm, cost: e.target.value})}
+                            placeholder="0.00"
+                          />
+                        </div>
+                        {!productForm.is_service && (
+                          <div className="space-y-2">
+                            <Label htmlFor="product-stock">Stock Quantity</Label>
+                            <Input
+                              id="product-stock"
+                              type="number"
+                              value={productForm.stock_quantity}
+                              onChange={(e) => setProductForm({...productForm, stock_quantity: e.target.value})}
+                              placeholder="0"
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="product-description">Description</Label>
+                        <Textarea
+                          id="product-description"
+                          value={productForm.description}
+                          onChange={(e) => setProductForm({...productForm, description: e.target.value})}
+                          placeholder="Description of the product/service"
+                          rows={3}
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowAddProduct(false)}>Cancel</Button>
+                        <Button onClick={handleAddProduct} disabled={!productForm.name || !productForm.category || !productForm.price}>
+                          Add {productForm.is_service ? 'Service' : 'Product'}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <Button onClick={downloadCatalog} variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Catalog
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -728,8 +1029,12 @@ const BusinessFinanceAssistant = () => {
                       <div className="flex-1">
                         <h3 className="font-medium">{product.name}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {product.category} • {formatCurrency(Number(product.price))} • Stock: {product.stock_quantity || 'N/A'}
+                          {product.category} • {formatCurrency(Number(product.price))} • 
+                          {product.stock_quantity !== null ? ` Stock: ${product.stock_quantity}` : ' Service'}
                         </p>
+                        {product.description && (
+                          <p className="text-xs text-muted-foreground mt-1">{product.description}</p>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant={product.is_active ? "default" : "secondary"}>
@@ -751,10 +1056,113 @@ const BusinessFinanceAssistant = () => {
                 <CardTitle>Suppliers</CardTitle>
                 <CardDescription>Manage your supplier relationships and contacts</CardDescription>
               </div>
-              <Button onClick={downloadSuppliers} variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Download List
-              </Button>
+              <div className="flex gap-2">
+                <Dialog open={showAddSupplier} onOpenChange={setShowAddSupplier}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Supplier
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Add New Supplier</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="supplier-name">Company Name *</Label>
+                          <Input
+                            id="supplier-name"
+                            value={supplierForm.name}
+                            onChange={(e) => setSupplierForm({...supplierForm, name: e.target.value})}
+                            placeholder="Company name"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="supplier-contact">Contact Person</Label>
+                          <Input
+                            id="supplier-contact"
+                            value={supplierForm.contact_person}
+                            onChange={(e) => setSupplierForm({...supplierForm, contact_person: e.target.value})}
+                            placeholder="Contact person name"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="supplier-email">Email</Label>
+                          <Input
+                            id="supplier-email"
+                            type="email"
+                            value={supplierForm.email}
+                            onChange={(e) => setSupplierForm({...supplierForm, email: e.target.value})}
+                            placeholder="email@company.com"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="supplier-phone">Phone</Label>
+                          <Input
+                            id="supplier-phone"
+                            value={supplierForm.phone}
+                            onChange={(e) => setSupplierForm({...supplierForm, phone: e.target.value})}
+                            placeholder="Phone number"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="supplier-website">Website</Label>
+                          <Input
+                            id="supplier-website"
+                            value={supplierForm.website}
+                            onChange={(e) => setSupplierForm({...supplierForm, website: e.target.value})}
+                            placeholder="https://website.com"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="supplier-terms">Payment Terms</Label>
+                          <Select 
+                            value={supplierForm.payment_terms} 
+                            onValueChange={(value) => setSupplierForm({...supplierForm, payment_terms: value})}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Net 15">Net 15</SelectItem>
+                              <SelectItem value="Net 30">Net 30</SelectItem>
+                              <SelectItem value="Net 60">Net 60</SelectItem>
+                              <SelectItem value="Due on Receipt">Due on Receipt</SelectItem>
+                              <SelectItem value="COD">Cash on Delivery</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="supplier-address">Address</Label>
+                        <Textarea
+                          id="supplier-address"
+                          value={supplierForm.address}
+                          onChange={(e) => setSupplierForm({...supplierForm, address: e.target.value})}
+                          placeholder="Full address"
+                          rows={3}
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowAddSupplier(false)}>Cancel</Button>
+                        <Button onClick={handleAddSupplier} disabled={!supplierForm.name}>
+                          Add Supplier
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <Button onClick={downloadSuppliers} variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Download List
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -766,8 +1174,13 @@ const BusinessFinanceAssistant = () => {
                       <div className="flex-1">
                         <h3 className="font-medium">{supplier.name}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {supplier.contact_person} • {supplier.email} • {supplier.payment_terms}
+                          {supplier.contact_person && `${supplier.contact_person} • `}
+                          {supplier.email && `${supplier.email} • `}
+                          {supplier.payment_terms}
                         </p>
+                        {supplier.phone && (
+                          <p className="text-xs text-muted-foreground">Phone: {supplier.phone}</p>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant={supplier.is_active ? "default" : "secondary"}>
@@ -789,10 +1202,126 @@ const BusinessFinanceAssistant = () => {
                 <CardTitle>Expenses</CardTitle>
                 <CardDescription>Track and categorize your business expenses</CardDescription>
               </div>
-              <Button onClick={downloadExpenses} variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Download Report
-              </Button>
+              <div className="flex gap-2">
+                <Dialog open={showAddExpense} onOpenChange={setShowAddExpense}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Expense
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Add New Expense</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="expense-description">Description *</Label>
+                          <Input
+                            id="expense-description"
+                            value={expenseForm.description}
+                            onChange={(e) => setExpenseForm({...expenseForm, description: e.target.value})}
+                            placeholder="Expense description"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="expense-category">Category *</Label>
+                          <Select 
+                            value={expenseForm.category} 
+                            onValueChange={(value) => setExpenseForm({...expenseForm, category: value})}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Office Supplies">Office Supplies</SelectItem>
+                              <SelectItem value="Travel">Travel</SelectItem>
+                              <SelectItem value="Marketing">Marketing</SelectItem>
+                              <SelectItem value="Software">Software</SelectItem>
+                              <SelectItem value="Equipment">Equipment</SelectItem>
+                              <SelectItem value="Utilities">Utilities</SelectItem>
+                              <SelectItem value="Rent">Rent</SelectItem>
+                              <SelectItem value="Professional Services">Professional Services</SelectItem>
+                              <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="expense-amount">Amount *</Label>
+                          <Input
+                            id="expense-amount"
+                            type="number"
+                            step="0.01"
+                            value={expenseForm.amount}
+                            onChange={(e) => setExpenseForm({...expenseForm, amount: e.target.value})}
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="expense-date">Date *</Label>
+                          <Input
+                            id="expense-date"
+                            type="date"
+                            value={expenseForm.date}
+                            onChange={(e) => setExpenseForm({...expenseForm, date: e.target.value})}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="expense-supplier">Supplier (Optional)</Label>
+                          <Select 
+                            value={expenseForm.supplier_id} 
+                            onValueChange={(value) => setExpenseForm({...expenseForm, supplier_id: value})}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select supplier" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">No supplier</SelectItem>
+                              {suppliers.map((supplier) => (
+                                <SelectItem key={supplier.id} value={supplier.id}>
+                                  {supplier.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="expense-status">Status</Label>
+                          <Select 
+                            value={expenseForm.status} 
+                            onValueChange={(value) => setExpenseForm({...expenseForm, status: value})}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="approved">Approved</SelectItem>
+                              <SelectItem value="paid">Paid</SelectItem>
+                              <SelectItem value="rejected">Rejected</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowAddExpense(false)}>Cancel</Button>
+                        <Button onClick={handleAddExpense} disabled={!expenseForm.description || !expenseForm.category || !expenseForm.amount}>
+                          Add Expense
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <Button onClick={downloadExpenses} variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Report
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -825,10 +1354,125 @@ const BusinessFinanceAssistant = () => {
                 <CardTitle>Recurring Outgoings</CardTitle>
                 <CardDescription>Manage your scheduled payments and subscriptions</CardDescription>
               </div>
-              <Button onClick={downloadOutgoings} variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Download Schedule
-              </Button>
+              <div className="flex gap-2">
+                <Dialog open={showAddOutgoing} onOpenChange={setShowAddOutgoing}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Recurring Payment
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Add New Recurring Payment</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="outgoing-name">Payment Name *</Label>
+                          <Input
+                            id="outgoing-name"
+                            value={outgoingForm.name}
+                            onChange={(e) => setOutgoingForm({...outgoingForm, name: e.target.value})}
+                            placeholder="e.g., Office Rent, Software Subscription"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="outgoing-category">Category *</Label>
+                          <Select 
+                            value={outgoingForm.category} 
+                            onValueChange={(value) => setOutgoingForm({...outgoingForm, category: value})}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Rent">Rent</SelectItem>
+                              <SelectItem value="Utilities">Utilities</SelectItem>
+                              <SelectItem value="Software Subscriptions">Software Subscriptions</SelectItem>
+                              <SelectItem value="Insurance">Insurance</SelectItem>
+                              <SelectItem value="Loan Payments">Loan Payments</SelectItem>
+                              <SelectItem value="Professional Services">Professional Services</SelectItem>
+                              <SelectItem value="Marketing">Marketing</SelectItem>
+                              <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="outgoing-amount">Amount *</Label>
+                          <Input
+                            id="outgoing-amount"
+                            type="number"
+                            step="0.01"
+                            value={outgoingForm.amount}
+                            onChange={(e) => setOutgoingForm({...outgoingForm, amount: e.target.value})}
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="outgoing-frequency">Frequency *</Label>
+                          <Select 
+                            value={outgoingForm.frequency} 
+                            onValueChange={(value) => setOutgoingForm({...outgoingForm, frequency: value})}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="weekly">Weekly</SelectItem>
+                              <SelectItem value="monthly">Monthly</SelectItem>
+                              <SelectItem value="quarterly">Quarterly</SelectItem>
+                              <SelectItem value="annually">Annually</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="outgoing-next-payment">Next Payment Date *</Label>
+                          <Input
+                            id="outgoing-next-payment"
+                            type="date"
+                            value={outgoingForm.next_payment_date}
+                            onChange={(e) => setOutgoingForm({...outgoingForm, next_payment_date: e.target.value})}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="outgoing-supplier">Supplier (Optional)</Label>
+                          <Select 
+                            value={outgoingForm.supplier_id} 
+                            onValueChange={(value) => setOutgoingForm({...outgoingForm, supplier_id: value})}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select supplier" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">No supplier</SelectItem>
+                              {suppliers.map((supplier) => (
+                                <SelectItem key={supplier.id} value={supplier.id}>
+                                  {supplier.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowAddOutgoing(false)}>Cancel</Button>
+                        <Button onClick={handleAddOutgoing} disabled={!outgoingForm.name || !outgoingForm.category || !outgoingForm.amount}>
+                          Add Recurring Payment
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <Button onClick={downloadOutgoings} variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Schedule
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
