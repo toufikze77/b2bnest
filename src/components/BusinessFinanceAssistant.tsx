@@ -43,8 +43,6 @@ const BusinessFinanceAssistant = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'quotes' | 'invoices' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'banking' | 'reports' | 'analytics'>('dashboard');
-  
-  console.log('Current activeTab:', activeTab);
   const [documentType, setDocumentType] = useState<'invoice' | 'quote'>('quote');
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -1362,7 +1360,13 @@ const BusinessFinanceAssistant = () => {
             <CardContent>
               <div className="space-y-4">
                 {expenses.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No expenses found. Add your first expense to get started.</p>
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground mb-4">No expenses found. Add your first expense to get started.</p>
+                    <Button onClick={() => setShowAddExpense(true)} size="lg">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Your First Expense
+                    </Button>
+                  </div>
                 ) : (
                   expenses.map((expense) => (
                     <div key={expense.id} className="flex items-center justify-between p-4 border rounded-lg">
@@ -1513,7 +1517,13 @@ const BusinessFinanceAssistant = () => {
             <CardContent>
               <div className="space-y-4">
                 {outgoings.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No outgoings found. Add your first recurring payment to get started.</p>
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground mb-4">No outgoings found. Add your first recurring payment to get started.</p>
+                    <Button onClick={() => setShowAddOutgoing(true)} size="lg">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Your First Recurring Payment
+                    </Button>
+                  </div>
                 ) : (
                   outgoings.map((outgoing) => (
                     <div key={outgoing.id} className="flex items-center justify-between p-4 border rounded-lg">
