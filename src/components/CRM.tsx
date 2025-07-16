@@ -17,8 +17,6 @@ import {
 import ContactsView from './crm/ContactsView';
 import DealsView from './crm/DealsView';
 import MarketingTab from './crm/MarketingTab';
-import IntegrationsTab from './crm/IntegrationsTab';
-import ServicesTab from './crm/ServicesTab';
 import SecurityTab from './crm/SecurityTab';
 import ReportsTab from './crm/ReportsTab';
 import AnalyticsTab from './crm/AnalyticsTab';
@@ -377,12 +375,10 @@ const CRM = () => {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="contacts">Contacts</TabsTrigger>
           <TabsTrigger value="deals">Sales Pipeline</TabsTrigger>
           <TabsTrigger value="marketing">Marketing</TabsTrigger>
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
-          <TabsTrigger value="services">3rd-Party</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
@@ -407,14 +403,6 @@ const CRM = () => {
         
         <TabsContent value="marketing" className="mt-6">
           <MarketingTab />
-        </TabsContent>
-
-        <TabsContent value="integrations" className="mt-6">
-          <IntegrationsTab />
-        </TabsContent>
-
-        <TabsContent value="services" className="mt-6">
-          <ServicesTab />
         </TabsContent>
 
         <TabsContent value="security" className="mt-6">
