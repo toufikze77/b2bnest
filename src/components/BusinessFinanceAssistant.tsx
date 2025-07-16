@@ -558,6 +558,7 @@ const BusinessFinanceAssistant = () => {
     if (!user) return;
     
     try {
+      console.log('Adding expense:', expenseForm);
       const { error } = await supabase
         .from('expenses')
         .insert([{
@@ -570,7 +571,10 @@ const BusinessFinanceAssistant = () => {
           status: expenseForm.status
         }]);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
       toast.success('Expense added successfully');
       setShowAddExpense(false);
@@ -594,6 +598,7 @@ const BusinessFinanceAssistant = () => {
     if (!user) return;
     
     try {
+      console.log('Adding outgoing:', outgoingForm);
       const { error } = await supabase
         .from('outgoings')
         .insert([{
@@ -606,7 +611,10 @@ const BusinessFinanceAssistant = () => {
           supplier_id: outgoingForm.supplier_id || null
         }]);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
       toast.success('Recurring payment added successfully');
       setShowAddOutgoing(false);
@@ -642,7 +650,10 @@ const BusinessFinanceAssistant = () => {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={(value) => {
+        console.log('Tab changed to:', value);
+        setActiveTab(value as any);
+      }} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5 lg:grid-cols-11">
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <Home className="h-4 w-4" />
