@@ -1360,13 +1360,7 @@ const BusinessFinanceAssistant = () => {
             <CardContent>
               <div className="space-y-4">
                 {expenses.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground mb-4">No expenses found. Add your first expense to get started.</p>
-                    <Button onClick={() => setShowAddExpense(true)} size="lg">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Your First Expense
-                    </Button>
-                  </div>
+                  <p className="text-muted-foreground text-center py-8">No expenses found. Add your first expense to get started.</p>
                 ) : (
                   expenses.map((expense) => (
                     <div key={expense.id} className="flex items-center justify-between p-4 border rounded-lg">
@@ -1517,13 +1511,7 @@ const BusinessFinanceAssistant = () => {
             <CardContent>
               <div className="space-y-4">
                 {outgoings.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground mb-4">No outgoings found. Add your first recurring payment to get started.</p>
-                    <Button onClick={() => setShowAddOutgoing(true)} size="lg">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Your First Recurring Payment
-                    </Button>
-                  </div>
+                  <p className="text-muted-foreground text-center py-8">No outgoings found. Add your first recurring payment to get started.</p>
                 ) : (
                   outgoings.map((outgoing) => (
                     <div key={outgoing.id} className="flex items-center justify-between p-4 border rounded-lg">
