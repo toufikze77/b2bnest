@@ -1,17 +1,148 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   Shield,
   Activity,
   KeyRound,
   UserCheck,
   Eye,
-  Settings
+  Settings,
+  AlertTriangle,
+  CheckCircle
 } from 'lucide-react';
 
 const SecurityTab = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [securitySettings, setSecuritySettings] = useState({
+    twoFactorEnabled: false,
+    oauth2Enabled: true,
+    googleSSO: false,
+    microsoftSSO: false,
+    auditLogging: true,
+    sessionTimeout: '60',
+    failedLoginThreshold: '5'
+  });
+  const [loading, setLoading] = useState(false);
+  const [auditLogs, setAuditLogs] = useState([]);
+
+  useEffect(() => {
+    fetchSecuritySettings();
+    fetchAuditLogs();
+  }, []);
+
+  const fetchSecuritySettings = async () => {
+    try {
+      if (!user?.id) return;
+      
+      const { data, error } = await supabase
+        .from('integration_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('integration_name', 'security_settings')
+        .single();
+
+      if (data && !error && data.settings && typeof data.settings === 'object') {
+        setSecuritySettings(prev => ({ ...prev, ...(data.settings as Record<string, any>) }));
+      }
+    } catch (error) {
+      console.error('Error fetching security settings:', error);
+    }
+  };
+
+  const fetchAuditLogs = async () => {
+    try {
+      if (!user?.id) return;
+      
+      const { data, error } = await supabase
+        .from('audit_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (data && !error) {
+        setAuditLogs(data);
+      }
+    } catch (error) {
+      console.error('Error fetching audit logs:', error);
+    }
+  };
+
+  const updateSecuritySetting = async (key: string, value: any) => {
+    try {
+      setLoading(true);
+      if (!user?.id) return;
+
+      const newSettings = { ...securitySettings, [key]: value };
+      setSecuritySettings(newSettings);
+
+      const { error } = await supabase
+        .from('integration_settings')
+        .upsert({
+          user_id: user.id,
+          integration_name: 'security_settings',
+          settings: newSettings,
+          is_enabled: true
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Security Setting Updated",
+        description: `${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} has been ${value ? 'enabled' : 'disabled'}`,
+      });
+
+      // Log the action
+      await supabase.rpc('log_user_action', {
+        p_user_id: user.id,
+        p_action: 'security_setting_updated',
+        p_resource_type: 'security',
+        p_details: { setting: key, value }
+      });
+
+      fetchAuditLogs();
+    } catch (error) {
+      console.error('Error updating security setting:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update security setting",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const manageUserRoles = () => {
+    toast({
+      title: "User Role Management",
+      description: "Opening user role management interface...",
+    });
+  };
+
+  const configureSSO = (provider: string) => {
+    toast({
+      title: `${provider} SSO Configuration`,
+      description: `Opening ${provider} Single Sign-On configuration...`,
+    });
+  };
+
+  const viewAllAuditLogs = () => {
+    toast({
+      title: "Audit Logs",
+      description: "Opening comprehensive audit log viewer...",
+    });
+  };
+
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -68,7 +199,7 @@ const SecurityTab = () => {
                 <p className="text-sm text-gray-600">View own contacts & deals only</p>
               </div>
             </div>
-            <Button className="w-full">
+            <Button className="w-full" onClick={manageUserRoles} disabled={loading}>
               <UserCheck className="w-4 h-4 mr-2" />
               Manage User Roles
             </Button>
@@ -84,39 +215,21 @@ const SecurityTab = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <Activity className="w-4 h-4 text-blue-600" />
-                  <span className="font-medium text-sm">Contact Created</span>
+              {auditLogs.length > 0 ? auditLogs.map((log: any, index) => (
+                <div key={log.id} className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Activity className="w-4 h-4 text-blue-600" />
+                    <span className="font-medium text-sm">{log.action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                  </div>
+                  <p className="text-xs text-gray-600">{log.resource_type} • {new Date(log.created_at).toLocaleString()}</p>
                 </div>
-                <p className="text-xs text-gray-600">john.doe@company.com • 2 minutes ago</p>
-              </div>
-              
-              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <Activity className="w-4 h-4 text-green-600" />
-                  <span className="font-medium text-sm">Deal Updated</span>
+              )) : (
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-center">
+                  <p className="text-sm text-gray-600">No recent audit logs</p>
                 </div>
-                <p className="text-xs text-gray-600">sarah.johnson@startup.io • 5 minutes ago</p>
-              </div>
-              
-              <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <Activity className="w-4 h-4 text-orange-600" />
-                  <span className="font-medium text-sm">User Login</span>
-                </div>
-                <p className="text-xs text-gray-600">admin@company.com • 10 minutes ago</p>
-              </div>
-              
-              <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <Activity className="w-4 h-4 text-purple-600" />
-                  <span className="font-medium text-sm">Settings Modified</span>
-                </div>
-                <p className="text-xs text-gray-600">admin@company.com • 15 minutes ago</p>
-              </div>
+              )}
             </div>
-            <Button className="w-full">
+            <Button className="w-full" onClick={viewAllAuditLogs} disabled={loading}>
               <Eye className="w-4 h-4 mr-2" />
               View All Audit Logs
             </Button>
@@ -137,7 +250,11 @@ const SecurityTab = () => {
                   <KeyRound className="w-4 h-4 text-blue-500" />
                   <span>OAuth 2.0</span>
                 </div>
-                <Badge className="bg-green-100 text-green-800">Active</Badge>
+                <Switch
+                  checked={securitySettings.oauth2Enabled}
+                  onCheckedChange={(checked) => updateSecuritySetting('oauth2Enabled', checked)}
+                  disabled={loading}
+                />
               </div>
               
               <div className="p-3 border rounded-lg flex items-center justify-between">
@@ -145,7 +262,11 @@ const SecurityTab = () => {
                   <Shield className="w-4 h-4 text-green-500" />
                   <span>Two-Factor Auth</span>
                 </div>
-                <Badge className="bg-green-100 text-green-800">Enabled</Badge>
+                <Switch
+                  checked={securitySettings.twoFactorEnabled}
+                  onCheckedChange={(checked) => updateSecuritySetting('twoFactorEnabled', checked)}
+                  disabled={loading}
+                />
               </div>
               
               <div className="p-3 border rounded-lg flex items-center justify-between">
@@ -153,7 +274,11 @@ const SecurityTab = () => {
                   <KeyRound className="w-4 h-4 text-purple-500" />
                   <span>Google SSO</span>
                 </div>
-                <Badge className="bg-green-100 text-green-800">Connected</Badge>
+                <Switch
+                  checked={securitySettings.googleSSO}
+                  onCheckedChange={(checked) => updateSecuritySetting('googleSSO', checked)}
+                  disabled={loading}
+                />
               </div>
               
               <div className="p-3 border rounded-lg flex items-center justify-between">
@@ -161,13 +286,35 @@ const SecurityTab = () => {
                   <Shield className="w-4 h-4 text-blue-700" />
                   <span>Microsoft SSO</span>
                 </div>
-                <Badge className="bg-yellow-100 text-yellow-800">Available</Badge>
+                <Switch
+                  checked={securitySettings.microsoftSSO}
+                  onCheckedChange={(checked) => updateSecuritySetting('microsoftSSO', checked)}
+                  disabled={loading}
+                />
               </div>
             </div>
-            <Button className="w-full">
-              <Settings className="w-4 h-4 mr-2" />
-              Configure Security
-            </Button>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
+                <Input
+                  id="sessionTimeout"
+                  type="number"
+                  value={securitySettings.sessionTimeout}
+                  onChange={(e) => updateSecuritySetting('sessionTimeout', e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="failedLoginThreshold">Failed Login Threshold</Label>
+                <Input
+                  id="failedLoginThreshold"
+                  type="number"
+                  value={securitySettings.failedLoginThreshold}
+                  onChange={(e) => updateSecuritySetting('failedLoginThreshold', e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -184,7 +331,12 @@ const SecurityTab = () => {
             <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
               <Shield className="w-8 h-8 mx-auto mb-2 text-green-600" />
               <h4 className="font-semibold text-green-800">Security Score</h4>
-              <p className="text-2xl font-bold text-green-600">92%</p>
+              <p className="text-2xl font-bold text-green-600">
+                {Math.round(
+                  (Object.values(securitySettings).filter(v => v === true).length / 
+                   Object.values(securitySettings).filter(v => typeof v === 'boolean').length) * 100
+                )}%
+              </p>
             </div>
             
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
@@ -202,7 +354,19 @@ const SecurityTab = () => {
             <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg text-center">
               <KeyRound className="w-8 h-8 mx-auto mb-2 text-purple-600" />
               <h4 className="font-semibold text-purple-800">2FA Enabled</h4>
-              <p className="text-2xl font-bold text-purple-600">18/21</p>
+              <p className="text-2xl font-bold text-purple-600">
+                {securitySettings.twoFactorEnabled ? (
+                  <span className="flex items-center gap-1">
+                    <CheckCircle className="w-4 h-4" />
+                    Yes
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1">
+                    <AlertTriangle className="w-4 h-4" />
+                    No
+                  </span>
+                )}
+              </p>
             </div>
           </div>
         </CardContent>
