@@ -702,7 +702,7 @@ const BusinessFinanceAssistant = () => {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <Card 
               className="cursor-pointer hover:shadow-md transition-shadow"
               onClick={() => setActiveTab('quotes')}
@@ -742,7 +742,10 @@ const BusinessFinanceAssistant = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card 
+              className="cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => setActiveTab('expenses')}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
                 <Receipt className="h-4 w-4 text-muted-foreground" />
@@ -750,6 +753,20 @@ const BusinessFinanceAssistant = () => {
               <CardContent>
                 <div className="text-2xl font-bold">{formatCurrency(stats.totalExpenses)}</div>
                 <p className="text-xs text-muted-foreground">This period</p>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => setActiveTab('outgoings')}
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Monthly Outgoings</CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{outgoings.filter(o => o.is_active).length}</div>
+                <p className="text-xs text-muted-foreground">Active payments</p>
               </CardContent>
             </Card>
           </div>
