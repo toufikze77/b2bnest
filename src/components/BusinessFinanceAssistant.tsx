@@ -43,6 +43,8 @@ const BusinessFinanceAssistant = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'quotes' | 'invoices' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'banking' | 'reports' | 'analytics'>('dashboard');
+  
+  console.log('Current activeTab:', activeTab);
   const [documentType, setDocumentType] = useState<'invoice' | 'quote'>('quote');
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -744,7 +746,10 @@ const BusinessFinanceAssistant = () => {
 
             <Card 
               className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => setActiveTab('expenses')}
+              onClick={() => {
+                console.log('Expenses card clicked, setting activeTab to expenses');
+                setActiveTab('expenses');
+              }}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
@@ -758,7 +763,10 @@ const BusinessFinanceAssistant = () => {
 
             <Card 
               className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => setActiveTab('outgoings')}
+              onClick={() => {
+                console.log('Outgoings card clicked, setting activeTab to outgoings');
+                setActiveTab('outgoings');
+              }}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Monthly Outgoings</CardTitle>
