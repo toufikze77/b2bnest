@@ -408,7 +408,7 @@ const Whitepaper = () => {
               </div>
               <div className="flex justify-center gap-6 text-sm">
                 <span>🌐 Website: www.b2bnest.online</span>
-                <span>🐦 Twitter: @b2bnest</span>
+                <span>🐦 Twitter: @B2BNEST</span>
                 <span>💎 Token Presale: Coming soon on PinkSale</span>
               </div>
             </CardContent>
