@@ -1237,13 +1237,11 @@ const BusinessFinanceAssistant = () => {
                 <CardDescription>Track and categorize your business expenses</CardDescription>
               </div>
               <div className="flex gap-2">
+                <Button onClick={() => setShowAddExpense(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Expense
+                </Button>
                 <Dialog open={showAddExpense} onOpenChange={setShowAddExpense}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Expense
-                    </Button>
-                  </DialogTrigger>
                   <DialogContent className="max-w-2xl">
                     <DialogHeader>
                       <DialogTitle>Add New Expense</DialogTitle>
@@ -1389,13 +1387,11 @@ const BusinessFinanceAssistant = () => {
                 <CardDescription>Manage your scheduled payments and subscriptions</CardDescription>
               </div>
               <div className="flex gap-2">
+                <Button onClick={() => setShowAddOutgoing(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Recurring Payment
+                </Button>
                 <Dialog open={showAddOutgoing} onOpenChange={setShowAddOutgoing}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Recurring Payment
-                    </Button>
-                  </DialogTrigger>
                   <DialogContent className="max-w-2xl">
                     <DialogHeader>
                       <DialogTitle>Add New Recurring Payment</DialogTitle>
