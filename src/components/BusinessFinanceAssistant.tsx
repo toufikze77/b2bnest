@@ -54,6 +54,7 @@ const BusinessFinanceAssistant = () => {
   const [bankTransactions, setBankTransactions] = useState<BankTransaction[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<Quote | Invoice | null>(null);
   const [isDocumentViewOpen, setIsDocumentViewOpen] = useState(false);
+  const [userCurrency, setUserCurrency] = useState('USD');
   
   // Add form states
   const [showAddProduct, setShowAddProduct] = useState(false);
@@ -148,8 +149,32 @@ const BusinessFinanceAssistant = () => {
   useEffect(() => {
     if (user) {
       fetchData();
+      fetchUserCurrency();
     }
   }, [user]);
+
+  const fetchUserCurrency = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('currency_code')
+        .eq('id', user.id)
+        .maybeSingle();
+        
+      if (error) {
+        console.error('Error fetching user currency:', error);
+        return;
+      }
+      
+      if (data?.currency_code) {
+        setUserCurrency(data.currency_code);
+      }
+    } catch (error) {
+      console.error('Error fetching user currency:', error);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -1228,7 +1253,7 @@ const BusinessFinanceAssistant = () => {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Expenses</CardTitle>
-                <CardDescription>Track and categorize your business expenses • Total: ${expenses.reduce((total, expense) => total + Number(expense.amount), 0).toFixed(2)}</CardDescription>
+                <CardDescription>Track and categorize your business expenses • Total: {formatCurrency(expenses.reduce((total, expense) => total + Number(expense.amount), 0), userCurrency)}</CardDescription>
               </div>
               <div className="flex gap-2">
                 <Button onClick={() => setShowAddExpense(true)}>
@@ -1340,7 +1365,7 @@ const BusinessFinanceAssistant = () => {
                       </div>
                       <div className="flex items-center space-x-3">
                         <span className="text-lg font-semibold text-red-600">
-                          -${Number(expense.amount).toFixed(2)}
+                          -{formatCurrency(Number(expense.amount), userCurrency)}
                         </span>
                         <Badge variant="outline">{expense.status}</Badge>
                       </div>
@@ -1357,7 +1382,7 @@ const BusinessFinanceAssistant = () => {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Recurring Outgoings</CardTitle>
-                <CardDescription>Manage your scheduled payments and subscriptions • Total Monthly: ${outgoings.reduce((total, payment) => total + Number(payment.amount), 0).toFixed(2)}</CardDescription>
+                <CardDescription>Manage your scheduled payments and subscriptions • Total Monthly: {formatCurrency(outgoings.reduce((total, payment) => total + Number(payment.amount), 0), userCurrency)}</CardDescription>
               </div>
               <div className="flex gap-2">
                 <Button onClick={() => setShowAddOutgoing(true)}>
@@ -1487,7 +1512,7 @@ const BusinessFinanceAssistant = () => {
                       </div>
                       <div className="flex items-center space-x-3">
                         <span className="text-lg font-semibold text-purple-600">
-                          ${Number(payment.amount).toFixed(2)}
+                          {formatCurrency(Number(payment.amount), userCurrency)}
                         </span>
                         <Badge variant={payment.is_active ? "default" : "secondary"}>
                           {payment.is_active ? 'Active' : 'Inactive'}

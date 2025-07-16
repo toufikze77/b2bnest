@@ -1065,7 +1065,10 @@ export type Database = {
           bio: string | null
           company: string | null
           connection_count: number | null
+          country_code: string | null
           created_at: string | null
+          currency_code: string | null
+          date_format: string | null
           email: string | null
           experience_years: number | null
           full_name: string | null
@@ -1073,10 +1076,13 @@ export type Database = {
           id: string
           industry: string | null
           is_public: boolean | null
+          language_code: string | null
           linkedin_url: string | null
           location: string | null
           position: string | null
           skills: string[] | null
+          time_format: string | null
+          timezone: string | null
           twitter_url: string | null
           updated_at: string | null
           website: string | null
@@ -1086,7 +1092,10 @@ export type Database = {
           bio?: string | null
           company?: string | null
           connection_count?: number | null
+          country_code?: string | null
           created_at?: string | null
+          currency_code?: string | null
+          date_format?: string | null
           email?: string | null
           experience_years?: number | null
           full_name?: string | null
@@ -1094,10 +1103,13 @@ export type Database = {
           id: string
           industry?: string | null
           is_public?: boolean | null
+          language_code?: string | null
           linkedin_url?: string | null
           location?: string | null
           position?: string | null
           skills?: string[] | null
+          time_format?: string | null
+          timezone?: string | null
           twitter_url?: string | null
           updated_at?: string | null
           website?: string | null
@@ -1107,7 +1119,10 @@ export type Database = {
           bio?: string | null
           company?: string | null
           connection_count?: number | null
+          country_code?: string | null
           created_at?: string | null
+          currency_code?: string | null
+          date_format?: string | null
           email?: string | null
           experience_years?: number | null
           full_name?: string | null
@@ -1115,10 +1130,13 @@ export type Database = {
           id?: string
           industry?: string | null
           is_public?: boolean | null
+          language_code?: string | null
           linkedin_url?: string | null
           location?: string | null
           position?: string | null
           skills?: string[] | null
+          time_format?: string | null
+          timezone?: string | null
           twitter_url?: string | null
           updated_at?: string | null
           website?: string | null

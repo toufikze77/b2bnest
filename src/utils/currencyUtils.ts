@@ -30,3 +30,15 @@ export const formatCurrency = (amount: number, currencyCode: string = 'USD'): st
   if (!currency) return `$${amount.toFixed(2)}`;
   return `${currency.symbol}${amount.toFixed(2)}`;
 };
+
+export const formatCurrencyWithLocale = (amount: number, currencyCode: string = 'USD', locale: string = 'en-US'): string => {
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: currencyCode,
+    }).format(amount);
+  } catch (error) {
+    // Fallback to simple format if locale/currency not supported
+    return formatCurrency(amount, currencyCode);
+  }
+};
