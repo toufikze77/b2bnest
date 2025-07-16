@@ -193,6 +193,7 @@ interface Integration {
 }
 
 const ProjectManagement = () => {
+  console.log('🔧 ProjectManagement component loading...');
   const { user } = useAuth();
   const { canAccessFeature } = useSubscription();
   const { toast } = useToast();
@@ -207,8 +208,10 @@ const ProjectManagement = () => {
 
   // Check if user can access Project Management features
   const canAccessPM = canAccessFeature('project-management');
+  console.log('🔧 ProjectManagement - canAccessPM:', canAccessPM, 'user:', !!user);
 
   useEffect(() => {
+    console.log('🔧 ProjectManagement useEffect triggered', { user: !!user, canAccessPM });
     if (user && canAccessPM) {
       // Future: Load project data from database
       setLoading(false);
