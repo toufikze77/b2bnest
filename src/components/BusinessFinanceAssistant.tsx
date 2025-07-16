@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Download, Eye, Send, FileText, DollarSign, TrendingUp, Users, Package, Truck, Receipt, CreditCard, BarChart3, PieChart, Home, Building, Calendar, ShoppingCart, Banknote, Edit, Trash2 } from 'lucide-react';
+import { Plus, Download, Eye, Send, FileText, DollarSign, TrendingUp, Users, Package, Truck, Receipt, CreditCard, BarChart3, PieChart, Home, Building, Calendar, ShoppingCart, Banknote, Edit, Trash2, Repeat } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -1228,123 +1228,13 @@ const BusinessFinanceAssistant = () => {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Expenses</CardTitle>
-                <CardDescription>Track and categorize your business expenses</CardDescription>
+                <CardDescription>Track and categorize your business expenses • Total: ${expenses.reduce((total, expense) => total + Number(expense.amount), 0).toFixed(2)}</CardDescription>
               </div>
               <div className="flex gap-2">
-                <Dialog open={showAddExpense} onOpenChange={setShowAddExpense}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Expense
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle>Add New Expense</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="expense-description">Description *</Label>
-                          <Input
-                            id="expense-description"
-                            value={expenseForm.description}
-                            onChange={(e) => setExpenseForm({...expenseForm, description: e.target.value})}
-                            placeholder="Expense description"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="expense-category">Category *</Label>
-                          <Select 
-                            value={expenseForm.category} 
-                            onValueChange={(value) => setExpenseForm({...expenseForm, category: value})}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Office Supplies">Office Supplies</SelectItem>
-                              <SelectItem value="Travel">Travel</SelectItem>
-                              <SelectItem value="Marketing">Marketing</SelectItem>
-                              <SelectItem value="Software">Software</SelectItem>
-                              <SelectItem value="Equipment">Equipment</SelectItem>
-                              <SelectItem value="Utilities">Utilities</SelectItem>
-                              <SelectItem value="Rent">Rent</SelectItem>
-                              <SelectItem value="Professional Services">Professional Services</SelectItem>
-                              <SelectItem value="Other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="expense-amount">Amount *</Label>
-                          <Input
-                            id="expense-amount"
-                            type="number"
-                            step="0.01"
-                            value={expenseForm.amount}
-                            onChange={(e) => setExpenseForm({...expenseForm, amount: e.target.value})}
-                            placeholder="0.00"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="expense-date">Date *</Label>
-                          <Input
-                            id="expense-date"
-                            type="date"
-                            value={expenseForm.date}
-                            onChange={(e) => setExpenseForm({...expenseForm, date: e.target.value})}
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="expense-supplier">Supplier (Optional)</Label>
-                          <Select 
-                            value={expenseForm.supplier_id} 
-                            onValueChange={(value) => setExpenseForm({...expenseForm, supplier_id: value})}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select supplier" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="">No supplier</SelectItem>
-                              {suppliers.map((supplier) => (
-                                <SelectItem key={supplier.id} value={supplier.id}>
-                                  {supplier.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="expense-status">Status</Label>
-                          <Select 
-                            value={expenseForm.status} 
-                            onValueChange={(value) => setExpenseForm({...expenseForm, status: value})}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="approved">Approved</SelectItem>
-                              <SelectItem value="paid">Paid</SelectItem>
-                              <SelectItem value="rejected">Rejected</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setShowAddExpense(false)}>Cancel</Button>
-                        <Button onClick={handleAddExpense} disabled={!expenseForm.description || !expenseForm.category || !expenseForm.amount}>
-                          Add Expense
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <Button onClick={() => setShowAddExpense(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Expense
+                </Button>
                 <Button onClick={downloadExpenses} variant="outline">
                   <Download className="h-4 w-4 mr-2" />
                   Download Report
@@ -1352,19 +1242,106 @@ const BusinessFinanceAssistant = () => {
               </div>
             </CardHeader>
             <CardContent>
+              {showAddExpense && (
+                <div className="bg-muted p-6 rounded-lg mb-6">
+                  <h3 className="text-lg font-semibold mb-4">Add New Expense</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="block text-sm font-medium mb-2">Description</Label>
+                      <Input
+                        type="text"
+                        value={expenseForm.description}
+                        onChange={(e) => setExpenseForm({...expenseForm, description: e.target.value})}
+                        placeholder="Enter expense description"
+                      />
+                    </div>
+                    <div>
+                      <Label className="block text-sm font-medium mb-2">Amount</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={expenseForm.amount}
+                        onChange={(e) => setExpenseForm({...expenseForm, amount: e.target.value})}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <Label className="block text-sm font-medium mb-2">Category</Label>
+                      <Select 
+                        value={expenseForm.category} 
+                        onValueChange={(value) => setExpenseForm({...expenseForm, category: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="food">Food & Dining</SelectItem>
+                          <SelectItem value="transport">Transportation</SelectItem>
+                          <SelectItem value="utilities">Utilities</SelectItem>
+                          <SelectItem value="entertainment">Entertainment</SelectItem>
+                          <SelectItem value="shopping">Shopping</SelectItem>
+                          <SelectItem value="health">Health & Medical</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="block text-sm font-medium mb-2">Date</Label>
+                      <Input
+                        type="date"
+                        value={expenseForm.date}
+                        onChange={(e) => setExpenseForm({...expenseForm, date: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex space-x-3 mt-4">
+                    <Button onClick={handleAddExpense} disabled={!expenseForm.description || !expenseForm.amount}>
+                      Add Expense
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setShowAddExpense(false);
+                        setExpenseForm({
+                          description: '',
+                          category: '',
+                          amount: '',
+                          date: new Date().toISOString().split('T')[0],
+                          supplier_id: '',
+                          status: 'pending'
+                        });
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-4">
                 {expenses.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No expenses found. Add your first expense to get started.</p>
+                  <div className="text-center py-12 text-muted-foreground">
+                    <DollarSign size={48} className="mx-auto mb-4 text-muted" />
+                    <p>No expenses recorded yet.</p>
+                    <p className="text-sm">Click "Add Expense" to get started.</p>
+                  </div>
                 ) : (
                   expenses.map((expense) => (
-                    <div key={expense.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div key={expense.id} className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow">
                       <div className="flex-1">
                         <h3 className="font-medium">{expense.description}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {expense.category} • {formatCurrency(Number(expense.amount))} • {new Date(expense.date).toLocaleDateString()}
-                        </p>
+                        <div className="flex space-x-4 mt-1 text-sm text-muted-foreground">
+                          <span className="flex items-center">
+                            <Calendar size={16} className="mr-1" />
+                            {new Date(expense.date).toLocaleDateString()}
+                          </span>
+                          <span>{expense.category}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-lg font-semibold text-red-600">
+                          -${Number(expense.amount).toFixed(2)}
+                        </span>
                         <Badge variant="outline">{expense.status}</Badge>
                       </div>
                     </div>
@@ -1380,122 +1357,13 @@ const BusinessFinanceAssistant = () => {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Recurring Outgoings</CardTitle>
-                <CardDescription>Manage your scheduled payments and subscriptions</CardDescription>
+                <CardDescription>Manage your scheduled payments and subscriptions • Total Monthly: ${outgoings.reduce((total, payment) => total + Number(payment.amount), 0).toFixed(2)}</CardDescription>
               </div>
               <div className="flex gap-2">
-                <Dialog open={showAddOutgoing} onOpenChange={setShowAddOutgoing}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Recurring Payment
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle>Add New Recurring Payment</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="outgoing-name">Payment Name *</Label>
-                          <Input
-                            id="outgoing-name"
-                            value={outgoingForm.name}
-                            onChange={(e) => setOutgoingForm({...outgoingForm, name: e.target.value})}
-                            placeholder="e.g., Office Rent, Software Subscription"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="outgoing-category">Category *</Label>
-                          <Select 
-                            value={outgoingForm.category} 
-                            onValueChange={(value) => setOutgoingForm({...outgoingForm, category: value})}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Rent">Rent</SelectItem>
-                              <SelectItem value="Utilities">Utilities</SelectItem>
-                              <SelectItem value="Software Subscriptions">Software Subscriptions</SelectItem>
-                              <SelectItem value="Insurance">Insurance</SelectItem>
-                              <SelectItem value="Loan Payments">Loan Payments</SelectItem>
-                              <SelectItem value="Professional Services">Professional Services</SelectItem>
-                              <SelectItem value="Marketing">Marketing</SelectItem>
-                              <SelectItem value="Other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="outgoing-amount">Amount *</Label>
-                          <Input
-                            id="outgoing-amount"
-                            type="number"
-                            step="0.01"
-                            value={outgoingForm.amount}
-                            onChange={(e) => setOutgoingForm({...outgoingForm, amount: e.target.value})}
-                            placeholder="0.00"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="outgoing-frequency">Frequency *</Label>
-                          <Select 
-                            value={outgoingForm.frequency} 
-                            onValueChange={(value) => setOutgoingForm({...outgoingForm, frequency: value})}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="weekly">Weekly</SelectItem>
-                              <SelectItem value="monthly">Monthly</SelectItem>
-                              <SelectItem value="quarterly">Quarterly</SelectItem>
-                              <SelectItem value="annually">Annually</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="outgoing-next-payment">Next Payment Date *</Label>
-                          <Input
-                            id="outgoing-next-payment"
-                            type="date"
-                            value={outgoingForm.next_payment_date}
-                            onChange={(e) => setOutgoingForm({...outgoingForm, next_payment_date: e.target.value})}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="outgoing-supplier">Supplier (Optional)</Label>
-                          <Select 
-                            value={outgoingForm.supplier_id} 
-                            onValueChange={(value) => setOutgoingForm({...outgoingForm, supplier_id: value})}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select supplier" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="">No supplier</SelectItem>
-                              {suppliers.map((supplier) => (
-                                <SelectItem key={supplier.id} value={supplier.id}>
-                                  {supplier.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setShowAddOutgoing(false)}>Cancel</Button>
-                        <Button onClick={handleAddOutgoing} disabled={!outgoingForm.name || !outgoingForm.category || !outgoingForm.amount}>
-                          Add Recurring Payment
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <Button onClick={() => setShowAddOutgoing(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Recurring Payment
+                </Button>
                 <Button onClick={downloadOutgoings} variant="outline">
                   <Download className="h-4 w-4 mr-2" />
                   Download Schedule
@@ -1503,21 +1371,126 @@ const BusinessFinanceAssistant = () => {
               </div>
             </CardHeader>
             <CardContent>
+              {showAddOutgoing && (
+                <div className="bg-muted p-6 rounded-lg mb-6">
+                  <h3 className="text-lg font-semibold mb-4">Add New Recurring Payment</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="block text-sm font-medium mb-2">Description</Label>
+                      <Input
+                        type="text"
+                        value={outgoingForm.name}
+                        onChange={(e) => setOutgoingForm({...outgoingForm, name: e.target.value})}
+                        placeholder="Enter payment description"
+                      />
+                    </div>
+                    <div>
+                      <Label className="block text-sm font-medium mb-2">Amount</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={outgoingForm.amount}
+                        onChange={(e) => setOutgoingForm({...outgoingForm, amount: e.target.value})}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <Label className="block text-sm font-medium mb-2">Category</Label>
+                      <Select 
+                        value={outgoingForm.category} 
+                        onValueChange={(value) => setOutgoingForm({...outgoingForm, category: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="food">Food & Dining</SelectItem>
+                          <SelectItem value="transport">Transportation</SelectItem>
+                          <SelectItem value="utilities">Utilities</SelectItem>
+                          <SelectItem value="entertainment">Entertainment</SelectItem>
+                          <SelectItem value="shopping">Shopping</SelectItem>
+                          <SelectItem value="health">Health & Medical</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="block text-sm font-medium mb-2">Frequency</Label>
+                      <Select 
+                        value={outgoingForm.frequency} 
+                        onValueChange={(value) => setOutgoingForm({...outgoingForm, frequency: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="quarterly">Quarterly</SelectItem>
+                          <SelectItem value="yearly">Yearly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label className="block text-sm font-medium mb-2">Next Payment Date</Label>
+                      <Input
+                        type="date"
+                        value={outgoingForm.next_payment_date}
+                        onChange={(e) => setOutgoingForm({...outgoingForm, next_payment_date: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex space-x-3 mt-4">
+                    <Button onClick={handleAddOutgoing} disabled={!outgoingForm.name || !outgoingForm.amount}>
+                      Add Payment
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setShowAddOutgoing(false);
+                        setOutgoingForm({
+                          name: '',
+                          category: '',
+                          amount: '',
+                          frequency: 'monthly',
+                          next_payment_date: new Date().toISOString().split('T')[0],
+                          supplier_id: ''
+                        });
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-4">
                 {outgoings.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No outgoings found. Add your first recurring payment to get started.</p>
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Repeat size={48} className="mx-auto mb-4 text-muted" />
+                    <p>No recurring payments set up yet.</p>
+                    <p className="text-sm">Click "Add Recurring Payment" to get started.</p>
+                  </div>
                 ) : (
-                  outgoings.map((outgoing) => (
-                    <div key={outgoing.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  outgoings.map((payment) => (
+                    <div key={payment.id} className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow">
                       <div className="flex-1">
-                        <h3 className="font-medium">{outgoing.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {outgoing.category} • {formatCurrency(Number(outgoing.amount))} • {outgoing.frequency} • Next: {new Date(outgoing.next_payment_date).toLocaleDateString()}
-                        </p>
+                        <h3 className="font-medium">{payment.name}</h3>
+                        <div className="flex space-x-4 mt-1 text-sm text-muted-foreground">
+                          <span className="flex items-center">
+                            <Calendar size={16} className="mr-1" />
+                            Next: {new Date(payment.next_payment_date).toLocaleDateString()}
+                          </span>
+                          <span>{payment.category}</span>
+                          <span className="capitalize">{payment.frequency}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={outgoing.is_active ? "default" : "secondary"}>
-                          {outgoing.is_active ? 'Active' : 'Inactive'}
+                      <div className="flex items-center space-x-3">
+                        <span className="text-lg font-semibold text-purple-600">
+                          ${Number(payment.amount).toFixed(2)}
+                        </span>
+                        <Badge variant={payment.is_active ? "default" : "secondary"}>
+                          {payment.is_active ? 'Active' : 'Inactive'}
                         </Badge>
                       </div>
                     </div>
