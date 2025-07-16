@@ -272,7 +272,7 @@ const BusinessTools = () => {
     },
     {
       id: 'crm' as ToolType,
-      title: 'Customer Relationship Management',
+      title: 'CRM',
       description: 'Manage leads, contacts, and sales pipeline efficiently',
       icon: Users,
       color: 'bg-pink-500',
