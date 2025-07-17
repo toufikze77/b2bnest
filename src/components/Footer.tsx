@@ -74,6 +74,7 @@ const Footer = () => {
         </div>
         <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
           <p>&copy; 2024 Edeals Master Ltd (Company No. 15242148) trading as B2BNEST. All rights reserved.</p>
+          <p className="text-sm mt-2">Incorporated in England & Wales on 27 October 2023</p>
         </div>
       </div>
     </footer>
