@@ -46,9 +46,9 @@ const About = () => {
               Go Back Home
             </Button>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-6">About Our Platform</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-6">About B2BNEST</h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Empowering businesses with AI-powered automation solutions that streamline operations and drive efficiency.
+            B2BNEST is a platform operated by Edeals Master Ltd, empowering businesses with AI-powered automation solutions that streamline operations and drive efficiency.
           </p>
         </div>
 
@@ -60,7 +60,7 @@ const About = () => {
             </CardHeader>
             <CardContent>
               <p className="text-lg text-gray-700 text-center max-w-4xl mx-auto">
-                At our AI-Powered Business Automation Platform, we believe that every business deserves access to intelligent automation tools. 
+                At B2BNEST, operated by Edeals Master Ltd (Company No. 15242148), we believe that every business deserves access to intelligent automation tools. 
                 Our mission is to simplify complex business processes by providing AI-driven solutions, automation workflows, 
                 and intelligent tools that help companies operate more efficiently, reduce manual work, and focus on strategic growth.
               </p>
@@ -69,7 +69,7 @@ const About = () => {
                   <strong>Need help or have questions?</strong>
                 </p>
                 <p className="text-gray-600">
-                  Contact us at <a href="mailto:admin@aiplatform.online" className="text-blue-600 hover:underline font-medium">admin@aiplatform.online</a>
+                  Contact us at <a href="mailto:support@b2bnest.com" className="text-blue-600 hover:underline font-medium">support@b2bnest.com</a>
                 </p>
               </div>
             </CardContent>

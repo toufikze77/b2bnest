@@ -6,11 +6,11 @@ const TermsOfService = () => {
   const sections = [
     {
       title: "Acceptance of Terms",
-      content: "By accessing and using B2BNest, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service."
+      content: "By accessing and using B2BNEST, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service."
     },
     {
       title: "Use License",
-      content: "Permission is granted to temporarily access and use B2BNest for personal and commercial purposes. This license does not include: modifying or copying the materials, using the materials for commercial purpose without proper licensing, or attempting to reverse engineer any software contained on the platform."
+      content: "Permission is granted to temporarily access and use B2BNEST for personal and commercial purposes. This license does not include: modifying or copying the materials, using the materials for commercial purpose without proper licensing, or attempting to reverse engineer any software contained on the platform."
     },
     {
       title: "User Accounts",
@@ -60,11 +60,11 @@ const TermsOfService = () => {
         <Card className="bg-white shadow-lg mb-8">
           <CardContent className="p-8">
             <p className="text-lg text-gray-700 mb-6">
-              These Terms of Service ("Terms") govern your use of the B2BNest platform and services. 
+              These Terms of Service ("Terms") govern your use of the B2BNEST platform and services operated by Edeals Master Ltd (Company No. 15242148). 
               Please read these Terms carefully before using our service.
             </p>
             <p className="text-gray-700">
-              By accessing or using B2BNest, you agree to be bound by these Terms and our Privacy Policy.
+              By accessing or using B2BNEST, you agree to be bound by these Terms and our Privacy Policy.
             </p>
           </CardContent>
         </Card>
@@ -91,6 +91,7 @@ const TermsOfService = () => {
               If you have any questions about these Terms of Service, please contact us:
             </p>
             <div className="space-y-2 text-gray-700">
+              <p>Edeals Master Ltd (Company No. 15242148) trading as B2BNEST</p>
               <p>Email: legal@b2bnest.com</p>
               <p>Address: 1 St Katharine's Way, London E1W 1UN</p>
             </div>

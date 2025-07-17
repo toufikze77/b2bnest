@@ -68,11 +68,11 @@ const PrivacyPolicy = () => {
         <Card className="bg-white shadow-lg mb-8">
           <CardContent className="p-8">
             <p className="text-lg text-gray-700 mb-6">
-              At B2BNest, we are committed to protecting your privacy and ensuring the security of your personal information. 
+              At B2BNEST, operated by Edeals Master Ltd (Company No. 15242148), we are committed to protecting your privacy and ensuring the security of your personal information. 
               This Privacy Policy explains how we collect, use, and safeguard your information when you use our platform.
             </p>
             <p className="text-gray-700">
-              By using B2BNest, you agree to the collection and use of information in accordance with this policy.
+              By using B2BNEST, you agree to the collection and use of information in accordance with this policy.
             </p>
           </CardContent>
         </Card>
@@ -106,6 +106,7 @@ const PrivacyPolicy = () => {
               If you have any questions about this Privacy Policy or our data practices, please contact us:
             </p>
             <div className="space-y-2 text-gray-700">
+              <p>Edeals Master Ltd (Company No. 15242148) trading as B2BNEST</p>
               <p>Email: privacy@b2bnest.com</p>
               <p>Address: 1 St Katharine's Way, London E1W 1UN</p>
             </div>

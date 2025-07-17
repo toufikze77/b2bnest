@@ -9,7 +9,8 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <div className="mb-4">
-              <span className="text-xl font-bold">AI-Powered Business Automation Platform</span>
+              <span className="text-xl font-bold">B2BNEST</span>
+              <p className="text-sm text-gray-400 mt-1">A brand of Edeals Master Ltd</p>
             </div>
             <p className="text-gray-400">
               Professional business forms and documents for modern companies.
@@ -72,7 +73,7 @@ const Footer = () => {
           </div>
         </div>
         <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-          <p>&copy; 2024 AI-Powered Business Automation Platform. All rights reserved.</p>
+          <p>&copy; 2024 Edeals Master Ltd (Company No. 15242148) trading as B2BNEST. All rights reserved.</p>
         </div>
       </div>
     </footer>
