@@ -69,7 +69,7 @@ const About = () => {
                   <strong>Need help or have questions?</strong>
                 </p>
                 <p className="text-gray-600">
-                  Contact us at <a href="mailto:support@b2bnest.com" className="text-blue-600 hover:underline font-medium">support@b2bnest.com</a>
+                  Contact us at <a href="mailto:admin@b2bnest.online" className="text-blue-600 hover:underline font-medium">admin@b2bnest.online</a>
                 </p>
               </div>
             </CardContent>

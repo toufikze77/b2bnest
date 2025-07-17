@@ -93,7 +93,7 @@ const TermsOfService = () => {
             <div className="space-y-2 text-gray-700">
               <p><strong>Edeals Master Ltd</strong> (Company No. 15242148) trading as B2BNEST</p>
               <p>Incorporated in England & Wales on 27 October 2023</p>
-              <p>Email: legal@b2bnest.com</p>
+              <p>Email: admin@b2bnest.online</p>
               <p>Registered office: 6a-6b Calvert Road, Hastings, England, TN34 3NG</p>
             </div>
           </CardContent>
