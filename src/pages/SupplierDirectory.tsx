@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import RegionSelector from '@/components/RegionSelector';
 
 interface Supplier {
   id: string;
@@ -33,6 +34,7 @@ const SupplierDirectory = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [filterActive, setFilterActive] = useState('all');
+  const [selectedRegion, setSelectedRegion] = useState<string>('all');
 
   useEffect(() => {
     fetchSuppliers();
@@ -40,7 +42,7 @@ const SupplierDirectory = () => {
 
   useEffect(() => {
     filterAndSortSuppliers();
-  }, [suppliers, searchTerm, sortBy, filterActive]);
+  }, [suppliers, searchTerm, sortBy, filterActive, selectedRegion]);
 
   const fetchSuppliers = async () => {
     try {
@@ -200,6 +202,15 @@ const SupplierDirectory = () => {
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Connect with verified suppliers and business partners in our comprehensive directory
           </p>
+        </div>
+
+        {/* Region Selector */}
+        <div className="mb-6">
+          <RegionSelector 
+            selectedRegion={selectedRegion}
+            onRegionChange={setSelectedRegion}
+            showPopulator={true}
+          />
         </div>
 
         {/* Search and Filters */}

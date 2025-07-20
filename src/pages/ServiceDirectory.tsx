@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import RegionSelector from '@/components/RegionSelector';
 
 interface Advertisement {
   id: string;
@@ -38,6 +39,7 @@ const ServiceDirectory = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');
+  const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [filterCategory, setFilterCategory] = useState('all');
   const [priceRange, setPriceRange] = useState('all');
 
@@ -278,6 +280,15 @@ const ServiceDirectory = () => {
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Find professional services and solutions for your business needs
           </p>
+        </div>
+
+        {/* Region Selector */}
+        <div className="mb-6">
+          <RegionSelector 
+            selectedRegion={selectedRegion}
+            onRegionChange={setSelectedRegion}
+            showPopulator={true}
+          />
         </div>
 
         {/* Search and Filters */}

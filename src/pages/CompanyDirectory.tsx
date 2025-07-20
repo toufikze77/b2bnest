@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import RegionSelector from '@/components/RegionSelector';
 
 interface Company {
   id: string;
@@ -34,6 +35,7 @@ const CompanyDirectory = () => {
   const [sortBy, setSortBy] = useState('name');
   const [filterIndustry, setFilterIndustry] = useState('all');
   const [filterSize, setFilterSize] = useState('all');
+  const [selectedRegion, setSelectedRegion] = useState<string>('all');
 
   const industries = [
     'Technology', 'Healthcare', 'Finance', 'Manufacturing', 'Retail',
