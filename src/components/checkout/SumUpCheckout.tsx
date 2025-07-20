@@ -28,6 +28,13 @@ const SumUpCheckout = ({
   const handlePayment = async () => {
     setLoading(true);
     try {
+      // Ensure user is authenticated before proceeding
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        onError('User not authenticated. Please sign in and try again.');
+        return;
+      }
+
       const returnUrl = `${window.location.origin}/payment-success`;
       
       const { data, error } = await supabase.functions.invoke('create-sumup-checkout', {
@@ -57,13 +64,19 @@ const SumUpCheckout = ({
         
         // In a real implementation, you'd want to poll for payment status
         // or use webhooks to confirm payment completion
-        setTimeout(() => {
-          onSuccess({
-            id: data.id,
-            status: 'completed',
-            amount: amount,
-            currency: currency
-          });
+        setTimeout(async () => {
+          // Verify user is still authenticated before calling success
+          const { data: { user: currentUser } } = await supabase.auth.getUser();
+          if (currentUser) {
+            onSuccess({
+              id: data.id,
+              status: 'completed',
+              amount: amount,
+              currency: currency
+            });
+          } else {
+            onError('Authentication expired. Please sign in again.');
+          }
         }, 3000);
       } else {
         onError('Failed to create SumUp checkout');

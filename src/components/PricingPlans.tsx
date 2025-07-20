@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
+import { toast } from '@/components/ui/use-toast';
 import SubscriptionUpgrade from '@/components/SubscriptionUpgrade';
 
 const PricingPlans = () => {
@@ -87,11 +88,20 @@ const PricingPlans = () => {
 
   const handlePlanSelect = (planId: string) => {
     if (!user) {
+      toast({
+        title: "Sign In Required",
+        description: "Please sign in to purchase a plan.",
+        variant: "destructive"
+      });
       window.location.href = '/auth';
       return;
     }
 
     if (planId === 'starter') {
+      toast({
+        title: "Free Plan",
+        description: "You're already on the starter plan. All features are available to you.",
+      });
       return; // Free plan, no action needed
     }
 

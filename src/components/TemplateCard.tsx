@@ -7,6 +7,7 @@ import DocumentPreviewModal from './DocumentPreviewModal';
 import { userDocumentService } from '@/services/userDocumentService';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import TemplateCardBadges from './template-card/TemplateCardBadges';
 import TemplateCardHeader from './template-card/TemplateCardHeader';
 import TemplateCardContent from './template-card/TemplateCardContent';
@@ -52,6 +53,17 @@ const TemplateCard = ({ template, searchQuery = '', onPreview, onDownload }: Tem
     console.log('Payment completed for template:', template.id, paymentData);
     
     try {
+      // Double-check authentication before adding purchase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Payment Successful",
+          description: "Your payment was processed. Please sign in to access your purchase.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       await userDocumentService.addPurchase(template.id);
       toast({
         title: "Purchase Successful",
@@ -60,12 +72,22 @@ const TemplateCard = ({ template, searchQuery = '', onPreview, onDownload }: Tem
       onDownload?.(template);
     } catch (error) {
       console.error('Error adding purchase:', error);
-      toast({
-        title: "Purchase Complete",
-        description: "Your payment was successful. You can now download the document.",
-        variant: "default"
-      });
-      onDownload?.(template);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      if (errorMessage.includes('not authenticated')) {
+        toast({
+          title: "Payment Complete - Sign In Required",
+          description: "Your payment was successful. Please sign in to access your purchase.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Purchase Complete",
+          description: "Your payment was successful. You can now download the document.",
+          variant: "default"
+        });
+        onDownload?.(template);
+      }
     }
   };
 
