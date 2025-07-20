@@ -56,7 +56,7 @@ const BusinessToolsSection = () => {
   const additionalTools = [
     { icon: CheckSquare, title: "Setup Checklist", count: "25+ Steps" },
     { icon: Shield, title: "Compliance Checker", count: "Industry Specific" },
-    { icon: Lightbulb, title: "Best Practices", count: "Expert Insights" },
+    { icon: Lightbulb, title: "Startup Idea Generator", count: "AI-Powered" },
     { icon: Zap, title: "Integrations", count: "10+ Services" },
     { icon: Building2, title: "Business Resources", count: "Trusted Partners" }
   ];

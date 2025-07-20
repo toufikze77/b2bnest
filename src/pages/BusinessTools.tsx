@@ -28,9 +28,10 @@ import EmailSignatureGenerator from '@/components/EmailSignatureGenerator';
 import SocialMediaPostScheduler from '@/components/SocialMediaPostScheduler';
 import CustomerSurveyBuilder from '@/components/CustomerSurveyBuilder';
 import BusinessFinanceAssistant from '@/components/BusinessFinanceAssistant';
+import StartupIdeaGenerator from '@/components/StartupIdeaGenerator';
 import { AdvertisementSection } from '@/components/AdvertisementSection';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'premium-marketplace';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'premium-marketplace';
 
 const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
@@ -79,6 +80,15 @@ const BusinessTools = () => {
       icon: ListTodo,
       color: 'bg-green-600',
       benefits: ['Stay organized', 'Track progress', 'Boost productivity'],
+      isPremium: false
+    },
+    {
+      id: 'startup-idea-generator' as ToolType,
+      title: 'AI Startup Idea Generator',
+      description: 'Get AI-powered business ideas tailored to your interests and budget',
+      icon: Lightbulb,
+      color: 'bg-gradient-to-r from-purple-500 to-pink-500',
+      benefits: ['AI-powered insights', 'Market analysis', 'Personalized ideas', 'Growth opportunities'],
       isPremium: false
     },
     {
@@ -295,6 +305,8 @@ const BusinessTools = () => {
         return <BusinessFinanceAssistant />;
       case 'todo-list':
         return <TodoList />;
+      case 'startup-idea-generator':
+        return <StartupIdeaGenerator />;
       case 'business-name-generator':
         return <BusinessNameGenerator />;
       case 'qr-code-generator':
