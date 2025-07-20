@@ -58,14 +58,21 @@ const BusinessToolsSection = () => {
       features: ["Accurate estimates", "Compare structures", "Budget planning"],
       color: "bg-blue-500",
       popular: false
+    },
+    {
+      icon: Building2,
+      title: "Business Resources",
+      description: "Access trusted service providers and business partnerships",
+      features: ["Verified providers", "Competitive rates", "Expert guidance"],
+      color: "bg-orange-500",
+      popular: false
     }
   ];
 
   const additionalTools = [
     { icon: CheckSquare, title: "Setup Checklist", count: "25+ Steps" },
     { icon: Shield, title: "Compliance Checker", count: "Industry Specific" },
-    { icon: Zap, title: "Integrations", count: "10+ Services" },
-    { icon: Building2, title: "Business Resources", count: "Trusted Partners" }
+    { icon: Zap, title: "Integrations", count: "10+ Services" }
   ];
 
   return (

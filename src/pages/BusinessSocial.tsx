@@ -473,7 +473,7 @@ const BusinessSocial = () => {
             </Card>
 
             {/* Trending Topics */}
-            <Card>
+            <Card className="mb-6">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <TrendingUp className="h-5 w-5" />
@@ -494,6 +494,48 @@ const BusinessSocial = () => {
                     <h4 className="font-medium text-purple-900">#TechTrends</h4>
                     <p className="text-purple-700 text-sm">756 posts this week</p>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Business Resources */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  Business Resources
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="p-3 bg-orange-50 rounded-lg cursor-pointer hover:bg-orange-100 transition-colors">
+                    <h4 className="font-medium text-orange-900 flex items-center gap-2">
+                      <Building className="h-4 w-4" />
+                      Banking & Finance
+                    </h4>
+                    <p className="text-orange-700 text-sm">Trusted financial partners</p>
+                  </div>
+                  <div className="p-3 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                    <h4 className="font-medium text-blue-900 flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Professional Services
+                    </h4>
+                    <p className="text-blue-700 text-sm">Legal & accounting experts</p>
+                  </div>
+                  <div className="p-3 bg-green-50 rounded-lg cursor-pointer hover:bg-green-100 transition-colors">
+                    <h4 className="font-medium text-green-900 flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      Business Connectivity
+                    </h4>
+                    <p className="text-green-700 text-sm">Network & communication</p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t mt-4">
+                  <Link to="/business-tools">
+                    <Button variant="outline" size="sm" className="w-full">
+                      View All Resources
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
