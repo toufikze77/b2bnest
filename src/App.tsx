@@ -32,6 +32,10 @@ import MarketingMaterials from "@/pages/categories/MarketingMaterials";
 import Operations from "@/pages/categories/Operations";
 import CRMPage from "@/pages/CRMPage";
 import ProjectManagementPage from "@/pages/ProjectManagementPage";
+import BusinessDirectory from "@/pages/BusinessDirectory";
+import SupplierDirectory from "@/pages/SupplierDirectory";
+import CompanyDirectory from "@/pages/CompanyDirectory";
+import ServiceDirectory from "@/pages/ServiceDirectory";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -71,6 +75,13 @@ function App() {
               <Route path="/categories/operations" element={<Operations />} />
               <Route path="/crm" element={<ProtectedRoute><CRMPage /></ProtectedRoute>} />
               <Route path="/project-management" element={<ProtectedRoute><ProjectManagementPage /></ProtectedRoute>} />
+              
+              {/* Directory Routes */}
+              <Route path="/directory" element={<BusinessDirectory />} />
+              <Route path="/directory/suppliers" element={<SupplierDirectory />} />
+              <Route path="/directory/companies" element={<CompanyDirectory />} />
+              <Route path="/directory/services" element={<ServiceDirectory />} />
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
             <Toaster />
