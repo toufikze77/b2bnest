@@ -36,6 +36,14 @@ const BusinessToolsSection = () => {
       popular: true
     },
     {
+      icon: Lightbulb,
+      title: "Startup Idea Generator",
+      description: "Get AI-powered business ideas tailored to your interests and budget",
+      features: ["50+ industries", "Budget-based ideas", "Instant generation"],
+      color: "bg-green-500",
+      popular: false
+    },
+    {
       icon: FileText,
       title: "Quote & Invoice",
       description: "Create professional quotes and invoices with auto-generated codes",
@@ -56,7 +64,6 @@ const BusinessToolsSection = () => {
   const additionalTools = [
     { icon: CheckSquare, title: "Setup Checklist", count: "25+ Steps" },
     { icon: Shield, title: "Compliance Checker", count: "Industry Specific" },
-    { icon: Lightbulb, title: "Startup Idea Generator", count: "AI-Powered" },
     { icon: Zap, title: "Integrations", count: "10+ Services" },
     { icon: Building2, title: "Business Resources", count: "Trusted Partners" }
   ];
