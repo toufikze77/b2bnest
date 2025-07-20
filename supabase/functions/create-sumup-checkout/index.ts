@@ -40,7 +40,7 @@ serve(async (req) => {
       checkout_reference: `checkout_${Date.now()}`,
       amount: parseFloat(amount.toString()),
       currency: currency,
-      merchant_code: "YOUR_MERCHANT_CODE", // This needs to be replaced with actual merchant code
+      merchant_code: "MQ3LXRL4",
       description: itemName,
     };
 
