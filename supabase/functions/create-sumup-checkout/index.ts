@@ -33,35 +33,48 @@ serve(async (req) => {
       throw new Error("SumUp API key not configured");
     }
 
+    console.log("Creating SumUp checkout for amount:", amount, currency);
+
     // Create SumUp checkout
+    const checkoutBody = {
+      checkout_reference: `checkout_${Date.now()}`,
+      amount: parseFloat(amount.toString()),
+      currency: currency,
+      merchant_code: "YOUR_MERCHANT_CODE", // This needs to be replaced with actual merchant code
+      description: itemName,
+    };
+
+    console.log("Checkout request body:", JSON.stringify(checkoutBody, null, 2));
+
     const checkoutResponse = await fetch("https://api.sumup.com/v0.1/checkouts", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${sumupApiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        checkout_reference: `checkout_${Date.now()}`,
-        amount: amount,
-        currency: currency,
-        description: itemName,
-        return_url: returnUrl || `${req.headers.get("origin")}/payment-success`,
-      }),
+      body: JSON.stringify(checkoutBody),
     });
 
+    const responseText = await checkoutResponse.text();
+    console.log("SumUp API response status:", checkoutResponse.status);
+    console.log("SumUp API response:", responseText);
+
     if (!checkoutResponse.ok) {
-      const errorData = await checkoutResponse.text();
-      console.error("SumUp API Error:", errorData);
-      throw new Error(`SumUp API error: ${checkoutResponse.status}`);
+      console.error("SumUp API Error:", responseText);
+      throw new Error(`SumUp API error: ${checkoutResponse.status} - ${responseText}`);
     }
 
-    const checkoutData = await checkoutResponse.json();
+    const checkoutData = JSON.parse(responseText);
     console.log("SumUp checkout created:", checkoutData.id);
 
+    // For now, return a mock URL since SumUp doesn't provide a direct checkout URL
+    // In a real implementation, you'd need to create a frontend payment form
     return new Response(JSON.stringify({
       id: checkoutData.id,
-      checkout_url: `https://api.sumup.com/v0.1/checkouts/${checkoutData.id}`,
-      status: checkoutData.status
+      checkout_url: `${req.headers.get("origin")}/sumup-payment?checkout_id=${checkoutData.id}`,
+      status: checkoutData.status,
+      amount: checkoutData.amount,
+      currency: checkoutData.currency
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
