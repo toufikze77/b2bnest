@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, Wallet, Bitcoin } from 'lucide-react';
-import PayPalCheckout from './PayPalCheckout';
+import { CreditCard, Wallet } from 'lucide-react';
+import SumUpCheckout from './SumUpCheckout';
 import SolanaPayCheckout from './SolanaPayCheckout';
 
 interface PaymentMethodSelectorProps {
@@ -15,7 +15,7 @@ interface PaymentMethodSelectorProps {
   onPaymentError: (error: string) => void;
 }
 
-type PaymentMethod = 'paypal' | 'solana' | null;
+type PaymentMethod = 'sumup' | 'solana' | null;
 
 const PaymentMethodSelector = ({
   amount,
@@ -28,9 +28,9 @@ const PaymentMethodSelector = ({
 
   const resetSelection = () => setSelectedMethod(null);
 
-  if (selectedMethod === 'paypal') {
+  if (selectedMethod === 'sumup') {
     return (
-      <PayPalCheckout
+      <SumUpCheckout
         amount={amount}
         currency={currency}
         itemName={itemName}
@@ -71,14 +71,14 @@ const PaymentMethodSelector = ({
 
         <div className="space-y-3">
           <Button
-            onClick={() => setSelectedMethod('paypal')}
+            onClick={() => setSelectedMethod('sumup')}
             className="w-full h-12 bg-blue-600 hover:bg-blue-700"
             size="lg"
           >
             <CreditCard className="h-5 w-5 mr-2" />
-            Pay with PayPal
+            Pay with SumUp
             <Badge variant="secondary" className="ml-2 text-xs">
-              Cards & PayPal
+              Cards & Bank Transfer
             </Badge>
           </Button>
 
@@ -96,7 +96,7 @@ const PaymentMethodSelector = ({
         </div>
 
         <div className="text-center text-xs text-gray-500 mt-4">
-          Secure payments powered by PayPal and Solana blockchain
+          Secure payments powered by SumUp and Solana blockchain
         </div>
       </CardContent>
     </Card>
