@@ -35,13 +35,14 @@ serve(async (req) => {
 
     console.log("Creating SumUp checkout for amount:", amount, currency);
 
-    // Create SumUp checkout
+    // Create SumUp checkout with proper return URL
     const checkoutBody = {
       checkout_reference: `checkout_${Date.now()}`,
       amount: parseFloat(amount.toString()),
       currency: currency,
       merchant_code: "MQ3LXRL4",
       description: itemName,
+      return_url: returnUrl || `${req.headers.get("origin")}/sumup-payment`,
     };
 
     console.log("Checkout request body:", JSON.stringify(checkoutBody, null, 2));
@@ -67,11 +68,12 @@ serve(async (req) => {
     const checkoutData = JSON.parse(responseText);
     console.log("SumUp checkout created:", checkoutData.id);
 
-    // For now, return a mock URL since SumUp doesn't provide a direct checkout URL
-    // In a real implementation, you'd need to create a frontend payment form
+    // Use SumUp's hosted checkout page
+    const checkoutUrl = `https://checkout.sumup.com/${checkoutData.id}`;
+    
     return new Response(JSON.stringify({
       id: checkoutData.id,
-      checkout_url: `${req.headers.get("origin")}/sumup-payment?checkout_id=${checkoutData.id}`,
+      checkout_url: checkoutUrl,
       status: checkoutData.status,
       amount: checkoutData.amount,
       currency: checkoutData.currency
