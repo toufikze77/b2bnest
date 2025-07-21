@@ -206,40 +206,7 @@ const ProjectManagement = () => {
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showAutomationBuilder, setShowAutomationBuilder] = useState(false);
 
-  // Check if user can access Project Management features
-  const canAccessPM = canAccessFeature('project-management');
-  console.log('🔧 ProjectManagement - canAccessPM:', canAccessPM, 'user:', !!user);
-
-  useEffect(() => {
-    console.log('🔧 ProjectManagement useEffect triggered', { user: !!user, canAccessPM });
-    if (user && canAccessPM) {
-      // Future: Load project data from database
-      setLoading(false);
-    } else {
-      setLoading(false);
-    }
-  }, [user, canAccessPM]);
-
-  if (!canAccessPM) {
-    return (
-      <div className="max-w-4xl mx-auto p-6">
-        <SubscriptionUpgrade 
-          featureName="Project Management" 
-          onUpgrade={() => window.location.reload()}
-        />
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="max-w-7xl mx-auto p-6 flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin" />
-      </div>
-    );
-  }
-
-  // Sample data with enhanced features
+  // Sample data with enhanced features - moved before conditional returns
   const [projects, setProjects] = useState<Project[]>([
     {
       id: '1',
@@ -365,6 +332,39 @@ const ProjectManagement = () => {
     { id: '3', name: 'Slack', type: 'slack', status: 'connected', config: {} },
     { id: '4', name: 'Notion', type: 'notion', status: 'disconnected', config: {} }
   ]);
+
+  // Check if user can access Project Management features
+  const canAccessPM = canAccessFeature('project-management');
+  console.log('🔧 ProjectManagement - canAccessPM:', canAccessPM, 'user:', !!user);
+
+  useEffect(() => {
+    console.log('🔧 ProjectManagement useEffect triggered', { user: !!user, canAccessPM });
+    if (user && canAccessPM) {
+      // Future: Load project data from database
+      setLoading(false);
+    } else {
+      setLoading(false);
+    }
+  }, [user, canAccessPM]);
+
+  if (!canAccessPM) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <SubscriptionUpgrade 
+          featureName="Project Management" 
+          onUpgrade={() => window.location.reload()}
+        />
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto p-6 flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin" />
+      </div>
+    );
+  }
 
   const statusColumns = projects.find(p => p.id === selectedProject && selectedProject !== 'all')?.customColumns || [
     { id: 'backlog', title: 'Backlog', color: 'bg-gray-100', order: 1 },
