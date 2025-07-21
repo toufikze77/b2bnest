@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from '@/components/ui/use-toast';
-import SubscriptionUpgrade from '@/components/SubscriptionUpgrade';
+import { supabase } from '@/integrations/supabase/client';
 
 const PricingPlans = () => {
   const [isAnnual, setIsAnnual] = useState(false);
@@ -86,7 +86,7 @@ const PricingPlans = () => {
     },
   ];
 
-  const handlePlanSelect = (planId: string) => {
+  const handlePlanSelect = async (planId: string) => {
     if (!user) {
       toast({
         title: "Sign In Required",
@@ -105,8 +105,23 @@ const PricingPlans = () => {
       return; // Free plan, no action needed
     }
 
-    setSelectedPlan(planId);
-    setShowUpgrade(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-subscription-checkout', {
+        body: { planId, isAnnual }
+      });
+
+      if (error) throw error;
+
+      // Open Stripe checkout in a new tab
+      window.open(data.url, '_blank');
+    } catch (error) {
+      toast({
+        title: "Checkout Error",
+        description: "Failed to create checkout session. Please try again.",
+        variant: "destructive"
+      });
+      console.error('Checkout error:', error);
+    }
   };
 
   const getCurrentPlanBadge = (planId: string) => {
@@ -327,13 +342,6 @@ const PricingPlans = () => {
         </div>
       </div>
 
-      {/* Subscription Upgrade Modal */}
-      {showUpgrade && (
-        <SubscriptionUpgrade
-          featureName={selectedPlan === 'professional' ? 'Professional Plan' : 'Enterprise Plan'}
-          onUpgrade={() => setShowUpgrade(false)}
-        />
-      )}
     </div>
   );
 };
