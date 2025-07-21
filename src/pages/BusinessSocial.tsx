@@ -97,10 +97,21 @@ const BusinessSocial = () => {
   const [editingPost, setEditingPost] = useState<any>(null);
   const [editPostContent, setEditPostContent] = useState('');
   const [postComments, setPostComments] = useState<PostComment[]>([]);
+  const [isConnectionsOpen, setIsConnectionsOpen] = useState(false);
+  const [isMessagesOpen, setIsMessagesOpen] = useState(false);
+  const [connections, setConnections] = useState<any[]>([]);
+  const [connectionRequests, setConnectionRequests] = useState<any[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<any>(null);
+  const [newMessage, setNewMessage] = useState('');
+  const [suggestedConnections, setSuggestedConnections] = useState<Profile[]>([]);
 
   useEffect(() => {
     if (user) {
       fetchProfile(user.id);
+      fetchConnections();
+      fetchConnectionRequests();
+      fetchSuggestedConnections();
     }
     fetchPosts();
     fetchAdvertisements();
@@ -401,6 +412,175 @@ const BusinessSocial = () => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  // Connection functions
+  const fetchConnections = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('connections')
+        .select(`
+          *,
+          requester:profiles!connections_requester_id_fkey(*),
+          addressee:profiles!connections_addressee_id_fkey(*)
+        `)
+        .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
+        .eq('status', 'accepted');
+
+      if (error) throw error;
+      setConnections(data || []);
+    } catch (error) {
+      console.error('Error fetching connections:', error);
+    }
+  };
+
+  const fetchConnectionRequests = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('connections')
+        .select(`
+          *,
+          requester:profiles!connections_requester_id_fkey(*)
+        `)
+        .eq('addressee_id', user.id)
+        .eq('status', 'pending');
+
+      if (error) throw error;
+      setConnectionRequests(data || []);
+    } catch (error) {
+      console.error('Error fetching connection requests:', error);
+    }
+  };
+
+  const fetchSuggestedConnections = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .neq('id', user.id)
+        .limit(5);
+
+      if (error) throw error;
+      setSuggestedConnections(data || []);
+    } catch (error) {
+      console.error('Error fetching suggested connections:', error);
+    }
+  };
+
+  const sendConnectionRequest = async (addresseeId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('connections')
+        .insert({
+          requester_id: user.id,
+          addressee_id: addresseeId,
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Connection request sent!"
+      });
+
+      fetchSuggestedConnections();
+    } catch (error) {
+      console.error('Error sending connection request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send connection request.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const acceptConnectionRequest = async (connectionId: string) => {
+    try {
+      const { error } = await supabase
+        .from('connections')
+        .update({ status: 'accepted' })
+        .eq('id', connectionId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Connection request accepted!"
+      });
+
+      fetchConnections();
+      fetchConnectionRequests();
+    } catch (error) {
+      console.error('Error accepting connection:', error);
+      toast({
+        title: "Error",
+        description: "Failed to accept connection request.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Messaging functions
+  const fetchMessages = async (conversationUserId: string) => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .select(`
+          *,
+          sender:profiles!messages_sender_id_fkey(*),
+          receiver:profiles!messages_receiver_id_fkey(*)
+        `)
+        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${conversationUserId}),and(sender_id.eq.${conversationUserId},receiver_id.eq.${user.id})`)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setMessages(data || []);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    }
+  };
+
+  const sendMessage = async () => {
+    if (!user || !selectedConversation || !newMessage.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .insert({
+          sender_id: user.id,
+          receiver_id: selectedConversation.id,
+          content: newMessage
+        });
+
+      if (error) throw error;
+
+      setNewMessage('');
+      fetchMessages(selectedConversation.id);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send message.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const openConversation = async (connectionProfile: Profile) => {
+    setSelectedConversation(connectionProfile);
+    await fetchMessages(connectionProfile.id);
+    setIsMessagesOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -449,12 +629,33 @@ const BusinessSocial = () => {
                         {profile.location}
                       </p>
                     )}
-                    <div className="flex items-center justify-center gap-4 text-sm text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        {profile?.connection_count || 0} connections
-                      </span>
-                    </div>
+                     <div className="flex items-center justify-center gap-4 text-sm text-gray-500 mb-4">
+                       <span className="flex items-center gap-1">
+                         <Users className="h-4 w-4" />
+                         {connections.length} connections
+                       </span>
+                     </div>
+                     
+                     <div className="space-y-2">
+                       <Button 
+                         variant="outline" 
+                         size="sm" 
+                         className="w-full"
+                         onClick={() => setIsConnectionsOpen(true)}
+                       >
+                         <Users className="h-4 w-4 mr-2" />
+                         Connections
+                       </Button>
+                       <Button 
+                         variant="outline" 
+                         size="sm" 
+                         className="w-full"
+                         onClick={() => setIsMessagesOpen(true)}
+                       >
+                         <MessageCircle className="h-4 w-4 mr-2" />
+                         Messages
+                       </Button>
+                     </div>
                   </>
                 ) : (
                   <div>
@@ -494,6 +695,74 @@ const BusinessSocial = () => {
                     <h4 className="font-medium text-purple-900">#TechTrends</h4>
                     <p className="text-purple-700 text-sm">756 posts this week</p>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Connection Requests */}
+            {connectionRequests.length > 0 && (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <UserPlus className="h-5 w-5" />
+                    Connection Requests ({connectionRequests.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {connectionRequests.map((request) => (
+                      <div key={request.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-10 h-10">
+                            <AvatarImage src={request.requester?.avatar_url || ''} />
+                            <AvatarFallback>{getUserInitials(request.requester)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium text-sm">{getUserDisplayName(request.requester)}</p>
+                            <p className="text-xs text-gray-600">{request.requester?.headline}</p>
+                          </div>
+                        </div>
+                        <Button size="sm" onClick={() => acceptConnectionRequest(request.id)}>
+                          Accept
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Suggested Connections */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <UserPlus className="h-5 w-5" />
+                  People You May Know
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {suggestedConnections.slice(0, 3).map((person) => (
+                    <div key={person.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={person.avatar_url || ''} />
+                          <AvatarFallback>{getUserInitials(person)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-sm">{getUserDisplayName(person)}</p>
+                          <p className="text-xs text-gray-600">{person.headline}</p>
+                        </div>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => sendConnectionRequest(person.id)}
+                      >
+                        Connect
+                      </Button>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -930,6 +1199,156 @@ const BusinessSocial = () => {
                     Update Post
                   </Button>
                 </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Connections Modal */}
+        <Dialog open={isConnectionsOpen} onOpenChange={setIsConnectionsOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Your Connections</DialogTitle>
+            </DialogHeader>
+            <div className="max-h-[60vh] overflow-y-auto">
+              {connections.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">No connections yet</p>
+              ) : (
+                <div className="space-y-4">
+                  {connections.map((connection) => {
+                    const connectionProfile = connection.requester_id === user?.id 
+                      ? connection.addressee 
+                      : connection.requester;
+                    
+                    return (
+                      <div key={connection.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-12 h-12">
+                            <AvatarImage src={connectionProfile?.avatar_url || ''} />
+                            <AvatarFallback>{getUserInitials(connectionProfile)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{getUserDisplayName(connectionProfile)}</p>
+                            <p className="text-sm text-gray-600">{connectionProfile?.headline}</p>
+                            <p className="text-xs text-gray-500">{connectionProfile?.company}</p>
+                          </div>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => openConversation(connectionProfile)}
+                        >
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          Message
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Messages Modal */}
+        <Dialog open={isMessagesOpen} onOpenChange={setIsMessagesOpen}>
+          <DialogContent className="max-w-4xl max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle>Messages</DialogTitle>
+            </DialogHeader>
+            <div className="flex h-[60vh]">
+              {/* Conversations List */}
+              <div className="w-1/3 border-r pr-4">
+                <h3 className="font-medium mb-4">Conversations</h3>
+                <div className="space-y-2">
+                  {connections.map((connection) => {
+                    const connectionProfile = connection.requester_id === user?.id 
+                      ? connection.addressee 
+                      : connection.requester;
+                    
+                    return (
+                      <div 
+                        key={connection.id} 
+                        className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 ${
+                          selectedConversation?.id === connectionProfile?.id ? 'bg-blue-50' : ''
+                        }`}
+                        onClick={() => openConversation(connectionProfile)}
+                      >
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={connectionProfile?.avatar_url || ''} />
+                          <AvatarFallback>{getUserInitials(connectionProfile)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{getUserDisplayName(connectionProfile)}</p>
+                          <p className="text-xs text-gray-600 truncate">{connectionProfile?.headline}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Chat Area */}
+              <div className="flex-1 pl-4 flex flex-col">
+                {selectedConversation ? (
+                  <>
+                    <div className="flex items-center gap-3 pb-4 border-b">
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={selectedConversation?.avatar_url || ''} />
+                        <AvatarFallback>{getUserInitials(selectedConversation)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{getUserDisplayName(selectedConversation)}</p>
+                        <p className="text-sm text-gray-600">{selectedConversation?.headline}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto py-4 space-y-4">
+                      {messages.map((message) => (
+                        <div 
+                          key={message.id} 
+                          className={`flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                        >
+                          <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                            message.sender_id === user?.id 
+                              ? 'bg-blue-500 text-white' 
+                              : 'bg-gray-100 text-gray-900'
+                          }`}>
+                            <p className="text-sm">{message.content}</p>
+                            <p className={`text-xs mt-1 ${
+                              message.sender_id === user?.id ? 'text-blue-100' : 'text-gray-500'
+                            }`}>
+                              {formatDate(message.created_at)}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="border-t pt-4 flex gap-2">
+                      <Textarea
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Type a message..."
+                        className="flex-1 resize-none"
+                        rows={2}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            sendMessage();
+                          }
+                        }}
+                      />
+                      <Button onClick={sendMessage} disabled={!newMessage.trim()}>
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-gray-500">
+                    Select a conversation to start messaging
+                  </div>
+                )}
               </div>
             </div>
           </DialogContent>
