@@ -53,31 +53,8 @@ const SumUpCheckout = ({
       }
 
       if (data?.checkout_url) {
-        // Open SumUp checkout in a new tab
-        window.open(data.checkout_url, '_blank');
-        
-        // For demo purposes, simulate successful payment after a delay
-        toast({
-          title: "Payment Initiated",
-          description: "Complete your payment in the new tab",
-        });
-        
-        // In a real implementation, you'd want to poll for payment status
-        // or use webhooks to confirm payment completion
-        setTimeout(async () => {
-          // Verify user is still authenticated before calling success
-          const { data: { user: currentUser } } = await supabase.auth.getUser();
-          if (currentUser) {
-            onSuccess({
-              id: data.id,
-              status: 'completed',
-              amount: amount,
-              currency: currency
-            });
-          } else {
-            onError('Authentication expired. Please sign in again.');
-          }
-        }, 3000);
+        // Redirect to SumUp checkout instead of opening in new tab
+        window.location.href = data.checkout_url;
       } else {
         onError('Failed to create SumUp checkout');
       }
