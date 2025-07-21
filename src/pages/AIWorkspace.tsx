@@ -20,8 +20,10 @@ interface Block {
 
 interface Workspace {
   id: string;
+  user_id: string;
   title: string;
   blocks: Block[];
+  created_at: string;
   updated_at: string;
 }
 
@@ -44,7 +46,7 @@ const AIWorkspace = () => {
     if (!user) return;
     
     const { data, error } = await supabase
-      .from('ai_workspaces')
+      .from('ai_workspaces' as any)
       .select('*')
       .eq('user_id', user.id)
       .order('updated_at', { ascending: false });
@@ -54,9 +56,10 @@ const AIWorkspace = () => {
       return;
     }
 
-    setWorkspaces(data || []);
-    if (data && data.length > 0 && !currentWorkspace) {
-      setCurrentWorkspace(data[0]);
+    const workspaces = (data || []) as unknown as Workspace[];
+    setWorkspaces(workspaces);
+    if (workspaces.length > 0 && !currentWorkspace) {
+      setCurrentWorkspace(workspaces[0]);
     }
   };
 
@@ -77,7 +80,7 @@ const AIWorkspace = () => {
     };
 
     const { data, error } = await supabase
-      .from('ai_workspaces')
+      .from('ai_workspaces' as any)
       .insert(newWorkspace)
       .select()
       .single();
@@ -87,8 +90,9 @@ const AIWorkspace = () => {
       return;
     }
 
-    setWorkspaces(prev => [data, ...prev]);
-    setCurrentWorkspace(data);
+    const workspace = data as unknown as Workspace;
+    setWorkspaces(prev => [workspace, ...prev]);
+    setCurrentWorkspace(workspace);
     setNewWorkspaceTitle('');
     toast.success('Workspace created!');
   };
@@ -139,7 +143,7 @@ const AIWorkspace = () => {
     if (!currentWorkspace || !user) return;
 
     const { error } = await supabase
-      .from('ai_workspaces')
+      .from('ai_workspaces' as any)
       .update({
         title: currentWorkspace.title,
         blocks: currentWorkspace.blocks,

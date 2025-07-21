@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, User, LogOut, Settings, BarChart3, Users, KanbanSquare, Building2, ShoppingCart, Briefcase, Network } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, BarChart3, Users, KanbanSquare, Building2, ShoppingCart, Briefcase, Network, Brain } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -45,12 +45,27 @@ const Header = () => {
             <Link to="/business-tools" className="text-gray-700 hover:text-blue-600 transition-colors">
               Business Tools
             </Link>
-            <Link to="/ai-studio" className="text-gray-700 hover:text-blue-600 transition-colors">
-              AI Studio
-            </Link>
-            <Link to="/ai-showcase" className="text-gray-700 hover:text-blue-600 transition-colors">
-              AI-Powered
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <span className="text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">
+                  AI Tools
+                </span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem asChild>
+                  <Link to="/ai-studio">AI Studio</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/ai-showcase">AI Showcase</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/ai-workspace">
+                    <Brain className="h-4 w-4 mr-2" />
+                    AI Workspace
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <span className="text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">
@@ -193,20 +208,33 @@ const Header = () => {
               >
                 Business Tools
               </Link>
-              <Link
-                to="/ai-studio"
-                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                AI Studio
-              </Link>
-              <Link
-                to="/ai-showcase"
-                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                AI-Powered
-              </Link>
+              <div className="px-2">
+                <div className="font-medium text-gray-900 mb-2">AI Tools</div>
+                <div className="pl-4 space-y-2">
+                  <Link
+                    to="/ai-studio"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    AI Studio
+                  </Link>
+                  <Link
+                    to="/ai-showcase"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    AI Showcase
+                  </Link>
+                  <Link
+                    to="/ai-workspace"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Brain className="h-4 w-4 mr-2" />
+                    AI Workspace
+                  </Link>
+                </div>
+              </div>
               <div className="px-2">
                 <div className="font-medium text-gray-900 mb-2">Directory</div>
                 <div className="pl-4 space-y-2">
