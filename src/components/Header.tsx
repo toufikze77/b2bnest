@@ -8,9 +8,11 @@ import { Menu, X, User, LogOut, Settings, Shield } from 'lucide-react';
 
 const Header = () => {
   const { user, signOut } = useAuth();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, loading } = useUserRole();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  console.log('🔗 Header - User:', !!user, 'isAdmin:', isAdmin, 'loading:', loading);
 
   const handleSignOut = async () => {
     await signOut();
@@ -77,14 +79,14 @@ const Header = () => {
                       <Settings className="mr-3 h-4 w-4" />
                       Settings
                     </Link>
-                    {isAdmin && (
+                    {!loading && isAdmin && (
                       <Link
                         to="/admin"
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-t"
                         onClick={() => setIsMenuOpen(false)}
                       >
-                        <Shield className="mr-3 h-4 w-4" />
-                        Admin Dashboard
+                        <Shield className="mr-3 h-4 w-4 text-blue-600" />
+                        <span className="font-medium text-blue-600">Admin Dashboard</span>
                       </Link>
                     )}
                     <button
@@ -92,7 +94,7 @@ const Header = () => {
                         setIsMenuOpen(false);
                         handleSignOut();
                       }}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-t"
                     >
                       <LogOut className="mr-3 h-4 w-4" />
                       Sign Out
