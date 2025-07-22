@@ -17,12 +17,40 @@ const Footer = () => {
             </p>
           </div>
           <div>
-            <h4 className="font-semibold mb-4">Categories</h4>
+            <h4 className="font-semibold mb-4">Pages</h4>
             <ul className="space-y-2 text-gray-400">
-              <li>Legal Documents</li>
-              <li>HR Forms</li>
-              <li>Financial Templates</li>
-              <li>Operations</li>
+              <li>
+                <button 
+                  onClick={() => navigate('/business-social')}
+                  className="hover:text-white transition-colors"
+                >
+                  Business Social
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => navigate('/business-tools')}
+                  className="hover:text-white transition-colors"
+                >
+                  Business Tools
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => navigate('/ai-studio')}
+                  className="hover:text-white transition-colors"
+                >
+                  AI Studio
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => navigate('/pricing')}
+                  className="hover:text-white transition-colors"
+                >
+                  Pricing
+                </button>
+              </li>
             </ul>
           </div>
           <div>
