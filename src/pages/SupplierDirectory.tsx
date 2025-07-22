@@ -8,6 +8,7 @@ import { Search, MapPin, Globe, Phone, Mail, Star, Filter, Building2 } from 'luc
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
+import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import RegionSelector from '@/components/RegionSelector';
 
@@ -181,6 +182,7 @@ const SupplierDirectory = () => {
   if (loading) {
     return (
       <div className="min-h-screen">
+        <Header />
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
         </div>
@@ -191,6 +193,7 @@ const SupplierDirectory = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Header />
       
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
