@@ -10,7 +10,9 @@ const FeaturedTemplatesSection = ({ templates }: FeaturedTemplatesSectionProps) 
   // Filter to only show specific featured services
   const filteredTemplates = templates.filter(template => 
     template.title === 'Professional Web Development Services - Premium Package' ||
-    template.title === 'Merchants Cryptocurrency Integration Service'
+    template.title === 'Merchants Cryptocurrency Integration Service' ||
+    template.title === 'Stripe Payment Integration Service' ||
+    template.title === 'SumUp Merchant Integration Service'
   );
 
   return (

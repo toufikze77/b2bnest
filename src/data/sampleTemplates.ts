@@ -410,5 +410,79 @@ export const sampleTemplates: Template[] = [
     
     softwareRequired: ['PDF Reader'],
     instructions: 'Professional cryptocurrency payment integration service includes: Accept hundreds of currencies with seamless USDC conversion, guaranteed settlement with no volatility, deposit funds in any wallet or exchange, access to Coinbase balances for customer payments, and instant confirmation on Base & Polygon networks. Contact for consultation and implementation.'
+  },
+  {
+    id: '12',
+    title: 'Stripe Payment Integration Service',
+    description: 'Complete Stripe payment processing integration for merchants. Accept credit cards, digital wallets, and bank transfers with global reach. Features recurring billing, subscription management, fraud protection, and real-time analytics dashboard.',
+    category: templateCategories[7],
+    subcategory: 'Payment Integration',
+    tags: ['Stripe', 'Payment Processing', 'Credit Cards', 'Subscriptions', 'E-commerce', 'Digital Wallets'],
+    
+    fileType: 'PDF',
+    fileSize: '1.1 MB',
+    fileName: 'stripe-integration-service-package.pdf',
+    fileUrl: '/templates/professional-services/stripe-integration-package.pdf',
+    previewUrl: '/previews/professional-services/stripe-integration-preview.pdf',
+    thumbnailUrl: '/thumbnails/professional-services/stripe-integration-thumb.jpg',
+    
+    license: templateLicenses[2],
+    price: 1499.99,
+    currency: 'GBP',
+    isRoyaltyFree: false,
+    canResell: false,
+    commercialUse: true,
+    
+    author: 'PaymentTech Solutions (Verified Professional)',
+    version: '1.0',
+    lastUpdated: '2024-02-28',
+    downloads: 34,
+    rating: 4.9,
+    reviewCount: 7,
+    
+    featured: true,
+    trending: true,
+    isNew: true,
+    difficulty: 'Intermediate',
+    
+    softwareRequired: ['PDF Reader'],
+    instructions: 'Professional Stripe payment integration service includes: Accept credit cards and digital wallets globally, recurring billing and subscription management, advanced fraud protection, real-time analytics dashboard, multi-currency support, and webhook integration. Contact for consultation and implementation.'
+  },
+  {
+    id: '13',
+    title: 'SumUp Merchant Integration Service',
+    description: 'Complete SumUp payment solution integration for merchants. Accept card payments in-person and online with competitive rates. Features point-of-sale integration, inventory management, sales analytics, and multi-location support.',
+    category: templateCategories[7],
+    subcategory: 'Payment Integration',
+    tags: ['SumUp', 'Point of Sale', 'Card Payments', 'Merchant Services', 'Inventory', 'Analytics'],
+    
+    fileType: 'PDF',
+    fileSize: '950 KB',
+    fileName: 'sumup-integration-service-package.pdf',
+    fileUrl: '/templates/professional-services/sumup-integration-package.pdf',
+    previewUrl: '/previews/professional-services/sumup-integration-preview.pdf',
+    thumbnailUrl: '/thumbnails/professional-services/sumup-integration-thumb.jpg',
+    
+    license: templateLicenses[2],
+    price: 899.99,
+    currency: 'GBP',
+    isRoyaltyFree: false,
+    canResell: false,
+    commercialUse: true,
+    
+    author: 'RetailTech Solutions (Verified Professional)',
+    version: '1.0',
+    lastUpdated: '2024-02-28',
+    downloads: 18,
+    rating: 4.8,
+    reviewCount: 4,
+    
+    featured: true,
+    trending: true,
+    isNew: true,
+    difficulty: 'Beginner',
+    
+    softwareRequired: ['PDF Reader'],
+    instructions: 'Professional SumUp merchant integration service includes: Accept card payments in-person and online, point-of-sale system integration, inventory management system, sales analytics and reporting, multi-location support, and competitive processing rates. Contact for consultation and implementation.'
   }
 ];
