@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, Wallet } from 'lucide-react';
+import { CreditCard, Wallet, Bitcoin } from 'lucide-react';
 import StripeCheckout from './StripeCheckout';
 import SolanaPayCheckout from './SolanaPayCheckout';
+import CoinbaseCheckout from './CoinbaseCheckout';
 
 interface PaymentMethodSelectorProps {
   amount: number;
@@ -15,7 +16,7 @@ interface PaymentMethodSelectorProps {
   onPaymentError: (error: string) => void;
 }
 
-type PaymentMethod = 'stripe' | 'solana' | null;
+type PaymentMethod = 'stripe' | 'solana' | 'coinbase' | null;
 
 const PaymentMethodSelector = ({
   amount,
@@ -44,6 +45,18 @@ const PaymentMethodSelector = ({
   if (selectedMethod === 'solana') {
     return (
       <SolanaPayCheckout
+        amount={amount}
+        itemName={itemName}
+        onSuccess={onPaymentSuccess}
+        onError={onPaymentError}
+        onCancel={resetSelection}
+      />
+    );
+  }
+
+  if (selectedMethod === 'coinbase') {
+    return (
+      <CoinbaseCheckout
         amount={amount}
         itemName={itemName}
         onSuccess={onPaymentSuccess}
@@ -93,10 +106,22 @@ const PaymentMethodSelector = ({
               Fast & Low Fees
             </Badge>
           </Button>
+
+          <Button
+            onClick={() => setSelectedMethod('coinbase')}
+            className="w-full h-12 bg-orange-600 hover:bg-orange-700"
+            size="lg"
+          >
+            <Bitcoin className="h-5 w-5 mr-2" />
+            Pay with Crypto
+            <Badge variant="secondary" className="ml-2 text-xs">
+              BTC, ETH, LTC & More
+            </Badge>
+          </Button>
         </div>
 
         <div className="text-center text-xs text-gray-500 mt-4">
-          Secure payments powered by Stripe and Solana blockchain
+          Secure payments powered by Stripe, Solana, and Coinbase Commerce
         </div>
       </CardContent>
     </Card>
