@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/utils/currencyUtils';
 import AccountSettings from '@/components/AccountSettings';
+import ServiceImageUpload from '@/components/ServiceImageUpload';
 
 const UserDashboard = () => {
   const { user } = useAuth();
@@ -382,9 +383,10 @@ const UserDashboard = () => {
 
         {/* Tabs for different sections */}
         <Tabs defaultValue="purchases" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="purchases">My Purchases</TabsTrigger>
             <TabsTrigger value="favorites">My Favorites</TabsTrigger>
+            <TabsTrigger value="services">Create Service</TabsTrigger>
             <TabsTrigger value="settings">Account Settings</TabsTrigger>
           </TabsList>
           
@@ -507,6 +509,15 @@ const UserDashboard = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="services" className="space-y-4">
+            <ServiceImageUpload onServiceCreated={() => {
+              toast({
+                title: "Service Created",
+                description: "Your featured service has been created successfully!"
+              });
+            }} />
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-4">

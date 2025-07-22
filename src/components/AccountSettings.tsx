@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { Shield, Key, Mail, Eye, EyeOff, Globe, Clock, DollarSign, Calendar } from 'lucide-react';
+import ImageUpload from '@/components/ImageUpload';
 import { CURRENCIES } from '@/utils/currencyUtils';
 import { COUNTRIES, LANGUAGES, TIMEZONES, DATE_FORMATS, TIME_FORMATS, UserSettings } from '@/utils/userSettingsUtils';
 
@@ -384,6 +385,56 @@ const AccountSettings = () => {
 
   return (
     <div className="space-y-6">
+      {/* Profile Picture Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5" />
+            Profile Picture
+          </CardTitle>
+          <CardDescription>
+            Upload a profile picture to personalize your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ImageUpload
+            onImageUploaded={async (url) => {
+              try {
+                const { error } = await supabase
+                  .from('profiles')
+                  .update({ avatar_url: url })
+                  .eq('id', user.id);
+
+                if (error) {
+                  console.error('Error updating avatar:', error);
+                  toast({
+                    title: "Error",
+                    description: "Failed to update profile picture. Please try again.",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+
+                toast({
+                  title: "Success",
+                  description: "Profile picture updated successfully!"
+                });
+              } catch (error) {
+                console.error('Error updating avatar:', error);
+                toast({
+                  title: "Error",
+                  description: "Failed to update profile picture. Please try again.",
+                  variant: "destructive"
+                });
+              }
+            }}
+            bucket="user-avatars"
+            userId={user.id}
+            label="Profile Picture"
+            maxSize={2}
+          />
+        </CardContent>
+      </Card>
       {/* Password Reset Section */}
       <Card>
         <CardHeader>
