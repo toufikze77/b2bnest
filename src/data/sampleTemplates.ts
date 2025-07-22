@@ -484,5 +484,227 @@ export const sampleTemplates: Template[] = [
     
     softwareRequired: ['PDF Reader'],
     instructions: 'Professional SumUp merchant integration service includes: Accept card payments in-person and online, point-of-sale system integration, inventory management system, sales analytics and reporting, multi-location support, and competitive processing rates. Contact for consultation and implementation.'
+  },
+  {
+    id: '14',
+    title: 'E-commerce Platform Integration Service',
+    description: 'Complete e-commerce solution setup with full online store development, inventory management, and multi-channel selling. Includes payment integration, shipping automation, and mobile-responsive design for maximum conversions.',
+    category: templateCategories[7],
+    subcategory: 'E-commerce Development',
+    tags: ['E-commerce', 'Online Store', 'Shopify', 'WooCommerce', 'Inventory Management', 'Multi-channel'],
+    
+    fileType: 'PDF',
+    fileSize: '1.8 MB',
+    fileName: 'ecommerce-integration-service-package.pdf',
+    fileUrl: '/templates/professional-services/ecommerce-integration-package.pdf',
+    previewUrl: '/previews/professional-services/ecommerce-integration-preview.pdf',
+    thumbnailUrl: '/thumbnails/professional-services/ecommerce-integration-thumb.jpg',
+    
+    license: templateLicenses[2],
+    price: 4999.99,
+    currency: 'GBP',
+    isRoyaltyFree: false,
+    canResell: false,
+    commercialUse: true,
+    
+    author: 'E-commerce Experts (Verified Professional)',
+    version: '1.0',
+    lastUpdated: '2024-02-28',
+    downloads: 28,
+    rating: 4.9,
+    reviewCount: 6,
+    
+    featured: true,
+    trending: true,
+    isNew: true,
+    difficulty: 'Advanced',
+    
+    softwareRequired: ['PDF Reader'],
+    instructions: 'Professional e-commerce platform integration includes: Full online store setup, inventory management system, multi-channel selling integration (Amazon, eBay, social media), payment gateway integration, shipping automation, mobile optimization, and conversion rate optimization. Contact for consultation and implementation.'
+  },
+  {
+    id: '15',
+    title: 'SEO & Analytics Optimization Service',
+    description: 'Comprehensive SEO audit and optimization service with Google Analytics 4 setup, conversion tracking, and search engine marketing. Boost your online visibility and drive qualified traffic with data-driven strategies.',
+    category: templateCategories[7],
+    subcategory: 'Digital Marketing',
+    tags: ['SEO', 'Google Analytics', 'Search Marketing', 'Conversion Tracking', 'Digital Marketing', 'PPC'],
+    
+    fileType: 'PDF',
+    fileSize: '1.5 MB',
+    fileName: 'seo-analytics-service-package.pdf',
+    fileUrl: '/templates/professional-services/seo-analytics-package.pdf',
+    previewUrl: '/previews/professional-services/seo-analytics-preview.pdf',
+    thumbnailUrl: '/thumbnails/professional-services/seo-analytics-thumb.jpg',
+    
+    license: templateLicenses[2],
+    price: 3499.99,
+    currency: 'GBP',
+    isRoyaltyFree: false,
+    canResell: false,
+    commercialUse: true,
+    
+    author: 'SEO Masters Agency (Verified Professional)',
+    version: '1.0',
+    lastUpdated: '2024-02-28',
+    downloads: 41,
+    rating: 4.8,
+    reviewCount: 9,
+    
+    featured: true,
+    trending: true,
+    isNew: true,
+    difficulty: 'Intermediate',
+    
+    softwareRequired: ['PDF Reader'],
+    instructions: 'Professional SEO & Analytics optimization includes: Complete SEO audit and optimization, Google Analytics 4 setup and conversion tracking, search engine marketing and PPC campaign management, keyword research and content strategy, technical SEO improvements, and monthly performance reporting. Contact for consultation and implementation.'
+  },
+  {
+    id: '16',
+    title: 'Business Automation & Workflow Service',
+    description: 'Custom workflow automation and process optimization service. Streamline operations with API integrations, data synchronization, and automated workflows between your business applications.',
+    category: templateCategories[7],
+    subcategory: 'Business Automation',
+    tags: ['Automation', 'Workflow', 'API Integration', 'Process Optimization', 'Zapier', 'Business Efficiency'],
+    
+    fileType: 'PDF',
+    fileSize: '1.3 MB',
+    fileName: 'automation-workflow-service-package.pdf',
+    fileUrl: '/templates/professional-services/automation-workflow-package.pdf',
+    previewUrl: '/previews/professional-services/automation-workflow-preview.pdf',
+    thumbnailUrl: '/thumbnails/professional-services/automation-workflow-thumb.jpg',
+    
+    license: templateLicenses[2],
+    price: 2799.99,
+    currency: 'GBP',
+    isRoyaltyFree: false,
+    canResell: false,
+    commercialUse: true,
+    
+    author: 'Automation Solutions Pro (Verified Professional)',
+    version: '1.0',
+    lastUpdated: '2024-02-28',
+    downloads: 32,
+    rating: 4.7,
+    reviewCount: 8,
+    
+    featured: true,
+    trending: true,
+    isNew: true,
+    difficulty: 'Advanced',
+    
+    softwareRequired: ['PDF Reader'],
+    instructions: 'Professional business automation service includes: Custom workflow automation between apps, API integrations and data synchronization, process optimization and efficiency consulting, automated reporting and notifications, CRM and sales automation, and ongoing optimization support. Contact for consultation and implementation.'
+  },
+  {
+    id: '17',
+    title: 'Cloud Infrastructure & Security Service',
+    description: 'Enterprise-grade cloud infrastructure setup and security implementation. Includes cloud migration, server optimization, security audits, compliance implementation, and disaster recovery planning.',
+    category: templateCategories[7],
+    subcategory: 'Cloud & Security',
+    tags: ['Cloud Infrastructure', 'Security', 'AWS', 'Azure', 'Compliance', 'Disaster Recovery'],
+    
+    fileType: 'PDF',
+    fileSize: '2.1 MB',
+    fileName: 'cloud-security-service-package.pdf',
+    fileUrl: '/templates/professional-services/cloud-security-package.pdf',
+    previewUrl: '/previews/professional-services/cloud-security-preview.pdf',
+    thumbnailUrl: '/thumbnails/professional-services/cloud-security-thumb.jpg',
+    
+    license: templateLicenses[2],
+    price: 4499.99,
+    currency: 'GBP',
+    isRoyaltyFree: false,
+    canResell: false,
+    commercialUse: true,
+    
+    author: 'CloudSec Solutions (Verified Professional)',
+    version: '1.0',
+    lastUpdated: '2024-02-28',
+    downloads: 19,
+    rating: 5.0,
+    reviewCount: 4,
+    
+    featured: true,
+    trending: true,
+    isNew: true,
+    difficulty: 'Advanced',
+    
+    softwareRequired: ['PDF Reader'],
+    instructions: 'Professional cloud infrastructure & security service includes: Cloud migration and server setup, security audits and compliance implementation (GDPR, ISO 27001), backup solutions and disaster recovery planning, performance optimization and monitoring, SSL certificates and security hardening, and 24/7 monitoring support. Contact for consultation and implementation.'
+  },
+  {
+    id: '18',
+    title: 'Customer Support System Integration',
+    description: 'Complete customer support solution with live chat, helpdesk setup, knowledge base creation, and chatbot integration. Enhance customer satisfaction with professional support systems.',
+    category: templateCategories[7],
+    subcategory: 'Customer Support',
+    tags: ['Customer Support', 'Live Chat', 'Helpdesk', 'Chatbot', 'Knowledge Base', 'Customer Service'],
+    
+    fileType: 'PDF',
+    fileSize: '1.4 MB',
+    fileName: 'customer-support-service-package.pdf',
+    fileUrl: '/templates/professional-services/customer-support-package.pdf',
+    previewUrl: '/previews/professional-services/customer-support-preview.pdf',
+    thumbnailUrl: '/thumbnails/professional-services/customer-support-thumb.jpg',
+    
+    license: templateLicenses[2],
+    price: 2199.99,
+    currency: 'GBP',
+    isRoyaltyFree: false,
+    canResell: false,
+    commercialUse: true,
+    
+    author: 'SupportTech Solutions (Verified Professional)',
+    version: '1.0',
+    lastUpdated: '2024-02-28',
+    downloads: 25,
+    rating: 4.8,
+    reviewCount: 5,
+    
+    featured: true,
+    trending: true,
+    isNew: true,
+    difficulty: 'Intermediate',
+    
+    softwareRequired: ['PDF Reader'],
+    instructions: 'Professional customer support system integration includes: Live chat and helpdesk setup, knowledge base creation and chatbot integration, customer feedback and review management systems, ticket routing and escalation workflows, multi-channel support integration, and staff training materials. Contact for consultation and implementation.'
+  },
+  {
+    id: '19',
+    title: 'Digital Marketing Automation Service',
+    description: 'Comprehensive digital marketing automation solution with email campaigns, lead nurturing, CRM integration, social media management, and analytics. Maximize your marketing ROI with automated workflows.',
+    category: templateCategories[7],
+    subcategory: 'Marketing Automation',
+    tags: ['Marketing Automation', 'Email Marketing', 'CRM', 'Social Media', 'Lead Generation', 'Analytics'],
+    
+    fileType: 'PDF',
+    fileSize: '1.7 MB',
+    fileName: 'marketing-automation-service-package.pdf',
+    fileUrl: '/templates/professional-services/marketing-automation-package.pdf',
+    previewUrl: '/previews/professional-services/marketing-automation-preview.pdf',
+    thumbnailUrl: '/thumbnails/professional-services/marketing-automation-thumb.jpg',
+    
+    license: templateLicenses[2],
+    price: 3299.99,
+    currency: 'GBP',
+    isRoyaltyFree: false,
+    canResell: false,
+    commercialUse: true,
+    
+    author: 'MarketingTech Pro (Verified Professional)',
+    version: '1.0',
+    lastUpdated: '2024-02-28',
+    downloads: 37,
+    rating: 4.9,
+    reviewCount: 11,
+    
+    featured: true,
+    trending: true,
+    isNew: true,
+    difficulty: 'Intermediate',
+    
+    softwareRequired: ['PDF Reader'],
+    instructions: 'Professional digital marketing automation service includes: Email marketing campaigns and lead nurturing, CRM integration and customer journey mapping, social media management and analytics, landing page optimization and A/B testing, automated sales funnels and conversion tracking, and comprehensive performance reporting. Contact for consultation and implementation.'
   }
 ];

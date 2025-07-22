@@ -12,7 +12,13 @@ const FeaturedTemplatesSection = ({ templates }: FeaturedTemplatesSectionProps) 
     template.title === 'Professional Web Development Services - Premium Package' ||
     template.title === 'Merchants Cryptocurrency Integration Service' ||
     template.title === 'Stripe Payment Integration Service' ||
-    template.title === 'SumUp Merchant Integration Service'
+    template.title === 'SumUp Merchant Integration Service' ||
+    template.title === 'E-commerce Platform Integration Service' ||
+    template.title === 'SEO & Analytics Optimization Service' ||
+    template.title === 'Business Automation & Workflow Service' ||
+    template.title === 'Cloud Infrastructure & Security Service' ||
+    template.title === 'Customer Support System Integration' ||
+    template.title === 'Digital Marketing Automation Service'
   );
 
   return (
