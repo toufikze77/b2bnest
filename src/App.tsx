@@ -37,6 +37,7 @@ import BusinessDirectory from "@/pages/BusinessDirectory";
 import SupplierDirectory from "@/pages/SupplierDirectory";
 import CompanyDirectory from "@/pages/CompanyDirectory";
 import ServiceDirectory from "@/pages/ServiceDirectory";
+import Settings from "@/pages/Settings";
 import PaymentSuccess from "@/pages/PaymentSuccess";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
@@ -56,6 +57,7 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/business-social" element={<ProtectedRoute><BusinessSocial /></ProtectedRoute>} />
             <Route path="/profile-setup" element={<ProtectedRoute><ProfileSetup /></ProtectedRoute>} />
               <Route path="/business-tools" element={<BusinessTools />} />
