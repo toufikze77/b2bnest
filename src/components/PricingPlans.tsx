@@ -8,11 +8,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import PaymentMethodSelector from '@/components/checkout/PaymentMethodSelector';
 
 const PricingPlans = () => {
   const [isAnnual, setIsAnnual] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState('');
+  const [showPaymentSelector, setShowPaymentSelector] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState(0);
+  const [paymentItemName, setPaymentItemName] = useState('');
   const { user } = useAuth();
   const { isPremium, subscription_tier } = useSubscription();
 
@@ -97,25 +101,31 @@ const PricingPlans = () => {
       return;
     }
 
-    // All plans are now paid, including starter
+    const plan = plans.find(p => p.id === planId);
+    if (!plan) return;
 
-    try {
-      const { data, error } = await supabase.functions.invoke('create-subscription-checkout', {
-        body: { planId, isAnnual }
-      });
+    const price = isAnnual ? plan.annual : plan.monthly;
+    setPaymentAmount(price);
+    setPaymentItemName(`${plan.name} Plan - ${isAnnual ? 'Annual' : 'Monthly'}`);
+    setSelectedPlan(planId);
+    setShowPaymentSelector(true);
+  };
 
-      if (error) throw error;
+  const handlePaymentSuccess = async (paymentData: any) => {
+    toast({
+      title: "Payment Successful!",
+      description: `Welcome to the ${selectedPlan} plan! Your subscription is now active.`,
+    });
+    setShowPaymentSelector(false);
+    // You could also update the user's subscription status here
+  };
 
-      // Open Stripe checkout in a new tab
-      window.open(data.url, '_blank');
-    } catch (error) {
-      toast({
-        title: "Checkout Error",
-        description: "Failed to create checkout session. Please try again.",
-        variant: "destructive"
-      });
-      console.error('Checkout error:', error);
-    }
+  const handlePaymentError = (error: string) => {
+    toast({
+      title: "Payment Failed",
+      description: error,
+      variant: "destructive"
+    });
   };
 
   const getCurrentPlanBadge = (planId: string) => {
@@ -300,11 +310,11 @@ const PricingPlans = () => {
             </div>
             <div className="text-left">
               <h4 className="font-semibold text-gray-900 mb-2">
-                What payment methods do you accept?
-              </h4>
-              <p className="text-gray-600">
-                We accept all major credit cards, PayPal, and bank transfers for annual plans.
-              </p>
+              What payment methods do you accept?
+            </h4>
+            <p className="text-gray-600">
+              We accept all major credit cards and cryptocurrencies (Bitcoin, Ethereum, Litecoin, etc.) via Stripe and Coinbase Commerce.
+            </p>
             </div>
             <div className="text-left">
               <h4 className="font-semibold text-gray-900 mb-2">
@@ -336,6 +346,31 @@ const PricingPlans = () => {
         </div>
       </div>
 
+      {/* Payment Method Selector Modal */}
+      {showPaymentSelector && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="p-4 border-b">
+              <h3 className="text-lg font-semibold">Choose Payment Method</h3>
+              <button 
+                onClick={() => setShowPaymentSelector(false)}
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-4">
+              <PaymentMethodSelector
+                amount={paymentAmount}
+                currency="GBP"
+                itemName={paymentItemName}
+                onPaymentSuccess={handlePaymentSuccess}
+                onPaymentError={handlePaymentError}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
