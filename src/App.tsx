@@ -79,11 +79,11 @@ function App() {
               <Route path="/crm" element={<ProtectedRoute><CRMPage /></ProtectedRoute>} />
               <Route path="/project-management" element={<ProtectedRoute><ProjectManagementPage /></ProtectedRoute>} />
               
-              {/* Directory Routes */}
-              <Route path="/directory" element={<BusinessDirectory />} />
-              <Route path="/directory/suppliers" element={<SupplierDirectory />} />
-              <Route path="/directory/companies" element={<CompanyDirectory />} />
-              <Route path="/directory/services" element={<ServiceDirectory />} />
+              {/* Directory Routes - Protected */}
+              <Route path="/directory" element={<ProtectedRoute><BusinessDirectory /></ProtectedRoute>} />
+              <Route path="/directory/suppliers" element={<ProtectedRoute><SupplierDirectory /></ProtectedRoute>} />
+              <Route path="/directory/companies" element={<ProtectedRoute><CompanyDirectory /></ProtectedRoute>} />
+              <Route path="/directory/services" element={<ProtectedRoute><ServiceDirectory /></ProtectedRoute>} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
               
               <Route path="*" element={<NotFound />} />
