@@ -350,7 +350,7 @@ export const sampleTemplates: Template[] = [
     fileName: 'web-development-service-package.pdf',
     fileUrl: '/templates/professional-services/web-development-package.pdf',
     previewUrl: '/previews/professional-services/web-dev-preview.pdf',
-    thumbnailUrl: '/thumbnails/professional-services/web-dev-thumb.jpg',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     
     license: templateLicenses[2],
     price: 2999.99,
@@ -387,7 +387,7 @@ export const sampleTemplates: Template[] = [
     fileName: 'crypto-integration-service-package.pdf',
     fileUrl: '/templates/professional-services/crypto-integration-package.pdf',
     previewUrl: '/previews/professional-services/crypto-integration-preview.pdf',
-    thumbnailUrl: '/thumbnails/professional-services/crypto-integration-thumb.jpg',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     
     license: templateLicenses[2],
     price: 1999.99,
@@ -424,7 +424,7 @@ export const sampleTemplates: Template[] = [
     fileName: 'stripe-integration-service-package.pdf',
     fileUrl: '/templates/professional-services/stripe-integration-package.pdf',
     previewUrl: '/previews/professional-services/stripe-integration-preview.pdf',
-    thumbnailUrl: '/thumbnails/professional-services/stripe-integration-thumb.jpg',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1483058712412-4245e9b90334?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     
     license: templateLicenses[2],
     price: 1499.99,
@@ -461,7 +461,7 @@ export const sampleTemplates: Template[] = [
     fileName: 'sumup-integration-service-package.pdf',
     fileUrl: '/templates/professional-services/sumup-integration-package.pdf',
     previewUrl: '/previews/professional-services/sumup-integration-preview.pdf',
-    thumbnailUrl: '/thumbnails/professional-services/sumup-integration-thumb.jpg',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1483058712412-4245e9b90334?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     
     license: templateLicenses[2],
     price: 899.99,
@@ -498,7 +498,7 @@ export const sampleTemplates: Template[] = [
     fileName: 'ecommerce-integration-service-package.pdf',
     fileUrl: '/templates/professional-services/ecommerce-integration-package.pdf',
     previewUrl: '/previews/professional-services/ecommerce-integration-preview.pdf',
-    thumbnailUrl: '/thumbnails/professional-services/ecommerce-integration-thumb.jpg',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     
     license: templateLicenses[2],
     price: 4999.99,
@@ -535,7 +535,7 @@ export const sampleTemplates: Template[] = [
     fileName: 'seo-analytics-service-package.pdf',
     fileUrl: '/templates/professional-services/seo-analytics-package.pdf',
     previewUrl: '/previews/professional-services/seo-analytics-preview.pdf',
-    thumbnailUrl: '/thumbnails/professional-services/seo-analytics-thumb.jpg',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     
     license: templateLicenses[2],
     price: 3499.99,
@@ -572,7 +572,7 @@ export const sampleTemplates: Template[] = [
     fileName: 'automation-workflow-service-package.pdf',
     fileUrl: '/templates/professional-services/automation-workflow-package.pdf',
     previewUrl: '/previews/professional-services/automation-workflow-preview.pdf',
-    thumbnailUrl: '/thumbnails/professional-services/automation-workflow-thumb.jpg',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1473091534298-04dcbce3278c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     
     license: templateLicenses[2],
     price: 2799.99,
@@ -609,7 +609,7 @@ export const sampleTemplates: Template[] = [
     fileName: 'cloud-security-service-package.pdf',
     fileUrl: '/templates/professional-services/cloud-security-package.pdf',
     previewUrl: '/previews/professional-services/cloud-security-preview.pdf',
-    thumbnailUrl: '/thumbnails/professional-services/cloud-security-thumb.jpg',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1492321936769-b49830bc1d1e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     
     license: templateLicenses[2],
     price: 4499.99,
@@ -646,7 +646,7 @@ export const sampleTemplates: Template[] = [
     fileName: 'customer-support-service-package.pdf',
     fileUrl: '/templates/professional-services/customer-support-package.pdf',
     previewUrl: '/previews/professional-services/customer-support-preview.pdf',
-    thumbnailUrl: '/thumbnails/professional-services/customer-support-thumb.jpg',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1483058712412-4245e9b90334?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     
     license: templateLicenses[2],
     price: 2199.99,
@@ -683,7 +683,7 @@ export const sampleTemplates: Template[] = [
     fileName: 'marketing-automation-service-package.pdf',
     fileUrl: '/templates/professional-services/marketing-automation-package.pdf',
     previewUrl: '/previews/professional-services/marketing-automation-preview.pdf',
-    thumbnailUrl: '/thumbnails/professional-services/marketing-automation-thumb.jpg',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     
     license: templateLicenses[2],
     price: 3299.99,
