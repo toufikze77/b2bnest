@@ -1,7 +1,9 @@
 
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 const CTASection = () => {
+  const { user } = useAuth();
   return (
     <section className="py-20 px-4 sm:px-6 lg:px-8 bg-blue-600">
       <div className="max-w-4xl mx-auto text-center">
@@ -13,13 +15,19 @@ const CTASection = () => {
           to save time and ensure compliance.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button size="lg" variant="secondary" className="text-lg px-8 py-3">
+          <Button 
+            size="lg" 
+            variant="secondary" 
+            className="text-lg px-8 py-3"
+            onClick={() => window.location.href = '/'}
+          >
             Browse All Forms
           </Button>
           <Button 
             size="lg" 
             variant="outline" 
             className="text-lg px-8 py-3 text-white border-white bg-transparent hover:bg-white hover:text-blue-600 transition-colors duration-200"
+            onClick={() => window.location.href = user ? '/pricing' : '/auth'}
           >
             Start 14-Day Free Trial
           </Button>
