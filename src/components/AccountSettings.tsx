@@ -6,12 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-import { Shield, Key, Mail, Eye, EyeOff, Globe, Clock, DollarSign, Calendar } from 'lucide-react';
+import { Shield, Key, Mail, Eye, EyeOff, Globe, Clock, DollarSign, Calendar, MessageSquare, Lightbulb } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
+import FeedbackForm from '@/components/FeedbackForm';
 import { CURRENCIES } from '@/utils/currencyUtils';
 import { COUNTRIES, LANGUAGES, TIMEZONES, DATE_FORMATS, TIME_FORMATS, UserSettings } from '@/utils/userSettingsUtils';
 
@@ -384,389 +386,407 @@ const AccountSettings = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Profile Picture Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5" />
-            Profile Picture
-          </CardTitle>
-          <CardDescription>
-            Upload a profile picture to personalize your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ImageUpload
-            onImageUploaded={async (url) => {
-              try {
-                const { error } = await supabase
-                  .from('profiles')
-                  .update({ avatar_url: url })
-                  .eq('id', user.id);
+    <Tabs defaultValue="account" className="space-y-6">
+      <TabsList className="grid w-full grid-cols-4">
+        <TabsTrigger value="account">Account</TabsTrigger>
+        <TabsTrigger value="security">Security</TabsTrigger>
+        <TabsTrigger value="preferences">Preferences</TabsTrigger>
+        <TabsTrigger value="feedback">Feedback</TabsTrigger>
+      </TabsList>
 
-                if (error) {
+      <TabsContent value="account" className="space-y-6">
+        {/* Profile Picture Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="h-5 w-5" />
+              Profile Picture
+            </CardTitle>
+            <CardDescription>
+              Upload a profile picture to personalize your account
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ImageUpload
+              onImageUploaded={async (url) => {
+                try {
+                  const { error } = await supabase
+                    .from('profiles')
+                    .update({ avatar_url: url })
+                    .eq('id', user.id);
+
+                  if (error) {
+                    console.error('Error updating avatar:', error);
+                    toast({
+                      title: "Error",
+                      description: "Failed to update profile picture. Please try again.",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+
+                  toast({
+                    title: "Success",
+                    description: "Profile picture updated successfully!"
+                  });
+                } catch (error) {
                   console.error('Error updating avatar:', error);
                   toast({
                     title: "Error",
                     description: "Failed to update profile picture. Please try again.",
                     variant: "destructive"
                   });
-                  return;
                 }
+              }}
+              bucket="user-avatars"
+              userId={user.id}
+              label="Profile Picture"
+              maxSize={2}
+            />
+          </CardContent>
+        </Card>
+      </TabsContent>
 
-                toast({
-                  title: "Success",
-                  description: "Profile picture updated successfully!"
-                });
-              } catch (error) {
-                console.error('Error updating avatar:', error);
-                toast({
-                  title: "Error",
-                  description: "Failed to update profile picture. Please try again.",
-                  variant: "destructive"
-                });
-              }
-            }}
-            bucket="user-avatars"
-            userId={user.id}
-            label="Profile Picture"
-            maxSize={2}
-          />
-        </CardContent>
-      </Card>
-      {/* Password Reset Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Key className="h-5 w-5" />
-            Change Password
-          </CardTitle>
-          <CardDescription>
-            Update your account password for better security
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handlePasswordChange} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="current-password">Current Password</Label>
-              <div className="relative">
+      <TabsContent value="security" className="space-y-6">
+        {/* Password Reset Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5" />
+              Change Password
+            </CardTitle>
+            <CardDescription>
+              Update your account password for better security
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handlePasswordChange} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="current-password">Current Password</Label>
+                <div className="relative">
+                  <Input
+                    id="current-password"
+                    type={showPasswords ? "text" : "password"}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowPasswords(!showPasswords)}
+                  >
+                    {showPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New Password</Label>
                 <Input
-                  id="current-password"
+                  id="new-password"
                   type={showPasswords ? "text" : "password"}
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
                   required
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                  onClick={() => setShowPasswords(!showPasswords)}
-                >
-                  {showPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="new-password">New Password</Label>
-              <Input
-                id="new-password"
-                type={showPasswords ? "text" : "password"}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm New Password</Label>
-              <Input
-                id="confirm-password"
-                type={showPasswords ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-            </div>
-            
-            <Button type="submit" disabled={isChangingPassword}>
-              {isChangingPassword ? "Updating..." : "Update Password"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Separator />
-
-      {/* 2FA Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Two-Factor Authentication
-          </CardTitle>
-          <CardDescription>
-            Add an extra layer of security to your account using email verification
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Enable 2FA</Label>
-              <p className="text-sm text-muted-foreground">
-                {is2FAEnabled 
-                  ? "Two-factor authentication is currently enabled" 
-                  : "Secure your account with email verification codes"
-                }
-              </p>
-            </div>
-            <Switch
-              checked={is2FAEnabled}
-              onCheckedChange={is2FAEnabled ? handleDisable2FA : handleSend2FACode}
-              disabled={isLoading2FA}
-            />
-          </div>
-
-          {isVerifying2FA && (
-            <div className="space-y-4 p-4 bg-muted rounded-lg">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Mail className="h-4 w-4" />
-                Verification code generated (check the notification above)
               </div>
               
               <div className="space-y-2">
-                <Label>Enter 6-digit verification code</Label>
-                <InputOTP
-                  maxLength={6}
-                  value={verificationCode}
-                  onChange={setVerificationCode}
-                >
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                  </InputOTPGroup>
-                </InputOTP>
+                <Label htmlFor="confirm-password">Confirm New Password</Label>
+                <Input
+                  id="confirm-password"
+                  type={showPasswords ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
               </div>
               
-              <div className="flex gap-2">
-                <Button 
-                  onClick={handleVerify2FA}
-                  disabled={verificationCode.length !== 6 || isLoading2FA}
-                >
-                  {isLoading2FA ? "Verifying..." : "Verify & Enable 2FA"}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setIsVerifying2FA(false);
-                    setVerificationCode('');
-                  }}
-                >
-                  Cancel
-                </Button>
+              <Button type="submit" disabled={isChangingPassword}>
+                {isChangingPassword ? "Updating..." : "Update Password"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* 2FA Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Two-Factor Authentication
+            </CardTitle>
+            <CardDescription>
+              Add an extra layer of security to your account using email verification
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Enable 2FA</Label>
+                <p className="text-sm text-muted-foreground">
+                  {is2FAEnabled 
+                    ? "Two-factor authentication is currently enabled" 
+                    : "Secure your account with email verification codes"
+                  }
+                </p>
+              </div>
+              <Switch
+                checked={is2FAEnabled}
+                onCheckedChange={is2FAEnabled ? handleDisable2FA : handleSend2FACode}
+                disabled={isLoading2FA}
+              />
+            </div>
+
+            {isVerifying2FA && (
+              <div className="space-y-4 p-4 bg-muted rounded-lg">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Mail className="h-4 w-4" />
+                  Verification code generated (check the notification above)
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Enter 6-digit verification code</Label>
+                  <InputOTP
+                    maxLength={6}
+                    value={verificationCode}
+                    onChange={setVerificationCode}
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleVerify2FA}
+                    disabled={verificationCode.length !== 6 || isLoading2FA}
+                  >
+                    {isLoading2FA ? "Verifying..." : "Verify & Enable 2FA"}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setIsVerifying2FA(false);
+                      setVerificationCode('');
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {is2FAEnabled && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-800">
+                  ✓ Two-factor authentication is active. You'll receive verification codes via email when signing in.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="preferences" className="space-y-6">
+        {/* Global Settings Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="h-5 w-5" />
+              Global Settings
+            </CardTitle>
+            <CardDescription>
+              Configure your global preferences for currency, timezone, language, and formats
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* ... keep existing code ... */}
+            {/* Currency Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                <Label className="text-sm font-medium">Currency & Region</Label>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="currency">Default Currency</Label>
+                  <Select
+                    value={userSettings.currency_code}
+                    onValueChange={(value) => updateUserSettings({ currency_code: value })}
+                    disabled={isUpdatingSettings}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(CURRENCIES).map((currency) => (
+                        <SelectItem key={currency.code} value={currency.code}>
+                          {currency.symbol} {currency.name} ({currency.code})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="country">Country</Label>
+                  <Select
+                    value={userSettings.country_code}
+                    onValueChange={(value) => updateUserSettings({ country_code: value })}
+                    disabled={isUpdatingSettings}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(COUNTRIES).map((country) => (
+                        <SelectItem key={country.code} value={country.code}>
+                          {country.flag} {country.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
-          )}
 
-          {is2FAEnabled && (
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-sm text-green-800">
-                ✓ Two-factor authentication is active. You'll receive verification codes via email when signing in.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            <Separator />
 
-      <Separator />
-
-      {/* Global Settings Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5" />
-            Global Settings
-          </CardTitle>
-          <CardDescription>
-            Configure your global preferences for currency, timezone, language, and formats
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Currency Settings */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              <Label className="text-sm font-medium">Currency & Region</Label>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="currency">Default Currency</Label>
-                <Select
-                  value={userSettings.currency_code}
-                  onValueChange={(value) => updateUserSettings({ currency_code: value })}
-                  disabled={isUpdatingSettings}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select currency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.values(CURRENCIES).map((currency) => (
-                      <SelectItem key={currency.code} value={currency.code}>
-                        {currency.symbol} {currency.name} ({currency.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {/* Language & Timezone */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Globe className="h-4 w-4" />
+                <Label className="text-sm font-medium">Language & Time</Label>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="country">Country</Label>
-                <Select
-                  value={userSettings.country_code}
-                  onValueChange={(value) => updateUserSettings({ country_code: value })}
-                  disabled={isUpdatingSettings}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select country" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.values(COUNTRIES).map((country) => (
-                      <SelectItem key={country.code} value={country.code}>
-                        {country.flag} {country.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="language">Language</Label>
+                  <Select
+                    value={userSettings.language_code}
+                    onValueChange={(value) => updateUserSettings({ language_code: value })}
+                    disabled={isUpdatingSettings}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(LANGUAGES).map((language) => (
+                        <SelectItem key={language.code} value={language.code}>
+                          {language.nativeName} ({language.name})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="timezone">Timezone</Label>
+                  <Select
+                    value={userSettings.timezone}
+                    onValueChange={(value) => updateUserSettings({ timezone: value })}
+                    disabled={isUpdatingSettings}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select timezone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TIMEZONES.map((timezone) => (
+                        <SelectItem key={timezone.value} value={timezone.value}>
+                          {timezone.label} ({timezone.offset})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
-          </div>
 
-          <Separator />
+            <Separator />
 
-          {/* Language & Timezone */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Globe className="h-4 w-4" />
-              <Label className="text-sm font-medium">Language & Time</Label>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="language">Language</Label>
-                <Select
-                  value={userSettings.language_code}
-                  onValueChange={(value) => updateUserSettings({ language_code: value })}
-                  disabled={isUpdatingSettings}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.values(LANGUAGES).map((language) => (
-                      <SelectItem key={language.code} value={language.code}>
-                        {language.nativeName} ({language.name})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {/* Date & Time Formats */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                <Label className="text-sm font-medium">Date & Time Formats</Label>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="timezone">Timezone</Label>
-                <Select
-                  value={userSettings.timezone}
-                  onValueChange={(value) => updateUserSettings({ timezone: value })}
-                  disabled={isUpdatingSettings}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select timezone" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIMEZONES.map((timezone) => (
-                      <SelectItem key={timezone.value} value={timezone.value}>
-                        {timezone.label} ({timezone.offset})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Date & Time Formats */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <Label className="text-sm font-medium">Date & Time Formats</Label>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="date-format">Date Format</Label>
-                <Select
-                  value={userSettings.date_format}
-                  onValueChange={(value) => updateUserSettings({ date_format: value })}
-                  disabled={isUpdatingSettings}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select date format" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DATE_FORMATS.map((format) => (
-                      <SelectItem key={format.value} value={format.value}>
-                        {format.label} - {format.example}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="time-format">Time Format</Label>
-                <Select
-                  value={userSettings.time_format}
-                  onValueChange={(value) => updateUserSettings({ time_format: value })}
-                  disabled={isUpdatingSettings}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select time format" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIME_FORMATS.map((format) => (
-                      <SelectItem key={format.value} value={format.value}>
-                        {format.label} - {format.example}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="date-format">Date Format</Label>
+                  <Select
+                    value={userSettings.date_format}
+                    onValueChange={(value) => updateUserSettings({ date_format: value })}
+                    disabled={isUpdatingSettings}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select date format" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DATE_FORMATS.map((format) => (
+                        <SelectItem key={format.value} value={format.value}>
+                          {format.label} - {format.example}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="time-format">Time Format</Label>
+                  <Select
+                    value={userSettings.time_format}
+                    onValueChange={(value) => updateUserSettings({ time_format: value })}
+                    disabled={isUpdatingSettings}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select time format" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TIME_FORMATS.map((format) => (
+                        <SelectItem key={format.value} value={format.value}>
+                          {format.label} - {format.example}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Settings Preview */}
-          <div className="p-4 bg-muted rounded-lg">
-            <Label className="text-sm font-medium mb-2 block">Preview</Label>
-            <div className="text-sm text-muted-foreground space-y-1">
-              <p>Current time: {new Date().toLocaleString("en-US", { 
-                timeZone: userSettings.timezone,
-                hour12: userSettings.time_format === '12h',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}</p>
-              <p>Currency: {CURRENCIES[userSettings.currency_code as keyof typeof CURRENCIES]?.symbol}1,234.56</p>
-              <p>Country: {COUNTRIES[userSettings.country_code as keyof typeof COUNTRIES]?.flag} {COUNTRIES[userSettings.country_code as keyof typeof COUNTRIES]?.name}</p>
+            {/* Settings Preview */}
+            <div className="p-4 bg-muted rounded-lg">
+              <Label className="text-sm font-medium mb-2 block">Preview</Label>
+              <div className="text-sm text-muted-foreground space-y-1">
+                <p>Current time: {new Date().toLocaleString("en-US", { 
+                  timeZone: userSettings.timezone,
+                  hour12: userSettings.time_format === '12h',
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}</p>
+                <p>Currency: {CURRENCIES[userSettings.currency_code as keyof typeof CURRENCIES]?.symbol}1,234.56</p>
+                <p>Country: {COUNTRIES[userSettings.country_code as keyof typeof COUNTRIES]?.flag} {COUNTRIES[userSettings.country_code as keyof typeof COUNTRIES]?.name}</p>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="feedback" className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FeedbackForm type="feedback" />
+          <FeedbackForm type="feature_request" />
+        </div>
+      </TabsContent>
+    </Tabs>
   );
 };
 
