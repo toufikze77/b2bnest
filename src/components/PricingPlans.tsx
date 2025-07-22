@@ -97,13 +97,7 @@ const PricingPlans = () => {
       return;
     }
 
-    if (planId === 'starter') {
-      toast({
-        title: "Free Plan",
-        description: "You're already on the starter plan. All features are available to you.",
-      });
-      return; // Free plan, no action needed
-    }
+    // All plans are now paid, including starter
 
     try {
       const { data, error } = await supabase.functions.invoke('create-subscription-checkout', {
