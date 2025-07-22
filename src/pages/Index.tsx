@@ -3,7 +3,7 @@ import { SearchProvider, useSearch } from "@/contexts/SearchContext";
 import { templateService } from "@/services/templateService";
 import HeroSection from "@/components/HeroSection";
 import StatsSection from "@/components/StatsSection";
-import CategoriesSection from "@/components/CategoriesSection";
+
 import FeaturedTemplatesSection from "@/components/FeaturedTemplatesSection";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
@@ -68,13 +68,8 @@ const IndexContent = () => {
       {/* Business Tools Section - Only show when not searching */}
       {!showSearchResults && <BusinessToolsSection />}
 
-      {/* Categories and Popular Forms - Only show when not searching */}
-      {!showSearchResults && (
-        <>
-          <CategoriesSection />
-          <FeaturedTemplatesSection templates={resultsToShow} />
-        </>
-      )}
+      {/* Featured Templates - Only show when not searching */}
+      {!showSearchResults && <FeaturedTemplatesSection templates={resultsToShow} />}
 
       {/* Testimonials Section - only show when not searching */}
       {!showSearchResults && <TestimonialsSection />}
