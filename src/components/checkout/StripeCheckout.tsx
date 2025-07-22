@@ -5,7 +5,7 @@ import { CreditCard, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-interface SumUpCheckoutProps {
+interface StripeCheckoutProps {
   amount: number;
   currency: string;
   itemName: string;
@@ -14,14 +14,14 @@ interface SumUpCheckoutProps {
   onCancel: () => void;
 }
 
-const SumUpCheckout = ({
+const StripeCheckout = ({
   amount,
   currency,
   itemName,
   onSuccess,
   onError,
   onCancel
-}: SumUpCheckoutProps) => {
+}: StripeCheckoutProps) => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -35,28 +35,25 @@ const SumUpCheckout = ({
         return;
       }
 
-      const returnUrl = `${window.location.origin}/payment-success`;
-      
-      const { data, error } = await supabase.functions.invoke('create-sumup-checkout', {
+      const { data, error } = await supabase.functions.invoke('create-payment', {
         body: {
-          amount: amount,
-          currency: currency,
+          amount: Math.round(amount * 100), // Convert to cents
+          currency: currency.toLowerCase(),
           itemName: itemName,
-          returnUrl: returnUrl
         }
       });
 
       if (error) {
-        console.error('SumUp checkout error:', error);
-        onError(error.message || 'Failed to create checkout');
+        console.error('Stripe payment error:', error);
+        onError(error.message || 'Failed to create payment session');
         return;
       }
 
-      if (data?.checkout_url) {
-        // Redirect to SumUp checkout instead of opening in new tab
-        window.location.href = data.checkout_url;
+      if (data?.url) {
+        // Redirect to Stripe checkout
+        window.location.href = data.url;
       } else {
-        onError('Failed to create SumUp checkout');
+        onError('Failed to create Stripe payment session');
       }
     } catch (error) {
       console.error('Payment error:', error);
@@ -71,7 +68,7 @@ const SumUpCheckout = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CreditCard className="h-5 w-5" />
-          SumUp Payment
+          Stripe Payment
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -90,7 +87,7 @@ const SumUpCheckout = ({
             disabled={loading}
           >
             <CreditCard className="h-5 w-5 mr-2" />
-            {loading ? 'Processing...' : 'Pay with SumUp'}
+            {loading ? 'Processing...' : 'Pay with Stripe'}
           </Button>
 
           <Button
@@ -104,11 +101,11 @@ const SumUpCheckout = ({
         </div>
 
         <div className="text-center text-xs text-gray-500 mt-4">
-          Secure payments powered by SumUp
+          Secure payments powered by Stripe
         </div>
       </CardContent>
     </Card>
   );
 };
 
-export default SumUpCheckout;
+export default StripeCheckout;

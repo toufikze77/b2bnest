@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CreditCard, Wallet } from 'lucide-react';
-import SumUpCheckout from './SumUpCheckout';
+import StripeCheckout from './StripeCheckout';
 import SolanaPayCheckout from './SolanaPayCheckout';
 
 interface PaymentMethodSelectorProps {
@@ -15,7 +15,7 @@ interface PaymentMethodSelectorProps {
   onPaymentError: (error: string) => void;
 }
 
-type PaymentMethod = 'sumup' | 'solana' | null;
+type PaymentMethod = 'stripe' | 'solana' | null;
 
 const PaymentMethodSelector = ({
   amount,
@@ -28,9 +28,9 @@ const PaymentMethodSelector = ({
 
   const resetSelection = () => setSelectedMethod(null);
 
-  if (selectedMethod === 'sumup') {
+  if (selectedMethod === 'stripe') {
     return (
-      <SumUpCheckout
+      <StripeCheckout
         amount={amount}
         currency={currency}
         itemName={itemName}
@@ -71,12 +71,12 @@ const PaymentMethodSelector = ({
 
         <div className="space-y-3">
           <Button
-            onClick={() => setSelectedMethod('sumup')}
+            onClick={() => setSelectedMethod('stripe')}
             className="w-full h-12 bg-blue-600 hover:bg-blue-700"
             size="lg"
           >
             <CreditCard className="h-5 w-5 mr-2" />
-            Pay with SumUp
+            Pay with Stripe
             <Badge variant="secondary" className="ml-2 text-xs">
               Cards & Bank Transfer
             </Badge>
@@ -96,7 +96,7 @@ const PaymentMethodSelector = ({
         </div>
 
         <div className="text-center text-xs text-gray-500 mt-4">
-          Secure payments powered by SumUp and Solana blockchain
+          Secure payments powered by Stripe and Solana blockchain
         </div>
       </CardContent>
     </Card>

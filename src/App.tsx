@@ -37,7 +37,7 @@ import BusinessDirectory from "@/pages/BusinessDirectory";
 import SupplierDirectory from "@/pages/SupplierDirectory";
 import CompanyDirectory from "@/pages/CompanyDirectory";
 import ServiceDirectory from "@/pages/ServiceDirectory";
-import SumUpPayment from "@/pages/SumUpPayment";
+import PaymentSuccess from "@/pages/PaymentSuccess";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -84,7 +84,7 @@ function App() {
               <Route path="/directory/suppliers" element={<SupplierDirectory />} />
               <Route path="/directory/companies" element={<CompanyDirectory />} />
               <Route path="/directory/services" element={<ServiceDirectory />} />
-              <Route path="/sumup-payment" element={<SumUpPayment />} />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
               
               <Route path="*" element={<NotFound />} />
             </Routes>
