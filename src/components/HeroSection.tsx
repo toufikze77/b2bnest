@@ -10,9 +10,9 @@ const HeroSection = ({ onSearch }: HeroSectionProps) => {
   return (
     <section className="py-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto text-center">
-        <h2 className="text-5xl font-bold text-gray-900 mb-6">
+        <h1 className="text-5xl font-bold text-gray-900 mb-6">
           AI-Powered Business <span className="text-blue-600">Automation Platform</span>
-        </h2>
+        </h1>
         <p className="text-xl text-gray-600 mb-6 max-w-3xl mx-auto">
           Early-stage AI startup transforming business operations with intelligent document generation and automated workflows. 
           Serving 8,200+ businesses with proven traction and clear path to profitability.
