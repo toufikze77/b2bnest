@@ -373,5 +373,42 @@ export const sampleTemplates: Template[] = [
     
     softwareRequired: ['PDF Reader'],
     instructions: 'Contact the professional directly through the provided details. Service includes consultation, development, and 3 months support. Subject to terms and conditions for yearly subscribers.'
+  },
+  {
+    id: '11',
+    title: 'Merchants Cryptocurrency Integration Service',
+    description: 'Complete cryptocurrency payment integration service for merchants. Accept hundreds of currencies with seamless USDC conversion, guaranteed settlement with no volatility, and instant confirmation on low-cost networks like Base & Polygon.',
+    category: templateCategories[7],
+    subcategory: 'Payment Integration',
+    tags: ['Cryptocurrency', 'Payment Processing', 'USDC', 'Commerce', 'Blockchain', 'Coinbase'],
+    
+    fileType: 'PDF',
+    fileSize: '1.2 MB',
+    fileName: 'crypto-integration-service-package.pdf',
+    fileUrl: '/templates/professional-services/crypto-integration-package.pdf',
+    previewUrl: '/previews/professional-services/crypto-integration-preview.pdf',
+    thumbnailUrl: '/thumbnails/professional-services/crypto-integration-thumb.jpg',
+    
+    license: templateLicenses[2],
+    price: 1999.99,
+    currency: 'GBP',
+    isRoyaltyFree: false,
+    canResell: false,
+    commercialUse: true,
+    
+    author: 'CryptoCommerce Solutions (Verified Professional)',
+    version: '1.0',
+    lastUpdated: '2024-02-28',
+    downloads: 23,
+    rating: 5.0,
+    reviewCount: 5,
+    
+    featured: true,
+    trending: true,
+    isNew: true,
+    difficulty: 'Intermediate',
+    
+    softwareRequired: ['PDF Reader'],
+    instructions: 'Professional cryptocurrency payment integration service includes: Accept hundreds of currencies with seamless USDC conversion, guaranteed settlement with no volatility, deposit funds in any wallet or exchange, access to Coinbase balances for customer payments, and instant confirmation on Base & Polygon networks. Contact for consultation and implementation.'
   }
 ];

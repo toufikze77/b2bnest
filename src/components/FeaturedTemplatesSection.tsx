@@ -7,9 +7,10 @@ interface FeaturedTemplatesSectionProps {
 }
 
 const FeaturedTemplatesSection = ({ templates }: FeaturedTemplatesSectionProps) => {
-  // Filter to only show Professional Web Development Services - Premium Package
+  // Filter to only show specific featured services
   const filteredTemplates = templates.filter(template => 
-    template.title === 'Professional Web Development Services - Premium Package'
+    template.title === 'Professional Web Development Services - Premium Package' ||
+    template.title === 'Merchants Cryptocurrency Integration Service'
   );
 
   return (
