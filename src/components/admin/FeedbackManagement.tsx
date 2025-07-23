@@ -52,7 +52,7 @@ const FeedbackManagement = () => {
         .from('feedback_requests')
         .select(`
           *,
-          profiles (
+          profiles!feedback_requests_user_id_fkey (
             full_name,
             email
           )
@@ -60,7 +60,16 @@ const FeedbackManagement = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setRequests(data || []);
+      
+      // Handle the case where profiles might be null or error
+      const processedData = data?.map(item => ({
+        ...item,
+        profiles: item.profiles && typeof item.profiles === 'object' && !Array.isArray(item.profiles) 
+          ? item.profiles 
+          : null
+      })) || [];
+      
+      setRequests(processedData);
     } catch (error) {
       console.error('Error fetching feedback requests:', error);
       toast({
