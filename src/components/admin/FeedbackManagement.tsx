@@ -47,25 +47,36 @@ const FeedbackManagement = () => {
   const fetchRequests = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // First get feedback requests
+      const { data: requestsData, error: requestsError } = await supabase
         .from('feedback_requests')
-        .select(`
-          *,
-          user_id
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (requestsError) throw requestsError;
 
-      // Process the data with proper typing
-      const processedData = data?.map(item => ({
-        ...item,
-        type: item.type as 'feedback' | 'feature_request',
-        priority: item.priority as 'low' | 'medium' | 'high',
-        status: item.status as 'open' | 'in_progress' | 'completed' | 'closed',
-        user_name: 'Unknown User',
-        user_email: 'unknown@example.com'
-      })) || [];
+      // Get profiles for the users who submitted requests
+      const userIds = requestsData?.map(req => req.user_id) || [];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Combine the data
+      const processedData = requestsData?.map(item => {
+        const profile = profilesData?.find(p => p.id === item.user_id);
+        return {
+          ...item,
+          type: item.type as 'feedback' | 'feature_request',
+          priority: item.priority as 'low' | 'medium' | 'high',
+          status: item.status as 'open' | 'in_progress' | 'completed' | 'closed',
+          user_name: profile?.full_name || 'Unknown User',
+          user_email: profile?.email || 'Unknown Email'
+        };
+      }) || [];
 
       setRequests(processedData as FeedbackRequest[]);
     } catch (error) {
