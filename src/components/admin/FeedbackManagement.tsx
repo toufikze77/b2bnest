@@ -23,10 +23,8 @@ interface FeedbackRequest {
   admin_response: string | null;
   created_at: string;
   updated_at: string;
-  profiles: {
-    full_name: string;
-    email: string;
-  };
+  user_email?: string;
+  user_name?: string;
 }
 
 const FeedbackManagement = () => {
@@ -53,22 +51,20 @@ const FeedbackManagement = () => {
         .from('feedback_requests')
         .select(`
           *,
-          profiles (
-            full_name,
-            email
-          )
+          user_id
         `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Handle the case where profiles might be null and ensure proper typing
+      // Process the data with proper typing
       const processedData = data?.map(item => ({
         ...item,
         type: item.type as 'feedback' | 'feature_request',
         priority: item.priority as 'low' | 'medium' | 'high',
         status: item.status as 'open' | 'in_progress' | 'completed' | 'closed',
-        profiles: item.profiles || { full_name: 'Unknown User', email: 'unknown@example.com' }
+        user_name: 'Unknown User',
+        user_email: 'unknown@example.com'
       })) || [];
 
       setRequests(processedData as FeedbackRequest[]);
@@ -119,7 +115,7 @@ const FeedbackManagement = () => {
     const matchesSearch = search === '' || 
       request.title.toLowerCase().includes(search.toLowerCase()) ||
       request.description.toLowerCase().includes(search.toLowerCase()) ||
-      request.profiles.full_name.toLowerCase().includes(search.toLowerCase());
+      (request.user_name || '').toLowerCase().includes(search.toLowerCase());
 
     return matchesType && matchesStatus && matchesPriority && matchesSearch;
   });
@@ -241,8 +237,8 @@ const FeedbackManagement = () => {
                     <TableCell className="font-medium">{request.title}</TableCell>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{request.profiles.full_name}</div>
-                        <div className="text-sm text-muted-foreground">{request.profiles.email}</div>
+                        <div className="font-medium">{request.user_name || 'Unknown User'}</div>
+                        <div className="text-sm text-muted-foreground">{request.user_email || 'Unknown Email'}</div>
                       </div>
                     </TableCell>
                     <TableCell>{request.category}</TableCell>
