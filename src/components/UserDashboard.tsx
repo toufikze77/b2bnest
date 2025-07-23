@@ -7,15 +7,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { userDocumentService } from '@/services/userDocumentService';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/utils/currencyUtils';
 import AccountSettings from '@/components/AccountSettings';
 import ServiceImageUpload from '@/components/ServiceImageUpload';
+import FeedbackManagement from '@/components/admin/FeedbackManagement';
 
 const UserDashboard = () => {
   const { user } = useAuth();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const [purchases, setPurchases] = useState([]);
   const [favorites, setFavorites] = useState([]);
@@ -383,11 +386,12 @@ const UserDashboard = () => {
 
         {/* Tabs for different sections */}
         <Tabs defaultValue="purchases" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-5' : 'grid-cols-4'}`}>
             <TabsTrigger value="purchases">My Purchases</TabsTrigger>
             <TabsTrigger value="favorites">My Favorites</TabsTrigger>
             <TabsTrigger value="services">Create Service</TabsTrigger>
             <TabsTrigger value="settings">Account Settings</TabsTrigger>
+            {isAdmin && <TabsTrigger value="admin">Admin</TabsTrigger>}
           </TabsList>
           
           <TabsContent value="purchases" className="space-y-4">
@@ -523,6 +527,12 @@ const UserDashboard = () => {
           <TabsContent value="settings" className="space-y-4">
             <AccountSettings />
           </TabsContent>
+
+          {isAdmin && (
+            <TabsContent value="admin" className="space-y-4">
+              <FeedbackManagement />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>
