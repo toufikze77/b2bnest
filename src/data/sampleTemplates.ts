@@ -390,7 +390,7 @@ export const sampleTemplates: Template[] = [
     thumbnailUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     
     license: templateLicenses[2],
-    price: 1999.99,
+    price: 199,
     currency: 'GBP',
     isRoyaltyFree: false,
     canResell: false,
@@ -427,7 +427,7 @@ export const sampleTemplates: Template[] = [
     thumbnailUrl: 'https://images.unsplash.com/photo-1483058712412-4245e9b90334?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     
     license: templateLicenses[2],
-    price: 1499.99,
+    price: 199,
     currency: 'GBP',
     isRoyaltyFree: false,
     canResell: false,
@@ -464,7 +464,7 @@ export const sampleTemplates: Template[] = [
     thumbnailUrl: 'https://images.unsplash.com/photo-1483058712412-4245e9b90334?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     
     license: templateLicenses[2],
-    price: 899.99,
+    price: 199,
     currency: 'GBP',
     isRoyaltyFree: false,
     canResell: false,
