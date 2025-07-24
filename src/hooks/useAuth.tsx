@@ -2,6 +2,7 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { validateEmail, validatePassword, validate2FACode, sanitizeInput, validateName, authRateLimiter } from '@/utils/inputValidation';
 
 interface AuthContextType {
   user: User | null;
@@ -48,6 +49,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signUp = async (email: string, password: string, fullName: string, companyName?: string) => {
     try {
+      // Input validation
+      if (!validateEmail(email)) {
+        return { error: { message: 'Invalid email format' } };
+      }
+      
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.isValid) {
+        return { error: { message: passwordValidation.message } };
+      }
+      
+      if (!validateName(fullName)) {
+        return { error: { message: 'Invalid name format' } };
+      }
+      
+      // Sanitize inputs
+      email = sanitizeInput(email);
+      fullName = sanitizeInput(fullName);
+      if (companyName) companyName = sanitizeInput(companyName);
+      
+      // Rate limiting
+      if (!authRateLimiter.canAttempt(`signup:${email}`, 3, 300000)) {
+        const remainingTime = Math.ceil(authRateLimiter.getRemainingTime(`signup:${email}`) / 60000);
+        return { error: { message: `Too many signup attempts. Please wait ${remainingTime} minutes.` } };
+      }
+      
       // First create the user account (this won't sign them in immediately)
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -77,6 +103,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
+      // Input validation
+      if (!validateEmail(email)) {
+        return { error: { message: 'Invalid email format' } };
+      }
+      
+      if (!password || password.length < 1) {
+        return { error: { message: 'Password is required' } };
+      }
+      
+      // Sanitize inputs
+      email = sanitizeInput(email);
+      
+      // Rate limiting
+      if (!authRateLimiter.canAttempt(`signin:${email}`, 5, 300000)) {
+        const remainingTime = Math.ceil(authRateLimiter.getRemainingTime(`signin:${email}`) / 60000);
+        return { error: { message: `Too many login attempts. Please wait ${remainingTime} minutes.` } };
+      }
+      
       console.log('🔐 Starting sign-in process for:', email);
       
       // Simple authentication without 2FA
@@ -102,9 +146,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const sendVerificationCode = async (email: string, type: 'verification' | 'login') => {
     try {
+      // Input validation
+      if (!validateEmail(email)) {
+        return { error: { message: 'Invalid email format' } };
+      }
+      
+      email = sanitizeInput(email);
+      
+      // Rate limiting
+      if (!authRateLimiter.canAttempt(`2fa:${email}`, 3, 300000)) {
+        const remainingTime = Math.ceil(authRateLimiter.getRemainingTime(`2fa:${email}`) / 60000);
+        return { error: { message: `Too many 2FA requests. Please wait ${remainingTime} minutes.` } };
+      }
+      
       console.log('📧 Sending verification code:', { email, type });
       const code = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes (reduced from 10)
       const codeType = type === 'verification' ? 'email_verification' : 'login_2fa';
 
       // For login 2FA, try to get user ID by email from profiles table
@@ -147,7 +204,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       console.log('📧 Email sent successfully');
-      return { error: null, code }; // Return code for demo purposes only
+      return { error: null }; // Removed code exposure for security
     } catch (error) {
       console.log('❌ Error in sendVerificationCode:', error);
       return { error };
@@ -156,6 +213,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const verify2FA = async (email: string, code: string, isLogin: boolean) => {
     try {
+      // Input validation
+      if (!validateEmail(email)) {
+        return { error: { message: 'Invalid email format' } };
+      }
+      
+      if (!validate2FACode(code)) {
+        return { error: { message: 'Invalid verification code format' } };
+      }
+      
+      email = sanitizeInput(email);
+      code = sanitizeInput(code);
+      
       const codeType = isLogin ? 'login_2fa' : 'email_verification';
       
       // Verify the code

@@ -1452,6 +1452,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_2fa_attempts: {
+        Row: {
+          attempt_count: number | null
+          blocked_until: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          last_attempt_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attempt_count?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attempt_count?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_2fa_codes: {
         Row: {
           code: string
@@ -1638,6 +1668,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_2fa_rate_limit: {
+        Args: { p_email: string }
+        Returns: boolean
+      }
       cleanup_expired_2fa_codes: {
         Args: Record<PropertyKey, never>
         Returns: undefined

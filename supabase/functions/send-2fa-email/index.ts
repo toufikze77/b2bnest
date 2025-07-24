@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.2';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -25,6 +26,33 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { email, code, type, name }: Email2FARequest = await req.json();
 
+    // Initialize Supabase client for rate limiting
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Check rate limiting
+    const { data: canSend, error: rateLimitError } = await supabase
+      .rpc('check_2fa_rate_limit', { p_email: email });
+
+    if (rateLimitError) {
+      console.error('Rate limit check error:', rateLimitError);
+      return new Response(
+        JSON.stringify({ error: 'Rate limit check failed' }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    if (!canSend) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Too many 2FA requests. Please wait before requesting another code.',
+          retryAfter: 15 * 60 // 15 minutes in seconds
+        }),
+        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const subject = type === 'verification' 
       ? 'Verify your email address' 
       : 'Your login verification code';
@@ -38,7 +66,7 @@ const handler = async (req: Request): Promise<Response> => {
           <div style="background-color: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0;">
             <h2 style="color: #2563eb; font-size: 32px; letter-spacing: 4px; margin: 0;">${code}</h2>
           </div>
-          <p>This code will expire in 10 minutes.</p>
+          <p>This code will expire in 5 minutes.</p>
           <p>If you didn't create an account with us, please ignore this email.</p>
           <p>Best regards,<br>The BusinessForms Pro Team</p>
         </div>
@@ -51,13 +79,14 @@ const handler = async (req: Request): Promise<Response> => {
           <div style="background-color: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0;">
             <h2 style="color: #2563eb; font-size: 32px; letter-spacing: 4px; margin: 0;">${code}</h2>
           </div>
-          <p>This code will expire in 10 minutes.</p>
+          <p>This code will expire in 5 minutes.</p>
           <p>If you didn't try to log in, please ignore this email and consider changing your password.</p>
           <p>Best regards,<br>The BusinessForms Pro Team</p>
         </div>
       `;
 
-    console.log(`Sending 2FA email to: ${email}`);
+    // Log securely without exposing sensitive data
+    console.log(`Sending 2FA email to: ${email.substring(0, 3)}***@${email.split('@')[1]}`);
     console.log(`Type: ${type}`);
 
     const emailResponse = await resend.emails.send({
@@ -67,12 +96,11 @@ const handler = async (req: Request): Promise<Response> => {
       html: emailContent,
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    console.log("Email sent successfully");
 
     return new Response(JSON.stringify({
       success: true,
-      message: `Email sent to ${email}`,
-      emailId: emailResponse.data?.id
+      message: `2FA code sent successfully`
     }), {
       status: 200,
       headers: {
