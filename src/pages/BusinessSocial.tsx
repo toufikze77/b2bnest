@@ -438,17 +438,38 @@ const BusinessSocial = () => {
     if (!user) return;
     
     try {
+      // First, let's fetch without the join to see if we get any data
       const { data, error } = await supabase
         .from('connections')
-        .select(`
-          *,
-          requester:profiles!connections_requester_id_fkey(*)
-        `)
+        .select('*')
         .eq('addressee_id', user.id)
         .eq('status', 'pending');
 
       if (error) throw error;
-      setConnectionRequests(data || []);
+      
+      console.log('Connection requests fetched:', data);
+      
+      // If we have requests, fetch the profile data separately
+      if (data && data.length > 0) {
+        const requesterIds = data.map(req => req.requester_id);
+        const { data: profiles, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', requesterIds);
+          
+        if (!profileError) {
+          // Combine the data
+          const requestsWithProfiles = data.map(request => ({
+            ...request,
+            requester: profiles?.find(p => p.id === request.requester_id)
+          }));
+          setConnectionRequests(requestsWithProfiles);
+        } else {
+          setConnectionRequests(data);
+        }
+      } else {
+        setConnectionRequests([]);
+      }
     } catch (error) {
       console.error('Error fetching connection requests:', error);
     }
