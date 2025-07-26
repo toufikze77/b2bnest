@@ -1452,6 +1452,147 @@ export type Database = {
         }
         Relationships: []
       }
+      todo_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          todo_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          todo_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          todo_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "todo_comments_todo_id_fkey"
+            columns: ["todo_id"]
+            isOneToOne: false
+            referencedRelation: "todos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      todo_history: {
+        Row: {
+          created_at: string
+          field_name: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          todo_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          field_name: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          todo_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          field_name?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          todo_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "todo_history_todo_id_fkey"
+            columns: ["todo_id"]
+            isOneToOne: false
+            referencedRelation: "todos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      todos: {
+        Row: {
+          actual_hours: number | null
+          assigned_to: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          estimated_hours: number | null
+          id: string
+          labels: string[] | null
+          parent_id: string | null
+          priority: string
+          reporter_id: string | null
+          start_date: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actual_hours?: number | null
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          labels?: string[] | null
+          parent_id?: string | null
+          priority?: string
+          reporter_id?: string | null
+          start_date?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actual_hours?: number | null
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          labels?: string[] | null
+          parent_id?: string | null
+          priority?: string
+          reporter_id?: string | null
+          start_date?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "todos_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "todos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_2fa_attempts: {
         Row: {
           attempt_count: number | null
