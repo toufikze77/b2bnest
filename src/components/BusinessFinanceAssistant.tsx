@@ -459,6 +459,13 @@ const BusinessFinanceAssistant = () => {
     setIsDocumentViewOpen(true);
   };
 
+  // Handle document edit
+  const handleEditDocument = (doc: Quote | Invoice) => {
+    setEditingDocument(doc);
+    setDocumentType('quote_number' in doc ? 'quote' : 'invoice');
+    setActiveTab('create');
+  };
+
   const handleSendDocument = async (doc: Quote | Invoice, type: 'quote' | 'invoice') => {
     setSendingDocument(doc.id);
     try {
@@ -474,12 +481,6 @@ const BusinessFinanceAssistant = () => {
     } finally {
       setSendingDocument(null);
     }
-  };
-
-  const handleEditDocument = (doc: Quote | Invoice) => {
-    setEditingDocument(doc);
-    setDocumentType('quote_number' in doc ? 'quote' : 'invoice');
-    setActiveTab('create');
   };
 
   const handleDocumentSaved = () => {
@@ -892,11 +893,28 @@ const BusinessFinanceAssistant = () => {
         </TabsContent>
 
         <TabsContent value="create">
+          {!editingDocument && (
+            <div className="flex gap-4 mb-6">
+              <Button
+                variant={documentType === 'quote' ? 'default' : 'outline'}
+                onClick={() => setDocumentType('quote')}
+              >
+                Create Quote
+              </Button>
+              <Button
+                variant={documentType === 'invoice' ? 'default' : 'outline'}
+                onClick={() => setDocumentType('invoice')}
+              >
+                Create Invoice
+              </Button>
+            </div>
+          )}
+          
           <QuoteInvoiceCreationSection 
-            userCurrency={userCurrency}
-            onDocumentCreated={handleDocumentSaved}
-            products={products}
+            documentType={documentType}
+            onDocumentSaved={handleDocumentSaved}
             editingDocument={editingDocument}
+            onEditComplete={() => setEditingDocument(null)}
             onCancelEdit={() => setEditingDocument(null)}
           />
         </TabsContent>
@@ -920,18 +938,21 @@ const BusinessFinanceAssistant = () => {
                           {quote.client_name} • {formatCurrency(Number(quote.total_amount))} • {new Date(quote.created_at).toLocaleDateString()}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">{quote.status}</Badge>
-                        <Button size="sm" variant="outline" onClick={() => handleViewDocument(quote)}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleDownloadDocument(quote)}>
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" onClick={() => handleSendDocument(quote, 'quote')}>
-                          <Send className="h-4 w-4" />
-                        </Button>
-                      </div>
+                       <div className="flex items-center gap-2">
+                         <Badge variant="outline">{quote.status}</Badge>
+                         <Button size="sm" variant="outline" onClick={() => handleEditDocument(quote)}>
+                           <Edit className="h-4 w-4" />
+                         </Button>
+                         <Button size="sm" variant="outline" onClick={() => handleViewDocument(quote)}>
+                           <Eye className="h-4 w-4" />
+                         </Button>
+                         <Button size="sm" variant="outline" onClick={() => handleDownloadDocument(quote)}>
+                           <Download className="h-4 w-4" />
+                         </Button>
+                         <Button size="sm" onClick={() => handleSendDocument(quote, 'quote')}>
+                           <Send className="h-4 w-4" />
+                         </Button>
+                       </div>
                     </div>
                   ))
                 )}
@@ -959,18 +980,21 @@ const BusinessFinanceAssistant = () => {
                           {invoice.client_name} • {formatCurrency(Number(invoice.total_amount))} • {new Date(invoice.created_at).toLocaleDateString()}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">{invoice.status}</Badge>
-                        <Button size="sm" variant="outline" onClick={() => handleViewDocument(invoice)}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleDownloadDocument(invoice)}>
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" onClick={() => handleSendDocument(invoice, 'invoice')}>
-                          <Send className="h-4 w-4" />
-                        </Button>
-                      </div>
+                       <div className="flex items-center gap-2">
+                         <Badge variant="outline">{invoice.status}</Badge>
+                         <Button size="sm" variant="outline" onClick={() => handleEditDocument(invoice)}>
+                           <Edit className="h-4 w-4" />
+                         </Button>
+                         <Button size="sm" variant="outline" onClick={() => handleViewDocument(invoice)}>
+                           <Eye className="h-4 w-4" />
+                         </Button>
+                         <Button size="sm" variant="outline" onClick={() => handleDownloadDocument(invoice)}>
+                           <Download className="h-4 w-4" />
+                         </Button>
+                         <Button size="sm" onClick={() => handleSendDocument(invoice, 'invoice')}>
+                           <Send className="h-4 w-4" />
+                         </Button>
+                       </div>
                     </div>
                   ))
                 )}
