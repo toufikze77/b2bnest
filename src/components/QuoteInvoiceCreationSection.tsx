@@ -27,6 +27,7 @@ const QuoteInvoiceCreationSection = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'quote' | 'invoice'>('quote');
   const [viewMode, setViewMode] = useState<'create' | 'list'>('create');
+  const [editingDocument, setEditingDocument] = useState<any>(null);
   const [quotes, setQuotes] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);

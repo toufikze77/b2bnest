@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
 import { 
   TrendingUp, 
   Users, 
@@ -59,6 +59,26 @@ const AnalyticsTab = ({ totalRevenue }: AnalyticsTabProps) => {
       winRate: 31
     }
   };
+
+  // Bar chart data for monthly performance
+  const monthlyData = [
+    { name: 'Jan', deals: 12, revenue: 45000 },
+    { name: 'Feb', deals: 19, revenue: 52000 },
+    { name: 'Mar', deals: 15, revenue: 48000 },
+    { name: 'Apr', deals: 28, revenue: 65000 },
+    { name: 'May', deals: 22, revenue: 58000 },
+    { name: 'Jun', deals: 25, revenue: 72000 },
+  ];
+
+  // Line chart data for conversion trends
+  const conversionTrends = [
+    { month: 'Jan', leads: 120, conversions: 28 },
+    { month: 'Feb', leads: 135, conversions: 32 },
+    { month: 'Mar', leads: 148, conversions: 35 },
+    { month: 'Apr', leads: 162, conversions: 42 },
+    { month: 'May', leads: 171, conversions: 45 },
+    { month: 'Jun', leads: 185, conversions: 48 },
+  ];
 
   return (
     <div className="space-y-6">
@@ -228,7 +248,7 @@ const AnalyticsTab = ({ totalRevenue }: AnalyticsTabProps) => {
         </Card>
       </div>
 
-      {/* Lead Sources & Activity Timeline */}
+      {/* Lead Sources & Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
@@ -287,6 +307,74 @@ const AnalyticsTab = ({ totalRevenue }: AnalyticsTabProps) => {
                 <span>Customer Acquisition Cost</span>
                 <span className="font-semibold">$1,840</span>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Monthly Performance & Conversion Trends */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" />
+              Monthly Performance
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip 
+                    formatter={(value, name) => [
+                      name === 'deals' ? value : `$${Number(value).toLocaleString()}`,
+                      name === 'deals' ? 'Deals Closed' : 'Revenue'
+                    ]}
+                  />
+                  <Legend />
+                  <Bar dataKey="deals" fill="#3B82F6" name="deals" />
+                  <Bar dataKey="revenue" fill="#10B981" name="revenue" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5" />
+              Conversion Trends
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={conversionTrends}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line 
+                    type="monotone" 
+                    dataKey="leads" 
+                    stroke="#F59E0B" 
+                    strokeWidth={2}
+                    name="Total Leads"
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="conversions" 
+                    stroke="#EF4444" 
+                    strokeWidth={2}
+                    name="Conversions"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>

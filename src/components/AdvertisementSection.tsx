@@ -169,11 +169,18 @@ export const AdvertisementSection = () => {
         {user && (
           <div className="flex gap-4">
             {!userSubscription?.is_yearly ? (
-              <Card className="p-4">
-                <p className="text-sm text-muted-foreground mb-2">Want to advertise here?</p>
-                <Button variant="outline" size="sm">
-                  Upgrade to Yearly Plan
-                </Button>
+              <Card className="relative overflow-hidden border-2 border-gradient-to-r from-primary to-secondary bg-gradient-to-br from-primary/5 to-secondary/5 p-6 shadow-lg hover:shadow-xl transition-all duration-300">
+                <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-primary to-secondary opacity-10 rounded-full transform translate-x-6 -translate-y-6"></div>
+                <div className="relative">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                    <p className="text-lg font-semibold text-foreground">Want to advertise here?</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">Join our Premium Marketplace and showcase your business to thousands of potential customers!</p>
+                  <Button className="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-medium shadow-md">
+                    ✨ Upgrade to Yearly Plan
+                  </Button>
+                </div>
               </Card>
             ) : userAd ? (
               <Card className="p-4">
