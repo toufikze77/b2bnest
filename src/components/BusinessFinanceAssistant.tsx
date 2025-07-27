@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import QuoteInvoiceCreationSection from '@/components/QuoteInvoiceCreationSection';
+import DocumentList from '@/components/DocumentList';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { Tables } from '@/integrations/supabase/types';
 
@@ -44,6 +45,9 @@ const BusinessFinanceAssistant = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'quotes' | 'invoices' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'banking' | 'reports' | 'analytics'>('dashboard');
   const [documentType, setDocumentType] = useState<'invoice' | 'quote'>('quote');
+  const [editingDocument, setEditingDocument] = useState<Quote | Invoice | null>(null);
+  const [showDocumentList, setShowDocumentList] = useState(false);
+  const [sendingDocument, setSendingDocument] = useState<string | null>(null);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -455,10 +459,33 @@ const BusinessFinanceAssistant = () => {
     setIsDocumentViewOpen(true);
   };
 
-  const handleSendDocument = (doc: Quote | Invoice) => {
-    const docType = 'quote_number' in doc ? 'quote' : 'invoice';
-    const number = 'quote_number' in doc ? doc.quote_number : doc.invoice_number;
-    toast.success(`${docType.charAt(0).toUpperCase() + docType.slice(1)} ${number} sent successfully`);
+  const handleSendDocument = async (doc: Quote | Invoice, type: 'quote' | 'invoice') => {
+    setSendingDocument(doc.id);
+    try {
+      const docType = 'quote_number' in doc ? 'quote' : 'invoice';
+      const number = 'quote_number' in doc ? doc.quote_number : doc.invoice_number;
+      
+      // Simulate sending delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      toast.success(`${docType.charAt(0).toUpperCase() + docType.slice(1)} ${number} sent successfully`);
+    } catch (error) {
+      toast.error('Failed to send document');
+    } finally {
+      setSendingDocument(null);
+    }
+  };
+
+  const handleEditDocument = (doc: Quote | Invoice) => {
+    setEditingDocument(doc);
+    setDocumentType('quote_number' in doc ? 'quote' : 'invoice');
+    setActiveTab('create');
+  };
+
+  const handleDocumentSaved = () => {
+    setEditingDocument(null);
+    fetchData();
+    toast.success('Document saved successfully');
   };
 
   const handleDownloadDocument = async (doc: Quote | Invoice) => {
@@ -865,15 +892,13 @@ const BusinessFinanceAssistant = () => {
         </TabsContent>
 
         <TabsContent value="create">
-          <Card>
-            <CardHeader>
-              <CardTitle>Create New Document</CardTitle>
-              <CardDescription>Generate quotes and invoices for your clients</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <QuoteInvoiceCreationSection />
-            </CardContent>
-          </Card>
+          <QuoteInvoiceCreationSection 
+            userCurrency={userCurrency}
+            onDocumentCreated={handleDocumentSaved}
+            products={products}
+            editingDocument={editingDocument}
+            onCancelEdit={() => setEditingDocument(null)}
+          />
         </TabsContent>
 
         <TabsContent value="quotes" className="space-y-6">
@@ -903,7 +928,7 @@ const BusinessFinanceAssistant = () => {
                         <Button size="sm" variant="outline" onClick={() => handleDownloadDocument(quote)}>
                           <Download className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" onClick={() => handleSendDocument(quote)}>
+                        <Button size="sm" onClick={() => handleSendDocument(quote, 'quote')}>
                           <Send className="h-4 w-4" />
                         </Button>
                       </div>
@@ -942,7 +967,7 @@ const BusinessFinanceAssistant = () => {
                         <Button size="sm" variant="outline" onClick={() => handleDownloadDocument(invoice)}>
                           <Download className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" onClick={() => handleSendDocument(invoice)}>
+                        <Button size="sm" onClick={() => handleSendDocument(invoice, 'invoice')}>
                           <Send className="h-4 w-4" />
                         </Button>
                       </div>
@@ -1806,7 +1831,7 @@ const BusinessFinanceAssistant = () => {
                   <Download className="h-4 w-4 mr-2" />
                   Download PDF
                 </Button>
-                <Button onClick={() => handleSendDocument(selectedDocument)}>
+                <Button onClick={() => handleSendDocument(selectedDocument, 'quote_number' in selectedDocument ? 'quote' : 'invoice')}>
                   <Send className="h-4 w-4 mr-2" />
                   Send
                 </Button>

@@ -23,11 +23,25 @@ interface QuoteInvoiceItem {
   amount: number;
 }
 
-const QuoteInvoiceCreationSection = () => {
+interface QuoteInvoiceCreationSectionProps {
+  userCurrency?: string;
+  onDocumentCreated?: () => void;
+  products?: any[];
+  editingDocument?: any;
+  onCancelEdit?: () => void;
+}
+
+const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = ({
+  userCurrency = 'USD',
+  onDocumentCreated,
+  products = [],
+  editingDocument: externalEditingDocument,
+  onCancelEdit
+}) => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'quote' | 'invoice'>('quote');
   const [viewMode, setViewMode] = useState<'create' | 'list'>('create');
-  const [editingDocument, setEditingDocument] = useState<any>(null);
+  const [editingDocument, setEditingDocument] = useState<any>(externalEditingDocument);
   const [isDraft, setIsDraft] = useState(true);
   const [quotes, setQuotes] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
@@ -213,6 +227,13 @@ const QuoteInvoiceCreationSection = () => {
       loadDocuments();
     }
   }, [user, viewMode]);
+
+  // Handle external editing document
+  React.useEffect(() => {
+    if (externalEditingDocument) {
+      handleEditDocument(externalEditingDocument);
+    }
+  }, [externalEditingDocument]);
 
   const calculateSubtotal = () => {
     return items.reduce((total, item) => total + item.amount, 0);
@@ -598,6 +619,11 @@ const QuoteInvoiceCreationSection = () => {
       setLogoUrl(null);
       setIsDraft(true);
 
+      // Call the callback to notify parent component
+      if (onDocumentCreated) {
+        onDocumentCreated();
+      }
+      
       // Always reload documents after creation/update
       await loadDocuments();
       
@@ -1063,6 +1089,7 @@ const QuoteInvoiceCreationSection = () => {
                     variant="outline" 
                     onClick={() => {
                       setEditingDocument(null);
+                      if (onCancelEdit) onCancelEdit();
                       setViewMode('list');
                     }}
                     className="flex-1"
