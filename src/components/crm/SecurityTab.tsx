@@ -5,9 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import UserRoleManagement from './UserRoleManagement';
 import { 
   Shield,
   Activity,
@@ -33,6 +35,7 @@ const SecurityTab = () => {
   });
   const [loading, setLoading] = useState(false);
   const [auditLogs, setAuditLogs] = useState([]);
+  const [showUserRoleManagement, setShowUserRoleManagement] = useState(false);
 
   useEffect(() => {
     fetchSecuritySettings();
@@ -123,10 +126,7 @@ const SecurityTab = () => {
   };
 
   const manageUserRoles = () => {
-    toast({
-      title: "User Role Management",
-      description: "Opening user role management interface...",
-    });
+    setShowUserRoleManagement(true);
   };
 
   const configureSSO = (provider: string) => {
@@ -199,10 +199,20 @@ const SecurityTab = () => {
                 <p className="text-sm text-gray-600">View own contacts & deals only</p>
               </div>
             </div>
-            <Button className="w-full" onClick={manageUserRoles} disabled={loading}>
-              <UserCheck className="w-4 h-4 mr-2" />
-              Manage User Roles
-            </Button>
+            <Dialog open={showUserRoleManagement} onOpenChange={setShowUserRoleManagement}>
+              <DialogTrigger asChild>
+                <Button className="w-full" onClick={manageUserRoles} disabled={loading}>
+                  <UserCheck className="w-4 h-4 mr-2" />
+                  Manage User Roles
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>User Role Management</DialogTitle>
+                </DialogHeader>
+                <UserRoleManagement />
+              </DialogContent>
+            </Dialog>
           </CardContent>
         </Card>
 
