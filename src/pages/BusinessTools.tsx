@@ -224,7 +224,7 @@ const BusinessTools = () => {
       icon: Calculator,
       color: 'bg-blue-500',
       benefits: ['Accurate cost estimates', 'Compare business structures', 'Plan your budget'],
-      isPremium: true
+      isPremium: false
     },
     {
       id: 'setup-checklist' as ToolType,
@@ -233,7 +233,7 @@ const BusinessTools = () => {
       icon: CheckSquare,
       color: 'bg-green-500',
       benefits: ['Never miss important steps', 'Track your progress', 'Organized workflow'],
-      isPremium: true
+      isPremium: false
     },
     {
       id: 'compliance' as ToolType,

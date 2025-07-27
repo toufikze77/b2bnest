@@ -9,9 +9,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Minus, Save, Send, Edit, X, FileText } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Minus, Save, Send, Edit, X, FileText, Upload, Package } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/utils/currencyUtils';
+import ImageUpload from '@/components/ImageUpload';
 
 interface QuoteInvoiceCreationSectionProps {
   documentType: 'quote' | 'invoice';
@@ -19,6 +21,14 @@ interface QuoteInvoiceCreationSectionProps {
   editingDocument?: any;
   onEditComplete?: () => void;
   onCancelEdit?: () => void;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
 }
 
 const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = ({
@@ -31,6 +41,8 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [saveAsDraft, setSaveAsDraft] = useState(true);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [logoUrl, setLogoUrl] = useState('');
   
   // Form state
   const [formData, setFormData] = useState({
@@ -43,12 +55,36 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
     tax_rate: '0',
     valid_until: '',
     due_date: '',
-    status: 'draft'
+    status: 'draft',
+    logo_url: ''
   });
 
   const [items, setItems] = useState([
     { id: '1', description: '', quantity: 1, rate: 0, amount: 0 }
   ]);
+
+  // Load products on component mount
+  useEffect(() => {
+    loadProducts();
+  }, [user]);
+
+  const loadProducts = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('products_services')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error loading products:', error);
+    }
+  };
 
   // Load editing document data
   useEffect(() => {
@@ -63,8 +99,11 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
         tax_rate: String(editingDocument.tax_rate || 0),
         valid_until: editingDocument.valid_until || '',
         due_date: editingDocument.due_date || '',
-        status: editingDocument.status || 'draft'
+        status: editingDocument.status || 'draft',
+        logo_url: editingDocument.logo_url || ''
       });
+      
+      setLogoUrl(editingDocument.logo_url || '');
       
       // Set draft checkbox based on current status
       setSaveAsDraft(editingDocument.status === 'draft');
@@ -95,10 +134,12 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
       tax_rate: '0',
       valid_until: '',
       due_date: '',
-      status: 'draft'
+      status: 'draft',
+      logo_url: ''
     });
     setItems([{ id: '1', description: '', quantity: 1, rate: 0, amount: 0 }]);
     setSaveAsDraft(true);
+    setLogoUrl('');
   };
 
   const calculateItemAmount = (quantity: number, rate: number) => {
@@ -126,6 +167,17 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
       quantity: 1,
       rate: 0,
       amount: 0
+    }]);
+  };
+
+  const addProductAsItem = (product: Product) => {
+    const newId = String(items.length + 1);
+    setItems(prev => [...prev, {
+      id: newId,
+      description: product.name + (product.description ? ` - ${product.description}` : ''),
+      quantity: 1,
+      rate: product.price,
+      amount: product.price
     }]);
   };
 
@@ -184,6 +236,7 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
         total_amount: total,
         notes: formData.notes,
         status: saveAsDraft ? 'draft' : 'sent',
+        logo_url: logoUrl,
         updated_at: new Date().toISOString(),
         ...(documentType === 'quote' && {
           valid_until: formData.valid_until || null,
@@ -416,14 +469,60 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
           )}
         </div>
 
+        {/* Logo Upload */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Company Logo</h3>
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+            <ImageUpload
+              onImageUploaded={(url) => {
+                setLogoUrl(url);
+                setFormData(prev => ({ ...prev, logo_url: url }));
+              }}
+              bucket="user-avatars"
+              currentImageUrl={logoUrl}
+              accept="image/*"
+              maxSize={5}
+              className="w-full"
+              label="Upload Company Logo"
+            />
+            {logoUrl && (
+              <div className="mt-2">
+                <img src={logoUrl} alt="Company Logo" className="h-16 w-auto" />
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Items */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Items</h3>
-            <Button onClick={addItem} variant="outline" size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Item
-            </Button>
+            <div className="flex gap-2">
+              {products.length > 0 && (
+                <Select onValueChange={(value) => {
+                  const product = products.find(p => p.id === value);
+                  if (product) addProductAsItem(product);
+                }}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Select product/service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {products.map((product) => (
+                      <SelectItem key={product.id} value={product.id}>
+                        <div className="flex items-center gap-2">
+                          <Package className="h-4 w-4" />
+                          <span>{product.name} - {formatCurrency(product.price)}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Button onClick={addItem} variant="outline" size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Item
+              </Button>
+            </div>
           </div>
           
           <div className="space-y-3">
