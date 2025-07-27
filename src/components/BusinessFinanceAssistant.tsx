@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Download, Eye, Send, FileText, DollarSign, TrendingUp, Users, Package, Truck, Receipt, CreditCard, BarChart3, PieChart, Home, Building, Calendar, ShoppingCart, Banknote, Edit, Trash2, Repeat } from 'lucide-react';
+import { Plus, Download, Eye, Send, FileText, DollarSign, TrendingUp, Users, Package, Truck, Receipt, CreditCard, BarChart3, Home, Building, Calendar, ShoppingCart, Banknote, Edit, Trash2, Repeat } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -20,6 +20,21 @@ import QuoteInvoiceCreationSection from '@/components/QuoteInvoiceCreationSectio
 import DocumentList from '@/components/DocumentList';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { Tables } from '@/integrations/supabase/types';
+import { 
+  LineChart, 
+  Line, 
+  BarChart, 
+  Bar, 
+  PieChart, 
+  Pie, 
+  Cell, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer 
+} from 'recharts';
 
 // Type definitions
 type Quote = Tables<'quotes'>;
@@ -39,6 +54,324 @@ interface FinanceItem {
   rate: number;
   amount: number;
 }
+
+// BusinessAnalytics Component with Working Charts
+interface BusinessAnalyticsProps {
+  quotes: Quote[];
+  invoices: Invoice[];
+}
+
+const BusinessAnalytics: React.FC<BusinessAnalyticsProps> = ({ quotes, invoices }) => {
+  // Combine all documents for analysis
+  const allDocuments = [...quotes, ...invoices];
+
+  // Calculate key metrics
+  const totalRevenue = allDocuments
+    .filter(doc => doc.status === 'paid')
+    .reduce((sum, doc) => sum + (Number(doc.total_amount) || 0), 0);
+
+  const pendingRevenue = allDocuments
+    .filter(doc => doc.status === 'sent')
+    .reduce((sum, doc) => sum + (Number(doc.total_amount) || 0), 0);
+
+  const draftCount = allDocuments.filter(doc => doc.status === 'draft').length;
+  const totalClients = new Set(allDocuments.map(doc => doc.client_name)).size;
+
+  // Prepare monthly revenue data
+  const getMonthlyData = () => {
+    const monthlyStats: any = {};
+    const last6Months = [];
+    
+    // Generate last 6 months
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const monthKey = date.toISOString().slice(0, 7); // YYYY-MM format
+      const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      
+      last6Months.push(monthKey);
+      monthlyStats[monthKey] = {
+        month: monthName,
+        revenue: 0,
+        quotes: 0,
+        invoices: 0,
+        deals: 0
+      };
+    }
+
+    // Populate with actual data
+    allDocuments.forEach(doc => {
+      const docMonth = doc.created_at?.slice(0, 7);
+      if (docMonth && monthlyStats[docMonth]) {
+        if (doc.status === 'paid') {
+          monthlyStats[docMonth].revenue += Number(doc.total_amount) || 0;
+          monthlyStats[docMonth].deals += 1;
+        }
+        if ('quote_number' in doc) {
+          monthlyStats[docMonth].quotes += 1;
+        } else {
+          monthlyStats[docMonth].invoices += 1;
+        }
+      }
+    });
+
+    return last6Months.map(month => monthlyStats[month]);
+  };
+
+  // Prepare status distribution data
+  const getStatusData = () => {
+    const statusCounts = allDocuments.reduce((acc: any, doc) => {
+      acc[doc.status] = (acc[doc.status] || 0) + 1;
+      return acc;
+    }, {});
+
+    const colors: any = {
+      draft: '#8884d8',
+      sent: '#82ca9d',
+      paid: '#00C49F',
+      overdue: '#FF8042'
+    };
+
+    return Object.entries(statusCounts).map(([status, count]) => ({
+      name: status.charAt(0).toUpperCase() + status.slice(1),
+      value: count,
+      fill: colors[status] || '#8884d8'
+    }));
+  };
+
+  // Prepare conversion trends data
+  const getConversionData = () => {
+    const last6Months = [];
+    
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const monthKey = date.toISOString().slice(0, 7);
+      const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+      
+      const monthDocs = allDocuments.filter(doc => 
+        doc.created_at?.slice(0, 7) === monthKey
+      );
+      
+      const sent = monthDocs.filter(doc => doc.status === 'sent' || doc.status === 'paid').length;
+      const paid = monthDocs.filter(doc => doc.status === 'paid').length;
+      const conversionRate = sent > 0 ? (paid / sent) * 100 : 0;
+      
+      last6Months.push({
+        month: monthName,
+        sent,
+        paid,
+        conversionRate: Math.round(conversionRate)
+      });
+    }
+    
+    return last6Months;
+  };
+
+  const monthlyData = getMonthlyData();
+  const statusData = getStatusData();
+  const conversionData = getConversionData();
+
+  return (
+    <div className="space-y-6">
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-green-600">
+                  {formatCurrency(totalRevenue)}
+                </p>
+                <p className="text-sm text-muted-foreground">Total Revenue</p>
+              </div>
+              <DollarSign className="h-8 w-8 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-orange-600">
+                  {formatCurrency(pendingRevenue)}
+                </p>
+                <p className="text-sm text-muted-foreground">Pending Revenue</p>
+              </div>
+              <TrendingUp className="h-8 w-8 text-orange-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-blue-600">{totalClients}</p>
+                <p className="text-sm text-muted-foreground">Total Clients</p>
+              </div>
+              <Users className="h-8 w-8 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-purple-600">{draftCount}</p>
+                <p className="text-sm text-muted-foreground">Draft Documents</p>
+              </div>
+              <Calendar className="h-8 w-8 text-purple-600" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Row 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Monthly Revenue Bar Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Monthly Performance</CardTitle>
+            <CardDescription>Revenue and deals closed over the last 6 months</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip 
+                  formatter={(value, name) => [
+                    name === 'revenue' ? formatCurrency(Number(value)) : value,
+                    name === 'revenue' ? 'Revenue' : 'Deals Closed'
+                  ]}
+                />
+                <Legend />
+                <Bar dataKey="revenue" fill="#8884d8" name="Revenue" />
+                <Bar dataKey="deals" fill="#82ca9d" name="Deals Closed" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Document Status Pie Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Document Status Distribution</CardTitle>
+            <CardDescription>Breakdown of all quotes and invoices by status</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={statusData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {statusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Row 2 */}
+      <div className="grid grid-cols-1 gap-6">
+        {/* Conversion Trends Line Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Conversion Trends</CardTitle>
+            <CardDescription>Track your quote-to-payment conversion rates over time</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={350}>
+              <LineChart data={conversionData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis yAxisId="left" orientation="left" />
+                <YAxis yAxisId="right" orientation="right" />
+                <Tooltip 
+                  formatter={(value, name) => [
+                    name === 'conversionRate' ? `${value}%` : value,
+                    name === 'conversionRate' ? 'Conversion Rate' : 
+                    name === 'sent' ? 'Documents Sent' : 'Documents Paid'
+                  ]}
+                />
+                <Legend />
+                <Bar yAxisId="left" dataKey="sent" fill="#8884d8" name="Sent" />
+                <Bar yAxisId="left" dataKey="paid" fill="#82ca9d" name="Paid" />
+                <Line 
+                  yAxisId="right" 
+                  type="monotone" 
+                  dataKey="conversionRate" 
+                  stroke="#ff7300" 
+                  strokeWidth={3}
+                  name="Conversion Rate (%)"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Summary Insights */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Business Insights</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="p-4 bg-muted rounded-lg">
+              <h4 className="font-semibold text-green-600">Revenue Growth</h4>
+              <p className="text-sm text-muted-foreground mt-1">
+                {monthlyData.length >= 2 && monthlyData[monthlyData.length - 1].revenue > monthlyData[monthlyData.length - 2].revenue
+                  ? "📈 Revenue is trending upward this month"
+                  : monthlyData.length >= 2 && monthlyData[monthlyData.length - 1].revenue < monthlyData[monthlyData.length - 2].revenue
+                  ? "📉 Revenue declined from last month"
+                  : "📊 Revenue remains steady"}
+              </p>
+            </div>
+            
+            <div className="p-4 bg-muted rounded-lg">
+              <h4 className="font-semibold text-blue-600">Document Health</h4>
+              <p className="text-sm text-muted-foreground mt-1">
+                {draftCount > 5 
+                  ? "⚠️ You have many drafts - consider sending them"
+                  : draftCount > 0
+                  ? "✏️ You have some drafts ready to send"
+                  : "✅ All documents have been sent"}
+              </p>
+            </div>
+            
+            <div className="p-4 bg-muted rounded-lg">
+              <h4 className="font-semibold text-purple-600">Client Base</h4>
+              <p className="text-sm text-muted-foreground mt-1">
+                {totalClients === 0
+                  ? "🚀 Start by adding your first client"
+                  : totalClients < 5
+                  ? "🌱 Growing client base - keep it up!"
+                  : "🎯 Strong client portfolio established"}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 
 const BusinessFinanceAssistant = () => {
   const { user } = useAuth();
@@ -1697,24 +2030,7 @@ const BusinessFinanceAssistant = () => {
         </TabsContent>
 
         <TabsContent value="analytics">
-          <div className="grid gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Business Analytics</CardTitle>
-                <CardDescription>Insights into your business performance</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <PieChart className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Analytics Coming Soon</h3>
-                  <p className="text-muted-foreground">
-                    Advanced analytics and reporting features will be available soon.
-                    Connect your bank accounts and add more data to get detailed insights.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <BusinessAnalytics quotes={quotes} invoices={invoices} />
         </TabsContent>
       </Tabs>
 
