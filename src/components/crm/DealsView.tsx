@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Calendar, DollarSign } from 'lucide-react';
+import { Plus, Calendar, DollarSign, Edit, Trash2, MoreHorizontal } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 // Updated interface to match database schema
 interface Deal {
@@ -26,13 +27,25 @@ interface Deal {
 interface DealsViewProps {
   deals: Deal[];
   onAddDeal?: (dealData: Partial<Deal>) => Promise<Deal | undefined>;
+  onUpdateDeal?: (dealId: string, dealData: Partial<Deal>) => Promise<Deal | undefined>;
+  onDeleteDeal?: (dealId: string) => Promise<void>;
   onRefresh?: () => Promise<void>;
 }
 
-const DealsView = ({ deals, onAddDeal, onRefresh }: DealsViewProps) => {
+const DealsView = ({ deals, onAddDeal, onUpdateDeal, onDeleteDeal, onRefresh }: DealsViewProps) => {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [formData, setFormData] = useState({
+    title: '',
+    value: '',
+    stage: 'prospecting',
+    probability: '50',
+    close_date: '',
+    notes: ''
+  });
+  const [editFormData, setEditFormData] = useState({
     title: '',
     value: '',
     stage: 'prospecting',
@@ -76,6 +89,50 @@ const DealsView = ({ deals, onAddDeal, onRefresh }: DealsViewProps) => {
         close_date: '',
         notes: ''
       });
+      await onRefresh?.();
+    }
+  };
+
+  const handleEditDeal = (deal: Deal) => {
+    setEditingDeal(deal);
+    setEditFormData({
+      title: deal.title || '',
+      value: deal.value?.toString() || '',
+      stage: deal.stage || 'prospecting',
+      probability: deal.probability?.toString() || '50',
+      close_date: deal.close_date || '',
+      notes: deal.notes || ''
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateDeal = async () => {
+    if (!editingDeal || !editFormData.title.trim()) {
+      toast({
+        title: "Error",
+        description: "Deal title is required",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const dealData = {
+      ...editFormData,
+      value: editFormData.value ? parseFloat(editFormData.value) : 0,
+      probability: parseInt(editFormData.probability)
+    };
+
+    const result = await onUpdateDeal?.(editingDeal.id, dealData);
+    if (result) {
+      setIsEditDialogOpen(false);
+      setEditingDeal(null);
+      await onRefresh?.();
+    }
+  };
+
+  const handleDeleteDeal = async (dealId: string) => {
+    if (window.confirm('Are you sure you want to delete this deal?')) {
+      await onDeleteDeal?.(dealId);
       await onRefresh?.();
     }
   };
@@ -145,6 +202,62 @@ const DealsView = ({ deals, onAddDeal, onRefresh }: DealsViewProps) => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Deal Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Deal</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Input 
+                placeholder="Deal Title *" 
+                value={editFormData.title}
+                onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+              />
+              <Input 
+                placeholder="Deal Value ($)" 
+                type="number" 
+                value={editFormData.value}
+                onChange={(e) => setEditFormData({ ...editFormData, value: e.target.value })}
+              />
+              <Select value={editFormData.stage} onValueChange={(value) => setEditFormData({ ...editFormData, stage: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Stage" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="prospecting">Prospecting</SelectItem>
+                  <SelectItem value="qualification">Qualification</SelectItem>
+                  <SelectItem value="proposal">Proposal</SelectItem>
+                  <SelectItem value="negotiation">Negotiation</SelectItem>
+                  <SelectItem value="closed">Closed Won</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input 
+                placeholder="Probability (%)" 
+                type="number" 
+                min="0" 
+                max="100"
+                value={editFormData.probability}
+                onChange={(e) => setEditFormData({ ...editFormData, probability: e.target.value })}
+              />
+              <Input 
+                placeholder="Expected Close Date" 
+                type="date" 
+                value={editFormData.close_date}
+                onChange={(e) => setEditFormData({ ...editFormData, close_date: e.target.value })}
+              />
+              <Input 
+                placeholder="Notes (optional)" 
+                value={editFormData.notes}
+                onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+              />
+              <Button className="w-full" onClick={handleUpdateDeal}>
+                Update Deal
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Pipeline Kanban View */}
@@ -161,9 +274,31 @@ const DealsView = ({ deals, onAddDeal, onRefresh }: DealsViewProps) => {
               {deals
                 .filter(deal => deal.stage === stage.id)
                 .map(deal => (
-                  <Card key={deal.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                  <Card key={deal.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
-                      <h4 className="font-medium mb-2">{deal.title}</h4>
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-medium">{deal.title}</h4>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => handleEditDeal(deal)}>
+                              <Edit className="w-4 h-4 mr-2" />
+                              Edit Deal
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteDeal(deal.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete Deal
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                       <p className="text-sm text-gray-600 mb-2">
                         {deal.contact_id ? `Contact ID: ${deal.contact_id}` : 'No contact assigned'}
                       </p>

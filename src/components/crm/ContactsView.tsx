@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -14,7 +15,9 @@ import {
   Search,
   MoreHorizontal,
   Target,
-  Star
+  Star,
+  Edit,
+  Trash2
 } from 'lucide-react';
 
 // Updated interface to match database schema
@@ -40,12 +43,16 @@ interface ContactsViewProps {
   contacts: Contact[];
   statusColors: Record<string, string>;
   onAddContact?: (contactData: Partial<Contact>) => Promise<Contact | undefined>;
+  onUpdateContact?: (contactId: string, contactData: Partial<Contact>) => Promise<Contact | undefined>;
+  onDeleteContact?: (contactId: string) => Promise<void>;
   onRefresh?: () => Promise<void>;
 }
 
-const ContactsView = ({ contacts, statusColors, onAddContact, onRefresh }: ContactsViewProps) => {
+const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, onDeleteContact, onRefresh }: ContactsViewProps) => {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [formData, setFormData] = useState({
@@ -57,6 +64,17 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onRefresh }: Conta
     value: '',
     source: '',
     status: 'lead'
+  });
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    company: '',
+    position: '',
+    value: '',
+    source: '',
+    status: 'lead',
+    notes: ''
   });
 
   // Filter contacts based on search and status
@@ -96,6 +114,52 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onRefresh }: Conta
         source: '',
         status: 'lead'
       });
+      await onRefresh?.();
+    }
+  };
+
+  const handleEditContact = (contact: Contact) => {
+    setEditingContact(contact);
+    setEditFormData({
+      name: contact.name || '',
+      email: contact.email || '',
+      phone: contact.phone || '',
+      company: contact.company || '',
+      position: contact.position || '',
+      value: contact.value?.toString() || '',
+      source: contact.source || '',
+      status: contact.status || 'lead',
+      notes: contact.notes || ''
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateContact = async () => {
+    if (!editingContact || !editFormData.name.trim()) {
+      toast({
+        title: "Error",
+        description: "Contact name is required",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const contactData = {
+      ...editFormData,
+      value: editFormData.value ? parseFloat(editFormData.value) : 0
+    };
+
+    const result = await onUpdateContact?.(editingContact.id, contactData);
+    if (result) {
+      setIsEditDialogOpen(false);
+      setEditingContact(null);
+      await onRefresh?.();
+    }
+  };
+
+  const handleDeleteContact = async (contactId: string) => {
+    if (window.confirm('Are you sure you want to delete this contact?')) {
+      await onDeleteContact?.(contactId);
       await onRefresh?.();
     }
   };
@@ -200,6 +264,72 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onRefresh }: Conta
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Contact Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Contact</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Input 
+                placeholder="Full Name *" 
+                value={editFormData.name}
+                onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+              />
+              <Input 
+                placeholder="Email" 
+                type="email" 
+                value={editFormData.email}
+                onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+              />
+              <Input 
+                placeholder="Phone" 
+                value={editFormData.phone}
+                onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+              />
+              <Input 
+                placeholder="Company" 
+                value={editFormData.company}
+                onChange={(e) => setEditFormData({ ...editFormData, company: e.target.value })}
+              />
+              <Input 
+                placeholder="Position" 
+                value={editFormData.position}
+                onChange={(e) => setEditFormData({ ...editFormData, position: e.target.value })}
+              />
+              <Input 
+                placeholder="Potential Value ($)" 
+                type="number" 
+                value={editFormData.value}
+                onChange={(e) => setEditFormData({ ...editFormData, value: e.target.value })}
+              />
+              <Input 
+                placeholder="Lead Source" 
+                value={editFormData.source}
+                onChange={(e) => setEditFormData({ ...editFormData, source: e.target.value })}
+              />
+              <Input 
+                placeholder="Notes" 
+                value={editFormData.notes}
+                onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+              />
+              <Select value={editFormData.status} onValueChange={(value) => setEditFormData({ ...editFormData, status: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="lead">Lead</SelectItem>
+                  <SelectItem value="prospect">Prospect</SelectItem>
+                  <SelectItem value="customer">Customer</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button className="w-full" onClick={handleUpdateContact}>
+                Update Contact
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid gap-4">
@@ -256,9 +386,26 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onRefresh }: Conta
                         {contact.status}
                       </Badge>
                     )}
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => handleEditContact(contact)}>
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit Contact
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleDeleteContact(contact.id)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete Contact
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </CardContent>

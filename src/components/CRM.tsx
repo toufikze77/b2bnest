@@ -125,6 +125,114 @@ const CRM = () => {
     }
   };
 
+  const updateContact = async (contactId: string, contactData: Partial<Contact>) => {
+    try {
+      console.log('Updating contact with ID:', contactId, 'data:', contactData);
+      
+      if (!user?.id) {
+        console.error('No user ID available');
+        toast({
+          title: "Error",
+          description: "You must be logged in to update contacts",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const updateData = {
+        name: contactData.name?.trim(),
+        email: contactData.email?.trim() || null,
+        phone: contactData.phone?.trim() || null,
+        company: contactData.company?.trim() || null,
+        position: contactData.position?.trim() || null,
+        status: contactData.status || 'lead',
+        value: contactData.value || 0,
+        source: contactData.source?.trim() || null,
+        notes: contactData.notes?.trim() || null
+      };
+
+      const { data, error } = await supabase
+        .from('crm_contacts')
+        .update(updateData)
+        .eq('id', contactId)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase contact update error:', error);
+        toast({
+          title: "Database Error",
+          description: error.message || "Failed to update contact",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Update local state
+      setContacts(prev => prev.map(contact => 
+        contact.id === contactId ? data : contact
+      ));
+      
+      toast({
+        title: "Success",
+        description: "Contact updated successfully!"
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error updating contact:', error);
+      toast({
+        title: "Error",
+        description: `Failed to update contact: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteContact = async (contactId: string) => {
+    try {
+      if (!user?.id) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to delete contacts",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('crm_contacts')
+        .delete()
+        .eq('id', contactId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error deleting contact:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete contact",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setContacts(prev => prev.filter(contact => contact.id !== contactId));
+      
+      toast({
+        title: "Success",
+        description: "Contact deleted successfully!"
+      });
+    } catch (error) {
+      console.error('Error deleting contact:', error);
+      toast({
+        title: "Error",
+        description: `Failed to delete contact: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  };
+
   const addContact = async (contactData: Partial<Contact>) => {
     try {
       console.log('Adding contact with data:', contactData);
@@ -198,6 +306,112 @@ const CRM = () => {
       toast({
         title: "Error",
         description: `Failed to add contact: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateDeal = async (dealId: string, dealData: Partial<Deal>) => {
+    try {
+      console.log('Updating deal with ID:', dealId, 'data:', dealData);
+      
+      if (!user?.id) {
+        console.error('No user ID available');
+        toast({
+          title: "Error",
+          description: "You must be logged in to update deals",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const updateData = {
+        title: dealData.title?.trim(),
+        value: dealData.value || 0,
+        stage: dealData.stage || 'prospecting',
+        contact_id: dealData.contact_id || null,
+        probability: dealData.probability || 50,
+        close_date: dealData.close_date || null,
+        notes: dealData.notes?.trim() || null
+      };
+
+      const { data, error } = await supabase
+        .from('crm_deals')
+        .update(updateData)
+        .eq('id', dealId)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase deal update error:', error);
+        toast({
+          title: "Database Error",
+          description: error.message || "Failed to update deal",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Update local state
+      setDeals(prev => prev.map(deal => 
+        deal.id === dealId ? data : deal
+      ));
+      
+      toast({
+        title: "Success",
+        description: "Deal updated successfully!"
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error updating deal:', error);
+      toast({
+        title: "Error",
+        description: `Failed to update deal: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteDeal = async (dealId: string) => {
+    try {
+      if (!user?.id) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to delete deals",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('crm_deals')
+        .delete()
+        .eq('id', dealId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error deleting deal:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete deal",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setDeals(prev => prev.filter(deal => deal.id !== dealId));
+      
+      toast({
+        title: "Success",
+        description: "Deal deleted successfully!"
+      });
+    } catch (error) {
+      console.error('Error deleting deal:', error);
+      toast({
+        title: "Error",
+        description: `Failed to delete deal: ${error.message}`,
         variant: "destructive"
       });
     }
@@ -389,6 +603,8 @@ const CRM = () => {
             contacts={contacts} 
             statusColors={statusColors}
             onAddContact={addContact}
+            onUpdateContact={updateContact}
+            onDeleteContact={deleteContact}
             onRefresh={fetchCRMData}
           />
         </TabsContent>
@@ -397,6 +613,8 @@ const CRM = () => {
           <DealsView 
             deals={deals}
             onAddDeal={addDeal}
+            onUpdateDeal={updateDeal}
+            onDeleteDeal={deleteDeal}
             onRefresh={fetchCRMData}
           />
         </TabsContent>

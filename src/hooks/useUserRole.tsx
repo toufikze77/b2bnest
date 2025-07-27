@@ -45,6 +45,7 @@ export const useUserRole = () => {
 
   const isOwner = role === 'owner';
   const isAdmin = role === 'admin' || role === 'owner';
+  const isManager = role === 'manager' || isAdmin;
   const canUpload = isAdmin;
   const canModify = isAdmin;
 
@@ -53,6 +54,7 @@ export const useUserRole = () => {
     loading,
     isOwner,
     isAdmin,
+    isManager,
     canUpload,
     canModify
   };
