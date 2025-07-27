@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Plus, FileText, User, DollarSign, Quote, Upload, Image, X, List } from 'lucide-react';
+import { Plus, FileText, User, DollarSign, Quote, Upload, Image, X, List, Edit, Eye, Download, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,7 @@ const QuoteInvoiceCreationSection = () => {
   const [activeTab, setActiveTab] = useState<'quote' | 'invoice'>('quote');
   const [viewMode, setViewMode] = useState<'create' | 'list'>('create');
   const [editingDocument, setEditingDocument] = useState<any>(null);
+  const [isDraft, setIsDraft] = useState(true);
   const [quotes, setQuotes] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -435,6 +436,35 @@ const QuoteInvoiceCreationSection = () => {
     }
   };
 
+  const handleEditDocument = (document: any) => {
+    setEditingDocument(document);
+    setActiveTab('quote_number' in document ? 'quote' : 'invoice');
+    setViewMode('create');
+    
+    // Populate form with document data
+    setDocumentData({
+      number: 'quote_number' in document ? document.quote_number : document.invoice_number,
+      clientName: document.client_name || '',
+      clientEmail: document.client_email || '',
+      clientAddress: document.client_address || '',
+      companyName: document.company_name || '',
+      companyAddress: document.company_address || '',
+      date: document.created_at ? new Date(document.created_at).toISOString().split('T')[0] : '',
+      validUntil: document.valid_until || '',
+      dueDate: document.due_date || '',
+      notes: document.notes || '',
+      terms: 'Net 30',
+      currency: document.currency || 'USD',
+      vatEnabled: document.tax_rate > 0,
+      vatRate: document.tax_rate * 100 || 0,
+      vatLabel: document.tax_rate > 0 ? `${document.tax_rate * 100}% VAT` : 'No VAT'
+    });
+    
+    setItems(document.items ? JSON.parse(document.items) : []);
+    setIsDraft(document.status === 'draft');
+    setLogoUrl(document.logo_url || null);
+  };
+
   const handleGenerate = async () => {
     if (!user) {
       toast({
@@ -471,15 +501,6 @@ const QuoteInvoiceCreationSection = () => {
       const vatAmount = calculateVAT();
       const total = calculateTotal();
 
-      console.log('Generating document with data:', {
-        activeTab,
-        subtotal,
-        vatAmount,
-        total,
-        items,
-        documentData
-      });
-
       const documentPayload = {
         user_id: user.id,
         company_name: documentData.companyName || null,
@@ -493,40 +514,69 @@ const QuoteInvoiceCreationSection = () => {
         tax_amount: Number(vatAmount) || 0,
         total_amount: Number(total) || 0,
         notes: documentData.notes || null,
-        status: 'draft',
+        status: isDraft ? 'draft' : 'sent',
         logo_url: logoUrl || null,
         currency: documentData.currency || 'USD'
       };
 
-      if (activeTab === 'quote') {
-        const { error } = await supabase
-          .from('quotes')
-          .insert({
-            ...documentPayload,
-            quote_number: documentNumber,
-            valid_until: documentData.validUntil || null
-          });
-        
-        if (error) throw error;
+      if (editingDocument) {
+        // Update existing document
+        if (activeTab === 'quote') {
+          const { error } = await supabase
+            .from('quotes')
+            .update({
+              ...documentPayload,
+              quote_number: documentNumber,
+              valid_until: documentData.validUntil || null
+            })
+            .eq('id', editingDocument.id);
+          
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from('invoices')
+            .update({
+              ...documentPayload,
+              invoice_number: documentNumber,
+              due_date: documentData.dueDate || null
+            })
+            .eq('id', editingDocument.id);
+          
+          if (error) throw error;
+        }
       } else {
-        const { error } = await supabase
-          .from('invoices')
-          .insert({
-            ...documentPayload,
-            invoice_number: documentNumber,
-            due_date: documentData.dueDate || null
-          });
-        
-        if (error) throw error;
+        // Create new document
+        if (activeTab === 'quote') {
+          const { error } = await supabase
+            .from('quotes')
+            .insert({
+              ...documentPayload,
+              quote_number: documentNumber,
+              valid_until: documentData.validUntil || null
+            });
+          
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from('invoices')
+            .insert({
+              ...documentPayload,
+              invoice_number: documentNumber,
+              due_date: documentData.dueDate || null
+            });
+          
+          if (error) throw error;
+        }
       }
 
       const documentType = activeTab === 'quote' ? 'Quote' : 'Invoice';
       toast({
-        title: `${documentType} Created`,
-        description: `${documentType} ${documentNumber} has been created successfully.`,
+        title: `${documentType} ${editingDocument ? 'Updated' : 'Created'}`,
+        description: `${documentType} ${documentNumber} has been ${editingDocument ? 'updated' : 'created'} successfully.`,
       });
 
       // Reset form
+      setEditingDocument(null);
       setDocumentData({
         number: '',
         clientName: '',
@@ -546,18 +596,19 @@ const QuoteInvoiceCreationSection = () => {
       });
       setItems([{ id: '1', description: '', quantity: 1, rate: 0, amount: 0 }]);
       setLogoUrl(null);
+      setIsDraft(true);
 
-      // Always reload documents after creation
+      // Always reload documents after creation/update
       await loadDocuments();
       
-      // Switch to list view to show the created document
+      // Switch to list view to show the created/updated document
       setViewMode('list');
 
     } catch (error) {
       console.error('Document generation error:', error);
       toast({
-        title: "Generation Failed",
-        description: `Failed to generate ${activeTab}. Please try again.`,
+        title: "Operation Failed",
+        description: `Failed to ${editingDocument ? 'update' : 'create'} ${activeTab}. Please try again.`,
         variant: "destructive"
       });
     } finally {
@@ -596,6 +647,7 @@ const QuoteInvoiceCreationSection = () => {
         onView={viewDocument}
         onDownload={downloadDocument}
         onSend={sendDocument}
+        onEdit={handleEditDocument}
       />
     );
   }
@@ -983,15 +1035,49 @@ const QuoteInvoiceCreationSection = () => {
               />
             </div>
 
-            {/* Generate Button */}
-            <div className="flex gap-4">
-              <Button 
-                onClick={handleGenerate} 
-                className="flex-1"
-                disabled={generating}
-              >
-                {generating ? 'Generating...' : `Generate ${currentDocumentType}`}
-              </Button>
+            {/* Status and Generate Button */}
+            <div className="space-y-4">
+              {/* Draft Toggle */}
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="draft-toggle"
+                  checked={isDraft}
+                  onChange={(e) => setIsDraft(e.target.checked)}
+                  className="rounded"
+                />
+                <Label htmlFor="draft-toggle" className="text-sm font-medium">
+                  Save as Draft
+                </Label>
+                {!isDraft && (
+                  <span className="text-xs text-muted-foreground">
+                    Document will be marked as sent
+                  </span>
+                )}
+              </div>
+
+              {/* Generate/Update Button */}
+              <div className="flex gap-4">
+                {editingDocument && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setEditingDocument(null);
+                      setViewMode('list');
+                    }}
+                    className="flex-1"
+                  >
+                    Cancel Edit
+                  </Button>
+                )}
+                <Button 
+                  onClick={handleGenerate} 
+                  className="flex-1"
+                  disabled={generating}
+                >
+                  {generating ? 'Processing...' : editingDocument ? `Update ${currentDocumentType}` : `Generate ${currentDocumentType}`}
+                </Button>
+              </div>
             </div>
           </TabsContent>
         </Tabs>

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ArrowLeft, FileText, Eye, Download, Send } from 'lucide-react';
+import { ArrowLeft, FileText, Eye, Download, Send, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,6 +17,7 @@ interface DocumentListProps {
   onView: (id: string, type: 'quote' | 'invoice') => void;
   onDownload: (doc: any, type: 'quote' | 'invoice') => void;
   onSend: (doc: any, type: 'quote' | 'invoice') => void;
+  onEdit?: (doc: any) => void;
 }
 
 const DocumentList: React.FC<DocumentListProps> = ({
@@ -29,7 +30,8 @@ const DocumentList: React.FC<DocumentListProps> = ({
   onBack,
   onView,
   onDownload,
-  onSend
+  onSend,
+  onEdit
 }) => {
   return (
     <Card className="mb-8">
@@ -93,6 +95,16 @@ const DocumentList: React.FC<DocumentListProps> = ({
                         <Eye className="h-4 w-4 mr-1" />
                         View
                       </Button>
+                      {onEdit && (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => onEdit(doc)}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                      )}
                       <Button 
                         size="sm" 
                         variant="outline"

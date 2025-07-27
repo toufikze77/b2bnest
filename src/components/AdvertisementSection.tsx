@@ -169,16 +169,16 @@ export const AdvertisementSection = () => {
         {user && (
           <div className="flex gap-4">
             {!userSubscription?.is_yearly ? (
-              <Card className="relative overflow-hidden border-2 border-gradient-to-r from-primary to-secondary bg-gradient-to-br from-primary/5 to-secondary/5 p-6 shadow-lg hover:shadow-xl transition-all duration-300">
-                <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-primary to-secondary opacity-10 rounded-full transform translate-x-6 -translate-y-6"></div>
+              <Card className="relative overflow-hidden border border-cyan-200 bg-gradient-to-br from-cyan-50 to-blue-50 p-4 shadow-md hover:shadow-lg transition-all duration-300">
+                <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 opacity-20 rounded-full transform translate-x-2 -translate-y-2"></div>
                 <div className="relative">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                    <p className="text-lg font-semibold text-foreground">Want to advertise here?</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse"></div>
+                    <p className="text-sm font-medium text-foreground">Want to advertise here?</p>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-4">Join our Premium Marketplace and showcase your business to thousands of potential customers!</p>
-                  <Button className="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-medium shadow-md">
-                    ✨ Upgrade to Yearly Plan
+                  <p className="text-xs text-muted-foreground mb-3">Join our Premium Marketplace!</p>
+                  <Button size="sm" className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-medium shadow-sm">
+                    ✨ Upgrade to Yearly
                   </Button>
                 </div>
               </Card>
