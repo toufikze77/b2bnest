@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useUserSettings } from '@/hooks/useUserSettings';
+import { formatCurrency } from '@/utils/currencyUtils';
 import { Plus, Calendar, DollarSign, Edit, Trash2, MoreHorizontal } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
@@ -34,6 +36,7 @@ interface DealsViewProps {
 
 const DealsView = ({ deals, onAddDeal, onUpdateDeal, onDeleteDeal, onRefresh }: DealsViewProps) => {
   const { toast } = useToast();
+  const { settings } = useUserSettings();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
@@ -304,7 +307,7 @@ const DealsView = ({ deals, onAddDeal, onUpdateDeal, onDeleteDeal, onRefresh }: 
                       </p>
                       <div className="flex justify-between items-center mb-2">
                         <span className="font-semibold text-green-600">
-                          ${(deal.value || 0).toLocaleString()}
+                          {formatCurrency(deal.value || 0, settings?.currency_code || 'USD')}
                         </span>
                         <Badge variant="outline">{deal.probability || 0}%</Badge>
                       </div>

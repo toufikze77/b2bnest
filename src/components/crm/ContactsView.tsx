@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useUserSettings } from '@/hooks/useUserSettings';
+import { formatCurrency } from '@/utils/currencyUtils';
 import { 
   Phone, 
   Mail, 
@@ -50,6 +52,7 @@ interface ContactsViewProps {
 
 const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, onDeleteContact, onRefresh }: ContactsViewProps) => {
   const { toast } = useToast();
+  const { settings } = useUserSettings();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
@@ -373,8 +376,8 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="font-semibold">${(contact.value || 0).toLocaleString()}</p>
+                   <div className="text-right">
+                      <p className="font-semibold">{formatCurrency(contact.value || 0, settings?.currency_code || 'USD')}</p>
                       <p className="text-sm text-gray-500">Potential Value</p>
                       <div className="flex items-center gap-1 text-xs text-gray-400 mt-1">
                         <Star className="w-3 h-3" />

@@ -90,12 +90,17 @@ const SecurityTab = () => {
 
       const { error } = await supabase
         .from('integration_settings')
-        .upsert({
-          user_id: user.id,
-          integration_name: 'security_settings',
-          settings: newSettings,
-          is_enabled: true
-        });
+        .upsert(
+          {
+            user_id: user.id,
+            integration_name: 'security_settings',
+            settings: newSettings,
+            is_enabled: true
+          },
+          {
+            onConflict: 'user_id,integration_name'
+          }
+        );
 
       if (error) throw error;
 
@@ -136,11 +141,32 @@ const SecurityTab = () => {
     });
   };
 
-  const viewAllAuditLogs = () => {
-    toast({
-      title: "Audit Logs",
-      description: "Opening comprehensive audit log viewer...",
-    });
+  const [showAllAuditLogs, setShowAllAuditLogs] = useState(false);
+  const [allAuditLogs, setAllAuditLogs] = useState([]);
+
+  const viewAllAuditLogs = async () => {
+    try {
+      if (!user?.id) return;
+      
+      const { data, error } = await supabase
+        .from('audit_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (data && !error) {
+        setAllAuditLogs(data);
+        setShowAllAuditLogs(true);
+      }
+    } catch (error) {
+      console.error('Error fetching all audit logs:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load audit logs",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -239,10 +265,40 @@ const SecurityTab = () => {
                 </div>
               )}
             </div>
-            <Button className="w-full" onClick={viewAllAuditLogs} disabled={loading}>
-              <Eye className="w-4 h-4 mr-2" />
-              View All Audit Logs
-            </Button>
+            <Dialog open={showAllAuditLogs} onOpenChange={setShowAllAuditLogs}>
+              <DialogTrigger asChild>
+                <Button className="w-full" onClick={viewAllAuditLogs} disabled={loading}>
+                  <Eye className="w-4 h-4 mr-2" />
+                  View All Audit Logs
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Complete Audit Log</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {allAuditLogs.length > 0 ? allAuditLogs.map((log: any) => (
+                    <div key={log.id} className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Activity className="w-4 h-4 text-blue-600" />
+                          <span className="font-medium">{log.action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                        </div>
+                        <span className="text-xs text-gray-500">{new Date(log.created_at).toLocaleString()}</span>
+                      </div>
+                      <p className="text-sm text-gray-600">{log.resource_type}</p>
+                      {log.details && (
+                        <div className="mt-2 p-2 bg-gray-50 rounded text-xs">
+                          <pre>{JSON.stringify(log.details, null, 2)}</pre>
+                        </div>
+                      )}
+                    </div>
+                  )) : (
+                    <p className="text-center text-gray-500">No audit logs found</p>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
           </CardContent>
         </Card>
 
