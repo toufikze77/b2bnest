@@ -1,21 +1,83 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 import { 
   ChartBar,
   Target,
   ExternalLink,
-  BarChart3
+  BarChart3,
+  Download,
+  FileText
 } from 'lucide-react';
+import CurrencySelector from './CurrencySelector';
 
 interface ReportsTabProps {
   totalRevenue: number;
 }
 
 const ReportsTab = ({ totalRevenue }: ReportsTabProps) => {
+  const [currency, setCurrency] = useState('USD');
+  const [isExporting, setIsExporting] = useState(false);
+  const { toast } = useToast();
+
+  const handleExportReport = async () => {
+    setIsExporting(true);
+    try {
+      // Simulate report generation
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Create sample CSV data
+      const csvData = [
+        ['Metric', 'Value', 'Currency'],
+        ['Total Revenue', totalRevenue.toString(), currency],
+        ['Lead Conversion Rate', '24.5%', ''],
+        ['Average Deal Size', '32500', currency],
+        ['Sales Cycle Length', '45 days', ''],
+        ['Customer Lifetime Value', '47200', currency],
+        ['Customer Acquisition Cost', '1840', currency]
+      ];
+      
+      const csvContent = csvData.map(row => row.join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `crm-report-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Report Exported",
+        description: "Your detailed report has been downloaded successfully."
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "There was an error exporting your report.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleCustomReport = () => {
+    toast({
+      title: "Custom Report Builder",
+      description: "Custom report builder will be available in the next update."
+    });
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Reports & Analytics</h2>
+        <CurrencySelector value={currency} onValueChange={setCurrency} className="w-40" />
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -50,7 +112,7 @@ const ReportsTab = ({ totalRevenue }: ReportsTabProps) => {
               <Badge className="mt-2 bg-green-100 text-green-800">Connected</Badge>
             </div>
           </div>
-          <Button className="w-full">
+          <Button className="w-full" onClick={handleCustomReport}>
             <ChartBar className="w-4 h-4 mr-2" />
             Create Custom Report
           </Button>
@@ -92,12 +154,26 @@ const ReportsTab = ({ totalRevenue }: ReportsTabProps) => {
               <p className="text-sm text-purple-700">↘ 8% improvement</p>
             </div>
           </div>
-          <Button className="w-full">
-            <BarChart3 className="w-4 h-4 mr-2" />
-            Export Detailed Report
+          <Button 
+            className="w-full" 
+            onClick={handleExportReport}
+            disabled={isExporting}
+          >
+            {isExporting ? (
+              <>
+                <Download className="w-4 h-4 mr-2 animate-spin" />
+                Exporting...
+              </>
+            ) : (
+              <>
+                <FileText className="w-4 h-4 mr-2" />
+                Export Detailed Report
+              </>
+            )}
           </Button>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };

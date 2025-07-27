@@ -30,7 +30,7 @@ interface UserRole {
 
 const UserRoleManagement = () => {
   const { user } = useAuth();
-  const { isOwner } = useUserRole();
+  const { isOwner, isManager } = useUserRole();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,10 +39,10 @@ const UserRoleManagement = () => {
   const [editingUser, setEditingUser] = useState<UserRole | null>(null);
 
   useEffect(() => {
-    if (isOwner) {
+    if (isManager) {
       fetchUsers();
     }
-  }, [isOwner]);
+  }, [isManager]);
 
   const fetchUsers = async () => {
     try {
@@ -156,13 +156,13 @@ const UserRoleManagement = () => {
     user.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (!isOwner) {
+  if (!isManager) {
     return (
       <Card>
         <CardContent className="p-6 text-center">
           <Shield className="w-12 h-12 mx-auto mb-4 text-gray-400" />
           <h3 className="text-lg font-semibold mb-2">Access Restricted</h3>
-          <p className="text-gray-600">Only owners can manage user roles</p>
+          <p className="text-gray-600">Only managers and above can manage user roles</p>
         </CardContent>
       </Card>
     );

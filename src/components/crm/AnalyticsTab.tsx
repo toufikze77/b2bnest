@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { 
   TrendingUp, 
   Users, 
@@ -15,6 +16,7 @@ import {
   Target,
   DollarSign
 } from 'lucide-react';
+import CurrencySelector from './CurrencySelector';
 
 interface AnalyticsTabProps {
   totalRevenue: number;
@@ -22,6 +24,15 @@ interface AnalyticsTabProps {
 
 const AnalyticsTab = ({ totalRevenue }: AnalyticsTabProps) => {
   const [timeRange, setTimeRange] = useState('30d');
+  const [currency, setCurrency] = useState('USD');
+
+  // Pie chart data for lead sources
+  const pieData = [
+    { name: 'Website', value: 45, color: '#3B82F6' },
+    { name: 'Referrals', value: 30, color: '#10B981' },
+    { name: 'Social Media', value: 15, color: '#F59E0B' },
+    { name: 'Email Campaign', value: 10, color: '#EF4444' },
+  ];
   
   // Sample analytics data (in a real app, this would come from API)
   const analyticsData = {
@@ -51,20 +62,23 @@ const AnalyticsTab = ({ totalRevenue }: AnalyticsTabProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Header with Time Range Selector */}
+      {/* Header with Controls */}
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Analytics & Insights</h2>
-        <Select value={timeRange} onValueChange={setTimeRange}>
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7d">Last 7 days</SelectItem>
-            <SelectItem value="30d">Last 30 days</SelectItem>
-            <SelectItem value="90d">Last 90 days</SelectItem>
-            <SelectItem value="1y">Last year</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex gap-4">
+          <CurrencySelector value={currency} onValueChange={setCurrency} className="w-40" />
+          <Select value={timeRange} onValueChange={setTimeRange}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7d">Last 7 days</SelectItem>
+              <SelectItem value="30d">Last 30 days</SelectItem>
+              <SelectItem value="90d">Last 90 days</SelectItem>
+              <SelectItem value="1y">Last year</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Communication Analytics */}
@@ -220,27 +234,30 @@ const AnalyticsTab = ({ totalRevenue }: AnalyticsTabProps) => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="w-5 h-5" />
-              Lead Sources
+              Lead Sources Distribution
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span>Website</span>
-                <Badge>45%</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span>Referrals</span>
-                <Badge>30%</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span>Social Media</span>
-                <Badge>15%</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span>Email Campaign</span>
-                <Badge>10%</Badge>
-              </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => [`${value}%`, 'Percentage']} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
