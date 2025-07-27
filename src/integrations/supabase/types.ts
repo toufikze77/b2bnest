@@ -519,6 +519,7 @@ export type Database = {
           close_date: string | null
           contact_id: string | null
           created_at: string
+          currency: string | null
           id: string
           notes: string | null
           probability: number | null
@@ -532,6 +533,7 @@ export type Database = {
           close_date?: string | null
           contact_id?: string | null
           created_at?: string
+          currency?: string | null
           id?: string
           notes?: string | null
           probability?: number | null
@@ -545,6 +547,7 @@ export type Database = {
           close_date?: string | null
           contact_id?: string | null
           created_at?: string
+          currency?: string | null
           id?: string
           notes?: string | null
           probability?: number | null

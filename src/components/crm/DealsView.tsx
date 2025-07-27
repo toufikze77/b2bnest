@@ -10,6 +10,7 @@ import { useUserSettings } from '@/hooks/useUserSettings';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { Plus, Calendar, DollarSign, Edit, Trash2, MoreHorizontal } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import CurrencySelector from './CurrencySelector';
 
 // Updated interface to match database schema
 interface Deal {
@@ -22,6 +23,7 @@ interface Deal {
   close_date: string | null;
   user_id: string;
   notes: string | null;
+  currency?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -46,7 +48,8 @@ const DealsView = ({ deals, onAddDeal, onUpdateDeal, onDeleteDeal, onRefresh }: 
     stage: 'prospecting',
     probability: '50',
     close_date: '',
-    notes: ''
+    notes: '',
+    currency: settings?.currency_code || 'USD'
   });
   const [editFormData, setEditFormData] = useState({
     title: '',
@@ -54,7 +57,8 @@ const DealsView = ({ deals, onAddDeal, onUpdateDeal, onDeleteDeal, onRefresh }: 
     stage: 'prospecting',
     probability: '50',
     close_date: '',
-    notes: ''
+    notes: '',
+    currency: settings?.currency_code || 'USD'
   });
 
   const stageColumns = [
@@ -90,7 +94,8 @@ const DealsView = ({ deals, onAddDeal, onUpdateDeal, onDeleteDeal, onRefresh }: 
         stage: 'prospecting',
         probability: '50',
         close_date: '',
-        notes: ''
+        notes: '',
+        currency: settings?.currency_code || 'USD'
       });
       await onRefresh?.();
     }
@@ -104,7 +109,8 @@ const DealsView = ({ deals, onAddDeal, onUpdateDeal, onDeleteDeal, onRefresh }: 
       stage: deal.stage || 'prospecting',
       probability: deal.probability?.toString() || '50',
       close_date: deal.close_date || '',
-      notes: deal.notes || ''
+      notes: deal.notes || '',
+      currency: deal.currency || settings?.currency_code || 'USD'
     });
     setIsEditDialogOpen(true);
   };
@@ -162,12 +168,18 @@ const DealsView = ({ deals, onAddDeal, onUpdateDeal, onDeleteDeal, onRefresh }: 
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               />
-              <Input 
-                placeholder="Deal Value ($)" 
-                type="number" 
-                value={formData.value}
-                onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-              />
+              <div className="grid grid-cols-2 gap-2">
+                <Input 
+                  placeholder="Deal Value" 
+                  type="number" 
+                  value={formData.value}
+                  onChange={(e) => setFormData({ ...formData, value: e.target.value })}
+                />
+                <CurrencySelector 
+                  value={formData.currency}
+                  onValueChange={(currency) => setFormData({ ...formData, currency })}
+                />
+              </div>
               <Select value={formData.stage} onValueChange={(value) => setFormData({ ...formData, stage: value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select Stage" />
@@ -218,12 +230,18 @@ const DealsView = ({ deals, onAddDeal, onUpdateDeal, onDeleteDeal, onRefresh }: 
                 value={editFormData.title}
                 onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
               />
-              <Input 
-                placeholder="Deal Value ($)" 
-                type="number" 
-                value={editFormData.value}
-                onChange={(e) => setEditFormData({ ...editFormData, value: e.target.value })}
-              />
+              <div className="grid grid-cols-2 gap-2">
+                <Input 
+                  placeholder="Deal Value" 
+                  type="number" 
+                  value={editFormData.value}
+                  onChange={(e) => setEditFormData({ ...editFormData, value: e.target.value })}
+                />
+                <CurrencySelector 
+                  value={editFormData.currency}
+                  onValueChange={(currency) => setEditFormData({ ...editFormData, currency })}
+                />
+              </div>
               <Select value={editFormData.stage} onValueChange={(value) => setEditFormData({ ...editFormData, stage: value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select Stage" />
@@ -307,7 +325,7 @@ const DealsView = ({ deals, onAddDeal, onUpdateDeal, onDeleteDeal, onRefresh }: 
                       </p>
                       <div className="flex justify-between items-center mb-2">
                         <span className="font-semibold text-green-600">
-                          {formatCurrency(deal.value || 0, settings?.currency_code || 'USD')}
+                          {formatCurrency(deal.value || 0, deal.currency || settings?.currency_code || 'USD')}
                         </span>
                         <Badge variant="outline">{deal.probability || 0}%</Badge>
                       </div>
