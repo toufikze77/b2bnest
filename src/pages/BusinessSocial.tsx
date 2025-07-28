@@ -597,18 +597,43 @@ const BusinessSocial = () => {
     if (!user) return;
 
     try {
+      // First get messages without joins
       const { data, error } = await supabase
         .from('messages')
-        .select(`
-          *,
-          sender:profiles!messages_sender_id_fkey(*),
-          receiver:profiles!messages_receiver_id_fkey(*)
-        `)
+        .select('*')
         .or(`and(sender_id.eq.${user.id},receiver_id.eq.${conversationUserId}),and(sender_id.eq.${conversationUserId},receiver_id.eq.${user.id})`)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setMessages(data || []);
+      
+      if (data && data.length > 0) {
+        // Get unique user IDs from messages
+        const userIds = new Set<string>();
+        data.forEach(msg => {
+          userIds.add(msg.sender_id);
+          userIds.add(msg.receiver_id);
+        });
+        
+        // Fetch profiles for all users in the conversation
+        const { data: profiles, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', Array.from(userIds));
+          
+        if (!profileError) {
+          // Combine message data with profiles
+          const messagesWithProfiles = data.map(msg => ({
+            ...msg,
+            sender: profiles?.find(p => p.id === msg.sender_id),
+            receiver: profiles?.find(p => p.id === msg.receiver_id)
+          }));
+          setMessages(messagesWithProfiles);
+        } else {
+          setMessages(data);
+        }
+      } else {
+        setMessages([]);
+      }
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
