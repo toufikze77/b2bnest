@@ -417,18 +417,44 @@ const BusinessSocial = () => {
     if (!user) return;
     
     try {
+      // First get the connections without joins
       const { data, error } = await supabase
         .from('connections')
-        .select(`
-          *,
-          requester:profiles!connections_requester_id_fkey(*),
-          addressee:profiles!connections_addressee_id_fkey(*)
-        `)
+        .select('*')
         .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
         .eq('status', 'accepted');
 
       if (error) throw error;
-      setConnections(data || []);
+      
+      if (data && data.length > 0) {
+        // Get all unique user IDs from connections
+        const userIds = new Set();
+        data.forEach(conn => {
+          userIds.add(conn.requester_id);
+          userIds.add(conn.addressee_id);
+        });
+        userIds.delete(user.id); // Remove current user
+        
+        // Fetch profiles for all connected users
+        const { data: profiles, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', Array.from(userIds) as string[]);
+          
+        if (!profileError) {
+          // Combine connection data with profiles
+          const connectionsWithProfiles = data.map(conn => ({
+            ...conn,
+            requester: profiles?.find(p => p.id === conn.requester_id),
+            addressee: profiles?.find(p => p.id === conn.addressee_id)
+          }));
+          setConnections(connectionsWithProfiles);
+        } else {
+          setConnections(data);
+        }
+      } else {
+        setConnections([]);
+      }
     } catch (error) {
       console.error('Error fetching connections:', error);
     }
@@ -496,6 +522,24 @@ const BusinessSocial = () => {
     if (!user) return;
 
     try {
+      // First check if connection already exists
+      const { data: existingConnection, error: checkError } = await supabase
+        .from('connections')
+        .select('*')
+        .or(`and(requester_id.eq.${user.id},addressee_id.eq.${addresseeId}),and(requester_id.eq.${addresseeId},addressee_id.eq.${user.id})`)
+        .maybeSingle();
+
+      if (checkError) throw checkError;
+
+      if (existingConnection) {
+        toast({
+          title: "Info",
+          description: "Connection request already exists or you are already connected.",
+          variant: "default"
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('connections')
         .insert({
