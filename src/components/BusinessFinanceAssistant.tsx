@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserSettings } from '@/hooks/useUserSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -59,9 +60,10 @@ interface FinanceItem {
 interface BusinessAnalyticsProps {
   quotes: Quote[];
   invoices: Invoice[];
+  userCurrency: string;
 }
 
-const BusinessAnalytics: React.FC<BusinessAnalyticsProps> = ({ quotes, invoices }) => {
+const BusinessAnalytics: React.FC<BusinessAnalyticsProps> = ({ quotes, invoices, userCurrency }) => {
   // Combine all documents for analysis
   const allDocuments = [...quotes, ...invoices];
 
@@ -181,7 +183,7 @@ const BusinessAnalytics: React.FC<BusinessAnalyticsProps> = ({ quotes, invoices 
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-2xl font-bold text-green-600">
-                  {formatCurrency(totalRevenue)}
+                  {formatCurrency(totalRevenue, userCurrency)}
                 </p>
                 <p className="text-sm text-muted-foreground">Total Revenue</p>
               </div>
@@ -195,7 +197,7 @@ const BusinessAnalytics: React.FC<BusinessAnalyticsProps> = ({ quotes, invoices 
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-2xl font-bold text-orange-600">
-                  {formatCurrency(pendingRevenue)}
+                  {formatCurrency(pendingRevenue, userCurrency)}
                 </p>
                 <p className="text-sm text-muted-foreground">Pending Revenue</p>
               </div>
@@ -245,7 +247,7 @@ const BusinessAnalytics: React.FC<BusinessAnalyticsProps> = ({ quotes, invoices 
                 <YAxis />
                 <Tooltip 
                   formatter={(value, name) => [
-                    name === 'revenue' ? formatCurrency(Number(value)) : value,
+                    name === 'revenue' ? formatCurrency(Number(value), userCurrency) : value,
                     name === 'revenue' ? 'Revenue' : 'Deals Closed'
                   ]}
                 />
@@ -375,6 +377,7 @@ const BusinessAnalytics: React.FC<BusinessAnalyticsProps> = ({ quotes, invoices 
 
 const BusinessFinanceAssistant = () => {
   const { user } = useAuth();
+  const { settings } = useUserSettings();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'quotes' | 'invoices' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'banking' | 'reports' | 'analytics'>('dashboard');
   const [documentType, setDocumentType] = useState<'invoice' | 'quote'>('quote');
@@ -757,22 +760,22 @@ const BusinessFinanceAssistant = () => {
       doc.items.forEach((item: any) => {
         pdf.text(item.description || '', 20, yPosition);
         pdf.text(String(item.quantity || 0), 100, yPosition);
-        pdf.text(formatCurrency(item.rate || 0), 130, yPosition);
-        pdf.text(formatCurrency(item.amount || 0), 160, yPosition);
+        pdf.text(formatCurrency(item.rate || 0, settings?.currency_code || 'USD'), 130, yPosition);
+        pdf.text(formatCurrency(item.amount || 0, settings?.currency_code || 'USD'), 160, yPosition);
         yPosition += 10;
       });
     }
     
     // Totals
     yPosition += 10;
-    pdf.text(`Subtotal: ${formatCurrency(Number(doc.subtotal) || 0)}`, 130, yPosition);
+    pdf.text(`Subtotal: ${formatCurrency(Number(doc.subtotal) || 0, settings?.currency_code || 'USD')}`, 130, yPosition);
     if (doc.tax_rate && Number(doc.tax_rate) > 0) {
       yPosition += 10;
-      pdf.text(`Tax (${doc.tax_rate}%): ${formatCurrency(Number(doc.tax_amount) || 0)}`, 130, yPosition);
+      pdf.text(`Tax (${doc.tax_rate}%): ${formatCurrency(Number(doc.tax_amount) || 0, settings?.currency_code || 'USD')}`, 130, yPosition);
     }
     yPosition += 10;
     pdf.setFontSize(14);
-    pdf.text(`Total: ${formatCurrency(Number(doc.total_amount) || 0)}`, 130, yPosition);
+    pdf.text(`Total: ${formatCurrency(Number(doc.total_amount) || 0, settings?.currency_code || 'USD')}`, 130, yPosition);
     
     // Notes
     if (doc.notes) {
@@ -1123,7 +1126,7 @@ const BusinessFinanceAssistant = () => {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</div>
+                <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue, settings?.currency_code || 'USD')}</div>
                 <p className="text-xs text-muted-foreground">From paid invoices</p>
               </CardContent>
             </Card>
@@ -1137,7 +1140,7 @@ const BusinessFinanceAssistant = () => {
                 <Receipt className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(stats.totalExpenses)}</div>
+                <div className="text-2xl font-bold">{formatCurrency(stats.totalExpenses, settings?.currency_code || 'USD')}</div>
                 <p className="text-xs text-muted-foreground">This period</p>
               </CardContent>
             </Card>
@@ -1268,7 +1271,7 @@ const BusinessFinanceAssistant = () => {
                       <div className="flex-1">
                         <h3 className="font-medium">Quote {quote.quote_number}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {quote.client_name} • {formatCurrency(Number(quote.total_amount))} • {new Date(quote.created_at).toLocaleDateString()}
+                          {quote.client_name} • {formatCurrency(Number(quote.total_amount), settings?.currency_code || 'USD')} • {new Date(quote.created_at).toLocaleDateString()}
                         </p>
                       </div>
                        <div className="flex items-center gap-2">
@@ -1310,7 +1313,7 @@ const BusinessFinanceAssistant = () => {
                       <div className="flex-1">
                         <h3 className="font-medium">Invoice {invoice.invoice_number}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {invoice.client_name} • {formatCurrency(Number(invoice.total_amount))} • {new Date(invoice.created_at).toLocaleDateString()}
+                          {invoice.client_name} • {formatCurrency(Number(invoice.total_amount), settings?.currency_code || 'USD')} • {new Date(invoice.created_at).toLocaleDateString()}
                         </p>
                       </div>
                        <div className="flex items-center gap-2">
@@ -1464,7 +1467,7 @@ const BusinessFinanceAssistant = () => {
                       <div className="flex-1">
                         <h3 className="font-medium">{product.name}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {product.category} • {formatCurrency(Number(product.price))} • 
+                          {product.category} • {formatCurrency(Number(product.price), settings?.currency_code || 'USD')} • 
                           {product.stock_quantity !== null ? ` Stock: ${product.stock_quantity}` : ' Service'}
                         </p>
                         {product.description && (
@@ -1635,7 +1638,7 @@ const BusinessFinanceAssistant = () => {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Expenses</CardTitle>
-                <CardDescription>Track and categorize your business expenses • Total: {formatCurrency(expenses.reduce((total, expense) => total + Number(expense.amount), 0), userCurrency)}</CardDescription>
+                <CardDescription>Track and categorize your business expenses • Total: {formatCurrency(expenses.reduce((total, expense) => total + Number(expense.amount), 0), settings?.currency_code || 'USD')}</CardDescription>
               </div>
               <div className="flex gap-2">
                 <Button onClick={() => setShowAddExpense(true)}>
@@ -1747,7 +1750,7 @@ const BusinessFinanceAssistant = () => {
                       </div>
                       <div className="flex items-center space-x-3">
                         <span className="text-lg font-semibold text-red-600">
-                          -{formatCurrency(Number(expense.amount), userCurrency)}
+                          -{formatCurrency(Number(expense.amount), settings?.currency_code || 'USD')}
                         </span>
                         <Badge variant="outline">{expense.status}</Badge>
                       </div>
@@ -1764,7 +1767,7 @@ const BusinessFinanceAssistant = () => {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Recurring Outgoings</CardTitle>
-                <CardDescription>Manage your scheduled payments and subscriptions • Total Monthly: {formatCurrency(outgoings.reduce((total, payment) => total + Number(payment.amount), 0), userCurrency)}</CardDescription>
+                <CardDescription>Manage your scheduled payments and subscriptions • Total Monthly: {formatCurrency(outgoings.reduce((total, payment) => total + Number(payment.amount), 0), settings?.currency_code || 'USD')}</CardDescription>
               </div>
               <div className="flex gap-2">
                 <Button onClick={() => setShowAddOutgoing(true)}>
@@ -1894,7 +1897,7 @@ const BusinessFinanceAssistant = () => {
                       </div>
                       <div className="flex items-center space-x-3">
                         <span className="text-lg font-semibold text-purple-600">
-                          {formatCurrency(Number(payment.amount), userCurrency)}
+                          {formatCurrency(Number(payment.amount), settings?.currency_code || 'USD')}
                         </span>
                         <Badge variant={payment.is_active ? "default" : "secondary"}>
                           {payment.is_active ? 'Active' : 'Inactive'}
@@ -1986,17 +1989,17 @@ const BusinessFinanceAssistant = () => {
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
                   <span>Total Revenue</span>
-                  <span className="font-medium text-green-600">{formatCurrency(stats.totalRevenue)}</span>
+                  <span className="font-medium text-green-600">{formatCurrency(stats.totalRevenue, settings?.currency_code || 'USD')}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Total Expenses</span>
-                  <span className="font-medium text-red-600">{formatCurrency(stats.totalExpenses)}</span>
+                  <span className="font-medium text-red-600">{formatCurrency(stats.totalExpenses, settings?.currency_code || 'USD')}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between">
                   <span className="font-medium">Net Profit</span>
                   <span className={`font-bold ${stats.totalRevenue - stats.totalExpenses >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {formatCurrency(stats.totalRevenue - stats.totalExpenses)}
+                    {formatCurrency(stats.totalRevenue - stats.totalExpenses, settings?.currency_code || 'USD')}
                   </span>
                 </div>
               </CardContent>
@@ -2030,7 +2033,7 @@ const BusinessFinanceAssistant = () => {
         </TabsContent>
 
         <TabsContent value="analytics">
-          <BusinessAnalytics quotes={quotes} invoices={invoices} />
+          <BusinessAnalytics quotes={quotes} invoices={invoices} userCurrency={settings?.currency_code || 'USD'} />
         </TabsContent>
       </Tabs>
 
@@ -2121,8 +2124,8 @@ const BusinessFinanceAssistant = () => {
                           <tr key={index} className="border-b">
                             <td className="p-2">{item.description || 'N/A'}</td>
                             <td className="text-right p-2">{item.quantity || 0}</td>
-                            <td className="text-right p-2">{formatCurrency(item.rate || 0)}</td>
-                            <td className="text-right p-2">{formatCurrency(item.amount || 0)}</td>
+                            <td className="text-right p-2">{formatCurrency(item.rate || 0, settings?.currency_code || 'USD')}</td>
+                            <td className="text-right p-2">{formatCurrency(item.amount || 0, settings?.currency_code || 'USD')}</td>
                           </tr>
                         ))
                       ) : (
@@ -2141,17 +2144,17 @@ const BusinessFinanceAssistant = () => {
                   <div className="w-64 space-y-2">
                     <div className="flex justify-between">
                       <span>Subtotal:</span>
-                      <span>{formatCurrency(Number(selectedDocument.subtotal) || 0)}</span>
+                      <span>{formatCurrency(Number(selectedDocument.subtotal) || 0, settings?.currency_code || 'USD')}</span>
                     </div>
                     {selectedDocument.tax_rate && Number(selectedDocument.tax_rate) > 0 && (
                       <div className="flex justify-between">
                         <span>Tax ({selectedDocument.tax_rate}%):</span>
-                        <span>{formatCurrency(Number(selectedDocument.tax_amount) || 0)}</span>
+                        <span>{formatCurrency(Number(selectedDocument.tax_amount) || 0, settings?.currency_code || 'USD')}</span>
                       </div>
                     )}
                     <div className="flex justify-between font-semibold text-lg border-t pt-2">
                       <span>Total:</span>
-                      <span>{formatCurrency(Number(selectedDocument.total_amount) || 0)}</span>
+                      <span>{formatCurrency(Number(selectedDocument.total_amount) || 0, settings?.currency_code || 'USD')}</span>
                     </div>
                   </div>
                 </div>

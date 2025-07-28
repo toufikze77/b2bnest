@@ -12,6 +12,7 @@ interface DocumentListProps {
   invoices: any[];
   loading: boolean;
   sendingDocument: string | null;
+  userCurrency?: string;
   onTabChange: (tab: 'quote' | 'invoice') => void;
   onBack: () => void;
   onView: (id: string, type: 'quote' | 'invoice') => void;
@@ -26,6 +27,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
   invoices,
   loading,
   sendingDocument,
+  userCurrency = 'USD',
   onTabChange,
   onBack,
   onView,
@@ -82,7 +84,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
                       </div>
                       <div className="text-sm text-gray-600">
                         <p><strong>Client:</strong> {doc.client_name}</p>
-                        <p><strong>Total:</strong> {formatCurrency(doc.total_amount || 0, doc.currency || 'USD')}</p>
+                        <p><strong>Total:</strong> {formatCurrency(doc.total_amount || 0, userCurrency)}</p>
                         <p><strong>Created:</strong> {new Date(doc.created_at).toLocaleDateString()}</p>
                       </div>
                     </div>
