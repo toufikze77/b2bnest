@@ -372,45 +372,43 @@ const ServiceDirectory = () => {
         )}
 
         {/* Add Service CTA */}
-        {user && (
-          <div className="mt-12 text-center">
-            <div className="bg-blue-50 rounded-lg p-8">
-              <h3 className="text-2xl font-semibold text-gray-900 mb-4">
-                List Your Service
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Showcase your expertise and connect with clients looking for your services
-              </p>
-              {subscribed && subscription_tier !== 'free' ? (
+        <div className="mt-12 text-center">
+          <div className="bg-blue-50 rounded-lg p-8">
+            <h3 className="text-2xl font-semibold text-gray-900 mb-4">
+              List Your Service
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Showcase your expertise and connect with clients looking for your services
+            </p>
+            {user && subscribed && subscription_tier !== 'free' ? (
+              <Button 
+                size="lg" 
+                className="bg-blue-600 hover:bg-blue-700"
+                onClick={() => {
+                  // Navigate to advertisement section since services use the advertisement form
+                  window.location.href = '/#advertisement';
+                }}
+              >
+                Add Service Listing
+              </Button>
+            ) : (
+              <div className="text-center">
+                <p className="text-orange-600 mb-4 font-medium">
+                  {!user ? 'Sign in and get a yearly subscription to list your service' : 'Yearly subscription required to list your service'}
+                </p>
                 <Button 
                   size="lg" 
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-orange-600 hover:bg-orange-700"
                   onClick={() => {
-                    // Navigate to advertisement section since services use the advertisement form
-                    window.location.href = '/#advertisement';
+                    window.location.href = user ? '/pricing' : '/auth';
                   }}
                 >
-                  Add Service Listing
+                  {user ? 'Upgrade to Yearly Plan' : 'Sign In to Get Started'}
                 </Button>
-              ) : (
-                <div className="text-center">
-                  <p className="text-orange-600 mb-4 font-medium">
-                    Yearly subscription required to list your service
-                  </p>
-                  <Button 
-                    size="lg" 
-                    className="bg-orange-600 hover:bg-orange-700"
-                    onClick={() => {
-                      window.location.href = '/pricing';
-                    }}
-                  >
-                    Upgrade to Yearly Plan
-                  </Button>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       <Footer />

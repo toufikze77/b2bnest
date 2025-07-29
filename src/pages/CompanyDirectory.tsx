@@ -306,47 +306,45 @@ const CompanyDirectory = () => {
         )}
 
         {/* Add Company CTA */}
-        {user && (
-          <div className="mt-12 text-center">
-            <div className="bg-blue-50 rounded-lg p-8">
-              <h3 className="text-2xl font-semibold text-gray-900 mb-4">
-                List Your Company
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Showcase your business and connect with potential partners, clients, and talent
-              </p>
-              {subscribed && subscription_tier !== 'free' ? (
+        <div className="mt-12 text-center">
+          <div className="bg-blue-50 rounded-lg p-8">
+            <h3 className="text-2xl font-semibold text-gray-900 mb-4">
+              List Your Company
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Showcase your business and connect with potential partners, clients, and talent
+            </p>
+            {user && subscribed && subscription_tier !== 'free' ? (
+              <Button 
+                size="lg" 
+                className="bg-blue-600 hover:bg-blue-700"
+                onClick={() => {
+                  toast({
+                    title: "Feature Coming Soon", 
+                    description: "Company listing form will be available soon. Contact support for assistance.",
+                  });
+                }}
+              >
+                Add Company Profile
+              </Button>
+            ) : (
+              <div className="text-center">
+                <p className="text-orange-600 mb-4 font-medium">
+                  {!user ? 'Sign in and get a yearly subscription to list your company' : 'Yearly subscription required to list your company'}
+                </p>
                 <Button 
                   size="lg" 
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-orange-600 hover:bg-orange-700"
                   onClick={() => {
-                    toast({
-                      title: "Feature Coming Soon", 
-                      description: "Company listing form will be available soon. Contact support for assistance.",
-                    });
+                    window.location.href = user ? '/pricing' : '/auth';
                   }}
                 >
-                  Add Company Profile
+                  {user ? 'Upgrade to Yearly Plan' : 'Sign In to Get Started'}
                 </Button>
-              ) : (
-                <div className="text-center">
-                  <p className="text-orange-600 mb-4 font-medium">
-                    Yearly subscription required to list your company
-                  </p>
-                  <Button 
-                    size="lg" 
-                    className="bg-orange-600 hover:bg-orange-700"
-                    onClick={() => {
-                      window.location.href = '/pricing';
-                    }}
-                  >
-                    Upgrade to Yearly Plan
-                  </Button>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       <Footer />
