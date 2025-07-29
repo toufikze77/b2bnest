@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, User, LogOut, Settings, BarChart3, Users, KanbanSquare, Building2, ShoppingCart, Briefcase, Network, Brain } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, BarChart3, Users, KanbanSquare, Building2, ShoppingCart, Briefcase, Network, Brain, Bitcoin, Globe } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,9 +10,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
+import LivePriceSidebars from '@/components/sidebars/LivePriceSidebars';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isPriceSidebarOpen, setIsPriceSidebarOpen] = useState(false);
+  const [activePriceTab, setActivePriceTab] = useState<'crypto' | 'forex'>('crypto');
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -130,8 +133,43 @@ const Header = () => {
             </Link>
           </nav>
 
-          {/* User Menu */}
-          <div className="flex items-center space-x-4">
+          {/* Live Prices and User Menu */}
+          <div className="flex items-center space-x-2">
+            {/* Live Prices Toggles */}
+            <div className="hidden sm:flex items-center space-x-1">
+              <Button
+                variant={isPriceSidebarOpen && activePriceTab === 'crypto' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => {
+                  if (isPriceSidebarOpen && activePriceTab === 'crypto') {
+                    setIsPriceSidebarOpen(false);
+                  } else {
+                    setActivePriceTab('crypto');
+                    setIsPriceSidebarOpen(true);
+                  }
+                }}
+                className="h-8 px-2"
+              >
+                <Bitcoin className="h-4 w-4 mr-1" />
+                <span className="text-xs">Crypto</span>
+              </Button>
+              <Button
+                variant={isPriceSidebarOpen && activePriceTab === 'forex' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => {
+                  if (isPriceSidebarOpen && activePriceTab === 'forex') {
+                    setIsPriceSidebarOpen(false);
+                  } else {
+                    setActivePriceTab('forex');
+                    setIsPriceSidebarOpen(true);
+                  }
+                }}
+                className="h-8 px-2"
+              >
+                <Globe className="h-4 w-4 mr-1" />
+                <span className="text-xs">Forex</span>
+              </Button>
+            </div>
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -274,7 +312,36 @@ const Header = () => {
                     >
                       <Briefcase className="h-4 w-4 mr-2" />
                       Services
-                    </Link>
+              </Link>
+              
+              {/* Mobile Live Prices */}
+              <div className="px-2">
+                <div className="font-medium text-gray-900 mb-2">Live Prices</div>
+                <div className="pl-4 space-y-2">
+                  <button
+                    onClick={() => {
+                      setActivePriceTab('crypto');
+                      setIsPriceSidebarOpen(true);
+                      setIsMenuOpen(false);
+                    }}
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center w-full text-left"
+                  >
+                    <Bitcoin className="h-4 w-4 mr-2" />
+                    Crypto Prices
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActivePriceTab('forex');
+                      setIsPriceSidebarOpen(true);
+                      setIsMenuOpen(false);
+                    }}
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center w-full text-left"
+                  >
+                    <Globe className="h-4 w-4 mr-2" />
+                    Forex Rates
+                  </button>
+                </div>
+              </div>
                   </div>
                 </div>
               )}
@@ -346,6 +413,13 @@ const Header = () => {
           </div>
         )}
       </div>
+
+      {/* Live Price Sidebars */}
+      <LivePriceSidebars 
+        isOpen={isPriceSidebarOpen}
+        onClose={() => setIsPriceSidebarOpen(false)}
+        defaultTab={activePriceTab}
+      />
     </header>
   );
 };
