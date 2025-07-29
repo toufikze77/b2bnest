@@ -1,6 +1,6 @@
-import type { Config } from "tailwindcss";
+const plugin = require("tailwindcss/plugin");
 
-export default {
+module.exports = {
 	darkMode: ["class"],
 	content: [
 		"./pages/**/*.{ts,tsx}",
@@ -92,5 +92,11 @@ export default {
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
-} satisfies Config;
+	plugins: [
+		require("tailwindcss-animate"),
+		plugin(function ({ addVariant }) {
+			// Adds support for classic-dark theme
+			addVariant("classic-dark", ".classic-dark &");
+		}),
+	],
+};
