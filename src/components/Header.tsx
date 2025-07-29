@@ -129,7 +129,7 @@ const Header = () => {
                 <DropdownMenuItem asChild>
                   <Link to="/live-charts" className="w-full flex items-center">
                     <BarChart3 className="h-4 w-4 mr-2" />
-                    Live Charts
+                    Market
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -318,7 +318,7 @@ const Header = () => {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <BarChart3 className="h-4 w-4 mr-2" />
-                    Live Charts
+                    Market
                   </Link>
                 </div>
               </div>
