@@ -10,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
-import { ThemeSelector } from '@/components/ThemeSelector';
 import LivePriceSidebars from '@/components/sidebars/LivePriceSidebars';
 
 const Header = () => {
@@ -140,9 +139,8 @@ const Header = () => {
             </Link>
           </nav>
 
-          {/* Theme Selector, Live Prices and User Menu */}
+          {/* Live Prices and User Menu */}
           <div className="flex items-center space-x-2">
-            <ThemeSelector />
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
