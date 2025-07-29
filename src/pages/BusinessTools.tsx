@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, BarChart, File, Globe, CreditCard, Layout, Mail, Megaphone, Quote, Receipt, Eye, Download } from 'lucide-react';
+import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, BarChart, File, Globe, CreditCard, Layout, Mail, Megaphone, Quote, Receipt, Eye, Download, Star } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
+import { useFavoriteTools } from '@/hooks/useFavoriteTools';
 import SubscriptionUpgrade from '@/components/SubscriptionUpgrade';
 import CostCalculator from '@/components/CostCalculator';
 import BusinessSetupChecklist from '@/components/BusinessSetupChecklist';
@@ -38,12 +39,15 @@ import { AdvertisementSection } from '@/components/AdvertisementSection';
 
 type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'premium-marketplace' | 'currency-converter' | 'crypto-converter';
 
+type FilterType = 'all' | 'premium' | 'favorites';
+
 const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
-  const [filter, setFilter] = useState<'all' | 'premium'>('all');
+  const [filter, setFilter] = useState<FilterType>('all');
   const navigate = useNavigate();
   const { isPremium } = useSubscription();
   const { user } = useAuth();
+  const { favorites, toggleFavorite, isFavorited } = useFavoriteTools();
   
   // Handle URL parameters and location state to set the current tool
   useEffect(() => {
@@ -318,6 +322,7 @@ const BusinessTools = () => {
 
   const filteredTools = tools.filter(tool => {
     if (filter === 'premium') return tool.isPremium;
+    if (filter === 'favorites') return isFavorited(tool.id);
     return true;
   });
 
@@ -470,6 +475,15 @@ const BusinessTools = () => {
                 >
                   Premium Tools ({tools.filter(t => t.isPremium).length})
                 </Button>
+                {user && (
+                  <Button
+                    variant={filter === 'favorites' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setFilter('favorites')}
+                  >
+                    Favorites ({favorites.length})
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -502,6 +516,25 @@ const BusinessTools = () => {
                             )}
                           </div>
                         </div>
+                        {user && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleFavorite(tool.id);
+                            }}
+                            className="p-2 h-auto hover:bg-gray-100"
+                          >
+                            <Star 
+                              className={`h-4 w-4 ${
+                                isFavorited(tool.id) 
+                                  ? 'fill-yellow-400 text-yellow-400' 
+                                  : 'text-gray-400'
+                              }`} 
+                            />
+                          </Button>
+                        )}
                       </div>
                       <p className="text-gray-600">{tool.description}</p>
                     </CardHeader>
