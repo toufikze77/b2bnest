@@ -26,6 +26,7 @@ import ContractGenerator from '@/components/ContractGenerator';
 import PrivacyPolicyGenerator from '@/components/PrivacyPolicyGenerator';
 import DocumentTemplateLibrary from '@/components/DocumentTemplateLibrary';
 import CurrencyConverter from '@/components/CurrencyConverter';
+import CryptoConverter from '@/components/CryptoConverter';
 import BusinessCardDesigner from '@/components/BusinessCardDesigner';
 import LandingPageBuilder from '@/components/LandingPageBuilder';
 import EmailSignatureGenerator from '@/components/EmailSignatureGenerator';
@@ -35,7 +36,7 @@ import BusinessFinanceAssistant from '@/components/BusinessFinanceAssistant';
 import StartupIdeaGenerator from '@/components/StartupIdeaGenerator';
 import { AdvertisementSection } from '@/components/AdvertisementSection';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'premium-marketplace' | 'currency-converter';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'premium-marketplace' | 'currency-converter' | 'crypto-converter';
 
 const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
@@ -233,6 +234,15 @@ const BusinessTools = () => {
       isPremium: false
     },
     {
+      id: 'crypto-converter' as ToolType,
+      title: 'Crypto Converter',
+      description: 'Convert cryptocurrencies to fiat currencies with real-time prices',
+      icon: TrendingUp,
+      color: 'bg-orange-600',
+      benefits: ['Real-time prices', 'Auto-refresh', '15+ cryptos', 'Market data'],
+      isPremium: false
+    },
+    {
       id: 'cost-calculator' as ToolType,
       title: 'Cost Calculator',
       description: 'Calculate setup costs for your business structure',
@@ -425,6 +435,8 @@ const BusinessTools = () => {
         return <CRM />;
       case 'currency-converter':
         return <CurrencyConverter />;
+      case 'crypto-converter':
+        return <CryptoConverter />;
       default:
         return (
           <div className="max-w-6xl mx-auto p-6">
