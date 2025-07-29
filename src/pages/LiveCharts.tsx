@@ -21,8 +21,7 @@ import {
   Bitcoin,
   Activity
 } from 'lucide-react';
-import CryptoPriceSidebar from '@/components/sidebars/CryptoPriceSidebar';
-import ForexPriceSidebar from '@/components/sidebars/ForexPriceSidebar';
+import TradingViewWidget from '@/components/TradingViewWidget';
 import CandlestickChart from '@/components/charts/CandlestickChart';
 import Footer from '@/components/Footer';
 import SEOHead from '@/components/SEOHead';
@@ -43,7 +42,7 @@ const LiveCharts = () => {
       <div className="min-h-screen bg-gradient-to-br from-background to-secondary/10">
         <div className="flex">
           {/* Main Content Area */}
-          <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'mr-80' : 'mr-0'}`}>
+          <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'mr-[420px]' : 'mr-0'}`}>
             <div className="container mx-auto px-4 py-8">
               {/* Hero Section */}
               <div className="text-center mb-12">
@@ -630,28 +629,23 @@ const LiveCharts = () => {
 
           {/* Sticky Sidebar */}
           {sidebarOpen && (
-            <div className="fixed right-0 top-16 w-80 h-[calc(100vh-4rem)] bg-background border-l border-border shadow-xl z-30 overflow-hidden">
+            <div className="fixed right-0 top-16 w-[420px] h-[calc(100vh-4rem)] bg-background border-l border-border shadow-xl z-30 overflow-hidden">
               <div className="p-4 border-b border-border">
-                <h2 className="text-lg font-semibold">Live Market Prices</h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold">Live Market Overview</h2>
+                  <Button
+                    onClick={() => setSidebarOpen(false)}
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'crypto' | 'forex')} className="h-full">
-                <TabsList className="grid w-full grid-cols-2 mx-4 mt-4">
-                  <TabsTrigger value="crypto" className="flex items-center gap-2">
-                    <Bitcoin className="h-4 w-4" />
-                    Crypto
-                  </TabsTrigger>
-                  <TabsTrigger value="forex" className="flex items-center gap-2">
-                    <Globe className="h-4 w-4" />
-                    Forex
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="crypto" className="mt-4 h-full overflow-hidden">
-                  <CryptoPriceSidebar />
-                </TabsContent>
-                <TabsContent value="forex" className="mt-4 h-full overflow-hidden">
-                  <ForexPriceSidebar />
-                </TabsContent>
-              </Tabs>
+              <div className="h-full overflow-hidden">
+                <TradingViewWidget />
+              </div>
             </div>
           )}
         </div>
