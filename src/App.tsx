@@ -42,6 +42,7 @@ import Settings from "@/pages/Settings";
 import PaymentSuccess from "@/pages/PaymentSuccess";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Market from '@/pages/Market';
+import BusinessNews from '@/pages/BusinessNews';
 
 const queryClient = new QueryClient();
 
@@ -83,6 +84,7 @@ function App() {
               <Route path="/crm" element={<ProtectedRoute><CRMPage /></ProtectedRoute>} />
               <Route path="/project-management" element={<ProtectedRoute><ProjectManagementPage /></ProtectedRoute>} />
               <Route path="/live-charts" element={<Market />} />
+              <Route path="/business-news" element={<BusinessNews />} />
               
               {/* Directory Routes - Protected */}
               <Route path="/directory" element={<ProtectedRoute><BusinessDirectory /></ProtectedRoute>} />

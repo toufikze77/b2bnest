@@ -30,27 +30,15 @@ Deno.serve(async (req) => {
 
     console.log('Starting news fetch process...');
 
-    // Yahoo Finance RSS feeds for business news
+    // CNBC and Investopedia RSS feeds for business news
     const rssFeeds = [
       {
-        url: 'https://feeds.finance.yahoo.com/rss/2.0/headline',
+        url: 'https://www.cnbc.com/id/10001147/device/rss/rss.html',
+        category: 'Business'
+      },
+      {
+        url: 'https://www.investopedia.com/feedbuilder/feed/getfeed/?feedName=rss_headline',
         category: 'Finance'
-      },
-      {
-        url: 'https://feeds.finance.yahoo.com/rss/2.0/category-tech',
-        category: 'Technology'
-      },
-      {
-        url: 'https://feeds.finance.yahoo.com/rss/2.0/category-earnings',
-        category: 'Earnings'
-      },
-      {
-        url: 'https://feeds.finance.yahoo.com/rss/2.0/category-markets',
-        category: 'Markets'
-      },
-      {
-        url: 'https://feeds.finance.yahoo.com/rss/2.0/category-investing',
-        category: 'Investing'
       }
     ];
 
@@ -158,9 +146,11 @@ function parseRSSFeed(rssText: string, category: string, feedUrl: string): NewsA
         const imageUrl = imageMatch ? imageMatch[1] : null;
 
         // Determine source from feed URL
-        let source = 'Yahoo Finance';
-        if (feedUrl.includes('yahoo.com') || feedUrl.includes('finance.yahoo.com')) {
-          source = 'Yahoo Finance';
+        let source = 'Business News';
+        if (feedUrl.includes('cnbc.com')) {
+          source = 'CNBC';
+        } else if (feedUrl.includes('investopedia.com')) {
+          source = 'Investopedia';
         }
 
         if (title && link) {

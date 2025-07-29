@@ -115,7 +115,7 @@ const BusinessNewsSection = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Newspaper className="h-5 w-5" />
-            Business News & RSS
+            Business News
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -133,7 +133,7 @@ const BusinessNewsSection = () => {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            Business News & RSS
+            Business News
           </CardTitle>
           {isAdmin && (
             <Button
@@ -217,7 +217,7 @@ const BusinessNewsSection = () => {
         
         <div className="mt-4 pt-4 border-t border-border">
           <p className="text-xs text-muted-foreground text-center">
-            News powered by Reuters • Auto-updates every hour
+            News powered by CNBC & Investopedia • Auto-updates every hour
           </p>
         </div>
       </CardContent>

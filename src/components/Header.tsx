@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, User, LogOut, Settings, BarChart3, Users, KanbanSquare, Building2, ShoppingCart, Briefcase, Network, Brain, Bitcoin, Globe } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, BarChart3, Users, KanbanSquare, Building2, ShoppingCart, Briefcase, Network, Brain, Bitcoin, Globe, Newspaper } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -111,6 +111,12 @@ const Header = () => {
                 </span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link to="/business-news" className="w-full flex items-center">
+                    <Newspaper className="h-4 w-4 mr-2" />
+                    Business News
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/fundraising" className="w-full">
                     Funding Round
@@ -291,6 +297,14 @@ const Header = () => {
               <div className="px-2">
                 <div className="font-medium text-gray-900 mb-2">Invest</div>
                 <div className="pl-4 space-y-2">
+                  <Link
+                    to="/business-news"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Newspaper className="h-4 w-4 mr-2" />
+                    Business News
+                  </Link>
                   <Link
                     to="/fundraising"
                     className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
