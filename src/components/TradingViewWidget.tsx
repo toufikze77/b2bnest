@@ -4,29 +4,20 @@ function TradingViewWidget() {
   const container = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    console.log('TradingView widget useEffect triggered');
+    
     if (container.current) {
-      // Clear any existing content
-      container.current.innerHTML = '';
+      console.log('Container found, setting up widget');
       
-      // Create the widget container first
-      const widgetDiv = document.createElement("div");
-      widgetDiv.className = "tradingview-widget-container__widget";
-      
-      // Create copyright
-      const copyrightDiv = document.createElement("div");
-      copyrightDiv.className = "tradingview-widget-copyright";
-      copyrightDiv.innerHTML = '<a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Market data by TradingView</span></a>';
-      
-      // Add elements to container
-      container.current.appendChild(widgetDiv);
-      container.current.appendChild(copyrightDiv);
-      
-      // Create script
-      const script = document.createElement("script");
-      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js";
-      script.type = "text/javascript";
-      script.async = true;
-      script.innerHTML = `
+      // Set the HTML structure directly
+      container.current.innerHTML = `
+        <div class="tradingview-widget-container__widget"></div>
+        <div class="tradingview-widget-copyright">
+          <a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank">
+            <span class="blue-text">Market data by TradingView</span>
+          </a>
+        </div>
+        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
         {
           "colorTheme": "dark",
           "dateRange": "12M",
@@ -155,11 +146,23 @@ function TradingViewWidget() {
           "height": "550",
           "showSymbolLogo": true,
           "showChart": true
-        }`;
+        }
+        </script>
+      `;
       
-      container.current.appendChild(script);
+      console.log('TradingView HTML injected');
       
-      console.log('TradingView widget script added to DOM');
+      // Force script execution by finding and re-executing the script
+      const scripts = container.current.getElementsByTagName('script');
+      if (scripts.length > 0) {
+        const script = scripts[0];
+        const newScript = document.createElement('script');
+        newScript.src = script.src;
+        newScript.async = true;
+        newScript.innerHTML = script.innerHTML;
+        script.parentNode?.replaceChild(newScript, script);
+        console.log('Script re-executed');
+      }
     }
   }, []);
 
@@ -171,9 +174,14 @@ function TradingViewWidget() {
         width: '400px', 
         height: '550px',
         backgroundColor: '#131722',
-        border: '1px solid #333'
+        border: '1px solid #444',
+        padding: '10px'
       }}
-    />
+    >
+      <div style={{ color: '#fff', padding: '20px', textAlign: 'center' }}>
+        Loading TradingView Widget...
+      </div>
+    </div>
   );
 }
 
