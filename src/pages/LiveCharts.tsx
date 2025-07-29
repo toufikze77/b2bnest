@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import CryptoPriceSidebar from '@/components/sidebars/CryptoPriceSidebar';
 import ForexPriceSidebar from '@/components/sidebars/ForexPriceSidebar';
+import CandlestickChart from '@/components/charts/CandlestickChart';
 import Footer from '@/components/Footer';
 import SEOHead from '@/components/SEOHead';
 
@@ -180,57 +181,82 @@ const LiveCharts = () => {
               </div>
 
               {/* Main Chart Area */}
-              <Card className="mb-16">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5" />
-                      Live Market Charts
-                    </CardTitle>
-                    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'crypto' | 'forex')}>
-                      <TabsList>
-                        <TabsTrigger value="crypto" className="flex items-center gap-2">
-                          <Bitcoin className="h-4 w-4" />
-                          Cryptocurrency
-                        </TabsTrigger>
-                        <TabsTrigger value="forex" className="flex items-center gap-2">
-                          <Globe className="h-4 w-4" />
-                          Foreign Exchange
-                        </TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="min-h-[500px] bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center">
-                    {activeTab === 'crypto' ? (
-                      <div className="text-center">
-                        <Bitcoin className="h-16 w-16 text-orange-500 mx-auto mb-4" />
-                        <h3 className="text-xl font-semibold text-gray-800 mb-2">Cryptocurrency Charts</h3>
-                        <p className="text-gray-600 mb-4">Advanced trading charts with real-time data</p>
-                        <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
-                          <div>• Candlestick charts</div>
-                          <div>• Volume indicators</div>
-                          <div>• Technical analysis</div>
-                          <div>• Price alerts</div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center">
-                        <Globe className="h-16 w-16 text-blue-500 mx-auto mb-4" />
-                        <h3 className="text-xl font-semibold text-gray-800 mb-2">Forex Market Charts</h3>
-                        <p className="text-gray-600 mb-4">Real-time foreign exchange rate charts</p>
-                        <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
-                          <div>• Major currency pairs</div>
-                          <div>• Live spreads</div>
-                          <div>• Market trends</div>
-                          <div>• Economic indicators</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="mb-16">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-3xl font-bold flex items-center gap-2">
+                    <BarChart3 className="h-8 w-8 text-primary" />
+                    Live Market Charts
+                  </h2>
+                  <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'crypto' | 'forex')}>
+                    <TabsList className="bg-background">
+                      <TabsTrigger value="crypto" className="flex items-center gap-2">
+                        <Bitcoin className="h-4 w-4" />
+                        Cryptocurrency
+                      </TabsTrigger>
+                      <TabsTrigger value="forex" className="flex items-center gap-2">
+                        <Globe className="h-4 w-4" />
+                        Foreign Exchange
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
+                
+                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'crypto' | 'forex')}>
+                  <TabsContent value="crypto" className="space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <CandlestickChart 
+                        symbol="bitcoin" 
+                        type="crypto" 
+                        title="Bitcoin (BTC/USD)"
+                      />
+                      <CandlestickChart 
+                        symbol="ethereum" 
+                        type="crypto" 
+                        title="Ethereum (ETH/USD)"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <CandlestickChart 
+                        symbol="binancecoin" 
+                        type="crypto" 
+                        title="Binance Coin (BNB/USD)"
+                      />
+                      <CandlestickChart 
+                        symbol="solana" 
+                        type="crypto" 
+                        title="Solana (SOL/USD)"
+                      />
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="forex" className="space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <CandlestickChart 
+                        symbol="EUR/USD" 
+                        type="forex" 
+                        title="Euro vs US Dollar (EUR/USD)"
+                      />
+                      <CandlestickChart 
+                        symbol="GBP/USD" 
+                        type="forex" 
+                        title="British Pound vs US Dollar (GBP/USD)"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <CandlestickChart 
+                        symbol="USD/JPY" 
+                        type="forex" 
+                        title="US Dollar vs Japanese Yen (USD/JPY)"
+                      />
+                      <CandlestickChart 
+                        symbol="AUD/USD" 
+                        type="forex" 
+                        title="Australian Dollar vs US Dollar (AUD/USD)"
+                      />
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </div>
 
               {/* Investment Strategies Section */}
               <div className="mb-16">
@@ -309,17 +335,17 @@ const LiveCharts = () => {
 
               {/* Success Stories Section */}
               <div className="mb-16">
-                <Card className="bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 border-0">
+                <Card className="bg-gradient-to-br from-background to-card border shadow-lg">
                   <CardContent className="p-8">
                     <div className="text-center mb-8">
-                      <h2 className="text-3xl font-bold mb-4">Success Stories from Business Owners</h2>
-                      <p className="text-lg text-muted-foreground">
+                      <h2 className="text-3xl font-bold text-foreground mb-4">Success Stories from Business Owners</h2>
+                      <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
                         Real results from entrepreneurs who diversified their wealth strategically
                       </p>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="bg-card p-6 rounded-lg border">
+                      <div className="bg-background p-6 rounded-lg border shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex items-center mb-4">
                           <Star className="h-5 w-5 text-yellow-500 mr-2" />
                           <span className="font-semibold">Sarah M. - E-commerce Owner</span>
@@ -334,10 +360,10 @@ const LiveCharts = () => {
                         </div>
                       </div>
                       
-                      <div className="bg-card p-6 rounded-lg border">
+                      <div className="bg-background p-6 rounded-lg border shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex items-center mb-4">
                           <Star className="h-5 w-5 text-yellow-500 mr-2" />
-                          <span className="font-semibold">Michael T. - Consulting Firm</span>
+                          <span className="font-semibold text-foreground">Michael T. - Consulting Firm</span>
                         </div>
                         <p className="text-sm text-muted-foreground mb-4">
                           "Forex hedging protected my international revenues during currency volatility. 
@@ -349,10 +375,10 @@ const LiveCharts = () => {
                         </div>
                       </div>
                       
-                      <div className="bg-card p-6 rounded-lg border">
+                      <div className="bg-background p-6 rounded-lg border shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex items-center mb-4">
                           <Star className="h-5 w-5 text-yellow-500 mr-2" />
-                          <span className="font-semibold">Lisa R. - Tech Startup</span>
+                          <span className="font-semibold text-foreground">Lisa R. - Tech Startup</span>
                         </div>
                         <p className="text-sm text-muted-foreground mb-4">
                           "Automated investing in index funds and crypto gave me passive income streams. 
@@ -545,37 +571,37 @@ const LiveCharts = () => {
 
               {/* Call to Action Section */}
               <div className="mb-16">
-                <Card className="bg-gradient-to-r from-primary via-secondary to-accent text-white border-0">
+                <Card className="bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 backdrop-blur-sm border shadow-xl">
                   <CardContent className="p-8 text-center">
-                    <h2 className="text-3xl font-bold mb-4 text-white">Ready to Start Your Investment Journey?</h2>
-                    <p className="text-lg mb-8 text-white/90 max-w-2xl mx-auto">
+                    <h2 className="text-3xl font-bold mb-4 text-white drop-shadow-sm">Ready to Start Your Investment Journey?</h2>
+                    <p className="text-lg mb-8 text-white/95 max-w-2xl mx-auto drop-shadow-sm">
                       Join thousands of business owners who are already building wealth through smart market diversification. 
                       Start small, think long-term, and let compound growth work for you.
                     </p>
                     
                     <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                      <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-white/90">
+                      <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-white/90 shadow-lg">
                         <Users className="h-5 w-5 mr-2" />
                         Join Our Community
                       </Button>
-                      <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+                      <Button size="lg" variant="outline" className="border-white/80 text-white hover:bg-white/20 backdrop-blur-sm">
                         <ArrowRight className="h-5 w-5 mr-2" />
                         Explore Investment Tools
                       </Button>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 pt-8 border-t border-white/20">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 pt-8 border-t border-white/30">
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-white">60%</div>
-                        <div className="text-sm text-white/80">Business Owners Investing</div>
+                        <div className="text-2xl font-bold text-white drop-shadow-sm">60%</div>
+                        <div className="text-sm text-white/90">Business Owners Investing</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-white">$2.1T</div>
-                        <div className="text-sm text-white/80">Global Market Cap</div>
+                        <div className="text-2xl font-bold text-white drop-shadow-sm">$2.1T</div>
+                        <div className="text-sm text-white/90">Global Market Cap</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-white">24/7</div>
-                        <div className="text-sm text-white/80">Market Access</div>
+                        <div className="text-2xl font-bold text-white drop-shadow-sm">24/7</div>
+                        <div className="text-sm text-white/90">Market Access</div>
                       </div>
                     </div>
                   </CardContent>
