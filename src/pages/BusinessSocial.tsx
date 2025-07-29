@@ -1178,6 +1178,41 @@ const BusinessSocial = () => {
               </CardContent>
             </Card>
 
+            {/* Business RSS */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Globe className="h-5 w-5" />
+                  Business RSS & News
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="p-3 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                    <h4 className="font-medium text-blue-900 text-sm">TechCrunch Business</h4>
+                    <p className="text-blue-700 text-xs">Latest startup & business news</p>
+                    <Badge variant="secondary" className="mt-1 text-xs">Live Feed</Badge>
+                  </div>
+                  <div className="p-3 bg-green-50 rounded-lg cursor-pointer hover:bg-green-100 transition-colors">
+                    <h4 className="font-medium text-green-900 text-sm">Harvard Business Review</h4>
+                    <p className="text-green-700 text-xs">Management insights & strategies</p>
+                    <Badge variant="secondary" className="mt-1 text-xs">Premium</Badge>
+                  </div>
+                  <div className="p-3 bg-purple-50 rounded-lg cursor-pointer hover:bg-purple-100 transition-colors">
+                    <h4 className="font-medium text-purple-900 text-sm">Forbes Business</h4>
+                    <p className="text-purple-700 text-xs">Industry trends & analysis</p>
+                    <Badge variant="secondary" className="mt-1 text-xs">Updated</Badge>
+                  </div>
+                </div>
+                <div className="pt-3 border-t mt-4">
+                  <Button variant="outline" size="sm" className="w-full">
+                    <Star className="h-4 w-4 mr-2" />
+                    Customize RSS Feeds
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Suggested Connections */}
             <Card>
               <CardHeader>
@@ -1187,33 +1222,39 @@ const BusinessSocial = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarFallback>JD</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <h4 className="font-medium text-sm">John Doe</h4>
-                      <p className="text-gray-500 text-xs">CEO at TechCorp</p>
+                {suggestedConnections.length > 0 ? (
+                  <div className="space-y-4">
+                    {suggestedConnections.slice(0, 3).map((person) => (
+                      <div key={person.id} className="flex items-center gap-3">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={person.avatar_url || ''} />
+                          <AvatarFallback>{getUserInitials(person)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-sm">{getUserDisplayName(person)}</h4>
+                          <p className="text-gray-500 text-xs">{person.headline || person.company}</p>
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => sendConnectionRequest(person.id)}
+                        >
+                          <UserPlus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                    <div className="pt-3 border-t">
+                      <Button variant="outline" size="sm" className="w-full">
+                        View All Suggestions
+                      </Button>
                     </div>
-                    <Button size="sm" variant="outline">
-                      <UserPlus className="h-3 w-3" />
-                    </Button>
                   </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarFallback>SM</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <h4 className="font-medium text-sm">Sarah Miller</h4>
-                      <p className="text-gray-500 text-xs">Product Manager</p>
-                    </div>
-                    <Button size="sm" variant="outline">
-                      <UserPlus className="h-3 w-3" />
-                    </Button>
+                ) : (
+                  <div className="text-center py-4">
+                    <UserPlus className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">No suggestions available</p>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>
