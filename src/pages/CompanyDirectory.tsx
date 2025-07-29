@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Search, MapPin, Globe, Users, Calendar, Building2, Filter, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -28,6 +29,7 @@ interface Company {
 
 const CompanyDirectory = () => {
   const { user } = useAuth();
+  const { subscription_tier, subscribed } = useSubscription();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
@@ -313,9 +315,32 @@ const CompanyDirectory = () => {
               <p className="text-gray-600 mb-6">
                 Showcase your business and connect with potential partners, clients, and talent
               </p>
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
-                Add Company Profile
-              </Button>
+              {subscribed && subscription_tier !== 'free' ? (
+                <Button 
+                  size="lg" 
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={() => {
+                    window.location.href = '/auth';
+                  }}
+                >
+                  Add Company Profile
+                </Button>
+              ) : (
+                <div className="text-center">
+                  <p className="text-orange-600 mb-4 font-medium">
+                    Yearly subscription required to list your company
+                  </p>
+                  <Button 
+                    size="lg" 
+                    className="bg-orange-600 hover:bg-orange-700"
+                    onClick={() => {
+                      window.location.href = '/pricing';
+                    }}
+                  >
+                    Upgrade to Yearly Plan
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}

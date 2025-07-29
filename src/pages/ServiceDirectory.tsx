@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Search, MapPin, DollarSign, Star, Filter, Briefcase, Mail, Phone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -34,6 +35,7 @@ interface Advertisement {
 
 const ServiceDirectory = () => {
   const { user } = useAuth();
+  const { subscription_tier, subscribed } = useSubscription();
   const [services, setServices] = useState<Advertisement[]>([]);
   const [filteredServices, setFilteredServices] = useState<Advertisement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -379,9 +381,32 @@ const ServiceDirectory = () => {
               <p className="text-gray-600 mb-6">
                 Showcase your expertise and connect with clients looking for your services
               </p>
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
-                Add Service Listing
-              </Button>
+              {subscribed && subscription_tier !== 'free' ? (
+                <Button 
+                  size="lg" 
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={() => {
+                    window.location.href = '/auth';
+                  }}
+                >
+                  Add Service Listing
+                </Button>
+              ) : (
+                <div className="text-center">
+                  <p className="text-orange-600 mb-4 font-medium">
+                    Yearly subscription required to list your service
+                  </p>
+                  <Button 
+                    size="lg" 
+                    className="bg-orange-600 hover:bg-orange-700"
+                    onClick={() => {
+                      window.location.href = '/pricing';
+                    }}
+                  >
+                    Upgrade to Yearly Plan
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}
