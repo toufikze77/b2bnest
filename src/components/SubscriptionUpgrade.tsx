@@ -80,7 +80,13 @@ const SubscriptionUpgrade = ({ featureName, onUpgrade }: SubscriptionUpgradeProp
                   <Zap className="h-5 w-5 text-yellow-500" />
                 </div>
                 <CardDescription>Full access to AI Studio</CardDescription>
-                <div className="text-2xl font-bold">£11<span className="text-sm font-normal">/month</span></div>
+                <div className="flex items-center justify-center gap-2">
+                  <div className="text-2xl font-bold">£11<span className="text-sm font-normal">/month</span></div>
+                  <span className="text-sm text-gray-400 line-through">£39</span>
+                </div>
+                <Badge className="mt-2 bg-red-100 text-red-800">
+                  Limited Time: 72% OFF
+                </Badge>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
