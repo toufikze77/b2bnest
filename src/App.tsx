@@ -49,7 +49,8 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+      <ThemeProvider attribute="class" defaultTheme="light" storageKey="vite-ui-theme"
+        themes={["light", "dark", "classic-dark"]}>
         <AuthProvider>
           <UserSettingsProvider>
             <Router>
