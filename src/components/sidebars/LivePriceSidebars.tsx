@@ -21,7 +21,7 @@ const LivePriceSidebars: React.FC<LivePriceSidebarsProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed right-0 top-0 z-50 h-full bg-background border-l border-border shadow-lg animate-in slide-in-from-right duration-300">
+    <div className="fixed right-0 top-16 z-40 w-80 h-[calc(100vh-4rem)] bg-background border-l border-border shadow-xl transition-transform duration-300 transform translate-x-0">
       <div className="flex items-center justify-between p-4 border-b border-border">
         <h2 className="text-lg font-semibold">Live Market Prices</h2>
         <Button 

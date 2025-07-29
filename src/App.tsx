@@ -41,6 +41,7 @@ import ServiceDirectory from "@/pages/ServiceDirectory";
 import Settings from "@/pages/Settings";
 import PaymentSuccess from "@/pages/PaymentSuccess";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import LiveCharts from '@/pages/LiveCharts';
 
 const queryClient = new QueryClient();
 
@@ -81,6 +82,7 @@ function App() {
               <Route path="/categories/operations" element={<Operations />} />
               <Route path="/crm" element={<ProtectedRoute><CRMPage /></ProtectedRoute>} />
               <Route path="/project-management" element={<ProtectedRoute><ProjectManagementPage /></ProtectedRoute>} />
+              <Route path="/live-charts" element={<LiveCharts />} />
               
               {/* Directory Routes - Protected */}
               <Route path="/directory" element={<ProtectedRoute><BusinessDirectory /></ProtectedRoute>} />

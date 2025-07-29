@@ -131,6 +131,9 @@ const Header = () => {
             <Link to="/pricing" className="text-gray-700 hover:text-blue-600 transition-colors">
               Pricing
             </Link>
+            <Link to="/live-charts" className="text-gray-700 hover:text-blue-600 transition-colors">
+              Live Charts
+            </Link>
           </nav>
 
           {/* Live Prices and User Menu */}
@@ -377,6 +380,13 @@ const Header = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Pricing
+              </Link>
+              <Link
+                to="/live-charts"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Live Charts
               </Link>
               {user && (
                 <>
