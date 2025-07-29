@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
+import { useSubscription } from '@/hooks/useSubscription';
+import SubscriptionUpgrade from '@/components/SubscriptionUpgrade';
 import CostCalculator from '@/components/CostCalculator';
 import BusinessSetupChecklist from '@/components/BusinessSetupChecklist';
 import ComplianceChecker from '@/components/ComplianceChecker';
@@ -37,6 +39,7 @@ const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
   const [filter, setFilter] = useState<'all' | 'free' | 'premium'>('all');
   const navigate = useNavigate();
+  const { isPremium } = useSubscription();
   
   // Handle URL parameters and location state to set the current tool
   useEffect(() => {
@@ -298,6 +301,12 @@ const BusinessTools = () => {
   });
 
   const renderTool = () => {
+    // Check if user is trying to access a premium tool without subscription
+    const currentToolData = tools.find(tool => tool.id === currentTool);
+    if (currentToolData?.isPremium && !isPremium) {
+      return <SubscriptionUpgrade featureName={currentToolData.title} />;
+    }
+
     switch (currentTool) {
       case 'premium-marketplace':
         return <AdvertisementSection />;
@@ -402,7 +411,13 @@ const BusinessTools = () => {
                   <Card 
                     key={tool.id} 
                     className="cursor-pointer hover:shadow-lg transition-all duration-200 h-full"
-                    onClick={() => setCurrentTool(tool.id)}
+                    onClick={() => {
+                      if (tool.isPremium && !isPremium) {
+                        setCurrentTool(tool.id); // This will show the upgrade screen
+                      } else {
+                        setCurrentTool(tool.id);
+                      }
+                    }}
                   >
                     <CardHeader>
                       <div className="flex items-center gap-3 mb-2">
