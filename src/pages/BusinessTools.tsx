@@ -87,7 +87,7 @@ const BusinessTools = () => {
       icon: ListTodo,
       color: 'bg-green-600',
       benefits: ['Stay organized', 'Track progress', 'Boost productivity'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'startup-idea-generator' as ToolType,
@@ -96,7 +96,7 @@ const BusinessTools = () => {
       icon: Lightbulb,
       color: 'bg-gradient-to-r from-purple-500 to-pink-500',
       benefits: ['AI-powered insights', 'Market analysis', 'Personalized ideas', 'Growth opportunities'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'business-name-generator' as ToolType,
@@ -105,7 +105,7 @@ const BusinessTools = () => {
       icon: Sparkles,
       color: 'bg-purple-600',
       benefits: ['Creative suggestions', 'Domain availability', 'Industry-specific names'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'qr-code-generator' as ToolType,
@@ -114,7 +114,7 @@ const BusinessTools = () => {
       icon: QrCode,
       color: 'bg-gray-600',
       benefits: ['Multiple formats', 'Instant generation', 'Easy download'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'time-tracker' as ToolType,
@@ -123,7 +123,7 @@ const BusinessTools = () => {
       icon: Clock,
       color: 'bg-emerald-600',
       benefits: ['Project tracking', 'Real-time timer', 'Activity summaries'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'cash-flow-tracker' as ToolType,
@@ -132,7 +132,7 @@ const BusinessTools = () => {
       icon: TrendingUp,
       color: 'bg-green-600',
       benefits: ['Income/expense tracking', 'Financial insights', 'Category analysis'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'goal-tracker' as ToolType,
@@ -141,7 +141,7 @@ const BusinessTools = () => {
       icon: Target,
       color: 'bg-red-600',
       benefits: ['Milestone tracking', 'Progress monitoring', 'Achievement insights'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'roi-calculator' as ToolType,
@@ -150,7 +150,7 @@ const BusinessTools = () => {
       icon: BarChart,
       color: 'bg-yellow-600',
       benefits: ['Investment analysis', 'Performance tracking', 'Decision support'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'contract-generator' as ToolType,
@@ -159,7 +159,7 @@ const BusinessTools = () => {
       icon: FileText,
       color: 'bg-purple-700',
       benefits: ['Professional templates', 'Multiple contract types', 'Legal framework'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'privacy-policy-generator' as ToolType,
@@ -168,7 +168,7 @@ const BusinessTools = () => {
       icon: Shield,
       color: 'bg-green-700',
       benefits: ['GDPR compliant', 'Customizable sections', 'Legal protection'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'document-templates' as ToolType,
@@ -177,7 +177,7 @@ const BusinessTools = () => {
       icon: File,
       color: 'bg-blue-700',
       benefits: ['Professional templates', 'Multiple categories', 'Ready to use'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'business-card-designer' as ToolType,
@@ -186,7 +186,7 @@ const BusinessTools = () => {
       icon: CreditCard,
       color: 'bg-pink-600',
       benefits: ['Professional designs', 'Custom templates', 'Print-ready format'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'landing-page-builder' as ToolType,
@@ -195,7 +195,7 @@ const BusinessTools = () => {
       icon: Layout,
       color: 'bg-indigo-600',
       benefits: ['Responsive design', 'Multiple templates', 'SEO optimized'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'email-signature-generator' as ToolType,
@@ -204,7 +204,7 @@ const BusinessTools = () => {
       icon: Mail,
       color: 'bg-orange-600',
       benefits: ['Professional templates', 'HTML output', 'Brand consistency'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'social-media-scheduler' as ToolType,
@@ -213,7 +213,7 @@ const BusinessTools = () => {
       icon: Users,
       color: 'bg-cyan-600',
       benefits: ['Multi-platform support', 'Content planning', 'Scheduling tools'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'customer-survey-builder' as ToolType,
@@ -222,7 +222,7 @@ const BusinessTools = () => {
       icon: BarChart,
       color: 'bg-violet-600',
       benefits: ['Custom questions', 'Response tracking', 'Analytics dashboard'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'currency-converter' as ToolType,
@@ -230,8 +230,8 @@ const BusinessTools = () => {
       description: 'Convert currencies with real-time exchange rates',
       icon: TrendingUp,
       color: 'bg-green-600',
-      benefits: ['Real-time rates', '20+ currencies', 'Business-focused', 'Free to use'],
-      isPremium: false
+      benefits: ['Real-time rates', '20+ currencies', 'Business-focused'],
+      isPremium: true
     },
     {
       id: 'crypto-converter' as ToolType,
@@ -240,7 +240,7 @@ const BusinessTools = () => {
       icon: TrendingUp,
       color: 'bg-orange-600',
       benefits: ['Real-time prices', 'Auto-refresh', '15+ cryptos', 'Market data'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'cost-calculator' as ToolType,
@@ -249,7 +249,7 @@ const BusinessTools = () => {
       icon: Calculator,
       color: 'bg-blue-500',
       benefits: ['Accurate cost estimates', 'Compare business structures', 'Plan your budget'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'setup-checklist' as ToolType,
@@ -258,7 +258,7 @@ const BusinessTools = () => {
       icon: CheckSquare,
       color: 'bg-green-500',
       benefits: ['Never miss important steps', 'Track your progress', 'Organized workflow'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'compliance' as ToolType,
@@ -267,7 +267,7 @@ const BusinessTools = () => {
       icon: Shield,
       color: 'bg-red-500',
       benefits: ['Avoid penalties', 'Stay compliant', 'Industry-specific guidance'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'best-practices' as ToolType,
@@ -294,7 +294,7 @@ const BusinessTools = () => {
       icon: Building2,
       color: 'bg-orange-500',
       benefits: ['Vetted service providers', 'Compare options', 'Get recommendations'],
-      isPremium: false
+      isPremium: true
     },
     {
       id: 'project-management' as ToolType,
