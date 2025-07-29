@@ -126,13 +126,16 @@ const Header = () => {
                     Tokenomics
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/live-charts" className="w-full flex items-center">
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Live Charts
+                  </Link>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <Link to="/pricing" className="text-gray-700 hover:text-blue-600 transition-colors">
               Pricing
-            </Link>
-            <Link to="/live-charts" className="text-gray-700 hover:text-blue-600 transition-colors">
-              Live Charts
             </Link>
           </nav>
 
@@ -372,6 +375,14 @@ const Header = () => {
                   >
                     Tokenomics
                   </Link>
+                  <Link
+                    to="/live-charts"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Live Charts
+                  </Link>
                 </div>
               </div>
               <Link
@@ -380,13 +391,6 @@ const Header = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Pricing
-              </Link>
-              <Link
-                to="/live-charts"
-                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Live Charts
               </Link>
               {user && (
                 <>
