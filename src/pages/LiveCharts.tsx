@@ -496,21 +496,24 @@ const LiveCharts = () => {
 
               {/* Call to Action Section */}
               <div className="mb-16">
-                <Card className="bg-gradient-to-br from-primary via-secondary to-accent border shadow-xl relative overflow-hidden">
-                  <div className="absolute inset-0 bg-black/20"></div>
-                  <CardContent className="p-8 text-center relative z-10">
-                    <h2 className="text-4xl font-bold mb-6 text-white drop-shadow-xl">Ready to Start Your Investment Journey?</h2>
-                    <p className="text-xl mb-8 text-white max-w-3xl mx-auto drop-shadow-xl leading-relaxed font-medium">
+                <Card className="bg-gradient-to-br from-blue-600 via-purple-600 to-cyan-500 border-none shadow-2xl relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-cyan-400/20 animate-pulse"></div>
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_70%)]"></div>
+                  <CardContent className="p-12 text-center relative z-10">
+                    <h2 className="text-5xl font-extrabold mb-8 text-white drop-shadow-2xl animate-fade-in">
+                      Ready to Start Your Investment Journey?
+                    </h2>
+                    <p className="text-2xl mb-10 text-white max-w-4xl mx-auto drop-shadow-2xl leading-relaxed font-semibold tracking-wide">
                       Join thousands of business owners who are already building wealth through smart market diversification. 
                       Start small, think long-term, and let compound growth work for you.
                     </p>
                     
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                      <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-white/90 shadow-lg">
+                    <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+                      <Button size="lg" className="bg-white text-blue-600 hover:bg-cyan-100 hover:scale-110 transition-all duration-500 px-10 py-4 text-xl font-bold shadow-2xl hover:shadow-cyan-300/50">
                         <Users className="h-5 w-5 mr-2" />
                         Join Our Community
                       </Button>
-                      <Button size="lg" variant="outline" className="border-white/80 text-white hover:bg-white/20 backdrop-blur-sm">
+                      <Button size="lg" variant="outline" className="bg-white/10 text-white border-2 border-white/60 hover:bg-white/20 hover:scale-110 transition-all duration-500 px-10 py-4 text-xl font-bold backdrop-blur-md hover:shadow-lg hover:shadow-white/30">
                         <ArrowRight className="h-5 w-5 mr-2" />
                         Explore Investment Tools
                       </Button>
