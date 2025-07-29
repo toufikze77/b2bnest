@@ -24,7 +24,7 @@ const Footer = () => {
                   onClick={() => navigate('/business-social')}
                   className="hover:text-white transition-colors"
                 >
-                  Business Social
+                  BizzLink
                 </button>
               </li>
               <li>

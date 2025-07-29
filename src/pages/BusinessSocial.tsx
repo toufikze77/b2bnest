@@ -713,7 +713,7 @@ const BusinessSocial = () => {
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Business Social Network</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">BizzLink</h1>
           <p className="text-gray-600 text-lg">
             Connect with professionals, share insights, and grow your network - completely free!
           </p>
