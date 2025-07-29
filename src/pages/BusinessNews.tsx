@@ -275,7 +275,7 @@ const BusinessNewsPage = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5" />
-                Crypto News
+                CoinDesk
               </CardTitle>
             </CardHeader>
             <CardContent>
