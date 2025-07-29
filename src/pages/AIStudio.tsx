@@ -71,7 +71,6 @@ const AIStudio = () => {
           {aiFeatures.map((feature) => {
             const IconComponent = feature.icon;
             const isLocked = user && !canAccessFeature(feature.id);
-            const isFree = feature.id === 'advisor';
             
             return (
               <Card 
@@ -81,11 +80,6 @@ const AIStudio = () => {
                 } ${isLocked ? 'opacity-75' : ''}`}
                 onClick={() => setActiveTab(feature.id)}
               >
-                {isFree && (
-                  <div className="absolute -top-2 -right-2 z-10">
-                    <Badge className="bg-green-500 text-white text-xs">FREE</Badge>
-                  </div>
-                )}
                 {isLocked && (
                   <div className="absolute -top-2 -right-2 z-10">
                     <Badge className="bg-orange-500 text-white text-xs">
@@ -124,7 +118,14 @@ const AIStudio = () => {
           </TabsList>
 
           <TabsContent value="advisor" className="space-y-6">
-            <AIBusinessAdvisor />
+            {canAccessFeature('advisor') ? (
+              <AIBusinessAdvisor />
+            ) : (
+              <SubscriptionUpgrade 
+                featureName="AI Business Advisor" 
+                onUpgrade={() => window.location.reload()}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
