@@ -80,7 +80,7 @@ const SubscriptionUpgrade = ({ featureName, onUpgrade }: SubscriptionUpgradeProp
                   <Zap className="h-5 w-5 text-yellow-500" />
                 </div>
                 <CardDescription>Full access to AI Studio</CardDescription>
-                <div className="text-2xl font-bold">£9.99<span className="text-sm font-normal">/month</span></div>
+                <div className="text-2xl font-bold">£11<span className="text-sm font-normal">/month</span></div>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
@@ -124,7 +124,7 @@ const SubscriptionUpgrade = ({ featureName, onUpgrade }: SubscriptionUpgradeProp
       <CheckoutModal
         isOpen={isCheckoutOpen}
         onClose={() => setIsCheckoutOpen(false)}
-        amount={9.99}
+        amount={11}
         currency="GBP"
         itemName="AI Studio Premium Subscription"
         onPaymentSuccess={handlePaymentSuccess}
