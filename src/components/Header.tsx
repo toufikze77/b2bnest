@@ -141,41 +141,6 @@ const Header = () => {
 
           {/* Live Prices and User Menu */}
           <div className="flex items-center space-x-2">
-            {/* Live Prices Toggles */}
-            <div className="hidden sm:flex items-center space-x-1">
-              <Button
-                variant={isPriceSidebarOpen && activePriceTab === 'crypto' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => {
-                  if (isPriceSidebarOpen && activePriceTab === 'crypto') {
-                    setIsPriceSidebarOpen(false);
-                  } else {
-                    setActivePriceTab('crypto');
-                    setIsPriceSidebarOpen(true);
-                  }
-                }}
-                className="h-8 px-2"
-              >
-                <Bitcoin className="h-4 w-4 mr-1" />
-                <span className="text-xs">Crypto</span>
-              </Button>
-              <Button
-                variant={isPriceSidebarOpen && activePriceTab === 'forex' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => {
-                  if (isPriceSidebarOpen && activePriceTab === 'forex') {
-                    setIsPriceSidebarOpen(false);
-                  } else {
-                    setActivePriceTab('forex');
-                    setIsPriceSidebarOpen(true);
-                  }
-                }}
-                className="h-8 px-2"
-              >
-                <Globe className="h-4 w-4 mr-1" />
-                <span className="text-xs">Forex</span>
-              </Button>
-            </div>
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -320,34 +285,6 @@ const Header = () => {
                       Services
               </Link>
               
-              {/* Mobile Live Prices */}
-              <div className="px-2">
-                <div className="font-medium text-gray-900 mb-2">Live Prices</div>
-                <div className="pl-4 space-y-2">
-                  <button
-                    onClick={() => {
-                      setActivePriceTab('crypto');
-                      setIsPriceSidebarOpen(true);
-                      setIsMenuOpen(false);
-                    }}
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center w-full text-left"
-                  >
-                    <Bitcoin className="h-4 w-4 mr-2" />
-                    Crypto Prices
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActivePriceTab('forex');
-                      setIsPriceSidebarOpen(true);
-                      setIsMenuOpen(false);
-                    }}
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center w-full text-left"
-                  >
-                    <Globe className="h-4 w-4 mr-2" />
-                    Forex Rates
-                  </button>
-                </div>
-              </div>
                   </div>
                 </div>
               )}

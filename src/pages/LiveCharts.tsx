@@ -48,10 +48,10 @@ const LiveCharts = () => {
                   <TrendingUp className="h-4 w-4 mr-2" />
                   Join 60% of Successful Business Owners
                 </div>
-                <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6">
+                <h1 className="text-5xl font-bold text-foreground mb-6">
                   Diversify Your Business Wealth
                 </h1>
-                <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8 leading-relaxed">
+                <p className="text-xl text-foreground/80 max-w-3xl mx-auto mb-8 leading-relaxed">
                   Smart entrepreneurs don't put all their eggs in one basket. Discover how over 60% of business owners 
                   are building wealth through crypto, forex, and stock investments alongside their core operations.
                 </p>
@@ -498,8 +498,8 @@ const LiveCharts = () => {
               <div className="mb-16">
                 <Card className="bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 backdrop-blur-sm border shadow-xl">
                   <CardContent className="p-8 text-center">
-                    <h2 className="text-3xl font-bold mb-4 text-white drop-shadow-sm">Ready to Start Your Investment Journey?</h2>
-                    <p className="text-lg mb-8 text-white/95 max-w-2xl mx-auto drop-shadow-sm">
+                    <h2 className="text-3xl font-bold mb-4 text-white drop-shadow-lg">Ready to Start Your Investment Journey?</h2>
+                    <p className="text-lg mb-8 text-white max-w-2xl mx-auto drop-shadow-lg">
                       Join thousands of business owners who are already building wealth through smart market diversification. 
                       Start small, think long-term, and let compound growth work for you.
                     </p>
