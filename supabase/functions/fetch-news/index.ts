@@ -129,6 +129,11 @@ function parseRSSFeed(rssText: string, category: string, feedUrl: string): NewsA
   const articles: NewsArticle[] = [];
   
   try {
+    // Handle CoinDesk specifically with better parsing
+    if (feedUrl.includes('coindesk.com')) {
+      return parseCoinDeskFeed(rssText, category);
+    }
+    
     // Simple regex-based RSS parsing for basic feeds
     const itemRegex = /<item[^>]*>([\s\S]*?)<\/item>/gi;
     const items = rssText.match(itemRegex) || [];
@@ -149,8 +154,6 @@ function parseRSSFeed(rssText: string, category: string, feedUrl: string): NewsA
         let source = 'Business News';
         if (feedUrl.includes('cnbc.com')) {
           source = 'CNBC';
-        } else if (feedUrl.includes('coindesk.com')) {
-          source = 'CoinDesk';
         }
 
         if (title && link) {
@@ -171,6 +174,62 @@ function parseRSSFeed(rssText: string, category: string, feedUrl: string): NewsA
     }
   } catch (parseError) {
     console.error('Error parsing RSS feed:', parseError);
+  }
+
+  return articles;
+}
+
+function parseCoinDeskFeed(rssText: string, category: string): NewsArticle[] {
+  const articles: NewsArticle[] = [];
+  
+  try {
+    console.log('Parsing CoinDesk feed with improved logic...');
+    
+    // Extract channel items
+    const itemRegex = /<item[^>]*>([\s\S]*?)<\/item>/gi;
+    const items = rssText.match(itemRegex) || [];
+    
+    console.log(`Found ${items.length} CoinDesk items`);
+
+    for (const item of items) {
+      try {
+        const title = extractTagContent(item, 'title');
+        const link = extractTagContent(item, 'link') || extractTagContent(item, 'guid');
+        const description = extractTagContent(item, 'description');
+        const pubDate = extractTagContent(item, 'pubDate');
+        
+        // Try to extract image from enclosure or media tags
+        let imageUrl = null;
+        const enclosureMatch = item.match(/<enclosure[^>]+url="([^"]+)"[^>]*type="image/i);
+        if (enclosureMatch) {
+          imageUrl = enclosureMatch[1];
+        } else {
+          // Try media:content or other image tags
+          const mediaMatch = item.match(/<media:content[^>]+url="([^"]+)"/i) || 
+                           item.match(/<img[^>]+src="([^"]+)"/i);
+          if (mediaMatch) {
+            imageUrl = mediaMatch[1];
+          }
+        }
+
+        if (title && link) {
+          articles.push({
+            title: cleanText(title),
+            description: description ? cleanText(description) : undefined,
+            content: description ? cleanText(description) : undefined,
+            link: link.trim(),
+            published_at: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
+            source: 'CoinDesk',
+            category,
+            image_url: imageUrl
+          });
+        }
+      } catch (itemError) {
+        console.error('Error parsing CoinDesk item:', itemError);
+      }
+    }
+  } catch (parseError) {
+    console.error('Error parsing CoinDesk feed:', parseError);
   }
 
   return articles;
