@@ -21,14 +21,13 @@ import {
   Bitcoin,
   Activity
 } from 'lucide-react';
-import TradingViewWidget from '@/components/TradingViewWidget';
+
 import CandlestickChart from '@/components/charts/CandlestickChart';
 import Footer from '@/components/Footer';
 import SEOHead from '@/components/SEOHead';
 
 const LiveCharts = () => {
   const [activeTab, setActiveTab] = useState<'crypto' | 'forex'>('crypto');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
     <>
@@ -42,7 +41,7 @@ const LiveCharts = () => {
       <div className="min-h-screen bg-gradient-to-br from-background to-secondary/10">
         <div className="flex">
           {/* Main Content Area */}
-          <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'mr-[420px]' : 'mr-0'}`}>
+          <div className="flex-1">
             <div className="container mx-auto px-4 py-8">
               {/* Hero Section */}
               <div className="text-center mb-12">
@@ -74,19 +73,11 @@ const LiveCharts = () => {
               </div>
 
               {/* Header Controls */}
-              <div className="flex justify-between items-center mb-8">
+              <div className="mb-8">
                 <div>
                   <h2 className="text-2xl font-bold">Live Market Data</h2>
                   <p className="text-muted-foreground mt-1">Real-time market insights for informed investment decisions</p>
                 </div>
-                <Button
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  <Activity className="h-4 w-4" />
-                  {sidebarOpen ? 'Hide Sidebar' : 'Show Live Prices'}
-                </Button>
               </div>
 
               {/* Stats Cards */}
@@ -627,27 +618,6 @@ const LiveCharts = () => {
             </div>
           </div>
 
-          {/* Sticky Sidebar */}
-          {sidebarOpen && (
-            <div className="fixed right-0 top-16 w-[420px] h-[calc(100vh-4rem)] bg-background border-l border-border shadow-xl z-30 overflow-hidden">
-              <div className="p-4 border-b border-border">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">Live Market Overview</h2>
-                  <Button
-                    onClick={() => setSidebarOpen(false)}
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              <div className="h-full overflow-hidden">
-                <TradingViewWidget />
-              </div>
-            </div>
-          )}
         </div>
         <Footer />
       </div>
