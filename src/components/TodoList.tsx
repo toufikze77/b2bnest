@@ -42,6 +42,9 @@ const TodoList = () => {
   useEffect(() => {
     if (user) {
       fetchTodos();
+    } else {
+      // For non-authenticated users, show empty state
+      setLoading(false);
     }
   }, [user]);
 
@@ -82,7 +85,14 @@ const TodoList = () => {
   };
 
   const createTodo = async (todoData: any) => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Sign Up Required",
+        description: "Please sign up to save your tasks permanently.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     if (checkFreePlanLimit()) return;
 
@@ -198,18 +208,7 @@ const TodoList = () => {
   const doneCount = todos.filter(t => t.status === 'done').length;
   const totalCount = todos.length;
 
-  if (!user) {
-    return (
-      <div className="max-w-4xl mx-auto p-6">
-        <Card>
-          <CardContent className="p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">Authentication Required</h2>
-            <p className="text-gray-600">Please log in to access your tasks.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Remove authentication requirement to allow free access
 
   return (
     <div className="max-w-6xl mx-auto p-6">
