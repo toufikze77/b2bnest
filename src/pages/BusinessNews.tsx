@@ -113,12 +113,12 @@ const BusinessNewsPage = () => {
 
   const categorizeArticles = (articles: NewsArticle[]) => {
     const cnbcArticles = articles.filter(article => article.source === 'CNBC');
-    const wsjArticles = articles.filter(article => article.source === 'Wall Street Journal');
+    const cryptoArticles = articles.filter(article => article.source === 'CoinDesk');
     
-    return { cnbcArticles, wsjArticles };
+    return { cnbcArticles, cryptoArticles };
   };
 
-  const { cnbcArticles, wsjArticles } = categorizeArticles(articles);
+  const { cnbcArticles, cryptoArticles } = categorizeArticles(articles);
 
   if (loading) {
     return (
@@ -151,7 +151,7 @@ const BusinessNewsPage = () => {
                 Business News
               </h1>
               <p className="text-muted-foreground text-lg">
-                Stay updated with the latest business and investment news from CNBC and Wall Street Journal
+                Stay updated with the latest business and crypto news from CNBC and CoinDesk
               </p>
             </div>
             {isAdmin && (
@@ -197,13 +197,13 @@ const BusinessNewsPage = () => {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">WSJ Articles</CardTitle>
+              <CardTitle className="text-sm font-medium">Crypto Articles</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{wsjArticles.length}</div>
+              <div className="text-2xl font-bold">{cryptoArticles.length}</div>
               <p className="text-xs text-muted-foreground">
-                Market insights
+                Crypto insights
               </p>
             </CardContent>
           </Card>
@@ -270,23 +270,23 @@ const BusinessNewsPage = () => {
             </CardContent>
           </Card>
 
-          {/* Wall Street Journal News */}
+          {/* Crypto News */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5" />
-                Wall Street Journal Market News
+                Crypto News
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4 max-h-[600px] overflow-y-auto">
-                {wsjArticles.length === 0 ? (
+                {cryptoArticles.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No WSJ articles available</p>
+                    <p>No crypto articles available</p>
                   </div>
                 ) : (
-                  wsjArticles.map((article) => (
+                  cryptoArticles.map((article) => (
                     <div
                       key={article.id}
                       className="border-b border-border last:border-b-0 pb-4 last:pb-0"
@@ -333,7 +333,7 @@ const BusinessNewsPage = () => {
         {/* Footer */}
         <div className="mt-8 pt-8 border-t border-border">
           <p className="text-xs text-muted-foreground text-center">
-            News powered by CNBC & Wall Street Journal • Updated automatically • 
+            News powered by CNBC & CoinDesk • Updated automatically • 
             Last refresh: {new Date().toLocaleString()}
           </p>
         </div>

@@ -30,15 +30,15 @@ Deno.serve(async (req) => {
 
     console.log('Starting news fetch process...');
 
-    // CNBC and Investopedia RSS feeds for business news
+    // CNBC and CoinDesk RSS feeds for business and crypto news
     const rssFeeds = [
       {
         url: 'https://www.cnbc.com/id/10001147/device/rss/rss.html',
         category: 'Business'
       },
       {
-        url: 'https://feeds.a.dj.com/rss/RSSMarketsMain.xml',
-        category: 'Markets'
+        url: 'https://www.coindesk.com/arc/outboundfeeds/rss/',
+        category: 'Crypto'
       }
     ];
 
@@ -149,8 +149,8 @@ function parseRSSFeed(rssText: string, category: string, feedUrl: string): NewsA
         let source = 'Business News';
         if (feedUrl.includes('cnbc.com')) {
           source = 'CNBC';
-        } else if (feedUrl.includes('a.dj.com')) {
-          source = 'Wall Street Journal';
+        } else if (feedUrl.includes('coindesk.com')) {
+          source = 'CoinDesk';
         }
 
         if (title && link) {
