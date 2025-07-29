@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowUpDown, TrendingUp, RefreshCw } from 'lucide-react';
+import { ArrowUpDown, TrendingUp, RefreshCw, Zap, Globe, DollarSign } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface ExchangeRates {
@@ -14,6 +14,7 @@ interface CurrencyData {
   code: string;
   name: string;
   symbol: string;
+  flag: string;
 }
 
 const CurrencyConverter = () => {
@@ -24,28 +25,29 @@ const CurrencyConverter = () => {
   const [convertedAmount, setConvertedAmount] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
   const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [isConverting, setIsConverting] = useState<boolean>(false);
 
   const currencies: CurrencyData[] = [
-    { code: 'USD', name: 'US Dollar', symbol: '$' },
-    { code: 'EUR', name: 'Euro', symbol: '€' },
-    { code: 'GBP', name: 'British Pound', symbol: '£' },
-    { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
-    { code: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
-    { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$' },
-    { code: 'CHF', name: 'Swiss Franc', symbol: 'Fr' },
-    { code: 'CNY', name: 'Chinese Yuan', symbol: '¥' },
-    { code: 'SEK', name: 'Swedish Krona', symbol: 'kr' },
-    { code: 'NZD', name: 'New Zealand Dollar', symbol: 'NZ$' },
-    { code: 'MXN', name: 'Mexican Peso', symbol: '$' },
-    { code: 'SGD', name: 'Singapore Dollar', symbol: 'S$' },
-    { code: 'HKD', name: 'Hong Kong Dollar', symbol: 'HK$' },
-    { code: 'NOK', name: 'Norwegian Krone', symbol: 'kr' },
-    { code: 'TRY', name: 'Turkish Lira', symbol: '₺' },
-    { code: 'RUB', name: 'Russian Ruble', symbol: '₽' },
-    { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
-    { code: 'BRL', name: 'Brazilian Real', symbol: 'R$' },
-    { code: 'ZAR', name: 'South African Rand', symbol: 'R' },
-    { code: 'KRW', name: 'South Korean Won', symbol: '₩' }
+    { code: 'USD', name: 'US Dollar', symbol: '$', flag: '🇺🇸' },
+    { code: 'EUR', name: 'Euro', symbol: '€', flag: '🇪🇺' },
+    { code: 'GBP', name: 'British Pound', symbol: '£', flag: '🇬🇧' },
+    { code: 'JPY', name: 'Japanese Yen', symbol: '¥', flag: '🇯🇵' },
+    { code: 'AUD', name: 'Australian Dollar', symbol: 'A$', flag: '🇦🇺' },
+    { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$', flag: '🇨🇦' },
+    { code: 'CHF', name: 'Swiss Franc', symbol: 'Fr', flag: '🇨🇭' },
+    { code: 'CNY', name: 'Chinese Yuan', symbol: '¥', flag: '🇨🇳' },
+    { code: 'SEK', name: 'Swedish Krona', symbol: 'kr', flag: '🇸🇪' },
+    { code: 'NZD', name: 'New Zealand Dollar', symbol: 'NZ$', flag: '🇳🇿' },
+    { code: 'MXN', name: 'Mexican Peso', symbol: '$', flag: '🇲🇽' },
+    { code: 'SGD', name: 'Singapore Dollar', symbol: 'S$', flag: '🇸🇬' },
+    { code: 'HKD', name: 'Hong Kong Dollar', symbol: 'HK$', flag: '🇭🇰' },
+    { code: 'NOK', name: 'Norwegian Krone', symbol: 'kr', flag: '🇳🇴' },
+    { code: 'TRY', name: 'Turkish Lira', symbol: '₺', flag: '🇹🇷' },
+    { code: 'RUB', name: 'Russian Ruble', symbol: '₽', flag: '🇷🇺' },
+    { code: 'INR', name: 'Indian Rupee', symbol: '₹', flag: '🇮🇳' },
+    { code: 'BRL', name: 'Brazilian Real', symbol: 'R$', flag: '🇧🇷' },
+    { code: 'ZAR', name: 'South African Rand', symbol: 'R', flag: '🇿🇦' },
+    { code: 'KRW', name: 'South Korean Won', symbol: '₩', flag: '🇰🇷' }
   ];
 
   const fetchExchangeRates = async () => {
@@ -63,13 +65,13 @@ const CurrencyConverter = () => {
       setLastUpdated(new Date().toLocaleString());
       
       toast({
-        title: "Exchange rates updated",
+        title: "🚀 Exchange rates updated",
         description: "Latest currency rates have been fetched successfully.",
       });
     } catch (error) {
       console.error('Error fetching exchange rates:', error);
       toast({
-        title: "Error fetching rates",
+        title: "❌ Error fetching rates",
         description: "Unable to fetch the latest exchange rates. Please try again.",
         variant: "destructive"
       });
@@ -84,10 +86,16 @@ const CurrencyConverter = () => {
 
   useEffect(() => {
     if (exchangeRates[toCurrency] && amount) {
-      const numAmount = parseFloat(amount);
-      if (!isNaN(numAmount)) {
-        setConvertedAmount(numAmount * exchangeRates[toCurrency]);
-      }
+      setIsConverting(true);
+      const timer = setTimeout(() => {
+        const numAmount = parseFloat(amount);
+        if (!isNaN(numAmount)) {
+          setConvertedAmount(numAmount * exchangeRates[toCurrency]);
+        }
+        setIsConverting(false);
+      }, 300);
+
+      return () => clearTimeout(timer);
     }
   }, [amount, toCurrency, exchangeRates]);
 
@@ -98,7 +106,6 @@ const CurrencyConverter = () => {
   };
 
   const formatCurrency = (value: number, currencyCode: string) => {
-    const currency = currencies.find(c => c.code === currencyCode);
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currencyCode,
@@ -114,50 +121,69 @@ const CurrencyConverter = () => {
     return 0;
   };
 
+  const getCurrencyFlag = (code: string) => {
+    return currencies.find(c => c.code === code)?.flag || '💱';
+  };
+
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Currency Converter</h1>
-        <p className="text-gray-600">
-          Convert currencies using real-time exchange rates from reliable financial data sources.
+    <div className="max-w-6xl mx-auto p-6">
+      {/* Hero Section */}
+      <div className="text-center mb-8 animate-fade-in">
+        <div className="inline-flex items-center gap-3 mb-4">
+          <div className="h-12 w-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center animate-pulse">
+            <Globe className="h-6 w-6 text-white" />
+          </div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Currency Converter
+          </h1>
+        </div>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          Convert currencies instantly with real-time exchange rates from reliable financial data sources
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-8 lg:grid-cols-3">
         {/* Main Converter */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Currency Conversion
+        <div className="lg:col-span-2 animate-fade-in">
+          <Card className="border-0 shadow-2xl bg-gradient-to-br from-white to-gray-50/50 backdrop-blur-sm">
+            <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Zap className="h-6 w-6" />
+                Live Currency Conversion
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="p-8 space-y-8">
               {/* Amount Input */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Amount</label>
+              <div className="space-y-3">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Amount
+                </label>
                 <Input
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="Enter amount"
-                  className="text-lg"
+                  className="text-2xl font-bold h-14 border-2 focus:border-blue-500 transition-all duration-300 hover:border-blue-300"
                 />
               </div>
 
               {/* Currency Selection */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">From</label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                <div className="space-y-3">
+                  <label className="text-sm font-semibold text-gray-700">From Currency</label>
                   <Select value={fromCurrency} onValueChange={setFromCurrency}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-12 border-2 hover:border-blue-300 transition-all duration-300">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-60">
                       {currencies.map((currency) => (
-                        <SelectItem key={currency.code} value={currency.code}>
-                          {currency.code} - {currency.name}
+                        <SelectItem key={currency.code} value={currency.code} className="py-3">
+                          <div className="flex items-center gap-3">
+                            <span className="text-lg">{currency.flag}</span>
+                            <span className="font-medium">{currency.code}</span>
+                            <span className="text-muted-foreground">- {currency.name}</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -169,22 +195,26 @@ const CurrencyConverter = () => {
                     variant="outline"
                     size="icon"
                     onClick={handleSwapCurrencies}
-                    className="h-10 w-10"
+                    className="h-12 w-12 border-2 hover:border-blue-500 hover:bg-blue-50 hover:scale-110 transition-all duration-300 group"
                   >
-                    <ArrowUpDown className="h-4 w-4" />
+                    <ArrowUpDown className="h-5 w-5 group-hover:rotate-180 transition-transform duration-300" />
                   </Button>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">To</label>
+                <div className="space-y-3">
+                  <label className="text-sm font-semibold text-gray-700">To Currency</label>
                   <Select value={toCurrency} onValueChange={setToCurrency}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-12 border-2 hover:border-blue-300 transition-all duration-300">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-60">
                       {currencies.map((currency) => (
-                        <SelectItem key={currency.code} value={currency.code}>
-                          {currency.code} - {currency.name}
+                        <SelectItem key={currency.code} value={currency.code} className="py-3">
+                          <div className="flex items-center gap-3">
+                            <span className="text-lg">{currency.flag}</span>
+                            <span className="font-medium">{currency.code}</span>
+                            <span className="text-muted-foreground">- {currency.name}</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -193,35 +223,44 @@ const CurrencyConverter = () => {
               </div>
 
               {/* Conversion Result */}
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg border">
-                <div className="text-center">
-                  <div className="text-sm text-gray-600 mb-2">
-                    {amount} {fromCurrency} equals
+              <div className="relative overflow-hidden bg-gradient-to-r from-blue-50 via-purple-50 to-blue-50 p-8 rounded-2xl border-2 border-blue-100 animate-scale-in">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-purple-600/5 animate-pulse"></div>
+                <div className="relative text-center">
+                  <div className="flex items-center justify-center gap-2 text-sm text-gray-600 mb-3">
+                    <span className="text-xl">{getCurrencyFlag(fromCurrency)}</span>
+                    <span>{amount} {fromCurrency} equals</span>
+                    <span className="text-xl">{getCurrencyFlag(toCurrency)}</span>
                   </div>
-                  <div className="text-3xl font-bold text-gray-900 mb-2">
-                    {formatCurrency(convertedAmount, toCurrency)}
+                  <div className={`text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3 transition-all duration-500 ${isConverting ? 'scale-110 opacity-50' : 'scale-100 opacity-100'}`}>
+                    {isConverting ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+                      </div>
+                    ) : (
+                      formatCurrency(convertedAmount, toCurrency)
+                    )}
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-gray-500 bg-white/50 rounded-lg px-4 py-2 inline-block">
                     Exchange Rate: 1 {fromCurrency} = {getExchangeRate().toFixed(6)} {toCurrency}
                   </div>
                 </div>
               </div>
 
-              {/* Refresh Button */}
-              <div className="flex justify-between items-center">
+              {/* Controls */}
+              <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                 <Button 
                   variant="outline" 
                   onClick={fetchExchangeRates}
                   disabled={loading}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300"
                 >
                   <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                   Refresh Rates
                 </Button>
                 
                 {lastUpdated && (
-                  <p className="text-sm text-gray-500">
-                    Last updated: {lastUpdated}
+                  <p className="text-sm text-gray-500 bg-gray-50 rounded-lg px-3 py-1">
+                    🕒 Updated: {lastUpdated.split(' ')[1]}
                   </p>
                 )}
               </div>
@@ -229,21 +268,33 @@ const CurrencyConverter = () => {
           </Card>
         </div>
 
-        {/* Popular Conversions */}
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle>Popular Rates</CardTitle>
+        {/* Sidebar */}
+        <div className="space-y-6 animate-fade-in">
+          {/* Popular Rates */}
+          <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-gray-50/50">
+            <CardHeader className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-t-lg">
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Popular Rates
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {['EUR', 'GBP', 'JPY', 'CAD', 'AUD'].map((currency) => (
-                  <div key={currency} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <div className="font-medium">
-                      1 {fromCurrency} → {currency}
+            <CardContent className="p-4">
+              <div className="space-y-3">
+                {['EUR', 'GBP', 'JPY', 'CAD', 'AUD'].map((currency, index) => (
+                  <div key={currency} className={`flex justify-between items-center p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border hover:shadow-md transition-all duration-300 hover:scale-105 animate-fade-in`} style={{animationDelay: `${index * 100}ms`}}>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">{getCurrencyFlag(currency)}</span>
+                      <div className="font-medium">
+                        <div className="text-sm text-gray-500">1 {fromCurrency}</div>
+                        <div className="font-bold">{currency}</div>
+                      </div>
                     </div>
-                    <div className="text-sm font-semibold">
-                      {exchangeRates[currency] ? exchangeRates[currency].toFixed(4) : 'Loading...'}
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-blue-600">
+                        {exchangeRates[currency] ? exchangeRates[currency].toFixed(4) : (
+                          <div className="animate-pulse w-16 h-4 bg-gray-200 rounded"></div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -252,29 +303,47 @@ const CurrencyConverter = () => {
           </Card>
 
           {/* Features */}
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Features</CardTitle>
+          <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-gray-50/50">
+            <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-t-lg">
+              <CardTitle>✨ Features</CardTitle>
             </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                  Real-time exchange rates
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                  20+ major currencies
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                  Accurate calculations
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                  Free to use
-                </li>
+            <CardContent className="p-4">
+              <ul className="space-y-3">
+                {[
+                  { icon: '⚡', text: 'Real-time exchange rates' },
+                  { icon: '🌍', text: '20+ major currencies' },
+                  { icon: '🎯', text: 'Accurate calculations' },
+                  { icon: '🆓', text: 'Free to use' },
+                  { icon: '📱', text: 'Mobile responsive' },
+                  { icon: '🔒', text: 'Secure & private' }
+                ].map((feature, index) => (
+                  <li key={index} className={`flex items-center gap-3 p-3 rounded-lg bg-white/50 hover:bg-white transition-all duration-300 hover:scale-105 animate-fade-in`} style={{animationDelay: `${index * 150}ms`}}>
+                    <span className="text-lg">{feature.icon}</span>
+                    <span className="text-sm font-medium text-gray-700">{feature.text}</span>
+                  </li>
+                ))}
               </ul>
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions */}
+          <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-gray-50/50">
+            <CardHeader className="bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-t-lg">
+              <CardTitle>🚀 Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 space-y-3">
+              <Button variant="outline" className="w-full justify-start hover:bg-orange-50 hover:border-orange-300 transition-all duration-300">
+                <span className="mr-2">💰</span>
+                Set Favorite Pairs
+              </Button>
+              <Button variant="outline" className="w-full justify-start hover:bg-blue-50 hover:border-blue-300 transition-all duration-300">
+                <span className="mr-2">📊</span>
+                View Rate History
+              </Button>
+              <Button variant="outline" className="w-full justify-start hover:bg-green-50 hover:border-green-300 transition-all duration-300">
+                <span className="mr-2">🔔</span>
+                Rate Alerts
+              </Button>
             </CardContent>
           </Card>
         </div>
