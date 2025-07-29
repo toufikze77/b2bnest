@@ -82,10 +82,17 @@ export const useSubscription = () => {
     fetchSubscription();
   }, [user]);
 
-  const isPremium = isAdmin || (subscription.subscribed && subscription.subscription_tier !== 'free');
+  // Special access emails for AI Studio features
+  const specialAccessEmails = ['toufikze@gmail.com', 'toufik.zemri@outlook.com'];
+  const hasSpecialAccess = user?.email && specialAccessEmails.includes(user.email);
+  
+  const isPremium = isAdmin || hasSpecialAccess || (subscription.subscribed && subscription.subscription_tier !== 'free');
   const canAccessFeature = (featureId: string) => {
     // Admin users have access to all features
     if (isAdmin) return true;
+    
+    // Special access users have full AI Studio access
+    if (hasSpecialAccess && ['analytics', 'workflows', 'personalization'].includes(featureId)) return true;
     
     // Free features available to all users
     if (['advisor', 'crm', 'contacts', 'deals'].includes(featureId)) return true;
