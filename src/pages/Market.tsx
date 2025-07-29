@@ -27,7 +27,7 @@ import TradingViewWidget from '@/components/TradingViewWidget';
 import Footer from '@/components/Footer';
 import SEOHead from '@/components/SEOHead';
 
-const LiveCharts = () => {
+const Market = () => {
 
   return (
     <>
@@ -569,4 +569,4 @@ const LiveCharts = () => {
   );
 };
 
-export default LiveCharts;
+export default Market;
