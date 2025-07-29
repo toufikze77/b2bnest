@@ -1321,6 +1321,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          image_url: string | null
           is_public: boolean | null
           like_count: number | null
           media_urls: string[] | null
@@ -1335,6 +1336,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          image_url?: string | null
           is_public?: boolean | null
           like_count?: number | null
           media_urls?: string[] | null
@@ -1349,6 +1351,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          image_url?: string | null
           is_public?: boolean | null
           like_count?: number | null
           media_urls?: string[] | null
