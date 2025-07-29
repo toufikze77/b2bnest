@@ -627,8 +627,11 @@ const LiveCharts = () => {
             </div>
           </div>
 
-          {/* TradingView Widget */}
-          {sidebarOpen && <TradingViewWidget />}
+          {/* TradingView Widget Sidebar */}
+          <TradingViewWidget 
+            isOpen={sidebarOpen} 
+            onClose={() => setSidebarOpen(false)} 
+          />
         </div>
         <Footer />
       </div>
