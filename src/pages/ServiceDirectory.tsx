@@ -386,7 +386,8 @@ const ServiceDirectory = () => {
                   size="lg" 
                   className="bg-blue-600 hover:bg-blue-700"
                   onClick={() => {
-                    window.location.href = '/auth';
+                    // Navigate to advertisement section since services use the advertisement form
+                    window.location.href = '/#advertisement';
                   }}
                 >
                   Add Service Listing

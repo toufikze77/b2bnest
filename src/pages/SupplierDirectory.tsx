@@ -294,7 +294,10 @@ const SupplierDirectory = () => {
                   size="lg" 
                   className="bg-blue-600 hover:bg-blue-700"
                   onClick={() => {
-                    window.location.href = '/auth';
+                    toast({
+                      title: "Feature Coming Soon",
+                      description: "Supplier listing form will be available soon. Contact support for assistance.",
+                    });
                   }}
                 >
                   Add Your Supplier Listing
