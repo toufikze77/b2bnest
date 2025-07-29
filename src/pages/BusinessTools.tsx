@@ -245,7 +245,7 @@ const BusinessTools = () => {
       icon: Shield,
       color: 'bg-red-500',
       benefits: ['Avoid penalties', 'Stay compliant', 'Industry-specific guidance'],
-      isPremium: true
+      isPremium: false
     },
     {
       id: 'best-practices' as ToolType,
@@ -272,7 +272,7 @@ const BusinessTools = () => {
       icon: Building2,
       color: 'bg-orange-500',
       benefits: ['Vetted service providers', 'Compare options', 'Get recommendations'],
-      isPremium: true
+      isPremium: false
     },
     {
       id: 'project-management' as ToolType,
