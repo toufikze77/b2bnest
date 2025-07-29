@@ -30,19 +30,35 @@ Deno.serve(async (req) => {
 
     console.log('Starting news fetch process...');
 
-    // Reuters RSS feeds for different business categories
+    // Business news RSS feeds from multiple reliable sources
     const rssFeeds = [
       {
-        url: 'https://www.reutersagency.com/feed/?best-sectors=business-finance&post_type=best',
-        category: 'Business & Finance'
+        url: 'https://feeds.reuters.com/reuters/businessNews',
+        category: 'Business'
       },
       {
-        url: 'https://www.reutersagency.com/feed/?best-sectors=technology&post_type=best',
+        url: 'https://feeds.reuters.com/reuters/technologyNews',
         category: 'Technology'
       },
       {
-        url: 'https://www.reutersagency.com/feed/?best-sectors=markets&post_type=best',
-        category: 'Markets'
+        url: 'https://rss.cnn.com/rss/money_latest.rss',
+        category: 'Business'
+      },
+      {
+        url: 'https://feeds.feedburner.com/TechCrunch/',
+        category: 'Technology'
+      },
+      {
+        url: 'https://www.business-standard.com/rss/latest.rss',
+        category: 'Business'
+      },
+      {
+        url: 'https://feeds.washingtonpost.com/rss/business/technology',
+        category: 'Technology'
+      },
+      {
+        url: 'https://feeds.npr.org/1006/rss.xml',
+        category: 'Business'
       }
     ];
 
@@ -69,7 +85,7 @@ Deno.serve(async (req) => {
         console.log(`Retrieved RSS content, length: ${rssText.length}`);
 
         // Parse RSS XML manually
-        const articles = parseRSSFeed(rssText, feed.category);
+        const articles = parseRSSFeed(rssText, feed.category, feed.url);
         console.log(`Parsed ${articles.length} articles from ${feed.category} feed`);
 
         totalArticles += articles.length;
@@ -129,7 +145,7 @@ Deno.serve(async (req) => {
   }
 });
 
-function parseRSSFeed(rssText: string, category: string): NewsArticle[] {
+function parseRSSFeed(rssText: string, category: string, feedUrl: string): NewsArticle[] {
   const articles: NewsArticle[] = [];
   
   try {
@@ -149,6 +165,16 @@ function parseRSSFeed(rssText: string, category: string): NewsArticle[] {
         const imageMatch = item.match(/<img[^>]+src="([^"]+)"/i);
         const imageUrl = imageMatch ? imageMatch[1] : null;
 
+        // Determine source from feed URL
+        let source = 'News';
+        if (feedUrl.includes('reuters.com')) source = 'Reuters';
+        else if (feedUrl.includes('cnn.com')) source = 'CNN';
+        else if (feedUrl.includes('bloomberg.com')) source = 'Bloomberg';
+        else if (feedUrl.includes('techcrunch.com')) source = 'TechCrunch';
+        else if (feedUrl.includes('business-standard.com')) source = 'Business Standard';
+        else if (feedUrl.includes('washingtonpost.com')) source = 'Washington Post';
+        else if (feedUrl.includes('npr.org')) source = 'NPR';
+
         if (title && link) {
           articles.push({
             title: cleanText(title),
@@ -156,7 +182,7 @@ function parseRSSFeed(rssText: string, category: string): NewsArticle[] {
             content: content ? cleanText(content) : undefined,
             link: link.trim(),
             published_at: pubDate ? new Date(pubDate).toISOString() : undefined,
-            source: 'Reuters',
+            source,
             category,
             image_url: imageUrl
           });
