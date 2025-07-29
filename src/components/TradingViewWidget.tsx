@@ -8,14 +8,28 @@ function TradingViewWidget() {
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <style>
-        body { margin: 0; padding: 0; background: #0F0F0F; }
+        html, body {
+          margin: 0;
+          padding: 0;
+          height: 100%;
+          background: #0F0F0F;
+        }
+        .tradingview-widget-container {
+          height: 100%;
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+        }
+        .tradingview-widget-container__widget {
+          flex: 1;
+        }
         .blue-text { color: #2962ff; }
       </style>
     </head>
     <body>
       <!-- TradingView Widget BEGIN -->
-      <div class="tradingview-widget-container" style="height:100vh;width:100%">
-        <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
+      <div class="tradingview-widget-container">
+        <div class="tradingview-widget-container__widget"></div>
         <div class="tradingview-widget-copyright">
           <a href="https://www.tradingview.com/symbols/BITSTAMP-ETHUSD/?exchange=BITSTAMP" rel="noopener nofollow" target="_blank">
             <span class="blue-text">ETHUSD chart by TradingView</span>
