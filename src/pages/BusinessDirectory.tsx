@@ -31,12 +31,102 @@ const BusinessDirectory = () => {
     totalListings: 0
   });
   const [featuredListings, setFeaturedListings] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchStats();
     fetchFeaturedListings();
   }, []);
+
+  const performSearch = async (query: string) => {
+    if (!query.trim()) {
+      setShowSearchResults(false);
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const searchQuery = query.toLowerCase().trim();
+      
+      // Search companies
+      const { data: companies } = await supabase
+        .from('companies')
+        .select('*')
+        .or(`name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,industry.ilike.%${searchQuery}%,location.ilike.%${searchQuery}%`)
+        .limit(10);
+
+      // Search suppliers  
+      const { data: suppliers } = await supabase
+        .from('suppliers')
+        .select('*')
+        .eq('is_active', true)
+        .or(`name.ilike.%${searchQuery}%,contact_person.ilike.%${searchQuery}%,address.ilike.%${searchQuery}%`)
+        .limit(10);
+
+      // Search services
+      const { data: services } = await supabase
+        .from('advertisements')
+        .select('*')
+        .eq('is_service', true)
+        .eq('is_active', true)
+        .or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`)
+        .limit(10);
+
+      // Combine and format results
+      const results = [
+        ...(companies || []).map(item => ({ ...item, type: 'Company', searchType: 'companies' })),
+        ...(suppliers || []).map(item => ({ ...item, type: 'Supplier', searchType: 'suppliers' })),
+        ...(services || []).map(item => ({ ...item, type: 'Service', searchType: 'services' }))
+      ];
+
+      setSearchResults(results);
+      setShowSearchResults(true);
+    } catch (error) {
+      console.error('Error searching:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    performSearch(searchTerm);
+  };
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    
+    // Debounced search after user stops typing
+    if (value.length >= 2) {
+      const timeoutId = setTimeout(() => {
+        performSearch(value);
+      }, 300);
+      return () => clearTimeout(timeoutId);
+    } else {
+      setShowSearchResults(false);
+      setSearchResults([]);
+    }
+  };
+
+  const navigateToResult = (result: any) => {
+    switch (result.searchType) {
+      case 'companies':
+        navigate('/directory/companies');
+        break;
+      case 'suppliers':
+        navigate('/directory/suppliers');
+        break;
+      case 'services':
+        navigate('/directory/services');
+        break;
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -285,17 +375,76 @@ const BusinessDirectory = () => {
           
           {/* Quick Search */}
           <div className="max-w-2xl mx-auto relative">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-              <input
-                type="text"
-                placeholder="Search companies, services, or professionals..."
-                className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-200 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-              />
-              <Button className="absolute right-2 top-2 px-6 py-2 bg-blue-600 hover:bg-blue-700">
-                Search
-              </Button>
-            </div>
+            <form onSubmit={handleSearch}>
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={handleSearchInputChange}
+                  placeholder="Search companies, services, or professionals..."
+                  className="w-full pl-12 pr-20 py-4 rounded-xl border border-gray-200 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                />
+                <Button 
+                  type="submit"
+                  disabled={isSearching}
+                  className="absolute right-2 top-2 px-6 py-2 bg-blue-600 hover:bg-blue-700"
+                >
+                  {isSearching ? 'Searching...' : 'Search'}
+                </Button>
+              </div>
+            </form>
+            
+            {/* Search Results Dropdown */}
+            {showSearchResults && (
+              <div className="absolute z-50 w-full mt-2 bg-white rounded-xl shadow-xl border border-gray-200 max-h-96 overflow-y-auto">
+                {searchResults.length > 0 ? (
+                  <div className="p-4">
+                    <div className="text-sm font-medium text-gray-700 mb-3">
+                      Found {searchResults.length} results
+                    </div>
+                    {searchResults.map((result, index) => (
+                      <div
+                        key={index}
+                        onClick={() => navigateToResult(result)}
+                        className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+                      >
+                        <div className="flex-shrink-0">
+                          {result.type === 'Company' && <Building2 className="h-5 w-5 text-blue-600" />}
+                          {result.type === 'Supplier' && <ShoppingCart className="h-5 w-5 text-green-600" />}
+                          {result.type === 'Service' && <Briefcase className="h-5 w-5 text-purple-600" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-medium text-gray-900 truncate">
+                              {result.title || result.name}
+                            </h4>
+                            <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
+                              {result.type}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 truncate">
+                            {result.description || result.industry || result.category || 'No description available'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="border-t pt-3 mt-3">
+                      <button
+                        onClick={() => setShowSearchResults(false)}
+                        className="text-sm text-blue-600 hover:text-blue-700"
+                      >
+                        Close search results
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-gray-500">
+                    No results found for "{searchTerm}"
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
