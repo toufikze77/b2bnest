@@ -37,8 +37,8 @@ Deno.serve(async (req) => {
         category: 'Business'
       },
       {
-        url: 'https://www.investopedia.com/feedbuilder/feed/getfeed/?feedName=rss_headline',
-        category: 'Finance'
+        url: 'https://feeds.a.dj.com/rss/RSSMarketsMain.xml',
+        category: 'Markets'
       }
     ];
 
@@ -149,8 +149,8 @@ function parseRSSFeed(rssText: string, category: string, feedUrl: string): NewsA
         let source = 'Business News';
         if (feedUrl.includes('cnbc.com')) {
           source = 'CNBC';
-        } else if (feedUrl.includes('investopedia.com')) {
-          source = 'Investopedia';
+        } else if (feedUrl.includes('a.dj.com')) {
+          source = 'Wall Street Journal';
         }
 
         if (title && link) {
