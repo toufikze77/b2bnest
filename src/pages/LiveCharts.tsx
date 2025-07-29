@@ -22,12 +22,11 @@ import {
   Activity
 } from 'lucide-react';
 
-import CandlestickChart from '@/components/charts/CandlestickChart';
+import TradingViewWidget from '@/components/TradingViewWidget';
 import Footer from '@/components/Footer';
 import SEOHead from '@/components/SEOHead';
 
 const LiveCharts = () => {
-  const [activeTab, setActiveTab] = useState<'crypto' | 'forex'>('crypto');
 
   return (
     <>
@@ -172,80 +171,18 @@ const LiveCharts = () => {
 
               {/* Main Chart Area */}
               <div className="mb-16">
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-center mb-6">
                   <h2 className="text-3xl font-bold flex items-center gap-2">
                     <BarChart3 className="h-8 w-8 text-primary" />
                     Live Market Charts
                   </h2>
-                  <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'crypto' | 'forex')}>
-                    <TabsList className="bg-background">
-                      <TabsTrigger value="crypto" className="flex items-center gap-2">
-                        <Bitcoin className="h-4 w-4" />
-                        Cryptocurrency
-                      </TabsTrigger>
-                      <TabsTrigger value="forex" className="flex items-center gap-2">
-                        <Globe className="h-4 w-4" />
-                        Foreign Exchange
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
                 </div>
                 
-                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'crypto' | 'forex')}>
-                  <TabsContent value="crypto" className="space-y-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <CandlestickChart 
-                        symbol="bitcoin" 
-                        type="crypto" 
-                        title="Bitcoin (BTC/USD)"
-                      />
-                      <CandlestickChart 
-                        symbol="ethereum" 
-                        type="crypto" 
-                        title="Ethereum (ETH/USD)"
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <CandlestickChart 
-                        symbol="binancecoin" 
-                        type="crypto" 
-                        title="Binance Coin (BNB/USD)"
-                      />
-                      <CandlestickChart 
-                        symbol="solana" 
-                        type="crypto" 
-                        title="Solana (SOL/USD)"
-                      />
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="forex" className="space-y-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <CandlestickChart 
-                        symbol="EUR/USD" 
-                        type="forex" 
-                        title="Euro vs US Dollar (EUR/USD)"
-                      />
-                      <CandlestickChart 
-                        symbol="GBP/USD" 
-                        type="forex" 
-                        title="British Pound vs US Dollar (GBP/USD)"
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <CandlestickChart 
-                        symbol="USD/JPY" 
-                        type="forex" 
-                        title="US Dollar vs Japanese Yen (USD/JPY)"
-                      />
-                      <CandlestickChart 
-                        symbol="AUD/USD" 
-                        type="forex" 
-                        title="Australian Dollar vs US Dollar (AUD/USD)"
-                      />
-                    </div>
-                  </TabsContent>
-                </Tabs>
+                <div className="flex justify-center">
+                  <div style={{ height: "600px", width: "100%", maxWidth: "1200px" }}>
+                    <TradingViewWidget />
+                  </div>
+                </div>
               </div>
 
               {/* Investment Strategies Section */}
