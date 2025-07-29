@@ -32,9 +32,9 @@ const LiveCharts = () => {
   return (
     <>
       <SEOHead 
-        title="Live Market Charts - Crypto & Forex Trading for Business Owners | Your Platform"
-        description="Join 60% of successful business owners who diversify with crypto, forex, and stocks. Real-time charts, market analysis, and investment strategies for entrepreneurs."
-        keywords="business owner investment, entrepreneur crypto, forex for business owners, live market charts, investment diversification, business wealth strategy"
+        title="Market - Real-Time Trading & Investment Hub for Business Owners | Your Platform"
+        description="Professional market access for business owners. Real-time charts, investment tools, and wealth diversification strategies for entrepreneurs."
+        keywords="market trading, business owner investment, real-time market data, entrepreneur trading, investment hub, business wealth diversification"
         canonical="/live-charts"
       />
       
