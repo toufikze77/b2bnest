@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useAuth } from '@/hooks/useAuth';
 import SubscriptionUpgrade from '@/components/SubscriptionUpgrade';
 import CostCalculator from '@/components/CostCalculator';
 import BusinessSetupChecklist from '@/components/BusinessSetupChecklist';
@@ -40,6 +41,7 @@ const BusinessTools = () => {
   const [filter, setFilter] = useState<'all' | 'free' | 'premium'>('all');
   const navigate = useNavigate();
   const { isPremium } = useSubscription();
+  const { user } = useAuth();
   
   // Handle URL parameters and location state to set the current tool
   useEffect(() => {
@@ -301,10 +303,61 @@ const BusinessTools = () => {
   });
 
   const renderTool = () => {
-    // Check if user is trying to access a premium tool without subscription
+    // Check if user is trying to access a premium tool
     const currentToolData = tools.find(tool => tool.id === currentTool);
-    if (currentToolData?.isPremium && !isPremium) {
-      return <SubscriptionUpgrade featureName={currentToolData.title} />;
+    if (currentToolData?.isPremium) {
+      // If user is not authenticated, show sign-in prompt
+      if (!user) {
+        return (
+          <div className="max-w-2xl mx-auto p-6">
+            <Card className="border-2 border-dashed border-blue-300">
+              <CardHeader className="text-center">
+                <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mb-4">
+                  <Users className="h-8 w-8 text-white" />
+                </div>
+                <CardTitle className="text-2xl text-gray-900">
+                  Sign In Required
+                </CardTitle>
+                <p className="text-gray-600 mt-2">
+                  Please sign in to access <strong>{currentToolData.title}</strong> and other premium tools.
+                </p>
+              </CardHeader>
+              <CardContent className="text-center space-y-4">
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-500">Premium tool benefits:</p>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    {currentToolData.benefits.map((benefit, index) => (
+                      <li key={index} className="flex items-center justify-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                        {benefit}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="flex gap-3 justify-center">
+                  <Button 
+                    onClick={() => navigate('/auth')}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  >
+                    Sign In / Sign Up
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setCurrentTool('overview')}
+                  >
+                    View Free Tools
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      }
+      
+      // If user is authenticated but doesn't have premium, show upgrade prompt
+      if (!isPremium) {
+        return <SubscriptionUpgrade featureName={currentToolData.title} />;
+      }
     }
 
     switch (currentTool) {
@@ -412,8 +465,9 @@ const BusinessTools = () => {
                     key={tool.id} 
                     className="cursor-pointer hover:shadow-lg transition-all duration-200 h-full"
                     onClick={() => {
-                      if (tool.isPremium && !isPremium) {
-                        setCurrentTool(tool.id); // This will show the upgrade screen
+                      if (tool.isPremium) {
+                        // Always set the tool to trigger the appropriate prompt
+                        setCurrentTool(tool.id);
                       } else {
                         setCurrentTool(tool.id);
                       }
