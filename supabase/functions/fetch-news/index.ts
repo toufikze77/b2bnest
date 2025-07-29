@@ -30,35 +30,27 @@ Deno.serve(async (req) => {
 
     console.log('Starting news fetch process...');
 
-    // Business news RSS feeds from multiple reliable sources
+    // Yahoo Finance RSS feeds for business news
     const rssFeeds = [
       {
-        url: 'https://feeds.reuters.com/reuters/businessNews',
-        category: 'Business'
+        url: 'https://feeds.finance.yahoo.com/rss/2.0/headline',
+        category: 'Finance'
       },
       {
-        url: 'https://feeds.reuters.com/reuters/technologyNews',
+        url: 'https://feeds.finance.yahoo.com/rss/2.0/category-tech',
         category: 'Technology'
       },
       {
-        url: 'https://rss.cnn.com/rss/money_latest.rss',
-        category: 'Business'
+        url: 'https://feeds.finance.yahoo.com/rss/2.0/category-earnings',
+        category: 'Earnings'
       },
       {
-        url: 'https://feeds.feedburner.com/TechCrunch/',
-        category: 'Technology'
+        url: 'https://feeds.finance.yahoo.com/rss/2.0/category-markets',
+        category: 'Markets'
       },
       {
-        url: 'https://www.business-standard.com/rss/latest.rss',
-        category: 'Business'
-      },
-      {
-        url: 'https://feeds.washingtonpost.com/rss/business/technology',
-        category: 'Technology'
-      },
-      {
-        url: 'https://feeds.npr.org/1006/rss.xml',
-        category: 'Business'
+        url: 'https://feeds.finance.yahoo.com/rss/2.0/category-investing',
+        category: 'Investing'
       }
     ];
 
@@ -166,14 +158,10 @@ function parseRSSFeed(rssText: string, category: string, feedUrl: string): NewsA
         const imageUrl = imageMatch ? imageMatch[1] : null;
 
         // Determine source from feed URL
-        let source = 'News';
-        if (feedUrl.includes('reuters.com')) source = 'Reuters';
-        else if (feedUrl.includes('cnn.com')) source = 'CNN';
-        else if (feedUrl.includes('bloomberg.com')) source = 'Bloomberg';
-        else if (feedUrl.includes('techcrunch.com')) source = 'TechCrunch';
-        else if (feedUrl.includes('business-standard.com')) source = 'Business Standard';
-        else if (feedUrl.includes('washingtonpost.com')) source = 'Washington Post';
-        else if (feedUrl.includes('npr.org')) source = 'NPR';
+        let source = 'Yahoo Finance';
+        if (feedUrl.includes('yahoo.com') || feedUrl.includes('finance.yahoo.com')) {
+          source = 'Yahoo Finance';
+        }
 
         if (title && link) {
           articles.push({
