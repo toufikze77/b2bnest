@@ -1,0 +1,22 @@
+-- Add more categories to Premium Marketplace
+INSERT INTO public.advertisement_categories (name, description, icon, is_active) VALUES
+('Transportation', 'Logistics, shipping, delivery, and transportation services', '🚚', true),
+('Food & Beverage', 'Restaurants, catering, food services, and beverage suppliers', '🍽️', true),
+('Manufacturing', 'Production, fabrication, and manufacturing services', '🏭', true),
+('Retail', 'E-commerce, online stores, and retail products', '🛍️', true),
+('Construction', 'Building, renovation, contracting, and construction services', '🏗️', true),
+('Entertainment', 'Events, entertainment, media, and production services', '🎭', true),
+('Travel & Tourism', 'Travel agencies, tour operators, and hospitality services', '✈️', true),
+('Insurance', 'Insurance brokers, policies, and risk management services', '🛡️', true),
+('Banking & Investment', 'Financial institutions, investment services, and banking', '🏦', true),
+('Automotive', 'Car services, dealerships, repairs, and automotive products', '🚗', true),
+('Beauty & Personal Care', 'Beauty services, wellness, spa, and personal care', '💄', true),
+('Photography & Video', 'Photography, videography, and multimedia services', '📸', true),
+('Security', 'Security services, systems, and safety solutions', '🔒', true),
+('Agriculture', 'Farming, agricultural services, and rural business solutions', '🌾', true),
+('Energy & Environment', 'Renewable energy, environmental services, and sustainability', '🌱', true),
+('Printing & Publishing', 'Printing services, publishing, and print media', '📖', true),
+('Sports & Fitness', 'Fitness services, sports facilities, and athletic equipment', '💪', true),
+('Telecommunications', 'Phone services, internet providers, and communication solutions', '📞', true),
+('Non-Profit', 'Charitable organizations, foundations, and social enterprises', '❤️', true),
+('Government Services', 'Public sector services, municipal, and government contractors', '🏛️', true);
