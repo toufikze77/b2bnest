@@ -975,6 +975,48 @@ export type Database = {
         }
         Relationships: []
       }
+      news_articles: {
+        Row: {
+          category: string | null
+          content: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          link: string
+          published_at: string | null
+          source: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          content?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          link: string
+          published_at?: string | null
+          source?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          content?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          link?: string
+          published_at?: string | null
+          source?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string | null

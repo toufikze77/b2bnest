@@ -35,6 +35,7 @@ import {
 import { Link } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import ImageUpload from '@/components/ImageUpload';
+import BusinessNewsSection from '@/components/BusinessNewsSection';
 
 interface Profile {
   id: string;
@@ -1200,40 +1201,8 @@ const BusinessSocial = () => {
               </CardContent>
             </Card>
 
-            {/* Business RSS */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Globe className="h-5 w-5" />
-                  Business RSS & News
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="p-3 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
-                    <h4 className="font-medium text-blue-900 text-sm">TechCrunch Business</h4>
-                    <p className="text-blue-700 text-xs">Latest startup & business news</p>
-                    <Badge variant="secondary" className="mt-1 text-xs">Live Feed</Badge>
-                  </div>
-                  <div className="p-3 bg-green-50 rounded-lg cursor-pointer hover:bg-green-100 transition-colors">
-                    <h4 className="font-medium text-green-900 text-sm">Harvard Business Review</h4>
-                    <p className="text-green-700 text-xs">Management insights & strategies</p>
-                    <Badge variant="secondary" className="mt-1 text-xs">Premium</Badge>
-                  </div>
-                  <div className="p-3 bg-purple-50 rounded-lg cursor-pointer hover:bg-purple-100 transition-colors">
-                    <h4 className="font-medium text-purple-900 text-sm">Forbes Business</h4>
-                    <p className="text-purple-700 text-xs">Industry trends & analysis</p>
-                    <Badge variant="secondary" className="mt-1 text-xs">Updated</Badge>
-                  </div>
-                </div>
-                <div className="pt-3 border-t mt-4">
-                  <Button variant="outline" size="sm" className="w-full">
-                    <Star className="h-4 w-4 mr-2" />
-                    Customize RSS Feeds
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Business News Section */}
+            <BusinessNewsSection />
 
             {/* Suggested Connections */}
             <Card>
