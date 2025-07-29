@@ -40,15 +40,17 @@ const BusinessNewsPage = () => {
 
   const fetchNews = async () => {
     try {
-      // Get total count
+      // Get total count for CNBC and CoinDesk only
       const { count } = await supabase
         .from('news_articles')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .in('source', ['CNBC', 'CoinDesk']);
 
       // Get articles for display
       const { data, error } = await supabase
         .from('news_articles')
         .select('*')
+        .in('source', ['CNBC', 'CoinDesk'])
         .order('published_at', { ascending: false, nullsFirst: false })
         .limit(50);
 
@@ -148,70 +150,101 @@ const BusinessNewsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
-                <Newspaper className="h-8 w-8" />
-                Business News
-              </h1>
-              <p className="text-muted-foreground text-lg">
-                Stay updated with the latest business and crypto news from CNBC and CoinDesk
-              </p>
+        <div className="mb-8 relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-3xl blur-3xl"></div>
+          <div className="relative bg-card/50 backdrop-blur-sm border rounded-3xl p-8">
+            <div className="flex items-center justify-between">
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-gradient-to-br from-primary to-primary/70 rounded-2xl shadow-lg">
+                    <Newspaper className="h-8 w-8 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                      Business News
+                    </h1>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm text-muted-foreground">Live Updates</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-muted-foreground text-lg max-w-2xl">
+                  Stay ahead of the market with real-time business insights and crypto developments from trusted sources
+                </p>
+              </div>
+              {isAdmin && (
+                <Button
+                  onClick={refreshNews}
+                  disabled={refreshing}
+                  className="flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
+                >
+                  <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                  {refreshing ? 'Refreshing...' : 'Refresh News'}
+                </Button>
+              )}
             </div>
-            {isAdmin && (
-              <Button
-                onClick={refreshNews}
-                disabled={refreshing}
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                {refreshing ? 'Refreshing...' : 'Refresh News'}
-              </Button>
-            )}
           </div>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card via-card to-primary/5 shadow-xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent"></div>
+            <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Articles</CardTitle>
-              <Newspaper className="h-4 w-4 text-muted-foreground" />
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Newspaper className="h-4 w-4 text-primary" />
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalCount}</div>
-              <p className="text-xs text-muted-foreground">
-                Latest business news
+            <CardContent className="relative">
+              <div className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                {totalCount}
+              </div>
+              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse"></div>
+                Live business updates
               </p>
             </CardContent>
           </Card>
           
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">CNBC Articles</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card via-card to-blue-500/5 shadow-xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent"></div>
+            <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">CNBC Business</CardTitle>
+              <div className="p-2 bg-blue-500/10 rounded-lg">
+                <TrendingUp className="h-4 w-4 text-blue-500" />
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{cnbcArticles.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Business news stories
+            <CardContent className="relative">
+              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                {cnbcArticles.length}
+              </div>
+              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"></div>
+                Market insights
               </p>
             </CardContent>
           </Card>
           
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card via-card to-amber-500/5 shadow-xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent"></div>
+            <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Coin News</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <div className="p-2 bg-amber-500/10 rounded-lg">
+                <DollarSign className="h-4 w-4 text-amber-500" />
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{cryptoArticles.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Crypto insights
+            <CardContent className="relative">
+              <div className="text-3xl font-bold text-amber-600 dark:text-amber-400">
+                {cryptoArticles.length}
+              </div>
+              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                <div className="w-1 h-1 bg-amber-500 rounded-full animate-pulse"></div>
+                Crypto developments
               </p>
             </CardContent>
           </Card>
@@ -220,29 +253,35 @@ const BusinessNewsPage = () => {
         {/* News Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* CNBC Business News */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                CNBC Business News
+          <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card via-card to-blue-500/5 shadow-xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent"></div>
+            <CardHeader className="relative border-b bg-gradient-to-r from-blue-500/10 to-transparent">
+              <CardTitle className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/20 rounded-lg">
+                  <BarChart3 className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <div className="text-lg font-bold">CNBC Business News</div>
+                  <div className="text-xs text-muted-foreground font-normal">Market Analysis & Insights</div>
+                </div>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4 max-h-[600px] overflow-y-auto">
+            <CardContent className="relative p-0">
+              <div className="space-y-0 max-h-[600px] overflow-y-auto">
                 {cnbcArticles.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Newspaper className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>No CNBC articles available</p>
                   </div>
                 ) : (
-                  cnbcArticles.map((article) => (
+                  cnbcArticles.map((article, index) => (
                     <div
                       key={article.id}
-                      className="border-b border-border last:border-b-0 pb-4 last:pb-0"
+                      className="group border-b border-border/50 last:border-b-0 hover:bg-blue-500/5 transition-all duration-300"
                     >
-                      <div className="space-y-2">
+                      <div className="p-4 space-y-3">
                         <div className="flex items-start justify-between gap-3">
-                          <h4 className="font-medium text-sm leading-5 hover:text-primary transition-colors line-clamp-2">
+                          <h4 className="font-medium text-sm leading-5 group-hover:text-blue-600 transition-colors line-clamp-2">
                             <a
                               href={article.link}
                               target="_blank"
@@ -252,17 +291,17 @@ const BusinessNewsPage = () => {
                               {article.title}
                             </a>
                           </h4>
-                          <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0 mt-1" />
+                          <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-blue-500 flex-shrink-0 mt-0.5 transition-colors" />
                         </div>
                         
                         {article.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-2">
+                          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                             {article.description}
                           </p>
                         )}
                         
                         <div className="flex items-center justify-between">
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge variant="secondary" className="text-xs bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
                             {article.source}
                           </Badge>
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -279,29 +318,35 @@ const BusinessNewsPage = () => {
           </Card>
 
           {/* Crypto News */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                CoinDesk
+          <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card via-card to-amber-500/5 shadow-xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent"></div>
+            <CardHeader className="relative border-b bg-gradient-to-r from-amber-500/10 to-transparent">
+              <CardTitle className="flex items-center gap-3">
+                <div className="p-2 bg-amber-500/20 rounded-lg">
+                  <DollarSign className="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <div className="text-lg font-bold">CoinDesk</div>
+                  <div className="text-xs text-muted-foreground font-normal">Crypto & Blockchain News</div>
+                </div>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4 max-h-[600px] overflow-y-auto">
+            <CardContent className="relative p-0">
+              <div className="space-y-0 max-h-[600px] overflow-y-auto">
                 {cryptoArticles.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>No crypto articles available</p>
                   </div>
                 ) : (
-                  cryptoArticles.map((article) => (
+                  cryptoArticles.map((article, index) => (
                     <div
                       key={article.id}
-                      className="border-b border-border last:border-b-0 pb-4 last:pb-0"
+                      className="group border-b border-border/50 last:border-b-0 hover:bg-amber-500/5 transition-all duration-300"
                     >
-                      <div className="space-y-2">
+                      <div className="p-4 space-y-3">
                         <div className="flex items-start justify-between gap-3">
-                          <h4 className="font-medium text-sm leading-5 hover:text-primary transition-colors line-clamp-2">
+                          <h4 className="font-medium text-sm leading-5 group-hover:text-amber-600 transition-colors line-clamp-2">
                             <a
                               href={article.link}
                               target="_blank"
@@ -311,17 +356,17 @@ const BusinessNewsPage = () => {
                               {article.title}
                             </a>
                           </h4>
-                          <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0 mt-1" />
+                          <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-amber-500 flex-shrink-0 mt-0.5 transition-colors" />
                         </div>
                         
                         {article.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-2">
+                          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                             {article.description}
                           </p>
                         )}
                         
                         <div className="flex items-center justify-between">
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800">
                             {article.source}
                           </Badge>
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -339,11 +384,22 @@ const BusinessNewsPage = () => {
         </div>
 
         {/* Footer */}
-        <div className="mt-8 pt-8 border-t border-border">
-          <p className="text-xs text-muted-foreground text-center">
-            News powered by CNBC & CoinDesk • Updated automatically • 
-            Last refresh: {new Date().toLocaleString()}
-          </p>
+        <div className="mt-12 pt-8 border-t border-border/50">
+          <div className="text-center space-y-2">
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span>Live Updates</span>
+              </div>
+              <span>•</span>
+              <span>Powered by CNBC & CoinDesk</span>
+              <span>•</span>
+              <span>Auto-refreshed</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Last update: {new Date().toLocaleString()}
+            </p>
+          </div>
         </div>
       </div>
     </div>

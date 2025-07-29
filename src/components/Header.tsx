@@ -110,7 +110,13 @@ const Header = () => {
                   Invest
                 </span>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+               <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link to="/live-charts" className="w-full flex items-center">
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Market
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/business-news" className="w-full flex items-center">
                     <Newspaper className="h-4 w-4 mr-2" />
@@ -130,12 +136,6 @@ const Header = () => {
                 <DropdownMenuItem asChild>
                   <Link to="/tokenomics" className="w-full">
                     Tokenomics
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/live-charts" className="w-full flex items-center">
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Market
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
