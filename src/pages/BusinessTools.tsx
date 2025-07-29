@@ -25,6 +25,7 @@ import ROICalculator from '@/components/ROICalculator';
 import ContractGenerator from '@/components/ContractGenerator';
 import PrivacyPolicyGenerator from '@/components/PrivacyPolicyGenerator';
 import DocumentTemplateLibrary from '@/components/DocumentTemplateLibrary';
+import CurrencyConverter from '@/components/CurrencyConverter';
 import BusinessCardDesigner from '@/components/BusinessCardDesigner';
 import LandingPageBuilder from '@/components/LandingPageBuilder';
 import EmailSignatureGenerator from '@/components/EmailSignatureGenerator';
@@ -34,7 +35,7 @@ import BusinessFinanceAssistant from '@/components/BusinessFinanceAssistant';
 import StartupIdeaGenerator from '@/components/StartupIdeaGenerator';
 import { AdvertisementSection } from '@/components/AdvertisementSection';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'premium-marketplace';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'premium-marketplace' | 'currency-converter';
 
 const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
@@ -220,6 +221,15 @@ const BusinessTools = () => {
       icon: BarChart,
       color: 'bg-violet-600',
       benefits: ['Custom questions', 'Response tracking', 'Analytics dashboard'],
+      isPremium: false
+    },
+    {
+      id: 'currency-converter' as ToolType,
+      title: 'Currency Converter',
+      description: 'Convert currencies with real-time exchange rates',
+      icon: TrendingUp,
+      color: 'bg-green-600',
+      benefits: ['Real-time rates', '20+ currencies', 'Business-focused', 'Free to use'],
       isPremium: false
     },
     {
@@ -413,6 +423,8 @@ const BusinessTools = () => {
         return <ProjectManagement />;
       case 'crm':
         return <CRM />;
+      case 'currency-converter':
+        return <CurrencyConverter />;
       default:
         return (
           <div className="max-w-6xl mx-auto p-6">
