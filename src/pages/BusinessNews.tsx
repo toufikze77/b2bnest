@@ -29,6 +29,7 @@ interface NewsArticle {
 
 const BusinessNewsPage = () => {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const { isAdmin } = useUserRole();
@@ -39,6 +40,12 @@ const BusinessNewsPage = () => {
 
   const fetchNews = async () => {
     try {
+      // Get total count
+      const { count } = await supabase
+        .from('news_articles')
+        .select('*', { count: 'exact', head: true });
+
+      // Get articles for display
       const { data, error } = await supabase
         .from('news_articles')
         .select('*')
@@ -47,6 +54,7 @@ const BusinessNewsPage = () => {
 
       if (error) throw error;
 
+      setTotalCount(count || 0);
       setArticles(data || []);
     } catch (error) {
       console.error('Error fetching news:', error);
@@ -175,7 +183,7 @@ const BusinessNewsPage = () => {
               <Newspaper className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{articles.length}</div>
+              <div className="text-2xl font-bold">{totalCount}</div>
               <p className="text-xs text-muted-foreground">
                 Latest business news
               </p>
