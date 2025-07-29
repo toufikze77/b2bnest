@@ -40,7 +40,7 @@ type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance
 
 const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
-  const [filter, setFilter] = useState<'all' | 'free' | 'premium'>('all');
+  const [filter, setFilter] = useState<'all' | 'premium'>('all');
   const navigate = useNavigate();
   const { isPremium } = useSubscription();
   const { user } = useAuth();
@@ -317,7 +317,6 @@ const BusinessTools = () => {
   ];
 
   const filteredTools = tools.filter(tool => {
-    if (filter === 'free') return !tool.isPremium;
     if (filter === 'premium') return tool.isPremium;
     return true;
   });
@@ -365,7 +364,7 @@ const BusinessTools = () => {
                     variant="outline" 
                     onClick={() => setCurrentTool('overview')}
                   >
-                    View Free Tools
+                     View All Tools
                   </Button>
                 </div>
               </CardContent>
@@ -463,13 +462,6 @@ const BusinessTools = () => {
                   onClick={() => setFilter('all')}
                 >
                   All Tools ({tools.length})
-                </Button>
-                <Button
-                  variant={filter === 'free' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setFilter('free')}
-                >
-                  Free Tools ({tools.filter(t => !t.isPremium).length})
                 </Button>
                 <Button
                   variant={filter === 'premium' ? 'default' : 'outline'}
