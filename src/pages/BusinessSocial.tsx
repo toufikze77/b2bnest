@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
+import ImageUpload from '@/components/ImageUpload';
 
 interface Profile {
   id: string;
@@ -58,6 +59,7 @@ interface SocialPost {
   share_count: number;
   created_at: string;
   user_id: string;
+  image_url?: string | null;
   profiles?: Profile;
   user_liked?: boolean;
 }
@@ -90,6 +92,7 @@ const BusinessSocial = () => {
   const [loading, setLoading] = useState(true);
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
   const [newPost, setNewPost] = useState('');
+  const [postImageUrl, setPostImageUrl] = useState('');
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const [newComment, setNewComment] = useState('');
@@ -956,12 +959,19 @@ const BusinessSocial = () => {
                             value={newPost}
                             onChange={(e) => setNewPost(e.target.value)}
                           />
+                          
+                          <ImageUpload
+                            onImageUploaded={setPostImageUrl}
+                            bucket="service-images"
+                            currentImageUrl={postImageUrl}
+                            userId={user?.id}
+                            label="Add Photo to Post"
+                            maxSize={10}
+                            className="border-t pt-4"
+                          />
+                          
                           <div className="flex justify-between items-center">
                             <div className="flex gap-2">
-                              <Button variant="ghost" size="sm">
-                                <Image className="h-4 w-4 mr-2" />
-                                Photo
-                              </Button>
                               <Button variant="ghost" size="sm">
                                 <Building2 className="h-4 w-4 mr-2" />
                                 Company
@@ -1053,6 +1063,18 @@ const BusinessSocial = () => {
                       {/* Post Content */}
                       <div className="mb-4">
                         <p className="text-gray-800 whitespace-pre-wrap">{post.content}</p>
+                        
+                        {/* Post Image */}
+                        {post.image_url && (
+                          <div className="mt-4">
+                            <img
+                              src={post.image_url}
+                              alt="Post image"
+                              className="w-full rounded-lg border border-border max-h-96 object-cover"
+                            />
+                          </div>
+                        )}
+                        
                         {/* Video Embedding */}
                         {post.content && getYouTubeVideoId(post.content) && (
                           <div className="mt-4">
