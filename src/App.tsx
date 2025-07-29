@@ -86,11 +86,11 @@ function App() {
               <Route path="/live-charts" element={<Market />} />
               <Route path="/business-news" element={<BusinessNews />} />
               
-              {/* Directory Routes - Protected */}
-              <Route path="/directory" element={<ProtectedRoute><BusinessDirectory /></ProtectedRoute>} />
-              <Route path="/directory/suppliers" element={<ProtectedRoute><SupplierDirectory /></ProtectedRoute>} />
-              <Route path="/directory/companies" element={<ProtectedRoute><CompanyDirectory /></ProtectedRoute>} />
-              <Route path="/directory/services" element={<ProtectedRoute><ServiceDirectory /></ProtectedRoute>} />
+              {/* Directory Routes - Public Access */}
+              <Route path="/directory" element={<BusinessDirectory />} />
+              <Route path="/directory/suppliers" element={<SupplierDirectory />} />
+              <Route path="/directory/companies" element={<CompanyDirectory />} />
+              <Route path="/directory/services" element={<ServiceDirectory />} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
               
               <Route path="*" element={<NotFound />} />
