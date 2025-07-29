@@ -178,10 +178,8 @@ const LiveCharts = () => {
                   </h2>
                 </div>
                 
-                <div className="flex justify-center">
-                  <div style={{ height: "600px", width: "100%", maxWidth: "1200px" }}>
-                    <TradingViewWidget />
-                  </div>
+                <div className="w-full h-[800px]">
+                  <TradingViewWidget />
                 </div>
               </div>
 
