@@ -496,10 +496,11 @@ const LiveCharts = () => {
 
               {/* Call to Action Section */}
               <div className="mb-16">
-                <Card className="bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 backdrop-blur-sm border shadow-xl">
-                  <CardContent className="p-8 text-center">
-                    <h2 className="text-3xl font-bold mb-4 text-white drop-shadow-lg">Ready to Start Your Investment Journey?</h2>
-                    <p className="text-lg mb-8 text-white max-w-2xl mx-auto drop-shadow-lg">
+                <Card className="bg-gradient-to-br from-primary via-secondary to-accent border shadow-xl relative overflow-hidden">
+                  <div className="absolute inset-0 bg-black/20"></div>
+                  <CardContent className="p-8 text-center relative z-10">
+                    <h2 className="text-4xl font-bold mb-6 text-white drop-shadow-xl">Ready to Start Your Investment Journey?</h2>
+                    <p className="text-xl mb-8 text-white max-w-3xl mx-auto drop-shadow-xl leading-relaxed font-medium">
                       Join thousands of business owners who are already building wealth through smart market diversification. 
                       Start small, think long-term, and let compound growth work for you.
                     </p>
