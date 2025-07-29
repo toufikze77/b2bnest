@@ -339,22 +339,41 @@ const BusinessSocial = () => {
 
   const fetchComments = async (postId: string) => {
     try {
+      // First get comments without joins
       const { data, error } = await supabase
         .from('post_comments')
-        .select(`
-          *,
-          profiles (
-            id,
-            full_name,
-            email,
-            avatar_url
-          )
-        `)
+        .select('*')
         .eq('post_id', postId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setPostComments((data as any) || []);
+      
+      if (data && data.length > 0) {
+        // Get unique user IDs from comments
+        const userIds = new Set<string>();
+        data.forEach(comment => {
+          userIds.add(comment.user_id);
+        });
+        
+        // Fetch profiles for all users in comments
+        const { data: profiles, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', Array.from(userIds));
+          
+        if (!profileError) {
+          // Combine comment data with profiles
+          const commentsWithProfiles = data.map(comment => ({
+            ...comment,
+            profiles: profiles?.find(p => p.id === comment.user_id)
+          }));
+          setPostComments(commentsWithProfiles);
+        } else {
+          setPostComments(data);
+        }
+      } else {
+        setPostComments([]);
+      }
     } catch (error) {
       console.error('Error fetching comments:', error);
     }
@@ -391,6 +410,12 @@ const BusinessSocial = () => {
     setSelectedPost(post);
     await fetchComments(post.id);
     setIsCommentsOpen(true);
+  };
+
+  const getYouTubeVideoId = (url: string) => {
+    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
   };
 
   const formatDate = (dateString: string) => {
@@ -1028,6 +1053,21 @@ const BusinessSocial = () => {
                       {/* Post Content */}
                       <div className="mb-4">
                         <p className="text-gray-800 whitespace-pre-wrap">{post.content}</p>
+                        {/* Video Embedding */}
+                        {post.content && getYouTubeVideoId(post.content) && (
+                          <div className="mt-4">
+                            <iframe
+                              width="100%"
+                              height="315"
+                              src={`https://www.youtube.com/embed/${getYouTubeVideoId(post.content)}`}
+                              title="YouTube video player"
+                              frameBorder="0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                              className="rounded-lg"
+                            ></iframe>
+                          </div>
+                        )}
                       </div>
 
                       {/* Post Actions */}
@@ -1203,7 +1243,22 @@ const BusinessSocial = () => {
                         <p className="text-gray-600 text-sm mb-2">
                           {formatDate(selectedPost.created_at)}
                         </p>
-                        <p className="text-gray-800">{selectedPost.content}</p>
+                         <p className="text-gray-800">{selectedPost.content}</p>
+                         {/* Video Embedding in Comments Modal */}
+                         {selectedPost.content && getYouTubeVideoId(selectedPost.content) && (
+                           <div className="mt-3">
+                             <iframe
+                               width="100%"
+                               height="200"
+                               src={`https://www.youtube.com/embed/${getYouTubeVideoId(selectedPost.content)}`}
+                               title="YouTube video player"
+                               frameBorder="0"
+                               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                               allowFullScreen
+                               className="rounded-lg"
+                             ></iframe>
+                           </div>
+                         )}
                       </div>
                     </div>
                   </div>
