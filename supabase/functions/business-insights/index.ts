@@ -35,16 +35,16 @@ serve(async (req) => {
     switch (analysisType) {
       case 'cost_forecast':
         insightType = 'cost_forecast';
-        prompt = `Analyze the following business cost data for a ${businessStage} ${industry} business and provide a 3-month forecast with recommendations:
+        prompt = `Analyze the following business cost data for a ${businessStage} ${industry} business and provide a detailed analysis:
         ${JSON.stringify(data)}
         
-        Provide insights on:
-        1. Cost trends and patterns
-        2. Potential cost savings opportunities
-        3. Budget recommendations
-        4. Risk factors to watch
+        Provide a structured analysis with:
+        1. cost_trends: {average_monthly_expense: number, trend: string, pattern: string}
+        2. cost_savings_opportunities: {recommendations: [{area: string, suggestion: string}]}
+        3. budget_recommendations: {forecast: {Apr: number, May: number, Jun: number}, rationale: string}
+        4. risk_factors: {potential_risks: [{risk: string, impact: string}]}
         
-        Format as JSON with forecast, recommendations, and confidence score.`;
+        Return ONLY a valid JSON object with the analysis structure above. Do not include markdown formatting.`;
         break;
 
       case 'document_usage':
@@ -52,27 +52,25 @@ serve(async (req) => {
         prompt = `Analyze document usage patterns for a ${industry} business:
         ${JSON.stringify(data)}
         
-        Provide insights on:
-        1. Most/least used document types
-        2. Seasonal patterns
-        3. Recommendations for document optimization
-        4. Missing document types they might need
+        Provide a structured analysis with:
+        1. usage_analysis: {top_categories: {contracts: number, invoices: number, hr_forms: number, marketing: number}, total_downloads: number}
+        2. insights: {most_popular: string, least_used: string, trend: string}
+        3. recommendations: [string array of optimization suggestions]
         
-        Format as JSON with analysis and recommendations.`;
+        Return ONLY a valid JSON object with the analysis structure above. Do not include markdown formatting.`;
         break;
 
       case 'industry_trends':
         insightType = 'industry_trend';
-        prompt = `Provide current industry trends and predictions for ${industry} businesses at ${businessStage} stage:
+        prompt = `Provide current industry trends analysis for ${industry} businesses at ${businessStage} stage:
         
-        Focus on:
-        1. Market opportunities
-        2. Regulatory changes
-        3. Technology adoption trends
-        4. Competitive landscape
-        5. Actionable recommendations
+        Provide a structured analysis with:
+        1. market_opportunities: [{opportunity: string, potential_impact: string}]
+        2. regulatory_changes: [{change: string, timeline: string, impact: string}]
+        3. technology_trends: [{trend: string, adoption_rate: string, business_impact: string}]
+        4. strategic_recommendations: [string array of actionable recommendations]
         
-        Format as JSON with trends and strategic recommendations.`;
+        Return ONLY a valid JSON object with the analysis structure above. Do not include markdown formatting.`;
         break;
 
       default:
@@ -101,8 +99,11 @@ serve(async (req) => {
     });
 
     const aiData = await response.json();
-    const insights = aiData.choices[0].message.content;
+    let insights = aiData.choices[0].message.content;
 
+    // Clean up the response - remove markdown code blocks and extra formatting
+    insights = insights.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
     // Parse the JSON response to extract confidence score
     let parsedInsights;
     let confidenceScore = 0.8; // default
@@ -110,8 +111,20 @@ serve(async (req) => {
     try {
       parsedInsights = JSON.parse(insights);
       confidenceScore = parsedInsights.confidence_score || 0.8;
+      
+      // Log successful parsing for debugging
+      console.log('Successfully parsed insights:', JSON.stringify(parsedInsights, null, 2));
+      
     } catch (e) {
-      parsedInsights = { analysis: insights, confidence_score: 0.7 };
+      console.error('Failed to parse AI response as JSON:', e);
+      console.log('Raw AI response:', insights);
+      
+      // Fallback: create a structured response
+      parsedInsights = { 
+        analysis: insights,
+        error: 'Failed to parse AI response',
+        confidence_score: 0.7 
+      };
       confidenceScore = 0.7;
     }
 
