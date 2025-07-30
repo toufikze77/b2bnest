@@ -1,10 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Brain, Save, FileText, Image, List, Hash, Quote } from 'lucide-react';
+import { 
+  Plus, 
+  Brain, 
+  Save, 
+  FileText, 
+  Image, 
+  List, 
+  Hash, 
+  Quote, 
+  Download, 
+  Copy, 
+  Trash2, 
+  FolderOpen 
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useSubscription } from '@/hooks/useSubscription';
 import SubscriptionUpgrade from '@/components/SubscriptionUpgrade';
 import { toast } from 'sonner';
@@ -168,13 +183,78 @@ const AIWorkspace = () => {
       }
 
       setHasUnsavedChanges(false);
-      toast.success('Workspace saved!');
+      toast.success('Workspace saved successfully!');
       loadWorkspaces();
     } catch (err) {
       console.error('Exception saving workspace:', err);
       toast.error('Failed to save workspace');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const downloadWorkspace = () => {
+    if (!currentWorkspace) return;
+
+    const dataStr = JSON.stringify(currentWorkspace, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `${currentWorkspace.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_workspace.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+    
+    toast.success('Workspace downloaded successfully!');
+  };
+
+  const duplicateWorkspace = async () => {
+    if (!currentWorkspace || !user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('ai_workspaces')
+        .insert({
+          user_id: user.id,
+          title: `${currentWorkspace.title} (Copy)`,
+          blocks: currentWorkspace.blocks as any
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success('Workspace duplicated successfully!');
+      loadWorkspaces();
+      setCurrentWorkspace(data as unknown as Workspace);
+    } catch (error) {
+      console.error('Error duplicating workspace:', error);
+      toast.error('Failed to duplicate workspace');
+    }
+  };
+
+  const deleteWorkspace = async (workspaceId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('ai_workspaces')
+        .delete()
+        .eq('id', workspaceId);
+
+      if (error) throw error;
+
+      toast.success('Workspace deleted successfully!');
+      loadWorkspaces();
+      
+      // If we deleted the current workspace, clear it
+      if (currentWorkspace?.id === workspaceId) {
+        setCurrentWorkspace(null);
+      }
+    } catch (error) {
+      console.error('Error deleting workspace:', error);
+      toast.error('Failed to delete workspace');
     }
   };
 
@@ -378,40 +458,146 @@ const AIWorkspace = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
+      {/* Header with Workspace Management */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
           <Brain className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold">AI Workspace</h1>
+          <div>
+            <h1 className="text-3xl font-bold">AI Workspace</h1>
+            <p className="text-muted-foreground">
+              {workspaces.length} workspace{workspaces.length !== 1 ? 's' : ''} available
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-4">
+        
+        <div className="flex items-center gap-3">
+          {/* Workspace Selector */}
           <Select
             value={currentWorkspace?.id || ''}
             onValueChange={(value) => {
               const workspace = workspaces.find(w => w.id === value);
-              if (workspace) setCurrentWorkspace(workspace);
+              if (workspace) {
+                setCurrentWorkspace(workspace);
+                setHasUnsavedChanges(false);
+              }
             }}
           >
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Select workspace" />
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Select a workspace" />
             </SelectTrigger>
             <SelectContent>
-              {workspaces.map(workspace => (
-                <SelectItem key={workspace.id} value={workspace.id}>
-                  {workspace.title}
+              {workspaces.length === 0 ? (
+                <SelectItem value="empty" disabled>
+                  No workspaces found - create one below
                 </SelectItem>
-              ))}
+              ) : (
+                workspaces.map(workspace => (
+                  <SelectItem key={workspace.id} value={workspace.id}>
+                    <div className="flex items-center justify-between w-full">
+                      <span>{workspace.title}</span>
+                      <Badge variant="outline" className="ml-2">
+                        {workspace.blocks.length} blocks
+                      </Badge>
+                    </div>
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
-          <Button 
-            onClick={saveWorkspace} 
-            disabled={!currentWorkspace || isSaving || !hasUnsavedChanges}
-            variant={hasUnsavedChanges ? "default" : "outline"}
-          >
-            <Save className="h-4 w-4 mr-2" />
-            {isSaving ? 'Saving...' : hasUnsavedChanges ? 'Save*' : 'Saved'}
-          </Button>
+
+          {/* Workspace Actions */}
+          {currentWorkspace && (
+            <>
+              <Button 
+                onClick={saveWorkspace} 
+                disabled={!currentWorkspace || isSaving || !hasUnsavedChanges}
+                variant={hasUnsavedChanges ? "default" : "outline"}
+                size="sm"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {isSaving ? 'Saving...' : hasUnsavedChanges ? 'Save*' : 'Saved'}
+              </Button>
+
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    Manage
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Workspace Actions</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button 
+                        onClick={downloadWorkspace}
+                        variant="outline" 
+                        size="sm"
+                        className="w-full"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download
+                      </Button>
+                      <Button 
+                        onClick={duplicateWorkspace}
+                        variant="outline" 
+                        size="sm"
+                        className="w-full"
+                      >
+                        <Copy className="h-4 w-4 mr-2" />
+                        Duplicate
+                      </Button>
+                    </div>
+                    <Button 
+                      onClick={() => deleteWorkspace(currentWorkspace.id)}
+                      variant="destructive" 
+                      size="sm"
+                      className="w-full"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Workspace
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </>
+          )}
         </div>
       </div>
+
+      {/* Workspace Info Card */}
+      {workspaces.length > 0 && (
+        <Card className="mb-6 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <FolderOpen className="h-5 w-5 text-blue-600" />
+                  <span className="font-medium text-blue-900">
+                    Your Saved Workspaces
+                  </span>
+                </div>
+                <Badge variant="secondary">
+                  {workspaces.length} total
+                </Badge>
+              </div>
+              <div className="text-sm text-blue-700">
+                {currentWorkspace ? (
+                  <span>
+                    Current: <strong>{currentWorkspace.title}</strong> • 
+                    {currentWorkspace.blocks.length} blocks • 
+                    Last updated: {new Date(currentWorkspace.updated_at).toLocaleDateString()}
+                  </span>
+                ) : (
+                  'Select a workspace to continue'
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Sidebar */}
