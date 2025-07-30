@@ -352,6 +352,75 @@ export type Database = {
           },
         ]
       }
+      bills: {
+        Row: {
+          amount: number
+          attachment_url: string | null
+          bill_number: string | null
+          category: string
+          created_at: string
+          currency: string
+          description: string
+          due_date: string
+          id: string
+          issue_date: string
+          notes: string | null
+          paid_date: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          vendor_address: string | null
+          vendor_email: string | null
+          vendor_name: string
+        }
+        Insert: {
+          amount: number
+          attachment_url?: string | null
+          bill_number?: string | null
+          category?: string
+          created_at?: string
+          currency?: string
+          description: string
+          due_date: string
+          id?: string
+          issue_date: string
+          notes?: string | null
+          paid_date?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          vendor_address?: string | null
+          vendor_email?: string | null
+          vendor_name: string
+        }
+        Update: {
+          amount?: number
+          attachment_url?: string | null
+          bill_number?: string | null
+          category?: string
+          created_at?: string
+          currency?: string
+          description?: string
+          due_date?: string
+          id?: string
+          issue_date?: string
+          notes?: string | null
+          paid_date?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          vendor_address?: string | null
+          vendor_email?: string | null
+          vendor_name?: string
+        }
+        Relationships: []
+      }
       business_insights: {
         Row: {
           confidence_score: number | null
