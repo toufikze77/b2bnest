@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Download, Heart, Calendar, BarChart3, FileText, Quote, Receipt, Eye, Plus } from 'lucide-react';
+import { Download, Heart, Calendar, BarChart3, FileText, Quote, Receipt, Eye, Plus, CreditCard, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -24,6 +24,7 @@ const UserDashboard = () => {
   const [favorites, setFavorites] = useState([]);
   const [quotes, setQuotes] = useState([]);
   const [invoices, setInvoices] = useState([]);
+  const [bills, setBills] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalPurchases: 0,
@@ -31,7 +32,10 @@ const UserDashboard = () => {
     totalSpent: 0,
     favoriteCount: 0,
     totalQuotes: 0,
-    totalInvoices: 0
+    totalInvoices: 0,
+    totalBills: 0,
+    pendingBills: 0,
+    overdueBills: 0
   });
 
   useEffect(() => {
@@ -43,17 +47,19 @@ const UserDashboard = () => {
   const fetchUserData = async () => {
     try {
       setLoading(true);
-      const [purchasesData, favoritesData, quotesData, invoicesData] = await Promise.all([
+      const [purchasesData, favoritesData, quotesData, invoicesData, billsData] = await Promise.all([
         userDocumentService.getUserPurchases(),
         userDocumentService.getUserFavorites(),
         fetchQuotes(),
-        fetchInvoices()
+        fetchInvoices(),
+        fetchBills()
       ]);
 
       setPurchases(purchasesData || []);
       setFavorites(favoritesData || []);
       setQuotes(quotesData || []);
       setInvoices(invoicesData || []);
+      setBills(billsData || []);
 
       // Calculate stats
       const totalPurchases = purchasesData?.length || 0;
@@ -62,6 +68,9 @@ const UserDashboard = () => {
       const favoriteCount = favoritesData?.length || 0;
       const totalQuotes = quotesData?.length || 0;
       const totalInvoices = invoicesData?.length || 0;
+      const totalBills = billsData?.length || 0;
+      const pendingBills = billsData?.filter(bill => bill.status === 'pending')?.length || 0;
+      const overdueBills = billsData?.filter(bill => bill.status === 'overdue' || (bill.status === 'pending' && new Date(bill.due_date) < new Date()))?.length || 0;
 
       setStats({
         totalPurchases,
@@ -69,7 +78,10 @@ const UserDashboard = () => {
         totalSpent,
         favoriteCount,
         totalQuotes,
-        totalInvoices
+        totalInvoices,
+        totalBills,
+        pendingBills,
+        overdueBills
       });
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -104,6 +116,19 @@ const UserDashboard = () => {
 
     if (error) {
       console.error('Error fetching invoices:', error);
+      return [];
+    }
+    return data;
+  };
+
+  const fetchBills = async () => {
+    const { data, error } = await supabase
+      .from('bills')
+      .select('*')
+      .order('due_date', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching bills:', error);
       return [];
     }
     return data;
@@ -320,7 +345,7 @@ const UserDashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-8 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Purchases</CardTitle>
@@ -365,6 +390,36 @@ const UserDashboard = () => {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Bills</CardTitle>
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalBills}</div>
+            </CardContent>
+          </Card>
+          
+          <Card className={stats.pendingBills > 0 ? "border-orange-200 bg-orange-50" : ""}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pending Bills</CardTitle>
+              <Clock className="h-4 w-4 text-orange-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">{stats.pendingBills}</div>
+            </CardContent>
+          </Card>
+          
+          <Card className={stats.overdueBills > 0 ? "border-red-200 bg-red-50" : ""}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Overdue Bills</CardTitle>
+              <AlertCircle className="h-4 w-4 text-red-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">{stats.overdueBills}</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -372,24 +427,15 @@ const UserDashboard = () => {
               <div className="text-2xl font-bold">£{stats.totalSpent.toFixed(2)}</div>
             </CardContent>
           </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Favorites</CardTitle>
-              <Heart className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.favoriteCount}</div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Tabs for different sections */}
         <Tabs defaultValue="purchases" className="w-full">
-          <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-6' : 'grid-cols-5'}`}>
+          <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-7' : 'grid-cols-6'}`}>
             <TabsTrigger value="purchases">My Purchases</TabsTrigger>
             <TabsTrigger value="favorites">My Favorites</TabsTrigger>
             <TabsTrigger value="invoices">My Invoices</TabsTrigger>
+            <TabsTrigger value="bills">My Bills</TabsTrigger>
             <TabsTrigger value="services">Create Service</TabsTrigger>
             <TabsTrigger value="settings">Account Settings</TabsTrigger>
             {isAdmin && <TabsTrigger value="admin">Admin</TabsTrigger>}
@@ -589,6 +635,139 @@ const UserDashboard = () => {
                         </CardContent>
                       </Card>
                     ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="bills" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Your Bills</CardTitle>
+                    <CardDescription>
+                      Track and manage bills and incoming invoices you need to pay
+                    </CardDescription>
+                  </div>
+                  <Button 
+                    size="sm"
+                    onClick={() => {
+                      toast({
+                        title: "Add New Bill",
+                        description: "Bill creation functionality coming soon!",
+                      });
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Bill
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {bills.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <CreditCard className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <p>You don't have any bills yet.</p>
+                    <p className="text-sm">Add bills to track your payments and due dates.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {bills.map((bill) => {
+                      const isOverdue = bill.status === 'pending' && new Date(bill.due_date) < new Date();
+                      const isDueSoon = bill.status === 'pending' && new Date(bill.due_date) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+                      
+                      return (
+                        <Card 
+                          key={bill.id} 
+                          className={`hover:shadow-md transition-shadow ${
+                            isOverdue ? 'border-red-200 bg-red-50' : 
+                            isDueSoon ? 'border-orange-200 bg-orange-50' : ''
+                          }`}
+                        >
+                          <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="text-lg">{bill.vendor_name}</CardTitle>
+                              <div className="flex items-center gap-2">
+                                {isOverdue && <AlertCircle className="h-4 w-4 text-red-500" />}
+                                {isDueSoon && !isOverdue && <Clock className="h-4 w-4 text-orange-500" />}
+                                <Badge 
+                                  variant={
+                                    bill.status === 'paid' ? 'default' : 
+                                    isOverdue ? 'destructive' : 
+                                    'secondary'
+                                  }
+                                >
+                                  {isOverdue ? 'OVERDUE' : bill.status?.toUpperCase()}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {bill.description}
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2 mb-4">
+                              <div className="flex justify-between text-sm">
+                                <span>Amount:</span>
+                                <span className="font-medium">{formatCurrency(bill.amount, bill.currency)}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span>Due Date:</span>
+                                <span className={isOverdue ? 'text-red-600 font-medium' : isDueSoon ? 'text-orange-600 font-medium' : ''}>
+                                  {new Date(bill.due_date).toLocaleDateString()}
+                                </span>
+                              </div>
+                              {bill.bill_number && (
+                                <div className="flex justify-between text-sm">
+                                  <span>Bill #:</span>
+                                  <span>{bill.bill_number}</span>
+                                </div>
+                              )}
+                              <div className="flex justify-between text-sm">
+                                <span>Category:</span>
+                                <span className="capitalize">{bill.category}</span>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              {bill.status === 'pending' && (
+                                <Button 
+                                  className="flex-1" 
+                                  size="sm"
+                                  onClick={() => {
+                                    toast({
+                                      title: "Mark as Paid",
+                                      description: "Payment functionality coming soon!",
+                                    });
+                                  }}
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  Mark Paid
+                                </Button>
+                              )}
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  toast({
+                                    title: "Bill Details",
+                                    description: `${bill.vendor_name} - ${formatCurrency(bill.amount, bill.currency)}`,
+                                  });
+                                }}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            {bill.notes && (
+                              <div className="mt-2 pt-2 border-t text-xs text-gray-500">
+                                {bill.notes}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
