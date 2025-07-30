@@ -35,6 +35,7 @@ const AIWorkspace = () => {
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [newWorkspaceTitle, setNewWorkspaceTitle] = useState('');
+  const [aiPrompt, setAiPrompt] = useState('');
 
   useEffect(() => {
     if (isPremium && user) {
@@ -167,12 +168,21 @@ const AIWorkspace = () => {
     try {
       const { data, error } = await supabase.functions.invoke('ai-assistant', {
         body: { 
-          prompt: `Generate content for a workspace document based on this prompt: ${prompt}. Format it as structured content with headings, paragraphs, and lists.`,
-          type: 'workspace_generation'
+          message: `Generate content for a workspace document based on this prompt: ${prompt}. Format it as structured content with headings, paragraphs, and lists. Use markdown formatting with # for headings and - for lists.`,
+          conversationType: 'document_assistant',
+          userIndustry: 'General',
+          businessStage: 'startup'
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Failed to generate content');
+      }
+
+      if (!data || !data.response) {
+        throw new Error('No response received from AI');
+      }
 
       // Parse AI response and create blocks
       const aiContent = data.response;
@@ -189,11 +199,25 @@ const AIWorkspace = () => {
             content: line.replace('# ', ''),
             order: order++
           });
-        } else if (line.startsWith('- ')) {
+        } else if (line.startsWith('## ')) {
+          newBlocks.push({
+            id: crypto.randomUUID(),
+            type: 'heading',
+            content: line.replace('## ', ''),
+            order: order++
+          });
+        } else if (line.startsWith('- ') || line.startsWith('* ')) {
           newBlocks.push({
             id: crypto.randomUUID(),
             type: 'list',
-            content: line.replace('- ', ''),
+            content: line.replace(/^[*-] /, ''),
+            order: order++
+          });
+        } else if (line.startsWith('> ')) {
+          newBlocks.push({
+            id: crypto.randomUUID(),
+            type: 'quote',
+            content: line.replace('> ', ''),
             order: order++
           });
         } else if (line.trim()) {
@@ -206,16 +230,26 @@ const AIWorkspace = () => {
         }
       });
 
+      if (newBlocks.length === 0) {
+        // Fallback: create a single text block with the entire content
+        newBlocks.push({
+          id: crypto.randomUUID(),
+          type: 'text',
+          content: aiContent,
+          order: currentWorkspace.blocks.length
+        });
+      }
+
       const updatedWorkspace = {
         ...currentWorkspace,
         blocks: [...currentWorkspace.blocks, ...newBlocks]
       };
 
       setCurrentWorkspace(updatedWorkspace);
-      toast.success('AI content generated!');
+      toast.success(`AI generated ${newBlocks.length} content blocks!`);
     } catch (error) {
       console.error('Error generating AI content:', error);
-      toast.error('Failed to generate AI content');
+      toast.error(`Failed to generate AI content: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsGenerating(false);
     }
@@ -380,34 +414,80 @@ const AIWorkspace = () => {
               {currentWorkspace && (
                 <>
                   <hr />
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <p className="font-medium">Add Block</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button onClick={() => addBlock('text')} variant="outline" size="sm">
-                        <FileText className="h-4 w-4" />
+                    <div className="space-y-2">
+                      <Button 
+                        onClick={() => addBlock('text')} 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full justify-start"
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Text
                       </Button>
-                      <Button onClick={() => addBlock('heading')} variant="outline" size="sm">
-                        <Hash className="h-4 w-4" />
+                      <Button 
+                        onClick={() => addBlock('heading')} 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full justify-start"
+                      >
+                        <Hash className="h-4 w-4 mr-2" />
+                        Heading
                       </Button>
-                      <Button onClick={() => addBlock('list')} variant="outline" size="sm">
-                        <List className="h-4 w-4" />
+                      <Button 
+                        onClick={() => addBlock('list')} 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full justify-start"
+                      >
+                        <List className="h-4 w-4 mr-2" />
+                        List
                       </Button>
-                      <Button onClick={() => addBlock('quote')} variant="outline" size="sm">
-                        <Quote className="h-4 w-4" />
+                      <Button 
+                        onClick={() => addBlock('quote')} 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full justify-start"
+                      >
+                        <Quote className="h-4 w-4 mr-2" />
+                        Quote
                       </Button>
                     </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Button 
-                      onClick={() => generateWithAI('Create a business plan outline')}
-                      disabled={isGenerating}
-                      className="w-full"
-                      variant="outline"
-                    >
-                      <Brain className="h-4 w-4 mr-2" />
-                      {isGenerating ? 'Generating...' : 'AI Generate'}
-                    </Button>
+                  <div className="space-y-3">
+                    <p className="font-medium">AI Content Generation</p>
+                    <div className="space-y-2">
+                      <Textarea
+                        placeholder="Describe what you want to generate... (e.g., business plan, marketing strategy, project outline)"
+                        value={aiPrompt}
+                        onChange={(e) => setAiPrompt(e.target.value)}
+                        className="min-h-[80px] text-sm"
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button 
+                          onClick={() => generateWithAI(aiPrompt || 'Create a business plan outline')}
+                          disabled={isGenerating}
+                          className="w-full"
+                          size="sm"
+                        >
+                          <Brain className="h-4 w-4 mr-2" />
+                          {isGenerating ? 'Generating...' : 'Generate'}
+                        </Button>
+                        <Button 
+                          onClick={() => {
+                            setAiPrompt('');
+                            generateWithAI('Create a business plan outline');
+                          }}
+                          disabled={isGenerating}
+                          variant="outline"
+                          size="sm"
+                        >
+                          Quick Start
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </>
               )}
