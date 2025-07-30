@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { aiClassificationService, DocumentAnalysis } from '@/services/aiClassificationService';
+import { aiClassificationService } from '@/services/aiClassificationService';
+import type { DocumentAnalysis } from '@/services/aiClassificationService';
 import { useToast } from '@/hooks/use-toast';
 
 const AIDocumentDemo = () => {

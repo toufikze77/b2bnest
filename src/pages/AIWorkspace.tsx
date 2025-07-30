@@ -81,12 +81,13 @@ const AIWorkspace = () => {
     };
 
     const { data, error } = await supabase
-      .from('ai_workspaces' as any)
+      .from('ai_workspaces')
       .insert(newWorkspace)
       .select()
       .single();
 
     if (error) {
+      console.error('Error creating workspace:', error);
       toast.error('Failed to create workspace');
       return;
     }
@@ -144,15 +145,16 @@ const AIWorkspace = () => {
     if (!currentWorkspace || !user) return;
 
     const { error } = await supabase
-      .from('ai_workspaces' as any)
+      .from('ai_workspaces')
       .update({
         title: currentWorkspace.title,
-        blocks: currentWorkspace.blocks,
+        blocks: currentWorkspace.blocks as any,
         updated_at: new Date().toISOString()
       })
       .eq('id', currentWorkspace.id);
 
     if (error) {
+      console.error('Error saving workspace:', error);
       toast.error('Failed to save workspace');
       return;
     }
