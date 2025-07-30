@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,11 @@ import {
   RefreshCw,
   TrendingUp,
   BarChart3,
-  DollarSign
+  DollarSign,
+  ChevronLeft,
+  ChevronRight,
+  Pause,
+  Play
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -32,11 +36,32 @@ const BusinessNewsPage = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(true);
   const { isAdmin } = useUserRole();
 
+  // Auto-refresh timer
   useEffect(() => {
     fetchNews();
+    
+    // Set up auto-refresh every 5 minutes
+    const autoRefreshInterval = setInterval(() => {
+      fetchNews();
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(autoRefreshInterval);
   }, []);
+
+  // Slideshow auto-play
+  useEffect(() => {
+    if (!autoPlay || articles.length === 0) return;
+    
+    const slideInterval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % Math.min(articles.length, 6));
+    }, 4000);
+
+    return () => clearInterval(slideInterval);
+  }, [autoPlay, articles.length]);
 
   const fetchNews = async () => {
     try {
@@ -129,6 +154,20 @@ const BusinessNewsPage = () => {
   };
 
   const { cnbcArticles, cryptoArticles } = categorizeArticles(articles);
+
+  const nextSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev + 1) % Math.min(articles.length, 6));
+  }, [articles.length]);
+
+  const prevSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev - 1 + Math.min(articles.length, 6)) % Math.min(articles.length, 6));
+  }, [articles.length]);
+
+  const toggleAutoPlay = () => {
+    setAutoPlay(!autoPlay);
+  };
+
+  const featuredArticles = articles.slice(0, 6);
 
   if (loading) {
     return (
@@ -249,6 +288,133 @@ const BusinessNewsPage = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Featured News Slideshow */}
+        {featuredArticles.length > 0 && (
+          <Card className="mb-8 relative overflow-hidden border-0 bg-gradient-to-br from-card via-card to-primary/5 shadow-xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-secondary/5"></div>
+            <CardHeader className="relative border-b bg-gradient-to-r from-primary/10 to-secondary/10">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-primary to-primary/70 rounded-lg">
+                    <TrendingUp className="h-5 w-5 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold">Featured News</div>
+                    <div className="text-xs text-muted-foreground font-normal">Breaking Business Updates</div>
+                  </div>
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleAutoPlay}
+                    className="h-8 w-8 p-0"
+                  >
+                    {autoPlay ? (
+                      <Pause className="h-4 w-4" />
+                    ) : (
+                      <Play className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={prevSlide}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={nextSlide}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="relative p-0">
+              <div className="relative h-48 overflow-hidden">
+                <div 
+                  className="flex transition-transform duration-500 ease-in-out h-full"
+                  style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+                >
+                  {featuredArticles.map((article, index) => (
+                    <div key={article.id} className="min-w-full h-full flex-shrink-0">
+                      <div className="relative h-full bg-gradient-to-br from-background/50 to-muted/30 backdrop-blur-sm">
+                        {article.image_url && (
+                          <div className="absolute inset-0 opacity-20">
+                            <img 
+                              src={article.image_url} 
+                              alt={article.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        <div className="relative p-6 h-full flex flex-col justify-between">
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <Badge 
+                                variant={article.source === 'CNBC' ? 'default' : 'secondary'}
+                                className={article.source === 'CNBC' 
+                                  ? 'bg-blue-500/20 text-blue-700 border-blue-200' 
+                                  : 'bg-amber-500/20 text-amber-700 border-amber-200'
+                                }
+                              >
+                                {article.source}
+                              </Badge>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Clock className="h-3 w-3" />
+                                {formatDate(article.published_at)}
+                              </div>
+                            </div>
+                            <h3 className="text-xl font-bold line-clamp-2 leading-tight">
+                              {article.title}
+                            </h3>
+                            {article.description && (
+                              <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+                                {article.description}
+                              </p>
+                            )}
+                          </div>
+                          <div className="pt-4">
+                            <a
+                              href={article.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium text-sm transition-colors"
+                            >
+                              Read full article
+                              <ExternalLink className="h-4 w-4" />
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Slide indicators */}
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+                {featuredArticles.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentSlide(index)}
+                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                      index === currentSlide 
+                        ? 'bg-primary scale-125' 
+                        : 'bg-primary/30 hover:bg-primary/50'
+                    }`}
+                  />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* News Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -394,7 +560,7 @@ const BusinessNewsPage = () => {
               <span>•</span>
               <span>Powered by CNBC & CoinDesk</span>
               <span>•</span>
-              <span>Auto-refreshed</span>
+              <span>Auto-refreshed every 5 minutes</span>
             </div>
             <p className="text-xs text-muted-foreground">
               Last update: {new Date().toLocaleString()}
