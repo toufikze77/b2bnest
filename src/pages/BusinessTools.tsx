@@ -39,7 +39,7 @@ import { AdvertisementSection } from '@/components/AdvertisementSection';
 
 type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'premium-marketplace' | 'currency-converter' | 'crypto-converter';
 
-type FilterType = 'all' | 'premium' | 'favorites';
+type FilterType = 'all' | 'premium' | 'favorites' | 'free';
 
 const BusinessTools = () => {
   const [currentTool, setCurrentTool] = useState<ToolType>('overview');
@@ -100,7 +100,7 @@ const BusinessTools = () => {
       icon: Lightbulb,
       color: 'bg-gradient-to-r from-purple-500 to-pink-500',
       benefits: ['AI-powered insights', 'Market analysis', 'Personalized ideas', 'Growth opportunities'],
-      isPremium: true
+      isPremium: false
     },
     {
       id: 'business-name-generator' as ToolType,
@@ -109,7 +109,7 @@ const BusinessTools = () => {
       icon: Sparkles,
       color: 'bg-purple-600',
       benefits: ['Creative suggestions', 'Domain availability', 'Industry-specific names'],
-      isPremium: true
+      isPremium: false
     },
     {
       id: 'qr-code-generator' as ToolType,
@@ -118,7 +118,7 @@ const BusinessTools = () => {
       icon: QrCode,
       color: 'bg-gray-600',
       benefits: ['Multiple formats', 'Instant generation', 'Easy download'],
-      isPremium: true
+      isPremium: false
     },
     {
       id: 'time-tracker' as ToolType,
@@ -127,7 +127,7 @@ const BusinessTools = () => {
       icon: Clock,
       color: 'bg-emerald-600',
       benefits: ['Project tracking', 'Real-time timer', 'Activity summaries'],
-      isPremium: true
+      isPremium: false
     },
     {
       id: 'cash-flow-tracker' as ToolType,
@@ -235,7 +235,7 @@ const BusinessTools = () => {
       icon: TrendingUp,
       color: 'bg-green-600',
       benefits: ['Real-time rates', '20+ currencies', 'Business-focused'],
-      isPremium: true
+      isPremium: false
     },
     {
       id: 'crypto-converter' as ToolType,
@@ -322,6 +322,7 @@ const BusinessTools = () => {
 
   const filteredTools = tools.filter(tool => {
     if (filter === 'premium') return tool.isPremium;
+    if (filter === 'free') return !tool.isPremium;
     if (filter === 'favorites') return isFavorited(tool.id);
     return true;
   });
@@ -460,13 +461,21 @@ const BusinessTools = () => {
                 Comprehensive tools to help you start, manage, and grow your business with confidence.
               </p>
               
-              <div className="flex gap-2 mt-4">
+               <div className="flex gap-2 mt-4">
                 <Button
                   variant={filter === 'all' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setFilter('all')}
                 >
                   All Tools ({tools.length})
+                </Button>
+                <Button
+                  variant={filter === 'free' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setFilter('free')}
+                  className="bg-green-50 border-green-300 text-green-700 hover:bg-green-100"
+                >
+                  Free Tools ({tools.filter(t => !t.isPremium).length})
                 </Button>
                 <Button
                   variant={filter === 'premium' ? 'default' : 'outline'}
