@@ -32,7 +32,7 @@ class AIClassificationService {
       // Use a lightweight classification model that works well in browsers
       this.classifier = await pipeline(
         'text-classification',
-        'microsoft/DialoGPT-medium',
+        'Xenova/distilbert-base-uncased-finetuned-sst-2-english',
         { device: 'webgpu' }
       );
       this.isInitialized = true;
@@ -41,7 +41,7 @@ class AIClassificationService {
       console.warn('WebGPU not available, falling back to CPU');
       this.classifier = await pipeline(
         'text-classification',
-        'microsoft/DialoGPT-medium',
+        'Xenova/distilbert-base-uncased-finetuned-sst-2-english',
         { device: 'cpu' }
       );
       this.isInitialized = true;
