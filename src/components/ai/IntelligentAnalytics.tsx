@@ -124,6 +124,159 @@ const IntelligentAnalytics = () => {
     }
   };
 
+  const parseInsightData = (data: any) => {
+    if (typeof data === 'string') {
+      try {
+        // Try to parse if it's a JSON string
+        const parsed = JSON.parse(data);
+        if (parsed.analysis) {
+          return parsed.analysis;
+        }
+        return parsed;
+      } catch {
+        return data;
+      }
+    }
+    return data.analysis || data;
+  };
+
+  const renderInsightContent = (insight: InsightData) => {
+    const data = parseInsightData(insight.data);
+    
+    if (insight.insight_type === 'cost_forecast' && data.cost_trends) {
+      return (
+        <div className="space-y-6">
+          {/* Cost Trends */}
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Cost Trends Analysis
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="text-blue-700 font-medium">Average Monthly Expense:</span>
+                <div className="text-lg font-bold text-blue-900">${data.cost_trends.average_monthly_expense?.toLocaleString()}</div>
+              </div>
+              <div>
+                <span className="text-blue-700 font-medium">Trend:</span>
+                <div className="text-blue-900">{data.cost_trends.trend}</div>
+              </div>
+              <div>
+                <span className="text-blue-700 font-medium">Pattern:</span>
+                <div className="text-blue-900">{data.cost_trends.pattern}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Cost Savings Opportunities */}
+          {data.cost_savings_opportunities && (
+            <div className="bg-green-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
+                <Target className="h-4 w-4" />
+                Cost Savings Opportunities
+              </h4>
+              <div className="space-y-3">
+                {data.cost_savings_opportunities.recommendations?.map((rec: any, index: number) => (
+                  <div key={index} className="bg-white p-3 rounded border border-green-200">
+                    <div className="font-medium text-green-800">{rec.area}</div>
+                    <div className="text-sm text-green-700 mt-1">{rec.suggestion}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Budget Recommendations */}
+          {data.budget_recommendations && (
+            <div className="bg-purple-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Budget Forecast
+              </h4>
+              <div className="grid grid-cols-3 gap-4 mb-3">
+                {Object.entries(data.budget_recommendations.forecast || {}).map(([month, amount]) => (
+                  <div key={month} className="text-center bg-white p-2 rounded border border-purple-200">
+                    <div className="text-sm text-purple-700 font-medium">{month}</div>
+                    <div className="text-lg font-bold text-purple-900">${(amount as number).toLocaleString()}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="text-sm text-purple-700 bg-white p-3 rounded border border-purple-200">
+                <strong>Rationale:</strong> {data.budget_recommendations.rationale}
+              </div>
+            </div>
+          )}
+
+          {/* Risk Factors */}
+          {data.risk_factors && (
+            <div className="bg-red-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-red-900 mb-3 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                Risk Factors
+              </h4>
+              <div className="space-y-3">
+                {data.risk_factors.potential_risks?.map((risk: any, index: number) => (
+                  <div key={index} className="bg-white p-3 rounded border border-red-200">
+                    <div className="font-medium text-red-800">{risk.risk}</div>
+                    <div className="text-sm text-red-700 mt-1">{risk.impact}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (insight.insight_type === 'document_usage' && data.usage_analysis) {
+      return (
+        <div className="space-y-6">
+          {/* Usage Statistics */}
+          <div className="bg-indigo-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-indigo-900 mb-3 flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Document Usage Statistics
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {Object.entries(data.usage_analysis.top_categories || {}).map(([category, count]) => (
+                <div key={category} className="text-center bg-white p-3 rounded border border-indigo-200">
+                  <div className="text-sm text-indigo-700 font-medium capitalize">{category.replace('_', ' ')}</div>
+                  <div className="text-xl font-bold text-indigo-900">{count as number}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Recommendations */}
+          {data.recommendations && (
+            <div className="bg-amber-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-amber-900 mb-3 flex items-center gap-2">
+                <Target className="h-4 w-4" />
+                Optimization Recommendations
+              </h4>
+              <div className="space-y-2">
+                {data.recommendations.map((rec: string, index: number) => (
+                  <div key={index} className="bg-white p-3 rounded border border-amber-200 text-amber-800">
+                    {rec}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Fallback for any unstructured data
+    return (
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <pre className="whitespace-pre-wrap text-sm text-gray-700">
+          {typeof data === 'object' ? JSON.stringify(data, null, 2) : data}
+        </pre>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -236,11 +389,7 @@ const IntelligentAnalytics = () => {
                       value={insight.confidence_score * 100} 
                       className="h-2"
                     />
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <pre className="whitespace-pre-wrap text-sm">
-                        {JSON.stringify(insight.data, null, 2)}
-                      </pre>
-                    </div>
+                    {renderInsightContent(insight)}
                   </div>
                 </CardContent>
               </Card>
