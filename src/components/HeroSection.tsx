@@ -10,12 +10,16 @@ const HeroSection = ({ onSearch }: HeroSectionProps) => {
   return (
     <section className="py-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto text-center">
+        {/* Free Trial Banner */}
+        <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-6 py-3 rounded-full mb-6">
+          <span className="text-lg font-medium">🎉 Start Your 14-Day Free Trial - No Card Needed!</span>
+        </div>
+        
         <h1 className="text-5xl font-bold text-gray-900 mb-6">
           AI-Powered Business <span className="text-blue-600">Automation Platform</span>
         </h1>
         <p className="text-xl text-gray-600 mb-6 max-w-3xl mx-auto">
-          Early-stage AI startup transforming business operations with intelligent document generation and automated workflows. 
-          Serving 8,200+ businesses with proven traction and clear path to profitability.
+          Try all premium features free for 14 days. Transform your business operations with intelligent document generation and automated workflows. Serving 8,200+ businesses with proven traction.
         </p>
         <div className="flex justify-center gap-4 mb-8">
           <div className="bg-green-100 text-green-800 px-4 py-2 rounded-full font-semibold">

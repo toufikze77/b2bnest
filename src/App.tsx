@@ -4,6 +4,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { UserSettingsProvider } from "@/hooks/useUserSettings";
 import { Toaster } from "@/components/ui/toaster";
 import Layout from "@/components/Layout";
+import UpgradeButton from "@/components/UpgradeButton";
 
 import Index from "@/pages/Index";
 import About from "@/pages/About";
@@ -96,6 +97,8 @@ function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
             <Toaster />
+            {/* Floating upgrade button - appears globally */}
+            <UpgradeButton variant="floating" />
           </Layout>
           </Router>
         </UserSettingsProvider>

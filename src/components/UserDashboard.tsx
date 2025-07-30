@@ -15,6 +15,7 @@ import { formatCurrency } from '@/utils/currencyUtils';
 import AccountSettings from '@/components/AccountSettings';
 import ServiceImageUpload from '@/components/ServiceImageUpload';
 import FeedbackManagement from '@/components/admin/FeedbackManagement';
+import TrialBanner from '@/components/TrialBanner';
 
 const UserDashboard = () => {
   const { user } = useAuth();
@@ -343,6 +344,9 @@ const UserDashboard = () => {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">My Dashboard</h1>
           <p className="text-gray-600">Welcome back, {user.email}</p>
         </div>
+
+        {/* Trial Banner */}
+        <TrialBanner />
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-8 gap-6 mb-8">

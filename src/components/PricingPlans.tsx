@@ -42,7 +42,7 @@ const PricingPlans = () => {
         'Email support',
         'Mobile app access',
       ],
-      cta: 'Buy now',
+      cta: 'Start Free Trial',
       popular: false,
     },
     {
@@ -69,7 +69,7 @@ const PricingPlans = () => {
         'Team collaboration tools',
         'Custom integrations',
       ],
-      cta: 'Buy now',
+      cta: 'Start Free Trial',
       popular: true,
       savings: '20% off',
     },
@@ -97,7 +97,7 @@ const PricingPlans = () => {
         'Training & onboarding',
         'SLA guarantee',
       ],
-      cta: 'Buy now',
+      cta: 'Start Free Trial',
       popular: false,
       savings: '20% off',
     },
@@ -161,6 +161,10 @@ const PricingPlans = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-16">
+          {/* Free Trial Banner */}
+          <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-6 py-3 rounded-full mb-6">
+            <span className="text-lg font-medium">🎉 Start Your 14-Day Free Trial - No Card Needed!</span>
+          </div>
           <div className="flex items-center justify-center gap-2 mb-4">
             <Sparkles className="h-8 w-8 text-blue-600" />
             <h2 className="text-4xl font-bold text-gray-900">
@@ -168,8 +172,7 @@ const PricingPlans = () => {
             </h2>
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-            Join 8,200+ businesses already scaling with our AI-powered platform. 
-            Choose the plan that fits your growth stage.
+            Try all premium features free for 14 days. Join 8,200+ businesses already scaling with our platform.
           </p>
           
           {/* Annual/Monthly Toggle */}
