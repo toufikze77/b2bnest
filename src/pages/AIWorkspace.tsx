@@ -34,6 +34,8 @@ const AIWorkspace = () => {
   const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [newWorkspaceTitle, setNewWorkspaceTitle] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
 
@@ -61,6 +63,7 @@ const AIWorkspace = () => {
     setWorkspaces(workspaces);
     if (workspaces.length > 0 && !currentWorkspace) {
       setCurrentWorkspace(workspaces[0]);
+      setHasUnsavedChanges(false);
     }
   };
 
@@ -115,6 +118,7 @@ const AIWorkspace = () => {
     };
 
     setCurrentWorkspace(updatedWorkspace);
+    setHasUnsavedChanges(true);
   };
 
   const updateBlock = (blockId: string, content: string) => {
@@ -128,6 +132,7 @@ const AIWorkspace = () => {
     };
 
     setCurrentWorkspace(updatedWorkspace);
+    setHasUnsavedChanges(true);
   };
 
   const deleteBlock = (blockId: string) => {
@@ -139,28 +144,38 @@ const AIWorkspace = () => {
     };
 
     setCurrentWorkspace(updatedWorkspace);
+    setHasUnsavedChanges(true);
   };
 
   const saveWorkspace = async () => {
     if (!currentWorkspace || !user) return;
 
-    const { error } = await supabase
-      .from('ai_workspaces')
-      .update({
-        title: currentWorkspace.title,
-        blocks: currentWorkspace.blocks as any,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', currentWorkspace.id);
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('ai_workspaces')
+        .update({
+          title: currentWorkspace.title,
+          blocks: currentWorkspace.blocks as any,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentWorkspace.id);
 
-    if (error) {
-      console.error('Error saving workspace:', error);
+      if (error) {
+        console.error('Error saving workspace:', error);
+        toast.error('Failed to save workspace');
+        return;
+      }
+
+      setHasUnsavedChanges(false);
+      toast.success('Workspace saved!');
+      loadWorkspaces();
+    } catch (err) {
+      console.error('Exception saving workspace:', err);
       toast.error('Failed to save workspace');
-      return;
+    } finally {
+      setIsSaving(false);
     }
-
-    toast.success('Workspace saved!');
-    loadWorkspaces();
   };
 
   const generateWithAI = async (prompt: string) => {
@@ -248,6 +263,7 @@ const AIWorkspace = () => {
       };
 
       setCurrentWorkspace(updatedWorkspace);
+      setHasUnsavedChanges(true);
       toast.success(`AI generated ${newBlocks.length} content blocks!`);
     } catch (error) {
       console.error('Error generating AI content:', error);
@@ -386,9 +402,13 @@ const AIWorkspace = () => {
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={saveWorkspace} disabled={!currentWorkspace}>
+          <Button 
+            onClick={saveWorkspace} 
+            disabled={!currentWorkspace || isSaving || !hasUnsavedChanges}
+            variant={hasUnsavedChanges ? "default" : "outline"}
+          >
             <Save className="h-4 w-4 mr-2" />
-            Save
+            {isSaving ? 'Saving...' : hasUnsavedChanges ? 'Save*' : 'Saved'}
           </Button>
         </div>
       </div>
