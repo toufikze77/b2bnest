@@ -188,11 +188,14 @@ const AIDocumentDemo = () => {
             <div className="mt-4 p-4 bg-gray-50 rounded-lg">
               <h4 className="font-semibold text-gray-900 mb-2">Try the Demo:</h4>
               <p className="text-sm text-gray-600 mb-2">
-                Create a text file with this sample content:
+                Create a text file (.txt) with this sample content:
               </p>
               <code className="text-xs bg-white p-2 rounded border block">
                 "This employment agreement between Company XYZ and Employee establishes terms and conditions of employment, including salary, benefits, confidential information obligations, and liability limitations."
               </code>
+              <p className="text-xs text-gray-500 mt-1">
+                Save as "sample.txt" and upload above to see AI analysis in action.
+              </p>
             </div>
           </CardContent>
         </Card>

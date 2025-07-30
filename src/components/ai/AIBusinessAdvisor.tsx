@@ -34,10 +34,19 @@ const AIBusinessAdvisor = () => {
   ];
 
   const handleAskAdvisor = async () => {
-    if (!question.trim() || !industry || !businessStage) {
+    if (!question.trim()) {
       toast({
         title: "Missing Information",
-        description: "Please provide your question, industry, and business stage.",
+        description: "Please provide your question.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!industry || !businessStage) {
+      toast({
+        title: "Missing Information", 
+        description: "Please select your industry and business stage.",
         variant: "destructive",
       });
       return;
