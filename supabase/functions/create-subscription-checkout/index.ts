@@ -79,8 +79,13 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}&create_invoice=true`,
       cancel_url: `${req.headers.get("origin")}/pricing`,
+      metadata: {
+        plan_id: planId,
+        is_annual: isAnnual.toString(),
+        user_id: user.id,
+      },
     });
 
     return new Response(JSON.stringify({ url: session.url }), {

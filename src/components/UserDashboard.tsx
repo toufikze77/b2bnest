@@ -386,9 +386,10 @@ const UserDashboard = () => {
 
         {/* Tabs for different sections */}
         <Tabs defaultValue="purchases" className="w-full">
-          <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-5' : 'grid-cols-4'}`}>
+          <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-6' : 'grid-cols-5'}`}>
             <TabsTrigger value="purchases">My Purchases</TabsTrigger>
             <TabsTrigger value="favorites">My Favorites</TabsTrigger>
+            <TabsTrigger value="invoices">My Invoices</TabsTrigger>
             <TabsTrigger value="services">Create Service</TabsTrigger>
             <TabsTrigger value="settings">Account Settings</TabsTrigger>
             {isAdmin && <TabsTrigger value="admin">Admin</TabsTrigger>}
@@ -504,6 +505,85 @@ const UserDashboard = () => {
                               onClick={() => handleRemoveFavorite(favorite.document_id)}
                             >
                               <Heart className="h-4 w-4 fill-current text-red-500" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="invoices" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Invoices</CardTitle>
+                <CardDescription>
+                  Invoices generated from your subscription payments and purchases
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {invoices.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Receipt className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <p>You don't have any invoices yet.</p>
+                    <p className="text-sm">Invoices will appear here after making subscription payments.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {invoices.map((invoice) => (
+                      <Card key={invoice.id} className="hover:shadow-md transition-shadow">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-lg">Invoice {invoice.invoice_number}</CardTitle>
+                            <Badge variant={invoice.status === 'paid' ? 'default' : 'secondary'}>
+                              {invoice.status?.toUpperCase()}
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            Client: {invoice.client_name}
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2 mb-4">
+                            <div className="flex justify-between text-sm">
+                              <span>Amount:</span>
+                              <span className="font-medium">{formatCurrency(invoice.total_amount, invoice.currency)}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span>Date:</span>
+                              <span>{new Date(invoice.created_at).toLocaleDateString()}</span>
+                            </div>
+                            {invoice.due_date && (
+                              <div className="flex justify-between text-sm">
+                                <span>Due Date:</span>
+                                <span>{new Date(invoice.due_date).toLocaleDateString()}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              className="flex-1" 
+                              size="sm"
+                              onClick={() => handleDownloadQuoteInvoice(invoice, 'invoice')}
+                            >
+                              <Download className="h-4 w-4 mr-2" />
+                              Download
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                // Create a modal or detailed view for invoice
+                                toast({
+                                  title: "Invoice Details",
+                                  description: `Invoice ${invoice.invoice_number} - ${formatCurrency(invoice.total_amount, invoice.currency)}`,
+                                });
+                              }}
+                            >
+                              <Eye className="h-4 w-4" />
                             </Button>
                           </div>
                         </CardContent>
