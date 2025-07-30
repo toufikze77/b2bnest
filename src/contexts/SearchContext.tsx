@@ -2,10 +2,12 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Template, TemplateFilter } from '@/types/template';
 import { templateService } from '@/services/templateService';
+import { unifiedSearchService, SearchResult } from '@/services/unifiedSearchService';
 
 interface SearchContextType {
   searchQuery: string;
   searchResults: Template[];
+  unifiedResults: SearchResult[];
   filters: TemplateFilter;
   isSearching: boolean;
   suggestions: string[];
@@ -13,6 +15,7 @@ interface SearchContextType {
   setSearchQuery: (query: string) => void;
   setFilters: (filters: Partial<TemplateFilter>) => void;
   performSearch: (query: string) => void;
+  performUnifiedSearch: (query: string) => void;
   clearSearch: () => void;
   addToRecentSearches: (query: string) => void;
 }
@@ -22,6 +25,7 @@ const SearchContext = createContext<SearchContextType | undefined>(undefined);
 export const SearchProvider = ({ children }: { children: React.ReactNode }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Template[]>([]);
+  const [unifiedResults, setUnifiedResults] = useState<SearchResult[]>([]);
   const [filters, setFiltersState] = useState<TemplateFilter>({
     categories: [],
     licenses: [],
@@ -59,9 +63,24 @@ export const SearchProvider = ({ children }: { children: React.ReactNode }) => {
     }, 300);
   }, [filters]);
 
+  const performUnifiedSearch = useCallback(async (query: string) => {
+    setIsSearching(true);
+    
+    try {
+      const results = await unifiedSearchService.search(query, 20);
+      setUnifiedResults(results);
+    } catch (error) {
+      console.error('Unified search error:', error);
+      setUnifiedResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
   const clearSearch = useCallback(() => {
     setSearchQuery('');
     setSearchResults([]);
+    setUnifiedResults([]);
     setSuggestions([]);
   }, []);
 
@@ -73,28 +92,11 @@ export const SearchProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Generate suggestions based on query
   React.useEffect(() => {
-    if (searchQuery.length > 0) {
-      const commonSuggestions = [
-        'Non-Disclosure Agreement',
-        'Invoice Template',
-        'Business Plan',
-        'Employee Contract',
-        'Service Agreement',
-        'Expense Report',
-        'Legal Forms',
-        'HR Documents',
-        'Financial Templates',
-        'Social Media Calendar',
-        'Marketing Materials',
-        'Onboarding Checklist'
-      ];
-      
-      const filtered = commonSuggestions.filter(suggestion =>
-        suggestion.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        suggestion.toLowerCase() !== searchQuery.toLowerCase()
-      ).slice(0, 5);
-      
-      setSuggestions(filtered);
+    if (searchQuery.length > 1) {
+      const suggestions = unifiedSearchService.getSuggestions(searchQuery);
+      setSuggestions(suggestions);
+    } else if (searchQuery.length === 0) {
+      setSuggestions(unifiedSearchService.getPopularSearches());
     } else {
       setSuggestions([]);
     }
@@ -104,6 +106,7 @@ export const SearchProvider = ({ children }: { children: React.ReactNode }) => {
     <SearchContext.Provider value={{
       searchQuery,
       searchResults,
+      unifiedResults,
       filters,
       isSearching,
       suggestions,
@@ -111,6 +114,7 @@ export const SearchProvider = ({ children }: { children: React.ReactNode }) => {
       setSearchQuery,
       setFilters,
       performSearch,
+      performUnifiedSearch,
       clearSearch,
       addToRecentSearches
     }}>

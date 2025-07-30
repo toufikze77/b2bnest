@@ -1,31 +1,43 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Filter, X, Clock, TrendingUp } from 'lucide-react';
+import { Search, Filter, X, Clock, TrendingUp, FileText, Settings, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useSearch } from '@/contexts/SearchContext';
+import { SearchResult } from '@/services/unifiedSearchService';
 
 interface SmartSearchProps {
   onSearch: (query: string) => void;
+  onResultSelect?: (result: SearchResult) => void;
   placeholder?: string;
   showFilters?: boolean;
+  unified?: boolean;
 }
 
-const SmartSearch = ({ onSearch, placeholder = "Search forms and documents...", showFilters = true }: SmartSearchProps) => {
+const SmartSearch = ({ 
+  onSearch, 
+  onResultSelect,
+  placeholder = "Search tools, documents, and templates...", 
+  showFilters = true,
+  unified = true 
+}: SmartSearchProps) => {
   const {
     searchQuery,
     suggestions,
     recentSearches,
+    unifiedResults,
     filters,
     isSearching,
     setSearchQuery,
     setFilters,
+    performUnifiedSearch,
     addToRecentSearches
   } = useSearch();
   
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showResults, setShowResults] = useState(false);
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -33,11 +45,16 @@ const SmartSearch = ({ onSearch, placeholder = "Search forms and documents...", 
   const categories = ['Legal Documents', 'Human Resources', 'Financial Forms', 'Operations'];
   const popularTags = ['Contract', 'Invoice', 'Agreement', 'Template', 'Report', 'Form'];
 
-  const handleSearch = (query: string) => {
+  const handleSearch = async (query: string) => {
     setSearchQuery(query);
     if (query.length > 0) {
       addToRecentSearches(query);
-      onSearch(query);
+      if (unified) {
+        await performUnifiedSearch(query);
+        setShowResults(true);
+      } else {
+        onSearch(query);
+      }
     }
     setShowSuggestions(false);
   };
@@ -49,8 +66,18 @@ const SmartSearch = ({ onSearch, placeholder = "Search forms and documents...", 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchQuery(value);
-    setShowSuggestions(value.length > 0);
-    onSearch(value);
+    setShowSuggestions(value.length > 0 || (value.length === 0 && suggestions.length > 0));
+    setShowResults(false);
+    
+    if (unified && value.length > 1) {
+      // Debounced search for better performance
+      const timeoutId = setTimeout(() => {
+        performUnifiedSearch(value);
+      }, 300);
+      return () => clearTimeout(timeoutId);
+    } else if (!unified) {
+      onSearch(value);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -63,8 +90,9 @@ const SmartSearch = ({ onSearch, placeholder = "Search forms and documents...", 
 
   const clearSearch = () => {
     setSearchQuery('');
-    onSearch('');
     setShowSuggestions(false);
+    setShowResults(false);
+    if (!unified) onSearch('');
     inputRef.current?.focus();
   };
 
@@ -73,6 +101,7 @@ const SmartSearch = ({ onSearch, placeholder = "Search forms and documents...", 
     const handleClickOutside = (event: MouseEvent) => {
       if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
+        setShowResults(false);
       }
     };
 
@@ -87,6 +116,25 @@ const SmartSearch = ({ onSearch, placeholder = "Search forms and documents...", 
     setFilters({ ...filters, categories: newCategories });
   };
 
+  const handleResultClick = (result: SearchResult) => {
+    if (onResultSelect) {
+      onResultSelect(result);
+    } else if (result.url) {
+      window.location.href = result.url;
+    }
+    setShowResults(false);
+    setShowSuggestions(false);
+  };
+
+  const getResultIcon = (type: string) => {
+    switch (type) {
+      case 'tool': return <Settings className="h-4 w-4" />;
+      case 'document': return <FileText className="h-4 w-4" />;
+      case 'template': return <Sparkles className="h-4 w-4" />;
+      default: return <Search className="h-4 w-4" />;
+    }
+  };
+
   return (
     <div className="relative w-full max-w-2xl mx-auto">
       <div className="relative">
@@ -98,7 +146,10 @@ const SmartSearch = ({ onSearch, placeholder = "Search forms and documents...", 
           value={searchQuery}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          onFocus={() => setShowSuggestions(searchQuery.length > 0 || recentSearches.length > 0)}
+          onFocus={() => {
+            setShowSuggestions(searchQuery.length > 0 || suggestions.length > 0);
+            if (unified && searchQuery.length > 1) setShowResults(true);
+          }}
           className="pl-12 pr-20 py-4 text-lg rounded-xl border-2 border-gray-200 focus:border-blue-500 shadow-lg"
         />
         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
@@ -128,8 +179,65 @@ const SmartSearch = ({ onSearch, placeholder = "Search forms and documents...", 
         </div>
       </div>
 
+      {/* Unified Search Results */}
+      {unified && showResults && unifiedResults.length > 0 && (
+        <Card className="absolute top-full left-0 right-0 mt-2 shadow-lg z-50" ref={suggestionsRef}>
+          <CardContent className="p-0 max-h-96 overflow-y-auto">
+            <div className="p-4">
+              <div className="flex items-center text-sm text-muted-foreground mb-3">
+                <Search className="h-4 w-4 mr-2" />
+                Found {unifiedResults.length} results
+              </div>
+              <div className="space-y-2">
+                {unifiedResults.map((result) => (
+                  <button
+                    key={result.id}
+                    onClick={() => handleResultClick(result)}
+                    className="w-full text-left p-3 hover:bg-muted rounded-lg transition-colors border border-transparent hover:border-border"
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 text-muted-foreground mt-1">
+                        {getResultIcon(result.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h4 className="text-sm font-medium text-foreground truncate">
+                            {result.title}
+                          </h4>
+                          <Badge variant="outline" className="text-xs">
+                            {result.type}
+                          </Badge>
+                          {result.featured && (
+                            <Badge variant="default" className="text-xs">
+                              Featured
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                          {result.description}
+                        </p>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <span className="text-xs text-muted-foreground">
+                            {result.category}
+                          </span>
+                          {result.price !== undefined && result.price > 0 && (
+                            <span className="text-xs font-medium text-foreground">
+                              ${result.price}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Search Suggestions */}
-      {showSuggestions && (suggestions.length > 0 || recentSearches.length > 0) && (
+      {showSuggestions && !showResults && (suggestions.length > 0 || recentSearches.length > 0) && (
         <Card className="absolute top-full left-0 right-0 mt-2 shadow-lg z-50" ref={suggestionsRef}>
           <CardContent className="p-0">
             {/* Recent Searches */}

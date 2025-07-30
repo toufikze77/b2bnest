@@ -181,6 +181,13 @@ export const userDocumentService = {
       return false;
     }
 
+    // Validate that documentId is a valid UUID before querying
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(documentId)) {
+      // If documentId is not a UUID (e.g., template numeric ID), return false
+      return false;
+    }
+
     const { data, error } = await supabase
       .from('user_favorites')
       .select('id')

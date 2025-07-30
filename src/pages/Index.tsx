@@ -9,6 +9,7 @@ import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import SearchResults from "@/components/SearchResults";
+import UnifiedSearchResults from "@/components/UnifiedSearchResults";
 import ProvisionalServicesSlideshow from "@/components/ProvisionalServicesSlideshow";
 import AIDocumentAssistant from "@/components/AIDocumentAssistant";
 import AIInvestmentShowcase from "@/components/AIInvestmentShowcase";
@@ -16,12 +17,13 @@ import BusinessToolsSection from "@/components/BusinessToolsSection";
 import { Template } from "@/types/template";
 
 const IndexContent = () => {
-  const { searchQuery, searchResults, performSearch } = useSearch();
+  const { searchQuery, searchResults, unifiedResults, performSearch, performUnifiedSearch } = useSearch();
 
   const popularTemplates = templateService.getFeaturedTemplates();
 
-  const handleSearch = (query: string) => {
-    performSearch(query);
+  const handleSearch = async (query: string) => {
+    // Use unified search for better results
+    await performUnifiedSearch(query);
   };
 
   const handleTemplateSelect = (template: Template) => {
@@ -32,14 +34,27 @@ const IndexContent = () => {
 
   // Show search results if there's a search query, otherwise show popular templates
   const showSearchResults = searchQuery.trim().length > 0;
+  const showUnifiedResults = showSearchResults && unifiedResults.length > 0;
   const resultsToShow = showSearchResults ? searchResults : popularTemplates;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <HeroSection onSearch={handleSearch} />
 
-      {/* Search Results - Show immediately below search bar */}
-      {showSearchResults && (
+      {/* Unified Search Results - Show immediately below search bar */}
+      {showUnifiedResults && (
+        <section className="px-4 sm:px-6 lg:px-8 mb-16">
+          <div className="max-w-7xl mx-auto">
+            <UnifiedSearchResults 
+              results={unifiedResults} 
+              searchQuery={searchQuery}
+            />
+          </div>
+        </section>
+      )}
+      
+      {/* Fallback to template search results if no unified results */}
+      {showSearchResults && !showUnifiedResults && (
         <section className="px-4 sm:px-6 lg:px-8 mb-16">
           <div className="max-w-7xl mx-auto">
             <SearchResults 
