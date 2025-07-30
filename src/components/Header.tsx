@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
 import LivePriceSidebars from '@/components/sidebars/LivePriceSidebars';
-import UpgradeButton from '@/components/UpgradeButton';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -146,9 +145,6 @@ const Header = () => {
 
           {/* Live Prices and User Menu */}
           <div className="flex items-center space-x-2">
-            {/* Upgrade Button for logged in users */}
-            {user && <UpgradeButton variant="outline" size="sm" />}
-            
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

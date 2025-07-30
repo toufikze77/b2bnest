@@ -1289,7 +1289,6 @@ export type Database = {
           id: string
           industry: string | null
           is_public: boolean | null
-          is_trial_active: boolean | null
           language_code: string | null
           linkedin_url: string | null
           location: string | null
@@ -1297,9 +1296,6 @@ export type Database = {
           skills: string[] | null
           time_format: string | null
           timezone: string | null
-          trial_ends_at: string | null
-          trial_expired: boolean | null
-          trial_started_at: string | null
           twitter_url: string | null
           updated_at: string | null
           website: string | null
@@ -1320,7 +1316,6 @@ export type Database = {
           id: string
           industry?: string | null
           is_public?: boolean | null
-          is_trial_active?: boolean | null
           language_code?: string | null
           linkedin_url?: string | null
           location?: string | null
@@ -1328,9 +1323,6 @@ export type Database = {
           skills?: string[] | null
           time_format?: string | null
           timezone?: string | null
-          trial_ends_at?: string | null
-          trial_expired?: boolean | null
-          trial_started_at?: string | null
           twitter_url?: string | null
           updated_at?: string | null
           website?: string | null
@@ -1351,7 +1343,6 @@ export type Database = {
           id?: string
           industry?: string | null
           is_public?: boolean | null
-          is_trial_active?: boolean | null
           language_code?: string | null
           linkedin_url?: string | null
           location?: string | null
@@ -1359,9 +1350,6 @@ export type Database = {
           skills?: string[] | null
           time_format?: string | null
           timezone?: string | null
-          trial_ends_at?: string | null
-          trial_expired?: boolean | null
-          trial_started_at?: string | null
           twitter_url?: string | null
           updated_at?: string | null
           website?: string | null
@@ -1962,15 +1950,6 @@ export type Database = {
       check_2fa_rate_limit: {
         Args: { p_email: string }
         Returns: boolean
-      }
-      check_trial_status: {
-        Args: { user_id_param: string }
-        Returns: {
-          is_trial_active: boolean
-          trial_expired: boolean
-          days_remaining: number
-          trial_ends_at: string
-        }[]
       }
       cleanup_expired_2fa_codes: {
         Args: Record<PropertyKey, never>
