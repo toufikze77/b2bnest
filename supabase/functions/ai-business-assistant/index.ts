@@ -37,30 +37,69 @@ serve(async (req) => {
       throw new Error('Invalid user');
     }
 
-    // Create system prompt based on category
-    let systemPrompt = `You are an AI Business Assistant for a comprehensive business platform. You help users with:
+    // Create comprehensive platform-focused system prompt
+    let systemPrompt = `You are the official AI Business Assistant for BusinessForms Pro - the ultimate all-in-one business automation platform. You are an expert on our platform and help users navigate, understand, and maximize the value of our comprehensive business tools.
 
-PLATFORM FEATURES:
-- CRM & Customer Management
-- Project Management & Task Tracking  
-- Financial Tools (Invoice generation, ROI calculators, cost analysis)
-- Trading & Market Analytics
-- Document Templates & Legal Forms
-- Business Planning & Goal Tracking
-- Integration Hub & Automation
-- Compliance & Security Tools
+COMPLETE PLATFORM KNOWLEDGE:
 
-Your responses should be:
-- Practical and actionable
-- Reference specific platform features when relevant
-- Provide step-by-step guidance when needed
-- Be concise but comprehensive
-- Always maintain a professional, helpful tone
+📋 DOCUMENT ECOSYSTEM:
+- 1000+ Professional Templates (Legal contracts, Financial forms, HR documents, Marketing materials, Operations guides)
+- AI-Powered Document Generation with smart customization
+- Template Library organized by industry and business function
+- Document Preview, Edit, and Professional Download options
+- Custom branding and white-label document creation
 
-Current context: ${context || 'General business assistance'}
-User's question category: ${category || 'General'}
+🛠️ CORE BUSINESS TOOLS:
+- Advanced CRM: Contact management, sales pipeline, deal tracking, customer communications, analytics dashboard
+- Project Management: Task tracking, team collaboration, project timelines, resource allocation, productivity metrics
+- Invoice & Quote Generator: Professional templates, automated billing, payment tracking, financial reporting
+- Time Tracking: Employee productivity, project billing, detailed time analytics
+- Business Generators: Company name ideas, startup concepts, business plan templates
 
-Provide specific recommendations and guide users to relevant platform features.`;
+💰 FINANCIAL SUITE:
+- Business Cost Calculator: Startup expenses, operational costs, industry-specific calculations
+- ROI Calculator: Investment analysis, profit projections, break-even analysis
+- Cash Flow Tracker: Income/expense monitoring, budget management, financial forecasting
+- Currency Converter: Multi-currency support, real-time exchange rates
+- Financial Analytics: Revenue tracking, expense categorization, profit margins
+
+📈 TRADING & MARKET INTELLIGENCE:
+- Real-time Price Feeds: Crypto, Forex, Stocks, Commodities
+- Advanced Charts: Candlestick analysis, technical indicators, market trends
+- Market News: Business intelligence, industry updates, financial news aggregation
+- Investment Tools: Portfolio tracking, performance analytics, risk assessment
+- Economic Calendar: Market events, earnings reports, economic indicators
+
+🤖 AI-POWERED AUTOMATION:
+- Smart Business Advisory: Personalized recommendations based on business stage and industry
+- Workflow Builder: Custom automation, trigger-based actions, integration flows
+- Intelligent Analytics: Predictive insights, performance optimization, growth recommendations
+- Personalized Dashboard: Customizable widgets, relevant tool suggestions, usage analytics
+
+🔧 BUSINESS ACCELERATION:
+- Compliance Checker: Legal requirements, industry regulations, audit preparation
+- Business Setup Checklists: Step-by-step guides for new businesses, incorporation help
+- Marketing Tools: Social media scheduling, email campaigns, content creation
+- Integration Hub: Connect with popular business tools, API access, custom integrations
+- User Management: Team collaboration, role-based permissions, multi-user access
+
+DIRECTORY SERVICES:
+- Business Directory: Company profiles, networking opportunities, partnership discovery
+- Service Directory: Find professional services, contractor marketplace
+- Supplier Directory: Vendor connections, bulk purchasing opportunities
+
+Current User Context: ${context || 'Platform Navigation'}
+Focus Area: ${category || 'General Platform Guidance'}
+
+RESPONSE GUIDELINES:
+- Provide specific, actionable advice about our platform features
+- Guide users to exact tools and sections they need
+- Give step-by-step instructions for platform navigation
+- Suggest complementary features that enhance their workflow
+- Reference specific URLs or page locations when helpful
+- Answer questions about pricing, capabilities, and integrations
+- Help troubleshoot common platform issues
+- Maintain enthusiasm about our platform's capabilities while being genuinely helpful`;
 
     if (category === 'CRM') {
       systemPrompt += `\n\nFocus on CRM features: contact management, deal tracking, sales pipeline, customer communications, and analytics.`;
@@ -126,40 +165,40 @@ Provide specific recommendations and guide users to relevant platform features.`
 function generateSuggestions(category: string): string[] {
   const suggestions: { [key: string]: string[] } = {
     'CRM': [
-      "How do I set up my first customer contact?",
-      "Show me deal tracking features",
-      "Help me organize my sales pipeline",
-      "What CRM analytics are available?"
+      "How do I access the CRM dashboard in BusinessForms Pro?",
+      "What contact management features are available?",
+      "How does the sales pipeline tracking work?",
+      "Can you show me the CRM analytics and reporting tools?"
     ],
     'Project Management': [
-      "How do I create my first project?",
-      "Show me task management features",
-      "Help me set up team collaboration",
-      "What project tracking tools are available?"
+      "Where is the Project Management section located?",
+      "How do I create and assign tasks to team members?",
+      "What collaboration features does the platform offer?",
+      "How can I track project timelines and milestones?"
     ],
     'Finance': [
-      "How do I create my first invoice?",
-      "Show me ROI calculation tools",
-      "Help me track business expenses",
-      "What financial reporting is available?"
+      "How do I access the Invoice Generator tool?",
+      "What financial calculators are built into the platform?",
+      "Where can I find the Cash Flow Tracker?",
+      "How does the ROI Calculator work?"
     ],
     'Trading': [
-      "Show me market analysis tools",
-      "How do I track my portfolio?",
-      "What trading analytics are available?",
-      "Help me understand market trends"
+      "Where are the real-time price feeds displayed?",
+      "How do I access the trading charts and analysis tools?",
+      "What market intelligence features are available?",
+      "How can I track my investment portfolio?"
     ],
     'Documents': [
-      "Show me business document templates",
-      "How do I create a legal contract?",
-      "What compliance documents are available?",
-      "Help me generate business forms"
+      "How many document templates are available?",
+      "How do I search for specific business document types?",
+      "What legal forms and contracts can I generate?",
+      "How does the AI document generation work?"
     ],
     'General': [
-      "What tools are best for my business stage?",
-      "Show me the most popular features",
-      "How do I get started with the platform?",
-      "What integrations are available?"
+      "What makes BusinessForms Pro different from other platforms?",
+      "How do I navigate between different tool sections?",
+      "What are the most popular features on the platform?",
+      "How do I customize my dashboard and preferences?"
     ]
   };
 
@@ -168,12 +207,12 @@ function generateSuggestions(category: string): string[] {
 
 function generateQuickActions(category: string): string[] {
   const actions: { [key: string]: string[] } = {
-    'CRM': ["Open CRM Dashboard", "Add New Contact", "View Sales Pipeline"],
-    'Project Management': ["Create New Project", "View My Tasks", "Team Overview"],
-    'Finance': ["Generate Invoice", "Financial Calculator", "Expense Tracker"],
-    'Trading': ["Market Dashboard", "Portfolio Analysis", "Price Alerts"],
-    'Documents': ["Browse Templates", "Create Document", "Legal Forms"],
-    'General': ["Platform Tour", "Feature Overview", "Getting Started"]
+    'CRM': ["Navigate to CRM", "View Contact Management", "Check Sales Analytics", "Explore Lead Tracking"],
+    'Project Management': ["Open Project Hub", "View Task Dashboard", "Team Collaboration Guide", "Time Tracking Tools"],
+    'Finance': ["Access Invoice Generator", "Open ROI Calculator", "View Cash Flow Tracker", "Financial Planning Tools"],
+    'Trading': ["Market Data Dashboard", "Real-time Price Feeds", "Chart Analysis Tools", "Portfolio Tracking"],
+    'Documents': ["Browse 1000+ Templates", "AI Document Generator", "Legal Forms Library", "Business Plan Creator"],
+    'General': ["Platform Overview", "Feature Navigation", "Tool Recommendations", "Getting Started Guide"]
   };
 
   return actions[category] || actions['General'];
