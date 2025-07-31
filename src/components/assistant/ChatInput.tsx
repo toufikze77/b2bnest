@@ -26,7 +26,7 @@ const ChatInput = ({ value, onChange, onSend, disabled }: ChatInputProps) => {
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder="Ask me about business documents..."
+          placeholder="Ask me about our business tools and services..."
           className="flex-1 border-gray-300 focus:border-blue-500"
           disabled={disabled}
         />

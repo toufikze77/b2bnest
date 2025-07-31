@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { templateService } from '@/services/templateService';
-import { aiDocumentService } from '@/services/aiDocumentService';
+import { aiPlatformService } from '@/services/aiPlatformService';
 import { Template } from '@/types/template';
 import ChatMessage from './assistant/ChatMessage';
 import TypingIndicator from './assistant/TypingIndicator';
@@ -32,7 +32,7 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
     {
       id: '1',
       type: 'assistant',
-      content: "Hi! I'm your AI Document Assistant powered by advanced AI. I can help you find the perfect business documents, explain legal requirements, and provide personalized recommendations. What type of document do you need help with today?",
+      content: "Hi! I'm your AI Business Assistant powered by advanced AI. I can help you navigate our comprehensive business platform with tools for CRM, project management, financial tracking, document generation, trading analytics, and much more. What business challenge can I help you solve today?",
       timestamp: new Date()
     }
   ]);
@@ -41,12 +41,12 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const quickSuggestions = [
-    "I need an NDA for a new partnership",
-    "Help me find invoice templates for my startup",
-    "What documents do I need for hiring employees?",
-    "I'm starting a business, what's essential?",
-    "Show me free legal templates",
-    "I need comprehensive contracts"
+    "Show me CRM tools for managing customers",
+    "I need project management features",
+    "Help me with invoice generation and billing",
+    "What financial tracking tools are available?",
+    "Show me trading and analytics features",
+    "I need business planning and goal tracking tools"
   ];
 
   const scrollToBottom = () => {
@@ -61,19 +61,17 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
     // Simulate AI thinking time
     await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1500));
 
-    // Use AI service to analyze intent and get recommendations
-    const intent = aiDocumentService.analyzeIntent(userInput);
-    const templates = aiDocumentService.getPersonalizedRecommendations(intent, 4);
-    const content = aiDocumentService.generateContextualResponse(userInput, templates);
-    const quickActions = aiDocumentService.getQuickActions(templates);
+    // Use AI platform service to analyze intent and get recommendations
+    const intent = aiPlatformService.analyzeIntent(userInput);
+    const tools = aiPlatformService.getRecommendedTools(intent, 3);
+    
+    // Get templates as a secondary option
+    let templates = templateService.searchTemplates(userInput).slice(0, 2);
+    
+    const content = aiPlatformService.generateContextualResponse(userInput, tools, templates);
+    const quickActions = aiPlatformService.getQuickActions(tools);
 
-    // Fallback to search if AI service doesn't find good matches
-    let finalTemplates = templates;
-    if (templates.length === 0) {
-      finalTemplates = templateService.searchTemplates(userInput).slice(0, 3);
-    }
-
-    return { content, templates: finalTemplates, quickActions };
+    return { content, templates, quickActions };
   };
 
   const handleSendMessage = async () => {
@@ -147,7 +145,7 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
                 <Sparkles className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle className="text-lg">AI Document Assistant</CardTitle>
+                <CardTitle className="text-lg">AI Business Assistant</CardTitle>
                 <div className="flex items-center gap-1 text-sm text-blue-100">
                   <Zap className="h-3 w-3" />
                   <span>Powered by Advanced AI</span>
