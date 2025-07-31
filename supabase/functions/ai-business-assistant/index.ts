@@ -11,50 +11,102 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// AI Agents Configuration
+// Enhanced AI Agents Configuration with specialized capabilities
 const AI_AGENTS = {
   specialist: {
     model: 'gpt-4.1-2025-04-14',
-    temperature: 0.3,
-    maxTokens: 800,
-    role: 'Platform Expert & Feature Specialist'
+    temperature: 0.2,
+    maxTokens: 1000,
+    role: 'Platform Expert & Feature Specialist',
+    expertise: ['technical_features', 'specifications', 'integrations', 'advanced_capabilities']
   },
   advisor: {
-    model: 'gpt-4o-mini',
-    temperature: 0.5,
-    maxTokens: 600,
-    role: 'Business Process Advisor'
+    model: 'gpt-4.1-2025-04-14',
+    temperature: 0.4,
+    maxTokens: 800,
+    role: 'Business Strategy & Process Advisor',
+    expertise: ['business_optimization', 'roi_analysis', 'workflow_efficiency', 'growth_strategies']
   },
   navigator: {
     model: 'gpt-4o-mini',
-    temperature: 0.2,
-    maxTokens: 400,
-    role: 'Platform Navigation Guide'
+    temperature: 0.1,
+    maxTokens: 600,
+    role: 'Platform Navigation & User Experience Guide',
+    expertise: ['navigation', 'user_interface', 'step_by_step_guidance', 'quick_actions']
+  },
+  synthesizer: {
+    model: 'gpt-4.1-2025-04-14',
+    temperature: 0.3,
+    maxTokens: 1200,
+    role: 'Master AI Coordinator & Response Synthesizer',
+    expertise: ['response_synthesis', 'context_understanding', 'intelligent_prioritization']
   }
 };
 
-// Enhanced platform knowledge base
+// Comprehensive Platform Knowledge Base
 const PLATFORM_KNOWLEDGE = {
   navigation: {
-    dashboard: "/dashboard - Main user dashboard with personalized widgets",
-    crm: "/crm - Customer Relationship Management tools",
-    projectManagement: "/project-management - Task and project tracking",
-    documents: "/documents - Template library and document generation",
-    finance: "/finance - Financial tools and calculators",
-    trading: "/trading - Market data and investment tools",
-    settings: "/settings - User preferences and account settings"
+    dashboard: "/dashboard - Personalized dashboard with widgets, analytics, and quick access tools",
+    crm: "/crm - Complete CRM suite with contacts, deals, analytics, and automation",
+    projectManagement: "/project-management - Advanced project tracking, team collaboration, time management",
+    documents: "/documents - 1000+ templates, AI generation, legal forms, contracts, invoices",
+    finance: "/finance - Financial calculators, invoice generation, ROI analysis, cash flow tracking",
+    trading: "/trading - Real-time market data, technical analysis, portfolio management, crypto tracking",
+    settings: "/settings - User preferences, account settings, integrations, security options",
+    aiStudio: "/ai-studio - AI-powered business tools, document generation, analytics",
+    businessTools: "/business-tools - Comprehensive business toolkit and utilities"
   },
   features: {
-    documents: "1000+ professional templates, AI generation, custom branding",
-    crm: "Contact management, deal pipeline, sales analytics, communication tracking",
-    finance: "Invoice generation, cost calculators, ROI analysis, cash flow tracking",
-    trading: "Real-time prices, technical analysis, portfolio management",
-    ai: "Smart recommendations, workflow automation, predictive analytics"
+    documents: {
+      templates: "1000+ professional templates across all business categories",
+      generation: "AI-powered document creation with custom branding and automation",
+      categories: "Legal contracts, HR forms, marketing materials, financial documents, operations manuals"
+    },
+    crm: {
+      contacts: "Advanced contact management with custom fields and relationship tracking",
+      pipeline: "Visual sales pipeline with deal stages, probability tracking, and forecasting",
+      analytics: "Comprehensive sales analytics, performance metrics, and reporting dashboards",
+      automation: "Workflow automation, email sequences, and communication tracking"
+    },
+    finance: {
+      invoicing: "Professional invoice and quote generation with multi-currency support",
+      calculators: "ROI, cost analysis, break-even, loan, and investment calculators",
+      tracking: "Cash flow monitoring, expense tracking, and financial planning tools",
+      reporting: "Financial reports, P&L statements, and business analytics"
+    },
+    trading: {
+      data: "Real-time market data for stocks, forex, crypto, and commodities",
+      analysis: "Technical analysis tools, charting, and market intelligence",
+      portfolio: "Portfolio tracking, performance analysis, and risk management",
+      alerts: "Price alerts, market news, and trading notifications"
+    },
+    ai: {
+      automation: "Smart workflow automation and business process optimization",
+      analytics: "Predictive analytics, trend analysis, and business intelligence",
+      generation: "AI-powered content creation, document generation, and data processing",
+      personalization: "Intelligent recommendations and personalized user experiences"
+    }
   },
   pricing: {
-    free: "Basic document access, limited CRM, standard calculators",
-    pro: "Full template library, advanced CRM, premium analytics",
-    enterprise: "Custom integrations, team management, priority support"
+    free: {
+      access: "Basic template library, limited CRM features, standard calculators",
+      limits: "Up to 10 documents per month, basic analytics, community support"
+    },
+    pro: {
+      access: "Full template library, advanced CRM, premium analytics, AI features",
+      benefits: "Unlimited documents, advanced reporting, priority support, integrations"
+    },
+    enterprise: {
+      access: "All features plus custom integrations, team management, white-label options",
+      benefits: "Dedicated support, custom development, enterprise security, SLA guarantees"
+    }
+  },
+  integrations: {
+    accounting: "QuickBooks, Xero, FreshBooks integration for seamless financial management",
+    communication: "Email marketing, CRM sync, notification systems",
+    productivity: "Google Workspace, Microsoft 365, Slack integration",
+    payment: "Stripe, PayPal, crypto payment processing",
+    analytics: "Google Analytics, business intelligence tools, custom reporting"
   }
 };
 
@@ -84,25 +136,47 @@ serve(async (req) => {
       throw new Error('Invalid user');
     }
 
-    // Analyze user intent and select appropriate AI agents
-    const intentAnalysis = await analyzeUserIntent(message, category, context);
-    console.log('Intent Analysis:', intentAnalysis);
+    // Enhanced user intent analysis with conversation context
+    const intentAnalysis = await analyzeUserIntent(message, category, context, user.id, supabase);
+    console.log('Enhanced Intent Analysis:', intentAnalysis);
 
-    // Get responses from multiple AI agents in parallel
-    const [specialistResponse, advisorResponse, navigatorResponse] = await Promise.all([
-      getSpecialistResponse(message, category, context, intentAnalysis),
-      getAdvisorResponse(message, category, context, intentAnalysis),
-      getNavigatorResponse(message, category, context, intentAnalysis)
-    ]);
+    // Determine which agents are most relevant based on intent
+    const relevantAgents = selectRelevantAgents(intentAnalysis, category);
+    console.log('Selected Agents:', relevantAgents);
 
-    // Synthesize final intelligent response
+    // Get responses from relevant AI agents in parallel for optimal performance
+    const agentPromises = [];
+    const agentTypes = [];
+
+    if (relevantAgents.includes('specialist')) {
+      agentPromises.push(getSpecialistResponse(message, category, context, intentAnalysis));
+      agentTypes.push('specialist');
+    }
+    if (relevantAgents.includes('advisor')) {
+      agentPromises.push(getAdvisorResponse(message, category, context, intentAnalysis));
+      agentTypes.push('advisor');
+    }
+    if (relevantAgents.includes('navigator')) {
+      agentPromises.push(getNavigatorResponse(message, category, context, intentAnalysis));
+      agentTypes.push('navigator');
+    }
+
+    const agentResponses = await Promise.all(agentPromises);
+    
+    // Create response object with agent insights
+    const agentInsights: any = {};
+    agentTypes.forEach((type, index) => {
+      agentInsights[type] = agentResponses[index];
+    });
+
+    // Synthesize final intelligent response using enhanced coordinator
     const finalResponse = await synthesizeResponses({
-      specialist: specialistResponse,
-      advisor: advisorResponse,
-      navigator: navigatorResponse,
+      agentInsights,
       intent: intentAnalysis,
       category,
-      message
+      message,
+      relevantAgents,
+      userContext: { userId: user.id, conversationHistory: context }
     });
 
     console.log('Final synthesized response:', finalResponse.substring(0, 200) + '...');
@@ -119,12 +193,21 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       response: finalResponse,
       suggestions: generateIntelligentSuggestions(category, intentAnalysis),
-      quickActions: generateQuickActions(category),
+      quickActions: generateQuickActions(category, intentAnalysis),
       confidence: intentAnalysis.confidence,
-      agentInsights: {
-        specialist: specialistResponse.substring(0, 100) + '...',
-        advisor: advisorResponse.substring(0, 100) + '...',
-        navigator: navigatorResponse.substring(0, 100) + '...'
+      agentInsights: Object.keys(agentInsights).reduce((acc: any, key) => {
+        acc[key] = {
+          summary: agentInsights[key].substring(0, 100) + '...',
+          expertise: AI_AGENTS[key as keyof typeof AI_AGENTS]?.expertise || [],
+          relevance: calculateRelevanceScore(intentAnalysis, key)
+        };
+        return acc;
+      }, {}),
+      intelligenceMetrics: {
+        totalAgentsUsed: relevantAgents.length,
+        processingTime: Date.now(),
+        intentComplexity: intentAnalysis.complexity,
+        responseQuality: calculateResponseQuality(intentAnalysis, finalResponse)
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -185,9 +268,35 @@ function generateSuggestions(category: string): string[] {
   return suggestions[category] || suggestions['General'];
 }
 
-// AI Agent Functions
-async function analyzeUserIntent(message: string, category: string, context: string) {
+// Enhanced AI Agent Functions with Advanced Intelligence
+async function analyzeUserIntent(message: string, category: string, context: string, userId: string, supabase: any) {
   try {
+    // Get user's conversation history for better context understanding
+    const { data: conversationHistory } = await supabase
+      .from('ai_conversations')
+      .select('message, response, category, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    const contextualPrompt = `You are an advanced intent analysis AI for BusinessForms Pro. Analyze the user's message with deep contextual understanding.
+
+ANALYSIS FRAMEWORK:
+- intent_type: navigation|feature_inquiry|support|pricing|integration|workflow_optimization|troubleshooting|comparison
+- complexity: low|medium|high|expert (based on technical depth required)
+- urgency: low|medium|high|critical (based on business impact)
+- confidence: 0-1 (your confidence in the analysis)
+- keywords: [relevant platform features/terms mentioned]
+- category_match: boolean (does message align with selected category)
+- emotional_tone: neutral|frustrated|excited|curious|confused
+- business_context: startup|established|enterprise|personal
+- expected_outcome: information|action|guidance|solution
+- followup_likelihood: low|medium|high (probability user will ask follow-ups)
+
+CONVERSATION HISTORY: ${JSON.stringify(conversationHistory?.slice(0, 3) || [])}
+
+Return valid JSON only.`;
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -195,26 +304,79 @@ async function analyzeUserIntent(message: string, category: string, context: str
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-2025-04-14',
         messages: [{
           role: 'system',
-          content: `Analyze user intent for BusinessForms Pro platform queries. Return JSON with: intent_type (navigation|feature_inquiry|support|pricing|integration), complexity (low|medium|high), urgency (low|medium|high), confidence (0-1), keywords[], and category_match (boolean).`
+          content: contextualPrompt
         }, {
           role: 'user',
           content: `Category: ${category}, Message: "${message}", Context: ${context}`
         }],
-        max_tokens: 200,
+        max_tokens: 300,
         temperature: 0.1
       })
     });
 
     const data = await response.json();
-    return JSON.parse(data.choices[0].message.content || '{"intent_type":"general","complexity":"medium","urgency":"medium","confidence":0.7,"keywords":[],"category_match":false}');
+    const analysis = JSON.parse(data.choices[0].message.content || '{}');
+    
+    // Add enhanced metrics
+    analysis.timestamp = new Date().toISOString();
+    analysis.conversation_length = conversationHistory?.length || 0;
+    
+    return analysis;
   } catch (error) {
-    console.error('Intent analysis error:', error);
-    return { intent_type: 'general', complexity: 'medium', urgency: 'medium', confidence: 0.5, keywords: [], category_match: false };
+    console.error('Enhanced intent analysis error:', error);
+    return { 
+      intent_type: 'general', 
+      complexity: 'medium', 
+      urgency: 'medium', 
+      confidence: 0.5, 
+      keywords: [], 
+      category_match: false,
+      emotional_tone: 'neutral',
+      business_context: 'established',
+      expected_outcome: 'information',
+      followup_likelihood: 'medium'
+    };
   }
 }
+
+// Intelligent Agent Selection based on Intent Analysis
+function selectRelevantAgents(intentAnalysis: any, category: string): string[] {
+  const agents = [];
+  
+  // Always include navigator for navigation requests
+  if (intentAnalysis.intent_type === 'navigation' || intentAnalysis.complexity === 'low') {
+    agents.push('navigator');
+  }
+  
+  // Include specialist for technical and feature inquiries
+  if (['feature_inquiry', 'integration', 'troubleshooting'].includes(intentAnalysis.intent_type) || 
+      intentAnalysis.complexity === 'high' || intentAnalysis.complexity === 'expert') {
+    agents.push('specialist');
+  }
+  
+  // Include advisor for business strategy and optimization
+  if (['workflow_optimization', 'pricing', 'comparison'].includes(intentAnalysis.intent_type) || 
+      intentAnalysis.business_context !== 'personal') {
+    agents.push('advisor');
+  }
+  
+  // For complex queries, use all agents
+  if (intentAnalysis.complexity === 'expert' || intentAnalysis.urgency === 'critical') {
+    return ['specialist', 'advisor', 'navigator'];
+  }
+  
+  // Default: ensure at least one agent is selected
+  if (agents.length === 0) {
+    agents.push('navigator');
+  }
+  
+  return agents;
+}
+
+// Enhanced Agent Response Functions with Specialized Intelligence
 
 async function getSpecialistResponse(message: string, category: string, context: string, intent: any) {
   const systemPrompt = `You are the Platform Expert & Feature Specialist for BusinessForms Pro. You have deep technical knowledge of all platform features and capabilities.
@@ -327,23 +489,41 @@ Category: ${category} | Intent: ${intent.intent_type}`;
 }
 
 async function synthesizeResponses(data: any) {
-  const systemPrompt = `You are the Master AI Coordinator for BusinessForms Pro. Synthesize multiple AI agent responses into one comprehensive, intelligent answer.
+  const systemPrompt = `You are the Master AI Coordinator for BusinessForms Pro - an advanced AI system that synthesizes multiple specialized agent responses into the perfect user experience.
 
-SYNTHESIS GUIDELINES:
-- Combine technical expertise, business advice, and navigation guidance
-- Prioritize most relevant information based on user intent
-- Ensure response is coherent, actionable, and platform-focused
-- Include specific examples and clear next steps
-- Maintain enthusiasm about platform capabilities
+ADVANCED SYNTHESIS FRAMEWORK:
+🎯 INTELLIGENCE PRIORITIES:
+- Prioritize based on user intent: ${data.intent.intent_type}
+- Adapt complexity to user context: ${data.intent.complexity}
+- Match emotional tone: ${data.intent.emotional_tone || 'professional'}
+- Align with business context: ${data.intent.business_context || 'business'}
 
-Intent: ${data.intent.intent_type} | Category: ${data.category} | Confidence: ${data.intent.confidence}
+🔄 RESPONSE OPTIMIZATION:
+- Lead with most relevant agent insights based on intent analysis
+- Seamlessly blend technical accuracy with practical guidance
+- Include specific platform examples and step-by-step actions
+- Provide clear next steps and follow-up suggestions
+- Maintain platform expertise while being conversational
 
-Agent Responses:
-SPECIALIST: ${data.specialist}
-ADVISOR: ${data.advisor}
-NAVIGATOR: ${data.navigator}
+📊 QUALITY METRICS:
+- Ensure response completeness (addresses all aspects of query)
+- Verify accuracy (all platform information is correct)
+- Confirm actionability (user can immediately apply guidance)
+- Check engagement (response encourages platform exploration)
 
-Create a unified, intelligent response that best serves the user's needs.`;
+AGENT INSIGHTS AVAILABLE:
+${Object.keys(data.agentInsights).map(agent => 
+  `${agent.toUpperCase()}: ${data.agentInsights[agent]}`
+).join('\n')}
+
+SYNTHESIS INSTRUCTIONS:
+1. Start with the most relevant information based on intent analysis
+2. Integrate insights from ${data.relevantAgents.join(', ')} agents intelligently
+3. Provide specific BusinessForms Pro examples and navigation paths
+4. End with clear next steps and platform recommendations
+5. Maintain enthusiasm while being practical and helpful
+
+Create a unified, intelligent response that exceeds user expectations.`;
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -352,13 +532,13 @@ Create a unified, intelligent response that best serves the user's needs.`;
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4.1-2025-04-14',
+      model: AI_AGENTS.synthesizer.model,
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: data.message }
+        { role: 'user', content: `User Query: "${data.message}" | Category: ${data.category}` }
       ],
-      max_tokens: 1000,
-      temperature: 0.4
+      max_tokens: AI_AGENTS.synthesizer.maxTokens,
+      temperature: AI_AGENTS.synthesizer.temperature
     })
   });
 
@@ -439,15 +619,73 @@ function generateSuggestions(category: string): string[] {
   return suggestions[category] || suggestions['General'];
 }
 
-function generateQuickActions(category: string): string[] {
-  const actions: { [key: string]: string[] } = {
-    'CRM': ["Navigate to CRM", "View Contact Management", "Check Sales Analytics", "Explore Lead Tracking"],
-    'Project Management': ["Open Project Hub", "View Task Dashboard", "Team Collaboration Guide", "Time Tracking Tools"],
-    'Finance': ["Access Invoice Generator", "Open ROI Calculator", "View Cash Flow Tracker", "Financial Planning Tools"],
-    'Trading': ["Market Data Dashboard", "Real-time Price Feeds", "Chart Analysis Tools", "Portfolio Tracking"],
-    'Documents': ["Browse 1000+ Templates", "AI Document Generator", "Legal Forms Library", "Business Plan Creator"],
-    'General': ["Platform Overview", "Feature Navigation", "Tool Recommendations", "Getting Started Guide"]
+function generateQuickActions(category: string, intentAnalysis?: any): string[] {
+  const baseActions: { [key: string]: string[] } = {
+    'CRM': ["Navigate to CRM Dashboard", "Add New Contact", "View Sales Pipeline", "Generate CRM Reports"],
+    'Project Management': ["Create New Project", "View Task Board", "Team Performance", "Time Tracking"],
+    'Finance': ["Generate Invoice", "Calculate ROI", "Track Cash Flow", "Financial Reports"],
+    'Trading': ["View Market Data", "Analyze Charts", "Track Portfolio", "Set Price Alerts"],
+    'Documents': ["Browse Templates", "Generate Document", "Legal Forms", "Custom Branding"],
+    'AI': ["AI Document Assistant", "Business Insights", "Workflow Automation", "Predictive Analytics"],
+    'General': ["Platform Tour", "Feature Overview", "Quick Setup", "Help Center"]
   };
 
-  return actions[category] || actions['General'];
+  let actions = baseActions[category] || baseActions['General'];
+
+  // Enhance actions based on intent analysis
+  if (intentAnalysis) {
+    if (intentAnalysis.urgency === 'high') {
+      actions = actions.map(action => `🚀 ${action} (Priority)`);
+    } else if (intentAnalysis.intent_type === 'navigation') {
+      actions = actions.map(action => `📍 ${action.replace('View', 'Navigate to')}`);
+    } else if (intentAnalysis.intent_type === 'feature_inquiry') {
+      actions = actions.map(action => `💡 Learn: ${action}`);
+    }
+  }
+
+  return actions;
+}
+
+// Advanced Intelligence Helper Functions
+function calculateRelevanceScore(intentAnalysis: any, agentType: string): number {
+  const relevanceMap: { [key: string]: { [key: string]: number } } = {
+    specialist: {
+      feature_inquiry: 0.9,
+      integration: 0.95,
+      troubleshooting: 0.85,
+      support: 0.7
+    },
+    advisor: {
+      workflow_optimization: 0.95,
+      pricing: 0.9,
+      comparison: 0.85,
+      feature_inquiry: 0.6
+    },
+    navigator: {
+      navigation: 0.95,
+      support: 0.8,
+      feature_inquiry: 0.7,
+      workflow_optimization: 0.5
+    }
+  };
+
+  return relevanceMap[agentType]?.[intentAnalysis.intent_type] || 0.5;
+}
+
+function calculateResponseQuality(intentAnalysis: any, response: string): number {
+  let quality = 0.5; // Base quality score
+  
+  // Boost quality based on response length and detail
+  if (response.length > 200) quality += 0.1;
+  if (response.length > 500) quality += 0.1;
+  
+  // Boost quality based on intent complexity handling
+  if (intentAnalysis.complexity === 'high' && response.length > 400) quality += 0.15;
+  if (intentAnalysis.complexity === 'expert' && response.length > 600) quality += 0.2;
+  
+  // Boost quality based on confidence in intent analysis
+  quality += intentAnalysis.confidence * 0.2;
+  
+  // Cap at 1.0
+  return Math.min(quality, 1.0);
 }
