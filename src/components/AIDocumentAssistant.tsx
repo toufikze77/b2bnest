@@ -200,7 +200,7 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
     const lowerMessage = message.toLowerCase();
     
     // Pricing-related questions
-    if (lowerMessage.includes('price') || lowerMessage.includes('cost') || lowerMessage.includes('plan') || category === 'Pricing') {
+    if (lowerMessage.includes('price') || lowerMessage.includes('cost') || lowerMessage.includes('plan')) {
       if (lowerMessage.includes('crm')) {
         return {
           response: `Our CRM module starts at $29/month per user and includes: ${platformFeatures.CRM.features.join(', ')}. It's also included in our Professional ($99/month) and Enterprise ($199/month) plans with additional features.`,
@@ -220,27 +220,48 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
       };
     }
 
-    // Feature-specific questions
-    if (category !== 'General' && category !== 'Pricing' && category !== 'Support') {
-      const categoryData = platformFeatures[category as keyof typeof platformFeatures];
-      if (categoryData) {
-        return {
-          response: `Our ${category} module includes these powerful features:\n\n${categoryData.features.map(f => `• ${f}`).join('\n')}\n\n${categoryData.pricing}\n\nWould you like to know more about any specific feature?`,
-          quickActions: [`How much does ${category} cost?`, 'Show me a demo', 'Start free trial']
-        };
-      }
+    // CRM specific questions
+    if (lowerMessage.includes('crm') || lowerMessage.includes('contact') || lowerMessage.includes('customer') || lowerMessage.includes('lead')) {
+      return {
+        response: `Our CRM module includes these powerful features:\n\n${platformFeatures.CRM.features.map(f => `• ${f}`).join('\n')}\n\n${platformFeatures.CRM.pricing}\n\nWould you like to know more about any specific CRM feature?`,
+        quickActions: ['How much does CRM cost?', 'Show me a CRM demo', 'Import existing contacts']
+      };
     }
 
-    // General platform questions
-    if (lowerMessage.includes('what is') || lowerMessage.includes('about') || category === 'General') {
+    // Project Management questions
+    if (lowerMessage.includes('project') || lowerMessage.includes('task') || lowerMessage.includes('team') || lowerMessage.includes('collaboration')) {
       return {
-        response: `B2BNest.online is a comprehensive business management platform that combines:\n\n• **CRM** - Customer relationship management\n• **Project Management** - Task and team collaboration\n• **Financial Tools** - Invoicing, expense tracking, analytics\n• **Trading Tools** - Portfolio management and market analysis\n• **Document Management** - Templates, contracts, and workflows\n\nAll integrated in one powerful platform starting at just $49/month!`,
-        quickActions: ['Show me pricing plans', 'What features are included?', 'How do I get started?']
+        response: `Our Project Management tools include:\n\n${platformFeatures['Project Management'].features.map(f => `• ${f}`).join('\n')}\n\n${platformFeatures['Project Management'].pricing}\n\nPerfect for managing teams and projects efficiently!`,
+        quickActions: ['Show project templates', 'How does team collaboration work?', 'Start project trial']
+      };
+    }
+
+    // Finance questions
+    if (lowerMessage.includes('finance') || lowerMessage.includes('invoice') || lowerMessage.includes('expense') || lowerMessage.includes('accounting')) {
+      return {
+        response: `Our Financial Management tools include:\n\n${platformFeatures.Finance.features.map(f => `• ${f}`).join('\n')}\n\n${platformFeatures.Finance.pricing}\n\nStreamline your business finances with powerful analytics!`,
+        quickActions: ['Create first invoice', 'Track expenses', 'View financial reports']
+      };
+    }
+
+    // Trading questions
+    if (lowerMessage.includes('trading') || lowerMessage.includes('portfolio') || lowerMessage.includes('investment') || lowerMessage.includes('market')) {
+      return {
+        response: `Our Trading & Investment tools include:\n\n${platformFeatures.Trading.features.map(f => `• ${f}`).join('\n')}\n\n${platformFeatures.Trading.pricing}\n\nMake informed investment decisions with our advanced tools!`,
+        quickActions: ['View portfolio dashboard', 'Market analysis tools', 'Trading alerts setup']
+      };
+    }
+
+    // Document questions
+    if (lowerMessage.includes('document') || lowerMessage.includes('template') || lowerMessage.includes('contract') || lowerMessage.includes('legal')) {
+      return {
+        response: `Our Document Management system includes:\n\n${platformFeatures.Documents.features.map(f => `• ${f}`).join('\n')}\n\n${platformFeatures.Documents.pricing}\n\nCreate professional documents with ease!`,
+        quickActions: ['Browse templates', 'Create contract', 'Document collaboration']
       };
     }
 
     // Getting started questions
-    if (lowerMessage.includes('start') || lowerMessage.includes('begin') || lowerMessage.includes('setup')) {
+    if (lowerMessage.includes('start') || lowerMessage.includes('begin') || lowerMessage.includes('setup') || lowerMessage.includes('how to')) {
       return {
         response: `Getting started with B2BNest.online is easy:\n\n1. **Sign up** for a free 14-day trial\n2. **Choose your modules** based on your needs\n3. **Import your data** using our migration tools\n4. **Set up your team** and invite users\n5. **Get training** with our onboarding sessions\n\nOur support team will guide you through every step!`,
         quickActions: ['Start free trial', 'Book a demo', 'Contact sales']
@@ -248,7 +269,7 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
     }
 
     // Support questions
-    if (lowerMessage.includes('support') || lowerMessage.includes('help') || category === 'Support') {
+    if (lowerMessage.includes('support') || lowerMessage.includes('help') || lowerMessage.includes('contact')) {
       return {
         response: `We offer comprehensive support:\n\n• **24/7 Email Support** (all plans)\n• **Phone Support** (Professional & Enterprise)\n• **Live Chat** during business hours\n• **Knowledge Base** with tutorials\n• **Video Training** sessions\n• **Dedicated Account Manager** (Enterprise)\n\nAverage response time: 2 hours for email, immediate for chat/phone.`,
         quickActions: ['Contact support now', 'View knowledge base', 'Schedule training']
@@ -256,17 +277,33 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
     }
 
     // Integration questions
-    if (lowerMessage.includes('integrat') || lowerMessage.includes('connect')) {
+    if (lowerMessage.includes('integrat') || lowerMessage.includes('connect') || lowerMessage.includes('api')) {
       return {
         response: `B2BNest.online integrates with 100+ popular tools:\n\n• **Email**: Gmail, Outlook, Mailchimp\n• **Accounting**: QuickBooks, Xero, Sage\n• **Communication**: Slack, Microsoft Teams\n• **Storage**: Google Drive, Dropbox, OneDrive\n• **E-commerce**: Shopify, WooCommerce\n• **Custom APIs** available for Enterprise plans`,
         quickActions: ['See all integrations', 'Request custom integration', 'Technical documentation']
       };
     }
 
-    // Default response
+    // Feature questions
+    if (lowerMessage.includes('feature') || lowerMessage.includes('what can') || lowerMessage.includes('what do')) {
+      return {
+        response: `B2BNest.online offers comprehensive business tools:\n\n• **CRM** - Customer & lead management\n• **Project Management** - Task & team collaboration\n• **Financial Tools** - Invoicing & expense tracking\n• **Trading Tools** - Portfolio & market analysis\n• **Document Management** - Templates & contracts\n\nEach module is designed to work seamlessly together!`,
+        quickActions: ['Show me CRM features', 'Project management demo', 'Financial tools overview']
+      };
+    }
+
+    // General/about questions
+    if (lowerMessage.includes('what is') || lowerMessage.includes('about') || lowerMessage.includes('platform')) {
+      return {
+        response: `B2BNest.online is a comprehensive business management platform that combines:\n\n• **CRM** - Customer relationship management\n• **Project Management** - Task and team collaboration\n• **Financial Tools** - Invoicing, expense tracking, analytics\n• **Trading Tools** - Portfolio management and market analysis\n• **Document Management** - Templates, contracts, and workflows\n\nAll integrated in one powerful platform starting at just $49/month!`,
+        quickActions: ['Show me pricing plans', 'What features are included?', 'How do I get started?']
+      };
+    }
+
+    // Default response for unrecognized questions
     return {
-      response: `I'd be happy to help you learn more about B2BNest.online! I can provide information about our features, pricing, integrations, and help you get started. What specific area would you like to know more about?`,
-      quickActions: quickQuestions[category as keyof typeof quickQuestions] || quickQuestions['General']
+      response: `I'd be happy to help you learn more about B2BNest.online! I can provide information about:\n\n• **Features & Modules** (CRM, Projects, Finance, Trading, Documents)\n• **Pricing Plans** and subscription options\n• **Getting Started** and setup process\n• **Integrations** and technical details\n• **Support** and training resources\n\nWhat specific area interests you most?`,
+      quickActions: ['Show all features', 'View pricing plans', 'How do I start?']
     };
   };
 
@@ -420,11 +457,21 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
                   disabled={isTyping}
                 />
 
-                {suggestions.length > 0 && (
-                  <QuickSuggestions
-                    suggestions={suggestions}
-                    onSuggestionClick={handleQuickQuestion}
-                  />
+                {suggestions.length > 0 && messages.length <= 2 && (
+                  <div className="p-2 border-t bg-gray-50">
+                    <p className="text-xs text-gray-600 mb-1">Try asking:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {suggestions.slice(0, 2).map((suggestion, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleQuickQuestion(suggestion)}
+                          className="text-xs bg-white border rounded px-2 py-1 hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
