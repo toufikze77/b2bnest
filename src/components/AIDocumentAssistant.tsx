@@ -1,5 +1,10 @@
+
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, X, Zap, MessageSquare, Settings, TrendingUp, FileText, Users, Calculator, CreditCard, Info, HelpCircle } from 'lucide-react';
+import { Sparkles, X, Zap, Settings, TrendingUp, FileText, Users, Calculator, CreditCard, Info, HelpCircle } from 'lucide-react';
+import ChatInput from './assistant/ChatInput';
+import ChatMessage from './assistant/ChatMessage';
+import TypingIndicator from './assistant/TypingIndicator';
+import QuickSuggestions from './assistant/QuickSuggestions';
 
 interface Message {
   id: string;
@@ -317,42 +322,13 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
     handleSendMessage(question);
   };
 
-  const ChatMessage = ({ message }: { message: Message }) => (
-    <div className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} mb-4`}>
-      <div className={`max-w-[80%] rounded-lg p-3 ${
-        message.type === 'user' 
-          ? 'bg-blue-600 text-white' 
-          : 'bg-gray-100 text-gray-800'
-      }`}>
-        <div className="whitespace-pre-wrap text-sm">{message.content}</div>
-        {message.quickActions && message.quickActions.length > 0 && (
-          <div className="mt-2 space-y-1">
-            {message.quickActions.map((action, index) => (
-              <button
-                key={index}
-                onClick={() => handleQuickQuestion(action)}
-                className="block w-full text-left text-xs bg-white/20 hover:bg-white/30 rounded px-2 py-1 transition-colors"
-              >
-                {action}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  const handleTemplateClick = (template: any) => {
+    if (onTemplateSelect) {
+      onTemplateSelect(template);
+    }
+  };
 
-  const TypingIndicator = () => (
-    <div className="flex justify-start mb-4">
-      <div className="bg-gray-100 rounded-lg p-3">
-        <div className="flex space-x-1">
-          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-        </div>
-      </div>
-    </div>
-  );
+  const suggestions = quickQuestions[currentCategory as keyof typeof quickQuestions] || quickQuestions['General'];
 
   if (!isOpen) {
     return (
@@ -391,7 +367,7 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-h-0">
           <div className="flex border-b">
             <button
               onClick={() => setActiveTab('chat')}
@@ -412,7 +388,7 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
           </div>
           
           {activeTab === 'chat' ? (
-            <>
+            <div className="flex-1 flex flex-col min-h-0">
               <div className="flex items-center gap-2 p-3 bg-gray-50 border-b">
                 <div className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
                   {categories.find(c => c.id === currentCategory)?.icon && 
@@ -423,38 +399,34 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
                 <span className="text-xs text-gray-600">Active Topic</span>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-4">
-                <div className="space-y-4">
-                  {messages.map((message) => (
-                    <ChatMessage key={message.id} message={message} />
-                  ))}
-                  
-                  {isTyping && <TypingIndicator />}
-                </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {messages.map((message) => (
+                  <ChatMessage 
+                    key={message.id} 
+                    message={message} 
+                    onTemplateClick={handleTemplateClick}
+                    onQuickActionClick={handleQuickQuestion}
+                  />
+                ))}
+                
+                {isTyping && <TypingIndicator />}
                 <div ref={messagesEndRef} />
               </div>
 
-              <div className="p-4 border-t">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                    placeholder="Ask about features, pricing, or getting started..."
-                    className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    disabled={isTyping}
-                  />
-                  <button
-                    onClick={() => handleSendMessage()}
-                    disabled={isTyping || !inputValue.trim()}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Send
-                  </button>
-                </div>
-              </div>
-            </>
+              <ChatInput
+                value={inputValue}
+                onChange={setInputValue}
+                onSend={() => handleSendMessage()}
+                disabled={isTyping}
+              />
+
+              {suggestions.length > 0 && (
+                <QuickSuggestions
+                  suggestions={suggestions}
+                  onSuggestionClick={handleQuickQuestion}
+                />
+              )}
+            </div>
           ) : (
             <div className="flex-1 overflow-y-auto p-4">
               <div className="space-y-3">
