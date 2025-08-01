@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, X, Zap, Settings, TrendingUp, FileText, Users, Calculator, CreditCard, Info, HelpCircle } from 'lucide-react';
 import ChatInput from './assistant/ChatInput';
@@ -343,8 +342,8 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
 
   return (
     <div className="fixed bottom-6 right-6 z-50 w-96 h-[650px] flex flex-col">
-      <div className="flex-1 flex flex-col bg-white rounded-lg shadow-2xl border">
-        <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white rounded-t-lg p-4">
+      <div className="flex-1 flex flex-col bg-white rounded-lg shadow-2xl border overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white rounded-t-lg p-4 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-2 bg-white/20 rounded-lg">
@@ -367,8 +366,8 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex border-b">
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex border-b flex-shrink-0">
             <button
               onClick={() => setActiveTab('chat')}
               className={`flex-1 p-3 text-sm font-medium ${
@@ -388,7 +387,7 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
           </div>
           
           {activeTab === 'chat' ? (
-            <div className="flex-1 flex flex-col min-h-0 max-h-full">
+            <div className="flex-1 flex flex-col overflow-hidden">
               <div className="flex items-center gap-2 p-3 bg-gray-50 border-b flex-shrink-0">
                 <div className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
                   {categories.find(c => c.id === currentCategory)?.icon && 
@@ -399,7 +398,7 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
                 <span className="text-xs text-gray-600">Active Topic</span>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" style={{ maxHeight: 'calc(100% - 120px)' }}>
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((message) => (
                   <ChatMessage 
                     key={message.id} 
@@ -413,7 +412,7 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
                 <div ref={messagesEndRef} />
               </div>
 
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 border-t">
                 <ChatInput
                   value={inputValue}
                   onChange={setInputValue}
