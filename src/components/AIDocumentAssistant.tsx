@@ -22,7 +22,7 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
     {
       id: '1',
       type: 'assistant',
-      content: "👋 Welcome to B2BNest.online! I'm your AI Business Assistant. I can help you understand our platform features, pricing plans, and guide you through our CRM, project management, financial tools, and more. What would you like to know?",
+      content: "👋 Welcome to B2BNEST! I'm your AI Business Assistant. I can help you understand our platform features, pricing plans, and guide you through our CRM, project management, financial tools, and more. What would you like to know?",
       timestamp: new Date()
     }
   ]);
