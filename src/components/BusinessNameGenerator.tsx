@@ -1,14 +1,22 @@
 import React, { useState } from 'react';
-import { Sparkles, RefreshCw, Copy, Check, Zap } from 'lucide-react';
+import { Sparkles, RefreshCw, Copy, Check, Zap, Globe, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 
+interface DomainOption {
+  extension: string;
+  available: boolean;
+  price: string;
+  registrar: string;
+  affiliateLink: string;
+}
+
 interface NameSuggestion {
   name: string;
-  domain: string;
+  domains: DomainOption[];
   available: boolean;
 }
 
@@ -24,6 +32,36 @@ const BusinessNameGenerator = () => {
     'Technology', 'Healthcare', 'Finance', 'Retail', 'Education', 
     'Marketing', 'Consulting', 'Food & Beverage', 'Real Estate', 'Creative'
   ];
+
+  const domainRegistrars = [
+    { name: 'Namecheap', affiliate: 'https://affiliate.namecheap.com/?affId=121420' },
+    { name: 'GoDaddy', affiliate: 'https://www.godaddy.com/deals' },
+    { name: 'Domain.com', affiliate: 'https://www.domain.com' },
+    { name: 'Porkbun', affiliate: 'https://porkbun.com' }
+  ];
+
+  const generateDomainOptions = (name: string): DomainOption[] => {
+    const cleanName = name.toLowerCase().replace(/\s+/g, '');
+    const extensions = [
+      { ext: '.com', price: '£8.99', popular: true },
+      { ext: '.co.uk', price: '£6.99', popular: true },
+      { ext: '.net', price: '£9.99', popular: false },
+      { ext: '.org', price: '£9.99', popular: false },
+      { ext: '.io', price: '£29.99', popular: false },
+      { ext: '.co', price: '£24.99', popular: false }
+    ];
+
+    return extensions.map(({ ext, price, popular }) => {
+      const registrar = domainRegistrars[Math.floor(Math.random() * domainRegistrars.length)];
+      return {
+        extension: `${cleanName}${ext}`,
+        available: Math.random() > (popular ? 0.4 : 0.2), // Popular extensions less likely available
+        price,
+        registrar: registrar.name,
+        affiliateLink: `${registrar.affiliate}?domain=${cleanName}${ext}`
+      };
+    });
+  };
 
   const generateNames = () => {
     if (!keyword.trim()) {
@@ -58,10 +96,13 @@ const BusinessNameGenerator = () => {
           name = `${modifiers[Math.floor(Math.random() * modifiers.length)]} ${keyword}`;
         }
         
+        const domains = generateDomainOptions(name);
+        const hasAvailableDomain = domains.some(domain => domain.available);
+        
         newSuggestions.push({
           name: name,
-          domain: `${name.toLowerCase().replace(/\s+/g, '')}.com`,
-          available: Math.random() > 0.3 // Random availability for demo
+          domains: domains,
+          available: hasAvailableDomain
         });
       }
       
@@ -156,39 +197,107 @@ const BusinessNameGenerator = () => {
             </p>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-3">
+            <div className="grid gap-6">
               {suggestions.map((suggestion, index) => (
                 <div 
                   key={index}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                  className="p-6 border rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  <div className="flex-1">
+                  <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-lg">{suggestion.name}</h3>
                       <Badge 
                         variant={suggestion.available ? "default" : "secondary"}
                         className="text-xs"
                       >
-                        {suggestion.available ? "Available" : "Taken"}
+                        {suggestion.available ? "Domains Available" : "Limited Availability"}
                       </Badge>
                     </div>
-                    <p className="text-sm text-gray-600">{suggestion.domain}</p>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyToClipboard(suggestion.name)}
+                    >
+                      {copiedName === suggestion.name ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
                   </div>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyToClipboard(suggestion.name)}
-                    className="ml-4"
-                  >
-                    {copiedName === suggestion.name ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Globe className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-700">Domain Options:</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {suggestion.domains.slice(0, 4).map((domain, domainIndex) => (
+                        <div 
+                          key={domainIndex}
+                          className={`flex items-center justify-between p-3 rounded border ${
+                            domain.available ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
+                          }`}
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm">{domain.extension}</span>
+                              <Badge 
+                                variant={domain.available ? "default" : "secondary"}
+                                className="text-xs"
+                              >
+                                {domain.available ? "Available" : "Taken"}
+                              </Badge>
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              {domain.price} via {domain.registrar}
+                            </div>
+                          </div>
+                          
+                          {domain.available && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(domain.affiliateLink, '_blank')}
+                              className="ml-2"
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              Register
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {suggestion.domains.length > 4 && (
+                      <div className="mt-2 text-center">
+                        <Button variant="ghost" size="sm" className="text-xs">
+                          View {suggestion.domains.length - 4} more domains
+                        </Button>
+                      </div>
                     )}
-                  </Button>
+                  </div>
                 </div>
               ))}
+            </div>
+
+            <div className="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
+              <div className="flex items-start gap-3">
+                <Globe className="h-5 w-5 text-amber-600 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-amber-900 mb-1">Domain Partnership Program</h4>
+                  <p className="text-sm text-amber-700 mb-3">
+                    We earn a small commission when you register domains through our partners. This helps us keep the business name generator free while providing you with competitive pricing.
+                  </p>
+                  <div className="flex gap-2 flex-wrap">
+                    <Badge variant="outline" className="text-xs">Namecheap Partner</Badge>
+                    <Badge variant="outline" className="text-xs">GoDaddy Affiliate</Badge>
+                    <Badge variant="outline" className="text-xs">Domain.com Partner</Badge>
+                  </div>
+                </div>
+              </div>
             </div>
             
             <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
