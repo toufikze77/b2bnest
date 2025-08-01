@@ -17,7 +17,7 @@ interface SEOHeadProps {
 const SEOHead = ({
   title = "B2BNest - Professional Business Document Templates & Tools",
   description = "Access 10,000+ professional business document templates, AI-powered tools, CRM, project management, and business resources. Streamline your workflow and ensure compliance.",
-  keywords = "business templates, document templates, business forms, legal documents, HR templates, financial forms, marketing materials, business tools, CRM, project management",
+  keywords = "business templates, document templates, business forms, legal documents, HR templates, financial forms, marketing materials, business tools, CRM, project management, SaaS deals, lifetime deals, business software, startup tools, entrepreneur resources, digital marketing tools, productivity software, app discovery, growth hacking, marketing automation, affiliate marketing, B2B SaaS, free business tools, tech discounts, online business, founder tools, business growth, software curation, software reviews, deal aggregator",
   canonical,
   canonicalUrl,
   ogImage = "https://b2bnest.com/lovable-uploads/86c25eed-4258-4e9e-9fd3-c368f065e452.png",
