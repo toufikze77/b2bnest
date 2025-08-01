@@ -388,8 +388,8 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
           </div>
           
           {activeTab === 'chat' ? (
-            <div className="flex-1 flex flex-col min-h-0">
-              <div className="flex items-center gap-2 p-3 bg-gray-50 border-b">
+            <div className="flex-1 flex flex-col min-h-0 max-h-full">
+              <div className="flex items-center gap-2 p-3 bg-gray-50 border-b flex-shrink-0">
                 <div className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
                   {categories.find(c => c.id === currentCategory)?.icon && 
                     React.createElement(categories.find(c => c.id === currentCategory)!.icon, { className: "h-3 w-3" })
@@ -399,7 +399,7 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
                 <span className="text-xs text-gray-600">Active Topic</span>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" style={{ maxHeight: 'calc(100% - 120px)' }}>
                 {messages.map((message) => (
                   <ChatMessage 
                     key={message.id} 
@@ -413,19 +413,21 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
                 <div ref={messagesEndRef} />
               </div>
 
-              <ChatInput
-                value={inputValue}
-                onChange={setInputValue}
-                onSend={() => handleSendMessage()}
-                disabled={isTyping}
-              />
-
-              {suggestions.length > 0 && (
-                <QuickSuggestions
-                  suggestions={suggestions}
-                  onSuggestionClick={handleQuickQuestion}
+              <div className="flex-shrink-0">
+                <ChatInput
+                  value={inputValue}
+                  onChange={setInputValue}
+                  onSend={() => handleSendMessage()}
+                  disabled={isTyping}
                 />
-              )}
+
+                {suggestions.length > 0 && (
+                  <QuickSuggestions
+                    suggestions={suggestions}
+                    onSuggestionClick={handleQuickQuestion}
+                  />
+                )}
+              </div>
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto p-4">
