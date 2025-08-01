@@ -47,7 +47,7 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
         'Customer Segmentation',
         'Automated Follow-ups'
       ],
-      pricing: 'Starting at $29/month per user'
+      pricing: 'Starting at £24/month per user'
     },
     'Project Management': {
       features: [
@@ -60,7 +60,7 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
         'Progress Monitoring',
         'Team Communication'
       ],
-      pricing: 'Starting at $19/month per user'
+      pricing: 'Starting at £16/month per user'
     },
     'Finance': {
       features: [
@@ -73,7 +73,7 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
         'Tax Management',
         'Financial Analytics Dashboard'
       ],
-      pricing: 'Starting at $39/month per user'
+      pricing: 'Starting at £32/month per user'
     },
     'Trading': {
       features: [
@@ -86,7 +86,7 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
         'Market Research Reports',
         'Investment Tracking'
       ],
-      pricing: 'Starting at $49/month per user'
+      pricing: 'Starting at £40/month per user'
     },
     'Documents': {
       features: [
@@ -99,23 +99,23 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
         'Document Storage & Search',
         'Automated Workflows'
       ],
-      pricing: 'Starting at $15/month per user'
+      pricing: 'Starting at £12/month per user'
     }
   };
 
   const subscriptionPlans = {
     'Starter': {
-      price: '$49/month',
+      price: '£40/month',
       features: ['Basic CRM (5 users)', 'Project Management', 'Document Templates', 'Email Support'],
       bestFor: 'Small teams getting started'
     },
     'Professional': {
-      price: '$99/month',
+      price: '£80/month',
       features: ['Full CRM (15 users)', 'Advanced Project Management', 'Financial Tools', 'Trading Basic', 'Phone Support'],
       bestFor: 'Growing businesses'
     },
     'Enterprise': {
-      price: '$199/month',
+      price: '£160/month',
       features: ['Unlimited CRM users', 'All Features Included', 'Advanced Trading Tools', 'Custom Integrations', 'Dedicated Support'],
       bestFor: 'Large organizations'
     },
@@ -203,7 +203,7 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
     if (lowerMessage.includes('price') || lowerMessage.includes('cost') || lowerMessage.includes('plan')) {
       if (lowerMessage.includes('crm')) {
         return {
-          response: `Our CRM module starts at $29/month per user and includes: ${platformFeatures.CRM.features.join(', ')}. It's also included in our Professional ($99/month) and Enterprise ($199/month) plans with additional features.`,
+          response: `Our CRM module starts at £24/month per user and includes: ${platformFeatures.CRM.features.join(', ')}. It's also included in our Professional (£80/month) and Enterprise (£160/month) plans with additional features.`,
           quickActions: ['Show me all pricing plans', 'What\'s included in CRM?', 'Is there a free trial?']
         };
       }
@@ -295,7 +295,7 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
     // General/about questions
     if (lowerMessage.includes('what is') || lowerMessage.includes('about') || lowerMessage.includes('platform')) {
       return {
-        response: `B2BNest.online is a comprehensive business management platform that combines:\n\n• **CRM** - Customer relationship management\n• **Project Management** - Task and team collaboration\n• **Financial Tools** - Invoicing, expense tracking, analytics\n• **Trading Tools** - Portfolio management and market analysis\n• **Document Management** - Templates, contracts, and workflows\n\nAll integrated in one powerful platform starting at just $49/month!`,
+        response: `B2BNest.online is a comprehensive business management platform that combines:\n\n• **CRM** - Customer relationship management\n• **Project Management** - Task and team collaboration\n• **Financial Tools** - Invoicing, expense tracking, analytics\n• **Trading Tools** - Portfolio management and market analysis\n• **Document Management** - Templates, contracts, and workflows\n\nAll integrated in one powerful platform starting at just £40/month!`,
         quickActions: ['Show me pricing plans', 'What features are included?', 'How do I get started?']
       };
     }
