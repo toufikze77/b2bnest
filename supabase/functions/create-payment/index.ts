@@ -22,6 +22,13 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
+    // Create service client for database writes
+    const supabaseService = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+
     let user = null;
     let customerEmail = "guest@example.com"; // Default for guest users
 
@@ -83,11 +90,46 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/payment-success`,
+      success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get("origin")}/pricing`,
     });
 
     console.log("Stripe payment session created:", session.id);
+
+    // Store payment record in database
+    try {
+      const { data: paymentRecord, error: paymentError } = await supabaseService
+        .from("payments")
+        .insert({
+          stripe_session_id: session.id,
+          user_id: user?.id || null,
+          customer_email: customerEmail,
+          customer_name: buyerInfo?.fullName || null,
+          company_name: buyerInfo?.companyName || null,
+          contact_number: buyerInfo?.contactNumber || null,
+          amount: amount,
+          currency: currency,
+          status: "pending",
+          item_name: itemName,
+          stripe_customer_id: customerId || null,
+          metadata: {
+            session_created_at: new Date().toISOString(),
+            origin: req.headers.get("origin")
+          }
+        })
+        .select()
+        .single();
+
+      if (paymentError) {
+        console.error("Error storing payment record:", paymentError);
+        // Continue anyway - don't fail the payment creation
+      } else {
+        console.log("Payment record stored:", paymentRecord.id);
+      }
+    } catch (dbError) {
+      console.error("Database error:", dbError);
+      // Continue anyway - don't fail the payment creation
+    }
 
     return new Response(JSON.stringify({
       id: session.id,
