@@ -12,6 +12,12 @@ interface StripeCheckoutProps {
   onSuccess: (paymentData: any) => void;
   onError: (error: string) => void;
   onCancel: () => void;
+  buyerInfo?: {
+    fullName: string;
+    companyName: string;
+    email: string;
+    contactNumber: string;
+  } | null;
 }
 
 const StripeCheckout = ({
@@ -20,7 +26,8 @@ const StripeCheckout = ({
   itemName,
   onSuccess,
   onError,
-  onCancel
+  onCancel,
+  buyerInfo
 }: StripeCheckoutProps) => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -28,18 +35,20 @@ const StripeCheckout = ({
   const handlePayment = async () => {
     setLoading(true);
     try {
-      // Ensure user is authenticated before proceeding
+      // Check if user is authenticated
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        onError('User not authenticated. Please sign in and try again.');
-        return;
-      }
-
+      
+      // For anonymous users, we'll need to handle this differently
+      // The buyer information should be available from the CheckoutModal context
+      
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: {
           amount: Math.round(amount * 100), // Convert to cents
           currency: currency.toLowerCase(),
           itemName: itemName,
+          // Include user info if available, otherwise payment will use guest flow
+          isAuthenticated: !!user,
+          buyerInfo: buyerInfo,
         }
       });
 

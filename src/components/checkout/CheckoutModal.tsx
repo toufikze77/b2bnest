@@ -128,6 +128,7 @@ const CheckoutModal = ({
                 itemName={itemName}
                 onPaymentSuccess={handlePaymentSuccess}
                 onPaymentError={handlePaymentError}
+                buyerInfo={buyerInfo}
               />
             </div>
           )}

@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { amount, currency = "gbp", itemName } = await req.json();
+    const { amount, currency = "gbp", itemName, isAuthenticated = false, buyerInfo } = await req.json();
 
     // Create Supabase client using the anon key for user authentication
     const supabaseClient = createClient(
@@ -22,18 +22,25 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
-    // Get authenticated user
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      throw new Error("No authorization header provided");
+    let user = null;
+    let customerEmail = "guest@example.com"; // Default for guest users
+
+    // Try to get authenticated user if they claim to be authenticated
+    if (isAuthenticated) {
+      const authHeader = req.headers.get("Authorization");
+      if (authHeader) {
+        const token = authHeader.replace("Bearer ", "");
+        const { data } = await supabaseClient.auth.getUser(token);
+        user = data.user;
+        if (user?.email) {
+          customerEmail = user.email;
+        }
+      }
     }
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseClient.auth.getUser(token);
-    const user = data.user;
-    
-    if (!user?.email) {
-      throw new Error("User not authenticated or email not available");
+    // Use buyer info email if available and no authenticated user
+    if (!user && buyerInfo?.email) {
+      customerEmail = buyerInfo.email;
     }
 
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -48,9 +55,9 @@ serve(async (req) => {
       apiVersion: "2023-10-16",
     });
 
-    // Check if a Stripe customer record exists for this user
+    // Check if a Stripe customer record exists for this email
     const customers = await stripe.customers.list({ 
-      email: user.email, 
+      email: customerEmail, 
       limit: 1 
     });
     
@@ -62,7 +69,7 @@ serve(async (req) => {
     // Create a one-time payment session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : user.email,
+      customer_email: customerId ? undefined : customerEmail,
       line_items: [
         {
           price_data: {

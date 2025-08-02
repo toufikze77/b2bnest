@@ -13,6 +13,12 @@ interface PaymentMethodSelectorProps {
   itemName: string;
   onPaymentSuccess: (paymentData: any) => void;
   onPaymentError: (error: string) => void;
+  buyerInfo?: {
+    fullName: string;
+    companyName: string;
+    email: string;
+    contactNumber: string;
+  } | null;
 }
 
 type PaymentMethod = 'stripe' | 'coinbase' | null;
@@ -22,7 +28,8 @@ const PaymentMethodSelector = ({
   currency,
   itemName,
   onPaymentSuccess,
-  onPaymentError
+  onPaymentError,
+  buyerInfo
 }: PaymentMethodSelectorProps) => {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(null);
 
@@ -37,6 +44,7 @@ const PaymentMethodSelector = ({
         onSuccess={onPaymentSuccess}
         onError={onPaymentError}
         onCancel={resetSelection}
+        buyerInfo={buyerInfo}
       />
     );
   }
