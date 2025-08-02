@@ -41,9 +41,13 @@ const StripeCheckout = ({
       // For anonymous users, we'll need to handle this differently
       // The buyer information should be available from the CheckoutModal context
       
+      // Ensure minimum amount for Stripe (30 pence for GBP, 50 cents for USD)
+      const minAmount = currency.toLowerCase() === 'gbp' ? 0.30 : 0.50;
+      const finalAmount = Math.max(amount, minAmount);
+      
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: {
-          amount: Math.round(amount * 100), // Convert to cents
+          amount: Math.round(finalAmount * 100), // Convert to cents
           currency: currency.toLowerCase(),
           itemName: itemName,
           // Include user info if available, otherwise payment will use guest flow
