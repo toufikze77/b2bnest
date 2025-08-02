@@ -216,7 +216,7 @@ const TodoList = () => {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-3xl font-bold mb-2">Task Management</h1>
-            <p className="text-gray-600">JIRA-inspired task tracking and project management</p>
+            <p className="text-gray-600">Organize tasks, track progress, and manage your workflow</p>
           </div>
           <div className="text-sm text-gray-500">
             {totalCount}/10 tasks used (Free Plan)

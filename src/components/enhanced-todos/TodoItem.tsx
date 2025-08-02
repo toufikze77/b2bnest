@@ -84,7 +84,11 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onEdit, onDelete, onStatusCha
             </div>
 
             {todo.description && (
-              <p className="text-sm text-gray-600 mb-2 ml-8">{todo.description}</p>
+              <p className="text-sm text-gray-600 mb-2 ml-8">
+                {todo.description.length > 100 
+                  ? `${todo.description.substring(0, 100)}...` 
+                  : todo.description}
+              </p>
             )}
 
             <div className="flex items-center gap-2 mb-2 ml-8">
