@@ -51,10 +51,18 @@ const SmartSearch = ({
     if (!inputElement) return;
 
     const handleAutofill = (e: Event) => {
+      console.log('🔍 SmartSearch autofill event:', {
+        target: e.target,
+        isSearchInput: e.target === inputElement,
+        animationType: (e as AnimationEvent).animationName,
+        searchInputId: inputElement.id || 'no-id'
+      });
+      
       // Only handle autofill for this specific input element
       if (e.target === inputElement && e.type === 'animationstart') {
         const animationEvent = e as AnimationEvent;
         if (animationEvent.animationName.includes('autofill')) {
+          console.log('🚫 SmartSearch blocking autofill focus');
           setIsAutofilling(true);
           setTimeout(() => setIsAutofilling(false), 100);
         }
@@ -63,19 +71,41 @@ const SmartSearch = ({
 
     const handleInput = (e: Event) => {
       const target = e.target as HTMLInputElement;
+      console.log('⌨️ SmartSearch input event:', {
+        target: target,
+        isSearchInput: target === inputElement,
+        value: target.value,
+        hasFocus: target.matches(':focus'),
+        searchInputId: inputElement.id || 'no-id'
+      });
+      
       // Only handle for this specific input and detect autofill more accurately
       if (target === inputElement && target.value && !target.matches(':focus')) {
+        console.log('🚫 SmartSearch blocking input focus');
         setIsAutofilling(true);
         setTimeout(() => setIsAutofilling(false), 100);
       }
     };
 
+    const handleFocusCapture = (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      console.log('👁️ SmartSearch focus capture:', {
+        target: target,
+        isSearchInput: target === inputElement,
+        searchInputId: inputElement.id || 'no-id',
+        targetId: target.id || 'no-id'
+      });
+    };
+
     inputElement.addEventListener('animationstart', handleAutofill);
     inputElement.addEventListener('input', handleInput);
+    // Add focus capture to see if focus events are being triggered
+    document.addEventListener('focusin', handleFocusCapture, true);
 
     return () => {
       inputElement.removeEventListener('animationstart', handleAutofill);
       inputElement.removeEventListener('input', handleInput);
+      document.removeEventListener('focusin', handleFocusCapture, true);
     };
   }, []);
 

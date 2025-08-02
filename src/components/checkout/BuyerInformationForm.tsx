@@ -124,6 +124,8 @@ const BuyerInformationForm = ({
                 placeholder="Enter your full name"
                 value={formData.fullName}
                 onChange={(e) => handleInputChange('fullName', e.target.value)}
+                onFocus={(e) => console.log('💼 Buyer form focus:', { field: 'fullName', target: e.target })}
+                onBlur={(e) => console.log('💼 Buyer form blur:', { field: 'fullName', target: e.target })}
                 className={errors.fullName ? 'border-destructive' : ''}
               />
               {errors.fullName && (
