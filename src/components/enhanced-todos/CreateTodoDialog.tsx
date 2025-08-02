@@ -5,7 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Flag } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Plus, Flag, CalendarIcon, Users, Brain } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import SubtaskManager from './SubtaskManager';
+import AITaskSuggestions from './AITaskSuggestions';
 
 interface CreateTodoDialogProps {
   onCreateTodo: (todoData: any) => void;
@@ -22,11 +28,15 @@ export const CreateTodoDialog: React.FC<CreateTodoDialogProps> = ({
     title: '',
     description: '',
     priority: 'medium',
-    due_date: '',
-    start_date: '',
+    due_date: null as Date | null,
+    start_date: null as Date | null,
     estimated_hours: '',
-    labels: ''
+    labels: '',
+    assigned_to: ''
   });
+  
+  const [subtasks, setSubtasks] = useState<any[]>([]);
+  const [showAISuggestions, setShowAISuggestions] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,10 +47,12 @@ export const CreateTodoDialog: React.FC<CreateTodoDialogProps> = ({
       title: formData.title.trim(),
       description: formData.description.trim() || undefined,
       priority: formData.priority,
-      due_date: formData.due_date || undefined,
-      start_date: formData.start_date || undefined,
+      due_date: formData.due_date ? formData.due_date.toISOString().split('T')[0] : undefined,
+      start_date: formData.start_date ? formData.start_date.toISOString().split('T')[0] : undefined,
       estimated_hours: formData.estimated_hours ? parseInt(formData.estimated_hours) : undefined,
-      labels: formData.labels.split(',').map(label => label.trim()).filter(Boolean)
+      labels: formData.labels.split(',').map(label => label.trim()).filter(Boolean),
+      assigned_to: formData.assigned_to || undefined,
+      subtasks: subtasks.length > 0 ? subtasks : undefined
     };
 
     onCreateTodo(todoData);
@@ -50,18 +62,49 @@ export const CreateTodoDialog: React.FC<CreateTodoDialogProps> = ({
       title: '',
       description: '',
       priority: 'medium',
-      due_date: '',
-      start_date: '',
+      due_date: null,
+      start_date: null,
       estimated_hours: '',
-      labels: ''
+      labels: '',
+      assigned_to: ''
     });
+    setSubtasks([]);
+    setShowAISuggestions(false);
     
     onOpenChange(false);
   };
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: string, value: string | Date | null) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  const handleAISuggestionApply = (suggestion: any) => {
+    if (suggestion.subtasks) {
+      setSubtasks(suggestion.subtasks.map((st: any, idx: number) => ({
+        id: `ai-subtask-${idx}`,
+        title: st.title,
+        completed: false,
+        estimated_hours: st.estimated_hours
+      })));
+    }
+    if (suggestion.estimated_hours) {
+      setFormData(prev => ({ ...prev, estimated_hours: suggestion.estimated_hours.toString() }));
+    }
+    if (suggestion.assignee) {
+      setFormData(prev => ({ ...prev, assigned_to: suggestion.assignee }));
+    }
+    if (suggestion.priority) {
+      setFormData(prev => ({ ...prev, priority: suggestion.priority }));
+    }
+  };
+
+  // Mock user list for assignment
+  const mockUsers = [
+    { id: 'user1', name: 'John Doe', email: 'john@example.com' },
+    { id: 'user2', name: 'Jane Smith', email: 'jane@example.com' },
+    { id: 'user3', name: 'Mike Johnson', email: 'mike@example.com' },
+    { id: 'user4', name: 'Sarah Wilson', email: 'sarah@example.com' }
+  ];
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -71,11 +114,24 @@ export const CreateTodoDialog: React.FC<CreateTodoDialogProps> = ({
           Create Task
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create New Task</DialogTitle>
+          <DialogTitle className="flex items-center justify-between">
+            Create New Task
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAISuggestions(!showAISuggestions)}
+            >
+              <Brain className="h-4 w-4 mr-2" />
+              {showAISuggestions ? 'Hide' : 'Show'} AI Suggestions
+            </Button>
+          </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="title">Title *</Label>
             <Input
@@ -142,34 +198,107 @@ export const CreateTodoDialog: React.FC<CreateTodoDialogProps> = ({
 
             <div className="space-y-2">
               <Label htmlFor="start_date">Start Date</Label>
-              <Input
-                id="start_date"
-                type="date"
-                value={formData.start_date}
-                onChange={(e) => handleChange('start_date', e.target.value)}
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.start_date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.start_date ? format(formData.start_date, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.start_date}
+                    onSelect={(date) => handleChange('start_date', date)}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="due_date">Due Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.due_date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.due_date ? format(formData.due_date, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.due_date}
+                    onSelect={(date) => handleChange('due_date', date)}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="assigned_to">Assign To</Label>
+              <Select value={formData.assigned_to} onValueChange={(value) => handleChange('assigned_to', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select assignee">
+                    {formData.assigned_to ? (
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        {mockUsers.find(u => u.id === formData.assigned_to)?.name}
+                      </div>
+                    ) : (
+                      <span>Select assignee</span>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {mockUsers.map(user => (
+                    <SelectItem key={user.id} value={user.id}>
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        <div>
+                          <div className="font-medium">{user.name}</div>
+                          <div className="text-sm text-gray-500">{user.email}</div>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="labels">Labels (comma-separated)</Label>
               <Input
-                id="due_date"
-                type="date"
-                value={formData.due_date}
-                onChange={(e) => handleChange('due_date', e.target.value)}
+                id="labels"
+                value={formData.labels}
+                onChange={(e) => handleChange('labels', e.target.value)}
+                placeholder="bug, feature, enhancement"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="labels">Labels (comma-separated)</Label>
-            <Input
-              id="labels"
-              value={formData.labels}
-              onChange={(e) => handleChange('labels', e.target.value)}
-              placeholder="bug, feature, enhancement"
-            />
-          </div>
+          {/* Subtasks Manager */}
+          <SubtaskManager 
+            subtasks={subtasks}
+            onSubtasksChange={setSubtasks}
+          />
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -180,6 +309,18 @@ export const CreateTodoDialog: React.FC<CreateTodoDialogProps> = ({
             </Button>
           </div>
         </form>
+
+        {/* AI Suggestions Panel */}
+        {showAISuggestions && (
+          <div className="space-y-4">
+            <AITaskSuggestions
+              taskTitle={formData.title}
+              taskDescription={formData.description}
+              onSuggestionApply={handleAISuggestionApply}
+            />
+          </div>
+        )}
+      </div>
       </DialogContent>
     </Dialog>
   );
