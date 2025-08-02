@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Filter, X, Clock, TrendingUp, FileText, Settings, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -39,13 +38,45 @@ const SmartSearch = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
+  const [isAutofilling, setIsAutofilling] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
   const categories = ['Legal Documents', 'Human Resources', 'Financial Forms', 'Operations'];
   const popularTags = ['Contract', 'Invoice', 'Agreement', 'Template', 'Report', 'Form'];
 
+  // Prevent focus during autofill
+  useEffect(() => {
+    const handleAutofill = (e: Event) => {
+      setIsAutofilling(true);
+      // Reset after a short delay
+      setTimeout(() => setIsAutofilling(false), 100);
+    };
+
+    const inputElement = inputRef.current;
+    if (inputElement) {
+      inputElement.addEventListener('animationstart', handleAutofill);
+      inputElement.addEventListener('input', (e: Event) => {
+        const target = e.target as HTMLInputElement;
+        // Detect if this might be an autofill event
+        if (target.value && !document.hasFocus()) {
+          setIsAutofilling(true);
+          setTimeout(() => setIsAutofilling(false), 100);
+        }
+      });
+    }
+
+    return () => {
+      if (inputElement) {
+        inputElement.removeEventListener('animationstart', handleAutofill);
+      }
+    };
+  }, []);
+
   const handleSearch = async (query: string) => {
+    // Prevent search if autofilling
+    if (isAutofilling) return;
+    
     setSearchQuery(query);
     if (query.length > 0) {
       addToRecentSearches(query);
@@ -60,10 +91,14 @@ const SmartSearch = ({
   };
 
   const handleSuggestionClick = (suggestion: string) => {
+    if (isAutofilling) return;
     handleSearch(suggestion);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Prevent processing during autofill
+    if (isAutofilling) return;
+    
     const value = e.target.value;
     setSearchQuery(value);
     setShowSuggestions(value.length > 0 || (value.length === 0 && suggestions.length > 0));
@@ -72,7 +107,9 @@ const SmartSearch = ({
     if (unified && value.length > 1) {
       // Debounced search for better performance
       const timeoutId = setTimeout(() => {
-        performUnifiedSearch(value);
+        if (!isAutofilling) {
+          performUnifiedSearch(value);
+        }
       }, 300);
       return () => clearTimeout(timeoutId);
     } else if (!unified) {
@@ -81,6 +118,11 @@ const SmartSearch = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (isAutofilling) {
+      e.preventDefault();
+      return;
+    }
+    
     if (e.key === 'Enter') {
       handleSearch(searchQuery);
     } else if (e.key === 'Escape') {
@@ -88,7 +130,21 @@ const SmartSearch = ({
     }
   };
 
+  const handleFocus = (e: React.FocusEvent) => {
+    // Prevent focus behavior during autofill
+    if (isAutofilling) {
+      e.preventDefault();
+      e.target.blur();
+      return;
+    }
+    
+    setShowSuggestions(searchQuery.length > 0 || suggestions.length > 0);
+    if (unified && searchQuery.length > 1) setShowResults(true);
+  };
+
   const clearSearch = () => {
+    if (isAutofilling) return;
+    
     setSearchQuery('');
     setShowSuggestions(false);
     setShowResults(false);
@@ -99,6 +155,8 @@ const SmartSearch = ({
   // Close suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      if (isAutofilling) return;
+      
       if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
         setShowResults(false);
@@ -107,9 +165,11 @@ const SmartSearch = ({
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [isAutofilling]);
 
   const handleCategoryToggle = (categoryId: string) => {
+    if (isAutofilling) return;
+    
     const newCategories = filters.categories.includes(categoryId)
       ? filters.categories.filter(id => id !== categoryId)
       : [...filters.categories, categoryId];
@@ -117,6 +177,8 @@ const SmartSearch = ({
   };
 
   const handleResultClick = (result: SearchResult) => {
+    if (isAutofilling) return;
+    
     if (onResultSelect) {
       onResultSelect(result);
     } else if (result.url) {
@@ -146,14 +208,16 @@ const SmartSearch = ({
           value={searchQuery}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          onFocus={() => {
-            setShowSuggestions(searchQuery.length > 0 || suggestions.length > 0);
-            if (unified && searchQuery.length > 1) setShowResults(true);
+          onFocus={handleFocus}
+          autoComplete="off"
+          className={`pl-12 pr-20 py-4 text-lg rounded-xl border-2 border-gray-200 focus:border-blue-500 shadow-lg ${isAutofilling ? 'pointer-events-none' : ''}`}
+          style={{
+            WebkitTextFillColor: 'inherit',
+            transition: 'none'
           }}
-          className="pl-12 pr-20 py-4 text-lg rounded-xl border-2 border-gray-200 focus:border-blue-500 shadow-lg"
         />
         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
-          {searchQuery && (
+          {searchQuery && !isAutofilling && (
             <Button
               variant="ghost"
               size="sm"
@@ -163,7 +227,7 @@ const SmartSearch = ({
               <X className="h-4 w-4" />
             </Button>
           )}
-          {showFilters && (
+          {showFilters && !isAutofilling && (
             <Button
               variant="ghost"
               size="sm"
@@ -180,7 +244,7 @@ const SmartSearch = ({
       </div>
 
       {/* Unified Search Results */}
-      {unified && showResults && unifiedResults.length > 0 && (
+      {unified && showResults && unifiedResults.length > 0 && !isAutofilling && (
         <Card className="absolute top-full left-0 right-0 mt-2 shadow-lg z-50" ref={suggestionsRef}>
           <CardContent className="p-0 max-h-96 overflow-y-auto">
             <div className="p-4">
@@ -237,7 +301,7 @@ const SmartSearch = ({
       )}
 
       {/* Search Suggestions */}
-      {showSuggestions && !showResults && (suggestions.length > 0 || recentSearches.length > 0) && (
+      {showSuggestions && !showResults && !isAutofilling && (suggestions.length > 0 || recentSearches.length > 0) && (
         <Card className="absolute top-full left-0 right-0 mt-2 shadow-lg z-50" ref={suggestionsRef}>
           <CardContent className="p-0">
             {/* Recent Searches */}
@@ -289,7 +353,7 @@ const SmartSearch = ({
       )}
 
       {/* Advanced Filters Panel */}
-      {showFiltersPanel && (
+      {showFiltersPanel && !isAutofilling && (
         <Card className="absolute top-full left-0 right-0 mt-2 shadow-lg z-40">
           <CardContent className="p-6">
             <div className="space-y-4">
