@@ -322,6 +322,11 @@ const TodoList = () => {
               </Select>
             </div>
 
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Task
+            </Button>
+            
             <CreateTodoDialog 
               onCreateTodo={createTodo}
               isOpen={isCreateDialogOpen}
