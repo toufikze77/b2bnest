@@ -130,13 +130,12 @@ const SmartSearch = ({
     }
   };
 
-  const handleFocus = (e: React.FocusEvent) => {
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     // Prevent focus behavior during autofill
     if (isAutofilling) {
       e.preventDefault();
-      const target = e.target as HTMLInputElement;
-      if (target && target.blur) {
-        target.blur();
+      if (e.target && e.target instanceof HTMLElement && 'blur' in e.target) {
+        e.target.blur();
       }
       return;
     }
