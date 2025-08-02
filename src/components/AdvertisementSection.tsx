@@ -163,40 +163,52 @@ export const AdvertisementSection = () => {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Premium Marketplace</h1>
-          <p className="text-muted-foreground">Discover services and products from our yearly subscribers</p>
+          <p className="text-muted-foreground">Browse freely - No registration required! Post ads with subscription.</p>
         </div>
         
-        {user && (
-          <div className="flex gap-4">
-            {!userSubscription?.is_yearly ? (
-              <Card className="relative overflow-hidden border border-cyan-200 bg-gradient-to-br from-cyan-50 to-blue-50 p-4 shadow-md hover:shadow-lg transition-all duration-300">
-                <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 opacity-20 rounded-full transform translate-x-2 -translate-y-2"></div>
-                <div className="relative">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse"></div>
-                    <p className="text-sm font-medium text-foreground">Want to advertise here?</p>
-                  </div>
-                  <p className="text-xs text-muted-foreground mb-3">Join our Premium Marketplace!</p>
-                  <Button size="sm" className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-medium shadow-sm">
-                    ✨ Upgrade to Yearly
-                  </Button>
+        <div className="flex gap-4">
+          {!user ? (
+            <Card className="relative overflow-hidden border border-cyan-200 bg-gradient-to-br from-cyan-50 to-blue-50 p-4 shadow-md hover:shadow-lg transition-all duration-300">
+              <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 opacity-20 rounded-full transform translate-x-2 -translate-y-2"></div>
+              <div className="relative">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse"></div>
+                  <p className="text-sm font-medium text-foreground">Want to advertise here?</p>
                 </div>
-              </Card>
-            ) : userAd ? (
-              <Card className="p-4">
-                <p className="text-sm text-success">✓ Your advertisement is live!</p>
-                <Button variant="outline" size="sm" onClick={() => setShowForm(true)}>
-                  Edit Advertisement
+                <p className="text-xs text-muted-foreground mb-3">Register & subscribe to post ads</p>
+                <Button size="sm" className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-medium shadow-sm">
+                  📝 Register to Post
                 </Button>
-              </Card>
-            ) : (
-              <Button onClick={() => setShowForm(true)} className="flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                Create Advertisement
+              </div>
+            </Card>
+          ) : !userSubscription?.is_yearly ? (
+            <Card className="relative overflow-hidden border border-cyan-200 bg-gradient-to-br from-cyan-50 to-blue-50 p-4 shadow-md hover:shadow-lg transition-all duration-300">
+              <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 opacity-20 rounded-full transform translate-x-2 -translate-y-2"></div>
+              <div className="relative">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse"></div>
+                  <p className="text-sm font-medium text-foreground">Want to advertise here?</p>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">Upgrade to post advertisements</p>
+                <Button size="sm" className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-medium shadow-sm">
+                  ✨ Upgrade to Yearly
+                </Button>
+              </div>
+            </Card>
+          ) : userAd ? (
+            <Card className="p-4">
+              <p className="text-sm text-success">✓ Your advertisement is live!</p>
+              <Button variant="outline" size="sm" onClick={() => setShowForm(true)}>
+                Edit Advertisement
               </Button>
-            )}
-          </div>
-        )}
+            </Card>
+          ) : (
+            <Button onClick={() => setShowForm(true)} className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Create Advertisement
+            </Button>
+          )}
+        </div>
       </div>
 
       {showForm && (
