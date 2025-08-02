@@ -51,17 +51,20 @@ const SmartSearch = ({
     if (!inputElement) return;
 
     const handleAutofill = (e: Event) => {
-      // Only handle autofill for this specific input
-      if (e.target === inputElement) {
-        setIsAutofilling(true);
-        setTimeout(() => setIsAutofilling(false), 100);
+      // Only handle autofill for this specific input element
+      if (e.target === inputElement && e.type === 'animationstart') {
+        const animationEvent = e as AnimationEvent;
+        if (animationEvent.animationName.includes('autofill')) {
+          setIsAutofilling(true);
+          setTimeout(() => setIsAutofilling(false), 100);
+        }
       }
     };
 
     const handleInput = (e: Event) => {
       const target = e.target as HTMLInputElement;
       // Only handle for this specific input and detect autofill more accurately
-      if (target === inputElement && target.value && !document.hasFocus()) {
+      if (target === inputElement && target.value && !target.matches(':focus')) {
         setIsAutofilling(true);
         setTimeout(() => setIsAutofilling(false), 100);
       }
