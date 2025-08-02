@@ -1,20 +1,132 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Flag, Users, Brain, X, Check } from 'lucide-react';
+import { Plus, Flag, Calendar, Users, Brain, X, Check } from 'lucide-react';
 
-interface CreateTodoDialogProps {
-  onCreateTodo: (todoData: any) => void;
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-}
+// Mock components since we don't have access to shadcn/ui in this environment
+const Dialog = ({ open, onOpenChange, children }) => {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+        {children}
+      </div>
+    </div>
+  );
+};
+
+const DialogContent = ({ children, className }) => (
+  <div className={`p-6 ${className}`}>
+    {children}
+  </div>
+);
+
+const DialogHeader = ({ children }) => (
+  <div className="mb-6">
+    {children}
+  </div>
+);
+
+const DialogTitle = ({ children, className }) => (
+  <h2 className={`text-xl font-semibold ${className}`}>
+    {children}
+  </h2>
+);
+
+const DialogTrigger = ({ children, asChild }) => children;
+
+const Button = ({ children, onClick = (e) => {}, type = "button", variant = "default", size = "default", className = "", disabled = false }) => {
+  const baseClasses = "px-4 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500";
+  const variantClasses = {
+    default: "bg-blue-600 text-white hover:bg-blue-700",
+    outline: "border border-gray-300 text-gray-700 hover:bg-gray-50",
+    ghost: "text-gray-600 hover:bg-gray-100",
+    destructive: "bg-red-600 text-white hover:bg-red-700"
+  };
+  const sizeClasses = {
+    default: "px-4 py-2",
+    sm: "px-3 py-1 text-sm",
+    lg: "px-6 py-3 text-lg"
+  };
+
+  return (
+    <button
+      type={type as "button" | "submit" | "reset"}
+      onClick={onClick}
+      disabled={disabled}
+      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+    >
+      {children}
+    </button>
+  );
+};
+
+const Input = ({ value, onChange, placeholder = "", type = "text", required = false, min = "", className = "", id = "", onKeyPress = (e) => {} }) => (
+  <input
+    id={id}
+    type={type}
+    value={value}
+    onChange={onChange}
+    onKeyPress={onKeyPress}
+    placeholder={placeholder}
+    required={required}
+    min={min}
+    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
+  />
+);
+
+const Label = ({ htmlFor = "", children }) => (
+  <label htmlFor={htmlFor} className="block text-sm font-medium text-gray-700 mb-1">
+    {children}
+  </label>
+);
+
+const Textarea = ({ value, onChange, placeholder, rows = 3, id }) => (
+  <textarea
+    id={id}
+    value={value}
+    onChange={onChange}
+    placeholder={placeholder}
+    rows={rows}
+    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+  />
+);
+
+const Select = ({ value, onValueChange, children }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-between"
+      >
+        <span>{value}</span>
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {isOpen && (
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+          {React.Children.map(children, child =>
+            React.cloneElement(child, { onSelect: (val) => { onValueChange(val); setIsOpen(false); } })
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const SelectItem = ({ value, onSelect = (val) => {}, children }) => (
+  <button
+    type="button"
+    onClick={() => onSelect(value)}
+    className="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100"
+  >
+    {children}
+  </button>
+);
 
 // SubtaskManager Component
-const SubtaskManager = ({ subtasks, onSubtasksChange }: any) => {
+const SubtaskManager = ({ subtasks, onSubtasksChange }) => {
   const [newSubtask, setNewSubtask] = useState('');
 
   const addSubtask = () => {
@@ -30,12 +142,12 @@ const SubtaskManager = ({ subtasks, onSubtasksChange }: any) => {
     }
   };
 
-  const removeSubtask = (id: string) => {
-    onSubtasksChange(subtasks.filter((st: any) => st.id !== id));
+  const removeSubtask = (id) => {
+    onSubtasksChange(subtasks.filter(st => st.id !== id));
   };
 
-  const updateSubtask = (id: string, field: string, value: any) => {
-    onSubtasksChange(subtasks.map((st: any) => 
+  const updateSubtask = (id, field, value) => {
+    onSubtasksChange(subtasks.map(st =>
       st.id === id ? { ...st, [field]: value } : st
     ));
   };
@@ -53,13 +165,14 @@ const SubtaskManager = ({ subtasks, onSubtasksChange }: any) => {
           <Plus className="h-4 w-4" />
         </Button>
       </div>
-      
-      {subtasks.map((subtask: any) => (
+     
+      {subtasks.map((subtask) => (
         <div key={subtask.id} className="flex items-center gap-2 p-2 border rounded">
           <Input
             value={subtask.title}
             onChange={(e) => updateSubtask(subtask.id, 'title', e.target.value)}
             className="flex-1"
+            placeholder="Subtask title"
           />
           <Input
             type="number"
@@ -67,6 +180,7 @@ const SubtaskManager = ({ subtasks, onSubtasksChange }: any) => {
             onChange={(e) => updateSubtask(subtask.id, 'estimated_hours', parseInt(e.target.value) || 0)}
             className="w-20"
             min="0"
+            placeholder="Hours"
           />
           <Button
             onClick={() => removeSubtask(subtask.id)}
@@ -82,8 +196,8 @@ const SubtaskManager = ({ subtasks, onSubtasksChange }: any) => {
 };
 
 // AITaskSuggestions Component
-const AITaskSuggestions = ({ taskTitle, onApplySuggestion }: any) => {
-  const [suggestions, setSuggestions] = useState<any>(null);
+const AITaskSuggestions = ({ taskTitle, onApplySuggestion }) => {
+  const [suggestions, setSuggestions] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const generateSuggestions = () => {
@@ -116,18 +230,18 @@ const AITaskSuggestions = ({ taskTitle, onApplySuggestion }: any) => {
       {suggestions && (
         <div className="p-4 border rounded-lg bg-blue-50">
           <h4 className="font-medium mb-3">AI Suggestions:</h4>
-          
+         
           <div className="space-y-3">
             <div>
               <p className="text-sm font-medium">Estimated Hours: {suggestions.estimated_hours}</p>
               <p className="text-sm font-medium">Suggested Priority: {suggestions.priority}</p>
               <p className="text-sm font-medium">Suggested Assignee: {suggestions.assignee}</p>
             </div>
-            
+           
             <div>
               <p className="text-sm font-medium mb-2">Suggested Subtasks:</p>
               <ul className="text-sm space-y-1">
-                {suggestions.subtasks.map((st: any, idx: number) => (
+                {suggestions.subtasks.map((st, idx) => (
                   <li key={idx} className="flex justify-between">
                     <span>{st.title}</span>
                     <span className="text-gray-500">{st.estimated_hours}h</span>
@@ -135,7 +249,7 @@ const AITaskSuggestions = ({ taskTitle, onApplySuggestion }: any) => {
                 ))}
               </ul>
             </div>
-            
+           
             <Button onClick={() => onApplySuggestion(suggestions)} size="sm">
               <Check className="h-4 w-4 mr-2" />
               Apply Suggestions
@@ -148,7 +262,7 @@ const AITaskSuggestions = ({ taskTitle, onApplySuggestion }: any) => {
 };
 
 // Main Component
-export const CreateTodoDialog: React.FC<CreateTodoDialogProps> = ({ onCreateTodo, isOpen, onOpenChange }) => {
+export const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -159,13 +273,13 @@ export const CreateTodoDialog: React.FC<CreateTodoDialogProps> = ({ onCreateTodo
     labels: '',
     assigned_to: ''
   });
-  
-  const [subtasks, setSubtasks] = useState<any[]>([]);
+ 
+  const [subtasks, setSubtasks] = useState([]);
   const [showAISuggestions, setShowAISuggestions] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    
+   
     if (!formData.title.trim()) return;
 
     const todoData = {
@@ -184,7 +298,7 @@ export const CreateTodoDialog: React.FC<CreateTodoDialogProps> = ({ onCreateTodo
     };
 
     onCreateTodo(todoData);
-    
+   
     // Reset form
     setFormData({
       title: '',
@@ -198,17 +312,17 @@ export const CreateTodoDialog: React.FC<CreateTodoDialogProps> = ({ onCreateTodo
     });
     setSubtasks([]);
     setShowAISuggestions(false);
-    
+   
     onOpenChange(false);
   };
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleAISuggestionApply = (suggestion: any) => {
+  const handleAISuggestionApply = (suggestion) => {
     if (suggestion.subtasks) {
-      setSubtasks(suggestion.subtasks.map((st: any, idx: number) => ({
+      setSubtasks(suggestion.subtasks.map((st, idx) => ({
         id: `ai-subtask-${idx}-${Date.now()}`,
         title: st.title,
         completed: false,
@@ -236,12 +350,6 @@ export const CreateTodoDialog: React.FC<CreateTodoDialogProps> = ({ onCreateTodo
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <Button className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Create Task
-        </Button>
-      </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
@@ -256,12 +364,20 @@ export const CreateTodoDialog: React.FC<CreateTodoDialogProps> = ({ onCreateTodo
                 <Brain className="h-4 w-4 mr-2" />
                 {showAISuggestions ? 'Hide' : 'Show'} AI Suggestions
               </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onOpenChange(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
           </DialogTitle>
         </DialogHeader>
-        
+       
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="title">Title *</Label>
               <Input
@@ -288,29 +404,24 @@ export const CreateTodoDialog: React.FC<CreateTodoDialogProps> = ({ onCreateTodo
               <div className="space-y-2">
                 <Label htmlFor="priority">Priority</Label>
                 <Select value={formData.priority} onValueChange={(value) => handleChange('priority', value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">
-                      <div className="flex items-center gap-2">
-                        <Flag className="h-4 w-4 text-green-600" />
-                        Low
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="medium">
-                      <div className="flex items-center gap-2">
-                        <Flag className="h-4 w-4 text-yellow-600" />
-                        Medium
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="high">
-                      <div className="flex items-center gap-2">
-                        <Flag className="h-4 w-4 text-red-600" />
-                        High
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
+                  <SelectItem value="low">
+                    <div className="flex items-center gap-2">
+                      <Flag className="h-4 w-4 text-green-600" />
+                      Low
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="medium">
+                    <div className="flex items-center gap-2">
+                      <Flag className="h-4 w-4 text-yellow-600" />
+                      Medium
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="high">
+                    <div className="flex items-center gap-2">
+                      <Flag className="h-4 w-4 text-red-600" />
+                      High
+                    </div>
+                  </SelectItem>
                 </Select>
               </div>
 
@@ -335,6 +446,7 @@ export const CreateTodoDialog: React.FC<CreateTodoDialogProps> = ({ onCreateTodo
                   type="date"
                   value={formData.start_date}
                   onChange={(e) => handleChange('start_date', e.target.value)}
+                  placeholder=""
                 />
               </div>
 
@@ -345,6 +457,7 @@ export const CreateTodoDialog: React.FC<CreateTodoDialogProps> = ({ onCreateTodo
                   type="date"
                   value={formData.due_date}
                   onChange={(e) => handleChange('due_date', e.target.value)}
+                  placeholder=""
                 />
               </div>
             </div>
@@ -352,25 +465,20 @@ export const CreateTodoDialog: React.FC<CreateTodoDialogProps> = ({ onCreateTodo
             <div className="space-y-2">
               <Label htmlFor="assigned_to">Assign To</Label>
               <Select value={formData.assigned_to} onValueChange={(value) => handleChange('assigned_to', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select assignee" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">
+                <SelectItem value="">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Unassigned
+                  </div>
+                </SelectItem>
+                {mockUsers.map((user) => (
+                  <SelectItem key={user.id} value={user.email}>
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4" />
-                      Unassigned
+                      {user.name} ({user.email})
                     </div>
                   </SelectItem>
-                  {mockUsers.map((user) => (
-                    <SelectItem key={user.id} value={user.email}>
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        {user.name} ({user.email})
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+                ))}
               </Select>
             </div>
 
@@ -386,30 +494,30 @@ export const CreateTodoDialog: React.FC<CreateTodoDialogProps> = ({ onCreateTodo
 
             <div className="space-y-2">
               <Label>Subtasks</Label>
-              <SubtaskManager 
-                subtasks={subtasks} 
-                onSubtasksChange={setSubtasks} 
+              <SubtaskManager
+                subtasks={subtasks}
+                onSubtasksChange={setSubtasks}
               />
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button type="submit" className="flex-1" disabled={!formData.title.trim()}>
+              <Button onClick={(e) => handleSubmit(e)} className="flex-1">
                 Create Task
               </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => onOpenChange(false)}
               >
                 Cancel
               </Button>
             </div>
-          </form>
+          </div>
 
           {showAISuggestions && (
             <div className="space-y-4">
               <h3 className="text-lg font-medium">AI Task Assistant</h3>
-              <AITaskSuggestions 
+              <AITaskSuggestions
                 taskTitle={formData.title}
                 onApplySuggestion={handleAISuggestionApply}
               />
