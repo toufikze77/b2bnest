@@ -45,31 +45,34 @@ const SmartSearch = ({
   const categories = ['Legal Documents', 'Human Resources', 'Financial Forms', 'Operations'];
   const popularTags = ['Contract', 'Invoice', 'Agreement', 'Template', 'Report', 'Form'];
 
-  // Prevent focus during autofill
+  // Prevent focus during autofill - only for this search input
   useEffect(() => {
+    const inputElement = inputRef.current;
+    if (!inputElement) return;
+
     const handleAutofill = (e: Event) => {
-      setIsAutofilling(true);
-      // Reset after a short delay
-      setTimeout(() => setIsAutofilling(false), 100);
+      // Only handle autofill for this specific input
+      if (e.target === inputElement) {
+        setIsAutofilling(true);
+        setTimeout(() => setIsAutofilling(false), 100);
+      }
     };
 
-    const inputElement = inputRef.current;
-    if (inputElement) {
-      inputElement.addEventListener('animationstart', handleAutofill);
-      inputElement.addEventListener('input', (e: Event) => {
-        const target = e.target as HTMLInputElement;
-        // Detect if this might be an autofill event
-        if (target.value && !document.hasFocus()) {
-          setIsAutofilling(true);
-          setTimeout(() => setIsAutofilling(false), 100);
-        }
-      });
-    }
+    const handleInput = (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      // Only handle for this specific input and detect autofill more accurately
+      if (target === inputElement && target.value && !document.hasFocus()) {
+        setIsAutofilling(true);
+        setTimeout(() => setIsAutofilling(false), 100);
+      }
+    };
+
+    inputElement.addEventListener('animationstart', handleAutofill);
+    inputElement.addEventListener('input', handleInput);
 
     return () => {
-      if (inputElement) {
-        inputElement.removeEventListener('animationstart', handleAutofill);
-      }
+      inputElement.removeEventListener('animationstart', handleAutofill);
+      inputElement.removeEventListener('input', handleInput);
     };
   }, []);
 
@@ -131,8 +134,11 @@ const SmartSearch = ({
   };
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    // Prevent focus behavior during autofill
-    if (isAutofilling) {
+    // Only handle focus for this specific search input
+    if (e.target !== inputRef.current) return;
+    
+    // Prevent focus behavior during autofill only for this search input
+    if (isAutofilling && e.target === inputRef.current) {
       e.preventDefault();
       if (e.target && e.target instanceof HTMLElement && 'blur' in e.target) {
         e.target.blur();
