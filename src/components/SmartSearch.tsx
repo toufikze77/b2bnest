@@ -134,7 +134,10 @@ const SmartSearch = ({
     // Prevent focus behavior during autofill
     if (isAutofilling) {
       e.preventDefault();
-      (e.target as HTMLInputElement).blur();
+      const target = e.target as HTMLInputElement;
+      if (target && target.blur) {
+        target.blur();
+      }
       return;
     }
     
