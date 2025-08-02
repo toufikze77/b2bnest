@@ -1,129 +1,44 @@
 import React, { useState } from 'react';
-import { Plus, Flag, Calendar, Users, Brain, X, Check } from 'lucide-react';
+import { Plus, Flag, Calendar as CalendarIcon, Users, Brain, X, Check } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
-// Mock components since we don't have access to shadcn/ui in this environment
-const Dialog = ({ open, onOpenChange, children }) => {
-  if (!open) return null;
+// DatePicker Component
+const DatePicker = ({ value, onChange, placeholder }) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
-        {children}
-      </div>
-    </div>
-  );
-};
-
-const DialogContent = ({ children, className }) => (
-  <div className={`p-6 ${className}`}>
-    {children}
-  </div>
-);
-
-const DialogHeader = ({ children }) => (
-  <div className="mb-6">
-    {children}
-  </div>
-);
-
-const DialogTitle = ({ children, className }) => (
-  <h2 className={`text-xl font-semibold ${className}`}>
-    {children}
-  </h2>
-);
-
-const DialogTrigger = ({ children, asChild }) => children;
-
-const Button = ({ children, onClick = (e) => {}, type = "button", variant = "default", size = "default", className = "", disabled = false }) => {
-  const baseClasses = "px-4 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500";
-  const variantClasses = {
-    default: "bg-blue-600 text-white hover:bg-blue-700",
-    outline: "border border-gray-300 text-gray-700 hover:bg-gray-50",
-    ghost: "text-gray-600 hover:bg-gray-100",
-    destructive: "bg-red-600 text-white hover:bg-red-700"
-  };
-  const sizeClasses = {
-    default: "px-4 py-2",
-    sm: "px-3 py-1 text-sm",
-    lg: "px-6 py-3 text-lg"
-  };
-
-  return (
-    <button
-      type={type as "button" | "submit" | "reset"}
-      onClick={onClick}
-      disabled={disabled}
-      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-    >
-      {children}
-    </button>
-  );
-};
-
-const Input = ({ value, onChange, placeholder = "", type = "text", required = false, min = "", className = "", id = "", onKeyPress = (e) => {} }) => (
-  <input
-    id={id}
-    type={type}
-    value={value}
-    onChange={onChange}
-    onKeyPress={onKeyPress}
-    placeholder={placeholder}
-    required={required}
-    min={min}
-    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
-  />
-);
-
-const Label = ({ htmlFor = "", children }) => (
-  <label htmlFor={htmlFor} className="block text-sm font-medium text-gray-700 mb-1">
-    {children}
-  </label>
-);
-
-const Textarea = ({ value, onChange, placeholder, rows = 3, id }) => (
-  <textarea
-    id={id}
-    value={value}
-    onChange={onChange}
-    placeholder={placeholder}
-    rows={rows}
-    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-  />
-);
-
-const Select = ({ value, onValueChange, children }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-between"
-      >
-        <span>{value}</span>
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      {isOpen && (
-        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
-          {React.Children.map(children, child =>
-            React.cloneElement(child, { onSelect: (val) => { onValueChange(val); setIsOpen(false); } })
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            "w-full justify-start text-left font-normal",
+            !value && "text-muted-foreground"
           )}
-        </div>
-      )}
-    </div>
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {value ? format(new Date(value), "PPP") : <span>{placeholder}</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0 bg-white z-50" align="start">
+        <Calendar
+          mode="single"
+          selected={value ? new Date(value) : undefined}
+          onSelect={(date) => onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+          initialFocus
+          className="p-3 pointer-events-auto"
+        />
+      </PopoverContent>
+    </Popover>
   );
 };
-
-const SelectItem = ({ value, onSelect = (val) => {}, children }) => (
-  <button
-    type="button"
-    onClick={() => onSelect(value)}
-    className="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100"
-  >
-    {children}
-  </button>
-);
 
 // SubtaskManager Component
 const SubtaskManager = ({ subtasks, onSubtasksChange }) => {
@@ -159,7 +74,7 @@ const SubtaskManager = ({ subtasks, onSubtasksChange }) => {
           value={newSubtask}
           onChange={(e) => setNewSubtask(e.target.value)}
           placeholder="Add a subtask..."
-          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSubtask())}
+          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSubtask())}
         />
         <Button onClick={addSubtask} size="sm">
           <Plus className="h-4 w-4" />
@@ -271,7 +186,8 @@ export const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
     start_date: '',
     estimated_hours: '',
     labels: '',
-    assigned_to: ''
+    assigned_to: '',
+    phone: ''
   });
  
   const [subtasks, setSubtasks] = useState([]);
@@ -292,6 +208,7 @@ export const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
       estimated_hours: formData.estimated_hours ? parseInt(formData.estimated_hours) : undefined,
       labels: formData.labels.split(',').map(label => label.trim()).filter(Boolean),
       assigned_to: formData.assigned_to || undefined,
+      phone: formData.phone || undefined,
       subtasks: subtasks.length > 0 ? subtasks : undefined,
       completed: false,
       created_at: new Date().toISOString()
@@ -308,7 +225,8 @@ export const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
       start_date: '',
       estimated_hours: '',
       labels: '',
-      assigned_to: ''
+      assigned_to: '',
+      phone: ''
     });
     setSubtasks([]);
     setShowAISuggestions(false);
@@ -404,24 +322,29 @@ export const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
               <div className="space-y-2">
                 <Label htmlFor="priority">Priority</Label>
                 <Select value={formData.priority} onValueChange={(value) => handleChange('priority', value)}>
-                  <SelectItem value="low">
-                    <div className="flex items-center gap-2">
-                      <Flag className="h-4 w-4 text-green-600" />
-                      Low
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="medium">
-                    <div className="flex items-center gap-2">
-                      <Flag className="h-4 w-4 text-yellow-600" />
-                      Medium
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="high">
-                    <div className="flex items-center gap-2">
-                      <Flag className="h-4 w-4 text-red-600" />
-                      High
-                    </div>
-                  </SelectItem>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">
+                      <div className="flex items-center gap-2">
+                        <Flag className="h-4 w-4 text-green-600" />
+                        Low
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="medium">
+                      <div className="flex items-center gap-2">
+                        <Flag className="h-4 w-4 text-yellow-600" />
+                        Medium
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="high">
+                      <div className="flex items-center gap-2">
+                        <Flag className="h-4 w-4 text-red-600" />
+                        High
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
                 </Select>
               </div>
 
@@ -441,23 +364,19 @@ export const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="start_date">Start Date</Label>
-                <Input
-                  id="start_date"
-                  type="date"
+                <DatePicker
                   value={formData.start_date}
-                  onChange={(e) => handleChange('start_date', e.target.value)}
-                  placeholder=""
+                  onChange={(date) => handleChange('start_date', date)}
+                  placeholder="Pick start date"
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="due_date">Due Date</Label>
-                <Input
-                  id="due_date"
-                  type="date"
+                <DatePicker
                   value={formData.due_date}
-                  onChange={(e) => handleChange('due_date', e.target.value)}
-                  placeholder=""
+                  onChange={(date) => handleChange('due_date', date)}
+                  placeholder="Pick due date"
                 />
               </div>
             </div>
@@ -465,20 +384,25 @@ export const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
             <div className="space-y-2">
               <Label htmlFor="assigned_to">Assign To</Label>
               <Select value={formData.assigned_to} onValueChange={(value) => handleChange('assigned_to', value)}>
-                <SelectItem value="">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Unassigned
-                  </div>
-                </SelectItem>
-                {mockUsers.map((user) => (
-                  <SelectItem key={user.id} value={user.email}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select assignee" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4" />
-                      {user.name} ({user.email})
+                      Unassigned
                     </div>
                   </SelectItem>
-                ))}
+                  {mockUsers.map((user) => (
+                    <SelectItem key={user.id} value={user.email}>
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        {user.name} ({user.email})
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </div>
 
@@ -489,6 +413,17 @@ export const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
                 value={formData.labels}
                 onChange={(e) => handleChange('labels', e.target.value)}
                 placeholder="bug, feature, urgent..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Contact Phone</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => handleChange('phone', e.target.value)}
+                placeholder="Enter contact phone number..."
               />
             </div>
 
@@ -528,3 +463,62 @@ export const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
     </Dialog>
   );
 };
+
+// Demo wrapper to show the dialog
+export default function CreateTodoDemo() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [todos, setTodos] = useState([]);
+
+  const handleCreateTodo = (todoData) => {
+    setTodos(prev => [...prev, todoData]);
+    console.log('Created todo:', todoData);
+  };
+
+  return (
+    <div className="p-8 space-y-4">
+      <h1 className="text-2xl font-bold">Project Management Hub</h1>
+     
+      <Button onClick={() => setIsOpen(true)}>
+        <Plus className="h-4 w-4 mr-2" />
+        Create Task
+      </Button>
+
+      <CreateTodoDialog
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        onCreateTodo={handleCreateTodo}
+      />
+
+      {todos.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-4">Created Tasks:</h2>
+          <div className="space-y-2">
+            {todos.map((todo) => (
+              <div key={todo.id} className="p-4 border rounded-lg">
+                <h3 className="font-medium">{todo.title}</h3>
+                <p className="text-sm text-gray-600">{todo.description}</p>
+                <div className="flex gap-4 text-sm text-gray-500 mt-2">
+                  <span>Priority: {todo.priority}</span>
+                  {todo.due_date && <span>Due: {todo.due_date}</span>}
+                  {todo.estimated_hours && <span>Est: {todo.estimated_hours}h</span>}
+                  {todo.assigned_to && <span>Assigned: {todo.assigned_to}</span>}
+                  {todo.phone && <span>Phone: {todo.phone}</span>}
+                </div>
+                {todo.subtasks && (
+                  <div className="mt-2">
+                    <p className="text-sm font-medium">Subtasks:</p>
+                    <ul className="text-sm text-gray-600 ml-4">
+                      {todo.subtasks.map((st) => (
+                        <li key={st.id}>• {st.title} ({st.estimated_hours}h)</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
