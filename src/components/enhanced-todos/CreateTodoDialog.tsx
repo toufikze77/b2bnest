@@ -399,7 +399,7 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
                   <SelectValue placeholder="Select assignee" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border shadow-md z-[100]">
-                  <SelectItem value="">
+                  <SelectItem value="unassigned">
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4" />
                       Unassigned
