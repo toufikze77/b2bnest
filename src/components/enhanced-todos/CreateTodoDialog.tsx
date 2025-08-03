@@ -187,8 +187,8 @@ const AITaskSuggestions = ({ taskTitle, onApplySuggestion }) => {
   );
 };
 
-// Main Component - exported as named export
-export const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
+// Main Component - exported as default export
+const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -475,8 +475,11 @@ export const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
   );
 };
 
-// Demo wrapper to show the dialog
-export default function CreateTodoDemo() {
+// Export CreateTodoDialog as default
+export default CreateTodoDialog;
+
+// Demo wrapper component for testing
+export function CreateTodoDemo() {
   const [isOpen, setIsOpen] = useState(false);
   const [todos, setTodos] = useState([]);
 

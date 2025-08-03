@@ -8,7 +8,7 @@ import { Filter, Search, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import TodoItem from './enhanced-todos/TodoItem';
-import { CreateTodoDialog } from './enhanced-todos/CreateTodoDialog';
+import CreateTodoDialog from './enhanced-todos/CreateTodoDialog';
 import { PlanUpgradeDialog } from './enhanced-todos/PlanUpgradeDialog';
 import { toast } from '@/hooks/use-toast';
 
