@@ -1383,12 +1383,14 @@ export type Database = {
           created_at: string | null
           currency_code: string | null
           date_format: string | null
+          display_name: string | null
           email: string | null
           experience_years: number | null
           full_name: string | null
           headline: string | null
           id: string
           industry: string | null
+          is_active: boolean | null
           is_public: boolean | null
           is_trial_active: boolean | null
           language_code: string | null
@@ -1414,12 +1416,14 @@ export type Database = {
           created_at?: string | null
           currency_code?: string | null
           date_format?: string | null
+          display_name?: string | null
           email?: string | null
           experience_years?: number | null
           full_name?: string | null
           headline?: string | null
           id: string
           industry?: string | null
+          is_active?: boolean | null
           is_public?: boolean | null
           is_trial_active?: boolean | null
           language_code?: string | null
@@ -1445,12 +1449,14 @@ export type Database = {
           created_at?: string | null
           currency_code?: string | null
           date_format?: string | null
+          display_name?: string | null
           email?: string | null
           experience_years?: number | null
           full_name?: string | null
           headline?: string | null
           id?: string
           industry?: string | null
+          is_active?: boolean | null
           is_public?: boolean | null
           is_trial_active?: boolean | null
           language_code?: string | null

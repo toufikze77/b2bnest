@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Flag, Calendar as CalendarIcon, Users, Brain, X, Check } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 // Fixed DatePicker Component
 const DatePicker = ({ value, onChange, placeholder, id }) => {
@@ -204,6 +205,37 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
  
   const [subtasks, setSubtasks] = useState([]);
   const [showAISuggestions, setShowAISuggestions] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // Fetch available users from Supabase
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoadingUsers(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, display_name, email, full_name')
+          .eq('is_active', true)
+          .order('display_name');
+
+        if (error) {
+          console.error('Error fetching users:', error);
+          return;
+        }
+
+        setAvailableUsers(data || []);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    if (isOpen) {
+      fetchUsers();
+    }
+  }, [isOpen]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -265,13 +297,6 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
     }
   };
 
-  // Mock user list for assignment
-  const mockUsers = [
-    { id: 'user1', name: 'John Doe', email: 'john@example.com' },
-    { id: 'user2', name: 'Jane Smith', email: 'jane@example.com' },
-    { id: 'user3', name: 'Mike Johnson', email: 'mike@example.com' },
-    { id: 'user4', name: 'Sarah Wilson', email: 'sarah@example.com' }
-  ];
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -403,14 +428,23 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
                       Unassigned
                     </div>
                   </SelectItem>
-                  {mockUsers.map((user) => (
-                    <SelectItem key={user.id} value={user.email}>
+                  {loadingUsers ? (
+                    <SelectItem value="loading" disabled>
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4" />
-                        {user.name} ({user.email})
+                        Loading users...
                       </div>
                     </SelectItem>
-                  ))}
+                  ) : (
+                    availableUsers.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          {user.display_name || user.full_name || user.email} ({user.email})
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
