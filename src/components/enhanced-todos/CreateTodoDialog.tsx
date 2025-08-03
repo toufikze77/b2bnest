@@ -27,7 +27,7 @@ const DatePicker = ({ value, onChange, placeholder }) => {
           {value ? format(new Date(value), "PPP") : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0 bg-background border shadow-md z-[200]" align="start">
+      <PopoverContent className="w-auto p-0 bg-background border shadow-md z-[200] pointer-events-auto" align="start">
         <Calendar
           mode="single"
           selected={value ? new Date(value) : undefined}
