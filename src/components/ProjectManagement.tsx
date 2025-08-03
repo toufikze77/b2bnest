@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import SubscriptionUpgrade from './SubscriptionUpgrade';
+import CreateTodoDialog from './enhanced-todos/CreateTodoDialog';
 import { 
   Plus, 
   Calendar as CalendarIcon, 
@@ -347,6 +348,44 @@ const ProjectManagement = () => {
     }
   }, [user, canAccessPM]);
 
+  // Handle creating new tasks
+  const handleCreateTask = (taskData: any) => {
+    const newTask: Task = {
+      id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      title: taskData.title,
+      description: taskData.description || '',
+      status: 'todo',
+      priority: taskData.priority || 'medium',
+      assignee: taskData.assigned_to || 'Unassigned',
+      dueDate: taskData.due_date ? new Date(taskData.due_date) : null,
+      project: taskData.project || projects[0]?.name || 'General',
+      tags: taskData.labels || [],
+      estimatedHours: taskData.estimated_hours,
+      subtasks: taskData.subtasks || [],
+      progress: 0,
+      comments: []
+    };
+
+    setTasks(prev => [...prev, newTask]);
+    
+    // Add activity log
+    const newActivity: ActivityLog = {
+      id: `activity-${Date.now()}`,
+      type: 'task_created',
+      description: `Created new task: ${newTask.title}`,
+      user: user?.email || 'Unknown User',
+      timestamp: new Date(),
+      projectId: newTask.project,
+      taskId: newTask.id
+    };
+    setActivityLogs(prev => [newActivity, ...prev]);
+
+    toast({
+      title: "Task Created",
+      description: `Successfully created task: ${newTask.title}`,
+    });
+  };
+
   if (!canAccessPM) {
     return (
       <div className="max-w-4xl mx-auto p-6">
@@ -387,6 +426,59 @@ const ProjectManagement = () => {
     const matchesProject = selectedProject === 'all' || task.project === selectedProject;
     return matchesSearch && matchesProject;
   });
+
+  // Handle task status updates
+  const handleTaskStatusUpdate = (taskId: string, newStatus: string) => {
+    setTasks(prev => prev.map(task => {
+      if (task.id === taskId) {
+        const updatedTask = { ...task, status: newStatus as any };
+        
+        // Add activity log
+        const activity: ActivityLog = {
+          id: `activity-${Date.now()}`,
+          type: 'task_updated',
+          description: `Task "${task.title}" moved to ${newStatus}`,
+          user: user?.email || 'Unknown User',
+          timestamp: new Date(),
+          projectId: task.project,
+          taskId: task.id
+        };
+        setActivityLogs(prev => [activity, ...prev]);
+        
+        return updatedTask;
+      }
+      return task;
+    }));
+    
+    toast({
+      title: "Task Updated",
+      description: `Task status changed to ${newStatus}`,
+    });
+  };
+
+  // Handle task deletion
+  const handleTaskDelete = (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      setTasks(prev => prev.filter(t => t.id !== taskId));
+      
+      const activity: ActivityLog = {
+        id: `activity-${Date.now()}`,
+        type: 'task_updated',
+        description: `Task "${task.title}" was deleted`,
+        user: user?.email || 'Unknown User',
+        timestamp: new Date(),
+        projectId: task.project,
+        taskId: task.id
+      };
+      setActivityLogs(prev => [activity, ...prev]);
+      
+      toast({
+        title: "Task Deleted",
+        description: `Task "${task.title}" has been deleted`,
+      });
+    }
+  };
 
   const EnhancedKanbanBoard = () => (
     <div className="space-y-6">
@@ -432,13 +524,24 @@ const ProjectManagement = () => {
               {filteredTasks
                 .filter(task => task.status === column.id)
                 .map(task => (
-                  <Card key={task.id} className="cursor-pointer hover:shadow-lg transition-all hover-scale">
+                  <Card 
+                    key={task.id} 
+                    className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]"
+                    onClick={() => handleTaskStatusUpdate(task.id, column.id)}
+                  >
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-2">
                         <h4 className="font-medium text-sm">{task.title}</h4>
                         <div className="flex items-center gap-1">
                           <div className={`w-2 h-2 rounded-full ${priorityColors[task.priority]}`}></div>
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleTaskDelete(task.id);
+                            }}
+                          >
                             <MoreHorizontal className="w-3 h-3" />
                           </Button>
                         </div>
@@ -502,11 +605,13 @@ const ProjectManagement = () => {
                           )}
                         </div>
                         
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
                           {task.dueDate && (
-                            <div className="flex items-center gap-1 text-xs text-gray-500">
-                              <CalendarIcon className="w-3 h-3" />
-                              {format(task.dueDate, 'MMM dd')}
+                            <div className="flex items-center gap-1">
+                              <CalendarIcon className="w-3 h-3 text-gray-400" />
+                              <span className="text-xs text-gray-500">
+                                {format(task.dueDate, 'MMM dd')}
+                              </span>
                             </div>
                           )}
                           <Avatar className="w-6 h-6">
@@ -1459,94 +1564,12 @@ const ProjectManagement = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Enhanced Create Task Modal */}
-      <Dialog open={showCreateTask} onOpenChange={setShowCreateTask}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Create New Task</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-4">
-              <Input placeholder="Task title" />
-              <Textarea placeholder="Detailed description" />
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map(project => (
-                    <SelectItem key={project.id} value={project.name}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="grid grid-cols-2 gap-2">
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Assignee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="john">John Doe</SelectItem>
-                    <SelectItem value="jane">Jane Smith</SelectItem>
-                    <SelectItem value="mike">Mike Johnson</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <Input placeholder="Estimated hours" type="number" />
-              <Input placeholder="Tags (comma separated)" />
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start">
-                    <CalendarIcon className="w-4 h-4 mr-2" />
-                    Pick due date
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar mode="single" />
-                </PopoverContent>
-              </Popover>
-              
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Add Subtasks</p>
-                <div className="space-y-2">
-                  <Input placeholder="Subtask 1" />
-                  <Input placeholder="Subtask 2" />
-                  <Button variant="outline" size="sm">
-                    <Plus className="w-3 h-3 mr-1" />
-                    Add Subtask
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex gap-2 pt-4">
-            <Button className="flex-1">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Task
-            </Button>
-            <Button variant="outline">
-              <Brain className="w-4 h-4 mr-2" />
-              AI Suggestions
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Enhanced Create Task Modal using CreateTodoDialog */}
+      <CreateTodoDialog
+        isOpen={showCreateTask}
+        onOpenChange={setShowCreateTask}
+        onCreateTodo={handleCreateTask}
+      />
 
       {/* Automation Builder Modal */}
       <Dialog open={showAutomationBuilder} onOpenChange={setShowAutomationBuilder}>
