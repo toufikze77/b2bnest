@@ -190,7 +190,7 @@ const AITaskSuggestions = ({ taskTitle, onApplySuggestion }) => {
 };
 
 // Main Component - exported as default export
-const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
+const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -207,6 +207,38 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
   const [showAISuggestions, setShowAISuggestions] = useState(false);
   const [availableUsers, setAvailableUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // Populate form when editing existing task
+  useEffect(() => {
+    if (editTask) {
+      setFormData({
+        title: editTask.title || '',
+        description: editTask.description || '',
+        priority: editTask.priority || 'medium',
+        due_date: editTask.due_date || '',
+        start_date: editTask.start_date || '',
+        estimated_hours: editTask.estimated_hours ? String(editTask.estimated_hours) : '',
+        labels: editTask.labels ? editTask.labels.join(', ') : '',
+        assigned_to: editTask.assigned_to || '',
+        phone: editTask.phone || ''
+      });
+      setSubtasks(editTask.subtasks || []);
+    } else {
+      // Reset form for new task
+      setFormData({
+        title: '',
+        description: '',
+        priority: 'medium',
+        due_date: '',
+        start_date: '',
+        estimated_hours: '',
+        labels: '',
+        assigned_to: '',
+        phone: ''
+      });
+      setSubtasks([]);
+    }
+  }, [editTask]);
 
   // Fetch available users from Supabase
   useEffect(() => {
@@ -303,7 +335,7 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            Create New Task
+            {editTask ? 'Edit Task' : 'Create New Task'}
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -480,7 +512,7 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
 
             <div className="flex gap-2 pt-4">
               <Button onClick={(e) => handleSubmit(e)} className="flex-1">
-                Create Task
+                {editTask ? 'Update Task' : 'Create Task'}
               </Button>
               <Button
                 type="button"
