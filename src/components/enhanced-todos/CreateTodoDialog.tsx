@@ -210,7 +210,6 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
     if (!formData.title.trim()) return;
 
     const todoData = {
-      id: Date.now().toString(),
       title: formData.title.trim(),
       description: formData.description.trim() || undefined,
       priority: formData.priority,
@@ -218,11 +217,7 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
       start_date: formData.start_date || undefined,
       estimated_hours: formData.estimated_hours ? parseInt(formData.estimated_hours) : undefined,
       labels: formData.labels.split(',').map(label => label.trim()).filter(Boolean),
-      assigned_to: formData.assigned_to === 'unassigned' ? undefined : formData.assigned_to,
-      status: 'todo',
-      user_id: undefined, // Will be set by the backend
-      reporter_id: undefined, // Will be set by the backend
-      created_at: new Date().toISOString()
+      assigned_to: formData.assigned_to === 'unassigned' ? undefined : formData.assigned_to
     };
 
     onCreateTodo(todoData);
