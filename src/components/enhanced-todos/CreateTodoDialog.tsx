@@ -27,7 +27,7 @@ const DatePicker = ({ value, onChange, placeholder }) => {
           {value ? format(new Date(value), "PPP") : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0 bg-background border shadow-md z-[100]" align="start">
+      <PopoverContent className="w-auto p-0 bg-background border shadow-md z-[200]" align="start">
         <Calendar
           mode="single"
           selected={value ? new Date(value) : undefined}
@@ -331,7 +331,7 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-background border shadow-md z-[100]">
+                  <SelectContent className="bg-background border shadow-md z-[200]">
                     <SelectItem value="low">
                       <div className="flex items-center gap-2">
                         <Flag className="h-4 w-4 text-green-600" />
@@ -393,7 +393,7 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
                 <SelectTrigger>
                   <SelectValue placeholder="Select assignee" />
                 </SelectTrigger>
-                <SelectContent className="bg-background border shadow-md z-[100]">
+                <SelectContent className="bg-background border shadow-md z-[200]">
                   <SelectItem value="unassigned">
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4" />
