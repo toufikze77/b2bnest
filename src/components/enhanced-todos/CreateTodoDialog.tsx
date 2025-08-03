@@ -1,37 +1,284 @@
-import React, { useState } from 'react';
-import { Plus, Flag, Calendar as CalendarIcon, Users, Brain, X, Check } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
+import React, { useState, useEffect } from 'react';
+import { Plus, Calendar, Clock, User, AlertCircle, CheckCircle2, Circle, Trash2, Edit3, Filter, Search, BarChart3, Users, Target, Lightbulb } from 'lucide-react';
 
-// DatePicker Component
+// UI Components
+const Button = ({ children, onClick, variant = "default", size = "default", className = "", disabled = false, asChild = false, ...props }) => {
+  const baseClasses = "inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50";
+  const variants = {
+    default: "bg-primary text-primary-foreground hover:bg-primary/90",
+    destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+    outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+    secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+    ghost: "hover:bg-accent hover:text-accent-foreground",
+    link: "text-primary underline-offset-4 hover:underline"
+  };
+  const sizes = {
+    default: "h-10 px-4 py-2",
+    sm: "h-9 rounded-md px-3",
+    lg: "h-11 rounded-md px-8",
+    icon: "h-10 w-10"
+  };
+  
+  if (asChild && React.isValidElement(children)) {
+    return React.cloneElement(children, {
+      className: `${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`,
+      onClick,
+      disabled,
+      ...props
+    });
+  }
+  
+  return (
+    <button 
+      className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
+      onClick={onClick}
+      disabled={disabled}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+
+const Dialog = ({ children, open, onOpenChange }) => {
+  if (!open) return null;
+  
+  return (
+    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
+      <div className="fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 rounded-lg">
+        {children}
+      </div>
+    </div>
+  );
+};
+
+const DialogContent = ({ children, className = "" }) => (
+  <div className={`grid gap-4 ${className}`}>
+    {children}
+  </div>
+);
+
+const DialogHeader = ({ children }) => (
+  <div className="flex flex-col space-y-1.5 text-center sm:text-left">
+    {children}
+  </div>
+);
+
+const DialogTitle = ({ children }) => (
+  <h2 className="text-lg font-semibold leading-none tracking-tight">
+    {children}
+  </h2>
+);
+
+const DialogFooter = ({ children }) => (
+  <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
+    {children}
+  </div>
+);
+
+const Input = ({ className = "", ...props }) => (
+  <input 
+    className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+    {...props}
+  />
+);
+
+const Textarea = ({ className = "", ...props }) => (
+  <textarea 
+    className={`flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+    {...props}
+  />
+);
+
+const Select = ({ children, value, onValueChange }) => {
+  const [open, setOpen] = useState(false);
+  
+  return (
+    <div className="relative">
+      <button
+        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+        onClick={() => setOpen(!open)}
+      >
+        <span>{value || "Select option..."}</span>
+        <svg className="h-4 w-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute top-full mt-1 w-full z-50 rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+          {React.Children.map(children, child => 
+            React.cloneElement(child, { 
+              onSelect: (val) => {
+                onValueChange(val);
+                setOpen(false);
+              }
+            })
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const SelectItem = ({ children, value, onSelect }) => (
+  <div 
+    className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+    onClick={() => onSelect(value)}
+  >
+    {children}
+  </div>
+);
+
+const Badge = ({ children, variant = "default", className = "" }) => {
+  const variants = {
+    default: "bg-primary text-primary-foreground",
+    secondary: "bg-secondary text-secondary-foreground",
+    destructive: "bg-destructive text-destructive-foreground",
+    outline: "text-foreground border border-input"
+  };
+  
+  return (
+    <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors ${variants[variant]} ${className}`}>
+      {children}
+    </div>
+  );
+};
+
+const Popover = ({ children }) => {
+  const [open, setOpen] = useState(false);
+  
+  return (
+    <div className="relative">
+      {React.Children.map(children, child => {
+        if (child.type === PopoverTrigger) {
+          return React.cloneElement(child, { onClick: () => setOpen(!open) });
+        }
+        if (child.type === PopoverContent && open) {
+          return (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+              {React.cloneElement(child, { onClose: () => setOpen(false) })}
+            </>
+          );
+        }
+        return null;
+      })}
+    </div>
+  );
+};
+
+const PopoverTrigger = ({ children, asChild, onClick }) => {
+  if (asChild && React.isValidElement(children)) {
+    return React.cloneElement(children, { onClick });
+  }
+  return <div onClick={onClick}>{children}</div>;
+};
+
+const PopoverContent = ({ children, className = "", align = "center", onClose }) => (
+  <div className={`absolute top-full mt-1 z-50 rounded-md border bg-popover p-0 text-popover-foreground shadow-md ${align === 'start' ? 'left-0' : 'left-1/2 -translate-x-1/2'} ${className}`}>
+    {children}
+  </div>
+);
+
+const CalendarComponent = ({ mode, selected, onSelect, initialFocus, className = "" }) => {
+  const today = new Date();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+  
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
+  
+  const days = [];
+  
+  // Add empty cells for days before the first day of the month
+  for (let i = 0; i < firstDayOfMonth; i++) {
+    days.push(<div key={`empty-${i}`} className="p-2"></div>);
+  }
+  
+  // Add days of the month
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(currentYear, currentMonth, day);
+    const isSelected = selected && formatDate(date, 'yyyy-MM-dd') === formatDate(selected, 'yyyy-MM-dd');
+    const isToday = formatDate(date, 'yyyy-MM-dd') === formatDate(today, 'yyyy-MM-dd');
+    
+    days.push(
+      <button
+        key={day}
+        className={`p-2 text-sm rounded-md hover:bg-accent hover:text-accent-foreground ${
+          isSelected ? 'bg-primary text-primary-foreground' : ''
+        } ${isToday ? 'bg-accent' : ''}`}
+        onClick={() => onSelect(date)}
+      >
+        {day}
+      </button>
+    );
+  }
+  
+  return (
+    <div className={`p-3 ${className}`}>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-medium">
+          {formatMonthYear(new Date(currentYear, currentMonth))}
+        </h3>
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+          <div key={day} className="p-2 text-xs font-medium text-center text-muted-foreground">
+            {day}
+          </div>
+        ))}
+        {days}
+      </div>
+    </div>
+  );
+};
+
+// Date formatting utility functions
+const formatDate = (date, formatType = 'short') => {
+  if (!date) return '';
+  const d = new Date(date);
+  
+  if (formatType === 'PPP') {
+    return d.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  }
+  
+  if (formatType === 'yyyy-MM-dd') {
+    return d.toISOString().split('T')[0];
+  }
+  
+  return d.toLocaleDateString();
+};
+
+const formatMonthYear = (date) => {
+  return date.toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'long' 
+  });
+};
+
+// Fixed DatePicker Component
 const DatePicker = ({ value, onChange, placeholder }) => {
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className={cn(
-            "w-full justify-start text-left font-normal",
-            !value && "text-muted-foreground"
-          )}
+          className="w-full justify-start text-left font-normal"
         >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? format(new Date(value), "PPP") : <span>{placeholder}</span>}
+          <Calendar className="mr-2 h-4 w-4" />
+          {value ? formatDate(value, 'PPP') : <span className="text-muted-foreground">{placeholder}</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0 bg-background border shadow-md z-[100]" align="start">
-        <Calendar
+        <CalendarComponent
           mode="single"
           selected={value ? new Date(value) : undefined}
-          onSelect={(date) => onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+          onSelect={(date) => onChange(date ? formatDate(date, 'yyyy-MM-dd') : '')}
           initialFocus
           className="p-3 pointer-events-auto"
         />
@@ -40,7 +287,7 @@ const DatePicker = ({ value, onChange, placeholder }) => {
   );
 };
 
-// SubtaskManager Component
+// Fixed SubtaskManager Component
 const SubtaskManager = ({ subtasks, onSubtasksChange }) => {
   const [newSubtask, setNewSubtask] = useState('');
 
@@ -58,12 +305,12 @@ const SubtaskManager = ({ subtasks, onSubtasksChange }) => {
   };
 
   const removeSubtask = (id) => {
-    onSubtasksChange(subtasks.filter(st => st.id !== id));
+    onSubtasksChange(subtasks.filter(subtask => subtask.id !== id));
   };
 
-  const updateSubtask = (id, field, value) => {
-    onSubtasksChange(subtasks.map(st =>
-      st.id === id ? { ...st, [field]: value } : st
+  const toggleSubtask = (id) => {
+    onSubtasksChange(subtasks.map(subtask => 
+      subtask.id === id ? { ...subtask, completed: !subtask.completed } : subtask
     ));
   };
 
@@ -71,111 +318,187 @@ const SubtaskManager = ({ subtasks, onSubtasksChange }) => {
     <div className="space-y-3">
       <div className="flex gap-2">
         <Input
+          placeholder="Add a subtask..."
           value={newSubtask}
           onChange={(e) => setNewSubtask(e.target.value)}
-          placeholder="Add a subtask..."
-          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSubtask())}
+          onKeyPress={(e) => e.key === 'Enter' && addSubtask()}
+          className="flex-1"
         />
         <Button onClick={addSubtask} size="sm">
           <Plus className="h-4 w-4" />
         </Button>
       </div>
-     
-      {subtasks.map((subtask) => (
-        <div key={subtask.id} className="flex items-center gap-2 p-2 border rounded">
-          <Input
-            value={subtask.title}
-            onChange={(e) => updateSubtask(subtask.id, 'title', e.target.value)}
-            className="flex-1"
-            placeholder="Subtask title"
-          />
-          <Input
-            type="number"
-            value={subtask.estimated_hours}
-            onChange={(e) => updateSubtask(subtask.id, 'estimated_hours', parseInt(e.target.value) || 0)}
-            className="w-20"
-            min="0"
-            placeholder="Hours"
-          />
-          <Button
-            onClick={() => removeSubtask(subtask.id)}
-            variant="destructive"
-            size="sm"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+      
+      {subtasks.length > 0 && (
+        <div className="space-y-2">
+          {subtasks.map((subtask) => (
+            <div key={subtask.id} className="flex items-center gap-2 p-2 border rounded">
+              <button
+                onClick={() => toggleSubtask(subtask.id)}
+                className="flex-shrink-0"
+              >
+                {subtask.completed ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                ) : (
+                  <Circle className="h-4 w-4 text-gray-400" />
+                )}
+              </button>
+              <span className={`flex-1 text-sm ${subtask.completed ? 'line-through text-gray-500' : ''}`}>
+                {subtask.title}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => removeSubtask(subtask.id)}
+                className="text-red-500 hover:text-red-700"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   );
 };
 
-// AITaskSuggestions Component
-const AITaskSuggestions = ({ taskTitle, onApplySuggestion }) => {
+// Fixed AI Suggestions Component
+const AISuggestions = ({ taskTitle, onApplySuggestion }) => {
   const [suggestions, setSuggestions] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const generateSuggestions = async () => {
-    if (!taskTitle.trim()) return;
+    if (!taskTitle.trim()) {
+      alert('Please enter a task title first');
+      return;
+    }
     
     setLoading(true);
     try {
-      // Simulate AI suggestions based on task title
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       const mockSuggestions = {
         subtasks: [
-          { title: `Research for: ${taskTitle}`, estimated_hours: 2 },
+          { title: `Research requirements for: ${taskTitle}`, estimated_hours: 2 },
           { title: `Plan implementation of: ${taskTitle}`, estimated_hours: 1 },
-          { title: `Execute: ${taskTitle}`, estimated_hours: 4 },
-          { title: `Review and test: ${taskTitle}`, estimated_hours: 1 }
+          { title: `Execute main work: ${taskTitle}`, estimated_hours: 4 },
+          { title: `Review and test: ${taskTitle}`, estimated_hours: 1 },
+          { title: `Document and finalize: ${taskTitle}`, estimated_hours: 1 }
         ],
-        estimated_hours: 8,
-        priority: taskTitle.toLowerCase().includes('urgent') || taskTitle.toLowerCase().includes('important') ? 'high' : 'medium',
-        assignee: 'john@example.com'
+        estimated_hours: 9,
+        priority: taskTitle.toLowerCase().includes('urgent') || taskTitle.toLowerCase().includes('important') ? 'high' : 
+                 taskTitle.toLowerCase().includes('low') || taskTitle.toLowerCase().includes('minor') ? 'low' : 'medium',
+        assignee: 'john@example.com',
+        tags: taskTitle.toLowerCase().includes('bug') ? ['bug', 'urgent'] : 
+              taskTitle.toLowerCase().includes('feature') ? ['feature', 'enhancement'] : 
+              ['task', 'general']
       };
+      
       setSuggestions(mockSuggestions);
     } catch (error) {
       console.error('Error generating suggestions:', error);
+      alert('Failed to generate suggestions. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="space-y-4">
-      <Button onClick={generateSuggestions} disabled={loading || !taskTitle.trim()}>
-        <Brain className="h-4 w-4 mr-2" />
-        {loading ? 'Generating...' : 'Generate AI Suggestions'}
-      </Button>
+  const applySuggestion = (type, value) => {
+    onApplySuggestion(type, value);
+  };
 
-      {suggestions && (
-        <div className="p-4 border rounded-lg bg-blue-50">
-          <h4 className="font-medium mb-3">AI Suggestions:</h4>
-         
-          <div className="space-y-3">
-            <div>
-              <p className="text-sm font-medium">Estimated Hours: {suggestions.estimated_hours}</p>
-              <p className="text-sm font-medium">Suggested Priority: {suggestions.priority}</p>
-              <p className="text-sm font-medium">Suggested Assignee: {suggestions.assignee}</p>
+  return (
+    <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+      <div className="flex items-center justify-between">
+        <h3 className="font-medium flex items-center gap-2">
+          <Lightbulb className="h-4 w-4" />
+          AI Suggestions
+        </h3>
+        <Button 
+          onClick={generateSuggestions} 
+          disabled={loading || !taskTitle.trim()}
+          size="sm"
+        >
+          {loading ? 'Generating...' : 'Get Suggestions'}
+        </Button>
+      </div>
+
+      {loading && (
+        <div className="text-center py-4">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-sm text-gray-500 mt-2">Analyzing task and generating suggestions...</p>
+        </div>
+      )}
+
+      {suggestions && !loading && (
+        <div className="space-y-3">
+          <div>
+            <h4 className="text-sm font-medium mb-2">Suggested Subtasks:</h4>
+            <div className="space-y-1">
+              {suggestions.subtasks.map((subtask, index) => (
+                <div key={index} className="flex items-center justify-between text-sm p-2 bg-white rounded border">
+                  <span>{subtask.title} ({subtask.estimated_hours}h)</span>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => applySuggestion('subtask', subtask)}
+                  >
+                    Add
+                  </Button>
+                </div>
+              ))}
             </div>
-           
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm font-medium mb-2">Suggested Subtasks:</p>
-              <ul className="text-sm space-y-1">
-                {suggestions.subtasks.map((st, idx) => (
-                  <li key={idx} className="flex justify-between">
-                    <span>{st.title}</span>
-                    <span className="text-gray-500">{st.estimated_hours}h</span>
-                  </li>
+              <h4 className="text-sm font-medium mb-1">Estimated Hours:</h4>
+              <div className="flex items-center justify-between">
+                <span className="text-sm">{suggestions.estimated_hours} hours</span>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => applySuggestion('hours', suggestions.estimated_hours)}
+                >
+                  Apply
+                </Button>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-medium mb-1">Priority:</h4>
+              <div className="flex items-center justify-between">
+                <Badge variant={suggestions.priority === 'high' ? 'destructive' : suggestions.priority === 'medium' ? 'default' : 'secondary'}>
+                  {suggestions.priority}
+                </Badge>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => applySuggestion('priority', suggestions.priority)}
+                >
+                  Apply
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-medium mb-1">Suggested Tags:</h4>
+            <div className="flex items-center justify-between">
+              <div className="flex gap-1">
+                {suggestions.tags.map((tag, index) => (
+                  <Badge key={index} variant="outline">{tag}</Badge>
                 ))}
-              </ul>
+              </div>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => applySuggestion('tags', suggestions.tags)}
+              >
+                Apply All
+              </Button>
             </div>
-           
-            <Button onClick={() => onApplySuggestion(suggestions)} size="sm">
-              <Check className="h-4 w-4 mr-2" />
-              Apply Suggestions
-            </Button>
           </div>
         </div>
       )}
@@ -183,349 +506,181 @@ const AITaskSuggestions = ({ taskTitle, onApplySuggestion }) => {
   );
 };
 
-// Main Component
-export const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
-  const [formData, setFormData] = useState({
+// Create Task Dialog Component
+const CreateTodoDialog = ({ open, onOpenChange, onCreateTodo }) => {
+  const [taskData, setTaskData] = useState({
     title: '',
     description: '',
     priority: 'medium',
     due_date: '',
-    start_date: '',
-    estimated_hours: '',
-    labels: '',
-    assigned_to: '',
-    phone: ''
+    assignee: '',
+    estimated_hours: 1,
+    tags: [],
+    subtasks: []
   });
- 
-  const [subtasks, setSubtasks] = useState([]);
-  const [showAISuggestions, setShowAISuggestions] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-   
-    if (!formData.title.trim()) return;
-
-    const todoData = {
-      id: Date.now().toString(),
-      title: formData.title.trim(),
-      description: formData.description.trim() || undefined,
-      priority: formData.priority,
-      due_date: formData.due_date || undefined,
-      start_date: formData.start_date || undefined,
-      estimated_hours: formData.estimated_hours ? parseInt(formData.estimated_hours) : undefined,
-      labels: formData.labels.split(',').map(label => label.trim()).filter(Boolean),
-      assigned_to: formData.assigned_to || undefined,
-      phone: formData.phone || undefined,
-      subtasks: subtasks.length > 0 ? subtasks : undefined,
-      completed: false,
-      created_at: new Date().toISOString()
-    };
-
-    onCreateTodo(todoData);
-   
-    // Reset form
-    setFormData({
+  const resetForm = () => {
+    setTaskData({
       title: '',
       description: '',
       priority: 'medium',
       due_date: '',
-      start_date: '',
-      estimated_hours: '',
-      labels: '',
-      assigned_to: '',
-      phone: ''
+      assignee: '',
+      estimated_hours: 1,
+      tags: [],
+      subtasks: []
     });
-    setSubtasks([]);
-    setShowAISuggestions(false);
-   
+  };
+
+  const handleSubmit = () => {
+    if (!taskData.title.trim()) {
+      alert('Please enter a task title');
+      return;
+    }
+
+    const newTask = {
+      ...taskData,
+      id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      status: 'todo',
+      created_at: new Date().toISOString(),
+      progress: 0
+    };
+
+    onCreateTodo(newTask);
+    resetForm();
     onOpenChange(false);
   };
 
-  const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleAISuggestion = (type, value) => {
+    switch (type) {
+      case 'subtask':
+        setTaskData(prev => ({
+          ...prev,
+          subtasks: [...prev.subtasks, value]
+        }));
+        break;
+      case 'hours':
+        setTaskData(prev => ({
+          ...prev,
+          estimated_hours: value
+        }));
+        break;
+      case 'priority':
+        setTaskData(prev => ({
+          ...prev,
+          priority: value
+        }));
+        break;
+      case 'tags':
+        setTaskData(prev => ({
+          ...prev,
+          tags: [...prev.tags, ...value.filter(tag => !prev.tags.includes(tag))]
+        }));
+        break;
+      default:
+        break;
+    }
   };
-
-  const handleAISuggestionApply = (suggestion) => {
-    if (suggestion.subtasks) {
-      setSubtasks(suggestion.subtasks.map((st, idx) => ({
-        id: `ai-subtask-${idx}-${Date.now()}`,
-        title: st.title,
-        completed: false,
-        estimated_hours: st.estimated_hours
-      })));
-    }
-    if (suggestion.estimated_hours) {
-      setFormData(prev => ({ ...prev, estimated_hours: suggestion.estimated_hours.toString() }));
-    }
-    if (suggestion.assignee) {
-      setFormData(prev => ({ ...prev, assigned_to: suggestion.assignee }));
-    }
-    if (suggestion.priority) {
-      setFormData(prev => ({ ...prev, priority: suggestion.priority }));
-    }
-  };
-
-  // Mock user list for assignment
-  const mockUsers = [
-    { id: 'user1', name: 'John Doe', email: 'john@example.com' },
-    { id: 'user2', name: 'Jane Smith', email: 'jane@example.com' },
-    { id: 'user3', name: 'Mike Johnson', email: 'mike@example.com' },
-    { id: 'user4', name: 'Sarah Wilson', email: 'sarah@example.com' }
-  ];
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            Create New Task
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowAISuggestions(!showAISuggestions)}
-              >
-                <Brain className="h-4 w-4 mr-2" />
-                {showAISuggestions ? 'Hide' : 'Show'} AI Suggestions
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => onOpenChange(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </DialogTitle>
+          <DialogTitle>Create New Task</DialogTitle>
         </DialogHeader>
-       
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => handleChange('title', e.target.value)}
-                placeholder="Enter task title..."
-                required
-              />
-            </div>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium">Task Title *</label>
+            <Input
+              placeholder="Enter task title..."
+              value={taskData.title}
+              onChange={(e) => setTaskData({...taskData, title: e.target.value})}
+            />
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => handleChange('description', e.target.value)}
-                placeholder="Describe the task..."
-                rows={3}
-              />
-            </div>
+          <div>
+            <label className="text-sm font-medium">Description</label>
+            <Textarea
+              placeholder="Enter task description..."
+              value={taskData.description}
+              onChange={(e) => setTaskData({...taskData, description: e.target.value})}
+            />
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="priority">Priority</Label>
-                <Select value={formData.priority} onValueChange={(value) => handleChange('priority', value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border shadow-md z-[100]">
-                    <SelectItem value="low">
-                      <div className="flex items-center gap-2">
-                        <Flag className="h-4 w-4 text-green-600" />
-                        Low
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="medium">
-                      <div className="flex items-center gap-2">
-                        <Flag className="h-4 w-4 text-yellow-600" />
-                        Medium
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="high">
-                      <div className="flex items-center gap-2">
-                        <Flag className="h-4 w-4 text-red-600" />
-                        High
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="estimated_hours">Estimated Hours</Label>
-                <Input
-                  id="estimated_hours"
-                  type="number"
-                  min="0"
-                  value={formData.estimated_hours}
-                  onChange={(e) => handleChange('estimated_hours', e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="start_date">Start Date</Label>
-                <DatePicker
-                  value={formData.start_date}
-                  onChange={(date) => handleChange('start_date', date)}
-                  placeholder="Pick start date"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="due_date">Due Date</Label>
-                <DatePicker
-                  value={formData.due_date}
-                  onChange={(date) => handleChange('due_date', date)}
-                  placeholder="Pick due date"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="assigned_to">Assign To</Label>
-              <Select value={formData.assigned_to} onValueChange={(value) => handleChange('assigned_to', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select assignee" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border shadow-md z-[100]">
-                  <SelectItem value="">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Unassigned
-                    </div>
-                  </SelectItem>
-                  {mockUsers.map((user) => (
-                    <SelectItem key={user.id} value={user.email}>
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        {user.name} ({user.email})
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium">Priority</label>
+              <Select 
+                value={taskData.priority} 
+                onValueChange={(value) => setTaskData({...taskData, priority: value})}
+              >
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="labels">Labels (comma-separated)</Label>
+            <div>
+              <label className="text-sm font-medium">Estimated Hours</label>
               <Input
-                id="labels"
-                value={formData.labels}
-                onChange={(e) => handleChange('labels', e.target.value)}
-                placeholder="bug, feature, urgent..."
+                type="number"
+                min="0.5"
+                step="0.5"
+                value={taskData.estimated_hours}
+                onChange={(e) => setTaskData({...taskData, estimated_hours: parseFloat(e.target.value) || 1})}
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">Contact Phone</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => handleChange('phone', e.target.value)}
-                placeholder="Enter contact phone number..."
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Subtasks</Label>
-              <SubtaskManager
-                subtasks={subtasks}
-                onSubtasksChange={setSubtasks}
-              />
-            </div>
-
-            <div className="flex gap-2 pt-4">
-              <Button onClick={(e) => handleSubmit(e)} className="flex-1">
-                Create Task
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
             </div>
           </div>
 
-          {showAISuggestions && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">AI Task Assistant</h3>
-              <AITaskSuggestions
-                taskTitle={formData.title}
-                onApplySuggestion={handleAISuggestionApply}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium">Due Date</label>
+              <DatePicker
+                value={taskData.due_date}
+                onChange={(date) => setTaskData({...taskData, due_date: date})}
+                placeholder="Select due date"
               />
             </div>
-          )}
+
+            <div>
+              <label className="text-sm font-medium">Assignee</label>
+              <Select 
+                value={taskData.assignee} 
+                onValueChange={(value) => setTaskData({...taskData, assignee: value})}
+              >
+                <SelectItem value="john@example.com">John Doe</SelectItem>
+                <SelectItem value="jane@example.com">Jane Smith</SelectItem>
+                <SelectItem value="mike@example.com">Mike Johnson</SelectItem>
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Subtasks</label>
+            <SubtaskManager
+              subtasks={taskData.subtasks}
+              onSubtasksChange={(subtasks) => setTaskData({...taskData, subtasks})}
+            />
+          </div>
+
+          <AISuggestions
+            taskTitle={taskData.title}
+            onApplySuggestion={handleAISuggestion}
+          />
         </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit}>
+            Create Task
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 };
 
-// Demo wrapper to show the dialog
-export default function CreateTodoDemo() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [todos, setTodos] = useState([]);
-
-  const handleCreateTodo = (todoData) => {
-    setTodos(prev => [...prev, todoData]);
-    console.log('Created todo:', todoData);
-  };
-
-  return (
-    <div className="p-8 space-y-4">
-      <h1 className="text-2xl font-bold">Project Management Hub</h1>
-     
-      <Button onClick={() => setIsOpen(true)}>
-        <Plus className="h-4 w-4 mr-2" />
-        Create Task
-      </Button>
-
-      <CreateTodoDialog
-        isOpen={isOpen}
-        onOpenChange={setIsOpen}
-        onCreateTodo={handleCreateTodo}
-      />
-
-      {todos.length > 0 && (
-        <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-4">Created Tasks:</h2>
-          <div className="space-y-2">
-            {todos.map((todo) => (
-              <div key={todo.id} className="p-4 border rounded-lg">
-                <h3 className="font-medium">{todo.title}</h3>
-                <p className="text-sm text-gray-600">{todo.description}</p>
-                <div className="flex gap-4 text-sm text-gray-500 mt-2">
-                  <span>Priority: {todo.priority}</span>
-                  {todo.due_date && <span>Due: {todo.due_date}</span>}
-                  {todo.estimated_hours && <span>Est: {todo.estimated_hours}h</span>}
-                  {todo.assigned_to && <span>Assigned: {todo.assigned_to}</span>}
-                  {todo.phone && <span>Phone: {todo.phone}</span>}
-                </div>
-                {todo.subtasks && (
-                  <div className="mt-2">
-                    <p className="text-sm font-medium">Subtasks:</p>
-                    <ul className="text-sm text-gray-600 ml-4">
-                      {todo.subtasks.map((st) => (
-                        <li key={st.id}>• {st.title} ({st.estimated_hours}h)</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+export default CreateTodoDialog;
