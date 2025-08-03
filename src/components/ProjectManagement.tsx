@@ -206,6 +206,8 @@ const ProjectManagement = () => {
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showAutomationBuilder, setShowAutomationBuilder] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [showEditTask, setShowEditTask] = useState(false);
 
   // Sample data with enhanced features - moved before conditional returns
   const [projects, setProjects] = useState<Project[]>([
@@ -534,16 +536,38 @@ const ProjectManagement = () => {
                         <h4 className="font-medium text-sm">{task.title}</h4>
                         <div className="flex items-center gap-1">
                           <div className={`w-2 h-2 rounded-full ${priorityColors[task.priority]}`}></div>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleTaskDelete(task.id);
-                            }}
-                          >
-                            <MoreHorizontal className="w-3 h-3" />
-                          </Button>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
+                                <MoreHorizontal className="w-3 h-3" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-40 p-1" align="end">
+                              <div className="space-y-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="w-full justify-start"
+                                  onClick={() => {
+                                    setEditingTask(task);
+                                    setShowEditTask(true);
+                                  }}
+                                >
+                                  <Edit className="w-3 h-3 mr-2" />
+                                  Edit
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="w-full justify-start text-red-600 hover:text-red-700"
+                                  onClick={() => handleTaskDelete(task.id)}
+                                >
+                                  <Trash2 className="w-3 h-3 mr-2" />
+                                  Delete
+                                </Button>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
                         </div>
                       </div>
                       
@@ -1564,12 +1588,30 @@ const ProjectManagement = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Enhanced Create Task Modal using CreateTodoDialog */}
+      {/* Enhanced Create Task Dialog */}
       <CreateTodoDialog
         isOpen={showCreateTask}
         onOpenChange={setShowCreateTask}
         onCreateTodo={handleCreateTask}
       />
+
+      {/* Edit Task Dialog */}
+      {editingTask && (
+        <CreateTodoDialog
+          isOpen={showEditTask}
+          onOpenChange={setShowEditTask}
+          onCreateTodo={(taskData) => {
+            setTasks(prev => prev.map(t => 
+              t.id === editingTask.id 
+                ? { ...editingTask, ...taskData }
+                : t
+            ));
+            setShowEditTask(false);
+            setEditingTask(null);
+            toast({ title: "Task Updated", description: "Task updated successfully." });
+          }}
+        />
+      )}
 
       {/* Automation Builder Modal */}
       <Dialog open={showAutomationBuilder} onOpenChange={setShowAutomationBuilder}>
