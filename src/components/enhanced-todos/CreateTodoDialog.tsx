@@ -12,11 +12,12 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 // Fixed DatePicker Component
-const DatePicker = ({ value, onChange, placeholder }) => {
+const DatePicker = ({ value, onChange, placeholder, id }) => {
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button
+          id={id}
           variant="outline"
           className={cn(
             "w-full justify-start text-left font-normal",
@@ -326,9 +327,9 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="priority">Priority</Label>
+                <Label htmlFor="task-priority">Priority</Label>
                 <Select value={formData.priority} onValueChange={(value) => handleChange('priority', value)}>
-                  <SelectTrigger>
+                  <SelectTrigger id="task-priority">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-background border shadow-md z-[200]">
@@ -369,8 +370,9 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="start_date">Start Date</Label>
+                <Label htmlFor="task-start-date">Start Date</Label>
                 <DatePicker
+                  id="task-start-date"
                   value={formData.start_date}
                   onChange={(date) => handleChange('start_date', date)}
                   placeholder="Pick start date"
@@ -378,8 +380,9 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="due_date">Due Date</Label>
+                <Label htmlFor="task-due-date">Due Date</Label>
                 <DatePicker
+                  id="task-due-date"
                   value={formData.due_date}
                   onChange={(date) => handleChange('due_date', date)}
                   placeholder="Pick due date"
@@ -388,9 +391,9 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="assigned_to">Assign To</Label>
+              <Label htmlFor="task-assignee">Assign To</Label>
               <Select value={formData.assigned_to} onValueChange={(value) => handleChange('assigned_to', value)}>
-                <SelectTrigger>
+                <SelectTrigger id="task-assignee">
                   <SelectValue placeholder="Select assignee" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border shadow-md z-[200]">
