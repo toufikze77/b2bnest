@@ -27,7 +27,7 @@ const DatePicker = ({ value, onChange, placeholder }) => {
           {value ? format(new Date(value), "PPP") : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0 bg-white z-50" align="start">
+      <PopoverContent className="w-auto p-0 bg-background border shadow-md z-[100]" align="start">
         <Calendar
           mode="single"
           selected={value ? new Date(value) : undefined}
@@ -47,7 +47,7 @@ const SubtaskManager = ({ subtasks, onSubtasksChange }) => {
   const addSubtask = () => {
     if (newSubtask.trim()) {
       const subtask = {
-        id: Date.now().toString(),
+        id: `subtask-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         title: newSubtask.trim(),
         completed: false,
         estimated_hours: 1
@@ -115,10 +115,14 @@ const AITaskSuggestions = ({ taskTitle, onApplySuggestion }) => {
   const [suggestions, setSuggestions] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const generateSuggestions = () => {
+  const generateSuggestions = async () => {
+    if (!taskTitle.trim()) return;
+    
     setLoading(true);
-    // Simulate AI suggestions based on task title
-    setTimeout(() => {
+    try {
+      // Simulate AI suggestions based on task title
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       const mockSuggestions = {
         subtasks: [
           { title: `Research for: ${taskTitle}`, estimated_hours: 2 },
@@ -131,8 +135,11 @@ const AITaskSuggestions = ({ taskTitle, onApplySuggestion }) => {
         assignee: 'john@example.com'
       };
       setSuggestions(mockSuggestions);
+    } catch (error) {
+      console.error('Error generating suggestions:', error);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -325,7 +332,7 @@ export const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border shadow-md z-[100]">
                     <SelectItem value="low">
                       <div className="flex items-center gap-2">
                         <Flag className="h-4 w-4 text-green-600" />
@@ -387,7 +394,7 @@ export const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange }) => {
                 <SelectTrigger>
                   <SelectValue placeholder="Select assignee" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background border shadow-md z-[100]">
                   <SelectItem value="">
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4" />
