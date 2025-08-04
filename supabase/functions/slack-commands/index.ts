@@ -1,0 +1,236 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
+import { getValidToken } from '../shared/token-refresh.ts'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+)
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
+  try {
+    if (req.method === 'POST') {
+      const formData = await req.formData()
+      const command = formData.get('command')
+      const text = formData.get('text')
+      const userId = formData.get('user_id')
+      const channelId = formData.get('channel_id')
+      
+      console.log('Slack command received:', { command, text, userId })
+
+      if (command === '/louvable') {
+        return await handleLouvableCommand(text as string, userId as string, channelId as string)
+      }
+
+      return new Response('Unknown command', { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'text/plain' } 
+      })
+    }
+
+    // GET endpoint for task updates/webhooks
+    if (req.method === 'GET') {
+      const url = new URL(req.url)
+      const action = url.searchParams.get('action')
+      const userId = url.searchParams.get('user_id')
+      
+      if (action === 'send_task_update' && userId) {
+        return await sendTaskUpdate(userId)
+      }
+    }
+
+    return new Response('Method not allowed', { 
+      status: 405, 
+      headers: { ...corsHeaders, 'Content-Type': 'text/plain' } 
+    })
+
+  } catch (error) {
+    console.error('Slack command error:', error)
+    return new Response('Internal server error', { 
+      status: 500, 
+      headers: { ...corsHeaders, 'Content-Type': 'text/plain' } 
+    })
+  }
+})
+
+async function handleLouvableCommand(text: string, slackUserId: string, channelId: string) {
+  try {
+    // Find user by Slack ID in metadata
+    const { data: integration } = await supabase
+      .from('user_integrations')
+      .select('user_id, metadata')
+      .eq('integration_name', 'slack')
+      .eq('metadata->slack_user_id', slackUserId)
+      .single()
+
+    if (!integration) {
+      return new Response('Please connect your Louvable account first', {
+        headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
+      })
+    }
+
+    const userId = integration.user_id
+
+    if (!text || text === 'help') {
+      return new Response(`
+*Louvable Commands:*
+• \`/louvable my tasks\` - Show your active tasks
+• \`/louvable create [task name]\` - Create a new task
+• \`/louvable help\` - Show this help message
+      `, {
+        headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
+      })
+    }
+
+    if (text === 'my tasks') {
+      const { data: todos } = await supabase
+        .from('todos')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'todo')
+        .limit(10)
+
+      if (!todos || todos.length === 0) {
+        return new Response('You have no active tasks! 🎉', {
+          headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
+        })
+      }
+
+      const taskList = todos.map(todo => 
+        `• ${todo.title} ${todo.due_date ? `(due: ${todo.due_date})` : ''}`
+      ).join('\n')
+
+      return new Response(`*Your Active Tasks:*\n${taskList}`, {
+        headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
+      })
+    }
+
+    if (text.startsWith('create ')) {
+      const taskTitle = text.replace('create ', '').trim()
+      
+      if (!taskTitle) {
+        return new Response('Please provide a task title: `/louvable create [task name]`', {
+          headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
+        })
+      }
+
+      const { error } = await supabase
+        .from('todos')
+        .insert({
+          user_id: userId,
+          title: taskTitle,
+          status: 'todo',
+          priority: 'medium'
+        })
+
+      if (error) {
+        console.error('Error creating task:', error)
+        return new Response('Failed to create task', {
+          headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
+        })
+      }
+
+      return new Response(`✅ Task created: "${taskTitle}"`, {
+        headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
+      })
+    }
+
+    return new Response('Unknown command. Type `/louvable help` for available commands.', {
+      headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
+    })
+
+  } catch (error) {
+    console.error('Error handling Louvable command:', error)
+    return new Response('Something went wrong. Please try again.', {
+      headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
+    })
+  }
+}
+
+async function sendTaskUpdate(userId: string) {
+  try {
+    const token = await getValidToken(userId, 'slack')
+    if (!token) {
+      return new Response('Slack not connected', { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      })
+    }
+
+    // Get user's overdue tasks
+    const { data: overdueTasks } = await supabase
+      .from('todos')
+      .select('*')
+      .eq('user_id', userId)
+      .lt('due_date', new Date().toISOString())
+      .eq('status', 'todo')
+
+    if (!overdueTasks || overdueTasks.length === 0) {
+      return new Response('No overdue tasks', { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      })
+    }
+
+    // Get Slack channel from integration metadata
+    const { data: integration } = await supabase
+      .from('user_integrations')
+      .select('metadata')
+      .eq('user_id', userId)
+      .eq('integration_name', 'slack')
+      .single()
+
+    const slackUserId = integration?.metadata?.slack_user_id
+    if (!slackUserId) {
+      return new Response('Slack user ID not found', { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      })
+    }
+
+    const message = `🚨 *Overdue Tasks Reminder*\n${overdueTasks.map(task => 
+      `• ${task.title} (due: ${task.due_date})`
+    ).join('\n')}`
+
+    // Send DM to user
+    const response = await fetch('https://slack.com/api/chat.postMessage', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        channel: slackUserId,
+        text: message,
+      }),
+    })
+
+    const result = await response.json()
+    
+    if (!result.ok) {
+      console.error('Slack API error:', result)
+      return new Response(JSON.stringify({ error: result.error }), { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      })
+    }
+
+    return new Response(JSON.stringify({ success: true, message: 'Task update sent' }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
+
+  } catch (error) {
+    console.error('Error sending task update:', error)
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { 
+      status: 500, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    })
+  }
+}
