@@ -1405,7 +1405,7 @@ const ProjectManagement = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Project Management Hub</h1>
-          <p className="text-gray-600">AI-powered project management inspired by Salesforce & HubSpot</p>
+          <p className="text-gray-600">AI-powered project management</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setShowAIAssistant(true)}>
