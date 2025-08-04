@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, PlugZap } from 'lucide-react';
+import { CheckCircle2, PlugZap, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
@@ -19,11 +19,7 @@ const OAuthConnectCard = ({ provider, userId }: Props) => {
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    checkConnectionStatus();
-  }, [provider, userId]);
-
-  const checkConnectionStatus = async () => {
+  const fetchStatus = async () => {
     try {
       const integrationName = provider === 'google' ? 'google_calendar' : provider;
       const { data, error } = await supabase
@@ -35,13 +31,20 @@ const OAuthConnectCard = ({ provider, userId }: Props) => {
 
       if (!error && data?.access_token) {
         setConnected(true);
+      } else {
+        setConnected(false);
       }
     } catch (error) {
       console.error('Error checking connection status:', error);
+      setConnected(false);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchStatus();
+  }, [provider, userId]);
 
   const handleConnect = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -52,6 +55,26 @@ const OAuthConnectCard = ({ provider, userId }: Props) => {
     window.location.href = `${baseUrl}/${functionName}?state=${user.id}`;
   };
 
+  const handleDisconnect = async () => {
+    setLoading(true);
+    try {
+      const integrationName = provider === 'google' ? 'google_calendar' : provider;
+      const { error } = await supabase
+        .from('user_integrations')
+        .delete()
+        .eq('user_id', userId)
+        .eq('integration_name', integrationName);
+
+      if (!error) {
+        setConnected(false);
+      }
+    } catch (error) {
+      console.error('Error disconnecting:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="p-4 border rounded-xl flex items-center justify-between shadow-md">
       <div>
@@ -60,14 +83,15 @@ const OAuthConnectCard = ({ provider, userId }: Props) => {
           {connected ? 'Connected' : 'Not Connected'}
         </p>
       </div>
-      <Button
-        variant={connected ? 'secondary' : 'default'}
-        disabled={loading || connected}
-        onClick={handleConnect}
-      >
-        {connected ? <CheckCircle2 className="mr-2 w-4 h-4" /> : <PlugZap className="mr-2 w-4 h-4 animate-pulse" />} 
-        {connected ? 'Connected' : 'Connect'}
-      </Button>
+      {connected ? (
+        <Button variant="destructive" onClick={handleDisconnect} disabled={loading}>
+          <XCircle className="mr-2 w-4 h-4" /> Disconnect
+        </Button>
+      ) : (
+        <Button onClick={handleConnect} disabled={loading}>
+          <PlugZap className="mr-2 w-4 h-4 animate-pulse" /> Connect
+        </Button>
+      )}
     </div>
   );
 };
