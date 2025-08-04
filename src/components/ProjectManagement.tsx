@@ -1600,6 +1600,7 @@ const ProjectManagement = () => {
         <CreateTodoDialog
           isOpen={showEditTask}
           onOpenChange={setShowEditTask}
+          editTask={editingTask}
           onCreateTodo={(taskData) => {
             setTasks(prev => prev.map(t => 
               t.id === editingTask.id 
