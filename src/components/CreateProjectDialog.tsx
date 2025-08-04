@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,9 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Loader2 } from 'lucide-react';
+import { CalendarIcon, Loader2, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CreateProjectDialogProps {
   isOpen: boolean;
@@ -28,6 +29,13 @@ export interface ProjectFormData {
   members: string[];
 }
 
+interface User {
+  id: string;
+  display_name: string | null;
+  email: string;
+  full_name: string | null;
+}
+
 const colorOptions = [
   { value: 'bg-blue-500', label: 'Blue', color: 'bg-blue-500' },
   { value: 'bg-green-500', label: 'Green', color: 'bg-green-500' },
@@ -41,6 +49,8 @@ const colorOptions = [
 
 const CreateProjectDialog = ({ isOpen, onOpenChange, onCreateProject }: CreateProjectDialogProps) => {
   const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
   const [formData, setFormData] = useState<ProjectFormData>({
     name: '',
     description: '',
@@ -48,7 +58,30 @@ const CreateProjectDialog = ({ isOpen, onOpenChange, onCreateProject }: CreatePr
     status: 'planning',
     members: []
   });
-  const [memberInput, setMemberInput] = useState('');
+  const [selectedUser, setSelectedUser] = useState<string>('');
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (!isOpen) return;
+      
+      setLoadingUsers(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, display_name, email, full_name')
+          .order('full_name');
+        
+        if (error) throw error;
+        setUsers(data || []);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    fetchUsers();
+  }, [isOpen]);
 
   const resetForm = () => {
     setFormData({
@@ -58,7 +91,7 @@ const CreateProjectDialog = ({ isOpen, onOpenChange, onCreateProject }: CreatePr
       status: 'planning',
       members: []
     });
-    setMemberInput('');
+    setSelectedUser('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,20 +111,28 @@ const CreateProjectDialog = ({ isOpen, onOpenChange, onCreateProject }: CreatePr
   };
 
   const addMember = () => {
-    if (memberInput.trim() && !formData.members.includes(memberInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        members: [...prev.members, memberInput.trim()]
-      }));
-      setMemberInput('');
+    if (selectedUser && !formData.members.includes(selectedUser)) {
+      const user = users.find(u => u.id === selectedUser);
+      if (user) {
+        setFormData(prev => ({
+          ...prev,
+          members: [...prev.members, selectedUser]
+        }));
+        setSelectedUser('');
+      }
     }
   };
 
-  const removeMember = (memberToRemove: string) => {
+  const removeMember = (memberIdToRemove: string) => {
     setFormData(prev => ({
       ...prev,
-      members: prev.members.filter(member => member !== memberToRemove)
+      members: prev.members.filter(memberId => memberId !== memberIdToRemove)
     }));
+  };
+
+  const getUserDisplayName = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    return user?.display_name || user?.full_name || user?.email || 'Unknown User';
   };
 
   return (
@@ -234,30 +275,52 @@ const CreateProjectDialog = ({ isOpen, onOpenChange, onCreateProject }: CreatePr
           <div className="space-y-2">
             <Label>Team Members (Optional)</Label>
             <div className="flex gap-2">
-              <Input
-                value={memberInput}
-                onChange={(e) => setMemberInput(e.target.value)}
-                placeholder="Enter member name"
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addMember())}
-              />
-              <Button type="button" variant="outline" onClick={addMember}>
+              <Select
+                value={selectedUser}
+                onValueChange={setSelectedUser}
+                disabled={loadingUsers}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder={loadingUsers ? "Loading users..." : "Select a team member"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map(user => (
+                    <SelectItem 
+                      key={user.id} 
+                      value={user.id}
+                      disabled={formData.members.includes(user.id)}
+                    >
+                      <div className="flex flex-col">
+                        <span>{user.display_name || user.full_name || 'Unknown'}</span>
+                        <span className="text-xs text-muted-foreground">{user.email}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={addMember}
+                disabled={!selectedUser || formData.members.includes(selectedUser)}
+              >
                 Add
               </Button>
             </div>
             {formData.members.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
-                {formData.members.map(member => (
+                {formData.members.map(memberId => (
                   <div
-                    key={member}
-                    className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm"
+                    key={memberId}
+                    className="flex items-center gap-1 bg-primary/10 text-primary px-2 py-1 rounded-md text-sm"
                   >
-                    {member}
+                    {getUserDisplayName(memberId)}
                     <button
                       type="button"
-                      onClick={() => removeMember(member)}
-                      className="ml-1 text-blue-600 hover:text-blue-800"
+                      onClick={() => removeMember(memberId)}
+                      className="ml-1 text-primary hover:text-primary/80"
                     >
-                      ×
+                      <X className="h-3 w-3" />
                     </button>
                   </div>
                 ))}
