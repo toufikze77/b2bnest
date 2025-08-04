@@ -58,14 +58,44 @@ const ServicesTab = () => {
       if (!user?.id) return;
       
       const { data, error } = await supabase
-        .from('integration_settings')
+        .from('user_integrations')
         .select('*')
-        .eq('user_id', user.id)
-        .eq('integration_name', '3rd_party_services')
-        .single();
+        .eq('user_id', user.id);
 
-      if (data && !error && data.settings && typeof data.settings === 'object') {
-        setServices(prev => ({ ...prev, ...(data.settings as Record<string, any>) }));
+      if (!error && data) {
+        const serviceMapping: Record<string, boolean> = {};
+        data.forEach(integration => {
+          switch (integration.integration_name) {
+            case 'calendly':
+              serviceMapping.calendly = integration.is_connected;
+              break;
+            case 'stripe':
+              serviceMapping.stripe = integration.is_connected;
+              break;
+            case 'plaid':
+              serviceMapping.plaid = integration.is_connected;
+              break;
+            case 'notion':
+              serviceMapping.notion = integration.is_connected;
+              break;
+            case 'clickup':
+              serviceMapping.clickup = integration.is_connected;
+              break;
+            case 'slack':
+              serviceMapping.slack = integration.is_connected;
+              break;
+            case 'zoom':
+              serviceMapping.zoom = integration.is_connected;
+              break;
+            case 'teams':
+              serviceMapping.teams = integration.is_connected;
+              break;
+            case 'google_meet':
+              serviceMapping.googleMeet = integration.is_connected;
+              break;
+          }
+        });
+        setServices(prev => ({ ...prev, ...serviceMapping }));
       }
     } catch (error) {
       console.error('Error fetching service settings:', error);
@@ -77,19 +107,49 @@ const ServicesTab = () => {
       setLoading(true);
       if (!user?.id) return;
 
+      // Map frontend service names to database integration names
+      const integrationNameMap: Record<string, string> = {
+        calendly: 'calendly',
+        stripe: 'stripe',
+        plaid: 'plaid',
+        notion: 'notion',
+        clickup: 'clickup',
+        slack: 'slack',
+        zoom: 'zoom',
+        teams: 'teams',
+        googleMeet: 'google_meet'
+      };
+
+      const integrationName = integrationNameMap[serviceName];
+      if (!integrationName) {
+        throw new Error(`Unknown service: ${serviceName}`);
+      }
+
+      if (enabled) {
+        // Connect the service
+        const { error } = await supabase
+          .from('user_integrations')
+          .upsert({
+            user_id: user.id,
+            integration_name: integrationName,
+            is_connected: true,
+          });
+
+        if (error) throw error;
+      } else {
+        // Disconnect the service
+        const { error } = await supabase
+          .from('user_integrations')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('integration_name', integrationName);
+
+        if (error) throw error;
+      }
+
+      // Update local state
       const newServices = { ...services, [serviceName]: enabled };
       setServices(newServices);
-
-      const { error } = await supabase
-        .from('integration_settings')
-        .upsert({
-          user_id: user.id,
-          integration_name: '3rd_party_services',
-          settings: newServices,
-          is_enabled: true
-        });
-
-      if (error) throw error;
 
       toast({
         title: `${serviceName} ${enabled ? 'Connected' : 'Disconnected'}`,

@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   Zap,
   Calendar,
@@ -15,31 +17,204 @@ import {
   ExternalLink
 } from 'lucide-react';
 
+interface Integration {
+  id: string;
+  name: string;
+  integration_name: string;
+  is_connected: boolean;
+  oauth_url?: string;
+  requires_manual_setup?: boolean;
+  icon: React.ReactNode;
+  category: string;
+}
+
 const IntegrationsTab = () => {
   const { toast } = useToast();
-  const [integrations, setIntegrations] = useState({
-    zapier: false,
-    make: false,
-    webhooks: false,
-    googleCalendar: false,
-    outlookCalendar: false,
-    teams: false,
-    segment: false,
-    mixpanel: false,
-    googleAnalytics: false
-  });
+  const { user } = useAuth();
+  const [integrations, setIntegrations] = useState<Integration[]>([
+    { 
+      id: 'zapier', 
+      name: 'Zapier', 
+      integration_name: 'zapier', 
+      is_connected: false, 
+      requires_manual_setup: true,
+      icon: <Zap className="w-4 h-4 text-orange-500" />,
+      category: 'automation'
+    },
+    { 
+      id: 'make', 
+      name: 'Make (Integromat)', 
+      integration_name: 'make', 
+      is_connected: false, 
+      requires_manual_setup: true,
+      icon: <Workflow className="w-4 h-4 text-blue-500" />,
+      category: 'automation'
+    },
+    { 
+      id: 'webhooks', 
+      name: 'Webhooks', 
+      integration_name: 'webhooks', 
+      is_connected: false, 
+      requires_manual_setup: true,
+      icon: <Webhook className="w-4 h-4 text-purple-500" />,
+      category: 'automation'
+    },
+    { 
+      id: 'slack', 
+      name: 'Slack', 
+      integration_name: 'slack', 
+      is_connected: false, 
+      oauth_url: `https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-slack?state=${user?.id}`,
+      icon: <ExternalLink className="w-4 h-4 text-purple-500" />,
+      category: 'communication'
+    },
+    { 
+      id: 'notion', 
+      name: 'Notion', 
+      integration_name: 'notion', 
+      is_connected: false, 
+      oauth_url: `https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-notion?state=${user?.id}`,
+      icon: <ExternalLink className="w-4 h-4 text-gray-800" />,
+      category: 'productivity'
+    },
+    { 
+      id: 'google-calendar', 
+      name: 'Google Calendar', 
+      integration_name: 'google_calendar', 
+      is_connected: false, 
+      requires_manual_setup: true,
+      icon: <Calendar className="w-4 h-4 text-blue-500" />,
+      category: 'productivity'
+    },
+    { 
+      id: 'outlook-calendar', 
+      name: 'Outlook Calendar', 
+      integration_name: 'outlook_calendar', 
+      is_connected: false, 
+      requires_manual_setup: true,
+      icon: <Calendar className="w-4 h-4 text-blue-700" />,
+      category: 'productivity'
+    },
+    { 
+      id: 'teams', 
+      name: 'Microsoft Teams', 
+      integration_name: 'teams', 
+      is_connected: false, 
+      requires_manual_setup: true,
+      icon: <Building className="w-4 h-4 text-green-500" />,
+      category: 'communication'
+    },
+    { 
+      id: 'segment', 
+      name: 'Segment', 
+      integration_name: 'segment', 
+      is_connected: false, 
+      requires_manual_setup: true,
+      icon: <BarChart3 className="w-4 h-4 text-purple-500" />,
+      category: 'analytics'
+    },
+    { 
+      id: 'mixpanel', 
+      name: 'Mixpanel', 
+      integration_name: 'mixpanel', 
+      is_connected: false, 
+      requires_manual_setup: true,
+      icon: <BarChart3 className="w-4 h-4 text-orange-500" />,
+      category: 'analytics'
+    },
+    { 
+      id: 'google-analytics', 
+      name: 'Google Analytics', 
+      integration_name: 'google_analytics', 
+      is_connected: false, 
+      requires_manual_setup: true,
+      icon: <Target className="w-4 h-4 text-red-500" />,
+      category: 'analytics'
+    },
+  ]);
 
-  const handleConnect = (integration: string, serviceName: string) => {
-    // Simulate connection process
-    setIntegrations(prev => ({
-      ...prev,
-      [integration]: !prev[integration as keyof typeof prev]
-    }));
+  useEffect(() => {
+    fetchUserIntegrations();
+  }, [user?.id]);
+
+  const fetchUserIntegrations = async () => {
+    if (!user?.id) return;
+
+    const { data, error } = await supabase
+      .from('user_integrations')
+      .select('*')
+      .eq('user_id', user.id);
+
+    if (!error && data) {
+      setIntegrations(prev => 
+        prev.map(integration => {
+          const userIntegration = data.find(ui => ui.integration_name === integration.integration_name);
+          return {
+            ...integration,
+            is_connected: userIntegration?.is_connected || false,
+          };
+        })
+      );
+    }
+  };
+
+  const handleConnect = async (integrationId: string) => {
+    const integration = integrations.find(i => i.id === integrationId);
+    if (!integration || !user?.id) return;
+
+    if (integration.oauth_url && !integration.requires_manual_setup) {
+      // OAuth flow - redirect to OAuth URL
+      window.location.href = integration.oauth_url;
+      return;
+    }
+
+    // Manual setup or toggle for services without OAuth
+    const newConnectedState = !integration.is_connected;
     
-    toast({
-      title: integrations[integration as keyof typeof integrations] ? "Disconnected" : "Connected",
-      description: `${serviceName} has been ${integrations[integration as keyof typeof integrations] ? "disconnected" : "connected"} successfully.`,
-    });
+    try {
+      if (newConnectedState) {
+        // Connect the integration
+        const { error } = await supabase
+          .from('user_integrations')
+          .upsert({
+            user_id: user.id,
+            integration_name: integration.integration_name,
+            is_connected: true,
+          });
+
+        if (error) throw error;
+      } else {
+        // Disconnect the integration
+        const { error } = await supabase
+          .from('user_integrations')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('integration_name', integration.integration_name);
+
+        if (error) throw error;
+      }
+
+      // Update local state
+      setIntegrations(prev => 
+        prev.map(int => 
+          int.id === integrationId 
+            ? { ...int, is_connected: newConnectedState }
+            : int
+        )
+      );
+
+      toast({
+        title: newConnectedState ? "Connected" : "Disconnected",
+        description: `${integration.name} has been ${newConnectedState ? "connected" : "disconnected"} successfully.`,
+      });
+    } catch (error) {
+      console.error('Integration error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update integration status.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleAction = (action: string) => {
@@ -48,6 +223,31 @@ const IntegrationsTab = () => {
       description: `${action} functionality is available. Connect your preferred services to get started.`,
     });
   };
+
+  const getIntegrationsByCategory = (category: string) => {
+    return integrations.filter(int => int.category === category);
+  };
+
+  const renderIntegrationCard = (integration: Integration) => (
+    <div key={integration.id} className="p-3 border rounded-lg flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        {integration.icon}
+        <span>{integration.name}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Badge className={integration.is_connected ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}>
+          {integration.is_connected ? "Connected" : "Available"}
+        </Badge>
+        <Button 
+          size="sm" 
+          variant="outline"
+          onClick={() => handleConnect(integration.id)}
+        >
+          {integration.is_connected ? "Disconnect" : "Connect"}
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -60,60 +260,7 @@ const IntegrationsTab = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
-            <div className="p-3 border rounded-lg flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-orange-500" />
-                <span>Zapier</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge className={integrations.zapier ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}>
-                  {integrations.zapier ? "Connected" : "Available"}
-                </Badge>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => handleConnect('zapier', 'Zapier')}
-                >
-                  {integrations.zapier ? "Disconnect" : "Connect"}
-                </Button>
-              </div>
-            </div>
-            <div className="p-3 border rounded-lg flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Workflow className="w-4 h-4 text-blue-500" />
-                <span>Make (Integromat)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge className={integrations.make ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}>
-                  {integrations.make ? "Connected" : "Available"}
-                </Badge>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => handleConnect('make', 'Make')}
-                >
-                  {integrations.make ? "Disconnect" : "Connect"}
-                </Button>
-              </div>
-            </div>
-            <div className="p-3 border rounded-lg flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Webhook className="w-4 h-4 text-purple-500" />
-                <span>Webhooks</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge className={integrations.webhooks ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}>
-                  {integrations.webhooks ? "Active" : "Inactive"}
-                </Badge>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => handleConnect('webhooks', 'Webhooks')}
-                >
-                  {integrations.webhooks ? "Disable" : "Enable"}
-                </Button>
-              </div>
-            </div>
+            {getIntegrationsByCategory('automation').map(renderIntegrationCard)}
           </div>
           <Button className="w-full" onClick={() => handleAction("Automation")}>
             <Plus className="w-4 h-4 mr-2" />
@@ -131,60 +278,8 @@ const IntegrationsTab = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
-            <div className="p-3 border rounded-lg flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-blue-500" />
-                <span>Google Calendar</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge className={integrations.googleCalendar ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}>
-                  {integrations.googleCalendar ? "Connected" : "Available"}
-                </Badge>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => handleConnect('googleCalendar', 'Google Calendar')}
-                >
-                  {integrations.googleCalendar ? "Disconnect" : "Connect"}
-                </Button>
-              </div>
-            </div>
-            <div className="p-3 border rounded-lg flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-blue-700" />
-                <span>Outlook Calendar</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge className={integrations.outlookCalendar ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}>
-                  {integrations.outlookCalendar ? "Connected" : "Available"}
-                </Badge>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => handleConnect('outlookCalendar', 'Outlook Calendar')}
-                >
-                  {integrations.outlookCalendar ? "Disconnect" : "Connect"}
-                </Button>
-              </div>
-            </div>
-            <div className="p-3 border rounded-lg flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Building className="w-4 h-4 text-green-500" />
-                <span>Microsoft Teams</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge className={integrations.teams ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}>
-                  {integrations.teams ? "Connected" : "Available"}
-                </Badge>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => handleConnect('teams', 'Microsoft Teams')}
-                >
-                  {integrations.teams ? "Disconnect" : "Connect"}
-                </Button>
-              </div>
-            </div>
+            {getIntegrationsByCategory('productivity').map(renderIntegrationCard)}
+            {getIntegrationsByCategory('communication').map(renderIntegrationCard)}
           </div>
           <Button className="w-full" onClick={() => handleAction("Calendar sync")}>
             <Calendar className="w-4 h-4 mr-2" />
@@ -202,60 +297,7 @@ const IntegrationsTab = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
-            <div className="p-3 border rounded-lg flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-purple-500" />
-                <span>Segment</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge className={integrations.segment ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}>
-                  {integrations.segment ? "Connected" : "Available"}
-                </Badge>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => handleConnect('segment', 'Segment')}
-                >
-                  {integrations.segment ? "Disconnect" : "Connect"}
-                </Button>
-              </div>
-            </div>
-            <div className="p-3 border rounded-lg flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-orange-500" />
-                <span>Mixpanel</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge className={integrations.mixpanel ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}>
-                  {integrations.mixpanel ? "Connected" : "Available"}
-                </Badge>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => handleConnect('mixpanel', 'Mixpanel')}
-                >
-                  {integrations.mixpanel ? "Disconnect" : "Connect"}
-                </Button>
-              </div>
-            </div>
-            <div className="p-3 border rounded-lg flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Target className="w-4 h-4 text-red-500" />
-                <span>Google Analytics</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge className={integrations.googleAnalytics ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}>
-                  {integrations.googleAnalytics ? "Connected" : "Available"}
-                </Badge>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => handleConnect('googleAnalytics', 'Google Analytics')}
-                >
-                  {integrations.googleAnalytics ? "Disconnect" : "Connect"}
-                </Button>
-              </div>
-            </div>
+            {getIntegrationsByCategory('analytics').map(renderIntegrationCard)}
           </div>
           <Button className="w-full" onClick={() => handleAction("Analytics")}>
             <BarChart3 className="w-4 h-4 mr-2" />
