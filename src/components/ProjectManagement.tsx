@@ -21,6 +21,8 @@ import CreateProjectDialog, { ProjectFormData } from './CreateProjectDialog';
 import EditProjectDialog from './EditProjectDialog';
 import ProjectTimeTracker from './ProjectTimeTracker';
 import ProjectActivityTimeline from './ProjectActivityTimeline';
+import StatsCard from './cards/StatsCard';
+import ProjectCard from './cards/ProjectCard';
 import { 
   Plus, 
   Calendar as CalendarIcon, 
@@ -1686,84 +1688,22 @@ const ProjectManagement = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {projects.map(project => (
-                <Card key={project.id} className="hover:shadow-lg transition-all cursor-pointer">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-4 h-4 rounded ${project.color}`}></div>
-                        <div>
-                          <h4 className="font-semibold">{project.name}</h4>
-                          <p className="text-sm text-gray-600">{project.description}</p>
-                        </div>
-                      </div>
-                      <Badge 
-                        className={
-                          project.status === 'active' ? 'bg-green-100 text-green-800' :
-                          project.status === 'planning' ? 'bg-blue-100 text-blue-800' :
-                          project.status === 'on-hold' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
-                        }
-                      >
-                        {project.status}
-                      </Badge>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Progress</span>
-                          <span>{project.progress}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-blue-600 h-2 rounded-full transition-all" 
-                            style={{ width: `${project.progress}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                      
-                      {project.deadline && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <CalendarIcon className="w-4 h-4" />
-                          <span>Due: {format(project.deadline, 'MMM dd, yyyy')}</span>
-                        </div>
-                      )}
-                      
-                      {project.client && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <User className="w-4 h-4" />
-                          <span>{project.client}</span>
-                        </div>
-                      )}
-                      
-                      {project.budget && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <span className="font-medium">Budget: ${project.budget.toLocaleString()}</span>
-                        </div>
-                      )}
-                      
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-gray-400" />
-                        <div className="flex -space-x-2">
-                          {project.members.slice(0, 3).map((member, index) => (
-                            <Avatar key={index} className="w-6 h-6 border-2 border-white">
-                              <AvatarFallback className="text-xs">
-                                {member.split(' ').map(n => n[0]).join('')}
-                              </AvatarFallback>
-                            </Avatar>
-                          ))}
-                          {project.members.length > 3 && (
-                            <div className="w-6 h-6 bg-gray-100 border-2 border-white rounded-full flex items-center justify-center">
-                              <span className="text-xs text-gray-600">+{project.members.length - 3}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {projects.map(project => {
+                // Convert project format to match ProjectCard expectations
+                const projectCardData = {
+                  ...project,
+                  team_members: project.members,
+                  deadline: project.deadline?.toISOString().split('T')[0]
+                };
+                
+                return (
+                  <ProjectCard
+                    key={project.id}
+                    project={projectCardData}
+                    onClick={() => {/* Handle project click */}}
+                  />
+                );
+              })}
               
               {projects.length === 0 && (
                 <Card className="border-dashed border-2 border-gray-300">
