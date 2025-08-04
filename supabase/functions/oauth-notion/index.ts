@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
+import { encrypt } from '../shared/crypto.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,6 +8,8 @@ const corsHeaders = {
 
 interface NotionOAuthResponse {
   access_token?: string
+  refresh_token?: string
+  expires_in?: number
   workspace_id?: string
   workspace_name?: string
   workspace_icon?: string
@@ -68,13 +71,26 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    // Encrypt tokens
+    const encryptedAccessToken = await encrypt(notionData.access_token, Deno.env.get('ENCRYPTION_SECRET') || 'default-secret-key-32-chars-long')
+    const encryptedRefreshToken = notionData.refresh_token 
+      ? await encrypt(notionData.refresh_token, Deno.env.get('ENCRYPTION_SECRET') || 'default-secret-key-32-chars-long')
+      : null
+
+    // Calculate expiration
+    const expiresAt = notionData.expires_in 
+      ? new Date(Date.now() + notionData.expires_in * 1000).toISOString()
+      : null
+
     // Store integration in database
     const { error: dbError } = await supabase
       .from('user_integrations')
       .upsert({
         user_id: state,
         integration_name: 'notion',
-        access_token: notionData.access_token,
+        access_token: encryptedAccessToken,
+        refresh_token: encryptedRefreshToken,
+        expires_at: expiresAt,
         is_connected: true,
         metadata: {
           workspace_id: notionData.workspace_id,
@@ -92,6 +108,8 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    console.log('Notion integration successful for user:', state)
 
     // Redirect back to the app
     return new Response(null, {

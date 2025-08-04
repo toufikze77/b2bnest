@@ -73,7 +73,7 @@ const IntegrationsTab = () => {
       name: 'Notion', 
       integration_name: 'notion', 
       is_connected: false, 
-      oauth_url: `https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-notion?state=${user?.id}`,
+      oauth_url: `https://api.notion.com/v1/oauth/authorize?owner=user&client_id=${import.meta.env.VITE_NOTION_CLIENT_ID || 'demo'}&redirect_uri=https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-notion&response_type=code&state=${user?.id}`,
       icon: <ExternalLink className="w-4 h-4 text-gray-800" />,
       category: 'productivity'
     },
@@ -82,56 +82,20 @@ const IntegrationsTab = () => {
       name: 'Google Calendar', 
       integration_name: 'google_calendar', 
       is_connected: false, 
-      requires_manual_setup: true,
+      oauth_url: `https://accounts.google.com/o/oauth2/v2/auth?client_id=${import.meta.env.VITE_GOOGLE_CLIENT_ID || 'demo'}&redirect_uri=https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-google-calendar&response_type=code&scope=https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email&access_type=offline&state=${user?.id}&prompt=consent`,
       icon: <Calendar className="w-4 h-4 text-blue-500" />,
       category: 'productivity'
     },
     { 
-      id: 'outlook-calendar', 
-      name: 'Outlook Calendar', 
-      integration_name: 'outlook_calendar', 
+      id: 'trello', 
+      name: 'Trello', 
+      integration_name: 'trello', 
       is_connected: false, 
-      requires_manual_setup: true,
-      icon: <Calendar className="w-4 h-4 text-blue-700" />,
-      category: 'productivity'
-    },
-    { 
-      id: 'teams', 
-      name: 'Microsoft Teams', 
-      integration_name: 'teams', 
-      is_connected: false, 
-      requires_manual_setup: true,
-      icon: <Building className="w-4 h-4 text-green-500" />,
-      category: 'communication'
-    },
-    { 
-      id: 'segment', 
-      name: 'Segment', 
-      integration_name: 'segment', 
-      is_connected: false, 
-      requires_manual_setup: true,
-      icon: <BarChart3 className="w-4 h-4 text-purple-500" />,
-      category: 'analytics'
-    },
-    { 
-      id: 'mixpanel', 
-      name: 'Mixpanel', 
-      integration_name: 'mixpanel', 
-      is_connected: false, 
-      requires_manual_setup: true,
-      icon: <BarChart3 className="w-4 h-4 text-orange-500" />,
-      category: 'analytics'
-    },
-    { 
-      id: 'google-analytics', 
-      name: 'Google Analytics', 
-      integration_name: 'google_analytics', 
-      is_connected: false, 
-      requires_manual_setup: true,
-      icon: <Target className="w-4 h-4 text-red-500" />,
-      category: 'analytics'
-    },
-  ]);
+      oauth_url: `https://trello.com/1/authorize?response_type=code&client_id=${import.meta.env.VITE_TRELLO_CLIENT_ID || 'demo'}&redirect_uri=https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-trello&scope=read,write&expiration=never&name=BusinessForms&state=${user?.id}`,
+       icon: <Target className="w-4 h-4 text-blue-600" />,
+       category: 'productivity'
+     }
+   ]);
 
   useEffect(() => {
     fetchUserIntegrations();

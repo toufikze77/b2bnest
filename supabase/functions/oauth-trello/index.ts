@@ -6,21 +6,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface SlackOAuthResponse {
-  ok: boolean
+interface TrelloOAuthResponse {
   access_token?: string
-  team?: {
-    id: string
-    name: string
-  }
-  authed_user?: {
-    id: string
-  }
+  refresh_token?: string
+  expires_in?: number
+  scope?: string
+  token_type?: string
   error?: string
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -38,28 +33,33 @@ Deno.serve(async (req) => {
     }
 
     // Exchange code for access token
-    const slackTokenResponse = await fetch('https://slack.com/api/oauth.v2.access', {
+    const trelloTokenResponse = await fetch('https://trello.com/1/oauth2/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        client_id: Deno.env.get('SLACK_CLIENT_ID') || '',
-        client_secret: Deno.env.get('SLACK_CLIENT_SECRET') || '',
         code,
-        redirect_uri: `${Deno.env.get('SUPABASE_URL')}/functions/v1/oauth-slack`,
+        client_id: Deno.env.get('TRELLO_CLIENT_ID') || '',
+        client_secret: Deno.env.get('TRELLO_CLIENT_SECRET') || '',
+        redirect_uri: `${Deno.env.get('SUPABASE_URL')}/functions/v1/oauth-trello`,
+        grant_type: 'authorization_code',
       }),
     })
 
-    const slackData: SlackOAuthResponse = await slackTokenResponse.json()
+    const trelloData: TrelloOAuthResponse = await trelloTokenResponse.json()
 
-    if (!slackData.ok || !slackData.access_token) {
-      console.error('Slack OAuth error:', slackData.error)
+    if (!trelloData.access_token) {
+      console.error('Trello OAuth error:', trelloData.error)
       return new Response(
-        JSON.stringify({ error: slackData.error || 'Failed to get access token' }),
+        JSON.stringify({ error: trelloData.error || 'Failed to get access token' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    // Get user info from Trello
+    const userInfoResponse = await fetch(`https://api.trello.com/1/members/me?key=${Deno.env.get('TRELLO_CLIENT_ID')}&token=${trelloData.access_token}`)
+    const userInfo = await userInfoResponse.json()
 
     // Initialize Supabase client
     const supabase = createClient(
@@ -68,20 +68,33 @@ Deno.serve(async (req) => {
     )
 
     // Encrypt tokens
-    const encryptedAccessToken = await encrypt(slackData.access_token, Deno.env.get('ENCRYPTION_SECRET') || 'default-secret-key-32-chars-long')
+    const encryptedAccessToken = await encrypt(trelloData.access_token, Deno.env.get('ENCRYPTION_SECRET') || 'default-secret-key-32-chars-long')
+    const encryptedRefreshToken = trelloData.refresh_token 
+      ? await encrypt(trelloData.refresh_token, Deno.env.get('ENCRYPTION_SECRET') || 'default-secret-key-32-chars-long')
+      : null
+
+    // Calculate expiration (Trello tokens typically don't expire)
+    const expiresAt = trelloData.expires_in 
+      ? new Date(Date.now() + trelloData.expires_in * 1000).toISOString()
+      : null
 
     // Store integration in database
     const { error: dbError } = await supabase
       .from('user_integrations')
       .upsert({
         user_id: state,
-        integration_name: 'slack',
+        integration_name: 'trello',
         access_token: encryptedAccessToken,
+        refresh_token: encryptedRefreshToken,
+        expires_at: expiresAt,
         is_connected: true,
         metadata: {
-          team_id: slackData.team?.id,
-          team_name: slackData.team?.name,
-          slack_user_id: slackData.authed_user?.id,
+          trello_user_id: userInfo.id,
+          username: userInfo.username,
+          full_name: userInfo.fullName,
+          email: userInfo.email,
+          avatar_url: userInfo.avatarUrl,
+          scope: trelloData.scope,
         },
       })
 
@@ -93,12 +106,14 @@ Deno.serve(async (req) => {
       )
     }
 
+    console.log('Trello integration successful for user:', state)
+
     // Redirect back to the app
     return new Response(null, {
       status: 302,
       headers: {
         ...corsHeaders,
-        'Location': `${Deno.env.get('SITE_URL') || 'http://localhost:5173'}/business-tools?slack_connected=true`,
+        'Location': `${Deno.env.get('SITE_URL') || 'http://localhost:5173'}/business-tools?trello_connected=true`,
       },
     })
 
