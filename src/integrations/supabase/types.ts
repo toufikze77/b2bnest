@@ -1475,51 +1475,160 @@ export type Database = {
         }
         Relationships: []
       }
+      project_activities: {
+        Row: {
+          activity_type: string
+          created_at: string
+          description: string | null
+          id: string
+          metadata: Json | null
+          project_id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          project_id: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          project_id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_activities_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_time_entries: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_minutes: number
+          end_time: string | null
+          hourly_rate: number | null
+          id: string
+          is_billable: boolean
+          project_id: string
+          start_time: string
+          task_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          end_time?: string | null
+          hourly_rate?: number | null
+          id?: string
+          is_billable?: boolean
+          project_id: string
+          start_time: string
+          task_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          end_time?: string | null
+          hourly_rate?: number | null
+          id?: string
+          is_billable?: boolean
+          project_id?: string
+          start_time?: string
+          task_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_time_entries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
+          actual_hours: number | null
           budget: number | null
           client: string | null
           color: string
           created_at: string
           custom_columns: Json | null
+          custom_fields: Json | null
           deadline: string | null
           description: string | null
+          estimated_hours: number | null
           id: string
           members: Json | null
           name: string
+          priority: string | null
           progress: number
+          stage: string | null
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          actual_hours?: number | null
           budget?: number | null
           client?: string | null
           color?: string
           created_at?: string
           custom_columns?: Json | null
+          custom_fields?: Json | null
           deadline?: string | null
           description?: string | null
+          estimated_hours?: number | null
           id?: string
           members?: Json | null
           name: string
+          priority?: string | null
           progress?: number
+          stage?: string | null
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          actual_hours?: number | null
           budget?: number | null
           client?: string | null
           color?: string
           created_at?: string
           custom_columns?: Json | null
+          custom_fields?: Json | null
           deadline?: string | null
           description?: string | null
+          estimated_hours?: number | null
           id?: string
           members?: Json | null
           name?: string
+          priority?: string | null
           progress?: number
+          stage?: string | null
           status?: string
           updated_at?: string
           user_id?: string

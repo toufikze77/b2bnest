@@ -18,6 +18,9 @@ import { useSubscription } from '@/hooks/useSubscription';
 import SubscriptionUpgrade from './SubscriptionUpgrade';
 import CreateTodoDialog from './enhanced-todos/CreateTodoDialog';
 import CreateProjectDialog, { ProjectFormData } from './CreateProjectDialog';
+import EditProjectDialog from './EditProjectDialog';
+import ProjectTimeTracker from './ProjectTimeTracker';
+import ProjectActivityTimeline from './ProjectActivityTimeline';
 import { 
   Plus, 
   Calendar as CalendarIcon, 
