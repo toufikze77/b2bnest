@@ -189,6 +189,19 @@ const AITaskSuggestions = ({ taskTitle, onApplySuggestion }) => {
   );
 };
 
+// AI-powered project management template
+const projectManagementTemplate = {
+  title: "AI-powered project management",
+  description: "Comprehensive project management with task automation, team collaboration, and intelligent insights",
+  features: [
+    "Task automation and intelligent scheduling",
+    "Team collaboration and communication tools", 
+    "Real-time progress tracking and reporting",
+    "Resource allocation and capacity planning",
+    "AI-driven project insights and recommendations"
+  ]
+};
+
 // Main Component - exported as default export
 const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null }) => {
   const [formData, setFormData] = useState({
