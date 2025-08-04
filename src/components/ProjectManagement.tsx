@@ -17,6 +17,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import SubscriptionUpgrade from './SubscriptionUpgrade';
 import CreateTodoDialog from './enhanced-todos/CreateTodoDialog';
+import CreateProjectDialog, { ProjectFormData } from './CreateProjectDialog';
 import { 
   Plus, 
   Calendar as CalendarIcon, 
@@ -208,6 +209,7 @@ const ProjectManagement = () => {
   const [showAutomationBuilder, setShowAutomationBuilder] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showEditTask, setShowEditTask] = useState(false);
+  const [showCreateProject, setShowCreateProject] = useState(false);
 
   // Sample data with enhanced features - moved before conditional returns
   const [projects, setProjects] = useState<Project[]>([
@@ -343,12 +345,116 @@ const ProjectManagement = () => {
   useEffect(() => {
     console.log('🔧 ProjectManagement useEffect triggered', { user: !!user, canAccessPM });
     if (user && canAccessPM) {
-      // Future: Load project data from database
-      setLoading(false);
+      loadProjects();
     } else {
       setLoading(false);
     }
   }, [user, canAccessPM]);
+
+  // Load projects from database
+  const loadProjects = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data) {
+        const formattedProjects: Project[] = data.map(project => ({
+          id: project.id,
+          name: project.name,
+          description: project.description || '',
+          color: project.color,
+          progress: project.progress,
+          members: Array.isArray(project.members) ? project.members as string[] : [],
+          deadline: project.deadline ? new Date(project.deadline) : null,
+          budget: project.budget ? parseFloat(project.budget.toString()) : undefined,
+          client: project.client,
+          status: project.status as 'planning' | 'active' | 'on-hold' | 'completed',
+          customColumns: Array.isArray(project.custom_columns) ? project.custom_columns as unknown as KanbanColumn[] : [
+            { id: 'backlog', title: 'Backlog', color: 'bg-gray-100', order: 1 },
+            { id: 'todo', title: 'To Do', color: 'bg-blue-100', order: 2 },
+            { id: 'in-progress', title: 'In Progress', color: 'bg-yellow-100', order: 3 },
+            { id: 'review', title: 'Review', color: 'bg-purple-100', order: 4 },
+            { id: 'done', title: 'Done', color: 'bg-green-100', order: 5 }
+          ]
+        }));
+        setProjects(formattedProjects);
+      }
+    } catch (error) {
+      console.error('Error loading projects:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load projects. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle creating new projects
+  const handleCreateProject = async (projectData: ProjectFormData) => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .insert({
+          name: projectData.name,
+          description: projectData.description,
+          color: projectData.color,
+          status: projectData.status,
+          deadline: projectData.deadline ? projectData.deadline.toISOString().split('T')[0] : null,
+          budget: projectData.budget,
+          client: projectData.client,
+          members: projectData.members,
+          user_id: user?.id
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        const newProject: Project = {
+          id: data.id,
+          name: data.name,
+          description: data.description || '',
+          color: data.color,
+          progress: 0,
+          members: Array.isArray(data.members) ? data.members as string[] : [],
+          deadline: data.deadline ? new Date(data.deadline) : null,
+          budget: data.budget ? parseFloat(data.budget.toString()) : undefined,
+          client: data.client,
+          status: data.status as 'planning' | 'active' | 'on-hold' | 'completed',
+          customColumns: [
+            { id: 'backlog', title: 'Backlog', color: 'bg-gray-100', order: 1 },
+            { id: 'todo', title: 'To Do', color: 'bg-blue-100', order: 2 },
+            { id: 'in-progress', title: 'In Progress', color: 'bg-yellow-100', order: 3 },
+            { id: 'review', title: 'Review', color: 'bg-purple-100', order: 4 },
+            { id: 'done', title: 'Done', color: 'bg-green-100', order: 5 }
+          ]
+        };
+
+        setProjects(prev => [newProject, ...prev]);
+        
+        toast({
+          title: "Project Created",
+          description: `Successfully created project: ${newProject.name}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error creating project:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create project. Please try again.",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
 
   // Handle creating new tasks
   const handleCreateTask = (taskData: any) => {
@@ -1412,6 +1518,10 @@ const ProjectManagement = () => {
             <Brain className="w-4 h-4 mr-2" />
             AI Assistant
           </Button>
+          <Button variant="outline" onClick={() => setShowCreateProject(true)}>
+            <FolderOpen className="w-4 h-4 mr-2" />
+            New Project
+          </Button>
           <Button onClick={() => setShowCreateTask(true)}>
             <Plus className="w-4 h-4 mr-2" />
             New Task
@@ -1561,6 +1671,112 @@ const ProjectManagement = () => {
           {activeView === 'kanban' && <EnhancedKanbanBoard />}
           {activeView === 'list' && <div>List view implementation</div>}
           {activeView === 'calendar' && <div>Calendar view implementation</div>}
+          
+          {/* Projects Overview Section */}
+          <div className="mt-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-semibold">Active Projects</h3>
+              <Button variant="outline" onClick={() => setShowCreateProject(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                New Project
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {projects.map(project => (
+                <Card key={project.id} className="hover:shadow-lg transition-all cursor-pointer">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-4 h-4 rounded ${project.color}`}></div>
+                        <div>
+                          <h4 className="font-semibold">{project.name}</h4>
+                          <p className="text-sm text-gray-600">{project.description}</p>
+                        </div>
+                      </div>
+                      <Badge 
+                        className={
+                          project.status === 'active' ? 'bg-green-100 text-green-800' :
+                          project.status === 'planning' ? 'bg-blue-100 text-blue-800' :
+                          project.status === 'on-hold' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-gray-100 text-gray-800'
+                        }
+                      >
+                        {project.status}
+                      </Badge>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>Progress</span>
+                          <span>{project.progress}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full transition-all" 
+                            style={{ width: `${project.progress}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                      
+                      {project.deadline && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <CalendarIcon className="w-4 h-4" />
+                          <span>Due: {format(project.deadline, 'MMM dd, yyyy')}</span>
+                        </div>
+                      )}
+                      
+                      {project.client && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <User className="w-4 h-4" />
+                          <span>{project.client}</span>
+                        </div>
+                      )}
+                      
+                      {project.budget && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <span className="font-medium">Budget: ${project.budget.toLocaleString()}</span>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-gray-400" />
+                        <div className="flex -space-x-2">
+                          {project.members.slice(0, 3).map((member, index) => (
+                            <Avatar key={index} className="w-6 h-6 border-2 border-white">
+                              <AvatarFallback className="text-xs">
+                                {member.split(' ').map(n => n[0]).join('')}
+                              </AvatarFallback>
+                            </Avatar>
+                          ))}
+                          {project.members.length > 3 && (
+                            <div className="w-6 h-6 bg-gray-100 border-2 border-white rounded-full flex items-center justify-center">
+                              <span className="text-xs text-gray-600">+{project.members.length - 3}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              
+              {projects.length === 0 && (
+                <Card className="border-dashed border-2 border-gray-300">
+                  <CardContent className="p-6 text-center">
+                    <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h4 className="font-medium text-gray-900 mb-2">No projects yet</h4>
+                    <p className="text-sm text-gray-600 mb-4">Get started by creating your first project</p>
+                    <Button onClick={() => setShowCreateProject(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Project
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="milestones" className="mt-6">
@@ -1693,6 +1909,35 @@ const ProjectManagement = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Create Task Dialog */}
+      <CreateTodoDialog
+        isOpen={showCreateTask}
+        onOpenChange={setShowCreateTask}
+        onCreateTodo={handleCreateTask}
+      />
+
+      <CreateTodoDialog
+        isOpen={showEditTask}
+        onOpenChange={setShowEditTask}
+        editTask={editingTask}
+        onCreateTodo={(taskData) => {
+          setTasks(prev => prev.map(t => 
+            t.id === editingTask.id 
+              ? { ...t, ...taskData }
+              : t
+          ));
+          setEditingTask(null);
+          setShowEditTask(false);
+        }}
+      />
+
+      {/* Create Project Dialog */}
+      <CreateProjectDialog
+        isOpen={showCreateProject}
+        onOpenChange={setShowCreateProject}
+        onCreateProject={handleCreateProject}
+      />
     </div>
   );
 };
