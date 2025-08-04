@@ -142,7 +142,8 @@ const EditProjectDialog = ({ isOpen, onOpenChange, project, onUpdateProject }: E
       onUpdateProject({
         ...data,
         deadline: data.deadline ? new Date(data.deadline) : undefined,
-      });
+        status: data.status as 'planning' | 'active' | 'on-hold' | 'completed',
+      } as Project);
       onOpenChange(false);
     } catch (error) {
       console.error('Error updating project:', error);
