@@ -40,12 +40,12 @@ const IntegrationHub = () => {
       </div>
 
       <Tabs defaultValue="oauth" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="oauth">OAuth Integrations</TabsTrigger>
-          <TabsTrigger value="tools">Web Scraping Tools</TabsTrigger>
+        <TabsList className="flex space-x-4 border-b pb-2">
+          <TabsTrigger value="oauth" className="px-4 py-2">OAuth Integrations</TabsTrigger>
+          <TabsTrigger value="tools" className="px-4 py-2">Web Scraping Tools</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="oauth" className="space-y-6">
+        <TabsContent value="oauth" className="space-y-6 pt-4">
           <Card>
             <CardHeader>
               <CardTitle>OAuth Integrations</CardTitle>
@@ -60,7 +60,7 @@ const IntegrationHub = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="tools" className="space-y-6">
+        <TabsContent value="tools" className="space-y-6 pt-4">
           <Card>
             <CardHeader>
               <CardTitle>Web Scraping & Data Extraction</CardTitle>
