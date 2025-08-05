@@ -11,6 +11,40 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 )
 
+// Verify Slack request signature
+async function verifySlackRequest(req: Request): Promise<boolean> {
+  const signingSecret = Deno.env.get('SLACK_SIGNING_SECRET')
+  if (!signingSecret) return true // Skip verification in development
+  
+  const timestamp = req.headers.get('x-slack-request-timestamp')
+  const signature = req.headers.get('x-slack-signature')
+  
+  if (!timestamp || !signature) return false
+  
+  // Check if timestamp is too old (5 minutes)
+  const now = Math.floor(Date.now() / 1000)
+  if (Math.abs(now - parseInt(timestamp)) > 300) return false
+  
+  const body = await req.text()
+  const sigBase = `v0:${timestamp}:${body}`
+  
+  const encoder = new TextEncoder()
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(signingSecret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  
+  const signatureBytes = await crypto.subtle.sign('HMAC', key, encoder.encode(sigBase))
+  const expectedSignature = 'v0=' + Array.from(new Uint8Array(signatureBytes))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+  
+  return signature === expectedSignature
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -18,6 +52,16 @@ Deno.serve(async (req) => {
 
   try {
     if (req.method === 'POST') {
+      // Verify Slack request signature
+      const isVerified = await verifySlackRequest(req.clone())
+      if (!isVerified) {
+        console.error('Invalid Slack request signature')
+        return new Response('Unauthorized', { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'text/plain' } 
+        })
+      }
+
       const formData = await req.formData()
       const command = formData.get('command')
       const text = formData.get('text')
