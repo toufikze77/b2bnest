@@ -67,11 +67,16 @@ Deno.serve(async (req) => {
       const text = formData.get('text')
       const userId = formData.get('user_id')
       const channelId = formData.get('channel_id')
+      const triggerId = formData.get('trigger_id')
       
       console.log('Slack command received:', { command, text, userId })
 
       if (command === '/louvable') {
         return await handleLouvableCommand(text as string, userId as string, channelId as string)
+      }
+
+      if (command === '/task' || command === '/todo') {
+        return await handleTaskCommand(text as string, userId as string, triggerId as string)
       }
 
       return new Response('Unknown command', { 
@@ -193,6 +198,233 @@ async function handleLouvableCommand(text: string, slackUserId: string, channelI
 
   } catch (error) {
     console.error('Error handling Louvable command:', error)
+    return new Response('Something went wrong. Please try again.', {
+      headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
+    })
+  }
+}
+
+async function handleTaskCommand(text: string, slackUserId: string, triggerId: string) {
+  try {
+    // Find user by Slack ID in metadata
+    const { data: integration } = await supabase
+      .from('user_integrations')
+      .select('user_id, metadata')
+      .eq('integration_name', 'slack')
+      .eq('metadata->slack_user_id', slackUserId)
+      .single()
+
+    if (!integration) {
+      return new Response('Please connect your Slack account first at the Integration Hub', {
+        headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
+      })
+    }
+
+    const taskText = text?.toString().trim()
+    
+    if (!taskText) {
+      // Open modal for task creation
+      if (triggerId) {
+        const modal = {
+          trigger_id: triggerId,
+          view: {
+            type: 'modal',
+            callback_id: 'create_task',
+            title: {
+              type: 'plain_text',
+              text: 'Create New Task'
+            },
+            submit: {
+              type: 'plain_text',
+              text: 'Create Task'
+            },
+            close: {
+              type: 'plain_text',
+              text: 'Cancel'
+            },
+            blocks: [
+              {
+                type: 'input',
+                block_id: 'task_title_block',
+                element: {
+                  type: 'plain_text_input',
+                  action_id: 'task_title',
+                  placeholder: {
+                    type: 'plain_text',
+                    text: 'Enter task title...'
+                  }
+                },
+                label: {
+                  type: 'plain_text',
+                  text: 'Task Title'
+                }
+              },
+              {
+                type: 'input',
+                block_id: 'task_description_block',
+                optional: true,
+                element: {
+                  type: 'plain_text_input',
+                  action_id: 'task_description',
+                  multiline: true,
+                  placeholder: {
+                    type: 'plain_text',
+                    text: 'Enter task description...'
+                  }
+                },
+                label: {
+                  type: 'plain_text',
+                  text: 'Description'
+                }
+              },
+              {
+                type: 'input',
+                block_id: 'task_priority_block',
+                element: {
+                  type: 'static_select',
+                  action_id: 'task_priority',
+                  placeholder: {
+                    type: 'plain_text',
+                    text: 'Select priority'
+                  },
+                  initial_option: {
+                    text: {
+                      type: 'plain_text',
+                      text: 'Medium'
+                    },
+                    value: 'medium'
+                  },
+                  options: [
+                    {
+                      text: {
+                        type: 'plain_text',
+                        text: 'Low'
+                      },
+                      value: 'low'
+                    },
+                    {
+                      text: {
+                        type: 'plain_text',
+                        text: 'Medium'
+                      },
+                      value: 'medium'
+                    },
+                    {
+                      text: {
+                        type: 'plain_text',
+                        text: 'High'
+                      },
+                      value: 'high'
+                    },
+                    {
+                      text: {
+                        type: 'plain_text',
+                        text: 'Critical'
+                      },
+                      value: 'critical'
+                    }
+                  ]
+                },
+                label: {
+                  type: 'plain_text',
+                  text: 'Priority'
+                }
+              },
+              {
+                type: 'input',
+                block_id: 'task_due_block',
+                optional: true,
+                element: {
+                  type: 'datepicker',
+                  action_id: 'task_due_date',
+                  placeholder: {
+                    type: 'plain_text',
+                    text: 'Select due date'
+                  }
+                },
+                label: {
+                  type: 'plain_text',
+                  text: 'Due Date'
+                }
+              }
+            ]
+          }
+        }
+
+        // Open modal using Slack Web API
+        try {
+          const slackToken = Deno.env.get('SLACK_BOT_TOKEN')
+          if (!slackToken) {
+            throw new Error('SLACK_BOT_TOKEN not configured')
+          }
+
+          const modalResponse = await fetch('https://slack.com/api/views.open', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${slackToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(modal)
+          })
+
+          const modalResult = await modalResponse.json()
+          
+          if (!modalResult.ok) {
+            console.error('Failed to open modal:', modalResult)
+            throw new Error('Failed to open modal')
+          }
+
+          return new Response('', {
+            status: 200,
+            headers: corsHeaders
+          })
+
+        } catch (error) {
+          console.error('Error opening modal:', error)
+          return new Response('Please provide a task description. Usage: `/task Your task description`', {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
+          })
+        }
+      }
+
+      return new Response('Please provide a task description. Usage: `/task Your task description`', {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
+      })
+    }
+
+    // Quick task creation from command text
+    try {
+      const { error: todoError } = await supabase
+        .from('todos')
+        .insert({
+          user_id: integration.user_id,
+          title: taskText,
+          status: 'todo',
+          priority: 'medium'
+        })
+
+      if (todoError) {
+        console.error('Error creating todo:', todoError)
+        throw new Error('Failed to create task')
+      }
+
+      return new Response(`✅ Task created: *${taskText}*`, {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
+      })
+
+    } catch (error) {
+      console.error('Error creating task:', error)
+      return new Response('Failed to create task. Please try again or use the web app.', {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
+      })
+    }
+
+  } catch (error) {
+    console.error('Error handling task command:', error)
     return new Response('Something went wrong. Please try again.', {
       headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
     })
