@@ -635,33 +635,70 @@ const ProjectManagement = () => {
     return matchesSearch && matchesProject;
   });
 
-  // Handle task status updates
-  const handleTaskStatusUpdate = (taskId: string, newStatus: string) => {
-    setTasks(prev => prev.map(task => {
-      if (task.id === taskId) {
-        const updatedTask = { ...task, status: newStatus as any };
-        
-        // Add activity log
-        const activity: ActivityLog = {
-          id: `activity-${Date.now()}`,
-          type: 'task_updated',
-          description: `Task "${task.title}" moved to ${newStatus}`,
-          user: user?.email || 'Unknown User',
-          timestamp: new Date(),
-          projectId: task.project,
-          taskId: task.id
-        };
-        setActivityLogs(prev => [activity, ...prev]);
-        
-        return updatedTask;
-      }
-      return task;
-    }));
-    
-    toast({
-      title: "Task Updated",
-      description: `Task status changed to ${newStatus}`,
-    });
+  // Handle drag and drop
+  const handleDragStart = (e: React.DragEvent, task: Task) => {
+    e.dataTransfer.setData('text/plain', task.id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, columnId: string) => {
+    e.preventDefault();
+    const taskId = e.dataTransfer.getData('text/plain');
+    if (taskId) {
+      handleTaskStatusUpdate(taskId, columnId);
+    }
+  };
+
+  // Handle task status updates  
+  const handleTaskStatusUpdate = async (taskId: string, newStatus: string) => {
+    try {
+      // Update in database
+      const { error } = await supabase
+        .from('todos')
+        .update({ status: newStatus })
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      // Update local state
+      setTasks(prev => prev.map(task => {
+        if (task.id === taskId) {
+          const updatedTask = { ...task, status: newStatus as any };
+          
+          // Add activity log
+          const activity: ActivityLog = {
+            id: `activity-${Date.now()}`,
+            type: 'task_updated',
+            description: `Task "${task.title}" moved to ${newStatus}`,
+            user: user?.email || 'Unknown User',
+            timestamp: new Date(),
+            projectId: task.project,
+            taskId: task.id
+          };
+          setActivityLogs(prev => [activity, ...prev]);
+          
+          return updatedTask;
+        }
+        return task;
+      }));
+      
+      toast({
+        title: "Task Updated",
+        description: `Task status changed to ${newStatus}`,
+      });
+    } catch (error) {
+      console.error('Error updating task status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update task status. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Handle task deletion
@@ -695,11 +732,17 @@ const ProjectManagement = () => {
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="outline" size="sm" onClick={() => setShowBoardCustomizer(true)}>
+              <Button variant="outline" size="sm" onClick={() => {
+                console.log('Opening board customizer');
+                setShowBoardCustomizer(true);
+              }}>
                 <Settings className="w-4 h-4 mr-2" />
                 Customize Board
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowAutomationBuilder(true)}>
+              <Button variant="outline" size="sm" onClick={() => {
+                console.log('Opening automation builder');
+                setShowAutomationBuilder(true);
+              }}>
                 <Zap className="w-4 h-4 mr-2" />
                 Automation Rules
               </Button>
@@ -715,14 +758,22 @@ const ProjectManagement = () => {
       {/* Kanban Columns */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {statusColumns.map(column => (
-          <div key={column.id} className={`${column.color} rounded-lg p-4 min-h-[700px] animate-fade-in`}>
+          <div 
+            key={column.id} 
+            className={`${column.color} rounded-lg p-4 min-h-[700px] animate-fade-in`}
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, column.id)}
+          >
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold">{column.title}</h3>
               <div className="flex items-center gap-2">
                 <Badge variant="secondary">
                   {filteredTasks.filter(task => task.status === column.id).length}
                 </Badge>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" onClick={(e) => {
+                  e.stopPropagation();
+                  setShowCreateTask(true);
+                }}>
                   <Plus className="w-4 h-4" />
                 </Button>
               </div>
@@ -735,7 +786,14 @@ const ProjectManagement = () => {
                   <Card 
                     key={task.id} 
                     className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]"
-                    onClick={() => handleTaskStatusUpdate(task.id, column.id)}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, task)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      console.log('Task card clicked:', task.id, task.title);
+                      setEditingTask(task);
+                      setShowEditTask(true);
+                    }}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-2">
@@ -1843,7 +1901,15 @@ const ProjectManagement = () => {
                   <ProjectCard
                     key={project.id}
                     project={projectCardData}
-                    onClick={() => {/* Handle project click */}}
+                    onClick={() => {
+                      console.log('Selecting project:', project.id);
+                      setSelectedProject(project.id);
+                      setActiveTab('overview');
+                      toast({
+                        title: "Project Selected",
+                        description: `Now viewing: ${project.name}`,
+                      });
+                    }}
                   />
                 );
               })}
