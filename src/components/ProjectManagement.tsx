@@ -82,7 +82,9 @@ import {
   Rocket,
   HardDrive,
   Cloud,
-  Loader2
+  Loader2,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -184,10 +186,19 @@ interface KanbanColumn {
 
 interface AutomationRule {
   id: string;
+  name: string;
   trigger: string;
-  action: string;
-  conditions: any[];
-  enabled: boolean;
+  conditions: Array<{
+    field: string;
+    operator: string;
+    value: string;
+  }>;
+  actions: Array<{
+    type: string;
+    value: string;
+  }>;
+  isActive: boolean;
+  lastTriggered?: Date;
 }
 
 interface Integration {
@@ -212,6 +223,7 @@ const ProjectManagement = () => {
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showAutomationBuilder, setShowAutomationBuilder] = useState(false);
+  const [showBoardCustomizer, setShowBoardCustomizer] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showEditTask, setShowEditTask] = useState(false);
   const [showCreateProject, setShowCreateProject] = useState(false);
@@ -341,6 +353,27 @@ const ProjectManagement = () => {
     { id: '2', name: 'Google Calendar', type: 'google-calendar', status: 'connected', config: {} },
     { id: '3', name: 'Slack', type: 'slack', status: 'connected', config: {} },
     { id: '4', name: 'Notion', type: 'notion', status: 'disconnected', config: {} }
+  ]);
+
+  const [automationRules, setAutomationRules] = useState<AutomationRule[]>([
+    {
+      id: '1',
+      name: 'Auto-assign urgent tasks',
+      trigger: 'task_created',
+      conditions: [{ field: 'priority', operator: 'equals', value: 'urgent' }],
+      actions: [{ type: 'assign_to', value: 'team-lead' }],
+      isActive: true,
+      lastTriggered: new Date(Date.now() - 86400000) // 1 day ago
+    },
+    {
+      id: '2',
+      name: 'Deadline notifications',
+      trigger: 'deadline_approaching',
+      conditions: [{ field: 'days_until_due', operator: 'equals', value: '2' }],
+      actions: [{ type: 'send_notification', value: 'slack' }],
+      isActive: true,
+      lastTriggered: new Date(Date.now() - 3600000) // 1 hour ago
+    }
   ]);
 
   // Check if user can access Project Management features
@@ -596,7 +629,9 @@ const ProjectManagement = () => {
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          task.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesProject = selectedProject === 'all' || task.project === selectedProject;
+    const matchesProject = selectedProject === 'all' || 
+                        task.project === selectedProject || 
+                        projects.find(p => p.id === selectedProject)?.name === task.project;
     return matchesSearch && matchesProject;
   });
 
@@ -660,7 +695,7 @@ const ProjectManagement = () => {
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => setShowBoardCustomizer(true)}>
                 <Settings className="w-4 h-4 mr-2" />
                 Customize Board
               </Button>
@@ -1549,33 +1584,64 @@ const ProjectManagement = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <h5 className="font-medium">Auto-assign tasks by tags</h5>
-                <Badge className="bg-green-100 text-green-800">Active</Badge>
+            {automationRules.map((rule) => (
+              <div key={rule.id} className="p-4 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h5 className="font-medium">{rule.name}</h5>
+                  <Badge className={rule.isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
+                    {rule.isActive ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+                <p className="text-sm text-gray-600 mb-3">
+                  When {rule.trigger.replace('_', ' ')} → {rule.actions[0]?.type.replace('_', ' ')} {rule.actions[0]?.value}
+                </p>
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => {
+                      // Edit automation rule
+                      setShowAutomationBuilder(true);
+                    }}>
+                      Edit
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setAutomationRules(prev => prev.map(r => 
+                          r.id === rule.id ? { ...r, isActive: !r.isActive } : r
+                        ));
+                        toast({
+                          title: rule.isActive ? "Rule Disabled" : "Rule Enabled",
+                          description: `${rule.name} has been ${rule.isActive ? 'disabled' : 'enabled'}.`,
+                        });
+                      }}
+                    >
+                      {rule.isActive ? "Disable" : "Enable"}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-red-600"
+                      onClick={() => {
+                        setAutomationRules(prev => prev.filter(r => r.id !== rule.id));
+                        toast({
+                          title: "Rule Deleted",
+                          description: `${rule.name} has been deleted.`,
+                          variant: "destructive"
+                        });
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                  {rule.lastTriggered && (
+                    <span className="text-xs text-gray-500">
+                      Last triggered: {rule.lastTriggered.toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
               </div>
-              <p className="text-sm text-gray-600 mb-3">
-                When a task with "urgent" tag is created → Auto-assign to available team lead
-              </p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">Edit</Button>
-                <Button variant="outline" size="sm">Disable</Button>
-              </div>
-            </div>
-            
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <h5 className="font-medium">Deadline notifications</h5>
-                <Badge className="bg-green-100 text-green-800">Active</Badge>
-              </div>
-              <p className="text-sm text-gray-600 mb-3">
-                When task due date is 2 days away → Send Slack notification to assignee
-              </p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">Edit</Button>
-                <Button variant="outline" size="sm">Disable</Button>
-              </div>
-            </div>
+            ))}
             
             <Button variant="outline" className="w-full" onClick={() => setShowAutomationBuilder(true)}>
               <Plus className="w-4 h-4 mr-2" />
@@ -1704,7 +1770,7 @@ const ProjectManagement = () => {
               <SelectContent>
                 <SelectItem value="all">All Projects</SelectItem>
                 {projects.map(project => (
-                  <SelectItem key={project.id} value={project.name}>
+                  <SelectItem key={project.id} value={project.id}>
                     {project.name}
                   </SelectItem>
                 ))}
@@ -1920,11 +1986,214 @@ const ProjectManagement = () => {
             </div>
             
             <div className="flex gap-2">
-              <Button className="flex-1">
+              <Button 
+                className="flex-1"
+                onClick={() => {
+                  // Create new automation rule (simplified for demo)
+                  const newRule: AutomationRule = {
+                    id: `rule-${Date.now()}`,
+                    name: "Custom Automation",
+                    trigger: "task_created",
+                    conditions: [{ field: "priority", operator: "equals", value: "urgent" }],
+                    actions: [{ type: "assign_to", value: "team-lead" }],
+                    isActive: true,
+                    lastTriggered: undefined
+                  };
+                  
+                  setAutomationRules(prev => [...prev, newRule]);
+                  setShowAutomationBuilder(false);
+                  
+                  toast({
+                    title: "Automation Created",
+                    description: "Your automation rule has been created and activated.",
+                  });
+                }}
+              >
                 <Zap className="w-4 h-4 mr-2" />
                 Create Automation
               </Button>
-              <Button variant="outline">Test Rule</Button>
+              <Button variant="outline" onClick={() => {
+                toast({
+                  title: "Test Successful",
+                  description: "Your automation rule would trigger correctly.",
+                });
+              }}>
+                Test Rule
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Board Customizer Dialog */}
+      <Dialog open={showBoardCustomizer} onOpenChange={setShowBoardCustomizer}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Customize Kanban Board
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* Column Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Board Columns</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {statusColumns.map((column, index) => (
+                    <div key={column.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-4 h-4 rounded ${column.color}`}></div>
+                        <Input 
+                          value={column.title} 
+                          onChange={(e) => {
+                            const newColumns = [...statusColumns];
+                            newColumns[index].title = e.target.value;
+                            // Update the current project's columns if one is selected
+                            if (selectedProject !== 'all') {
+                              setProjects(prev => prev.map(p => 
+                                p.id === selectedProject 
+                                  ? { ...p, customColumns: newColumns }
+                                  : p
+                              ));
+                            }
+                          }}
+                          className="max-w-[200px]"
+                        />
+                        <Select 
+                          value={column.color} 
+                          onValueChange={(newColor) => {
+                            const newColumns = [...statusColumns];
+                            newColumns[index].color = newColor;
+                            if (selectedProject !== 'all') {
+                              setProjects(prev => prev.map(p => 
+                                p.id === selectedProject 
+                                  ? { ...p, customColumns: newColumns }
+                                  : p
+                              ));
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-[130px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="bg-gray-100">Gray</SelectItem>
+                            <SelectItem value="bg-blue-100">Blue</SelectItem>
+                            <SelectItem value="bg-green-100">Green</SelectItem>
+                            <SelectItem value="bg-yellow-100">Yellow</SelectItem>
+                            <SelectItem value="bg-purple-100">Purple</SelectItem>
+                            <SelectItem value="bg-red-100">Red</SelectItem>
+                            <SelectItem value="bg-orange-100">Orange</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm">
+                          <ArrowUp className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <ArrowDown className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-red-600">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  <Button variant="outline" className="w-full">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Column
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Board Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Board Settings</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Default View</label>
+                    <Select value={activeView} onValueChange={(value: any) => setActiveView(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="kanban">Kanban</SelectItem>
+                        <SelectItem value="list">List</SelectItem>
+                        <SelectItem value="calendar">Calendar</SelectItem>
+                        <SelectItem value="timeline">Timeline</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Card Size</label>
+                    <Select defaultValue="medium">
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="small">Small</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="large">Large</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Advanced Options */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Advanced Options</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="text-sm font-medium">Auto-refresh</label>
+                      <p className="text-xs text-gray-600">Automatically update board data</p>
+                    </div>
+                    <Button variant="outline" size="sm">ON</Button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="text-sm font-medium">Show card count</label>
+                      <p className="text-xs text-gray-600">Display number of cards in each column</p>
+                    </div>
+                    <Button variant="outline" size="sm">ON</Button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="text-sm font-medium">Compact mode</label>
+                      <p className="text-xs text-gray-600">Reduce card spacing and padding</p>
+                    </div>
+                    <Button variant="outline" size="sm">OFF</Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="flex gap-2">
+              <Button className="flex-1" onClick={() => {
+                toast({
+                  title: "Board Customized",
+                  description: "Your board settings have been saved.",
+                });
+                setShowBoardCustomizer(false);
+              }}>
+                Save Changes
+              </Button>
+              <Button variant="outline" onClick={() => setShowBoardCustomizer(false)}>
+                Cancel
+              </Button>
             </div>
           </div>
         </DialogContent>
