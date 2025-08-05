@@ -46,10 +46,11 @@ const SlackConnectCard = ({ userId }: Props) => {
 
   const handleConnect = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!user || !session) return;
 
     const baseUrl = 'https://gvftvswyrevummbvyhxa.supabase.co/functions/v1';
-    window.location.href = `${baseUrl}/oauth-slack?state=${user.id}`;
+    window.location.href = `${baseUrl}/oauth-slack?state=${user.id}&access_token=${session.access_token}`;
   };
 
   const handleDisconnect = async () => {
