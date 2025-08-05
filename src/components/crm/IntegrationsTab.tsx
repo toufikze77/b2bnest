@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOAuthConnect } from '@/hooks/useOAuthConnect';
 import { 
   Zap,
   Calendar,
@@ -22,15 +23,23 @@ interface Integration {
   name: string;
   integration_name: string;
   is_connected: boolean;
-  oauth_url?: string;
+  requires_oauth?: boolean;
   requires_manual_setup?: boolean;
   icon: React.ReactNode;
   category: string;
+  oauth_config?: {
+    provider: 'slack' | 'notion' | 'trello' | 'google_calendar';
+    redirectPath: string;
+    scope: string;
+    prompt?: string;
+    accessType?: string;
+  };
 }
 
 const IntegrationsTab = () => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { initiateOAuth } = useOAuthConnect();
   const [integrations, setIntegrations] = useState<Integration[]>([
     { 
       id: 'zapier', 
@@ -64,7 +73,12 @@ const IntegrationsTab = () => {
       name: 'Slack', 
       integration_name: 'slack', 
       is_connected: false, 
-      oauth_url: `https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-slack?state=${user?.id}`,
+      requires_oauth: true,
+      oauth_config: {
+        provider: 'slack',
+        redirectPath: 'oauth-slack',
+        scope: 'identity.basic,identity.team'
+      },
       icon: <ExternalLink className="w-4 h-4 text-purple-500" />,
       category: 'communication'
     },
@@ -73,7 +87,12 @@ const IntegrationsTab = () => {
       name: 'Notion', 
       integration_name: 'notion', 
       is_connected: false, 
-      oauth_url: `https://api.notion.com/v1/oauth/authorize?owner=user&client_id=${import.meta.env.VITE_NOTION_CLIENT_ID || 'demo'}&redirect_uri=https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-notion&response_type=code&state=${user?.id}`,
+      requires_oauth: true,
+      oauth_config: {
+        provider: 'notion',
+        redirectPath: 'oauth-notion',
+        scope: 'database.read,block.read,block.write,database.write'
+      },
       icon: <ExternalLink className="w-4 h-4 text-gray-800" />,
       category: 'productivity'
     },
@@ -82,7 +101,14 @@ const IntegrationsTab = () => {
       name: 'Google Calendar', 
       integration_name: 'google_calendar', 
       is_connected: false, 
-      oauth_url: `https://accounts.google.com/o/oauth2/v2/auth?client_id=${import.meta.env.VITE_GOOGLE_CLIENT_ID || 'demo'}&redirect_uri=https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-google-calendar&response_type=code&scope=https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email&access_type=offline&state=${user?.id}&prompt=consent`,
+      requires_oauth: true,
+      oauth_config: {
+        provider: 'google_calendar',
+        redirectPath: 'oauth-google-calendar',
+        scope: 'https://www.googleapis.com/auth/calendar',
+        prompt: 'consent',
+        accessType: 'offline'
+      },
       icon: <Calendar className="w-4 h-4 text-blue-500" />,
       category: 'productivity'
     },
@@ -91,10 +117,15 @@ const IntegrationsTab = () => {
       name: 'Trello', 
       integration_name: 'trello', 
       is_connected: false, 
-      oauth_url: `https://trello.com/1/authorize?response_type=code&client_id=${import.meta.env.VITE_TRELLO_CLIENT_ID || 'demo'}&redirect_uri=https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-trello&scope=read,write&expiration=never&name=BusinessForms&state=${user?.id}`,
-       icon: <Target className="w-4 h-4 text-blue-600" />,
-       category: 'productivity'
-     }
+      requires_oauth: true,
+      oauth_config: {
+        provider: 'trello',
+        redirectPath: 'oauth-trello',
+        scope: 'read,write'
+      },
+      icon: <Target className="w-4 h-4 text-blue-600" />,
+      category: 'productivity'
+    }
    ]);
 
   useEffect(() => {
@@ -126,9 +157,9 @@ const IntegrationsTab = () => {
     const integration = integrations.find(i => i.id === integrationId);
     if (!integration || !user?.id) return;
 
-    if (integration.oauth_url && !integration.requires_manual_setup) {
-      // OAuth flow - redirect to OAuth URL
-      window.location.href = integration.oauth_url;
+    if (integration.requires_oauth && integration.oauth_config) {
+      // OAuth flow using the hook
+      initiateOAuth(integration.oauth_config);
       return;
     }
 
