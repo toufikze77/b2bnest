@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Trello, PlugZap, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useOAuthConnect } from '@/hooks/useOAuthConnect';
 
 interface Props {
   userId: string;
@@ -12,6 +13,7 @@ const TrelloConnectCard = ({ userId }: Props) => {
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userInfo, setUserInfo] = useState<{ username?: string; fullName?: string } | null>(null);
+  const { initiateOAuth } = useOAuthConnect();
 
   const fetchStatus = async () => {
     try {
@@ -47,35 +49,12 @@ const TrelloConnectCard = ({ userId }: Props) => {
     fetchStatus();
   }, [userId]);
 
-  const handleConnect = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      console.error('No user found for Trello connection');
-      return;
-    }
-
-    console.log('Initiating Trello OAuth for user:', user.id);
-    
-    try {
-      // Get OAuth config from edge function
-      const { data: config, error } = await supabase.functions.invoke('get-oauth-config');
-      
-      if (error || !config?.trello) {
-        console.error('Failed to get Trello client ID:', error);
-        return;
-      }
-      
-      const redirectUri = encodeURIComponent('https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-trello');
-      const scope = encodeURIComponent('read,write');
-      const state = user.id;
-      
-      const trelloOAuthUrl = `https://trello.com/1/oauth2/authorize?client_id=${config.trello}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=${state}`;
-      
-      console.log('Redirecting to Trello OAuth:', trelloOAuthUrl);
-      window.location.href = trelloOAuthUrl;
-    } catch (error) {
-      console.error('Error initiating Trello OAuth:', error);
-    }
+  const handleConnect = () => {
+    initiateOAuth({
+      provider: 'trello',
+      redirectPath: 'oauth-trello',
+      scope: 'read,write',
+    });
   };
 
   const handleDisconnect = async () => {

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { useOAuthConnect } from '@/hooks/useOAuthConnect';
 
 interface Props {
   userId: string;
@@ -14,6 +15,7 @@ const NotionConnectCard = ({ userId }: Props) => {
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const { toast } = useToast();
+  const { initiateOAuth } = useOAuthConnect();
 
   const fetchStatus = async () => {
     try {
@@ -46,28 +48,12 @@ const NotionConnectCard = ({ userId }: Props) => {
     fetchStatus();
   }, [userId]);
 
-  const handleConnect = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    try {
-      // Get OAuth config from edge function
-      const { data: config, error } = await supabase.functions.invoke('get-oauth-config');
-      
-      if (error || !config?.notion) {
-        console.error('Failed to get Notion client ID:', error);
-        return;
-      }
-      
-      const redirectUri = encodeURIComponent('https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-notion');
-      const state = user.id;
-      
-      const notionOAuthUrl = `https://api.notion.com/v1/oauth/authorize?client_id=${config.notion}&redirect_uri=${redirectUri}&response_type=code&state=${state}`;
-      
-      window.location.href = notionOAuthUrl;
-    } catch (error) {
-      console.error('Error initiating Notion OAuth:', error);
-    }
+  const handleConnect = () => {
+    initiateOAuth({
+      provider: 'notion',
+      redirectPath: 'oauth-notion',
+      scope: '',
+    });
   };
 
   const handleDisconnect = async () => {

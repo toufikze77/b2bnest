@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, PlugZap, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useOAuthConnect } from '@/hooks/useOAuthConnect';
 
 interface Props {
   userId: string;
@@ -12,6 +13,7 @@ const SlackConnectCard = ({ userId }: Props) => {
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [teamName, setTeamName] = useState<string | null>(null);
+  const { initiateOAuth } = useOAuthConnect();
 
   const fetchStatus = async () => {
     try {
@@ -44,29 +46,12 @@ const SlackConnectCard = ({ userId }: Props) => {
     fetchStatus();
   }, [userId]);
 
-  const handleConnect = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    try {
-      // Get OAuth config from edge function
-      const { data: config, error } = await supabase.functions.invoke('get-oauth-config');
-      
-      if (error || !config?.slack) {
-        console.error('Failed to get Slack client ID:', error);
-        return;
-      }
-      
-      const redirectUri = encodeURIComponent('https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-slack');
-      const scope = encodeURIComponent('channels:read,chat:write,users:read');
-      const state = user.id;
-      
-      const slackOAuthUrl = `https://slack.com/oauth/v2/authorize?client_id=${config.slack}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
-      
-      window.location.href = slackOAuthUrl;
-    } catch (error) {
-      console.error('Error initiating Slack OAuth:', error);
-    }
+  const handleConnect = () => {
+    initiateOAuth({
+      provider: 'slack',
+      redirectPath: 'oauth-slack',
+      scope: 'channels:read,chat:write,users:read',
+    });
   };
 
   const handleDisconnect = async () => {
