@@ -351,6 +351,7 @@ const ProjectManagement = () => {
     console.log('🔧 ProjectManagement useEffect triggered', { user: !!user, canAccessPM });
     if (user && canAccessPM) {
       loadProjects();
+      loadTasks();
     } else {
       setLoading(false);
     }
@@ -398,6 +399,39 @@ const ProjectManagement = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadTasks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('todos')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data) {
+        const formattedTasks: Task[] = data.map(todo => ({
+          id: todo.id,
+          title: todo.title,
+          description: todo.description || '',
+          status: todo.status as 'backlog' | 'todo' | 'in-progress' | 'review' | 'done',
+          priority: todo.priority as 'low' | 'medium' | 'high' | 'urgent',
+          assignee: todo.assigned_to || 'Unassigned',
+          dueDate: todo.due_date ? new Date(todo.due_date) : null,
+          project: 'General', // Default project until we have proper project mapping
+          tags: todo.labels || [],
+          estimatedHours: todo.estimated_hours,
+          subtasks: [],
+          progress: 0,
+          comments: []
+        }));
+        setTasks(formattedTasks);
+      }
+    } catch (error) {
+      console.error('Error loading tasks:', error);
     }
   };
 
@@ -462,41 +496,67 @@ const ProjectManagement = () => {
   };
 
   // Handle creating new tasks
-  const handleCreateTask = (taskData: any) => {
-    const newTask: Task = {
-      id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      title: taskData.title,
-      description: taskData.description || '',
-      status: 'todo',
-      priority: taskData.priority || 'medium',
-      assignee: taskData.assigned_to || 'Unassigned',
-      dueDate: taskData.due_date ? new Date(taskData.due_date) : null,
-      project: taskData.project || projects[0]?.name || 'General',
-      tags: taskData.labels || [],
-      estimatedHours: taskData.estimated_hours,
-      subtasks: taskData.subtasks || [],
-      progress: 0,
-      comments: []
-    };
+  const handleCreateTask = async (taskData: any) => {
+    try {
+      const { data, error } = await supabase
+        .from('todos')
+        .insert({
+          title: taskData.title,
+          description: taskData.description || '',
+          status: 'todo',
+          priority: taskData.priority || 'medium',
+          due_date: taskData.due_date || null,
+          labels: taskData.labels || [],
+          estimated_hours: taskData.estimated_hours,
+          user_id: user?.id
+        })
+        .select()
+        .single();
 
-    setTasks(prev => [...prev, newTask]);
-    
-    // Add activity log
-    const newActivity: ActivityLog = {
-      id: `activity-${Date.now()}`,
-      type: 'task_created',
-      description: `Created new task: ${newTask.title}`,
-      user: user?.email || 'Unknown User',
-      timestamp: new Date(),
-      projectId: newTask.project,
-      taskId: newTask.id
-    };
-    setActivityLogs(prev => [newActivity, ...prev]);
+      if (error) throw error;
 
-    toast({
-      title: "Task Created",
-      description: `Successfully created task: ${newTask.title}`,
-    });
+      const newTask: Task = {
+        id: data.id,
+        title: data.title,
+        description: data.description || '',
+        status: data.status as 'backlog' | 'todo' | 'in-progress' | 'review' | 'done',
+        priority: data.priority as 'low' | 'medium' | 'high' | 'urgent',
+        assignee: data.assigned_to || 'Unassigned',
+        dueDate: data.due_date ? new Date(data.due_date) : null,
+        project: taskData.project || projects[0]?.name || 'General',
+        tags: data.labels || [],
+        estimatedHours: data.estimated_hours,
+        subtasks: [],
+        progress: 0,
+        comments: []
+      };
+
+      setTasks(prev => [...prev, newTask]);
+      
+      // Add activity log
+      const newActivity: ActivityLog = {
+        id: `activity-${Date.now()}`,
+        type: 'task_created',
+        description: `Created new task: ${newTask.title}`,
+        user: user?.email || 'Unknown User',
+        timestamp: new Date(),
+        projectId: newTask.project,
+        taskId: newTask.id
+      };
+      setActivityLogs(prev => [newActivity, ...prev]);
+
+      toast({
+        title: "Task Created",
+        description: `Successfully created task: ${newTask.title}`,
+      });
+    } catch (error) {
+      console.error('Error creating task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create task. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   if (!canAccessPM) {
