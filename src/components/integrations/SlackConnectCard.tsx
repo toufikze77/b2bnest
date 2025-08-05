@@ -48,15 +48,25 @@ const SlackConnectCard = ({ userId }: Props) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Redirect to Slack's OAuth URL
-    const clientId = 'your-slack-client-id'; // This should come from environment or config
-    const redirectUri = encodeURIComponent('https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-slack');
-    const scope = encodeURIComponent('channels:read,chat:write,users:read');
-    const state = user.id;
-    
-    const slackOAuthUrl = `https://slack.com/oauth/v2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
-    
-    window.location.href = slackOAuthUrl;
+    try {
+      // Get OAuth config from edge function
+      const { data: config, error } = await supabase.functions.invoke('get-oauth-config');
+      
+      if (error || !config?.slack) {
+        console.error('Failed to get Slack client ID:', error);
+        return;
+      }
+      
+      const redirectUri = encodeURIComponent('https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-slack');
+      const scope = encodeURIComponent('channels:read,chat:write,users:read');
+      const state = user.id;
+      
+      const slackOAuthUrl = `https://slack.com/oauth/v2/authorize?client_id=${config.slack}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
+      
+      window.location.href = slackOAuthUrl;
+    } catch (error) {
+      console.error('Error initiating Slack OAuth:', error);
+    }
   };
 
   const handleDisconnect = async () => {

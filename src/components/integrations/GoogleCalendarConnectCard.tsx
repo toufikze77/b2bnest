@@ -53,16 +53,26 @@ const GoogleCalendarConnectCard = ({ userId }: Props) => {
 
     console.log('Initiating Google Calendar OAuth for user:', user.id);
     
-    // Redirect to Google's OAuth URL
-    const clientId = 'your-google-client-id'; // This should come from environment or config
-    const redirectUri = encodeURIComponent('https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-google-calendar');
-    const scope = encodeURIComponent('https://www.googleapis.com/auth/calendar');
-    const state = user.id;
-    
-    const googleOAuthUrl = `https://accounts.google.com/oauth2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=${state}&access_type=offline&prompt=consent`;
-    
-    console.log('Redirecting to Google OAuth:', googleOAuthUrl);
-    window.location.href = googleOAuthUrl;
+    try {
+      // Get OAuth config from edge function
+      const { data: config, error } = await supabase.functions.invoke('get-oauth-config');
+      
+      if (error || !config?.google) {
+        console.error('Failed to get Google client ID:', error);
+        return;
+      }
+      
+      const redirectUri = encodeURIComponent('https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-google-calendar');
+      const scope = encodeURIComponent('https://www.googleapis.com/auth/calendar');
+      const state = user.id;
+      
+      const googleOAuthUrl = `https://accounts.google.com/oauth2/auth?client_id=${config.google}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=${state}&access_type=offline&prompt=consent`;
+      
+      console.log('Redirecting to Google OAuth:', googleOAuthUrl);
+      window.location.href = googleOAuthUrl;
+    } catch (error) {
+      console.error('Error initiating Google OAuth:', error);
+    }
   };
 
   const handleDisconnect = async () => {

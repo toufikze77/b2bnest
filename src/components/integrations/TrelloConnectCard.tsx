@@ -56,16 +56,26 @@ const TrelloConnectCard = ({ userId }: Props) => {
 
     console.log('Initiating Trello OAuth for user:', user.id);
     
-    // Redirect to Trello's OAuth URL
-    const clientId = 'your-trello-client-id'; // This should come from environment or config
-    const redirectUri = encodeURIComponent('https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-trello');
-    const scope = encodeURIComponent('read,write');
-    const state = user.id;
-    
-    const trelloOAuthUrl = `https://trello.com/1/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=${state}`;
-    
-    console.log('Redirecting to Trello OAuth:', trelloOAuthUrl);
-    window.location.href = trelloOAuthUrl;
+    try {
+      // Get OAuth config from edge function
+      const { data: config, error } = await supabase.functions.invoke('get-oauth-config');
+      
+      if (error || !config?.trello) {
+        console.error('Failed to get Trello client ID:', error);
+        return;
+      }
+      
+      const redirectUri = encodeURIComponent('https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-trello');
+      const scope = encodeURIComponent('read,write');
+      const state = user.id;
+      
+      const trelloOAuthUrl = `https://trello.com/1/oauth2/authorize?client_id=${config.trello}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=${state}`;
+      
+      console.log('Redirecting to Trello OAuth:', trelloOAuthUrl);
+      window.location.href = trelloOAuthUrl;
+    } catch (error) {
+      console.error('Error initiating Trello OAuth:', error);
+    }
   };
 
   const handleDisconnect = async () => {

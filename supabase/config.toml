@@ -2,3 +2,6 @@ project_id = "gvftvswyrevummbvyhxa"
 
 [functions.fetch-news]
 verify_jwt = false
+
+[functions.get-oauth-config]
+verify_jwt = false

@@ -50,14 +50,24 @@ const NotionConnectCard = ({ userId }: Props) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Redirect to Notion's OAuth URL
-    const clientId = 'your-notion-client-id'; // This should come from environment or config
-    const redirectUri = encodeURIComponent('https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-notion');
-    const state = user.id;
-    
-    const notionOAuthUrl = `https://api.notion.com/v1/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&state=${state}`;
-    
-    window.location.href = notionOAuthUrl;
+    try {
+      // Get OAuth config from edge function
+      const { data: config, error } = await supabase.functions.invoke('get-oauth-config');
+      
+      if (error || !config?.notion) {
+        console.error('Failed to get Notion client ID:', error);
+        return;
+      }
+      
+      const redirectUri = encodeURIComponent('https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-notion');
+      const state = user.id;
+      
+      const notionOAuthUrl = `https://api.notion.com/v1/oauth/authorize?client_id=${config.notion}&redirect_uri=${redirectUri}&response_type=code&state=${state}`;
+      
+      window.location.href = notionOAuthUrl;
+    } catch (error) {
+      console.error('Error initiating Notion OAuth:', error);
+    }
   };
 
   const handleDisconnect = async () => {
