@@ -95,7 +95,7 @@ export const useSubscription = () => {
     if (hasSpecialAccess && ['analytics', 'workflows', 'personalization'].includes(featureId)) return true;
     
     // Free features available to all users
-    if (['advisor', 'crm', 'contacts', 'deals'].includes(featureId)) return true;
+    if (['advisor', 'crm', 'contacts', 'deals', 'project-management'].includes(featureId)) return true;
     
     // Other features require premium subscription
     return isPremium;
