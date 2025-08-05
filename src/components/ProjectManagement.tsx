@@ -439,7 +439,10 @@ const ProjectManagement = () => {
     try {
       const { data, error } = await supabase
         .from('todos')
-        .select('*')
+        .select(`
+          *,
+          project:projects(id, name)
+        `)
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
@@ -454,7 +457,7 @@ const ProjectManagement = () => {
           priority: todo.priority as 'low' | 'medium' | 'high' | 'urgent',
           assignee: todo.assigned_to || 'Unassigned',
           dueDate: todo.due_date ? new Date(todo.due_date) : null,
-          project: 'General', // Default project until we have proper project mapping
+          project: todo.project?.id || 'no-project',
           tags: todo.labels || [],
           estimatedHours: todo.estimated_hours,
           subtasks: [],
@@ -531,6 +534,9 @@ const ProjectManagement = () => {
   // Handle creating new tasks
   const handleCreateTask = async (taskData: any) => {
     try {
+      // Determine which project to assign the task to
+      const targetProjectId = selectedProject !== 'all' ? selectedProject : projects[0]?.id || null;
+      
       const { data, error } = await supabase
         .from('todos')
         .insert({
@@ -541,9 +547,13 @@ const ProjectManagement = () => {
           due_date: taskData.due_date || null,
           labels: taskData.labels || [],
           estimated_hours: taskData.estimated_hours,
+          project_id: targetProjectId,
           user_id: user?.id
         })
-        .select()
+        .select(`
+          *,
+          project:projects(id, name)
+        `)
         .single();
 
       if (error) throw error;
@@ -556,7 +566,7 @@ const ProjectManagement = () => {
         priority: data.priority as 'low' | 'medium' | 'high' | 'urgent',
         assignee: data.assigned_to || 'Unassigned',
         dueDate: data.due_date ? new Date(data.due_date) : null,
-        project: taskData.project || projects[0]?.name || 'General',
+        project: data.project?.id || 'no-project',
         tags: data.labels || [],
         estimatedHours: data.estimated_hours,
         subtasks: [],
@@ -629,9 +639,8 @@ const ProjectManagement = () => {
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          task.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesProject = selectedProject === 'all' || 
-                        task.project === selectedProject || 
-                        projects.find(p => p.id === selectedProject)?.name === task.project;
+    const matchesProject = selectedProject === 'all' || task.project === selectedProject;
+    console.log('Filtering task:', task.title, 'project:', task.project, 'selectedProject:', selectedProject, 'matches:', matchesProject);
     return matchesSearch && matchesProject;
   });
 
@@ -772,6 +781,7 @@ const ProjectManagement = () => {
                 </Badge>
                 <Button variant="ghost" size="sm" onClick={(e) => {
                   e.stopPropagation();
+                  console.log('Plus button clicked, opening create task dialog');
                   setShowCreateTask(true);
                 }}>
                   <Plus className="w-4 h-4" />

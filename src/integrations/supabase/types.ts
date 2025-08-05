@@ -1934,6 +1934,7 @@ export type Database = {
           labels: string[] | null
           parent_id: string | null
           priority: string
+          project_id: string | null
           reporter_id: string | null
           start_date: string | null
           status: string
@@ -1953,6 +1954,7 @@ export type Database = {
           labels?: string[] | null
           parent_id?: string | null
           priority?: string
+          project_id?: string | null
           reporter_id?: string | null
           start_date?: string | null
           status?: string
@@ -1972,6 +1974,7 @@ export type Database = {
           labels?: string[] | null
           parent_id?: string | null
           priority?: string
+          project_id?: string | null
           reporter_id?: string | null
           start_date?: string | null
           status?: string
@@ -1985,6 +1988,13 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "todos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "todos_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
