@@ -1405,7 +1405,14 @@ const ProjectManagement = () => {
               )}
               
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => {
+                    window.open(`/business-tools?tool=integrations&integration=${integration.type}`, '_blank');
+                  }}
+                >
                   Configure
                 </Button>
                 {integration.status === 'connected' && (
@@ -1432,7 +1439,12 @@ const ProjectManagement = () => {
                 <span className="font-medium">Gmail API</span>
               </div>
               <p className="text-sm text-gray-600 mb-3">Automatically log email communications</p>
-              <Button variant="outline" size="sm" className="w-full">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full"
+                onClick={() => window.open('/business-tools?tool=integrations&integration=gmail', '_blank')}
+              >
                 Connect Gmail
               </Button>
             </div>
@@ -1443,7 +1455,12 @@ const ProjectManagement = () => {
                 <span className="font-medium">Twilio</span>
               </div>
               <p className="text-sm text-gray-600 mb-3">SMS notifications and call tracking</p>
-              <Button variant="outline" size="sm" className="w-full">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full"
+                onClick={() => window.open('/business-tools?tool=integrations&integration=twilio', '_blank')}
+              >
                 Connect Twilio
               </Button>
             </div>
