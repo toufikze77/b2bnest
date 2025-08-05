@@ -49,10 +49,16 @@ const TrelloConnectCard = ({ userId }: Props) => {
 
   const handleConnect = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      console.error('No user found for Trello connection');
+      return;
+    }
 
+    console.log('Initiating Trello OAuth for user:', user.id);
     const baseUrl = 'https://gvftvswyrevummbvyhxa.supabase.co/functions/v1';
-    window.location.href = `${baseUrl}/oauth-trello?state=${user.id}`;
+    const oauthUrl = `${baseUrl}/oauth-trello?state=${user.id}`;
+    console.log('Redirecting to:', oauthUrl);
+    window.location.href = oauthUrl;
   };
 
   const handleDisconnect = async () => {

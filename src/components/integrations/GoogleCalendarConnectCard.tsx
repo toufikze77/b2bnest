@@ -46,10 +46,16 @@ const GoogleCalendarConnectCard = ({ userId }: Props) => {
 
   const handleConnect = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      console.error('No user found for Google Calendar connection');
+      return;
+    }
 
+    console.log('Initiating Google Calendar OAuth for user:', user.id);
     const baseUrl = 'https://gvftvswyrevummbvyhxa.supabase.co/functions/v1';
-    window.location.href = `${baseUrl}/oauth-google-calendar?state=${user.id}`;
+    const oauthUrl = `${baseUrl}/oauth-google-calendar?state=${user.id}`;
+    console.log('Redirecting to:', oauthUrl);
+    window.location.href = oauthUrl;
   };
 
   const handleDisconnect = async () => {
