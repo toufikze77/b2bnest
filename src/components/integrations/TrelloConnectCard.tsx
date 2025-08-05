@@ -49,17 +49,23 @@ const TrelloConnectCard = ({ userId }: Props) => {
 
   const handleConnect = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!user || !session) {
-      console.error('No user or session found for Trello connection');
+    if (!user) {
+      console.error('No user found for Trello connection');
       return;
     }
 
     console.log('Initiating Trello OAuth for user:', user.id);
-    const baseUrl = 'https://gvftvswyrevummbvyhxa.supabase.co/functions/v1';
-    const oauthUrl = `${baseUrl}/oauth-trello?state=${user.id}&access_token=${session.access_token}`;
-    console.log('Redirecting to:', oauthUrl);
-    window.location.href = oauthUrl;
+    
+    // Redirect to Trello's OAuth URL
+    const clientId = 'your-trello-client-id'; // This should come from environment or config
+    const redirectUri = encodeURIComponent('https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-trello');
+    const scope = encodeURIComponent('read,write');
+    const state = user.id;
+    
+    const trelloOAuthUrl = `https://trello.com/1/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=${state}`;
+    
+    console.log('Redirecting to Trello OAuth:', trelloOAuthUrl);
+    window.location.href = trelloOAuthUrl;
   };
 
   const handleDisconnect = async () => {

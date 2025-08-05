@@ -46,17 +46,23 @@ const GoogleCalendarConnectCard = ({ userId }: Props) => {
 
   const handleConnect = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!user || !session) {
-      console.error('No user or session found for Google Calendar connection');
+    if (!user) {
+      console.error('No user found for Google Calendar connection');
       return;
     }
 
     console.log('Initiating Google Calendar OAuth for user:', user.id);
-    const baseUrl = 'https://gvftvswyrevummbvyhxa.supabase.co/functions/v1';
-    const oauthUrl = `${baseUrl}/oauth-google-calendar?state=${user.id}&access_token=${session.access_token}`;
-    console.log('Redirecting to:', oauthUrl);
-    window.location.href = oauthUrl;
+    
+    // Redirect to Google's OAuth URL
+    const clientId = 'your-google-client-id'; // This should come from environment or config
+    const redirectUri = encodeURIComponent('https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-google-calendar');
+    const scope = encodeURIComponent('https://www.googleapis.com/auth/calendar');
+    const state = user.id;
+    
+    const googleOAuthUrl = `https://accounts.google.com/oauth2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=${state}&access_type=offline&prompt=consent`;
+    
+    console.log('Redirecting to Google OAuth:', googleOAuthUrl);
+    window.location.href = googleOAuthUrl;
   };
 
   const handleDisconnect = async () => {

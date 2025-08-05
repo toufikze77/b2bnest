@@ -46,11 +46,17 @@ const SlackConnectCard = ({ userId }: Props) => {
 
   const handleConnect = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!user || !session) return;
+    if (!user) return;
 
-    const baseUrl = 'https://gvftvswyrevummbvyhxa.supabase.co/functions/v1';
-    window.location.href = `${baseUrl}/oauth-slack?state=${user.id}&access_token=${session.access_token}`;
+    // Redirect to Slack's OAuth URL
+    const clientId = 'your-slack-client-id'; // This should come from environment or config
+    const redirectUri = encodeURIComponent('https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-slack');
+    const scope = encodeURIComponent('channels:read,chat:write,users:read');
+    const state = user.id;
+    
+    const slackOAuthUrl = `https://slack.com/oauth/v2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
+    
+    window.location.href = slackOAuthUrl;
   };
 
   const handleDisconnect = async () => {

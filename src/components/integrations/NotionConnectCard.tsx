@@ -48,11 +48,16 @@ const NotionConnectCard = ({ userId }: Props) => {
 
   const handleConnect = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!user || !session) return;
+    if (!user) return;
 
-    const baseUrl = 'https://gvftvswyrevummbvyhxa.supabase.co/functions/v1';
-    window.location.href = `${baseUrl}/oauth-notion?state=${user.id}&access_token=${session.access_token}`;
+    // Redirect to Notion's OAuth URL
+    const clientId = 'your-notion-client-id'; // This should come from environment or config
+    const redirectUri = encodeURIComponent('https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-notion');
+    const state = user.id;
+    
+    const notionOAuthUrl = `https://api.notion.com/v1/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&state=${state}`;
+    
+    window.location.href = notionOAuthUrl;
   };
 
   const handleDisconnect = async () => {
