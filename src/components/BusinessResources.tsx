@@ -35,7 +35,7 @@ const BusinessResources = () => {
         {
           name: 'You\'re invited to Hostinger!',
           description: 'Get an extra 20% discount • Free Domain Registration • Free website migration • 24/7 customer support • From £2.99/month + 2 extra months',
-          website: 'https://hostinger.com',
+          website: 'https://hostinger.co.uk?REFERRALCODE=TDWTOUFIKWBH',
           logo: '/lovable-uploads/0c54b546-305a-43b0-8343-8194fd8a69f7.png'
         },
         {
