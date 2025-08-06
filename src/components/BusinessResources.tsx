@@ -22,17 +22,18 @@ const BusinessResources = () => {
 
   const categories = {
     banking: {
-      title: 'Banking & Financial Services',
+      title: 'Business Resources',
       icon: CreditCard,
       services: [
         {
-          name: 'Chase Business Banking',
-          description: 'Comprehensive business banking with extensive branch network',
+          name: 'Business Bank account',
+          description: 'Take your finances further with the account designed for efficiency, and built for business.',
           features: ['No monthly fees for 12 months', 'Mobile banking', 'Business credit cards'],
           pricing: '$15/month after promotional period',
           rating: 4.3,
-          website: 'https://www.chase.com/business',
-          popular: true
+          website: 'https://business.revolut.com/signup?promo=b2b-ref-028-H2-TXL&ext=bcc2bf37-a7ca-3f5f-a13b-fbfc4b6829b4&context=B2B_REFERRAL',
+          popular: true,
+          logo: '/lovable-uploads/cc883fd6-cb02-4600-8302-bc4306a1ceee.png'
         },
         {
           name: 'Mercury',
@@ -273,6 +274,15 @@ const BusinessResources = () => {
                     </Badge>
                   )}
                   <CardHeader>
+                    {service.logo && (
+                      <div className="mb-4">
+                        <img 
+                          src={service.logo} 
+                          alt={`${service.name} logo`}
+                          className="w-full h-40 object-cover rounded-lg"
+                        />
+                      </div>
+                    )}
                     <CardTitle className="text-xl">{service.name}</CardTitle>
                     <p className="text-gray-600 text-sm">{service.description}</p>
                     {renderStarRating(service.rating)}
