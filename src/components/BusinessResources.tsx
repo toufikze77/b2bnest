@@ -28,20 +28,15 @@ const BusinessResources = () => {
         {
           name: 'Business Bank account',
           description: 'Take your finances further with the account designed for efficiency, and built for business.',
-          features: ['No monthly fees for 12 months', 'Mobile banking', 'Business credit cards'],
-          pricing: '$15/month after promotional period',
-          rating: 4.3,
           website: 'https://business.revolut.com/signup?promo=b2b-ref-028-H2-TXL&ext=bcc2bf37-a7ca-3f5f-a13b-fbfc4b6829b4&context=B2B_REFERRAL',
           popular: true,
           logo: '/lovable-uploads/cc883fd6-cb02-4600-8302-bc4306a1ceee.png'
         },
         {
-          name: 'Mercury',
-          description: 'Digital banking designed for startups and growing businesses',
-          features: ['No monthly fees', 'API integration', 'Multi-user access'],
-          pricing: 'Free for most accounts',
-          rating: 4.7,
-          website: 'https://mercury.com'
+          name: 'You\'re invited to Hostinger!',
+          description: 'Get an extra 20% discount • Free Domain Registration • Free website migration • 24/7 customer support • From £2.99/month + 2 extra months',
+          website: 'https://hostinger.com',
+          logo: '/lovable-uploads/0c54b546-305a-43b0-8343-8194fd8a69f7.png'
         },
         {
           name: 'Brex',
@@ -285,27 +280,31 @@ const BusinessResources = () => {
                     )}
                     <CardTitle className="text-xl">{service.name}</CardTitle>
                     <p className="text-gray-600 text-sm">{service.description}</p>
-                    {renderStarRating(service.rating)}
+                    {service.rating && renderStarRating(service.rating)}
                   </CardHeader>
                   <CardContent className="flex-1">
                     <div className="space-y-4">
-                      <div>
-                        <h4 className="font-medium mb-2">Key Features:</h4>
-                        <ul className="space-y-1">
-                          {service.features.map((feature, featureIndex) => (
-                            <li key={featureIndex} className="text-sm text-gray-600 flex items-center gap-2">
-                              <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                              {feature}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      
-                      <div className="border-t pt-4">
-                        <div className="flex justify-between items-center mb-3">
-                          <span className="font-medium">Pricing:</span>
-                          <span className="text-sm text-gray-600">{service.pricing}</span>
+                      {service.features && (
+                        <div>
+                          <h4 className="font-medium mb-2">Key Features:</h4>
+                          <ul className="space-y-1">
+                            {service.features.map((feature, featureIndex) => (
+                              <li key={featureIndex} className="text-sm text-gray-600 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                                {feature}
+                              </li>
+                            ))}
+                          </ul>
                         </div>
+                      )}
+                      
+                      <div className={service.features || service.pricing ? "border-t pt-4" : ""}>
+                        {service.pricing && (
+                          <div className="flex justify-between items-center mb-3">
+                            <span className="font-medium">Pricing:</span>
+                            <span className="text-sm text-gray-600">{service.pricing}</span>
+                          </div>
+                        )}
                         <Button 
                           className="w-full" 
                           onClick={() => window.open(service.website, '_blank')}
