@@ -254,7 +254,7 @@ const BusinessTools = () => {
       icon: TrendingUp,
       color: 'bg-orange-600',
       benefits: ['Real-time prices', 'Auto-refresh', '15+ cryptos', 'Market data'],
-      isPremium: true
+      isPremium: false
     },
     {
       id: 'cost-calculator' as ToolType,
@@ -308,7 +308,7 @@ const BusinessTools = () => {
       icon: Building2,
       color: 'bg-orange-500',
       benefits: ['Vetted service providers', 'Compare options', 'Get recommendations'],
-      isPremium: true
+      isPremium: false
     },
     {
       id: 'project-management' as ToolType,
