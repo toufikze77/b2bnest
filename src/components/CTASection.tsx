@@ -8,11 +8,11 @@ const CTASection = () => {
     <section className="py-20 px-4 sm:px-6 lg:px-8 bg-blue-600">
       <div className="max-w-4xl mx-auto text-center">
         <h3 className="text-4xl font-bold text-white mb-6">
-          Ready to Streamline Your Business?
+          Ready to Streamline Your Business Documentation?
         </h3>
         <p className="text-xl text-blue-100 mb-8">
-          Join thousands of businesses using our professional document templates 
-          to save time and ensure compliance.
+          Join over 10,000 businesses that trust B2BNest for their professional document needs. 
+          Start with our free templates or unlock the full library with our premium plans.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button 
@@ -21,7 +21,7 @@ const CTASection = () => {
             className="text-lg px-8 py-3"
             onClick={() => window.location.href = '/'}
           >
-            Browse All Forms
+            Browse Templates
           </Button>
           <Button 
             size="lg" 
