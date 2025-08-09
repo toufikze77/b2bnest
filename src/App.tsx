@@ -43,6 +43,7 @@ import PaymentSuccess from "@/pages/PaymentSuccess";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Market from '@/pages/Market';
 import BusinessNews from '@/pages/BusinessNews';
+import PublicWorkRequest from '@/pages/PublicWorkRequest';
 
 const queryClient = new QueryClient();
 
@@ -92,6 +93,9 @@ function App() {
               <Route path="/directory/companies" element={<CompanyDirectory />} />
               <Route path="/directory/services" element={<ServiceDirectory />} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
+              
+              {/* Public work request form */}
+              <Route path="/forms/work-request" element={<PublicWorkRequest />} />
               
               <Route path="*" element={<NotFound />} />
             </Routes>
