@@ -286,6 +286,19 @@ const ProjectManagement = () => {
     review: 4,
     done: 999,
   });
+  // Trello-like UI state
+  const [favoriteBoards, setFavoriteBoards] = useState<Record<string, boolean>>({});
+  const [listComposerOpen, setListComposerOpen] = useState<boolean>(false);
+  const [newListTitle, setNewListTitle] = useState<string>('');
+  const [cardComposerOpen, setCardComposerOpen] = useState<Record<string, boolean>>({});
+  const [newCardTitle, setNewCardTitle] = useState<Record<string, string>>({});
+  
+  const getTagColor = (tag: string) => {
+    const palette = ['bg-red-500','bg-orange-500','bg-amber-500','bg-yellow-500','bg-lime-500','bg-green-500','bg-emerald-500','bg-teal-500','bg-cyan-500','bg-sky-500','bg-blue-500','bg-indigo-500','bg-violet-500','bg-purple-500','bg-fuchsia-500','bg-pink-500','bg-rose-500'];
+    let hash = 0;
+    for (let i = 0; i < tag.length; i++) hash = (hash * 31 + tag.charCodeAt(i)) >>> 0;
+    return palette[hash % palette.length];
+  };
 
   // Sample data with enhanced features - moved before conditional returns
   const [projects, setProjects] = useState<Project[]>([
@@ -684,7 +697,7 @@ const ProjectManagement = () => {
           .insert({
             title: taskData.title,
             description: taskData.description || '',
-            status: 'todo',
+            status: taskData.status || 'todo',
             priority: taskData.priority || 'medium',
             due_date: taskData.due_date || null,
             labels: taskData.labels || [],
@@ -727,7 +740,7 @@ const ProjectManagement = () => {
           .insert({
             title: taskData.title,
             description: taskData.description || '',
-            status: 'todo',
+            status: taskData.status || 'todo',
             priority: taskData.priority || 'medium',
             due_date: taskData.due_date || null,
             labels: taskData.labels || [],
@@ -914,217 +927,191 @@ const ProjectManagement = () => {
     }
   };
 
-  const EnhancedKanbanBoard = () => (
-    <div className="space-y-6">
-      {/* Custom Board Controls */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="outline" size="sm" onClick={() => {
-                console.log('Opening board customizer');
-                setShowBoardCustomizer(true);
-              }}>
-                <Settings className="w-4 h-4 mr-2" />
-                Customize Board
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => {
-                console.log('Opening automation builder');
-                setShowAutomationBuilder(true);
-              }}>
-                <Zap className="w-4 h-4 mr-2" />
-                Automation Rules
-              </Button>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge className="bg-blue-100 text-blue-800">Auto-Assignment: ON</Badge>
-              <Badge className="bg-green-100 text-green-800">Notifications: ON</Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+  const EnhancedKanbanBoard = () => {
+    const currentProject = projects.find(p => p.id === selectedProject);
+    const isFav = favoriteBoards[selectedProject] || false;
+    const toggleFav = () => setFavoriteBoards(prev => ({ ...prev, [selectedProject]: !prev[selectedProject] }));
 
-      {/* Kanban Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-        {statusColumns.map(column => {
-          const columnTasks = filteredTasks.filter(task => task.status === column.id);
-          const limit = wipLimits[column.id] ?? 999;
-          const isOver = columnTasks.length > limit;
-          return (
-            <div 
-              key={column.id} 
-              className={`${column.color} rounded-lg p-3 ${compactMode ? 'min-h-[500px]' : 'min-h-[700px]'} animate-fade-in ${isOver ? 'ring-2 ring-red-400' : ''}`}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, column.id)}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold flex items-center gap-2">
-                  {column.title}
-                  <Badge variant={isOver ? 'destructive' : 'secondary'} className="text-[10px]">
-                    {columnTasks.length}/{limit === 999 ? '∞' : limit}
-                  </Badge>
-                </h3>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">
-                    {columnTasks.length}
-                  </Badge>
-                  <Button variant="ghost" size="sm" onClick={(e) => {
-                    e.stopPropagation();
-                    console.log('Plus button clicked, opening create task dialog');
-                    setShowCreateTask(true);
-                  }}>
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-              
-              <div className={`${compactMode ? 'space-y-2' : 'space-y-3'}`}>
-                {columnTasks.map(task => (
-                  <Card 
-                    key={task.id} 
-                    className={`cursor-pointer hover:shadow-lg transition-all ${compactMode ? 'hover:scale-[1.01]' : 'hover:scale-[1.02]'}`}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, task)}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      console.log('Task card clicked:', task.id, task.title);
-                      setEditingTask(task);
-                      setShowEditTask(true);
-                    }}
-                  >
-                    <CardContent className={`${compactMode ? 'p-2' : 'p-4'}`}>
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className={`font-medium ${compactMode ? 'text-xs' : 'text-sm'}`}>{task.title}</h4>
-                        <div className="flex items-center gap-1">
-                          <div className={`w-2 h-2 rounded-full ${priorityColors[task.priority]}`}></div>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
-                                <MoreHorizontal className="w-3 h-3" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-40 p-1" align="end">
-                              <div className="space-y-1">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="w-full justify-start"
-                                  onClick={() => {
-                                    setEditingTask(task);
-                                    setShowEditTask(true);
-                                  }}
-                                >
-                                  <Edit className="w-3 h-3 mr-2" />
-                                  Edit
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="w-full justify-start"
-                                  onClick={() => handleTaskArchive(task.id)}
-                                >
-                                  <FolderOpen className="w-3 h-3 mr-2" />
-                                  Archive
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="w-full justify-start text-red-600 hover:text-red-700"
-                                  onClick={() => handleTaskDelete(task.id)}
-                                >
-                                  <Trash2 className="w-3 h-3 mr-2" />
-                                  Delete
-                                </Button>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                      </div>
-                      
-                      <p className={`text-xs text-gray-600 mb-2 ${compactMode ? 'line-clamp-1' : 'line-clamp-2'}`}>{task.description}</p>
-                      
-                      {/* Progress Bar */}
-                      {task.progress && (
-                        <div className="mb-3">
-                          <div className="flex justify-between text-xs mb-1">
-                            <span>Progress</span>
-                            <span>{task.progress}%</span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-1.5">
-                            <div 
-                              className="bg-blue-600 h-1.5 rounded-full transition-all" 
-                              style={{ width: `${task.progress}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      )}
+    const handleAddList = async () => {
+      const title = newListTitle.trim();
+      if (!title || selectedProject === 'all') return;
+      const nextOrder = (currentProject?.customColumns || statusColumns).length + 1;
+      const newCol: KanbanColumn = { id: `list-${Date.now()}`, title, color: 'bg-gray-100', order: nextOrder };
+      setProjects(prev => prev.map(p => p.id === selectedProject ? { ...p, customColumns: [ ...(p.customColumns || statusColumns), newCol ] } : p));
+      setListComposerOpen(false); setNewListTitle('');
+      try {
+        // Persist if possible
+        // @ts-ignore
+        await supabase.from('projects').update({ custom_columns: [ ...((currentProject?.customColumns)||statusColumns), newCol ] }).eq('id', selectedProject);
+      } catch(e) { console.warn('Add list persist failed', e); }
+    };
 
-                      {/* Subtasks */}
-                      {task.subtasks && task.subtasks.length > 0 && (
-                        <div className="mb-3">
-                          <div className="flex items-center gap-1 text-xs text-gray-500">
-                            <ListCheck className="w-3 h-3" />
-                            <span>
-                              {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length} subtasks
-                            </span>
-                          </div>
-                        </div>
-                      )}
+    const openCardComposer = (colId: string) => setCardComposerOpen(prev => ({ ...prev, [colId]: true }));
+    const closeCardComposer = (colId: string) => setCardComposerOpen(prev => ({ ...prev, [colId]: false }));
+    const updateCardTitle = (colId: string, v: string) => setNewCardTitle(prev => ({ ...prev, [colId]: v }));
+    const addCard = async (colId: string) => {
+      const title = (newCardTitle[colId] || '').trim();
+      if (!title) return;
+      await handleCreateTask({ title, status: colId });
+      updateCardTitle(colId, '');
+      closeCardComposer(colId);
+    };
 
-                      {/* Tags */}
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {task.tags.slice(0, 2).map(tag => (
-                          <Badge key={tag} variant="outline" className="text-xs px-1 py-0">
-                            {tag}
-                          </Badge>
-                        ))}
-                        {task.tags.length > 2 && (
-                          <Badge variant="outline" className="text-xs px-1 py-0">
-                            +{task.tags.length - 2}
-                          </Badge>
-                        )}
-                      </div>
-
-                      {/* Footer */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1">
-                          {task.attachments && task.attachments.length > 0 && (
-                            <Paperclip className="w-3 h-3 text-gray-400" />
-                          )}
-                          {task.comments && task.comments.length > 0 && (
-                            <div className="flex items-center gap-1">
-                              <MessageCircle className="w-3 h-3 text-gray-400" />
-                              <span className="text-xs text-gray-500">{task.comments.length}</span>
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center gap-1">
-                          {task.dueDate && (
-                            <div className="flex items-center gap-1">
-                              <CalendarIcon className="w-3 h-3 text-gray-400" />
-                              <span className="text-xs text-gray-500">
-                                {format(task.dueDate, 'MMM dd')}
-                              </span>
-                            </div>
-                          )}
-                          <Avatar className={`${compactMode ? 'w-5 h-5' : 'w-6 h-6'}`}>
-                            <AvatarFallback className="text-[10px]">
-                              {task.assignee.split(' ').map(n => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+    return (
+      <div className="space-y-4">
+        {/* Board Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm" onClick={toggleFav}>
+              <Star className={`w-4 h-4 ${isFav ? 'text-yellow-500 fill-yellow-500' : ''}`} />
+            </Button>
+            <h2 className="text-xl font-semibold">
+              {currentProject ? currentProject.name : 'All Projects'}
+            </h2>
+            {currentProject && (
+              <div className="flex -space-x-2 ml-2">
+                {currentProject.members.slice(0,4).map(m => (
+                  <Avatar key={m} className="w-6 h-6 border">
+                    <AvatarFallback className="text-[10px]">{m.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
+                  </Avatar>
                 ))}
+                {currentProject.members.length > 4 && (
+                  <Badge variant="secondary" className="ml-2">+{currentProject.members.length - 4}</Badge>
+                )}
               </div>
-            </div>
-          );
-        })}
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={()=>setShowBoardCustomizer(true)}>
+              <Settings className="w-4 h-4 mr-2" /> Customize
+            </Button>
+            <Button variant="outline" size="sm" onClick={()=>setShowAutomationBuilder(true)}>
+              <Zap className="w-4 h-4 mr-2" /> Automations
+            </Button>
+          </div>
+        </div>
+
+        {/* Lists horizontally scrollable */}
+        <div className="overflow-x-auto pb-4">
+          <div className="flex items-start gap-4 min-h-[70vh]">
+            {statusColumns.map(column => {
+              const columnTasks = filteredTasks.filter(task => task.status === column.id);
+              const limit = wipLimits[column.id] ?? (column as any).wipLimit ?? 999;
+              const isOver = columnTasks.length > limit;
+              const composerOpen = cardComposerOpen[column.id];
+              return (
+                <div key={column.id} className={`w-80 flex-shrink-0 ${isOver ? 'ring-2 ring-red-400 rounded' : ''}`} onDragOver={handleDragOver} onDrop={(e)=>handleDrop(e, column.id)}>
+                  <div className="px-3 py-2 bg-gray-100 rounded-t flex items-center justify-between">
+                    <div className="font-medium text-sm truncate flex items-center gap-2">
+                      {column.title}
+                      <Badge variant={isOver ? 'destructive' : 'secondary'} className="text-[10px]">{columnTasks.length}/{limit===999?'∞':limit}</Badge>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={(e)=>{ e.stopPropagation(); openCardComposer(column.id); }}>
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className={`bg-gray-50 p-2 space-y-2 ${compactMode ? '' : ''}`}>
+                    {columnTasks.map(task => (
+                      <Card key={task.id} className="cursor-pointer hover:shadow transition" draggable onDragStart={(e)=>handleDragStart(e, task)} onClick={(e)=>{ e.preventDefault(); setEditingTask(task); setShowEditTask(true); }}>
+                        <CardContent className="p-3">
+                          {/* Labels */}
+                          {task.tags && task.tags.length > 0 && (
+                            <div className="flex gap-1 mb-2">
+                              {task.tags.slice(0,4).map(tag => (
+                                <span key={tag} className={`${getTagColor(tag)} h-1.5 w-8 rounded`}></span>
+                              ))}
+                            </div>
+                          )}
+                          <div className="flex items-start justify-between">
+                            <h4 className="font-medium text-sm">{task.title}</h4>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="ghost" size="sm" onClick={(e)=>e.stopPropagation()}>
+                                  <MoreHorizontal className="w-3 h-3" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-40 p-1" align="end">
+                                <div className="space-y-1">
+                                  <Button variant="ghost" size="sm" className="w-full justify-start" onClick={()=>{ setEditingTask(task); setShowEditTask(true); }}>
+                                    <Edit className="w-3 h-3 mr-2" /> Edit
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="w-full justify-start" onClick={()=>handleTaskArchive(task.id)}>
+                                    <FolderOpen className="w-3 h-3 mr-2" /> Archive
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="w-full justify-start text-red-600 hover:text-red-700" onClick={()=>handleTaskDelete(task.id)}>
+                                    <Trash2 className="w-3 h-3 mr-2" /> Delete
+                                  </Button>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                          {task.description && <p className="text-xs text-gray-600 mt-1 line-clamp-2">{task.description}</p>}
+                          <div className="mt-2 flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-gray-500">
+                              {task.attachments && task.attachments.length > 0 && <Paperclip className="w-3 h-3" />}
+                              {task.comments && task.comments.length > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <MessageCircle className="w-3 h-3" />
+                                  <span className="text-[10px]">{task.comments.length}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {task.dueDate && (
+                                <div className="flex items-center gap-1 text-gray-500">
+                                  <CalendarIcon className="w-3 h-3" />
+                                  <span className="text-[10px]">{format(task.dueDate, 'MMM dd')}</span>
+                                </div>
+                              )}
+                              <Avatar className="w-6 h-6"><AvatarFallback className="text-[10px]">{task.assignee.split(' ').map(n=>n[0]).join('')}</AvatarFallback></Avatar>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+
+                    {/* Card composer */}
+                    {composerOpen ? (
+                      <div className="bg-white rounded border p-2 space-y-2">
+                        <Input placeholder="Card title" value={newCardTitle[column.id] || ''} onChange={(e)=>updateCardTitle(column.id, e.target.value)} />
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={()=>addCard(column.id)}>Add card</Button>
+                          <Button size="sm" variant="ghost" onClick={()=>closeCardComposer(column.id)}>Cancel</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button variant="ghost" size="sm" className="w-full justify-start" onClick={()=>openCardComposer(column.id)}>
+                        <Plus className="w-4 h-4 mr-1" /> Add a card
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Add list composer */}
+            {selectedProject !== 'all' && (
+              <div className="w-80 flex-shrink-0">
+                {listComposerOpen ? (
+                  <div className="bg-gray-50 p-2 rounded border space-y-2">
+                    <Input placeholder="List title" value={newListTitle} onChange={(e)=>setNewListTitle(e.target.value)} />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={handleAddList}>Add list</Button>
+                      <Button size="sm" variant="ghost" onClick={()=>{ setListComposerOpen(false); setNewListTitle(''); }}>Cancel</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button variant="outline" className="w-full justify-start" onClick={()=>setListComposerOpen(true)}>
+                    <Plus className="w-4 h-4 mr-1" /> Add another list
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const MilestonesView = () => (
     <div className="space-y-6">
