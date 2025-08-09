@@ -84,7 +84,8 @@ import {
   Cloud,
   Loader2,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Image as ImageIcon
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Pie, Bar } from 'react-chartjs-2';
@@ -121,6 +122,8 @@ interface Task {
   dependencies?: string[];
   progress?: number;
   archived?: boolean;
+  position?: number;
+  coverUrl?: string;
 }
 
 interface Subtask {
@@ -580,6 +583,8 @@ const ProjectManagement = () => {
               progress: 0,
               comments: [],
               archived: Boolean((todo as any).is_archived) || false,
+              position: (todo as any).position ?? undefined,
+              coverUrl: (todo as any).cover_url ?? undefined,
             }));
             setTasks(formattedTasks);
             return;
@@ -617,6 +622,8 @@ const ProjectManagement = () => {
           progress: 0,
           comments: [],
           archived: Boolean((todo as any).is_archived) || false,
+          position: (todo as any).position ?? undefined,
+          coverUrl: (todo as any).cover_url ?? undefined,
         }));
         setTasks(formattedTasks);
       }
@@ -730,6 +737,8 @@ const ProjectManagement = () => {
           progress: 0,
           comments: [],
           archived: Boolean((data as any).is_archived) || false,
+          position: (data as any).position ?? undefined,
+          coverUrl: (data as any).cover_url ?? undefined,
         };
 
         setTasks(prev => [...prev, newTask]);
@@ -771,6 +780,8 @@ const ProjectManagement = () => {
           progress: 0,
           comments: [],
           archived: Boolean((data as any).is_archived) || false,
+          position: (data as any).position ?? undefined,
+          coverUrl: (data as any).cover_url ?? undefined,
         };
 
         setTasks(prev => [...prev, newTaskFallback]);
@@ -839,7 +850,8 @@ const ProjectManagement = () => {
 
   // Handle drag and drop
   const handleDragStart = (e: React.DragEvent, task: Task) => {
-    e.dataTransfer.setData('text/plain', task.id);
+    const payload = JSON.stringify({ type: 'card', taskId: task.id, fromCol: task.status });
+    e.dataTransfer.setData('application/json', payload);
     e.dataTransfer.effectAllowed = 'move';
   };
 
@@ -848,12 +860,15 @@ const ProjectManagement = () => {
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDrop = (e: React.DragEvent, columnId: string) => {
+  const handleDrop = (e: React.DragEvent, columnId: string, beforeTaskId?: string) => {
     e.preventDefault();
-    const taskId = e.dataTransfer.getData('text/plain');
-    if (taskId) {
-      handleTaskStatusUpdate(taskId, columnId);
-    }
+    const j = e.dataTransfer.getData('application/json');
+    if (!j) return;
+    const data = JSON.parse(j);
+    if (data.type !== 'card') return;
+    const taskId = data.taskId as string;
+    const fromCol = data.fromCol as string;
+    handleTaskMove(taskId, fromCol, columnId, beforeTaskId);
   };
 
   // Handle task status updates  
@@ -927,6 +942,39 @@ const ProjectManagement = () => {
     }
   };
 
+  // Handle full move with ordering
+  const handleTaskMove = async (taskId: string, fromCol: string, toCol: string, beforeTaskId?: string) => {
+    // Update local order map
+    setColumnTaskOrder(prev => {
+      const next = { ...prev };
+      // remove from source
+      next[fromCol] = (next[fromCol] || []).filter(id => id !== taskId);
+      // insert into destination
+      const dest = new Set(next[toCol] || []);
+      if (!dest.has(taskId)) {
+        const arr = next[toCol] ? [...next[toCol]] : [];
+        if (beforeTaskId) {
+          const idx = arr.indexOf(beforeTaskId);
+          if (idx >= 0) arr.splice(idx, 0, taskId); else arr.push(taskId);
+        } else {
+          arr.push(taskId);
+        }
+        next[toCol] = arr;
+      }
+      return next;
+    });
+    // Update task status and optional position
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: toCol } : t));
+    try {
+      const pos = (columnTaskOrder[toCol] || []).indexOf(taskId);
+      const updateData: any = { status: toCol };
+      if (!isNaN(pos) && pos >= 0) updateData.position = pos;
+      await supabase.from('todos').update(updateData).eq('id', taskId);
+    } catch (e) {
+      console.warn('Move persist failed', e);
+    }
+  };
+
   const EnhancedKanbanBoard = () => {
     const currentProject = projects.find(p => p.id === selectedProject);
     const isFav = favoriteBoards[selectedProject] || false;
@@ -996,11 +1044,49 @@ const ProjectManagement = () => {
           <div className="flex items-start gap-4 min-h-[70vh]">
             {statusColumns.map(column => {
               const columnTasks = filteredTasks.filter(task => task.status === column.id);
+              // sort by columnTaskOrder
+              const order = columnTaskOrder[column.id] || [];
+              columnTasks.sort((a,b) => {
+                const ia = order.indexOf(a.id);
+                const ib = order.indexOf(b.id);
+                return (ia === -1 ? 1 : ia) - (ib === -1 ? 1 : ib);
+              });
               const limit = wipLimits[column.id] ?? (column as any).wipLimit ?? 999;
               const isOver = columnTasks.length > limit;
               const composerOpen = cardComposerOpen[column.id];
               return (
-                <div key={column.id} className={`w-80 flex-shrink-0 ${isOver ? 'ring-2 ring-red-400 rounded' : ''}`} onDragOver={handleDragOver} onDrop={(e)=>handleDrop(e, column.id)}>
+                <div key={column.id} className={`w-80 flex-shrink-0 ${isOver ? 'ring-2 ring-red-400 rounded' : ''}`} onDragOver={handleDragOver} onDrop={(e)=>handleDrop(e, column.id)} draggable onDragStart={(e)=>{
+                  const payload = JSON.stringify({ type: 'list', columnId: column.id });
+                  e.dataTransfer.setData('application/list', payload);
+                  e.dataTransfer.effectAllowed = 'move';
+                }} onDropCapture={(e)=>{
+                  const p = e.dataTransfer.getData('application/list');
+                  if (!p) return;
+                  const data = JSON.parse(p);
+                  if (data.type !== 'list') return;
+                  const fromId = data.columnId as string;
+                  const toId = column.id;
+                  if (fromId === toId) return;
+                  // reorder lists
+                  if (selectedProject !== 'all') {
+                    setProjects(prev => prev.map(project => {
+                      if (project.id !== selectedProject) return project;
+                      const cols = [...(project.customColumns || statusColumns)];
+                      const fromIdx = cols.findIndex(c => c.id === fromId);
+                      const toIdx = cols.findIndex(c => c.id === toId);
+                      if (fromIdx === -1 || toIdx === -1) return project;
+                      const [moved] = cols.splice(fromIdx, 1);
+                      cols.splice(toIdx, 0, moved);
+                      // renumber order
+                      const renum = cols.map((c, i) => ({ ...c, order: i + 1 }));
+                      // persist best-effort
+                      try { // @ts-ignore
+                        supabase.from('projects').update({ custom_columns: renum }).eq('id', selectedProject);
+                      } catch {}
+                      return { ...project, customColumns: renum };
+                    }));
+                  }
+                }}>
                   <div className="px-3 py-2 bg-gray-100 rounded-t flex items-center justify-between">
                     <div className="font-medium text-sm truncate flex items-center gap-2">
                       {column.title}
@@ -1012,62 +1098,80 @@ const ProjectManagement = () => {
                   </div>
                   <div className={`bg-gray-50 p-2 space-y-2 ${compactMode ? '' : ''}`}>
                     {columnTasks.map(task => (
-                      <Card key={task.id} className="cursor-pointer hover:shadow transition" draggable onDragStart={(e)=>handleDragStart(e, task)} onClick={(e)=>{ e.preventDefault(); setEditingTask(task); setShowEditTask(true); }}>
-                        <CardContent className="p-3">
-                          {/* Labels */}
-                          {task.tags && task.tags.length > 0 && (
-                            <div className="flex gap-1 mb-2">
-                              {task.tags.slice(0,4).map(tag => (
-                                <span key={tag} className={`${getTagColor(tag)} h-1.5 w-8 rounded`}></span>
-                              ))}
-                            </div>
-                          )}
-                          <div className="flex items-start justify-between">
-                            <h4 className="font-medium text-sm">{task.title}</h4>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="ghost" size="sm" onClick={(e)=>e.stopPropagation()}>
-                                  <MoreHorizontal className="w-3 h-3" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-40 p-1" align="end">
-                                <div className="space-y-1">
-                                  <Button variant="ghost" size="sm" className="w-full justify-start" onClick={()=>{ setEditingTask(task); setShowEditTask(true); }}>
-                                    <Edit className="w-3 h-3 mr-2" /> Edit
+                      <div key={task.id} onDragOver={handleDragOver} onDrop={(e)=>handleDrop(e, column.id, task.id)}>
+                        <Card className="cursor-pointer hover:shadow transition" draggable onDragStart={(e)=>handleDragStart(e, task)} onClick={(e)=>{ e.preventDefault(); setEditingTask(task); setShowEditTask(true); }}>
+                          <CardContent className="p-3">
+                            {/* Cover image */}
+                            {task.coverUrl && (
+                              <div className="mb-2 overflow-hidden rounded">
+                                <img src={task.coverUrl} alt="cover" className="w-full h-24 object-cover" />
+                              </div>
+                            )}
+                            {/* Labels */}
+                            {task.tags && task.tags.length > 0 && (
+                              <div className="flex gap-1 mb-2">
+                                {task.tags.slice(0,4).map(tag => (
+                                  <span key={tag} className={`${getTagColor(tag)} h-1.5 w-8 rounded`}></span>
+                                ))}
+                              </div>
+                            )}
+                            <div className="flex items-start justify-between">
+                              <h4 className="font-medium text-sm">{task.title}</h4>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="ghost" size="sm" onClick={(e)=>e.stopPropagation()}>
+                                    <MoreHorizontal className="w-3 h-3" />
                                   </Button>
-                                  <Button variant="ghost" size="sm" className="w-full justify-start" onClick={()=>handleTaskArchive(task.id)}>
-                                    <FolderOpen className="w-3 h-3 mr-2" /> Archive
-                                  </Button>
-                                  <Button variant="ghost" size="sm" className="w-full justify-start text-red-600 hover:text-red-700" onClick={()=>handleTaskDelete(task.id)}>
-                                    <Trash2 className="w-3 h-3 mr-2" /> Delete
-                                  </Button>
-                                </div>
-                              </PopoverContent>
-                            </Popover>
-                          </div>
-                          {task.description && <p className="text-xs text-gray-600 mt-1 line-clamp-2">{task.description}</p>}
-                          <div className="mt-2 flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-gray-500">
-                              {task.attachments && task.attachments.length > 0 && <Paperclip className="w-3 h-3" />}
-                              {task.comments && task.comments.length > 0 && (
-                                <div className="flex items-center gap-1">
-                                  <MessageCircle className="w-3 h-3" />
-                                  <span className="text-[10px]">{task.comments.length}</span>
-                                </div>
-                              )}
+                                </PopoverTrigger>
+                                <PopoverContent className="w-40 p-1" align="end">
+                                  <div className="space-y-1">
+                                    <Button variant="ghost" size="sm" className="w-full justify-start" onClick={()=>{ setEditingTask(task); setShowEditTask(true); }}>
+                                      <Edit className="w-3 h-3 mr-2" /> Edit
+                                    </Button>
+                                    <Button variant="ghost" size="sm" className="w-full justify-start" onClick={()=>handleTaskArchive(task.id)}>
+                                      <FolderOpen className="w-3 h-3 mr-2" /> Archive
+                                    </Button>
+                                    <Button variant="ghost" size="sm" className="w-full justify-start" onClick={async()=>{
+                                      const url = window.prompt('Cover image URL');
+                                      if (!url) return;
+                                      setTasks(prev => prev.map(t => t.id===task.id ? ({ ...t, coverUrl: url }) : t));
+                                      try {
+                                        await supabase.from('todos').update({ cover_url: url }).eq('id', task.id);
+                                      } catch (e) { console.warn('Cover persist failed', e); }
+                                    }}>
+                                      <ImageIcon className="w-3 h-3 mr-2" /> Add cover
+                                    </Button>
+                                    <Button variant="ghost" size="sm" className="w-full justify-start text-red-600 hover:text-red-700" onClick={()=>handleTaskDelete(task.id)}>
+                                      <Trash2 className="w-3 h-3 mr-2" /> Delete
+                                    </Button>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
                             </div>
-                            <div className="flex items-center gap-1">
-                              {task.dueDate && (
-                                <div className="flex items-center gap-1 text-gray-500">
-                                  <CalendarIcon className="w-3 h-3" />
-                                  <span className="text-[10px]">{format(task.dueDate, 'MMM dd')}</span>
-                                </div>
-                              )}
-                              <Avatar className="w-6 h-6"><AvatarFallback className="text-[10px]">{task.assignee.split(' ').map(n=>n[0]).join('')}</AvatarFallback></Avatar>
+                            {task.description && <p className="text-xs text-gray-600 mt-1 line-clamp-2">{task.description}</p>}
+                            <div className="mt-2 flex items-center justify-between">
+                              <div className="flex items-center gap-2 text-gray-500">
+                                {task.attachments && task.attachments.length > 0 && <Paperclip className="w-3 h-3" />}
+                                {task.comments && task.comments.length > 0 && (
+                                  <div className="flex items-center gap-1">
+                                    <MessageCircle className="w-3 h-3" />
+                                    <span className="text-[10px]">{task.comments.length}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                {task.dueDate && (
+                                  <div className="flex items-center gap-1 text-gray-500">
+                                    <CalendarIcon className="w-3 h-3" />
+                                    <span className="text-[10px]">{format(task.dueDate, 'MMM dd')}</span>
+                                  </div>
+                                )}
+                                <Avatar className="w-6 h-6"><AvatarFallback className="text-[10px]">{task.assignee.split(' ').map(n=>n[0]).join('')}</AvatarFallback></Avatar>
+                              </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                          </CardContent>
+                        </Card>
+                      </div>
                     ))}
 
                     {/* Card composer */}
