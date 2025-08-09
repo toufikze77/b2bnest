@@ -87,6 +87,18 @@ import {
   ArrowDown
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { Pie, Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip as ChartTooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+} from 'chart.js';
+
+ChartJS.register(ArcElement, ChartTooltip, Legend, CategoryScale, LinearScale, BarElement);
 
 // Enhanced interfaces
 interface Task {
@@ -233,6 +245,8 @@ interface Goal {
   targetDate?: Date | null;
   progress: number;
   owner?: string;
+  projectId?: string;
+  epicId?: string;
 }
 
 const ProjectManagement = () => {
@@ -264,6 +278,13 @@ const ProjectManagement = () => {
   const [showCreateEpic, setShowCreateEpic] = useState<boolean>(false);
   const [epics, setEpics] = useState<Epic[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [wipLimits, setWipLimits] = useState<Record<string, number>>({
+    backlog: 999,
+    todo: 8,
+    'in-progress': 5,
+    review: 4,
+    done: 999,
+  });
 
   // Sample data with enhanced features - moved before conditional returns
   const [projects, setProjects] = useState<Project[]>([
@@ -924,33 +945,40 @@ const ProjectManagement = () => {
 
       {/* Kanban Columns */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-        {statusColumns.map(column => (
-          <div 
-            key={column.id} 
-            className={`${column.color} rounded-lg p-3 ${compactMode ? 'min-h-[500px]' : 'min-h-[700px]'} animate-fade-in`}
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, column.id)}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold">{column.title}</h3>
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary">
-                  {filteredTasks.filter(task => task.status === column.id).length}
-                </Badge>
-                <Button variant="ghost" size="sm" onClick={(e) => {
-                  e.stopPropagation();
-                  console.log('Plus button clicked, opening create task dialog');
-                  setShowCreateTask(true);
-                }}>
-                  <Plus className="w-4 h-4" />
-                </Button>
+        {statusColumns.map(column => {
+          const columnTasks = filteredTasks.filter(task => task.status === column.id);
+          const limit = wipLimits[column.id] ?? 999;
+          const isOver = columnTasks.length > limit;
+          return (
+            <div 
+              key={column.id} 
+              className={`${column.color} rounded-lg p-3 ${compactMode ? 'min-h-[500px]' : 'min-h-[700px]'} animate-fade-in ${isOver ? 'ring-2 ring-red-400' : ''}`}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, column.id)}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  {column.title}
+                  <Badge variant={isOver ? 'destructive' : 'secondary'} className="text-[10px]">
+                    {columnTasks.length}/{limit === 999 ? '∞' : limit}
+                  </Badge>
+                </h3>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">
+                    {columnTasks.length}
+                  </Badge>
+                  <Button variant="ghost" size="sm" onClick={(e) => {
+                    e.stopPropagation();
+                    console.log('Plus button clicked, opening create task dialog');
+                    setShowCreateTask(true);
+                  }}>
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
-            
-            <div className={`${compactMode ? 'space-y-2' : 'space-y-3'}`}>
-              {filteredTasks
-                .filter(task => task.status === column.id)
-                .map(task => (
+              
+              <div className={`${compactMode ? 'space-y-2' : 'space-y-3'}`}>
+                {columnTasks.map(task => (
                   <Card 
                     key={task.id} 
                     className={`cursor-pointer hover:shadow-lg transition-all ${compactMode ? 'hover:scale-[1.01]' : 'hover:scale-[1.02]'}`}
@@ -1089,9 +1117,10 @@ const ProjectManagement = () => {
                     </CardContent>
                   </Card>
                 ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -1898,6 +1927,11 @@ const ProjectManagement = () => {
       acc[t.assignee] = (acc[t.assignee] || 0) + 1;
       return acc;
     }, {});
+    const hoursByAssignee = tasks.filter(t=>!t.archived).reduce<Record<string, number>>((acc, t) => {
+      const h = t.estimatedHours || 0;
+      acc[t.assignee] = (acc[t.assignee] || 0) + h;
+      return acc;
+    }, {});
     const topTags = Object.entries(
       tasks.filter(t => !t.archived).flatMap(t => t.tags).reduce<Record<string, number>>((acc, tag) => {
         acc[tag] = (acc[tag] || 0) + 1;
@@ -1905,60 +1939,39 @@ const ProjectManagement = () => {
       }, {})
     ).sort((a,b) => b[1]-a[1]).slice(0,6);
 
-    // Build conic-gradient for status pie
-    const colors: Record<Task['status'], string> = {
-      backlog: '#9ca3af', // gray-400
-      todo: '#3b82f6', // blue-500
-      'in-progress': '#f59e0b', // amber-500
-      review: '#a855f7', // purple-500
-      done: '#22c55e', // green-500
+    // Real charts datasets
+    const pieData = {
+      labels: statusOrder.map(s => s.replace('-', ' ')),
+      datasets: [{
+        data: statusCounts,
+        backgroundColor: ['#9ca3af','#3b82f6','#f59e0b','#a855f7','#22c55e'],
+        borderWidth: 0,
+      }]
     };
-    let current = 0;
-    const segments = statusOrder.map((s, i) => {
-      const value = (statusCounts[i] / total) * 360;
-      const seg = `${colors[s]} ${current.toFixed(2)}deg ${(current + value).toFixed(2)}deg`;
-      current += value;
-      return seg;
-    }).join(', ');
+    const barData = {
+      labels: priorityOrder,
+      datasets: [{
+        label: 'Tasks',
+        data: priorityCounts,
+        backgroundColor: ['#22c55e','#eab308','#f97316','#ef4444']
+      }]
+    };
 
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card><CardContent className="p-4">
             <CardTitle className="text-sm mb-2">Status Overview</CardTitle>
-            <div className="flex items-center gap-4">
-              <div className="w-24 h-24 rounded-full" style={{ background: `conic-gradient(${segments})` }} />
-              <div className="text-xs space-y-1">
-                {statusOrder.map((s, i) => (
-                  <div key={s} className="flex items-center gap-2">
-                    <span className="inline-block w-3 h-3 rounded" style={{ background: colors[s] }} />
-                    <span className="capitalize">{s.replace('-', ' ')}</span>
-                    <span className="ml-auto font-medium">{statusCounts[i]}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <Pie data={pieData} />
           </CardContent></Card>
 
           <Card><CardContent className="p-4">
             <CardTitle className="text-sm mb-2">Priority Breakdown</CardTitle>
-            <div className="space-y-2">
-              {priorityOrder.map((p, i) => (
-                <div key={p}>
-                  <div className="flex justify-between text-xs mb-1 capitalize">
-                    <span>{p}</span>
-                    <span>{priorityCounts[i]}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 h-2 rounded">
-                    <div className={`h-2 rounded ${p==='urgent'?'bg-red-500':p==='high'?'bg-orange-500':p==='medium'?'bg-yellow-500':'bg-green-500'}`} style={{ width: `${(priorityCounts[i]/(priorityCounts.reduce((a,b)=>a+b,0)||1))*100}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <Bar data={barData} options={{ plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }} />
           </CardContent></Card>
 
           <Card><CardContent className="p-4">
-            <CardTitle className="text-sm mb-2">Team Workload</CardTitle>
+            <CardTitle className="text-sm mb-2">Team Workload (Tasks)</CardTitle>
             <div className="space-y-2">
               {Object.entries(assigneeMap).map(([name, count]) => (
                 <div key={name} className="flex items-center gap-2 text-xs">
@@ -1973,15 +1986,19 @@ const ProjectManagement = () => {
           </CardContent></Card>
 
           <Card><CardContent className="p-4">
-            <CardTitle className="text-sm mb-2">Types of Work</CardTitle>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              {topTags.map(([tag, count]) => (
-                <div key={tag} className="p-2 border rounded flex items-center justify-between">
-                  <span className="truncate">#{tag}</span>
-                  <Badge variant="outline">{count}</Badge>
+            <CardTitle className="text-sm mb-2">Team Workload (Hours)</CardTitle>
+            <div className="space-y-2">
+              {Object.entries(hoursByAssignee).map(([name, hours]) => (
+                <div key={name} className="flex items-center gap-2 text-xs">
+                  <span className="truncate">{name}</span>
+                  <div className="ml-auto flex items-center gap-2">
+                    <Badge variant="outline">{hours}h</Badge>
+                  </div>
                 </div>
               ))}
-              {topTags.length === 0 && <div className="text-xs text-gray-500">No tags yet</div>}
+              {Object.keys(hoursByAssignee).length === 0 && (
+                <div className="text-xs text-gray-500">No estimated hours set.</div>
+              )}
             </div>
           </CardContent></Card>
         </div>
@@ -1999,6 +2016,21 @@ const ProjectManagement = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle className="text-sm">Types of Work</CardTitle></CardHeader>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {topTags.map(([tag, count]) => (
+                <div key={tag} className="p-2 border rounded flex items-center justify-between">
+                  <span className="truncate">#{tag}</span>
+                  <Badge variant="outline">{count}</Badge>
+                </div>
+              ))}
+              {topTags.length === 0 && <div className="text-xs text-gray-500">No tags yet</div>}
             </div>
           </CardContent>
         </Card>
@@ -2090,6 +2122,7 @@ const ProjectManagement = () => {
     const [title, setTitle] = useState('');
     const [desc, setDesc] = useState('');
     const [priority, setPriority] = useState<'low'|'medium'|'high'|'urgent'>('medium');
+    const [submitting, setSubmitting] = useState(false);
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
@@ -2117,9 +2150,34 @@ const ProjectManagement = () => {
             </div>
             <div className="flex gap-2">
               <Button onClick={async ()=>{
-                await handleCreateTask({ title, description: desc, priority });
-                setTitle(''); setDesc(''); setPriority('medium');
-              }} disabled={!title.trim()}>Submit</Button>
+                setSubmitting(true);
+                try {
+                  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/public-work-request`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                    },
+                    body: JSON.stringify({
+                      title,
+                      description: desc,
+                      priority,
+                      project_id: selectedProject !== 'all' ? selectedProject : null,
+                      team_id: selectedTeam !== 'all' ? selectedTeam : null,
+                    })
+                  });
+                  if (!res.ok) throw new Error('Submission failed');
+                  const json = await res.json();
+                  toast({ title: 'Submitted', description: `Request ID ${json.id}` });
+                  setTitle(''); setDesc(''); setPriority('medium');
+                  // Refresh tasks
+                  loadTasks();
+                } catch (e:any) {
+                  toast({ title: 'Error', description: e.message, variant: 'destructive' });
+                } finally {
+                  setSubmitting(false);
+                }
+              }} disabled={!title.trim() || submitting}>{submitting ? 'Submitting...' : 'Submit'}</Button>
               <Button variant="outline" onClick={()=>{ setTitle(''); setDesc(''); setPriority('medium'); }}>Reset</Button>
             </div>
           </CardContent>
@@ -2141,7 +2199,7 @@ const ProjectManagement = () => {
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-semibold">Goals</h3>
         <Button onClick={() => {
-          const g: Goal = { id: `goal-${Date.now()}`, title: `New Goal ${goals.length+1}`, progress: 0, targetDate: null };
+          const g: Goal = { id: `goal-${Date.now()}`, title: `New Goal ${goals.length+1}`, progress: 0, targetDate: null, projectId: selectedProject !== 'all' ? selectedProject : undefined };
           setGoals(prev => [g, ...prev]);
         }}>
           <Plus className="w-4 h-4 mr-2" /> Add Goal
@@ -2155,12 +2213,23 @@ const ProjectManagement = () => {
                 <div className="font-medium">{g.title}</div>
                 <Badge variant="outline">{g.progress}%</Badge>
               </div>
+              <div className="text-xs text-gray-500 flex items-center gap-2">
+                {g.projectId && <span>Project: {projects.find(p=>p.id===g.projectId)?.name || g.projectId}</span>}
+                {g.epicId && <span>Epic: {epics.find(e=>e.id===g.epicId)?.title || g.epicId}</span>}
+              </div>
               <div className="w-full bg-gray-200 h-2 rounded">
                 <div className="h-2 rounded bg-blue-600" style={{ width: `${g.progress}%` }} />
               </div>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" onClick={()=>setGoals(prev => prev.map(x => x.id===g.id ? { ...x, progress: Math.min(100, x.progress + 10) } : x))}>+10%</Button>
                 <Button size="sm" variant="outline" onClick={()=>setGoals(prev => prev.map(x => x.id===g.id ? { ...x, progress: Math.max(0, x.progress - 10) } : x))}>-10%</Button>
+                <Select value={g.epicId || ''} onValueChange={(v:any)=> setGoals(prev => prev.map(x => x.id===g.id ? { ...x, epicId: v || undefined } : x))}>
+                  <SelectTrigger className="w-[140px]"><SelectValue placeholder="Link Epic" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No epic</SelectItem>
+                    {epics.map(e => <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>
@@ -2787,6 +2856,24 @@ const ProjectManagement = () => {
                       <p className="text-xs text-gray-600">Reduce card spacing and padding</p>
                     </div>
                     <Button variant="outline" size="sm" onClick={()=>setCompactMode(v=>!v)}>{compactMode ? 'ON' : 'OFF'}</Button>
+                  </div>
+                  <div className="space-y-2 pt-3">
+                    <label className="text-sm font-medium">WIP limits</label>
+                    {statusColumns.map(col => (
+                      <div key={col.id} className="flex items-center gap-2 text-sm">
+                        <span className="w-24 capitalize">{col.title}</span>
+                        <Input
+                          type="number"
+                          min={1}
+                          className="w-24"
+                          value={wipLimits[col.id] ?? 999}
+                          onChange={(e)=>{
+                            const val = parseInt(e.target.value || '0', 10);
+                            setWipLimits(prev => ({ ...prev, [col.id]: isNaN(val) ? 999 : val }));
+                          }}
+                        />
+                      </div>
+                    ))}
                   </div>
                 </div>
               </CardContent>
