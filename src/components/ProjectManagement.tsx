@@ -85,7 +85,8 @@ import {
   Loader2,
   ArrowUp,
   ArrowDown,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Tag as TagIcon
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Pie, Bar } from 'react-chartjs-2';
@@ -251,6 +252,12 @@ interface Goal {
   owner?: string;
   projectId?: string;
   epicId?: string;
+}
+
+interface LabelDef {
+  id: string;
+  name: string;
+  color: string; // tailwind bg-* class
 }
 
 const ProjectManagement = () => {
@@ -1016,6 +1023,27 @@ const ProjectManagement = () => {
             <h2 className="text-xl font-semibold">
               {currentProject ? currentProject.name : 'All Projects'}
             </h2>
+            {selectedTaskIds.size > 0 && (
+              <div className="ml-4 flex items-center gap-2 bg-blue-50 border border-blue-200 rounded px-2 py-1 text-xs">
+                <span>{selectedTaskIds.size} selected</span>
+                <Select onValueChange={(newStatus:any)=>{
+                  const ids = Array.from(selectedTaskIds);
+                  ids.forEach(id => handleTaskStatusUpdate(id, newStatus));
+                  setSelectedTaskIds(new Set());
+                }}>
+                  <SelectTrigger className="h-7 w-[130px]"><SelectValue placeholder="Move to..." /></SelectTrigger>
+                  <SelectContent>
+                    {statusColumns.map(col => <SelectItem key={col.id} value={col.id}>{col.title}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Button size="sm" variant="outline" onClick={()=>{
+                  const ids = Array.from(selectedTaskIds);
+                  ids.forEach(id => handleTaskArchive(id));
+                  setSelectedTaskIds(new Set());
+                }}>Archive</Button>
+                <Button size="sm" variant="outline" onClick={()=>setSelectedTaskIds(new Set())}>Clear</Button>
+              </div>
+            )}
             {currentProject && (
               <div className="flex -space-x-2 ml-2">
                 {currentProject.members.slice(0,4).map(m => (
@@ -1099,7 +1127,7 @@ const ProjectManagement = () => {
                   <div className={`bg-gray-50 p-2 space-y-2 ${compactMode ? '' : ''}`}>
                     {columnTasks.map(task => (
                       <div key={task.id} onDragOver={handleDragOver} onDrop={(e)=>handleDrop(e, column.id, task.id)}>
-                        <Card className="cursor-pointer hover:shadow transition" draggable onDragStart={(e)=>handleDragStart(e, task)} onClick={(e)=>{ e.preventDefault(); setEditingTask(task); setShowEditTask(true); }}>
+                        <Card className={`cursor-pointer hover:shadow transition ${selectedTaskIds.has(task.id) ? 'ring-2 ring-blue-400' : ''}`} draggable onDragStart={(e)=>handleDragStart(e, task)} onClick={(e)=>{ e.preventDefault(); setLastFocusedTaskId(task.id); if (e.metaKey || e.ctrlKey) { const s = new Set(selectedTaskIds); s.has(task.id) ? s.delete(task.id) : s.add(task.id); setSelectedTaskIds(s); } else { setEditingTask(task); setShowEditTask(true); } }}>
                           <CardContent className="p-3">
                             {/* Cover image */}
                             {task.coverUrl && (
@@ -1128,6 +1156,15 @@ const ProjectManagement = () => {
                                     <Button variant="ghost" size="sm" className="w-full justify-start" onClick={()=>{ setEditingTask(task); setShowEditTask(true); }}>
                                       <Edit className="w-3 h-3 mr-2" /> Edit
                                     </Button>
+                                    <Button variant="ghost" size="sm" className="w-full justify-start" onClick={()=>{ setLabelsTask(task); setLabelsDialogOpen(true); }}>
+                                      <TagIcon className="w-3 h-3 mr-2" /> Labels
+                                    </Button>
+                                    <Button variant="ghost" size="sm" className="w-full justify-start" onClick={()=>{ setChecklistTask(task); setChecklistDialogOpen(true); }}>
+                                      <ListCheck className="w-3 h-3 mr-2" /> Checklist
+                                    </Button>
+                                    <Button variant="ghost" size="sm" className="w-full justify-start" onClick={()=>{ setDueDateTask(task); setDueDateDialogOpen(true); }}>
+                                      <CalendarIcon className="w-3 h-3 mr-2" /> Due date
+                                    </Button>
                                     <Button variant="ghost" size="sm" className="w-full justify-start" onClick={()=>handleTaskArchive(task.id)}>
                                       <FolderOpen className="w-3 h-3 mr-2" /> Archive
                                     </Button>
@@ -1135,9 +1172,7 @@ const ProjectManagement = () => {
                                       const url = window.prompt('Cover image URL');
                                       if (!url) return;
                                       setTasks(prev => prev.map(t => t.id===task.id ? ({ ...t, coverUrl: url }) : t));
-                                      try {
-                                        await supabase.from('todos').update({ cover_url: url }).eq('id', task.id);
-                                      } catch (e) { console.warn('Cover persist failed', e); }
+                                      try { await supabase.from('todos').update({ cover_url: url }).eq('id', task.id); } catch (e) { console.warn('Cover persist failed', e); }
                                     }}>
                                       <ImageIcon className="w-3 h-3 mr-2" /> Add cover
                                     </Button>
@@ -3029,6 +3064,112 @@ const ProjectManagement = () => {
             setShowCreateEpic(false);
             toast({ title: 'Epic Created', description: epic.title });
           }} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Labels Editor Dialog */}
+      <Dialog open={labelsDialogOpen} onOpenChange={setLabelsDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Edit Labels</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              {(boardLabels[selectedProject] || []).map(lbl => (
+                <button key={lbl.id} className={`h-8 rounded text-white text-xs px-2 flex items-center justify-between ${lbl.color}`} onClick={()=>{
+                  if (!labelsTask) return;
+                  const has = labelsTask.tags.includes(lbl.id);
+                  const nextTags = has ? labelsTask.tags.filter(t=>t!==lbl.id) : [...labelsTask.tags, lbl.id];
+                  setTasks(prev => prev.map(t => t.id===labelsTask.id ? { ...t, tags: nextTags } : t));
+                }}>
+                  <span className="truncate">{lbl.name}</span>
+                  {labelsTask && labelsTask.tags.includes(lbl.id) && <CheckCircle className="w-3 h-3" />}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input placeholder="New label name" onKeyDown={(e)=>{
+                if (e.key==='Enter') {
+                  const name = (e.target as HTMLInputElement).value.trim();
+                  if (!name) return; (e.target as HTMLInputElement).value='';
+                  const color = getTagColor(name);
+                  const newLbl: LabelDef = { id: `lbl-${Date.now()}`, name, color };
+                  setBoardLabels(prev => ({ ...prev, [selectedProject]: [ ...(prev[selectedProject]||[]), newLbl ] }));
+                  try { // best-effort persist in projects.custom_columns
+                    const proj = projects.find(p=>p.id===selectedProject);
+                    if (proj) {
+                      const payload = { labels: [ ...((boardLabels[selectedProject])||[]), newLbl ] };
+                      // @ts-ignore
+                      supabase.from('projects').update({ custom_columns: (proj.customColumns||statusColumns), custom_labels: payload }).eq('id', selectedProject);
+                    }
+                  } catch {}
+                }
+              }} />
+              <Button variant="outline" onClick={()=>setLabelsDialogOpen(false)}>Done</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Checklist Dialog */}
+      <Dialog open={checklistDialogOpen} onOpenChange={setChecklistDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Checklist</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {checklistTask?.subtasks?.map(st => (
+              <div key={st.id} className="flex items-center gap-2">
+                <Checkbox checked={st.completed} onCheckedChange={(v)=>{
+                  if (!checklistTask) return;
+                  const next = (checklistTask.subtasks||[]).map(x => x.id===st.id ? { ...x, completed: Boolean(v) } : x);
+                  setTasks(prev => prev.map(t => t.id===checklistTask.id ? { ...t, subtasks: next } : t));
+                }} />
+                <Input defaultValue={st.title} onBlur={(e)=>{
+                  if (!checklistTask) return;
+                  const next = (checklistTask.subtasks||[]).map(x => x.id===st.id ? { ...x, title: e.target.value } : x);
+                  setTasks(prev => prev.map(t => t.id===checklistTask.id ? { ...t, subtasks: next } : t));
+                }} />
+              </div>
+            ))}
+            <Button variant="outline" size="sm" onClick={()=>{
+              if (!checklistTask) return;
+              const next = [ ...(checklistTask.subtasks||[]), { id: `st-${Date.now()}`, title: 'New item', completed: false, assignee: checklistTask.assignee } ];
+              setTasks(prev => prev.map(t => t.id===checklistTask.id ? { ...t, subtasks: next } : t));
+            }}>Add item</Button>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={()=>setChecklistDialogOpen(false)}>Close</Button>
+              <Button onClick={async()=>{
+                if (!checklistTask) return;
+                try { await supabase.from('todos').update({ subtasks: checklistTask.subtasks || [] }).eq('id', checklistTask.id); } catch{}
+                setChecklistDialogOpen(false);
+              }}>Save</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Due Date Dialog */}
+      <Dialog open={dueDateDialogOpen} onOpenChange={setDueDateDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Set Due Date</DialogTitle>
+          </DialogHeader>
+          <div className="p-2">
+            <Calendar mode="single" selected={dueDateTask?.dueDate || undefined} onSelect={(d)=>{
+              if (dueDateTask && d) {
+                setTasks(prev => prev.map(t => t.id===dueDateTask.id ? { ...t, dueDate: d } : t));
+              }
+            }} />
+            <div className="mt-3 flex justify-end gap-2">
+              <Button variant="outline" onClick={()=>setDueDateDialogOpen(false)}>Cancel</Button>
+              <Button onClick={async()=>{
+                if (!dueDateTask) return;
+                try { await supabase.from('todos').update({ due_date: dueDateTask.dueDate ? dueDateTask.dueDate.toISOString().slice(0,10) : null }).eq('id', dueDateTask.id); } catch{}
+                setDueDateDialogOpen(false);
+              }}>Save</Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
