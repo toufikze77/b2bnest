@@ -195,6 +195,7 @@ interface KanbanColumn {
   color: string;
   order: number;
   automationRules?: AutomationRule[];
+  wipLimit?: number;
 }
 
 interface AutomationRule {
@@ -799,13 +800,13 @@ const ProjectManagement = () => {
     );
   }
 
-  const statusColumns = projects.find(p => p.id === selectedProject && selectedProject !== 'all')?.customColumns || [
+  const statusColumns = (projects.find(p => p.id === selectedProject && selectedProject !== 'all')?.customColumns || [
     { id: 'backlog', title: 'Backlog', color: 'bg-gray-100', order: 1 },
     { id: 'todo', title: 'To Do', color: 'bg-blue-100', order: 2 },
     { id: 'in-progress', title: 'In Progress', color: 'bg-yellow-100', order: 3 },
     { id: 'review', title: 'Review', color: 'bg-purple-100', order: 4 },
     { id: 'done', title: 'Done', color: 'bg-green-100', order: 5 }
-  ];
+  ]).sort((a,b)=>a.order - b.order);
 
   const priorityColors = {
     low: 'bg-green-500',
@@ -2885,6 +2886,26 @@ const ProjectManagement = () => {
                   title: "Board Customized",
                   description: "Your board settings have been saved.",
                 });
+                // Persist WIP limits into selected project's customColumns if a project is selected
+                if (selectedProject !== 'all') {
+                  setProjects(prev => prev.map(p => {
+                    if (p.id !== selectedProject) return p;
+                    const updated = { ...p };
+                    updated.customColumns = (p.customColumns || statusColumns).map(col => ({
+                      ...col,
+                      // @ts-ignore store limit
+                      wipLimit: wipLimits[col.id] ?? 999,
+                    }));
+                    return updated;
+                  }));
+                  try {
+                    // Best-effort server persistence (optional custom_columns column)
+                    // @ts-ignore
+                    supabase.from('projects').update({ custom_columns: (projects.find(p=>p.id===selectedProject)?.customColumns || statusColumns).map(col => ({ ...col, wipLimit: wipLimits[col.id] ?? 999 })) }).eq('id', selectedProject);
+                  } catch (e) {
+                    console.warn('Could not persist custom_columns wip limits:', e);
+                  }
+                }
                 setShowBoardCustomizer(false);
               }}>
                 Save Changes
