@@ -1880,6 +1880,33 @@ const ProjectManagement = () => {
 
   const typesOfWork = ['Development', 'Design', 'QA', 'Documentation', 'Client Communication'];
 
+  // Archive handlers
+  const archiveTask = async (taskId: string) => {
+    const { error } = await supabase.from('todos' as any).update({ archived_at: new Date().toISOString() }).eq('id', taskId);
+    if (!error) setTasks(prev => prev.filter(t => t.id !== taskId));
+  };
+  const unarchiveTask = async (taskId: string) => {
+    const { error } = await supabase.from('todos' as any).update({ archived_at: null }).eq('id', taskId);
+    if (!error) loadTasks();
+  };
+
+  // Convert work request to task
+  const convertWorkRequestToTask = async (req: WorkRequest) => {
+    const targetProjectId = selectedProject !== 'all' ? selectedProject : projects[0]?.id || null;
+    const { data: task, error } = await supabase.from('todos' as any).insert({
+      title: req.title,
+      description: req.description || '',
+      status: 'todo',
+      priority: req.priority || 'medium',
+      project_id: targetProjectId
+    }).select().single();
+    if (error || !task) return;
+    await supabase.from('work_requests' as any).update({ status: 'converted', created_task_id: task.id }).eq('id', req.id);
+    setWorkRequests(prev => prev.map(w => w.id === req.id ? { ...w, status: 'converted' } : w));
+    // add task to local state for immediate visibility
+    loadTasks();
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
       {/* Enhanced Header */}
@@ -2180,13 +2207,16 @@ const ProjectManagement = () => {
             <CardHeader><CardTitle>All Tasks (List)</CardTitle></CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {tasks.map(t => (
+                {tasks.filter(t => !(t as any).archived_at).map(t => (
                   <div key={t.id} className="p-3 border rounded-lg flex items-center justify-between">
                     <div>
                       <div className="font-medium">{t.title}</div>
                       <div className="text-xs text-gray-500">{t.status} • {t.priority}</div>
                     </div>
-                    <Badge variant="outline">{t.project}</Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{t.project}</Badge>
+                      <Button size="sm" variant="ghost" onClick={() => archiveTask(t.id)}>Archive</Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -2211,6 +2241,9 @@ const ProjectManagement = () => {
                       <div className="font-medium">{req.title}</div>
                       <div className="text-xs text-gray-500">{req.status} • {req.priority || 'medium'}</div>
                     </div>
+                    {req.status !== 'converted' && (
+                      <Button size="sm" variant="ghost" onClick={() => convertWorkRequestToTask(req)}>Convert to Task</Button>
+                    )}
                   </div>
                 ))}
                 {workRequests.length === 0 && <div className="text-sm text-gray-500">No work requests yet.</div>}
@@ -2250,13 +2283,16 @@ const ProjectManagement = () => {
             <CardHeader><CardTitle>All Work Items</CardTitle></CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {[...tasks].map(t => (
+                {[...tasks].filter(t => !(t as any).archived_at).map(t => (
                   <div key={t.id} className="p-3 border rounded-lg flex items-center justify-between">
                     <div>
                       <div className="font-medium">{t.title}</div>
                       <div className="text-xs text-gray-500">{t.status} • {t.priority}</div>
                     </div>
-                    <Badge variant="outline">{t.project}</Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{t.project}</Badge>
+                      <Button size="sm" variant="ghost" onClick={() => archiveTask(t.id)}>Archive</Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -2268,7 +2304,20 @@ const ProjectManagement = () => {
           <Card>
             <CardHeader><CardTitle>Archived Work Items</CardTitle></CardHeader>
             <CardContent>
-              <div className="text-sm text-gray-500">Archive functionality can be wired to a boolean flag on tasks (e.g., archived_at). Currently none are archived.</div>
+              <div className="space-y-2">
+                {tasks.filter(t => (t as any).archived_at).map(t => (
+                  <div key={t.id} className="p-3 border rounded-lg flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{t.title}</div>
+                      <div className="text-xs text-gray-500">Archived</div>
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => unarchiveTask(t.id)}>Unarchive</Button>
+                  </div>
+                ))}
+                {tasks.filter(t => (t as any).archived_at).length === 0 && (
+                  <div className="text-sm text-gray-500">No archived items.</div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
