@@ -10,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
-import { useTheme } from '@/contexts/ThemeContext';
 import LivePriceSidebars from '@/components/sidebars/LivePriceSidebars';
 
 const Header = () => {
@@ -18,7 +17,6 @@ const Header = () => {
   const [isPriceSidebarOpen, setIsPriceSidebarOpen] = useState(false);
   const [activePriceTab, setActivePriceTab] = useState<'crypto' | 'forex'>('crypto');
   const { user, signOut } = useAuth();
-  const { theme, setTheme, availableThemes } = useTheme();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -31,404 +29,345 @@ const Header = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <div className="flex items-center">
-            <Link to="/" className="flex items-center">
-              <img src="/lovable-uploads/86c25eed-4258-4e9e-9fd3-c368f065e452.png" alt="B2BNest" className="h-8 w-auto" />
-              <span className="ml-2 text-xl font-bold text-gray-900">B2BNest</span>
-            </Link>
-          </div>
+          <Link to="/" className="flex items-center">
+            <img 
+              src="/lovable-uploads/ac6d0f2a-e033-4bfc-b1e3-f5f14c1106e9.png" 
+              alt="AI-Powered Business Automation Platform Logo" 
+              style={{width: "125px", height: "auto"}}
+            />
+          </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex space-x-8">
-            <Link to="/" className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+          <nav className="hidden md:flex items-center space-x-8">
+            <Link to="/" className="text-gray-700 hover:text-blue-600 transition-colors">
               Home
             </Link>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-gray-500 hover:text-gray-900">
-                  BizzLink
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem asChild>
-                  <Link to="/business-social" className="flex items-center">
-                    <Users className="mr-2 h-4 w-4" />
-                    Business Social
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/forum" className="flex items-center">
-                    <Users className="mr-2 h-4 w-4" />
-                    Forum
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/business-news" className="flex items-center">
-                    <Newspaper className="mr-2 h-4 w-4" />
-                    Business News
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <Link to="/business-tools" className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+            <Link to="/business-social" className="text-gray-700 hover:text-blue-600 transition-colors">
+              BizzLink
+            </Link>
+            <Link to="/business-tools" className="text-gray-700 hover:text-blue-600 transition-colors">
               Business Tools
             </Link>
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-gray-500 hover:text-gray-900">
+                <span className="text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">
                   AI Tools
-                </Button>
+                </span>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem asChild>
-                  <Link to="/ai-showcase" className="flex items-center">
-                    <Brain className="mr-2 h-4 w-4" />
-                    AI Showcase
-                  </Link>
+                  <Link to="/ai-studio">AI Studio</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/ai-studio" className="flex items-center">
-                    <Brain className="mr-2 h-4 w-4" />
-                    AI Studio
-                  </Link>
+                  <Link to="/ai-showcase">AI Showcase</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/ai-workspace" className="flex items-center">
-                    <Brain className="mr-2 h-4 w-4" />
+                  <Link to="/ai-workspace">
+                    <Brain className="h-4 w-4 mr-2" />
                     AI Workspace
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-gray-500 hover:text-gray-900">
+                <span className="text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">
                   Directory
-                </Button>
+                </span>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
+              <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link to="/directory" className="flex items-center">
-                    <Building2 className="mr-2 h-4 w-4" />
-                    All Directories
+                  <Link to="/directory" className="w-full flex items-center">
+                    <Network className="h-4 w-4 mr-2" />
+                    Business Hub
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/directory/companies" className="flex items-center">
-                    <Building2 className="mr-2 h-4 w-4" />
+                  <Link to="/directory/companies" className="w-full flex items-center">
+                    <Building2 className="h-4 w-4 mr-2" />
                     Companies
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/directory/suppliers" className="flex items-center">
-                    <ShoppingCart className="mr-2 h-4 w-4" />
+                  <Link to="/directory/suppliers" className="w-full flex items-center">
+                    <ShoppingCart className="h-4 w-4 mr-2" />
                     Suppliers
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/directory/services" className="flex items-center">
-                    <Briefcase className="mr-2 h-4 w-4" />
+                  <Link to="/directory/services" className="w-full flex items-center">
+                    <Briefcase className="h-4 w-4 mr-2" />
                     Services
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-gray-500 hover:text-gray-900">
+                <span className="text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">
                   Invest
-                </Button>
+                </span>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
+               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link to="/fundraising" className="flex items-center">
-                    <Bitcoin className="mr-2 h-4 w-4" />
-                    Fundraising
+                  <Link to="/live-charts" className="w-full flex items-center">
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Market
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/whitepaper" className="flex items-center">
-                    <Globe className="mr-2 h-4 w-4" />
+                  <Link to="/business-news" className="w-full flex items-center">
+                    <Newspaper className="h-4 w-4 mr-2" />
+                    Business News
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/fundraising" className="w-full">
+                    Funding Round
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/whitepaper" className="w-full">
                     Whitepaper
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/tokenomics" className="flex items-center">
-                    <Bitcoin className="mr-2 h-4 w-4" />
+                  <Link to="/tokenomics" className="w-full">
                     Tokenomics
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/live-charts" className="flex items-center">
-                    <BarChart3 className="mr-2 h-4 w-4" />
-                    Live Charts
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-
-            <Link to="/pricing" className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+            <Link to="/pricing" className="text-gray-700 hover:text-blue-600 transition-colors">
               Pricing
             </Link>
           </nav>
 
-          {/* Right side controls */}
-          <div className="flex items-center space-x-4">
-            {/* Live Prices Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsPriceSidebarOpen(!isPriceSidebarOpen)}
-              className="hidden lg:flex"
-            >
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Live Prices
-            </Button>
-
-            {/* Theme Selector */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="px-3">
-                  Theme: {theme}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {availableThemes.map((t) => (
-                  <DropdownMenuItem key={t} onClick={() => setTheme(t)}>
-                    {t.charAt(0).toUpperCase() + t.slice(1)}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* User Menu */}
+          {/* Live Prices and User Menu */}
+          <div className="flex items-center space-x-2">
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="relative h-8 w-8 rounded-full">
+                  <Button variant="ghost" className="flex items-center space-x-2 px-3">
                     <User className="h-4 w-4" />
+                    <span className="hidden sm:inline truncate max-w-32">
+                      {user.email}
+                    </span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuItem onClick={() => navigate('/dashboard')}>
-                    <User className="mr-2 h-4 w-4" />
-                    Dashboard
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard" className="flex items-center w-full">
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      Dashboard
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/settings')}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings" className="flex items-center w-full">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Settings
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign out
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <div className="flex items-center space-x-2">
-                <Button variant="ghost" asChild>
-                  <Link to="/auth">Sign In</Link>
-                </Button>
-                <Button asChild>
-                  <Link to="/auth">Sign Up</Link>
-                </Button>
+                <Link to="/auth">
+                  <Button variant="outline" size="sm" className="bg-primary/10 border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/auth">
+                  <Button size="sm" className="bg-primary hover:bg-primary/90 animate-pulse">
+                    Sign Up
+                  </Button>
+                </Link>
               </div>
             )}
 
             {/* Mobile menu button */}
-            <div className="lg:hidden">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-              >
-                {isMenuOpen ? (
-                  <X className="h-6 w-6" />
-                ) : (
-                  <Menu className="h-6 w-6" />
-                )}
-              </Button>
-            </div>
+            <button
+              className="md:hidden p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
           </div>
         </div>
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="lg:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
+          <div className="md:hidden py-4 border-t">
+            <div className="flex flex-col space-y-4">
               <Link
                 to="/"
-                className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Home
               </Link>
-              
-              <div className="space-y-1">
-                <div className="text-gray-900 font-medium px-3 py-2">BizzLink</div>
-                <Link
-                  to="/business-social"
-                  className="text-gray-600 hover:text-gray-900 block px-6 py-2 rounded-md text-sm"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Business Social
-                </Link>
-                <Link
-                  to="/forum"
-                  className="text-gray-600 hover:text-gray-900 block px-6 py-2 rounded-md text-sm"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Forum
-                </Link>
-                <Link
-                  to="/business-news"
-                  className="text-gray-600 hover:text-gray-900 block px-6 py-2 rounded-md text-sm"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Business News
-                </Link>
-              </div>
-
+              <Link
+                to="/business-social"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                BizzLink
+              </Link>
               <Link
                 to="/business-tools"
-                className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Business Tools
               </Link>
-
-              <div className="space-y-1">
-                <div className="text-gray-900 font-medium px-3 py-2">AI Tools</div>
-                <Link
-                  to="/ai-showcase"
-                  className="text-gray-600 hover:text-gray-900 block px-6 py-2 rounded-md text-sm"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  AI Showcase
-                </Link>
-                <Link
-                  to="/ai-studio"
-                  className="text-gray-600 hover:text-gray-900 block px-6 py-2 rounded-md text-sm"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  AI Studio
-                </Link>
-                <Link
-                  to="/ai-workspace"
-                  className="text-gray-600 hover:text-gray-900 block px-6 py-2 rounded-md text-sm"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  AI Workspace
-                </Link>
+              <div className="px-2">
+                <div className="font-medium text-gray-900 mb-2">AI Tools</div>
+                <div className="pl-4 space-y-2">
+                  <Link
+                    to="/ai-studio"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    AI Studio
+                  </Link>
+                  <Link
+                    to="/ai-showcase"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    AI Showcase
+                  </Link>
+                  <Link
+                    to="/ai-workspace"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Brain className="h-4 w-4 mr-2" />
+                    AI Workspace
+                  </Link>
+                </div>
               </div>
-
-              <div className="space-y-1">
-                <div className="text-gray-900 font-medium px-3 py-2">Directory</div>
-                <Link
-                  to="/directory"
-                  className="text-gray-600 hover:text-gray-900 block px-6 py-2 rounded-md text-sm"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  All Directories
-                </Link>
-                <Link
-                  to="/directory/companies"
-                  className="text-gray-600 hover:text-gray-900 block px-6 py-2 rounded-md text-sm"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Companies
-                </Link>
-                <Link
-                  to="/directory/suppliers"
-                  className="text-gray-600 hover:text-gray-900 block px-6 py-2 rounded-md text-sm"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Suppliers
-                </Link>
-                <Link
-                  to="/directory/services"
-                  className="text-gray-600 hover:text-gray-900 block px-6 py-2 rounded-md text-sm"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Services
-                </Link>
+              <div className="px-2">
+                <div className="font-medium text-gray-900 mb-2">Directory</div>
+                <div className="pl-4 space-y-2">
+                  <Link
+                    to="/directory"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Network className="h-4 w-4 mr-2" />
+                    Business Hub
+                  </Link>
+                  <Link
+                    to="/directory/companies"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Building2 className="h-4 w-4 mr-2" />
+                    Companies
+                  </Link>
+                  <Link
+                    to="/directory/suppliers"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    Suppliers
+                  </Link>
+                  <Link
+                    to="/directory/services"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Briefcase className="h-4 w-4 mr-2" />
+                    Services
+            </Link>
+            
+                </div>
               </div>
-
-              <div className="space-y-1">
-                <div className="text-gray-900 font-medium px-3 py-2">Invest</div>
-                <Link
-                  to="/fundraising"
-                  className="text-gray-600 hover:text-gray-900 block px-6 py-2 rounded-md text-sm"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Fundraising
-                </Link>
-                <Link
-                  to="/whitepaper"
-                  className="text-gray-600 hover:text-gray-900 block px-6 py-2 rounded-md text-sm"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Whitepaper
-                </Link>
-                <Link
-                  to="/tokenomics"
-                  className="text-gray-600 hover:text-gray-900 block px-6 py-2 rounded-md text-sm"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Tokenomics
-                </Link>
-                <Link
-                  to="/live-charts"
-                  className="text-gray-600 hover:text-gray-900 block px-6 py-2 rounded-md text-sm"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Live Charts
-                </Link>
+              <div className="px-2">
+                <div className="font-medium text-gray-900 mb-2">Invest</div>
+                <div className="pl-4 space-y-2">
+                  <Link
+                    to="/business-news"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Newspaper className="h-4 w-4 mr-2" />
+                    Business News
+                  </Link>
+                  <Link
+                    to="/fundraising"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Funding Round
+                  </Link>
+                  <Link
+                    to="/whitepaper"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Whitepaper
+                  </Link>
+                  <Link
+                    to="/tokenomics"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Tokenomics
+                  </Link>
+                  <Link
+                    to="/live-charts"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Market
+                  </Link>
+                </div>
               </div>
-
               <Link
                 to="/pricing"
-                className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Pricing
               </Link>
-
               {user && (
                 <>
-                  <div className="border-t border-gray-200 pt-4 pb-3">
-                    <div className="space-y-1">
-                      <Link
-                        to="/dashboard"
-                        className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        Dashboard
-                      </Link>
-                      <Link
-                        to="/settings"
-                        className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        Settings
-                      </Link>
-                      <button
-                        onClick={() => {
-                          handleSignOut();
-                          setIsMenuOpen(false);
-                        }}
-                        className="text-gray-600 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium w-full text-left"
-                      >
-                        Sign out
-                      </button>
-                    </div>
-                  </div>
+                  <hr className="my-2" />
+                   <Link
+                     to="/dashboard"
+                     className="text-gray-700 hover:text-blue-600 transition-colors px-2 flex items-center"
+                     onClick={() => setIsMenuOpen(false)}
+                   >
+                     <BarChart3 className="h-4 w-4 mr-2" />
+                     Dashboard
+                   </Link>
+                   <Link
+                     to="/settings"
+                     className="text-gray-700 hover:text-blue-600 transition-colors px-2 flex items-center"
+                     onClick={() => setIsMenuOpen(false)}
+                   >
+                     <Settings className="h-4 w-4 mr-2" />
+                     Settings
+                   </Link>
+                  <button
+                    onClick={() => {
+                      handleSignOut();
+                      setIsMenuOpen(false);
+                    }}
+                    className="text-gray-700 hover:text-blue-600 transition-colors px-2 text-left flex items-center"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </button>
                 </>
               )}
             </div>
@@ -437,7 +376,7 @@ const Header = () => {
       </div>
 
       {/* Live Price Sidebars */}
-      <LivePriceSidebars
+      <LivePriceSidebars 
         isOpen={isPriceSidebarOpen}
         onClose={() => setIsPriceSidebarOpen(false)}
         defaultTab={activePriceTab}

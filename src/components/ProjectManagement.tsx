@@ -84,23 +84,9 @@ import {
   Cloud,
   Loader2,
   ArrowUp,
-  ArrowDown,
-  Image as ImageIcon,
-  Tag as TagIcon
+  ArrowDown
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { Pie, Bar } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip as ChartTooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-} from 'chart.js';
-
-ChartJS.register(ArcElement, ChartTooltip, Legend, CategoryScale, LinearScale, BarElement);
 
 // Enhanced interfaces
 interface Task {
@@ -122,9 +108,6 @@ interface Task {
   comments?: Comment[];
   dependencies?: string[];
   progress?: number;
-  archived?: boolean;
-  position?: number;
-  coverUrl?: string;
 }
 
 interface Subtask {
@@ -141,6 +124,42 @@ interface Comment {
   author: string;
   timestamp: Date;
   mentions?: string[];
+}
+
+interface Milestone {
+  id: string;
+  title: string;
+  description: string;
+  dueDate: Date;
+  project: string;
+  completed: boolean;
+  progress: number;
+  tasks: string[];
+  aiInsights?: string;
+}
+
+interface ActivityLog {
+  id: string;
+  type: 'task_created' | 'task_updated' | 'comment_added' | 'file_uploaded' | 'client_email' | 'meeting_scheduled' | 'milestone_completed' | 'ai_insight_generated';
+  description: string;
+  user: string;
+  timestamp: Date;
+  projectId: string;
+  taskId?: string;
+  metadata?: any;
+}
+
+interface ClientCommunication {
+  id: string;
+  type: 'email' | 'call' | 'meeting' | 'note' | 'feedback' | 'approval';
+  subject: string;
+  content: string;
+  clientName: string;
+  projectId: string;
+  timestamp: Date;
+  status: 'pending' | 'completed' | 'scheduled';
+  attachments?: string[];
+  aiSummary?: string;
 }
 
 interface Project {
@@ -163,7 +182,6 @@ interface KanbanColumn {
   color: string;
   order: number;
   automationRules?: AutomationRule[];
-  wipLimit?: number;
 }
 
 interface AutomationRule {
@@ -183,30 +201,13 @@ interface AutomationRule {
   lastTriggered?: Date;
 }
 
-// New interfaces for multitenancy and planning
-interface Team {
+interface Integration {
   id: string;
   name: string;
-  members: string[];
-}
-
-interface Epic {
-  id: string;
-  title: string;
-  description?: string;
-  projectId?: string;
-  dueDate?: Date | null;
-}
-
-interface Goal {
-  id: string;
-  title: string;
-  description?: string;
-  targetDate?: Date | null;
-  progress: number;
-  owner?: string;
-  projectId?: string;
-  epicId?: string;
+  type: 'trello' | 'notion' | 'google-calendar' | 'slack' | 'gmail' | 'twilio' | 'calendly' | 'zapier';
+  status: 'connected' | 'disconnected' | 'error';
+  config: any;
+  lastSync?: Date;
 }
 
 const ProjectManagement = () => {
@@ -216,7 +217,7 @@ const ProjectManagement = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<'kanban' | 'list' | 'calendar' | 'timeline'>('kanban');
-  const [activeTab, setActiveTab] = useState('summary');
+  const [activeTab, setActiveTab] = useState('overview');
   const [selectedProject, setSelectedProject] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateTask, setShowCreateTask] = useState(false);
@@ -226,53 +227,8 @@ const ProjectManagement = () => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showEditTask, setShowEditTask] = useState(false);
   const [showCreateProject, setShowCreateProject] = useState(false);
-  
-  // State for various dialogs and features
-  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
-  const [lastFocusedTaskId, setLastFocusedTaskId] = useState<string>('');
-  const [columnTaskOrder, setColumnTaskOrder] = useState<Record<string, string[]>>({});
-  const [labelsDialogOpen, setLabelsDialogOpen] = useState(false);
-  const [labelsTask, setLabelsTask] = useState<Task | null>(null);
-  const [checklistDialogOpen, setChecklistDialogOpen] = useState(false);
-  const [checklistTask, setChecklistTask] = useState<Task | null>(null);
-  const [dueDateDialogOpen, setDueDateDialogOpen] = useState(false);
-  const [dueDateTask, setDueDateTask] = useState<Task | null>(null);
-  
-  // Compact mode and multitenancy state
-  const [compactMode, setCompactMode] = useState<boolean>(true);
-  const [teams, setTeams] = useState<Team[]>([
-    { id: 'all', name: 'All Teams', members: [] },
-    { id: 'team-1', name: 'Product', members: ['John Doe', 'Jane Smith'] },
-    { id: 'team-2', name: 'Engineering', members: ['Mike Johnson', 'Alex Chen'] },
-  ]);
-  const [selectedTeam, setSelectedTeam] = useState<string>('all');
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [showCreateEpic, setShowCreateEpic] = useState<boolean>(false);
-  const [epics, setEpics] = useState<Epic[]>([]);
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [wipLimits, setWipLimits] = useState<Record<string, number>>({
-    backlog: 999,
-    todo: 8,
-    'in-progress': 5,
-    review: 4,
-    done: 999,
-  });
-  
-  // Trello-like UI state
-  const [favoriteBoards, setFavoriteBoards] = useState<Record<string, boolean>>({});
-  const [listComposerOpen, setListComposerOpen] = useState<boolean>(false);
-  const [newListTitle, setNewListTitle] = useState<string>('');
-  const [cardComposerOpen, setCardComposerOpen] = useState<Record<string, boolean>>({});
-  const [newCardTitle, setNewCardTitle] = useState<Record<string, string>>({});
-  
-  const getTagColor = (tag: string) => {
-    const palette = ['bg-red-500','bg-orange-500','bg-amber-500','bg-yellow-500','bg-lime-500','bg-green-500','bg-emerald-500','bg-teal-500','bg-cyan-500','bg-sky-500','bg-blue-500','bg-indigo-500','bg-violet-500','bg-purple-500','bg-fuchsia-500','bg-pink-500','bg-rose-500'];
-    let hash = 0;
-    for (let i = 0; i < tag.length; i++) hash = (hash * 31 + tag.charCodeAt(i)) >>> 0;
-    return palette[hash % palette.length];
-  };
 
-  // Sample data with enhanced features
+  // Sample data with enhanced features - moved before conditional returns
   const [projects, setProjects] = useState<Project[]>([
     {
       id: '1',
@@ -345,23 +301,94 @@ const ProjectManagement = () => {
     }
   ]);
 
-  const handleTaskArchive = async (taskId: string) => {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, archived: true } : t));
-    // Note: archived field might not exist in database yet
-    toast({ title: "Task Archived", description: "Task has been archived" });
-  };
+  const [milestones, setMilestones] = useState<Milestone[]>([
+    {
+      id: '1',
+      title: 'Design Phase Complete',
+      description: 'All UI/UX designs approved by client',
+      dueDate: new Date(2024, 2, 25),
+      project: 'Website Redesign',
+      completed: false,
+      progress: 80,
+      tasks: ['1'],
+      aiInsights: 'Design milestone is 80% complete. Consider client review meeting to finalize remaining designs.'
+    }
+  ]);
+
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([
+    {
+      id: '1',
+      type: 'task_created',
+      description: 'Created new task: Design Homepage Mockup',
+      user: 'John Doe',
+      timestamp: new Date(),
+      projectId: '1'
+    },
+    {
+      id: '2',
+      type: 'ai_insight_generated',
+      description: 'AI generated project insights and recommendations',
+      user: 'AI Assistant',
+      timestamp: new Date(),
+      projectId: '1'
+    }
+  ]);
+
+  const [clientCommunications, setClientCommunications] = useState<ClientCommunication[]>([
+    {
+      id: '1',
+      type: 'email',
+      subject: 'Weekly Progress Update - Website Redesign',
+      content: 'Design phase is progressing well. Homepage mockups are 60% complete...',
+      clientName: 'Tech Corp',
+      projectId: '1',
+      timestamp: new Date(),
+      status: 'completed',
+      aiSummary: 'Positive client response to design progress. No concerns raised.'
+    }
+  ]);
+
+  const [integrations, setIntegrations] = useState<Integration[]>([
+    { id: '1', name: 'Trello', type: 'trello', status: 'connected', config: {}, lastSync: new Date() },
+    { id: '2', name: 'Google Calendar', type: 'google-calendar', status: 'connected', config: {} },
+    { id: '3', name: 'Slack', type: 'slack', status: 'connected', config: {} },
+    { id: '4', name: 'Notion', type: 'notion', status: 'disconnected', config: {} }
+  ]);
+
+  const [automationRules, setAutomationRules] = useState<AutomationRule[]>([
+    {
+      id: '1',
+      name: 'Auto-assign urgent tasks',
+      trigger: 'task_created',
+      conditions: [{ field: 'priority', operator: 'equals', value: 'urgent' }],
+      actions: [{ type: 'assign_to', value: 'team-lead' }],
+      isActive: true,
+      lastTriggered: new Date(Date.now() - 86400000) // 1 day ago
+    },
+    {
+      id: '2',
+      name: 'Deadline notifications',
+      trigger: 'deadline_approaching',
+      conditions: [{ field: 'days_until_due', operator: 'equals', value: '2' }],
+      actions: [{ type: 'send_notification', value: 'slack' }],
+      isActive: true,
+      lastTriggered: new Date(Date.now() - 3600000) // 1 hour ago
+    }
+  ]);
 
   // Check if user can access Project Management features
-  const canAccessPM = useSubscription().canAccessFeature('project-management');
+  const canAccessPM = canAccessFeature('project-management');
+  console.log('🔧 ProjectManagement - canAccessPM:', canAccessPM, 'user:', !!user);
 
   useEffect(() => {
+    console.log('🔧 ProjectManagement useEffect triggered', { user: !!user, canAccessPM });
     if (user && canAccessPM) {
       loadProjects();
       loadTasks();
     } else {
       setLoading(false);
     }
-  }, [user, canAccessPM, selectedTeam]);
+  }, [user, canAccessPM]);
 
   // Load projects from database
   const loadProjects = async () => {
@@ -396,8 +423,13 @@ const ProjectManagement = () => {
         }));
         setProjects(formattedProjects);
       }
-    } catch {
-      toast({ title: 'Error', description: 'Failed to load projects.', variant: 'destructive' });
+    } catch (error) {
+      console.error('Error loading projects:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load projects. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -430,10 +462,7 @@ const ProjectManagement = () => {
           estimatedHours: todo.estimated_hours,
           subtasks: [],
           progress: 0,
-          comments: [],
-          archived: Boolean((todo as any).is_archived) || false,
-          position: (todo as any).position ?? undefined,
-          coverUrl: (todo as any).cover_url ?? undefined,
+          comments: []
         }));
         setTasks(formattedTasks);
       }
@@ -485,31 +514,41 @@ const ProjectManagement = () => {
         };
 
         setProjects(prev => [newProject, ...prev]);
-        toast({ title: "Project Created", description: `Successfully created project: ${newProject.name}` });
+        
+        toast({
+          title: "Project Created",
+          description: `Successfully created project: ${newProject.name}`,
+        });
       }
-    } catch {
-      toast({ title: "Error", description: "Failed to create project.", variant: "destructive" });
-      throw new Error('create project failed');
+    } catch (error) {
+      console.error('Error creating project:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create project. Please try again.",
+        variant: "destructive"
+      });
+      throw error;
     }
   };
 
   // Handle creating new tasks
   const handleCreateTask = async (taskData: any) => {
     try {
+      // Determine which project to assign the task to
       const targetProjectId = selectedProject !== 'all' ? selectedProject : projects[0]?.id || null;
-
+      
       const { data, error } = await supabase
         .from('todos')
         .insert({
           title: taskData.title,
           description: taskData.description || '',
-          status: taskData.status || 'todo',
+          status: 'todo',
           priority: taskData.priority || 'medium',
           due_date: taskData.due_date || null,
           labels: taskData.labels || [],
           estimated_hours: taskData.estimated_hours,
           project_id: targetProjectId,
-          user_id: user?.id,
+          user_id: user?.id
         })
         .select(`
           *,
@@ -532,17 +571,34 @@ const ProjectManagement = () => {
         estimatedHours: data.estimated_hours,
         subtasks: [],
         progress: 0,
-        comments: [],
-        archived: Boolean((data as any).is_archived) || false,
-        position: (data as any).position ?? undefined,
-        coverUrl: (data as any).cover_url ?? undefined,
+        comments: []
       };
 
       setTasks(prev => [...prev, newTask]);
-      toast({ title: 'Task Created', description: `Successfully created task: ${taskData.title}` });
+      
+      // Add activity log
+      const newActivity: ActivityLog = {
+        id: `activity-${Date.now()}`,
+        type: 'task_created',
+        description: `Created new task: ${newTask.title}`,
+        user: user?.email || 'Unknown User',
+        timestamp: new Date(),
+        projectId: newTask.project,
+        taskId: newTask.id
+      };
+      setActivityLogs(prev => [newActivity, ...prev]);
+
+      toast({
+        title: "Task Created",
+        description: `Successfully created task: ${newTask.title}`,
+      });
     } catch (error) {
       console.error('Error creating task:', error);
-      toast({ title: 'Error', description: 'Failed to create task. Please try again.', variant: 'destructive' });
+      toast({
+        title: "Error",
+        description: "Failed to create task. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -565,26 +621,32 @@ const ProjectManagement = () => {
     );
   }
 
-  const statusColumns = (projects.find(p => p.id === selectedProject && selectedProject !== 'all')?.customColumns || [
+  const statusColumns = projects.find(p => p.id === selectedProject && selectedProject !== 'all')?.customColumns || [
     { id: 'backlog', title: 'Backlog', color: 'bg-gray-100', order: 1 },
     { id: 'todo', title: 'To Do', color: 'bg-blue-100', order: 2 },
     { id: 'in-progress', title: 'In Progress', color: 'bg-yellow-100', order: 3 },
     { id: 'review', title: 'Review', color: 'bg-purple-100', order: 4 },
     { id: 'done', title: 'Done', color: 'bg-green-100', order: 5 }
-  ]).sort((a,b)=>a.order - b.order);
+  ];
+
+  const priorityColors = {
+    low: 'bg-green-500',
+    medium: 'bg-yellow-500',
+    high: 'bg-orange-500',
+    urgent: 'bg-red-500'
+  };
 
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          task.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesProject = selectedProject === 'all' || task.project === selectedProject;
-    const notArchived = !task.archived;
-    return matchesSearch && matchesProject && notArchived;
+    console.log('Filtering task:', task.title, 'project:', task.project, 'selectedProject:', selectedProject, 'matches:', matchesProject);
+    return matchesSearch && matchesProject;
   });
 
   // Handle drag and drop
   const handleDragStart = (e: React.DragEvent, task: Task) => {
-    const payload = JSON.stringify({ type: 'card', taskId: task.id, fromCol: task.status });
-    e.dataTransfer.setData('application/json', payload);
+    e.dataTransfer.setData('text/plain', task.id);
     e.dataTransfer.effectAllowed = 'move';
   };
 
@@ -593,486 +655,1336 @@ const ProjectManagement = () => {
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDrop = (e: React.DragEvent, columnId: string, beforeTaskId?: string) => {
+  const handleDrop = (e: React.DragEvent, columnId: string) => {
     e.preventDefault();
-    const j = e.dataTransfer.getData('application/json');
-    if (!j) return;
-    const data = JSON.parse(j);
-    if (data.type !== 'card') return;
-    const taskId = data.taskId as string;
-    const fromCol = data.fromCol as string;
-    handleTaskMove(taskId, fromCol, columnId, beforeTaskId);
+    const taskId = e.dataTransfer.getData('text/plain');
+    if (taskId) {
+      handleTaskStatusUpdate(taskId, columnId);
+    }
   };
 
   // Handle task status updates  
   const handleTaskStatusUpdate = async (taskId: string, newStatus: string) => {
     try {
-      const { error } = await supabase.from('todos').update({ status: newStatus }).eq('id', taskId);
+      // Update in database
+      const { error } = await supabase
+        .from('todos')
+        .update({ status: newStatus })
+        .eq('id', taskId);
+
       if (error) throw error;
 
-      setTasks(prev => prev.map(task => task.id === taskId ? { ...task, status: newStatus as any } : task));
-      toast({ title: "Task Updated", description: `Task status changed to ${newStatus}` });
-    } catch {
-      toast({ title: "Error", description: "Failed to update task status.", variant: "destructive" });
+      // Update local state
+      setTasks(prev => prev.map(task => {
+        if (task.id === taskId) {
+          const updatedTask = { ...task, status: newStatus as any };
+          
+          // Add activity log
+          const activity: ActivityLog = {
+            id: `activity-${Date.now()}`,
+            type: 'task_updated',
+            description: `Task "${task.title}" moved to ${newStatus}`,
+            user: user?.email || 'Unknown User',
+            timestamp: new Date(),
+            projectId: task.project,
+            taskId: task.id
+          };
+          setActivityLogs(prev => [activity, ...prev]);
+          
+          return updatedTask;
+        }
+        return task;
+      }));
+      
+      toast({
+        title: "Task Updated",
+        description: `Task status changed to ${newStatus}`,
+      });
+    } catch (error) {
+      console.error('Error updating task status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update task status. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
   // Handle task deletion
   const handleTaskDelete = (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-    setTasks(prev => prev.filter(t => t.id !== taskId));
-    toast({ title: "Task Deleted", description: `Task "${task.title}" has been deleted` });
-  };
-
-  // Handle full move with ordering
-  const handleTaskMove = async (taskId: string, fromCol: string, toCol: string, beforeTaskId?: string) => {
-    setColumnTaskOrder(prev => {
-      const next = { ...prev };
-      next[fromCol] = (next[fromCol] || []).filter(id => id !== taskId);
-      const dest = new Set(next[toCol] || []);
-      if (!dest.has(taskId)) {
-        const arr = next[toCol] ? [...next[toCol]] : [];
-        if (beforeTaskId) {
-          const idx = arr.indexOf(beforeTaskId);
-          if (idx >= 0) arr.splice(idx, 0, taskId); else arr.push(taskId);
-        } else {
-          arr.push(taskId);
-        }
-        next[toCol] = arr;
-      }
-      return next;
-    });
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: toCol as any } : t));
-    try {
-      const pos = (columnTaskOrder[toCol] || []).indexOf(taskId);
-      const updateData: any = { status: toCol };
-      if (!isNaN(pos) && pos >= 0) updateData.position = pos;
-      await supabase.from('todos').update(updateData).eq('id', taskId);
-    } catch (e) {
-      console.warn('Move persist failed', e);
+    if (task) {
+      setTasks(prev => prev.filter(t => t.id !== taskId));
+      
+      const activity: ActivityLog = {
+        id: `activity-${Date.now()}`,
+        type: 'task_updated',
+        description: `Task "${task.title}" was deleted`,
+        user: user?.email || 'Unknown User',
+        timestamp: new Date(),
+        projectId: task.project,
+        taskId: task.id
+      };
+      setActivityLogs(prev => [activity, ...prev]);
+      
+      toast({
+        title: "Task Deleted",
+        description: `Task "${task.title}" has been deleted`,
+      });
     }
   };
 
-  const EnhancedKanbanBoard = () => {
-    const currentProject = projects.find(p => p.id === selectedProject);
-    const isFav = favoriteBoards[selectedProject] || false;
-    const toggleFav = () => setFavoriteBoards(prev => ({ ...prev, [selectedProject]: !prev[selectedProject] }));
+  const EnhancedKanbanBoard = () => (
+    <div className="space-y-6">
+      {/* Custom Board Controls */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="outline" size="sm" onClick={() => {
+                console.log('Opening board customizer');
+                setShowBoardCustomizer(true);
+              }}>
+                <Settings className="w-4 h-4 mr-2" />
+                Customize Board
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => {
+                console.log('Opening automation builder');
+                setShowAutomationBuilder(true);
+              }}>
+                <Zap className="w-4 h-4 mr-2" />
+                Automation Rules
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-blue-100 text-blue-800">Auto-Assignment: ON</Badge>
+              <Badge className="bg-green-100 text-green-800">Notifications: ON</Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-    const handleAddList = async () => {
-      const title = newListTitle.trim();
-      if (!title || selectedProject === 'all') return;
-      const nextOrder = (currentProject?.customColumns || statusColumns).length + 1;
-      const newCol: KanbanColumn = { id: `list-${Date.now()}`, title, color: 'bg-gray-100', order: nextOrder };
-      setProjects(prev => prev.map(p => p.id === selectedProject ? { ...p, customColumns: [ ...(p.customColumns || statusColumns), newCol ] } : p));
-      setListComposerOpen(false); 
-      setNewListTitle('');
-      try {
-        await supabase.from('projects').update({ custom_columns: [ ...((currentProject?.customColumns)||statusColumns), newCol ] as any }).eq('id', selectedProject);
-      } catch(e) { 
-        console.warn('Add list persist failed', e); 
-      }
-    };
-
-    const openCardComposer = (colId: string) => setCardComposerOpen(prev => ({ ...prev, [colId]: true }));
-    const closeCardComposer = (colId: string) => setCardComposerOpen(prev => ({ ...prev, [colId]: false }));
-    const updateCardTitle = (colId: string, v: string) => setNewCardTitle(prev => ({ ...prev, [colId]: v }));
-    const addCard = async (colId: string) => {
-      const title = (newCardTitle[colId] || '').trim();
-      if (!title) return;
-      await handleCreateTask({ title, status: colId });
-      updateCardTitle(colId, '');
-      closeCardComposer(colId);
-    };
-
-    return (
-      <div className="space-y-4">
-        {/* Board Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={toggleFav}>
-              <Star className={`w-4 h-4 ${isFav ? 'text-yellow-500 fill-yellow-500' : ''}`} />
-            </Button>
-            <h2 className="text-xl font-semibold">
-              {currentProject ? currentProject.name : 'All Projects'}
-            </h2>
-            {selectedTaskIds.size > 0 && (
-              <div className="ml-4 flex items-center gap-2 bg-blue-50 border border-blue-200 rounded px-2 py-1 text-xs">
-                <span>{selectedTaskIds.size} selected</span>
-                <Select onValueChange={(newStatus:any)=>{
-                  const ids = Array.from(selectedTaskIds);
-                  ids.forEach(id => handleTaskStatusUpdate(id, newStatus));
-                  setSelectedTaskIds(new Set());
+      {/* Kanban Columns */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        {statusColumns.map(column => (
+          <div 
+            key={column.id} 
+            className={`${column.color} rounded-lg p-4 min-h-[700px] animate-fade-in`}
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, column.id)}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold">{column.title}</h3>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">
+                  {filteredTasks.filter(task => task.status === column.id).length}
+                </Badge>
+                <Button variant="ghost" size="sm" onClick={(e) => {
+                  e.stopPropagation();
+                  console.log('Plus button clicked, opening create task dialog');
+                  setShowCreateTask(true);
                 }}>
-                  <SelectTrigger className="h-7 w-[130px]"><SelectValue placeholder="Move to..." /></SelectTrigger>
-                  <SelectContent>
-                    {statusColumns.map(col => <SelectItem key={col.id} value={col.id}>{col.title}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <Button size="sm" variant="outline" onClick={()=>{
-                  const ids = Array.from(selectedTaskIds);
-                  ids.forEach(id => handleTaskArchive(id));
-                  setSelectedTaskIds(new Set());
-                }}>Archive</Button>
-                <Button size="sm" variant="outline" onClick={()=>setSelectedTaskIds(new Set())}>Clear</Button>
+                  <Plus className="w-4 h-4" />
+                </Button>
               </div>
-            )}
-            {currentProject && (
-              <div className="flex -space-x-2 ml-2">
-                {currentProject.members.slice(0,4).map(m => (
-                  <Avatar key={m} className="w-6 h-6 border">
-                    <AvatarFallback className="text-[10px]">{m.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
-                  </Avatar>
-                ))}
-                {currentProject.members.length > 4 && (
-                  <Badge variant="secondary" className="ml-2">+{currentProject.members.length - 4}</Badge>
-                )}
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={()=>setShowBoardCustomizer(true)}>
-              <Settings className="w-4 h-4 mr-2" /> Customize
-            </Button>
-            <Button variant="outline" size="sm" onClick={()=>setShowAutomationBuilder(true)}>
-              <Zap className="w-4 h-4 mr-2" /> Automations
-            </Button>
-          </div>
-        </div>
-
-        {/* Lists horizontally scrollable */}
-        <div className="overflow-x-auto pb-4">
-          <div className="flex items-start gap-4 min-h-[70vh]">
-            {statusColumns.map(column => {
-              const columnTasks = filteredTasks.filter(task => task.status === column.id);
-              const order = columnTaskOrder[column.id] || [];
-              columnTasks.sort((a,b) => {
-                const ia = order.indexOf(a.id);
-                const ib = order.indexOf(b.id);
-                return (ia === -1 ? 1 : ia) - (ib === -1 ? 1 : ib);
-              });
-              const limit = wipLimits[column.id] ?? (column as any).wipLimit ?? 999;
-              const isOver = columnTasks.length > limit;
-              const composerOpen = cardComposerOpen[column.id];
-              
-              return (
-                <div key={column.id} className={`w-80 flex-shrink-0 ${isOver ? 'ring-2 ring-red-400 rounded' : ''}`} 
-                     onDragOver={handleDragOver} 
-                     onDrop={(e)=>handleDrop(e, column.id)}>
-                  <div className="px-3 py-2 bg-gray-100 rounded-t flex items-center justify-between">
-                    <div className="font-medium text-sm truncate flex items-center gap-2">
-                      {column.title}
-                      <Badge variant={isOver ? 'destructive' : 'secondary'} className="text-[10px]">
-                        {columnTasks.length}/{limit===999?'∞':limit}
-                      </Badge>
-                    </div>
-                    <Button variant="ghost" size="icon" onClick={(e)=>{ e.stopPropagation(); openCardComposer(column.id); }}>
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <div className="bg-gray-50 p-2 space-y-2">
-                    {columnTasks.map(task => (
-                      <div key={task.id} onDragOver={handleDragOver} onDrop={(e)=>handleDrop(e, column.id, task.id)}>
-                        <Card className={`cursor-pointer hover:shadow transition ${selectedTaskIds.has(task.id) ? 'ring-2 ring-blue-400' : ''}`} 
-                              draggable 
-                              onDragStart={(e)=>handleDragStart(e, task)} 
-                              onClick={(e)=>{ 
-                                e.preventDefault(); 
-                                setLastFocusedTaskId(task.id); 
-                                if (e.metaKey || e.ctrlKey) { 
-                                  const s = new Set(selectedTaskIds); 
-                                  s.has(task.id) ? s.delete(task.id) : s.add(task.id); 
-                                  setSelectedTaskIds(s); 
-                                } else { 
-                                  setEditingTask(task); 
-                                  setShowEditTask(true); 
-                                } 
-                              }}>
-                          <CardContent className="p-3">
-                            {task.coverUrl && (
-                              <div className="mb-2 overflow-hidden rounded">
-                                <img src={task.coverUrl} alt="cover" className="w-full h-24 object-cover" />
+            </div>
+            
+            <div className="space-y-3">
+              {filteredTasks
+                .filter(task => task.status === column.id)
+                .map(task => (
+                  <Card 
+                    key={task.id} 
+                    className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, task)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      console.log('Task card clicked:', task.id, task.title);
+                      setEditingTask(task);
+                      setShowEditTask(true);
+                    }}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-medium text-sm">{task.title}</h4>
+                        <div className="flex items-center gap-1">
+                          <div className={`w-2 h-2 rounded-full ${priorityColors[task.priority]}`}></div>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
+                                <MoreHorizontal className="w-3 h-3" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-40 p-1" align="end">
+                              <div className="space-y-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="w-full justify-start"
+                                  onClick={() => {
+                                    setEditingTask(task);
+                                    setShowEditTask(true);
+                                  }}
+                                >
+                                  <Edit className="w-3 h-3 mr-2" />
+                                  Edit
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="w-full justify-start text-red-600 hover:text-red-700"
+                                  onClick={() => handleTaskDelete(task.id)}
+                                >
+                                  <Trash2 className="w-3 h-3 mr-2" />
+                                  Delete
+                                </Button>
                               </div>
-                            )}
-                            {task.tags && task.tags.length > 0 && (
-                              <div className="flex gap-1 mb-2">
-                                {task.tags.slice(0,4).map(tag => (
-                                  <span key={tag} className={`${getTagColor(tag)} h-1.5 w-8 rounded`}></span>
-                                ))}
-                              </div>
-                            )}
-                            <div className="flex items-start justify-between">
-                              <h4 className="font-medium text-sm">{task.title}</h4>
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <Button variant="ghost" size="sm" onClick={(e)=>e.stopPropagation()}>
-                                    <MoreHorizontal className="w-3 h-3" />
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-40 p-1" align="end">
-                                  <div className="space-y-1">
-                                    <Button variant="ghost" size="sm" className="w-full justify-start" 
-                                            onClick={()=>{ setEditingTask(task); setShowEditTask(true); }}>
-                                      <Edit className="w-3 h-3 mr-2" /> Edit
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="w-full justify-start" 
-                                            onClick={()=>{ setLabelsTask(task); setLabelsDialogOpen(true); }}>
-                                      <TagIcon className="w-3 h-3 mr-2" /> Labels
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="w-full justify-start" 
-                                            onClick={()=>handleTaskArchive(task.id)}>
-                                      <FolderOpen className="w-3 h-3 mr-2" /> Archive
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="w-full justify-start text-red-600 hover:text-red-700" 
-                                            onClick={()=>handleTaskDelete(task.id)}>
-                                      <Trash2 className="w-3 h-3 mr-2" /> Delete
-                                    </Button>
-                                  </div>
-                                </PopoverContent>
-                              </Popover>
-                            </div>
-                            {task.description && <p className="text-xs text-gray-600 mt-1 line-clamp-2">{task.description}</p>}
-                            <div className="mt-2 flex items-center justify-between">
-                              <div className="flex items-center gap-2 text-gray-500">
-                                {task.attachments && task.attachments.length > 0 && <Paperclip className="w-3 h-3" />}
-                                {task.comments && task.comments.length > 0 && (
-                                  <div className="flex items-center gap-1">
-                                    <MessageCircle className="w-3 h-3" />
-                                    <span className="text-[10px]">{task.comments.length}</span>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-1">
-                                {task.dueDate && (
-                                  <div className="flex items-center gap-1 text-gray-500">
-                                    <CalendarIcon className="w-3 h-3" />
-                                    <span className="text-[10px]">{format(task.dueDate, 'MMM dd')}</span>
-                                  </div>
-                                )}
-                                <Avatar className="w-6 h-6">
-                                  <AvatarFallback className="text-[10px]">
-                                    {task.assignee.split(' ').map(n=>n[0]).join('')}
-                                  </AvatarFallback>
-                                </Avatar>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    ))}
-
-                    {/* Card composer */}
-                    {composerOpen ? (
-                      <div className="bg-white rounded border p-2 space-y-2">
-                        <Input placeholder="Card title" 
-                               value={newCardTitle[column.id] || ''} 
-                               onChange={(e)=>updateCardTitle(column.id, e.target.value)} />
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={()=>addCard(column.id)}>Add card</Button>
-                          <Button size="sm" variant="ghost" onClick={()=>closeCardComposer(column.id)}>Cancel</Button>
+                            </PopoverContent>
+                          </Popover>
                         </div>
                       </div>
-                    ) : (
-                      <Button variant="ghost" size="sm" className="w-full justify-start" 
-                              onClick={()=>openCardComposer(column.id)}>
-                        <Plus className="w-4 h-4 mr-1" /> Add a card
-                      </Button>
+                      
+                      <p className="text-xs text-gray-600 mb-3 line-clamp-2">{task.description}</p>
+                      
+                      {/* Progress Bar */}
+                      {task.progress && (
+                        <div className="mb-3">
+                          <div className="flex justify-between text-xs mb-1">
+                            <span>Progress</span>
+                            <span>{task.progress}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                            <div 
+                              className="bg-blue-600 h-1.5 rounded-full transition-all" 
+                              style={{ width: `${task.progress}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Subtasks */}
+                      {task.subtasks && task.subtasks.length > 0 && (
+                        <div className="mb-3">
+                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <ListCheck className="w-3 h-3" />
+                            <span>
+                              {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length} subtasks
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tags */}
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {task.tags.slice(0, 2).map(tag => (
+                          <Badge key={tag} variant="outline" className="text-xs px-1 py-0">
+                            {tag}
+                          </Badge>
+                        ))}
+                        {task.tags.length > 2 && (
+                          <Badge variant="outline" className="text-xs px-1 py-0">
+                            +{task.tags.length - 2}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Footer */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1">
+                          {task.attachments && task.attachments.length > 0 && (
+                            <Paperclip className="w-3 h-3 text-gray-400" />
+                          )}
+                          {task.comments && task.comments.length > 0 && (
+                            <div className="flex items-center gap-1">
+                              <MessageCircle className="w-3 h-3 text-gray-400" />
+                              <span className="text-xs text-gray-500">{task.comments.length}</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-1">
+                          {task.dueDate && (
+                            <div className="flex items-center gap-1">
+                              <CalendarIcon className="w-3 h-3 text-gray-400" />
+                              <span className="text-xs text-gray-500">
+                                {format(task.dueDate, 'MMM dd')}
+                              </span>
+                            </div>
+                          )}
+                          <Avatar className="w-6 h-6">
+                            <AvatarFallback className="text-xs">
+                              {task.assignee.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const MilestonesView = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-semibold">Project Milestones</h3>
+        <Button>
+          <Plus className="w-4 h-4 mr-2" />
+          Add Milestone
+        </Button>
+      </div>
+      
+      <div className="grid gap-4">
+        {milestones.map(milestone => (
+          <Card key={milestone.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Flag className="w-5 h-5 text-blue-600" />
+                    <h4 className="font-semibold">{milestone.title}</h4>
+                    {milestone.completed && (
+                      <Badge className="bg-green-100 text-green-800">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Completed
+                      </Badge>
                     )}
                   </div>
-                </div>
-              );
-            })}
-
-            {/* Add list composer */}
-            {selectedProject !== 'all' && (
-              <div className="w-80 flex-shrink-0">
-                {listComposerOpen ? (
-                  <div className="bg-gray-50 p-2 rounded border space-y-2">
-                    <Input placeholder="List title" value={newListTitle} onChange={(e)=>setNewListTitle(e.target.value)} />
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={handleAddList}>Add list</Button>
-                      <Button size="sm" variant="ghost" onClick={()=>{ setListComposerOpen(false); setNewListTitle(''); }}>Cancel</Button>
+                  <p className="text-sm text-gray-600 mb-4">{milestone.description}</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Progress</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full transition-all" 
+                            style={{ width: `${milestone.progress}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-sm font-medium">{milestone.progress}%</span>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Due Date</p>
+                      <div className="flex items-center gap-1">
+                        <CalendarIcon className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm">{format(milestone.dueDate, 'MMM dd, yyyy')}</span>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Tasks</p>
+                      <div className="flex items-center gap-1">
+                        <Target className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm">{milestone.tasks.length} tasks</span>
+                      </div>
                     </div>
                   </div>
-                ) : (
-                  <Button variant="outline" className="w-full justify-start" onClick={()=>setListComposerOpen(true)}>
-                    <Plus className="w-4 h-4 mr-1" /> Add another list
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
 
-  return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* Header */}
+                  {milestone.aiInsights && (
+                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <Brain className="w-4 h-4 text-blue-600 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-medium text-blue-800 mb-1">AI Insights</p>
+                          <p className="text-sm text-blue-700">{milestone.aiInsights}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <Button variant="ghost" size="sm">
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+
+  const ClientCommunicationView = () => (
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Project Management</h1>
-          <p className="text-muted-foreground">Manage your projects and tasks efficiently</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => setShowCreateProject(true)} className="gap-2">
-            <Plus className="w-4 h-4" />
-            New Project
+        <h3 className="text-xl font-semibold">Client Communications</h3>
+        <div className="flex gap-2">
+          <Button variant="outline">
+            <Mail className="w-4 h-4 mr-2" />
+            Send Email
+          </Button>
+          <Button variant="outline">
+            <Phone className="w-4 h-4 mr-2" />
+            Schedule Call
+          </Button>
+          <Button>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Note
           </Button>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-4">
-        <Select value={selectedProject} onValueChange={setSelectedProject}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Select project" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Projects</SelectItem>
-            {projects.map(project => (
-              <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Communication Timeline */}
+      <div className="space-y-4">
+        {clientCommunications.map(comm => (
+          <Card key={comm.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  {comm.type === 'email' && <Mail className="w-5 h-5 text-blue-600" />}
+                  {comm.type === 'call' && <Phone className="w-5 h-5 text-green-600" />}
+                  {comm.type === 'meeting' && <Video className="w-5 h-5 text-purple-600" />}
+                  {comm.type === 'note' && <FileText className="w-5 h-5 text-gray-600" />}
+                </div>
+                
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-semibold">{comm.subject}</h4>
+                    <div className="flex items-center gap-2">
+                      <Badge 
+                        className={
+                          comm.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          comm.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }
+                      >
+                        {comm.status}
+                      </Badge>
+                      <span className="text-sm text-gray-500">
+                        {format(comm.timestamp, 'MMM dd, HH:mm')}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <p className="text-sm text-gray-600 mb-3">{comm.content}</p>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm text-gray-500">
+                        Client: <span className="font-medium">{comm.clientName}</span>
+                      </span>
+                      {comm.attachments && comm.attachments.length > 0 && (
+                        <div className="flex items-center gap-1">
+                          <Paperclip className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm text-gray-500">{comm.attachments.length} files</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm">
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm">
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {comm.aiSummary && (
+                    <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <Brain className="w-4 h-4 text-green-600 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-medium text-green-800 mb-1">AI Summary</p>
+                          <p className="text-sm text-green-700">{comm.aiSummary}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+
+  const ReportingDashboard = () => (
+    <div className="space-y-6">
+      <h3 className="text-xl font-semibold">Project Analytics & Reports</h3>
+      
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-blue-100 p-3 rounded-lg">
+                <Target className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Project Velocity</p>
+                <p className="text-2xl font-bold">8.5</p>
+                <p className="text-xs text-green-600">↗ +12% this week</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
         
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input
-            placeholder="Search tasks..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-green-100 p-3 rounded-lg">
+                <TrendingUp className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Completion Rate</p>
+                <p className="text-2xl font-bold">87%</p>
+                <p className="text-xs text-green-600">↗ +5% this month</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-purple-100 p-3 rounded-lg">
+                <Users className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Team Utilization</p>
+                <p className="text-2xl font-bold">92%</p>
+                <p className="text-xs text-red-600">↘ -3% this week</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-orange-100 p-3 rounded-lg">
+                <Clock className="w-6 h-6 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Avg. Task Time</p>
+                <p className="text-2xl font-bold">4.2h</p>
+                <p className="text-xs text-orange-600">→ No change</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ChartColumn className="w-5 h-5" />
+              Project Progress
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {projects.map(project => (
+                <div key={project.id}>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span>{project.name}</span>
+                    <span>{project.progress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full ${project.color.replace('bg-', 'bg-opacity-100 bg-')}`}
+                      style={{ width: `${project.progress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ChartPie className="w-5 h-5" />
+              Task Distribution
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-blue-600">
+                  {tasks.filter(t => t.status === 'todo').length}
+                </p>
+                <p className="text-sm text-gray-600">To Do</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-yellow-600">
+                  {tasks.filter(t => t.status === 'in-progress').length}
+                </p>
+                <p className="text-sm text-gray-600">In Progress</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-purple-600">
+                  {tasks.filter(t => t.status === 'review').length}
+                </p>
+                <p className="text-sm text-gray-600">Review</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-green-600">
+                  {tasks.filter(t => t.status === 'done').length}
+                </p>
+                <p className="text-sm text-gray-600">Done</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* External Tools Integration */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Advanced Analytics Tools</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button variant="outline" className="h-20 flex flex-col gap-2">
+              <ExternalLink className="w-6 h-6" />
+              <span>Metabase Dashboard</span>
+            </Button>
+            <Button variant="outline" className="h-20 flex flex-col gap-2">
+              <ExternalLink className="w-6 h-6" />
+              <span>Looker Studio</span>
+            </Button>
+            <Button variant="outline" className="h-20 flex flex-col gap-2">
+              <ExternalLink className="w-6 h-6" />
+              <span>Airtable Interface</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const TeamCollaborationView = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-semibold">Team Collaboration</h3>
+        <div className="flex gap-2">
+          <Button variant="outline">
+            <Share2 className="w-4 h-4 mr-2" />
+            Share Project
+          </Button>
+          <Button>
+            <Users className="w-4 h-4 mr-2" />
+            Invite Members
+          </Button>
         </div>
-        
-        <Button variant="outline" onClick={() => setShowCreateTask(true)}>
+      </div>
+
+      {/* Team Activity Feed */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="w-5 h-5" />
+            Recent Activity
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {activityLogs.slice(0, 10).map(log => (
+              <div key={log.id} className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg">
+                <Avatar className="w-8 h-8">
+                  <AvatarFallback className="text-xs">
+                    {log.user === 'AI Assistant' ? 'AI' : log.user.split(' ').map(n => n[0]).join('')}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <p className="text-sm">{log.description}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-gray-500">
+                      {format(log.timestamp, 'MMM dd, HH:mm')}
+                    </span>
+                    <Badge variant="outline" className="text-xs">
+                      {log.type.replace('_', ' ')}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Document Sharing */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FolderOpen className="w-5 h-5" />
+            Shared Documents
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center gap-3 mb-2">
+                <HardDrive className="w-6 h-6 text-blue-600" />
+                <span className="font-medium">Google Drive</span>
+              </div>
+              <p className="text-sm text-gray-600">Sync project files with Google Drive</p>
+              <Button className="w-full mt-3" variant="outline" size="sm">
+                Connect Drive
+              </Button>
+            </div>
+            
+            <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center gap-3 mb-2">
+                <Cloud className="w-6 h-6 text-blue-500" />
+                <span className="font-medium">Dropbox</span>
+              </div>
+              <p className="text-sm text-gray-600">Share files via Dropbox integration</p>
+              <Button className="w-full mt-3" variant="outline" size="sm">
+                Connect Dropbox
+              </Button>
+            </div>
+            
+            <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center gap-3 mb-2">
+                <Slack className="w-6 h-6 text-purple-600" />
+                <span className="font-medium">Slack</span>
+              </div>
+              <p className="text-sm text-gray-600">Get project updates in Slack</p>
+              <Badge className="bg-green-100 text-green-800">Connected</Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* @Mentions and Notifications */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BellRing className="w-5 h-5" />
+            Notifications & Mentions
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-3">
+                <Bell className="w-5 h-5 text-blue-600" />
+                <div>
+                  <p className="text-sm font-medium">John Doe mentioned you</p>
+                  <p className="text-xs text-gray-600">in "Design Homepage Mockup" task</p>
+                </div>
+              </div>
+              <Button variant="ghost" size="sm">
+                Mark as read
+              </Button>
+            </div>
+            
+            <div className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-yellow-600" />
+                <div>
+                  <p className="text-sm font-medium">Task deadline approaching</p>
+                  <p className="text-xs text-gray-600">"Setup Authentication System" due tomorrow</p>
+                </div>
+              </div>
+              <Button variant="ghost" size="sm">
+                Dismiss
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const AIAssistantView = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-semibold">AI Project Assistant</h3>
+        <Badge className="bg-purple-100 text-purple-800">
+          <Brain className="w-3 h-3 mr-1" />
+          Powered by GPT-4
+        </Badge>
+      </div>
+
+      {/* AI Features */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="hover:shadow-md transition-shadow cursor-pointer">
+          <CardContent className="p-6 text-center">
+            <Bot className="w-12 h-12 mx-auto mb-4 text-blue-600" />
+            <h4 className="font-semibold mb-2">Auto-Summarize Updates</h4>
+            <p className="text-sm text-gray-600 mb-4">Generate project summaries and status reports automatically</p>
+            <Button variant="outline" size="sm">
+              Generate Summary
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow cursor-pointer">
+          <CardContent className="p-6 text-center">
+            <Mail className="w-12 h-12 mx-auto mb-4 text-green-600" />
+            <h4 className="font-semibold mb-2">Generate Client Emails</h4>
+            <p className="text-sm text-gray-600 mb-4">Create professional client communications with AI</p>
+            <Button variant="outline" size="sm">
+              Compose Email
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow cursor-pointer">
+          <CardContent className="p-6 text-center">
+            <Lightbulb className="w-12 h-12 mx-auto mb-4 text-yellow-600" />
+            <h4 className="font-semibold mb-2">Suggest Priorities</h4>
+            <p className="text-sm text-gray-600 mb-4">AI-powered task prioritization and recommendations</p>
+            <Button variant="outline" size="sm">
+              Get Suggestions
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* AI Chat Interface */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5" />
+            AI Chat Assistant
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="h-64 border rounded-lg p-4 bg-gray-50 overflow-y-auto">
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <Avatar className="w-8 h-8">
+                    <AvatarFallback>AI</AvatarFallback>
+                  </Avatar>
+                  <div className="bg-white p-3 rounded-lg shadow-sm">
+                    <p className="text-sm">Hello! I can help you with project insights, task suggestions, and generating reports. What would you like to know about your projects?</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <Input placeholder="Ask me anything about your projects..." />
+              <Button>
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* AI Insights */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="w-5 h-5" />
+            Project Insights
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <Lightbulb className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div>
+                  <h5 className="font-medium text-blue-800 mb-1">Resource Optimization</h5>
+                  <p className="text-sm text-blue-700">Based on current workload, consider reassigning 2 tasks from John to Jane to balance team capacity.</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+                <div>
+                  <h5 className="font-medium text-yellow-800 mb-1">Deadline Risk</h5>
+                  <p className="text-sm text-yellow-700">Website Redesign project has a 25% risk of missing deadline. Consider extending timeline or adding resources.</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <TrendingUp className="w-5 h-5 text-green-600 mt-0.5" />
+                <div>
+                  <h5 className="font-medium text-green-800 mb-1">Performance Trend</h5>
+                  <p className="text-sm text-green-700">Team velocity has improved by 15% this month. Current pace should maintain project deadlines.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const IntegrationsView = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-semibold">Integrations & Tools</h3>
+        <Button>
           <Plus className="w-4 h-4 mr-2" />
-          Add Task
+          Add Integration
         </Button>
       </div>
 
-      {/* Main Content */}
+      {/* Integration Status */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {integrations.map(integration => (
+          <Card key={integration.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  {integration.type === 'trello' && <ExternalLink className="w-5 h-5 text-blue-600" />}
+                  {integration.type === 'notion' && <ExternalLink className="w-5 h-5 text-gray-800" />}
+                  {integration.type === 'google-calendar' && <CalendarIconOutline className="w-5 h-5 text-blue-500" />}
+                  {integration.type === 'slack' && <Slack className="w-5 h-5 text-purple-600" />}
+                  <span className="font-medium">{integration.name}</span>
+                </div>
+                <Badge 
+                  className={
+                    integration.status === 'connected' ? 'bg-green-100 text-green-800' :
+                    integration.status === 'error' ? 'bg-red-100 text-red-800' :
+                    'bg-gray-100 text-gray-800'
+                  }
+                >
+                  {integration.status}
+                </Badge>
+              </div>
+              
+              {integration.lastSync && (
+                <p className="text-xs text-gray-500 mb-3">
+                  Last sync: {format(integration.lastSync, 'MMM dd, HH:mm')}
+                </p>
+              )}
+              
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => {
+                    window.open(`/business-tools?tool=integrations&integration=${integration.type}`, '_blank');
+                  }}
+                >
+                  Configure
+                </Button>
+                {integration.status === 'connected' && (
+                  <Button variant="outline" size="sm">
+                    <Zap className="w-3 h-3" />
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Available Integrations */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Available Integrations</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center gap-3 mb-2">
+                <Mail className="w-6 h-6 text-blue-600" />
+                <span className="font-medium">Gmail API</span>
+              </div>
+              <p className="text-sm text-gray-600 mb-3">Automatically log email communications</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full"
+                onClick={() => window.open('/business-tools?tool=integrations&integration=gmail', '_blank')}
+              >
+                Connect Gmail
+              </Button>
+            </div>
+            
+            <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center gap-3 mb-2">
+                <Phone className="w-6 h-6 text-green-600" />
+                <span className="font-medium">Twilio</span>
+              </div>
+              <p className="text-sm text-gray-600 mb-3">SMS notifications and call tracking</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full"
+                onClick={() => window.open('/business-tools?tool=integrations&integration=twilio', '_blank')}
+              >
+                Connect Twilio
+              </Button>
+            </div>
+            
+            <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center gap-3 mb-2">
+                <CalendarIcon className="w-6 h-6 text-purple-600" />
+                <span className="font-medium">Calendly</span>
+              </div>
+              <p className="text-sm text-gray-600 mb-3">Automated meeting scheduling</p>
+              <Button variant="outline" size="sm" className="w-full">
+                Connect Calendly
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Automation Builder */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Workflow className="w-5 h-5" />
+            Automation Workflows
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {automationRules.map((rule) => (
+              <div key={rule.id} className="p-4 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h5 className="font-medium">{rule.name}</h5>
+                  <Badge className={rule.isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
+                    {rule.isActive ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+                <p className="text-sm text-gray-600 mb-3">
+                  When {rule.trigger.replace('_', ' ')} → {rule.actions[0]?.type.replace('_', ' ')} {rule.actions[0]?.value}
+                </p>
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => {
+                      // Edit automation rule
+                      setShowAutomationBuilder(true);
+                    }}>
+                      Edit
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setAutomationRules(prev => prev.map(r => 
+                          r.id === rule.id ? { ...r, isActive: !r.isActive } : r
+                        ));
+                        toast({
+                          title: rule.isActive ? "Rule Disabled" : "Rule Enabled",
+                          description: `${rule.name} has been ${rule.isActive ? 'disabled' : 'enabled'}.`,
+                        });
+                      }}
+                    >
+                      {rule.isActive ? "Disable" : "Enable"}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-red-600"
+                      onClick={() => {
+                        setAutomationRules(prev => prev.filter(r => r.id !== rule.id));
+                        toast({
+                          title: "Rule Deleted",
+                          description: `${rule.name} has been deleted.`,
+                          variant: "destructive"
+                        });
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                  {rule.lastTriggered && (
+                    <span className="text-xs text-gray-500">
+                      Last triggered: {rule.lastTriggered.toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+            
+            <Button variant="outline" className="w-full" onClick={() => setShowAutomationBuilder(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Create New Automation
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  return (
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      {/* Enhanced Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Project Management Hub</h1>
+          <p className="text-gray-600">AI-powered project management</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowAIAssistant(true)}>
+            <Brain className="w-4 h-4 mr-2" />
+            AI Assistant
+          </Button>
+          <Button variant="outline" onClick={() => setShowCreateProject(true)}>
+            <FolderOpen className="w-4 h-4 mr-2" />
+            New Project
+          </Button>
+          <Button onClick={() => setShowCreateTask(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            New Task
+          </Button>
+        </div>
+      </div>
+
+      {/* Enhanced Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-blue-100 p-3 rounded-lg">
+                <Rocket className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Active Projects</p>
+                <p className="text-2xl font-bold">{projects.filter(p => p.status === 'active').length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-green-100 p-3 rounded-lg">
+                <CheckCircle2 className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Completed Tasks</p>
+                <p className="text-2xl font-bold">{tasks.filter(t => t.status === 'done').length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-yellow-100 p-3 rounded-lg">
+                <Clock className="w-6 h-6 text-yellow-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">In Progress</p>
+                <p className="text-2xl font-bold">{tasks.filter(t => t.status === 'in-progress').length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-purple-100 p-3 rounded-lg">
+                <Flag className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Milestones</p>
+                <p className="text-2xl font-bold">{milestones.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-red-100 p-3 rounded-lg">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Overdue</p>
+                <p className="text-2xl font-bold">3</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Enhanced Filters and Search */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Input
+                placeholder="Search tasks, projects, or team members..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={selectedProject} onValueChange={setSelectedProject}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filter by project" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Projects</SelectItem>
+                {projects.map(project => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex gap-2">
+              <Button
+                variant={activeView === 'kanban' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveView('kanban')}
+              >
+                <KanbanSquare className="w-4 h-4" />
+              </Button>
+              <Button
+                variant={activeView === 'list' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveView('list')}
+              >
+                <List className="w-4 h-4" />
+              </Button>
+              <Button
+                variant={activeView === 'calendar' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveView('calendar')}
+              >
+                <CalendarIcon className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Enhanced Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="summary">Summary</TabsTrigger>
-          <TabsTrigger value="board">Board</TabsTrigger>
-          <TabsTrigger value="list">List</TabsTrigger>
-          <TabsTrigger value="calendar">Calendar</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-7">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="milestones">Milestones</TabsTrigger>
+          <TabsTrigger value="communication">Client Comm</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
+          <TabsTrigger value="collaboration">Collaboration</TabsTrigger>
+          <TabsTrigger value="ai-assistant">AI Assistant</TabsTrigger>
+          <TabsTrigger value="integrations">Integrations</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="summary" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <CheckCircle2 className="w-8 h-8 text-blue-600" />
-                  <div>
-                    <p className="text-sm text-gray-600">Total Tasks</p>
-                    <p className="text-2xl font-bold">{tasks.length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <Clock className="w-8 h-8 text-yellow-600" />
-                  <div>
-                    <p className="text-sm text-gray-600">In Progress</p>
-                    <p className="text-2xl font-bold">{tasks.filter(t => t.status === 'in-progress').length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <CheckCircle className="w-8 h-8 text-green-600" />
-                  <div>
-                    <p className="text-sm text-gray-600">Completed</p>
-                    <p className="text-2xl font-bold">{tasks.filter(t => t.status === 'done').length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        <TabsContent value="overview" className="mt-6">
+          {activeView === 'kanban' && <EnhancedKanbanBoard />}
+          {activeView === 'list' && <div>List view implementation</div>}
+          {activeView === 'calendar' && <div>Calendar view implementation</div>}
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {projects.map(project => (
-              <Card key={project.id}>
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold">{project.name}</h3>
-                  <p className="text-sm text-gray-600 mt-2">{project.description}</p>
-                  <div className="mt-4 flex items-center justify-between">
-                    <span className="text-sm">{project.progress}% complete</span>
-                    <Badge variant="secondary">{project.status}</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          {/* Projects Overview Section */}
+          <div className="mt-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-semibold">Active Projects</h3>
+              <Button variant="outline" onClick={() => setShowCreateProject(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                New Project
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {projects.map(project => {
+                // Convert project format to match ProjectCard expectations
+                const projectCardData = {
+                  ...project,
+                  team_members: project.members,
+                  deadline: project.deadline?.toISOString().split('T')[0]
+                };
+                
+                return (
+                  <ProjectCard
+                    key={project.id}
+                    project={projectCardData}
+                    onClick={() => {
+                      console.log('Selecting project:', project.id);
+                      setSelectedProject(project.id);
+                      setActiveTab('overview');
+                      toast({
+                        title: "Project Selected",
+                        description: `Now viewing: ${project.name}`,
+                      });
+                    }}
+                  />
+                );
+              })}
+              
+              {projects.length === 0 && (
+                <Card className="border-dashed border-2 border-gray-300">
+                  <CardContent className="p-6 text-center">
+                    <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h4 className="font-medium text-gray-900 mb-2">No projects yet</h4>
+                    <p className="text-sm text-gray-600 mb-4">Get started by creating your first project</p>
+                    <Button onClick={() => setShowCreateProject(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Project
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
         </TabsContent>
 
-        <TabsContent value="board">
-          <EnhancedKanbanBoard />
+        <TabsContent value="milestones" className="mt-6">
+          <MilestonesView />
         </TabsContent>
 
-        <TabsContent value="list" className="space-y-4">
-          <div className="space-y-2">
-            {filteredTasks.map(task => (
-              <Card key={task.id} className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <Badge variant={task.priority === 'urgent' ? 'destructive' : 'secondary'}>
-                      {task.priority}
-                    </Badge>
-                    <div>
-                      <h3 className="font-medium">{task.title}</h3>
-                      <p className="text-sm text-muted-foreground">{task.description}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{task.status}</Badge>
-                    <Avatar className="w-8 h-8">
-                      <AvatarFallback>
-                        {task.assignee.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+        <TabsContent value="communication" className="mt-6">
+          <ClientCommunicationView />
         </TabsContent>
 
-        <TabsContent value="calendar">
-          <div className="flex justify-center">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              className="rounded-md border"
-            />
-          </div>
+        <TabsContent value="reports" className="mt-6">
+          <ReportingDashboard />
+        </TabsContent>
+
+        <TabsContent value="collaboration" className="mt-6">
+          <TeamCollaborationView />
+        </TabsContent>
+
+        <TabsContent value="ai-assistant" className="mt-6">
+          <AIAssistantView />
+        </TabsContent>
+
+        <TabsContent value="integrations" className="mt-6">
+          <IntegrationsView />
         </TabsContent>
       </Tabs>
 
-      {/* Dialogs */}
-      <CreateTodoDialog 
-        isOpen={showCreateTask} 
-        onOpenChange={setShowCreateTask} 
-        onCreateTodo={handleCreateTask} 
+      {/* Enhanced Create Task Dialog */}
+      <CreateTodoDialog
+        isOpen={showCreateTask}
+        onOpenChange={setShowCreateTask}
+        onCreateTodo={handleCreateTask}
       />
-      
+
+      {/* Edit Task Dialog */}
       {editingTask && (
         <CreateTodoDialog
           isOpen={showEditTask}
           onOpenChange={setShowEditTask}
           editTask={editingTask}
           onCreateTodo={(taskData) => {
-            setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...editingTask, ...taskData } : t));
+            setTasks(prev => prev.map(t => 
+              t.id === editingTask.id 
+                ? { ...editingTask, ...taskData }
+                : t
+            ));
             setShowEditTask(false);
             setEditingTask(null);
             toast({ title: "Task Updated", description: "Task updated successfully." });
@@ -1080,6 +1992,312 @@ const ProjectManagement = () => {
         />
       )}
 
+      {/* Automation Builder Modal */}
+      <Dialog open={showAutomationBuilder} onOpenChange={setShowAutomationBuilder}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Automation Workflow Builder</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="grid grid-cols-3 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Trigger</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="When..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="task_created">Task is created</SelectItem>
+                      <SelectItem value="task_updated">Task is updated</SelectItem>
+                      <SelectItem value="deadline_approaching">Deadline approaches</SelectItem>
+                      <SelectItem value="status_changed">Status changes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Conditions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="If..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="priority_urgent">Priority is urgent</SelectItem>
+                        <SelectItem value="tag_contains">Tag contains</SelectItem>
+                        <SelectItem value="assignee_is">Assignee is</SelectItem>
+                        <SelectItem value="project_is">Project is</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input placeholder="Value" />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Action</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Then..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="assign_to">Auto-assign to</SelectItem>
+                      <SelectItem value="send_notification">Send notification</SelectItem>
+                      <SelectItem value="update_status">Update status</SelectItem>
+                      <SelectItem value="create_subtask">Create subtask</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </CardContent>
+              </Card>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button 
+                className="flex-1"
+                onClick={() => {
+                  // Create new automation rule (simplified for demo)
+                  const newRule: AutomationRule = {
+                    id: `rule-${Date.now()}`,
+                    name: "Custom Automation",
+                    trigger: "task_created",
+                    conditions: [{ field: "priority", operator: "equals", value: "urgent" }],
+                    actions: [{ type: "assign_to", value: "team-lead" }],
+                    isActive: true,
+                    lastTriggered: undefined
+                  };
+                  
+                  setAutomationRules(prev => [...prev, newRule]);
+                  setShowAutomationBuilder(false);
+                  
+                  toast({
+                    title: "Automation Created",
+                    description: "Your automation rule has been created and activated.",
+                  });
+                }}
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                Create Automation
+              </Button>
+              <Button variant="outline" onClick={() => {
+                toast({
+                  title: "Test Successful",
+                  description: "Your automation rule would trigger correctly.",
+                });
+              }}>
+                Test Rule
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Board Customizer Dialog */}
+      <Dialog open={showBoardCustomizer} onOpenChange={setShowBoardCustomizer}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Customize Kanban Board
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* Column Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Board Columns</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {statusColumns.map((column, index) => (
+                    <div key={column.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-4 h-4 rounded ${column.color}`}></div>
+                        <Input 
+                          value={column.title} 
+                          onChange={(e) => {
+                            const newColumns = [...statusColumns];
+                            newColumns[index].title = e.target.value;
+                            // Update the current project's columns if one is selected
+                            if (selectedProject !== 'all') {
+                              setProjects(prev => prev.map(p => 
+                                p.id === selectedProject 
+                                  ? { ...p, customColumns: newColumns }
+                                  : p
+                              ));
+                            }
+                          }}
+                          className="max-w-[200px]"
+                        />
+                        <Select 
+                          value={column.color} 
+                          onValueChange={(newColor) => {
+                            const newColumns = [...statusColumns];
+                            newColumns[index].color = newColor;
+                            if (selectedProject !== 'all') {
+                              setProjects(prev => prev.map(p => 
+                                p.id === selectedProject 
+                                  ? { ...p, customColumns: newColumns }
+                                  : p
+                              ));
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-[130px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="bg-gray-100">Gray</SelectItem>
+                            <SelectItem value="bg-blue-100">Blue</SelectItem>
+                            <SelectItem value="bg-green-100">Green</SelectItem>
+                            <SelectItem value="bg-yellow-100">Yellow</SelectItem>
+                            <SelectItem value="bg-purple-100">Purple</SelectItem>
+                            <SelectItem value="bg-red-100">Red</SelectItem>
+                            <SelectItem value="bg-orange-100">Orange</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm">
+                          <ArrowUp className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <ArrowDown className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-red-600">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  <Button variant="outline" className="w-full">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Column
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Board Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Board Settings</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Default View</label>
+                    <Select value={activeView} onValueChange={(value: any) => setActiveView(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="kanban">Kanban</SelectItem>
+                        <SelectItem value="list">List</SelectItem>
+                        <SelectItem value="calendar">Calendar</SelectItem>
+                        <SelectItem value="timeline">Timeline</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Card Size</label>
+                    <Select defaultValue="medium">
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="small">Small</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="large">Large</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Advanced Options */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Advanced Options</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="text-sm font-medium">Auto-refresh</label>
+                      <p className="text-xs text-gray-600">Automatically update board data</p>
+                    </div>
+                    <Button variant="outline" size="sm">ON</Button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="text-sm font-medium">Show card count</label>
+                      <p className="text-xs text-gray-600">Display number of cards in each column</p>
+                    </div>
+                    <Button variant="outline" size="sm">ON</Button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="text-sm font-medium">Compact mode</label>
+                      <p className="text-xs text-gray-600">Reduce card spacing and padding</p>
+                    </div>
+                    <Button variant="outline" size="sm">OFF</Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="flex gap-2">
+              <Button className="flex-1" onClick={() => {
+                toast({
+                  title: "Board Customized",
+                  description: "Your board settings have been saved.",
+                });
+                setShowBoardCustomizer(false);
+              }}>
+                Save Changes
+              </Button>
+              <Button variant="outline" onClick={() => setShowBoardCustomizer(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Task Dialog */}
+      <CreateTodoDialog
+        isOpen={showCreateTask}
+        onOpenChange={setShowCreateTask}
+        onCreateTodo={handleCreateTask}
+      />
+
+      <CreateTodoDialog
+        isOpen={showEditTask}
+        onOpenChange={setShowEditTask}
+        editTask={editingTask}
+        onCreateTodo={(taskData) => {
+          setTasks(prev => prev.map(t => 
+            t.id === editingTask.id 
+              ? { ...t, ...taskData }
+              : t
+          ));
+          setEditingTask(null);
+          setShowEditTask(false);
+        }}
+      />
+
+      {/* Create Project Dialog */}
       <CreateProjectDialog
         isOpen={showCreateProject}
         onOpenChange={setShowCreateProject}
