@@ -211,6 +211,51 @@ interface Integration {
   lastSync?: Date;
 }
 
+interface WorkRequest {
+  id: string;
+  user_id: string;
+  title: string;
+  description?: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'new' | 'in_review' | 'approved' | 'rejected' | 'converted';
+  created_at: string;
+}
+
+interface GoalItem {
+  id: string;
+  user_id: string;
+  title: string;
+  description?: string;
+  target_date?: string;
+  progress: number;
+  created_at: string;
+}
+
+interface TeamItem {
+  id: string;
+  owner_id: string;
+  name: string;
+  created_at: string;
+}
+
+interface TeamMemberItem {
+  id?: string;
+  team_id: string;
+  member_email: string;
+  role: string;
+  created_at?: string;
+}
+
+interface CalendarEventItem {
+  id: string;
+  user_id: string;
+  title: string;
+  start_at: string;
+  end_at?: string;
+  project_id?: string | null;
+  created_at: string;
+}
+
 const ProjectManagement = () => {
   console.log('🔧 ProjectManagement component loading...');
   const { user } = useAuth();
@@ -376,6 +421,94 @@ const ProjectManagement = () => {
       lastTriggered: new Date(Date.now() - 3600000) // 1 hour ago
     }
   ]);
+
+  const [workRequests, setWorkRequests] = useState<WorkRequest[]>([]);
+  const [goals, setGoals] = useState<GoalItem[]>([]);
+  const [teams, setTeams] = useState<TeamItem[]>([]);
+  const [teamMembers, setTeamMembers] = useState<Record<string, TeamMemberItem[]>>({});
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEventItem[]>([]);
+
+  // Fetch helpers
+  const fetchWorkRequests = async () => {
+    const { data, error } = await supabase.from('work_requests' as any).select('*').order('created_at', { ascending: false });
+    if (!error && data) setWorkRequests(data as unknown as WorkRequest[]);
+  };
+
+  const fetchGoals = async () => {
+    const { data, error } = await supabase.from('goals' as any).select('*').order('created_at', { ascending: false });
+    if (!error && data) setGoals(data as unknown as GoalItem[]);
+  };
+
+  const fetchTeams = async () => {
+    const { data, error } = await supabase.from('teams' as any).select('*').order('created_at', { ascending: false });
+    if (!error && data) {
+      const teamsData = data as unknown as TeamItem[];
+      setTeams(teamsData);
+      // load members per team
+      const { data: membersData } = await supabase.from('team_members' as any).select('*');
+      const grouped: Record<string, TeamMemberItem[]> = {};
+      (membersData || []).forEach((m: any) => {
+        const tm: TeamMemberItem = { team_id: m.team_id, member_email: m.member_email, role: m.role, created_at: m.created_at, id: m.id };
+        if (!grouped[tm.team_id]) grouped[tm.team_id] = [];
+        grouped[tm.team_id].push(tm);
+      });
+      setTeamMembers(grouped);
+    }
+  };
+
+  const fetchCalendarEvents = async () => {
+    const { data, error } = await supabase.from('calendar_events' as any).select('*').order('start_at', { ascending: true });
+    if (!error && data) setCalendarEvents(data as unknown as CalendarEventItem[]);
+  };
+
+  useEffect(() => {
+    fetchWorkRequests();
+    fetchGoals();
+    fetchTeams();
+    fetchCalendarEvents();
+  }, []);
+
+  // Create helpers
+  const createWorkRequest = async () => {
+    const title = window.prompt('Work request title');
+    if (!title) return;
+    const description = window.prompt('Description (optional)') || '';
+    const { data, error } = await supabase.from('work_requests' as any).insert({ title, description, priority: 'medium', status: 'new' }).select().single();
+    if (!error && data) setWorkRequests(prev => [data as unknown as WorkRequest, ...prev]);
+  };
+
+  const createGoal = async () => {
+    const title = window.prompt('Goal title');
+    if (!title) return;
+    const target = window.prompt('Target date (YYYY-MM-DD) optional') || null;
+    const { data, error } = await supabase.from('goals' as any).insert({ title, target_date: target, progress: 0 }).select().single();
+    if (!error && data) setGoals(prev => [data as unknown as GoalItem, ...prev]);
+  };
+
+  const createTeam = async () => {
+    const name = window.prompt('Team name');
+    if (!name) return;
+    const { data, error } = await supabase.from('teams' as any).insert({ name }).select().single();
+    if (!error && data) setTeams(prev => [data as unknown as TeamItem, ...prev]);
+  };
+
+  const addPersonToTeam = async (teamId: string) => {
+    const email = window.prompt('Member email to add');
+    if (!email) return;
+    const role = window.prompt('Role (e.g., member, admin)') || 'member';
+    const { data, error } = await supabase.from('team_members' as any).insert({ team_id: teamId, member_email: email, role }).select().single();
+    if (!error && data) setTeamMembers(prev => ({ ...prev, [teamId]: [...(prev[teamId] || []), data as unknown as TeamMemberItem] }));
+  };
+
+  const createCalendarEvent = async () => {
+    const title = window.prompt('Event title');
+    if (!title) return;
+    const start = window.prompt('Start (YYYY-MM-DD HH:MM)');
+    if (!start) return;
+    const end = window.prompt('End (YYYY-MM-DD HH:MM, optional)') || null;
+    const { data, error } = await supabase.from('calendar_events' as any).insert({ title, start_at: start, end_at: end }).select().single();
+    if (!error && data) setCalendarEvents(prev => [...prev, data as unknown as CalendarEventItem]);
+  };
 
   // Check if user can access Project Management features
   const canAccessPM = canAccessFeature('project-management');
@@ -2021,11 +2154,44 @@ const ProjectManagement = () => {
         </TabsContent>
 
         <TabsContent value="calendar" className="mt-6">
-          <div>Calendar view implementation</div>
+          <Card>
+            <CardHeader><CardTitle>Calendar</CardTitle></CardHeader>
+            <CardContent>
+              <div className="flex gap-2 mb-4">
+                <Button size="sm" variant="outline" onClick={createCalendarEvent}>Add Event</Button>
+              </div>
+              <div className="space-y-2">
+                {calendarEvents.map(ev => (
+                  <div key={ev.id} className="p-3 border rounded-lg flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{ev.title}</div>
+                      <div className="text-xs text-gray-500">{ev.start_at}{ev.end_at ? ` → ${ev.end_at}` : ''}</div>
+                    </div>
+                  </div>
+                ))}
+                {calendarEvents.length === 0 && <div className="text-sm text-gray-500">No events yet.</div>}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="list" className="mt-6">
-          <div>List view implementation</div>
+          <Card>
+            <CardHeader><CardTitle>All Tasks (List)</CardTitle></CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {tasks.map(t => (
+                  <div key={t.id} className="p-3 border rounded-lg flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{t.title}</div>
+                      <div className="text-xs text-gray-500">{t.status} • {t.priority}</div>
+                    </div>
+                    <Badge variant="outline">{t.project}</Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="forms" className="mt-6">
@@ -2035,7 +2201,20 @@ const ProjectManagement = () => {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-600 mb-4">Create simple forms to collect work requests and automatically create tasks.</p>
-              <Button variant="outline">Create Request Form</Button>
+              <div className="flex gap-2 mb-4">
+                <Button variant="outline" onClick={createWorkRequest}>New Work Request</Button>
+              </div>
+              <div className="space-y-2">
+                {workRequests.map(req => (
+                  <div key={req.id} className="p-3 border rounded-lg flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{req.title}</div>
+                      <div className="text-xs text-gray-500">{req.status} • {req.priority || 'medium'}</div>
+                    </div>
+                  </div>
+                ))}
+                {workRequests.length === 0 && <div className="text-sm text-gray-500">No work requests yet.</div>}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -2046,34 +2225,84 @@ const ProjectManagement = () => {
               <CardTitle>Goals</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-gray-600">Define measurable goals and link tasks and epics to track progress.</p>
+              <p className="text-sm text-gray-600 mb-4">Define measurable goals and link tasks and epics to track progress.</p>
+              <div className="flex gap-2 mb-4">
+                <Button variant="outline" onClick={createGoal}>Create Goal</Button>
+              </div>
+              <div className="space-y-2">
+                {goals.map(g => (
+                  <div key={g.id} className="p-3 border rounded-lg flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{g.title}</div>
+                      <div className="text-xs text-gray-500">Target: {g.target_date || '—'} • Progress: {g.progress}%</div>
+                    </div>
+                    <Badge variant="secondary">{g.progress}%</Badge>
+                  </div>
+                ))}
+                {goals.length === 0 && <div className="text-sm text-gray-500">No goals yet.</div>}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="all" className="mt-6">
-          <div>All work items</div>
+          <Card>
+            <CardHeader><CardTitle>All Work Items</CardTitle></CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {[...tasks].map(t => (
+                  <div key={t.id} className="p-3 border rounded-lg flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{t.title}</div>
+                      <div className="text-xs text-gray-500">{t.status} • {t.priority}</div>
+                    </div>
+                    <Badge variant="outline">{t.project}</Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="archived" className="mt-6">
-          <div>Archived work items</div>
+          <Card>
+            <CardHeader><CardTitle>Archived Work Items</CardTitle></CardHeader>
+            <CardContent>
+              <div className="text-sm text-gray-500">Archive functionality can be wired to a boolean flag on tasks (e.g., archived_at). Currently none are archived.</div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        <TabsContent value="teams" className="mt-6">
+                <TabsContent value="teams" className="mt-6">
           <Card>
             <CardHeader>
               <CardTitle>Teams</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2 mb-4">
-                <Button variant="outline" size="sm">Manage users</Button>
-                <Button variant="outline" size="sm">Create team</Button>
-                <Button variant="outline" size="sm">Add people</Button>
+                <Button variant="outline" size="sm" onClick={createTeam}>Create team</Button>
+                {teams.map(team => (
+                  <Button key={team.id} variant="outline" size="sm" onClick={() => addPersonToTeam(team.id)}>Add people to {team.name}</Button>
+                ))}
               </div>
-              <div className="text-sm text-gray-600">Team management actions and member overview appear here.</div>
+              <div className="space-y-4">
+                {teams.map(team => (
+                  <div key={team.id} className="p-3 border rounded-lg">
+                    <div className="font-medium mb-2">{team.name}</div>
+                    <div className="text-xs text-gray-500 mb-2">Members:</div>
+                    <div className="space-y-1">
+                      {(teamMembers[team.id] || []).map(m => (
+                        <div key={team.id + m.member_email} className="text-sm">{m.member_email} — {m.role}</div>
+                      ))}
+                      {(teamMembers[team.id] || []).length === 0 && (<div className="text-sm text-gray-500">No members yet.</div>)}
+                    </div>
+                  </div>
+                ))}
+                {teams.length === 0 && <div className="text-sm text-gray-500">No teams yet.</div>}
+              </div>
             </CardContent>
           </Card>
-                </TabsContent>
+        </TabsContent>
       </Tabs>
 
       {/* Projects Overview Section */}
