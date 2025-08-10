@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
 import LivePriceSidebars from '@/components/sidebars/LivePriceSidebars';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -18,6 +19,7 @@ const Header = () => {
   const [activePriceTab, setActivePriceTab] = useState<'crypto' | 'forex'>('crypto');
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { theme, setTheme, availableThemes } = useTheme();
 
   const handleSignOut = async () => {
     await signOut();
@@ -145,6 +147,22 @@ const Header = () => {
 
           {/* Live Prices and User Menu */}
           <div className="flex items-center space-x-2">
+            {/* Theme Switcher */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="px-3">
+                  Theme: {theme}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {availableThemes.map((t) => (
+                  <DropdownMenuItem key={t} onClick={() => setTheme(t)}>
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

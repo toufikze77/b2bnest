@@ -87,6 +87,7 @@ import {
   ArrowDown
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 
 // Enhanced interfaces
 interface Task {
@@ -210,6 +211,51 @@ interface Integration {
   lastSync?: Date;
 }
 
+interface WorkRequest {
+  id: string;
+  user_id: string;
+  title: string;
+  description?: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'new' | 'in_review' | 'approved' | 'rejected' | 'converted';
+  created_at: string;
+}
+
+interface GoalItem {
+  id: string;
+  user_id: string;
+  title: string;
+  description?: string;
+  target_date?: string;
+  progress: number;
+  created_at: string;
+}
+
+interface TeamItem {
+  id: string;
+  owner_id: string;
+  name: string;
+  created_at: string;
+}
+
+interface TeamMemberItem {
+  id?: string;
+  team_id: string;
+  member_email: string;
+  role: string;
+  created_at?: string;
+}
+
+interface CalendarEventItem {
+  id: string;
+  user_id: string;
+  title: string;
+  start_at: string;
+  end_at?: string;
+  project_id?: string | null;
+  created_at: string;
+}
+
 const ProjectManagement = () => {
   console.log('🔧 ProjectManagement component loading...');
   const { user } = useAuth();
@@ -217,7 +263,7 @@ const ProjectManagement = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<'kanban' | 'list' | 'calendar' | 'timeline'>('kanban');
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('summary');
   const [selectedProject, setSelectedProject] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateTask, setShowCreateTask] = useState(false);
@@ -375,6 +421,94 @@ const ProjectManagement = () => {
       lastTriggered: new Date(Date.now() - 3600000) // 1 hour ago
     }
   ]);
+
+  const [workRequests, setWorkRequests] = useState<WorkRequest[]>([]);
+  const [goals, setGoals] = useState<GoalItem[]>([]);
+  const [teams, setTeams] = useState<TeamItem[]>([]);
+  const [teamMembers, setTeamMembers] = useState<Record<string, TeamMemberItem[]>>({});
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEventItem[]>([]);
+
+  // Fetch helpers
+  const fetchWorkRequests = async () => {
+    const { data, error } = await supabase.from('work_requests' as any).select('*').order('created_at', { ascending: false });
+    if (!error && data) setWorkRequests(data as unknown as WorkRequest[]);
+  };
+
+  const fetchGoals = async () => {
+    const { data, error } = await supabase.from('goals' as any).select('*').order('created_at', { ascending: false });
+    if (!error && data) setGoals(data as unknown as GoalItem[]);
+  };
+
+  const fetchTeams = async () => {
+    const { data, error } = await supabase.from('teams' as any).select('*').order('created_at', { ascending: false });
+    if (!error && data) {
+      const teamsData = data as unknown as TeamItem[];
+      setTeams(teamsData);
+      // load members per team
+      const { data: membersData } = await supabase.from('team_members' as any).select('*');
+      const grouped: Record<string, TeamMemberItem[]> = {};
+      (membersData || []).forEach((m: any) => {
+        const tm: TeamMemberItem = { team_id: m.team_id, member_email: m.member_email, role: m.role, created_at: m.created_at, id: m.id };
+        if (!grouped[tm.team_id]) grouped[tm.team_id] = [];
+        grouped[tm.team_id].push(tm);
+      });
+      setTeamMembers(grouped);
+    }
+  };
+
+  const fetchCalendarEvents = async () => {
+    const { data, error } = await supabase.from('calendar_events' as any).select('*').order('start_at', { ascending: true });
+    if (!error && data) setCalendarEvents(data as unknown as CalendarEventItem[]);
+  };
+
+  useEffect(() => {
+    fetchWorkRequests();
+    fetchGoals();
+    fetchTeams();
+    fetchCalendarEvents();
+  }, []);
+
+  // Create helpers
+  const createWorkRequest = async () => {
+    const title = window.prompt('Work request title');
+    if (!title) return;
+    const description = window.prompt('Description (optional)') || '';
+    const { data, error } = await supabase.from('work_requests' as any).insert({ title, description, priority: 'medium', status: 'new' }).select().single();
+    if (!error && data) setWorkRequests(prev => [data as unknown as WorkRequest, ...prev]);
+  };
+
+  const createGoal = async () => {
+    const title = window.prompt('Goal title');
+    if (!title) return;
+    const target = window.prompt('Target date (YYYY-MM-DD) optional') || null;
+    const { data, error } = await supabase.from('goals' as any).insert({ title, target_date: target, progress: 0 }).select().single();
+    if (!error && data) setGoals(prev => [data as unknown as GoalItem, ...prev]);
+  };
+
+  const createTeam = async () => {
+    const name = window.prompt('Team name');
+    if (!name) return;
+    const { data, error } = await supabase.from('teams' as any).insert({ name }).select().single();
+    if (!error && data) setTeams(prev => [data as unknown as TeamItem, ...prev]);
+  };
+
+  const addPersonToTeam = async (teamId: string) => {
+    const email = window.prompt('Member email to add');
+    if (!email) return;
+    const role = window.prompt('Role (e.g., member, admin)') || 'member';
+    const { data, error } = await supabase.from('team_members' as any).insert({ team_id: teamId, member_email: email, role }).select().single();
+    if (!error && data) setTeamMembers(prev => ({ ...prev, [teamId]: [...(prev[teamId] || []), data as unknown as TeamMemberItem] }));
+  };
+
+  const createCalendarEvent = async () => {
+    const title = window.prompt('Event title');
+    if (!title) return;
+    const start = window.prompt('Start (YYYY-MM-DD HH:MM)');
+    if (!start) return;
+    const end = window.prompt('End (YYYY-MM-DD HH:MM, optional)') || null;
+    const { data, error } = await supabase.from('calendar_events' as any).insert({ title, start_at: start, end_at: end }).select().single();
+    if (!error && data) setCalendarEvents(prev => [...prev, data as unknown as CalendarEventItem]);
+  };
 
   // Check if user can access Project Management features
   const canAccessPM = canAccessFeature('project-management');
@@ -1721,6 +1855,184 @@ const ProjectManagement = () => {
     </div>
   );
 
+  const statusPieData = [
+    { name: 'Backlog', value: tasks.filter(t => t.status === 'backlog').length },
+    { name: 'To Do', value: tasks.filter(t => t.status === 'todo').length },
+    { name: 'In Progress', value: tasks.filter(t => t.status === 'in-progress').length },
+    { name: 'Review', value: tasks.filter(t => t.status === 'review').length },
+    { name: 'Done', value: tasks.filter(t => t.status === 'done').length },
+  ];
+
+  const statusColors = ['#9CA3AF', '#3B82F6', '#F59E0B', '#8B5CF6', '#10B981'];
+
+  const priorityBarData = [
+    { name: 'Low', count: tasks.filter(t => t.priority === 'low').length },
+    { name: 'Medium', count: tasks.filter(t => t.priority === 'medium').length },
+    { name: 'High', count: tasks.filter(t => t.priority === 'high').length },
+    { name: 'Urgent', count: tasks.filter(t => t.priority === 'urgent').length },
+  ];
+
+  const teamWorkload = [
+    { name: 'John Doe', load: tasks.filter(t => t.assignee === 'John Doe').length, capacity: 10 },
+    { name: 'Jane Smith', load: tasks.filter(t => t.assignee === 'Jane Smith').length, capacity: 8 },
+    { name: 'Mike Johnson', load: tasks.filter(t => t.assignee === 'Mike Johnson').length, capacity: 12 },
+  ];
+
+  const typesOfWork = ['Development', 'Design', 'QA', 'Documentation', 'Client Communication'];
+
+  // Archive handlers
+  const archiveTask = async (taskId: string) => {
+    const { error } = await supabase.from('todos' as any).update({ archived_at: new Date().toISOString() }).eq('id', taskId);
+    if (!error) setTasks(prev => prev.filter(t => t.id !== taskId));
+  };
+  const unarchiveTask = async (taskId: string) => {
+    const { error } = await supabase.from('todos' as any).update({ archived_at: null }).eq('id', taskId);
+    if (!error) loadTasks();
+  };
+
+  // Convert work request to task
+  const convertWorkRequestToTask = async (req: WorkRequest) => {
+    const targetProjectId = selectedProject !== 'all' ? selectedProject : projects[0]?.id || null;
+    const { data: task, error } = await supabase.from('todos' as any).insert({
+      title: req.title,
+      description: req.description || '',
+      status: 'todo',
+      priority: req.priority || 'medium',
+      project_id: targetProjectId
+    }).select().single();
+    if (error || !task) return;
+    await supabase.from('work_requests' as any).update({ status: 'converted', created_task_id: task.id }).eq('id', req.id);
+    setWorkRequests(prev => prev.map(w => w.id === req.id ? { ...w, status: 'converted' } : w));
+    // add task to local state for immediate visibility
+    loadTasks();
+  };
+
+  const PAGE_SIZE = 10;
+
+  // Work Requests dialogs and filters
+  const [workRequestDialogOpen, setWorkRequestDialogOpen] = useState(false);
+  const [editingWorkRequest, setEditingWorkRequest] = useState<WorkRequest | null>(null);
+  const [workRequestForm, setWorkRequestForm] = useState<{ title: string; description: string; priority: WorkRequest['priority']; status: WorkRequest['status']}>({ title: '', description: '', priority: 'medium', status: 'new' });
+  const [workRequestStatusFilter, setWorkRequestStatusFilter] = useState<'all' | WorkRequest['status']>('all');
+  const [workRequestPriorityFilter, setWorkRequestPriorityFilter] = useState<'all' | NonNullable<WorkRequest['priority']>>('all');
+  const [workRequestSort, setWorkRequestSort] = useState<'newest' | 'oldest'>('newest');
+  const [workRequestPage, setWorkRequestPage] = useState(1);
+
+  const openNewWorkRequestDialog = () => {
+    setEditingWorkRequest(null);
+    setWorkRequestForm({ title: '', description: '', priority: 'medium', status: 'new' });
+    setWorkRequestDialogOpen(true);
+  };
+  const openEditWorkRequestDialog = (req: WorkRequest) => {
+    setEditingWorkRequest(req);
+    setWorkRequestForm({ title: req.title, description: req.description || '', priority: req.priority || 'medium', status: req.status });
+    setWorkRequestDialogOpen(true);
+  };
+  const saveWorkRequest = async () => {
+    if (!workRequestForm.title.trim()) return;
+    if (editingWorkRequest) {
+      const { data, error } = await supabase.from('work_requests' as any)
+        .update({ title: workRequestForm.title, description: workRequestForm.description, priority: workRequestForm.priority, status: workRequestForm.status })
+        .eq('id', editingWorkRequest.id).select().single();
+      if (!error && data) {
+        setWorkRequests(prev => prev.map(w => w.id === editingWorkRequest.id ? data as any : w));
+      }
+    } else {
+      const { data, error } = await supabase.from('work_requests' as any)
+        .insert({ title: workRequestForm.title, description: workRequestForm.description, priority: workRequestForm.priority, status: workRequestForm.status })
+        .select().single();
+      if (!error && data) setWorkRequests(prev => [data as any, ...prev]);
+    }
+    setWorkRequestDialogOpen(false);
+  };
+  const deleteWorkRequest = async (req: WorkRequest) => {
+    const { error } = await supabase.from('work_requests' as any).delete().eq('id', req.id);
+    if (!error) setWorkRequests(prev => prev.filter(w => w.id !== req.id));
+  };
+  const filteredSortedWorkRequests = (() => {
+    let arr = [...workRequests];
+    if (workRequestStatusFilter !== 'all') arr = arr.filter(w => w.status === workRequestStatusFilter);
+    if (workRequestPriorityFilter !== 'all') arr = arr.filter(w => (w.priority || 'medium') === workRequestPriorityFilter);
+    arr.sort((a,b) => workRequestSort === 'newest' ? (b.created_at.localeCompare(a.created_at)) : (a.created_at.localeCompare(b.created_at)));
+    return arr;
+  })();
+  const pagedWorkRequests = filteredSortedWorkRequests.slice((workRequestPage-1)*PAGE_SIZE, workRequestPage*PAGE_SIZE);
+
+  // Goals dialogs and filters
+  const [goalDialogOpen, setGoalDialogOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<GoalItem | null>(null);
+  const [goalForm, setGoalForm] = useState<{ title: string; description: string; target_date: string; progress: number }>({ title: '', description: '', target_date: '', progress: 0 });
+  const [goalsSort, setGoalsSort] = useState<'newest' | 'oldest'>('newest');
+  const [goalsPage, setGoalsPage] = useState(1);
+  const openNewGoalDialog = () => {
+    setEditingGoal(null);
+    setGoalForm({ title: '', description: '', target_date: '', progress: 0 });
+    setGoalDialogOpen(true);
+  };
+  const openEditGoalDialog = (g: GoalItem) => {
+    setEditingGoal(g);
+    setGoalForm({ title: g.title, description: g.description || '', target_date: g.target_date || '', progress: g.progress });
+    setGoalDialogOpen(true);
+  };
+  const saveGoal = async () => {
+    if (!goalForm.title.trim()) return;
+    if (editingGoal) {
+      const { data, error } = await supabase.from('goals' as any)
+        .update({ title: goalForm.title, description: goalForm.description, target_date: goalForm.target_date || null, progress: goalForm.progress })
+        .eq('id', editingGoal.id).select().single();
+      if (!error && data) setGoals(prev => prev.map(x => x.id === editingGoal.id ? data as any : x));
+    } else {
+      const { data, error } = await supabase.from('goals' as any)
+        .insert({ title: goalForm.title, description: goalForm.description, target_date: goalForm.target_date || null, progress: goalForm.progress })
+        .select().single();
+      if (!error && data) setGoals(prev => [data as any, ...prev]);
+    }
+    setGoalDialogOpen(false);
+  };
+  const deleteGoal = async (g: GoalItem) => {
+    const { error } = await supabase.from('goals' as any).delete().eq('id', g.id);
+    if (!error) setGoals(prev => prev.filter(x => x.id !== g.id));
+  };
+  const sortedGoals = [...goals].sort((a,b) => goalsSort === 'newest' ? (b.created_at.localeCompare(a.created_at)) : (a.created_at.localeCompare(b.created_at)));
+  const pagedGoals = sortedGoals.slice((goalsPage-1)*PAGE_SIZE, goalsPage*PAGE_SIZE);
+
+  // Calendar event dialogs and filters
+  const [eventDialogOpen, setEventDialogOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEventItem | null>(null);
+  const [eventForm, setEventForm] = useState<{ title: string; start_at: string; end_at: string }>({ title: '', start_at: '', end_at: '' });
+  const [eventsSort, setEventsSort] = useState<'newest' | 'oldest'>('newest');
+  const [eventsPage, setEventsPage] = useState(1);
+  const openNewEventDialog = () => {
+    setEditingEvent(null);
+    setEventForm({ title: '', start_at: '', end_at: '' });
+    setEventDialogOpen(true);
+  };
+  const openEditEventDialog = (ev: CalendarEventItem) => {
+    setEditingEvent(ev);
+    setEventForm({ title: ev.title, start_at: ev.start_at?.slice(0,16) || '', end_at: ev.end_at?.slice(0,16) || '' });
+    setEventDialogOpen(true);
+  };
+  const saveEvent = async () => {
+    if (!eventForm.title.trim() || !eventForm.start_at) return;
+    const payload = { title: eventForm.title, start_at: eventForm.start_at, end_at: eventForm.end_at || null } as any;
+    if (editingEvent) {
+      const { data, error } = await supabase.from('calendar_events' as any)
+        .update(payload).eq('id', editingEvent.id).select().single();
+      if (!error && data) setCalendarEvents(prev => prev.map(e => e.id === editingEvent.id ? data as any : e));
+    } else {
+      const { data, error } = await supabase.from('calendar_events' as any)
+        .insert(payload).select().single();
+      if (!error && data) setCalendarEvents(prev => [...prev, data as any]);
+    }
+    setEventDialogOpen(false);
+  };
+  const deleteEvent = async (ev: CalendarEventItem) => {
+    const { error } = await supabase.from('calendar_events' as any).delete().eq('id', ev.id);
+    if (!error) setCalendarEvents(prev => prev.filter(e => e.id !== ev.id));
+  };
+  const sortedEvents = [...calendarEvents].sort((a,b) => eventsSort === 'newest' ? (b.start_at.localeCompare(a.start_at)) : (a.start_at.localeCompare(b.start_at)));
+  const pagedEvents = sortedEvents.slice((eventsPage-1)*PAGE_SIZE, eventsPage*PAGE_SIZE);
+
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
       {/* Enhanced Header */}
@@ -1873,23 +2185,369 @@ const ProjectManagement = () => {
 
       {/* Enhanced Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="milestones">Milestones</TabsTrigger>
-          <TabsTrigger value="communication">Client Comm</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
-          <TabsTrigger value="collaboration">Collaboration</TabsTrigger>
-          <TabsTrigger value="ai-assistant">AI Assistant</TabsTrigger>
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-10">
+          <TabsTrigger value="summary">Summary</TabsTrigger>
+          <TabsTrigger value="timeline">Timeline</TabsTrigger>
+          <TabsTrigger value="kanban">Board</TabsTrigger>
+          <TabsTrigger value="calendar">Calendar</TabsTrigger>
+          <TabsTrigger value="list">List</TabsTrigger>
+          <TabsTrigger value="forms">Forms</TabsTrigger>
+          <TabsTrigger value="goals">Goals</TabsTrigger>
+          <TabsTrigger value="all">All work</TabsTrigger>
+          <TabsTrigger value="archived">Archived</TabsTrigger>
+          <TabsTrigger value="teams">Teams</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="mt-6">
-          {activeView === 'kanban' && <EnhancedKanbanBoard />}
-          {activeView === 'list' && <div>List view implementation</div>}
-          {activeView === 'calendar' && <div>Calendar view implementation</div>}
-          
-          {/* Projects Overview Section */}
-          <div className="mt-6 space-y-6">
+        <TabsContent value="summary" className="mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Status Overview</CardTitle>
+              </CardHeader>
+              <CardContent className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={statusPieData} dataKey="value" nameKey="name" outerRadius={80} label>
+                      {statusPieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={statusColors[index % statusColors.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Priority Breakdown</CardTitle>
+              </CardHeader>
+              <CardContent className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={priorityBarData}>
+                    <XAxis dataKey="name" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#3b82f6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Team Workload</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {teamWorkload.map(member => (
+                    <div key={member.name} className="p-4 border rounded-lg flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-8 h-8"><AvatarFallback>{member.name[0]}</AvatarFallback></Avatar>
+                        <div>
+                          <div className="font-medium">{member.name}</div>
+                          <div className="text-xs text-gray-500">Capacity: {member.capacity}%</div>
+                        </div>
+                      </div>
+                      <Badge variant={member.load > member.capacity ? 'destructive' : 'secondary'}>
+                        {member.load} tasks
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {activityLogs.slice(0, 6).map(log => (
+                    <div key={log.id} className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg">
+                      <Avatar className="w-8 h-8"><AvatarFallback>{log.user[0]}</AvatarFallback></Avatar>
+                      <div>
+                        <div className="text-sm">{log.description}</div>
+                        <div className="text-xs text-gray-500">{format(log.timestamp, 'MMM dd, HH:mm')}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Types of Work</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-gray-600">
+                <ul className="list-disc pl-5 space-y-1">
+                  {typesOfWork.map(item => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="timeline" className="mt-6">
+          <div className="mb-4">
+            <Button onClick={() => setShowCreateProject(true)} size="sm">
+              <Plus className="w-4 h-4 mr-2" /> Create Epic
+            </Button>
+          </div>
+          <ProjectActivityTimeline />
+        </TabsContent>
+
+        <TabsContent value="kanban" className="mt-6">
+          <EnhancedKanbanBoard />
+        </TabsContent>
+
+        <TabsContent value="calendar" className="mt-6">
+          <Card>
+            <CardHeader><CardTitle>Calendar</CardTitle></CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Select value={eventsSort} onValueChange={(v:any)=>setEventsSort(v)}>
+                  <SelectTrigger className="w-[150px]"><SelectValue placeholder="Sort" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="newest">Newest</SelectItem>
+                    <SelectItem value="oldest">Oldest</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button size="sm" variant="outline" onClick={openNewEventDialog}>Add Event</Button>
+              </div>
+              <div className="space-y-2">
+                {pagedEvents.map(ev => (
+                  <div key={ev.id} className="p-3 border rounded-lg flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{ev.title}</div>
+                      <div className="text-xs text-gray-500">{ev.start_at}{ev.end_at ? ` → ${ev.end_at}` : ''}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="ghost" onClick={()=>openEditEventDialog(ev)}>Edit</Button>
+                      <Button size="sm" variant="ghost" onClick={()=>deleteEvent(ev)}>Delete</Button>
+                    </div>
+                  </div>
+                ))}
+                {sortedEvents.length === 0 && <div className="text-sm text-gray-500">No events yet.</div>}
+              </div>
+              <div className="flex justify-end gap-2 mt-3">
+                <Button size="sm" variant="outline" disabled={eventsPage===1} onClick={()=>setEventsPage(p=>Math.max(1,p-1))}>Prev</Button>
+                <Button size="sm" variant="outline" disabled={eventsPage*PAGE_SIZE>=sortedEvents.length} onClick={()=>setEventsPage(p=>p+1)}>Next</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="list" className="mt-6">
+          <Card>
+            <CardHeader><CardTitle>All Tasks (List)</CardTitle></CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {tasks.filter(t => !(t as any).archived_at).map(t => (
+                  <div key={t.id} className="p-3 border rounded-lg flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{t.title}</div>
+                      <div className="text-xs text-gray-500">{t.status} • {t.priority}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{t.project}</Badge>
+                      <Button size="sm" variant="ghost" onClick={() => archiveTask(t.id)}>Archive</Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="forms" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Forms: Collect and track work requests</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-4">Create simple forms to collect work requests and automatically create tasks.</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Select value={workRequestStatusFilter} onValueChange={(v: any) => setWorkRequestStatusFilter(v)}>
+                  <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="in_review">In review</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                    <SelectItem value="converted">Converted</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={workRequestPriorityFilter} onValueChange={(v: any) => setWorkRequestPriorityFilter(v)}>
+                  <SelectTrigger className="w-[150px]"><SelectValue placeholder="Priority" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All priorities</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={workRequestSort} onValueChange={(v: any) => setWorkRequestSort(v)}>
+                  <SelectTrigger className="w-[150px]"><SelectValue placeholder="Sort" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="newest">Newest</SelectItem>
+                    <SelectItem value="oldest">Oldest</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" onClick={openNewWorkRequestDialog}>New Work Request</Button>
+              </div>
+              <div className="space-y-2">
+                {pagedWorkRequests.map(req => (
+                  <div key={req.id} className="p-3 border rounded-lg flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{req.title}</div>
+                      <div className="text-xs text-gray-500">{req.status} • {req.priority || 'medium'}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => openEditWorkRequestDialog(req)}>Edit</Button>
+                      <Button size="sm" variant="ghost" onClick={() => deleteWorkRequest(req)}>Delete</Button>
+                      {req.status !== 'converted' && (
+                        <Button size="sm" variant="ghost" onClick={() => convertWorkRequestToTask(req)}>Convert to Task</Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {filteredSortedWorkRequests.length === 0 && <div className="text-sm text-gray-500">No work requests yet.</div>}
+              </div>
+              <div className="flex justify-end gap-2 mt-3">
+                <Button size="sm" variant="outline" disabled={workRequestPage===1} onClick={()=>setWorkRequestPage(p=>Math.max(1,p-1))}>Prev</Button>
+                <Button size="sm" variant="outline" disabled={workRequestPage*PAGE_SIZE>=filteredSortedWorkRequests.length} onClick={()=>setWorkRequestPage(p=>p+1)}>Next</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="goals" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Goals</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-4">Define measurable goals and link tasks and epics to track progress.</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Select value={goalsSort} onValueChange={(v:any)=>setGoalsSort(v)}>
+                  <SelectTrigger className="w-[150px]"><SelectValue placeholder="Sort" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="newest">Newest</SelectItem>
+                    <SelectItem value="oldest">Oldest</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" onClick={openNewGoalDialog}>Create Goal</Button>
+              </div>
+              <div className="space-y-2">
+                {pagedGoals.map(g => (
+                  <div key={g.id} className="p-3 border rounded-lg flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{g.title}</div>
+                      <div className="text-xs text-gray-500">Target: {g.target_date || '—'} • Progress: {g.progress}%</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">{g.progress}%</Badge>
+                      <Button size="sm" variant="ghost" onClick={()=>openEditGoalDialog(g)}>Edit</Button>
+                      <Button size="sm" variant="ghost" onClick={()=>deleteGoal(g)}>Delete</Button>
+                    </div>
+                  </div>
+                ))}
+                {sortedGoals.length === 0 && <div className="text-sm text-gray-500">No goals yet.</div>}
+              </div>
+              <div className="flex justify-end gap-2 mt-3">
+                <Button size="sm" variant="outline" disabled={goalsPage===1} onClick={()=>setGoalsPage(p=>Math.max(1,p-1))}>Prev</Button>
+                <Button size="sm" variant="outline" disabled={goalsPage*PAGE_SIZE>=sortedGoals.length} onClick={()=>setGoalsPage(p=>p+1)}>Next</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="all" className="mt-6">
+          <Card>
+            <CardHeader><CardTitle>All Work Items</CardTitle></CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {[...tasks].filter(t => !(t as any).archived_at).map(t => (
+                  <div key={t.id} className="p-3 border rounded-lg flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{t.title}</div>
+                      <div className="text-xs text-gray-500">{t.status} • {t.priority}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{t.project}</Badge>
+                      <Button size="sm" variant="ghost" onClick={() => archiveTask(t.id)}>Archive</Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="archived" className="mt-6">
+          <Card>
+            <CardHeader><CardTitle>Archived Work Items</CardTitle></CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {tasks.filter(t => (t as any).archived_at).map(t => (
+                  <div key={t.id} className="p-3 border rounded-lg flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{t.title}</div>
+                      <div className="text-xs text-gray-500">Archived</div>
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => unarchiveTask(t.id)}>Unarchive</Button>
+                  </div>
+                ))}
+                {tasks.filter(t => (t as any).archived_at).length === 0 && (
+                  <div className="text-sm text-gray-500">No archived items.</div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+                <TabsContent value="teams" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Teams</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Button variant="outline" size="sm" onClick={createTeam}>Create team</Button>
+                {teams.map(team => (
+                  <Button key={team.id} variant="outline" size="sm" onClick={() => addPersonToTeam(team.id)}>Add people to {team.name}</Button>
+                ))}
+              </div>
+              <div className="space-y-4">
+                {teams.map(team => (
+                  <div key={team.id} className="p-3 border rounded-lg">
+                    <div className="font-medium mb-2">{team.name}</div>
+                    <div className="text-xs text-gray-500 mb-2">Members:</div>
+                    <div className="space-y-1">
+                      {(teamMembers[team.id] || []).map(m => (
+                        <div key={team.id + m.member_email} className="text-sm">{m.member_email} — {m.role}</div>
+                      ))}
+                      {(teamMembers[team.id] || []).length === 0 && (<div className="text-sm text-gray-500">No members yet.</div>)}
+                    </div>
+                  </div>
+                ))}
+                {teams.length === 0 && <div className="text-sm text-gray-500">No teams yet.</div>}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Projects Overview Section */}
+      <div className="mt-6 space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-semibold">Active Projects</h3>
               <Button variant="outline" onClick={() => setShowCreateProject(true)}>
@@ -1914,7 +2572,7 @@ const ProjectManagement = () => {
                     onClick={() => {
                       console.log('Selecting project:', project.id);
                       setSelectedProject(project.id);
-                      setActiveTab('overview');
+                                             setActiveTab('summary');
                       toast({
                         title: "Project Selected",
                         description: `Now viewing: ${project.name}`,
@@ -1939,33 +2597,7 @@ const ProjectManagement = () => {
               )}
             </div>
           </div>
-        </TabsContent>
-
-        <TabsContent value="milestones" className="mt-6">
-          <MilestonesView />
-        </TabsContent>
-
-        <TabsContent value="communication" className="mt-6">
-          <ClientCommunicationView />
-        </TabsContent>
-
-        <TabsContent value="reports" className="mt-6">
-          <ReportingDashboard />
-        </TabsContent>
-
-        <TabsContent value="collaboration" className="mt-6">
-          <TeamCollaborationView />
-        </TabsContent>
-
-        <TabsContent value="ai-assistant" className="mt-6">
-          <AIAssistantView />
-        </TabsContent>
-
-        <TabsContent value="integrations" className="mt-6">
-          <IntegrationsView />
-        </TabsContent>
-      </Tabs>
-
+        
       {/* Enhanced Create Task Dialog */}
       <CreateTodoDialog
         isOpen={showCreateTask}
@@ -2303,6 +2935,79 @@ const ProjectManagement = () => {
         onOpenChange={setShowCreateProject}
         onCreateProject={handleCreateProject}
       />
+
+      {/* Work Request Dialog */}
+      <Dialog open={workRequestDialogOpen} onOpenChange={setWorkRequestDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingWorkRequest ? 'Edit Work Request' : 'New Work Request'}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Title" value={workRequestForm.title} onChange={e=>setWorkRequestForm({...workRequestForm, title: e.target.value})} />
+            <Textarea placeholder="Description" value={workRequestForm.description} onChange={e=>setWorkRequestForm({...workRequestForm, description: e.target.value})} />
+            <div className="flex gap-2">
+              <Select value={workRequestForm.priority||'medium'} onValueChange={(v:any)=>setWorkRequestForm({...workRequestForm, priority: v})}>
+                <SelectTrigger className="w-[150px]"><SelectValue placeholder="Priority" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={workRequestForm.status} onValueChange={(v:any)=>setWorkRequestForm({...workRequestForm, status: v})}>
+                <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="new">New</SelectItem>
+                  <SelectItem value="in_review">In review</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="converted">Converted</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={()=>setWorkRequestDialogOpen(false)}>Cancel</Button>
+              <Button onClick={saveWorkRequest}>Save</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Goal Dialog */}
+      <Dialog open={goalDialogOpen} onOpenChange={setGoalDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingGoal ? 'Edit Goal' : 'New Goal'}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Title" value={goalForm.title} onChange={e=>setGoalForm({...goalForm, title: e.target.value})} />
+            <Textarea placeholder="Description" value={goalForm.description} onChange={e=>setGoalForm({...goalForm, description: e.target.value})} />
+            <div className="flex gap-2">
+              <Input type="date" value={goalForm.target_date} onChange={e=>setGoalForm({...goalForm, target_date: e.target.value})} />
+              <Input type="number" min={0} max={100} value={goalForm.progress} onChange={e=>setGoalForm({...goalForm, progress: Number(e.target.value)})} />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={()=>setGoalDialogOpen(false)}>Cancel</Button>
+              <Button onClick={saveGoal}>Save</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Event Dialog */}
+      <Dialog open={eventDialogOpen} onOpenChange={setEventDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingEvent ? 'Edit Event' : 'New Event'}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Title" value={eventForm.title} onChange={e=>setEventForm({...eventForm, title: e.target.value})} />
+            <div className="flex gap-2">
+              <Input type="datetime-local" value={eventForm.start_at} onChange={e=>setEventForm({...eventForm, start_at: e.target.value})} />
+              <Input type="datetime-local" value={eventForm.end_at} onChange={e=>setEventForm({...eventForm, end_at: e.target.value})} />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={()=>setEventDialogOpen(false)}>Cancel</Button>
+              <Button onClick={saveEvent}>Save</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

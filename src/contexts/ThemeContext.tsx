@@ -38,6 +38,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const { settings } = useUserSettings();
   const [theme, setThemeState] = useState<ThemeName>('light');
 
+  // Initialize theme from user settings or localStorage
   useEffect(() => {
     const stored = (localStorage.getItem('theme') as ThemeName | null) || null;
     const fromProfile = (settings as any)?.theme as ThemeName | undefined;
@@ -51,11 +52,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     applyThemeToDocument(newTheme);
     localStorage.setItem('theme', newTheme);
 
+    // Persist to Supabase profile if logged in and column exists
     try {
       if (user) {
         await supabase.from('profiles' as any).update({ theme: newTheme }).eq('id', user.id);
       }
     } catch (e) {
+      // non-fatal if column not present yet
       console.warn('Unable to persist theme to profile:', e);
     }
   }, [user]);
