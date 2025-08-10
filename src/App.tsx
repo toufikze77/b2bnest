@@ -4,6 +4,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { UserSettingsProvider } from "@/hooks/useUserSettings";
 import { Toaster } from "@/components/ui/toaster";
 import Layout from "@/components/Layout";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 import Index from "@/pages/Index";
 import About from "@/pages/About";
@@ -53,6 +54,7 @@ function App() {
       <AuthProvider>
         <UserSettingsProvider>
           <Router>
+          <ThemeProvider>
           <Layout>
             <Routes>
               <Route path="/" element={<Index />} />
@@ -101,6 +103,7 @@ function App() {
             </Routes>
             <Toaster />
           </Layout>
+          </ThemeProvider>
           </Router>
         </UserSettingsProvider>
       </AuthProvider>
