@@ -66,6 +66,7 @@ export interface UserSettings {
   language_code: string;
   date_format: string;
   time_format: string;
+  theme?: string;
 }
 
 export const formatDateWithUserSettings = (date: Date, settings: UserSettings): string => {

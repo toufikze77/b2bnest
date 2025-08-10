@@ -26,7 +26,7 @@ export const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('currency_code, timezone, country_code, language_code, date_format, time_format')
+        .select('currency_code, timezone, country_code, language_code, date_format, time_format, theme')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -42,7 +42,8 @@ export const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
           country_code: data.country_code || 'US',
           language_code: data.language_code || 'en',
           date_format: data.date_format || 'MM/DD/YYYY',
-          time_format: data.time_format || '12h'
+          time_format: data.time_format || '12h',
+          theme: (data as any).theme || 'light'
         });
       }
     } catch (error) {
