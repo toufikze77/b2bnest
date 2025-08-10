@@ -87,6 +87,7 @@ import {
   ArrowDown
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 
 // Enhanced interfaces
 interface Task {
@@ -217,7 +218,7 @@ const ProjectManagement = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<'kanban' | 'list' | 'calendar' | 'timeline'>('kanban');
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('summary');
   const [selectedProject, setSelectedProject] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateTask, setShowCreateTask] = useState(false);
@@ -1721,6 +1722,31 @@ const ProjectManagement = () => {
     </div>
   );
 
+  const statusPieData = [
+    { name: 'Backlog', value: tasks.filter(t => t.status === 'backlog').length },
+    { name: 'To Do', value: tasks.filter(t => t.status === 'todo').length },
+    { name: 'In Progress', value: tasks.filter(t => t.status === 'in-progress').length },
+    { name: 'Review', value: tasks.filter(t => t.status === 'review').length },
+    { name: 'Done', value: tasks.filter(t => t.status === 'done').length },
+  ];
+
+  const statusColors = ['#9CA3AF', '#3B82F6', '#F59E0B', '#8B5CF6', '#10B981'];
+
+  const priorityBarData = [
+    { name: 'Low', count: tasks.filter(t => t.priority === 'low').length },
+    { name: 'Medium', count: tasks.filter(t => t.priority === 'medium').length },
+    { name: 'High', count: tasks.filter(t => t.priority === 'high').length },
+    { name: 'Urgent', count: tasks.filter(t => t.priority === 'urgent').length },
+  ];
+
+  const teamWorkload = [
+    { name: 'John Doe', load: tasks.filter(t => t.assignee === 'John Doe').length, capacity: 10 },
+    { name: 'Jane Smith', load: tasks.filter(t => t.assignee === 'Jane Smith').length, capacity: 8 },
+    { name: 'Mike Johnson', load: tasks.filter(t => t.assignee === 'Mike Johnson').length, capacity: 12 },
+  ];
+
+  const typesOfWork = ['Development', 'Design', 'QA', 'Documentation', 'Client Communication'];
+
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
       {/* Enhanced Header */}
@@ -1873,23 +1899,185 @@ const ProjectManagement = () => {
 
       {/* Enhanced Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="milestones">Milestones</TabsTrigger>
-          <TabsTrigger value="communication">Client Comm</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
-          <TabsTrigger value="collaboration">Collaboration</TabsTrigger>
-          <TabsTrigger value="ai-assistant">AI Assistant</TabsTrigger>
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-10">
+          <TabsTrigger value="summary">Summary</TabsTrigger>
+          <TabsTrigger value="timeline">Timeline</TabsTrigger>
+          <TabsTrigger value="kanban">Board</TabsTrigger>
+          <TabsTrigger value="calendar">Calendar</TabsTrigger>
+          <TabsTrigger value="list">List</TabsTrigger>
+          <TabsTrigger value="forms">Forms</TabsTrigger>
+          <TabsTrigger value="goals">Goals</TabsTrigger>
+          <TabsTrigger value="all">All work</TabsTrigger>
+          <TabsTrigger value="archived">Archived</TabsTrigger>
+          <TabsTrigger value="teams">Teams</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="mt-6">
-          {activeView === 'kanban' && <EnhancedKanbanBoard />}
-          {activeView === 'list' && <div>List view implementation</div>}
-          {activeView === 'calendar' && <div>Calendar view implementation</div>}
-          
-          {/* Projects Overview Section */}
-          <div className="mt-6 space-y-6">
+        <TabsContent value="summary" className="mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Status Overview</CardTitle>
+              </CardHeader>
+              <CardContent className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={statusPieData} dataKey="value" nameKey="name" outerRadius={80} label>
+                      {statusPieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={statusColors[index % statusColors.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Priority Breakdown</CardTitle>
+              </CardHeader>
+              <CardContent className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={priorityBarData}>
+                    <XAxis dataKey="name" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#3b82f6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Team Workload</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {teamWorkload.map(member => (
+                    <div key={member.name} className="p-4 border rounded-lg flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-8 h-8"><AvatarFallback>{member.name[0]}</AvatarFallback></Avatar>
+                        <div>
+                          <div className="font-medium">{member.name}</div>
+                          <div className="text-xs text-gray-500">Capacity: {member.capacity}%</div>
+                        </div>
+                      </div>
+                      <Badge variant={member.load > member.capacity ? 'destructive' : 'secondary'}>
+                        {member.load} tasks
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {activityLogs.slice(0, 6).map(log => (
+                    <div key={log.id} className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg">
+                      <Avatar className="w-8 h-8"><AvatarFallback>{log.user[0]}</AvatarFallback></Avatar>
+                      <div>
+                        <div className="text-sm">{log.description}</div>
+                        <div className="text-xs text-gray-500">{format(log.timestamp, 'MMM dd, HH:mm')}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Types of Work</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-gray-600">
+                <ul className="list-disc pl-5 space-y-1">
+                  {typesOfWork.map(item => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="timeline" className="mt-6">
+          <div className="mb-4">
+            <Button onClick={() => setShowCreateProject(true)} size="sm">
+              <Plus className="w-4 h-4 mr-2" /> Create Epic
+            </Button>
+          </div>
+          <ProjectActivityTimeline />
+        </TabsContent>
+
+        <TabsContent value="kanban" className="mt-6">
+          <EnhancedKanbanBoard />
+        </TabsContent>
+
+        <TabsContent value="calendar" className="mt-6">
+          <div>Calendar view implementation</div>
+        </TabsContent>
+
+        <TabsContent value="list" className="mt-6">
+          <div>List view implementation</div>
+        </TabsContent>
+
+        <TabsContent value="forms" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Forms: Collect and track work requests</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-4">Create simple forms to collect work requests and automatically create tasks.</p>
+              <Button variant="outline">Create Request Form</Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="goals" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Goals</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">Define measurable goals and link tasks and epics to track progress.</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="all" className="mt-6">
+          <div>All work items</div>
+        </TabsContent>
+
+        <TabsContent value="archived" className="mt-6">
+          <div>Archived work items</div>
+        </TabsContent>
+
+        <TabsContent value="teams" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Teams</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Button variant="outline" size="sm">Manage users</Button>
+                <Button variant="outline" size="sm">Create team</Button>
+                <Button variant="outline" size="sm">Add people</Button>
+              </div>
+              <div className="text-sm text-gray-600">Team management actions and member overview appear here.</div>
+            </CardContent>
+          </Card>
+                </TabsContent>
+      </Tabs>
+
+      {/* Projects Overview Section */}
+      <div className="mt-6 space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-semibold">Active Projects</h3>
               <Button variant="outline" onClick={() => setShowCreateProject(true)}>
@@ -1914,7 +2102,7 @@ const ProjectManagement = () => {
                     onClick={() => {
                       console.log('Selecting project:', project.id);
                       setSelectedProject(project.id);
-                      setActiveTab('overview');
+                                             setActiveTab('summary');
                       toast({
                         title: "Project Selected",
                         description: `Now viewing: ${project.name}`,
@@ -1939,33 +2127,7 @@ const ProjectManagement = () => {
               )}
             </div>
           </div>
-        </TabsContent>
-
-        <TabsContent value="milestones" className="mt-6">
-          <MilestonesView />
-        </TabsContent>
-
-        <TabsContent value="communication" className="mt-6">
-          <ClientCommunicationView />
-        </TabsContent>
-
-        <TabsContent value="reports" className="mt-6">
-          <ReportingDashboard />
-        </TabsContent>
-
-        <TabsContent value="collaboration" className="mt-6">
-          <TeamCollaborationView />
-        </TabsContent>
-
-        <TabsContent value="ai-assistant" className="mt-6">
-          <AIAssistantView />
-        </TabsContent>
-
-        <TabsContent value="integrations" className="mt-6">
-          <IntegrationsView />
-        </TabsContent>
-      </Tabs>
-
+        
       {/* Enhanced Create Task Dialog */}
       <CreateTodoDialog
         isOpen={showCreateTask}
