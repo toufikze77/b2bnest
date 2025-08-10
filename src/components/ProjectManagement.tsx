@@ -1907,6 +1907,132 @@ const ProjectManagement = () => {
     loadTasks();
   };
 
+  const PAGE_SIZE = 10;
+
+  // Work Requests dialogs and filters
+  const [workRequestDialogOpen, setWorkRequestDialogOpen] = useState(false);
+  const [editingWorkRequest, setEditingWorkRequest] = useState<WorkRequest | null>(null);
+  const [workRequestForm, setWorkRequestForm] = useState<{ title: string; description: string; priority: WorkRequest['priority']; status: WorkRequest['status']}>({ title: '', description: '', priority: 'medium', status: 'new' });
+  const [workRequestStatusFilter, setWorkRequestStatusFilter] = useState<'all' | WorkRequest['status']>('all');
+  const [workRequestPriorityFilter, setWorkRequestPriorityFilter] = useState<'all' | NonNullable<WorkRequest['priority']>>('all');
+  const [workRequestSort, setWorkRequestSort] = useState<'newest' | 'oldest'>('newest');
+  const [workRequestPage, setWorkRequestPage] = useState(1);
+
+  const openNewWorkRequestDialog = () => {
+    setEditingWorkRequest(null);
+    setWorkRequestForm({ title: '', description: '', priority: 'medium', status: 'new' });
+    setWorkRequestDialogOpen(true);
+  };
+  const openEditWorkRequestDialog = (req: WorkRequest) => {
+    setEditingWorkRequest(req);
+    setWorkRequestForm({ title: req.title, description: req.description || '', priority: req.priority || 'medium', status: req.status });
+    setWorkRequestDialogOpen(true);
+  };
+  const saveWorkRequest = async () => {
+    if (!workRequestForm.title.trim()) return;
+    if (editingWorkRequest) {
+      const { data, error } = await supabase.from('work_requests' as any)
+        .update({ title: workRequestForm.title, description: workRequestForm.description, priority: workRequestForm.priority, status: workRequestForm.status })
+        .eq('id', editingWorkRequest.id).select().single();
+      if (!error && data) {
+        setWorkRequests(prev => prev.map(w => w.id === editingWorkRequest.id ? data as any : w));
+      }
+    } else {
+      const { data, error } = await supabase.from('work_requests' as any)
+        .insert({ title: workRequestForm.title, description: workRequestForm.description, priority: workRequestForm.priority, status: workRequestForm.status })
+        .select().single();
+      if (!error && data) setWorkRequests(prev => [data as any, ...prev]);
+    }
+    setWorkRequestDialogOpen(false);
+  };
+  const deleteWorkRequest = async (req: WorkRequest) => {
+    const { error } = await supabase.from('work_requests' as any).delete().eq('id', req.id);
+    if (!error) setWorkRequests(prev => prev.filter(w => w.id !== req.id));
+  };
+  const filteredSortedWorkRequests = (() => {
+    let arr = [...workRequests];
+    if (workRequestStatusFilter !== 'all') arr = arr.filter(w => w.status === workRequestStatusFilter);
+    if (workRequestPriorityFilter !== 'all') arr = arr.filter(w => (w.priority || 'medium') === workRequestPriorityFilter);
+    arr.sort((a,b) => workRequestSort === 'newest' ? (b.created_at.localeCompare(a.created_at)) : (a.created_at.localeCompare(b.created_at)));
+    return arr;
+  })();
+  const pagedWorkRequests = filteredSortedWorkRequests.slice((workRequestPage-1)*PAGE_SIZE, workRequestPage*PAGE_SIZE);
+
+  // Goals dialogs and filters
+  const [goalDialogOpen, setGoalDialogOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<GoalItem | null>(null);
+  const [goalForm, setGoalForm] = useState<{ title: string; description: string; target_date: string; progress: number }>({ title: '', description: '', target_date: '', progress: 0 });
+  const [goalsSort, setGoalsSort] = useState<'newest' | 'oldest'>('newest');
+  const [goalsPage, setGoalsPage] = useState(1);
+  const openNewGoalDialog = () => {
+    setEditingGoal(null);
+    setGoalForm({ title: '', description: '', target_date: '', progress: 0 });
+    setGoalDialogOpen(true);
+  };
+  const openEditGoalDialog = (g: GoalItem) => {
+    setEditingGoal(g);
+    setGoalForm({ title: g.title, description: g.description || '', target_date: g.target_date || '', progress: g.progress });
+    setGoalDialogOpen(true);
+  };
+  const saveGoal = async () => {
+    if (!goalForm.title.trim()) return;
+    if (editingGoal) {
+      const { data, error } = await supabase.from('goals' as any)
+        .update({ title: goalForm.title, description: goalForm.description, target_date: goalForm.target_date || null, progress: goalForm.progress })
+        .eq('id', editingGoal.id).select().single();
+      if (!error && data) setGoals(prev => prev.map(x => x.id === editingGoal.id ? data as any : x));
+    } else {
+      const { data, error } = await supabase.from('goals' as any)
+        .insert({ title: goalForm.title, description: goalForm.description, target_date: goalForm.target_date || null, progress: goalForm.progress })
+        .select().single();
+      if (!error && data) setGoals(prev => [data as any, ...prev]);
+    }
+    setGoalDialogOpen(false);
+  };
+  const deleteGoal = async (g: GoalItem) => {
+    const { error } = await supabase.from('goals' as any).delete().eq('id', g.id);
+    if (!error) setGoals(prev => prev.filter(x => x.id !== g.id));
+  };
+  const sortedGoals = [...goals].sort((a,b) => goalsSort === 'newest' ? (b.created_at.localeCompare(a.created_at)) : (a.created_at.localeCompare(b.created_at)));
+  const pagedGoals = sortedGoals.slice((goalsPage-1)*PAGE_SIZE, goalsPage*PAGE_SIZE);
+
+  // Calendar event dialogs and filters
+  const [eventDialogOpen, setEventDialogOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEventItem | null>(null);
+  const [eventForm, setEventForm] = useState<{ title: string; start_at: string; end_at: string }>({ title: '', start_at: '', end_at: '' });
+  const [eventsSort, setEventsSort] = useState<'newest' | 'oldest'>('newest');
+  const [eventsPage, setEventsPage] = useState(1);
+  const openNewEventDialog = () => {
+    setEditingEvent(null);
+    setEventForm({ title: '', start_at: '', end_at: '' });
+    setEventDialogOpen(true);
+  };
+  const openEditEventDialog = (ev: CalendarEventItem) => {
+    setEditingEvent(ev);
+    setEventForm({ title: ev.title, start_at: ev.start_at?.slice(0,16) || '', end_at: ev.end_at?.slice(0,16) || '' });
+    setEventDialogOpen(true);
+  };
+  const saveEvent = async () => {
+    if (!eventForm.title.trim() || !eventForm.start_at) return;
+    const payload = { title: eventForm.title, start_at: eventForm.start_at, end_at: eventForm.end_at || null } as any;
+    if (editingEvent) {
+      const { data, error } = await supabase.from('calendar_events' as any)
+        .update(payload).eq('id', editingEvent.id).select().single();
+      if (!error && data) setCalendarEvents(prev => prev.map(e => e.id === editingEvent.id ? data as any : e));
+    } else {
+      const { data, error } = await supabase.from('calendar_events' as any)
+        .insert(payload).select().single();
+      if (!error && data) setCalendarEvents(prev => [...prev, data as any]);
+    }
+    setEventDialogOpen(false);
+  };
+  const deleteEvent = async (ev: CalendarEventItem) => {
+    const { error } = await supabase.from('calendar_events' as any).delete().eq('id', ev.id);
+    if (!error) setCalendarEvents(prev => prev.filter(e => e.id !== ev.id));
+  };
+  const sortedEvents = [...calendarEvents].sort((a,b) => eventsSort === 'newest' ? (b.start_at.localeCompare(a.start_at)) : (a.start_at.localeCompare(b.start_at)));
+  const pagedEvents = sortedEvents.slice((eventsPage-1)*PAGE_SIZE, eventsPage*PAGE_SIZE);
+
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
       {/* Enhanced Header */}
@@ -2184,19 +2310,34 @@ const ProjectManagement = () => {
           <Card>
             <CardHeader><CardTitle>Calendar</CardTitle></CardHeader>
             <CardContent>
-              <div className="flex gap-2 mb-4">
-                <Button size="sm" variant="outline" onClick={createCalendarEvent}>Add Event</Button>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Select value={eventsSort} onValueChange={(v:any)=>setEventsSort(v)}>
+                  <SelectTrigger className="w-[150px]"><SelectValue placeholder="Sort" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="newest">Newest</SelectItem>
+                    <SelectItem value="oldest">Oldest</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button size="sm" variant="outline" onClick={openNewEventDialog}>Add Event</Button>
               </div>
               <div className="space-y-2">
-                {calendarEvents.map(ev => (
+                {pagedEvents.map(ev => (
                   <div key={ev.id} className="p-3 border rounded-lg flex items-center justify-between">
                     <div>
                       <div className="font-medium">{ev.title}</div>
                       <div className="text-xs text-gray-500">{ev.start_at}{ev.end_at ? ` → ${ev.end_at}` : ''}</div>
                     </div>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="ghost" onClick={()=>openEditEventDialog(ev)}>Edit</Button>
+                      <Button size="sm" variant="ghost" onClick={()=>deleteEvent(ev)}>Delete</Button>
+                    </div>
                   </div>
                 ))}
-                {calendarEvents.length === 0 && <div className="text-sm text-gray-500">No events yet.</div>}
+                {sortedEvents.length === 0 && <div className="text-sm text-gray-500">No events yet.</div>}
+              </div>
+              <div className="flex justify-end gap-2 mt-3">
+                <Button size="sm" variant="outline" disabled={eventsPage===1} onClick={()=>setEventsPage(p=>Math.max(1,p-1))}>Prev</Button>
+                <Button size="sm" variant="outline" disabled={eventsPage*PAGE_SIZE>=sortedEvents.length} onClick={()=>setEventsPage(p=>p+1)}>Next</Button>
               </div>
             </CardContent>
           </Card>
@@ -2231,22 +2372,58 @@ const ProjectManagement = () => {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-600 mb-4">Create simple forms to collect work requests and automatically create tasks.</p>
-              <div className="flex gap-2 mb-4">
-                <Button variant="outline" onClick={createWorkRequest}>New Work Request</Button>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Select value={workRequestStatusFilter} onValueChange={(v: any) => setWorkRequestStatusFilter(v)}>
+                  <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="in_review">In review</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                    <SelectItem value="converted">Converted</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={workRequestPriorityFilter} onValueChange={(v: any) => setWorkRequestPriorityFilter(v)}>
+                  <SelectTrigger className="w-[150px]"><SelectValue placeholder="Priority" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All priorities</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={workRequestSort} onValueChange={(v: any) => setWorkRequestSort(v)}>
+                  <SelectTrigger className="w-[150px]"><SelectValue placeholder="Sort" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="newest">Newest</SelectItem>
+                    <SelectItem value="oldest">Oldest</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" onClick={openNewWorkRequestDialog}>New Work Request</Button>
               </div>
               <div className="space-y-2">
-                {workRequests.map(req => (
+                {pagedWorkRequests.map(req => (
                   <div key={req.id} className="p-3 border rounded-lg flex items-center justify-between">
                     <div>
                       <div className="font-medium">{req.title}</div>
                       <div className="text-xs text-gray-500">{req.status} • {req.priority || 'medium'}</div>
                     </div>
-                    {req.status !== 'converted' && (
-                      <Button size="sm" variant="ghost" onClick={() => convertWorkRequestToTask(req)}>Convert to Task</Button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => openEditWorkRequestDialog(req)}>Edit</Button>
+                      <Button size="sm" variant="ghost" onClick={() => deleteWorkRequest(req)}>Delete</Button>
+                      {req.status !== 'converted' && (
+                        <Button size="sm" variant="ghost" onClick={() => convertWorkRequestToTask(req)}>Convert to Task</Button>
+                      )}
+                    </div>
                   </div>
                 ))}
-                {workRequests.length === 0 && <div className="text-sm text-gray-500">No work requests yet.</div>}
+                {filteredSortedWorkRequests.length === 0 && <div className="text-sm text-gray-500">No work requests yet.</div>}
+              </div>
+              <div className="flex justify-end gap-2 mt-3">
+                <Button size="sm" variant="outline" disabled={workRequestPage===1} onClick={()=>setWorkRequestPage(p=>Math.max(1,p-1))}>Prev</Button>
+                <Button size="sm" variant="outline" disabled={workRequestPage*PAGE_SIZE>=filteredSortedWorkRequests.length} onClick={()=>setWorkRequestPage(p=>p+1)}>Next</Button>
               </div>
             </CardContent>
           </Card>
@@ -2259,20 +2436,35 @@ const ProjectManagement = () => {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-600 mb-4">Define measurable goals and link tasks and epics to track progress.</p>
-              <div className="flex gap-2 mb-4">
-                <Button variant="outline" onClick={createGoal}>Create Goal</Button>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Select value={goalsSort} onValueChange={(v:any)=>setGoalsSort(v)}>
+                  <SelectTrigger className="w-[150px]"><SelectValue placeholder="Sort" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="newest">Newest</SelectItem>
+                    <SelectItem value="oldest">Oldest</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" onClick={openNewGoalDialog}>Create Goal</Button>
               </div>
               <div className="space-y-2">
-                {goals.map(g => (
+                {pagedGoals.map(g => (
                   <div key={g.id} className="p-3 border rounded-lg flex items-center justify-between">
                     <div>
                       <div className="font-medium">{g.title}</div>
                       <div className="text-xs text-gray-500">Target: {g.target_date || '—'} • Progress: {g.progress}%</div>
                     </div>
-                    <Badge variant="secondary">{g.progress}%</Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">{g.progress}%</Badge>
+                      <Button size="sm" variant="ghost" onClick={()=>openEditGoalDialog(g)}>Edit</Button>
+                      <Button size="sm" variant="ghost" onClick={()=>deleteGoal(g)}>Delete</Button>
+                    </div>
                   </div>
                 ))}
-                {goals.length === 0 && <div className="text-sm text-gray-500">No goals yet.</div>}
+                {sortedGoals.length === 0 && <div className="text-sm text-gray-500">No goals yet.</div>}
+              </div>
+              <div className="flex justify-end gap-2 mt-3">
+                <Button size="sm" variant="outline" disabled={goalsPage===1} onClick={()=>setGoalsPage(p=>Math.max(1,p-1))}>Prev</Button>
+                <Button size="sm" variant="outline" disabled={goalsPage*PAGE_SIZE>=sortedGoals.length} onClick={()=>setGoalsPage(p=>p+1)}>Next</Button>
               </div>
             </CardContent>
           </Card>
@@ -2743,6 +2935,79 @@ const ProjectManagement = () => {
         onOpenChange={setShowCreateProject}
         onCreateProject={handleCreateProject}
       />
+
+      {/* Work Request Dialog */}
+      <Dialog open={workRequestDialogOpen} onOpenChange={setWorkRequestDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingWorkRequest ? 'Edit Work Request' : 'New Work Request'}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Title" value={workRequestForm.title} onChange={e=>setWorkRequestForm({...workRequestForm, title: e.target.value})} />
+            <Textarea placeholder="Description" value={workRequestForm.description} onChange={e=>setWorkRequestForm({...workRequestForm, description: e.target.value})} />
+            <div className="flex gap-2">
+              <Select value={workRequestForm.priority||'medium'} onValueChange={(v:any)=>setWorkRequestForm({...workRequestForm, priority: v})}>
+                <SelectTrigger className="w-[150px]"><SelectValue placeholder="Priority" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={workRequestForm.status} onValueChange={(v:any)=>setWorkRequestForm({...workRequestForm, status: v})}>
+                <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="new">New</SelectItem>
+                  <SelectItem value="in_review">In review</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="converted">Converted</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={()=>setWorkRequestDialogOpen(false)}>Cancel</Button>
+              <Button onClick={saveWorkRequest}>Save</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Goal Dialog */}
+      <Dialog open={goalDialogOpen} onOpenChange={setGoalDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingGoal ? 'Edit Goal' : 'New Goal'}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Title" value={goalForm.title} onChange={e=>setGoalForm({...goalForm, title: e.target.value})} />
+            <Textarea placeholder="Description" value={goalForm.description} onChange={e=>setGoalForm({...goalForm, description: e.target.value})} />
+            <div className="flex gap-2">
+              <Input type="date" value={goalForm.target_date} onChange={e=>setGoalForm({...goalForm, target_date: e.target.value})} />
+              <Input type="number" min={0} max={100} value={goalForm.progress} onChange={e=>setGoalForm({...goalForm, progress: Number(e.target.value)})} />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={()=>setGoalDialogOpen(false)}>Cancel</Button>
+              <Button onClick={saveGoal}>Save</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Event Dialog */}
+      <Dialog open={eventDialogOpen} onOpenChange={setEventDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingEvent ? 'Edit Event' : 'New Event'}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Title" value={eventForm.title} onChange={e=>setEventForm({...eventForm, title: e.target.value})} />
+            <div className="flex gap-2">
+              <Input type="datetime-local" value={eventForm.start_at} onChange={e=>setEventForm({...eventForm, start_at: e.target.value})} />
+              <Input type="datetime-local" value={eventForm.end_at} onChange={e=>setEventForm({...eventForm, end_at: e.target.value})} />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={()=>setEventDialogOpen(false)}>Cancel</Button>
+              <Button onClick={saveEvent}>Save</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
