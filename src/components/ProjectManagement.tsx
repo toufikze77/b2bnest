@@ -262,21 +262,8 @@ const ProjectManagement = () => {
   const { canAccessFeature } = useSubscription();
   const { toast } = useToast();
   
-  // Check if user can access Project Management features - MUST be before any useState hooks
-  const canAccessPM = canAccessFeature('project-management');
-  console.log('🔧 ProjectManagement - canAccessPM:', canAccessPM, 'user:', !!user);
-  
-  // Early return if user doesn't have access - prevents hook violations
-  if (!canAccessPM) {
-    return (
-      <div className="max-w-4xl mx-auto p-6">
-        <SubscriptionUpgrade 
-          featureName="Project Management" 
-          onUpgrade={() => window.location.reload()}
-        />
-      </div>
-    );
-  }
+  // Always call all hooks first to prevent hook violations
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<'kanban' | 'list' | 'calendar' | 'timeline'>('kanban');
@@ -527,17 +514,22 @@ const ProjectManagement = () => {
     if (!error && data) setCalendarEvents(prev => [...prev, data as unknown as CalendarEventItem]);
   };
 
-  // Access check moved to top of component to prevent hook violations
+  // Check access after hooks are initialized
+  useEffect(() => {
+    const canAccessPM = canAccessFeature('project-management');
+    console.log('🔧 ProjectManagement - Access check:', canAccessPM, 'user:', !!user);
+    setHasAccess(canAccessPM);
+  }, [canAccessFeature, user]);
 
   useEffect(() => {
-    console.log('🔧 ProjectManagement useEffect triggered', { user: !!user, canAccessPM });
-    if (user && canAccessPM) {
+    console.log('🔧 ProjectManagement useEffect triggered', { user: !!user, hasAccess });
+    if (user && hasAccess) {
       loadProjects();
       loadTasks();
     } else {
       setLoading(false);
     }
-  }, [user, canAccessPM]);
+  }, [user, hasAccess]);
 
   // Load projects from database
   const loadProjects = async () => {
@@ -3028,4 +3020,23 @@ const ProjectManagement = () => {
   );
 };
 
-export default ProjectManagement;
+// Add access check wrapper at the end
+const ProjectManagementWrapper = () => {
+  const { canAccessFeature } = useSubscription();
+  
+  // Check access before rendering
+  if (!canAccessFeature('project-management')) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <SubscriptionUpgrade 
+          featureName="Project Management" 
+          onUpgrade={() => window.location.reload()}
+        />
+      </div>
+    );
+  }
+  
+  return <ProjectManagement />;
+};
+
+export default ProjectManagementWrapper;
