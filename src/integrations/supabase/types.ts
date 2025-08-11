@@ -1398,6 +1398,7 @@ export type Database = {
           location: string | null
           position: string | null
           skills: string[] | null
+          theme: string | null
           time_format: string | null
           timezone: string | null
           trial_ends_at: string | null
@@ -1431,6 +1432,7 @@ export type Database = {
           location?: string | null
           position?: string | null
           skills?: string[] | null
+          theme?: string | null
           time_format?: string | null
           timezone?: string | null
           trial_ends_at?: string | null
@@ -1464,6 +1466,7 @@ export type Database = {
           location?: string | null
           position?: string | null
           skills?: string[] | null
+          theme?: string | null
           time_format?: string | null
           timezone?: string | null
           trial_ends_at?: string | null

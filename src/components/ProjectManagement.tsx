@@ -1900,8 +1900,18 @@ const ProjectManagement = () => {
       priority: req.priority || 'medium',
       project_id: targetProjectId
     }).select().single();
-    if (error || !task) return;
-    await supabase.from('work_requests' as any).update({ status: 'converted', created_task_id: task.id }).eq('id', req.id);
+    
+    if (error) {
+      console.error('Error creating task:', error);
+      return;
+    }
+    
+    if (task && 'id' in task) {
+      await supabase.from('work_requests' as any).update({ 
+        status: 'converted', 
+        created_task_id: task.id 
+      }).eq('id', req.id);
+    }
     setWorkRequests(prev => prev.map(w => w.id === req.id ? { ...w, status: 'converted' } : w));
     // add task to local state for immediate visibility
     loadTasks();
@@ -2299,7 +2309,7 @@ const ProjectManagement = () => {
               <Plus className="w-4 h-4 mr-2" /> Create Epic
             </Button>
           </div>
-          <ProjectActivityTimeline />
+          <ProjectActivityTimeline projectId={selectedProject || 'default'} projectName={selectedProject ? projects.find(p => p.id === selectedProject)?.name || 'Project' : 'All Projects'} />
         </TabsContent>
 
         <TabsContent value="kanban" className="mt-6">

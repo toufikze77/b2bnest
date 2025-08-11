@@ -32,6 +32,15 @@ export const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) {
         console.error('Error fetching user settings:', error);
+        setSettings({
+          currency_code: 'USD',
+          timezone: 'UTC',
+          country_code: 'US',
+          language_code: 'en',
+          date_format: 'MM/DD/YYYY',
+          time_format: '12h',
+          theme: 'light'
+        });
         return;
       }
 

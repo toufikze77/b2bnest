@@ -1,6 +1,4 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useUserSettings } from '@/hooks/useUserSettings';
 import { supabase } from '@/integrations/supabase/client';
 
 export type ThemeName = 'light' | 'dark' | 'ocean' | 'emerald' | 'rose';
@@ -34,34 +32,30 @@ function applyThemeToDocument(theme: ThemeName) {
 }
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
-  const { settings } = useUserSettings();
   const [theme, setThemeState] = useState<ThemeName>('light');
 
-  // Initialize theme from user settings or localStorage
+  // Initialize theme from localStorage
   useEffect(() => {
-    const stored = (localStorage.getItem('theme') as ThemeName | null) || null;
-    const fromProfile = (settings as any)?.theme as ThemeName | undefined;
-    const initial: ThemeName = fromProfile || stored || 'light';
-    setThemeState(initial);
-    applyThemeToDocument(initial);
-  }, [settings]);
+    const stored = (localStorage.getItem('theme') as ThemeName | null) || 'light';
+    setThemeState(stored);
+    applyThemeToDocument(stored);
+  }, []);
 
   const setTheme = useCallback(async (newTheme: ThemeName) => {
     setThemeState(newTheme);
     applyThemeToDocument(newTheme);
     localStorage.setItem('theme', newTheme);
 
-    // Persist to Supabase profile if logged in and column exists
+    // Persist to Supabase profile if logged in
     try {
+      const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase.from('profiles' as any).update({ theme: newTheme }).eq('id', user.id);
+        await supabase.from('profiles').update({ theme: newTheme }).eq('id', user.id);
       }
     } catch (e) {
-      // non-fatal if column not present yet
       console.warn('Unable to persist theme to profile:', e);
     }
-  }, [user]);
+  }, []);
 
   const value = useMemo(() => ({
     theme,
