@@ -261,6 +261,23 @@ const ProjectManagement = () => {
   const { user } = useAuth();
   const { canAccessFeature } = useSubscription();
   const { toast } = useToast();
+  
+  // Check if user can access Project Management features - MUST be before any useState hooks
+  const canAccessPM = canAccessFeature('project-management');
+  console.log('🔧 ProjectManagement - canAccessPM:', canAccessPM, 'user:', !!user);
+  
+  // Early return if user doesn't have access - prevents hook violations
+  if (!canAccessPM) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <SubscriptionUpgrade 
+          featureName="Project Management" 
+          onUpgrade={() => window.location.reload()}
+        />
+      </div>
+    );
+  }
+  
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<'kanban' | 'list' | 'calendar' | 'timeline'>('kanban');
   const [activeTab, setActiveTab] = useState('summary');
@@ -510,9 +527,7 @@ const ProjectManagement = () => {
     if (!error && data) setCalendarEvents(prev => [...prev, data as unknown as CalendarEventItem]);
   };
 
-  // Check if user can access Project Management features
-  const canAccessPM = canAccessFeature('project-management');
-  console.log('🔧 ProjectManagement - canAccessPM:', canAccessPM, 'user:', !!user);
+  // Access check moved to top of component to prevent hook violations
 
   useEffect(() => {
     console.log('🔧 ProjectManagement useEffect triggered', { user: !!user, canAccessPM });
@@ -736,16 +751,7 @@ const ProjectManagement = () => {
     }
   };
 
-  if (!canAccessPM) {
-    return (
-      <div className="max-w-4xl mx-auto p-6">
-        <SubscriptionUpgrade 
-          featureName="Project Management" 
-          onUpgrade={() => window.location.reload()}
-        />
-      </div>
-    );
-  }
+  // Access check moved to top of component
 
   if (loading) {
     return (
