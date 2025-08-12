@@ -302,6 +302,17 @@ const ProjectManagement = () => {
   const [newListTitle, setNewListTitle] = useState<string>('');
   const [cardComposerOpen, setCardComposerOpen] = useState<Record<string, boolean>>({});
   const [newCardTitle, setNewCardTitle] = useState<Record<string, string>>({});
+  // Additional Trello-like states for selection, labels, checklist, due dates and ordering
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+  const [lastFocusedTaskId, setLastFocusedTaskId] = useState<string | null>(null);
+  const [labelsDialogOpen, setLabelsDialogOpen] = useState<boolean>(false);
+  const [labelsTask, setLabelsTask] = useState<Task | null>(null);
+  const [checklistDialogOpen, setChecklistDialogOpen] = useState<boolean>(false);
+  const [checklistTask, setChecklistTask] = useState<Task | null>(null);
+  const [dueDateDialogOpen, setDueDateDialogOpen] = useState<boolean>(false);
+  const [dueDateTask, setDueDateTask] = useState<Task | null>(null);
+  const [boardLabels, setBoardLabels] = useState<Record<string, LabelDef[]>>({});
+  const [columnTaskOrder, setColumnTaskOrder] = useState<Record<string, string[]>>({});
   
   const getTagColor = (tag: string) => {
     const palette = ['bg-red-500','bg-orange-500','bg-amber-500','bg-yellow-500','bg-lime-500','bg-green-500','bg-emerald-500','bg-teal-500','bg-cyan-500','bg-sky-500','bg-blue-500','bg-indigo-500','bg-violet-500','bg-purple-500','bg-fuchsia-500','bg-pink-500','bg-rose-500'];
@@ -2511,6 +2522,43 @@ const ProjectManagement = () => {
         </Card>
       </div>
     );
+  };
+
+  // Archive task (best-effort persistence)
+  const handleTaskArchive = async (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    // Update local state first
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, archived: true } : t));
+    // Add activity log
+    const activity: ActivityLog = {
+      id: `activity-${Date.now()}`,
+      type: 'task_updated',
+      description: `Task "${task.title}" archived`,
+      user: user?.email || 'Unknown User',
+      timestamp: new Date(),
+      projectId: task.project,
+      taskId: task.id
+    };
+    setActivityLogs(prev => [activity, ...prev]);
+    toast({ title: 'Task Archived', description: `"${task.title}" moved to archive.` });
+    // Persist to supabase where possible
+    try {
+      const { error } = await supabase.from('todos').update({
+        // optional columns
+        // @ts-ignore
+        is_archived: true,
+      }).eq('id', taskId);
+      if (error) throw error;
+    } catch (e) {
+      try {
+        await supabase.from('todos').update({
+          // fallback alternative
+          // @ts-ignore
+          archived_at: new Date().toISOString(),
+        }).eq('id', taskId);
+      } catch {}
+    }
   };
 
   return (
