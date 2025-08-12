@@ -1,7 +1,7 @@
 // Shared crypto utility for Edge Functions
 const algorithm = 'AES-GCM';
 
-export function encrypt(text: string, secret: string): string {
+export function encrypt(text: string, secret: string): Promise<string> {
   const key = new TextEncoder().encode(secret.padEnd(32, '0').slice(0, 32));
   const iv = crypto.getRandomValues(new Uint8Array(12));
   

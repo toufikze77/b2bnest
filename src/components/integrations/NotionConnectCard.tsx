@@ -21,12 +21,12 @@ const NotionConnectCard = ({ userId }: Props) => {
     try {
       const { data, error } = await supabase
         .from('user_integrations')
-        .select('access_token, is_connected, metadata')
+        .select('is_connected, metadata')
         .eq('user_id', userId)
         .eq('integration_name', 'notion')
         .maybeSingle();
 
-      if (!error && data?.access_token) {
+      if (!error && data?.is_connected) {
         setConnected(true);
         if (data.metadata) {
           const metadata = typeof data.metadata === 'string' ? JSON.parse(data.metadata) : data.metadata;
