@@ -432,6 +432,29 @@ const ProjectManagement = () => {
   const [teamMembers, setTeamMembers] = useState<Record<string, TeamMemberItem[]>>({});
   const [calendarEvents, setCalendarEvents] = useState<CalendarEventItem[]>([]);
 
+  // Work Requests dialogs and filters - moved before returns to satisfy hooks rules
+  const [workRequestDialogOpen, setWorkRequestDialogOpen] = useState(false);
+  const [editingWorkRequest, setEditingWorkRequest] = useState<WorkRequest | null>(null);
+  const [workRequestForm, setWorkRequestForm] = useState<{ title: string; description: string; priority: WorkRequest['priority']; status: WorkRequest['status']}>({ title: '', description: '', priority: 'medium', status: 'new' });
+  const [workRequestStatusFilter, setWorkRequestStatusFilter] = useState<'all' | WorkRequest['status']>('all');
+  const [workRequestPriorityFilter, setWorkRequestPriorityFilter] = useState<'all' | NonNullable<WorkRequest['priority']>>('all');
+  const [workRequestSort, setWorkRequestSort] = useState<'newest' | 'oldest'>('newest');
+  const [workRequestPage, setWorkRequestPage] = useState(1);
+
+  // Goals dialogs and filters
+  const [goalDialogOpen, setGoalDialogOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<GoalItem | null>(null);
+  const [goalForm, setGoalForm] = useState<{ title: string; description: string; target_date: string; progress: number }>({ title: '', description: '', target_date: '', progress: 0 });
+  const [goalsSort, setGoalsSort] = useState<'newest' | 'oldest'>('newest');
+  const [goalsPage, setGoalsPage] = useState(1);
+
+  // Calendar event dialogs and filters
+  const [eventDialogOpen, setEventDialogOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEventItem | null>(null);
+  const [eventForm, setEventForm] = useState<{ title: string; start_at: string; end_at: string }>({ title: '', start_at: '', end_at: '' });
+  const [eventsSort, setEventsSort] = useState<'newest' | 'oldest'>('newest');
+  const [eventsPage, setEventsPage] = useState(1);
+
   // Fetch helpers
   const fetchWorkRequests = async () => {
     const { data, error } = await supabase.from('work_requests' as any).select('*').order('created_at', { ascending: false });
@@ -1917,14 +1940,6 @@ const ProjectManagement = () => {
 
   const PAGE_SIZE = 10;
 
-  // Work Requests dialogs and filters
-  const [workRequestDialogOpen, setWorkRequestDialogOpen] = useState(false);
-  const [editingWorkRequest, setEditingWorkRequest] = useState<WorkRequest | null>(null);
-  const [workRequestForm, setWorkRequestForm] = useState<{ title: string; description: string; priority: WorkRequest['priority']; status: WorkRequest['status']}>({ title: '', description: '', priority: 'medium', status: 'new' });
-  const [workRequestStatusFilter, setWorkRequestStatusFilter] = useState<'all' | WorkRequest['status']>('all');
-  const [workRequestPriorityFilter, setWorkRequestPriorityFilter] = useState<'all' | NonNullable<WorkRequest['priority']>>('all');
-  const [workRequestSort, setWorkRequestSort] = useState<'newest' | 'oldest'>('newest');
-  const [workRequestPage, setWorkRequestPage] = useState(1);
 
   const openNewWorkRequestDialog = () => {
     setEditingWorkRequest(null);
@@ -1967,11 +1982,6 @@ const ProjectManagement = () => {
   const pagedWorkRequests = filteredSortedWorkRequests.slice((workRequestPage-1)*PAGE_SIZE, workRequestPage*PAGE_SIZE);
 
   // Goals dialogs and filters
-  const [goalDialogOpen, setGoalDialogOpen] = useState(false);
-  const [editingGoal, setEditingGoal] = useState<GoalItem | null>(null);
-  const [goalForm, setGoalForm] = useState<{ title: string; description: string; target_date: string; progress: number }>({ title: '', description: '', target_date: '', progress: 0 });
-  const [goalsSort, setGoalsSort] = useState<'newest' | 'oldest'>('newest');
-  const [goalsPage, setGoalsPage] = useState(1);
   const openNewGoalDialog = () => {
     setEditingGoal(null);
     setGoalForm({ title: '', description: '', target_date: '', progress: 0 });
@@ -2005,11 +2015,6 @@ const ProjectManagement = () => {
   const pagedGoals = sortedGoals.slice((goalsPage-1)*PAGE_SIZE, goalsPage*PAGE_SIZE);
 
   // Calendar event dialogs and filters
-  const [eventDialogOpen, setEventDialogOpen] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<CalendarEventItem | null>(null);
-  const [eventForm, setEventForm] = useState<{ title: string; start_at: string; end_at: string }>({ title: '', start_at: '', end_at: '' });
-  const [eventsSort, setEventsSort] = useState<'newest' | 'oldest'>('newest');
-  const [eventsPage, setEventsPage] = useState(1);
   const openNewEventDialog = () => {
     setEditingEvent(null);
     setEventForm({ title: '', start_at: '', end_at: '' });
