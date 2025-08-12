@@ -2423,10 +2423,27 @@ const ProjectManagement = () => {
           <CardHeader><CardTitle className="text-sm">Create Team</CardTitle></CardHeader>
           <CardContent className="flex gap-2">
             <Input placeholder="Team name" value={newTeamName} onChange={(e)=>setNewTeamName(e.target.value)} />
-            <Button onClick={() => {
+            <Button onClick={async () => {
               if (!newTeamName.trim()) return;
-              const team: Team = { id: `team-${Date.now()}`, name: newTeamName.trim(), members: [] };
+              const name = newTeamName.trim();
+              let createdTeam: Team | null = null;
+              try {
+                const { data } = await supabase
+                  .from('teams')
+                  // @ts-ignore optional teams table
+                  .insert({ name, members: [], user_id: user?.id })
+                  .select()
+                  .single();
+                if (data) {
+                  createdTeam = { id: data.id, name: data.name, members: Array.isArray(data.members) ? data.members : [] } as Team;
+                }
+              } catch (e) {
+                console.warn('Supabase team insert failed, using local-only team:', e);
+              }
+              const team: Team = createdTeam ?? { id: `team-${Date.now()}`, name, members: [] };
               setTeams(prev => [...prev, team]);
+              setSelectedTeam(team.id);
+              setSelectedTeamLocal(team.id);
               setNewTeamName('');
               toast({ title: 'Team created', description: `${team.name} created.` });
             }}>Create team</Button>
@@ -2444,10 +2461,28 @@ const ProjectManagement = () => {
                 </SelectContent>
               </Select>
               <Input placeholder="Add person (name)" value={newMember} onChange={(e)=>setNewMember(e.target.value)} />
-              <Button onClick={() => {
+              <Button onClick={async () => {
                 if (!newMember.trim()) return;
-                setTeams(prev => prev.map(t => t.id === selectedTeam ? { ...t, members: [...t.members, newMember.trim()] } : t));
+                const targetTeamId = selectedTeam !== 'all' ? selectedTeam : selectedTeamLocal;
+                if (!targetTeamId || targetTeamId === 'all') {
+                  toast({ title: 'Select a team', description: 'Please select a team to add members.', variant: 'destructive' });
+                  return;
+                }
+                const memberName = newMember.trim();
+                setTeams(prev => prev.map(t => t.id === targetTeamId ? { ...t, members: [...t.members, memberName] } : t));
                 setNewMember('');
+                try {
+                  // Persist best-effort
+                  const teamRec = teams.find(t => t.id === targetTeamId);
+                  const nextMembers = [...(teamRec?.members || []), memberName];
+                  await supabase
+                    .from('teams')
+                    // @ts-ignore optional teams table
+                    .update({ members: nextMembers })
+                    .eq('id', targetTeamId);
+                } catch (e) {
+                  console.warn('Persist team members failed:', e);
+                }
                 toast({ title: 'Member added', description: 'Person added to team.' });
               }}>Add person</Button>
             </div>
