@@ -203,7 +203,7 @@ const projectManagementTemplate = {
 };
 
 // Main Component - exported as default export
-const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null }) => {
+const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null, teamId = 'all', teamMembers = [] }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -253,23 +253,43 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null 
     }
   }, [editTask]);
 
-  // Fetch available users from Supabase
+  // Fetch available users from Supabase, scoped by team when possible
   useEffect(() => {
     const fetchUsers = async () => {
       setLoadingUsers(true);
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from('profiles')
-          .select('id, display_name, email, full_name')
+          .select('id, display_name, email, full_name, team_id')
           .eq('is_active', true)
           .order('display_name');
 
-        if (error) {
-          console.error('Error fetching users:', error);
-          return;
+        if (teamId && teamId !== 'all') {
+          // Best-effort team scoping if column exists
+          try {
+            // @ts-ignore optional column
+            query = query.eq('team_id', teamId);
+          } catch {}
         }
 
-        setAvailableUsers(data || []);
+        const { data, error } = await query;
+
+        if (error) {
+          console.error('Error fetching users:', error);
+          // fallback: no profiles filtering
+        }
+
+        let users = data || [];
+        // If teamId is set but query did not filter, attempt client-side filter by provided teamMembers names
+        if (teamId && teamId !== 'all' && Array.isArray(teamMembers) && teamMembers.length > 0) {
+          const names = new Set(teamMembers.map((n:string)=>n.toLowerCase()));
+          users = users.filter((u:any) => {
+            const dn = (u.display_name || u.full_name || '').toLowerCase();
+            return names.has(dn);
+          });
+        }
+
+        setAvailableUsers(users);
       } catch (error) {
         console.error('Error fetching users:', error);
       } finally {
@@ -280,7 +300,7 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null 
     if (isOpen) {
       fetchUsers();
     }
-  }, [isOpen]);
+  }, [isOpen, teamId, Array.isArray(teamMembers) ? teamMembers.join('|') : '']);
 
   const handleSubmit = (e) => {
     e.preventDefault();

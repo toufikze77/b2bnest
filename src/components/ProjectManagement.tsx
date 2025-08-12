@@ -2737,6 +2737,8 @@ const ProjectManagement = () => {
         isOpen={showCreateTask}
         onOpenChange={setShowCreateTask}
         onCreateTodo={handleCreateTask}
+        teamId={selectedTeam}
+        teamMembers={(teams.find(t=>t.id===selectedTeam)?.members)||[]}
       />
 
       {/* Edit Task Dialog */}
@@ -2755,6 +2757,8 @@ const ProjectManagement = () => {
             setEditingTask(null);
             toast({ title: "Task Updated", description: "Task updated successfully." });
           }}
+          teamId={selectedTeam}
+          teamMembers={(teams.find(t=>t.id===selectedTeam)?.members)||[]}
         />
       )}
 
