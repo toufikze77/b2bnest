@@ -2278,7 +2278,63 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      advertisements_public: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          currency: string | null
+          description: string | null
+          featured_until: string | null
+          id: string | null
+          image_urls: string[] | null
+          is_active: boolean | null
+          is_service: boolean | null
+          price: number | null
+          subcategory: string | null
+          title: string | null
+          updated_at: string | null
+          user_id: string | null
+          view_count: number | null
+          website_url: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          featured_until?: string | null
+          id?: string | null
+          image_urls?: string[] | null
+          is_active?: boolean | null
+          is_service?: boolean | null
+          price?: number | null
+          subcategory?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          view_count?: number | null
+          website_url?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          featured_until?: string | null
+          id?: string | null
+          image_urls?: string[] | null
+          is_active?: boolean | null
+          is_service?: boolean | null
+          price?: number | null
+          subcategory?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          view_count?: number | null
+          website_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_2fa_rate_limit: {
@@ -2297,6 +2353,13 @@ export type Database = {
       cleanup_expired_2fa_codes: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      get_advertisement_contact_info: {
+        Args: { ad_id: string }
+        Returns: {
+          contact_email: string
+          contact_phone: string
+        }[]
       }
       has_role: {
         Args: {
