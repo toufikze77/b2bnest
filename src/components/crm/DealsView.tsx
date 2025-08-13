@@ -1,346 +1,232 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { useUserSettings } from '@/hooks/useUserSettings';
-import { formatCurrency } from '@/utils/currencyUtils';
-import { Plus, Calendar, DollarSign, Edit, Trash2, MoreHorizontal } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import CurrencySelector from './CurrencySelector';
+// hooks/useDragAndDrop.ts
+import { useState } from 'react';
+import { 
+  DragStartEvent, 
+  DragEndEvent, 
+  DragOverEvent,
+  PointerSensor,
+  useSensor,
+  useSensors
+} from '@dnd-kit/core';
 
-// Updated interface to match database schema
-interface Deal {
+export interface DragDropConfig<T = any> {
+  onItemMove?: (itemId: string, fromColumn: string, toColumn: string) => Promise<void>;
+  onItemReorder?: (itemId: string, fromIndex: number, toIndex: number, columnId: string) => Promise<void>;
+  onDragStart?: (item: T) => void;
+  onDragEnd?: (item: T) => void;
+}
+
+export interface Column {
   id: string;
   title: string;
-  value: number | null;
-  stage: string | null;
-  contact_id: string | null;
-  probability: number | null;
-  close_date: string | null;
-  user_id: string;
-  notes: string | null;
-  currency?: string | null;
-  created_at: string;
-  updated_at: string;
+  color?: string;
+  items: any[];
 }
 
-interface DealsViewProps {
-  deals: Deal[];
-  onAddDeal?: (dealData: Partial<Deal>) => Promise<Deal | undefined>;
-  onUpdateDeal?: (dealId: string, dealData: Partial<Deal>) => Promise<Deal | undefined>;
-  onDeleteDeal?: (dealId: string) => Promise<void>;
-  onRefresh?: () => Promise<void>;
+export const useDragAndDrop = <T = any>(config: DragDropConfig<T> = {}) => {
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeItem, setActiveItem] = useState<T | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    setActiveId(active.id as string);
+    
+    const item = active.data.current?.item as T;
+    setActiveItem(item);
+    config.onDragStart?.(item);
+  };
+
+  const handleDragOver = async (event: DragOverEvent) => {
+    const { active, over } = event;
+    
+    if (!over) return;
+
+    const activeType = active.data.current?.type;
+    const overType = over.data.current?.type;
+
+    // Handle item moving between columns
+    if (activeType === 'item' && overType === 'column') {
+      const activeItem = active.data.current?.item;
+      const activeColumn = active.data.current?.columnId;
+      const overColumn = over.data.current?.column;
+      
+      if (activeItem && overColumn && activeColumn !== overColumn.id) {
+        await config.onItemMove?.(activeItem.id, activeColumn, overColumn.id);
+      }
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (activeItem) {
+      config.onDragEnd?.(activeItem);
+    }
+    
+    setActiveId(null);
+    setActiveItem(null);
+
+    if (!over) return;
+
+    const activeType = active.data.current?.type;
+    const overType = over.data.current?.type;
+
+    // Handle final drop logic
+    if (activeType === 'item') {
+      if (overType === 'column') {
+        const activeItem = active.data.current?.item;
+        const activeColumn = active.data.current?.columnId;
+        const overColumn = over.data.current?.column;
+        
+        if (activeItem && overColumn && activeColumn !== overColumn.id) {
+          await config.onItemMove?.(activeItem.id, activeColumn, overColumn.id);
+        }
+      } else if (overType === 'item') {
+        // Handle reordering within the same column
+        const activeItem = active.data.current?.item;
+        const activeColumnId = active.data.current?.columnId;
+        const overItem = over.data.current?.item;
+        const overColumnId = over.data.current?.columnId;
+        
+        if (activeItem && overItem && activeColumnId === overColumnId) {
+          // You would need to pass column data to determine indices
+          // This is a simplified version
+          await config.onItemReorder?.(activeItem.id, 0, 1, activeColumnId);
+        }
+      }
+    }
+  };
+
+  return {
+    sensors,
+    activeId,
+    activeItem,
+    handleDragStart,
+    handleDragOver,
+    handleDragEnd,
+  };
+};
+
+// components/DragDrop/DraggableCard.tsx
+import React, { ReactNode } from 'react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { Card, CardContent } from '@/components/ui/card';
+import { GripVertical } from 'lucide-react';
+
+interface DraggableCardProps {
+  id: string;
+  item: any;
+  columnId: string;
+  children: ReactNode;
+  className?: string;
+  showGrip?: boolean;
 }
 
-const DealsView = ({ deals, onAddDeal, onUpdateDeal, onDeleteDeal, onRefresh }: DealsViewProps) => {
-  const { toast } = useToast();
-  const { settings } = useUserSettings();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    value: '',
-    stage: 'prospecting',
-    probability: '50',
-    close_date: '',
-    notes: '',
-    currency: settings?.currency_code || 'USD'
+export const DraggableCard: React.FC<DraggableCardProps> = ({
+  id,
+  item,
+  columnId,
+  children,
+  className = '',
+  showGrip = true,
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id,
+    data: {
+      type: 'item',
+      item,
+      columnId,
+    },
   });
-  const [editFormData, setEditFormData] = useState({
-    title: '',
-    value: '',
-    stage: 'prospecting',
-    probability: '50',
-    close_date: '',
-    notes: '',
-    currency: settings?.currency_code || 'USD'
-  });
 
-  const stageColumns = [
-    { id: 'prospecting', title: 'Prospecting', color: 'bg-gray-100' },
-    { id: 'qualification', title: 'Qualification', color: 'bg-blue-100' },
-    { id: 'proposal', title: 'Proposal', color: 'bg-yellow-100' },
-    { id: 'negotiation', title: 'Negotiation', color: 'bg-orange-100' },
-    { id: 'closed', title: 'Closed Won', color: 'bg-green-100' }
-  ];
-
-  const handleAddDeal = async () => {
-    if (!formData.title.trim()) {
-      toast({
-        title: "Error",
-        description: "Deal title is required",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const dealData = {
-      ...formData,
-      value: formData.value ? parseFloat(formData.value) : 0,
-      probability: parseInt(formData.probability)
-    };
-
-    const result = await onAddDeal?.(dealData);
-    if (result) {
-      setIsDialogOpen(false);
-      setFormData({
-        title: '',
-        value: '',
-        stage: 'prospecting',
-        probability: '50',
-        close_date: '',
-        notes: '',
-        currency: settings?.currency_code || 'USD'
-      });
-      await onRefresh?.();
-    }
-  };
-
-  const handleEditDeal = (deal: Deal) => {
-    setEditingDeal(deal);
-    setEditFormData({
-      title: deal.title || '',
-      value: deal.value?.toString() || '',
-      stage: deal.stage || 'prospecting',
-      probability: deal.probability?.toString() || '50',
-      close_date: deal.close_date || '',
-      notes: deal.notes || '',
-      currency: deal.currency || settings?.currency_code || 'USD'
-    });
-    setIsEditDialogOpen(true);
-  };
-
-  const handleUpdateDeal = async () => {
-    if (!editingDeal || !editFormData.title.trim()) {
-      toast({
-        title: "Error",
-        description: "Deal title is required",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const dealData = {
-      ...editFormData,
-      value: editFormData.value ? parseFloat(editFormData.value) : 0,
-      probability: parseInt(editFormData.probability)
-    };
-
-    const result = await onUpdateDeal?.(editingDeal.id, dealData);
-    if (result) {
-      setIsEditDialogOpen(false);
-      setEditingDeal(null);
-      await onRefresh?.();
-    }
-  };
-
-  const handleDeleteDeal = async (dealId: string) => {
-    if (window.confirm('Are you sure you want to delete this deal?')) {
-      await onDeleteDeal?.(dealId);
-      await onRefresh?.();
-    }
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header with Add Deal Button */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Sales Pipeline</h2>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Deal
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Deal</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <Input 
-                placeholder="Deal Title *" 
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <Input 
-                  placeholder="Deal Value" 
-                  type="number" 
-                  value={formData.value}
-                  onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-                />
-                <CurrencySelector 
-                  value={formData.currency}
-                  onValueChange={(currency) => setFormData({ ...formData, currency })}
-                />
-              </div>
-              <Select value={formData.stage} onValueChange={(value) => setFormData({ ...formData, stage: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Stage" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="prospecting">Prospecting</SelectItem>
-                  <SelectItem value="qualification">Qualification</SelectItem>
-                  <SelectItem value="proposal">Proposal</SelectItem>
-                  <SelectItem value="negotiation">Negotiation</SelectItem>
-                  <SelectItem value="closed">Closed Won</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input 
-                placeholder="Probability (%)" 
-                type="number" 
-                min="0" 
-                max="100"
-                value={formData.probability}
-                onChange={(e) => setFormData({ ...formData, probability: e.target.value })}
-              />
-              <Input 
-                placeholder="Expected Close Date" 
-                type="date" 
-                value={formData.close_date}
-                onChange={(e) => setFormData({ ...formData, close_date: e.target.value })}
-              />
-              <Input 
-                placeholder="Notes (optional)" 
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              />
-              <Button className="w-full" onClick={handleAddDeal}>
-                Add Deal
-              </Button>
+    <Card
+      ref={setNodeRef}
+      style={style}
+      className={`cursor-pointer hover:shadow-md transition-shadow ${
+        isDragging ? 'opacity-50 rotate-2' : ''
+      } ${className}`}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-start gap-2">
+          {showGrip && (
+            <div
+              className="cursor-grab hover:cursor-grabbing text-gray-400 hover:text-gray-600 mt-1"
+              {...attributes}
+              {...listeners}
+            >
+              <GripVertical className="w-4 h-4" />
             </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Edit Deal Dialog */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Deal</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <Input 
-                placeholder="Deal Title *" 
-                value={editFormData.title}
-                onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <Input 
-                  placeholder="Deal Value" 
-                  type="number" 
-                  value={editFormData.value}
-                  onChange={(e) => setEditFormData({ ...editFormData, value: e.target.value })}
-                />
-                <CurrencySelector 
-                  value={editFormData.currency}
-                  onValueChange={(currency) => setEditFormData({ ...editFormData, currency })}
-                />
-              </div>
-              <Select value={editFormData.stage} onValueChange={(value) => setEditFormData({ ...editFormData, stage: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Stage" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="prospecting">Prospecting</SelectItem>
-                  <SelectItem value="qualification">Qualification</SelectItem>
-                  <SelectItem value="proposal">Proposal</SelectItem>
-                  <SelectItem value="negotiation">Negotiation</SelectItem>
-                  <SelectItem value="closed">Closed Won</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input 
-                placeholder="Probability (%)" 
-                type="number" 
-                min="0" 
-                max="100"
-                value={editFormData.probability}
-                onChange={(e) => setEditFormData({ ...editFormData, probability: e.target.value })}
-              />
-              <Input 
-                placeholder="Expected Close Date" 
-                type="date" 
-                value={editFormData.close_date}
-                onChange={(e) => setEditFormData({ ...editFormData, close_date: e.target.value })}
-              />
-              <Input 
-                placeholder="Notes (optional)" 
-                value={editFormData.notes}
-                onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
-              />
-              <Button className="w-full" onClick={handleUpdateDeal}>
-                Update Deal
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Pipeline Kanban View */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {stageColumns.map(stage => (
-          <div key={stage.id} className={`${stage.color} rounded-lg p-4 min-h-[600px]`}>
-            <h3 className="font-semibold mb-4 flex items-center justify-between">
-              {stage.title}
-              <Badge variant="secondary">
-                {deals.filter(deal => deal.stage === stage.id).length}
-              </Badge>
-            </h3>
-            <div className="space-y-3">
-              {deals
-                .filter(deal => deal.stage === stage.id)
-                .map(deal => (
-                  <Card key={deal.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium">{deal.title}</h4>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            <DropdownMenuItem onClick={() => handleEditDeal(deal)}>
-                              <Edit className="w-4 h-4 mr-2" />
-                              Edit Deal
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleDeleteDeal(deal.id)}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Delete Deal
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-2">
-                        {deal.contact_id ? `Contact ID: ${deal.contact_id}` : 'No contact assigned'}
-                      </p>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="font-semibold text-green-600">
-                          {formatCurrency(deal.value || 0, deal.currency || settings?.currency_code || 'USD')}
-                        </span>
-                        <Badge variant="outline">{deal.probability || 0}%</Badge>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Close: {deal.close_date ? new Date(deal.close_date).toLocaleDateString() : 'No date set'}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-            </div>
+          )}
+          <div className="flex-1">
+            {children}
           </div>
-        ))}
-      </div>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
-export default DealsView;
+// components/DragDrop/DroppableColumn.tsx
+import React, { ReactNode } from 'react';
+import { useDroppable } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { Badge } from '@/components/ui/badge';
+
+interface DroppableColumnProps {
+  id: string;
+  title: string;
+  items: any[];
+  color?: string;
+  children: ReactNode;
+  className?: string;
+  showCount?: boolean;
+  subtitle?: string;
+}
+
+export const DroppableColumn: React.FC<DroppableColumnProps> = ({
+  id,
+  title,
+  items,
+  color = 'bg-gray-100 border-gray-300',
+  children,
+  className = '',
+  showCount = true,
+  subtitle,
+}) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id,
+    data: {
+      type: 'column',
+      column: { id, title, color },
+    },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`${color} border-2 border-dashed rounded-lg p-4 min-h-[500px] min-w-[300px] transition-colors ${
+        isOver ? 'border-solid bg-opacity-50' : ''
+      } ${className
