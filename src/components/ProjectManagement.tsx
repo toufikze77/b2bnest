@@ -508,8 +508,40 @@ const ProjectManagement = () => {
     const title = window.prompt('Goal title');
     if (!title) return;
     const target = window.prompt('Target date (YYYY-MM-DD) optional') || null;
-    const { data, error } = await supabase.from('goals' as any).insert({ title, target_date: target, progress: 0 }).select().single();
-    if (!error && data) setGoals(prev => [data as unknown as GoalItem, ...prev]);
+    
+    try {
+      const { data, error } = await supabase.from('goals' as any).insert({ 
+        title, 
+        target_date: target, 
+        progress: 0,
+        user_id: user?.id // Add user_id to ensure proper ownership
+      }).select().single();
+      
+      if (error) {
+        console.error('Error creating goal:', error);
+        toast({
+          title: "Error",
+          description: "Failed to create goal. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (data) {
+        setGoals(prev => [data as unknown as GoalItem, ...prev]);
+        toast({
+          title: "Success",
+          description: "Goal created successfully!",
+        });
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    }
   };
 
   const createTeam = async () => {
