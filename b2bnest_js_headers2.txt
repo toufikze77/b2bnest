@@ -1,0 +1,13 @@
+HTTP/2 200 
+date: Fri, 08 Aug 2025 12:18:38 GMT
+content-type: text/javascript; charset=utf-8
+content-length: 3381272
+cf-ray: 96bef515be218969-PDX
+access-control-allow-origin: *
+etag: "8e4a799150dbdfd04869f15c498e0922"
+access-control-allow-headers: *
+access-control-allow-methods: GET, HEAD, PUT, OPTIONS
+x-deployment-sha: 33a809c3e4d64db82507b59a7cb75f97ca4a6312
+vary: Accept-Encoding
+server: cloudflare
+
