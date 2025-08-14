@@ -46,7 +46,15 @@ const SortableItem = ({ id, children }: { id: string; children: React.ReactNode 
   );
 };
 
-const DealsView = ({ deals, onRefresh }: { deals: Deal[]; onRefresh: () => void }) => {
+interface DealsViewProps {
+  deals: Deal[];
+  onRefresh: () => void;
+  onAddDeal?: (dealData: Partial<Deal>) => Promise<any>;
+  onUpdateDeal?: (dealId: string, dealData: Partial<Deal>) => Promise<any>;
+  onDeleteDeal?: (dealId: string) => Promise<void>;
+}
+
+const DealsView = ({ deals, onRefresh }: DealsViewProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [localDeals, setLocalDeals] = useState<Deal[]>([]);
@@ -64,11 +72,14 @@ const DealsView = ({ deals, onRefresh }: { deals: Deal[]; onRefresh: () => void 
         id: deal.id,
         sort_order: index,
       }));
-      // Bulk update in Supabase
-      const { error } = await supabase
-        .from("crm_deals")
-        .upsert(updates, { onConflict: "id" });
-      if (error) throw error;
+      // Bulk update in Supabase using individual updates
+      for (const update of updates) {
+        const { error } = await supabase
+          .from("crm_deals")
+          .update({ sort_order: update.sort_order })
+          .eq('id', update.id);
+        if (error) throw error;
+      }
       toast({ title: "Order Saved", description: "Pipeline order updated successfully." });
     } catch (error: any) {
       console.error(error);
