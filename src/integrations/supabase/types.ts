@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -592,6 +592,7 @@ export type Database = {
           id: string
           notes: string | null
           probability: number | null
+          sort_order: number | null
           stage: string | null
           title: string
           updated_at: string
@@ -606,6 +607,7 @@ export type Database = {
           id?: string
           notes?: string | null
           probability?: number | null
+          sort_order?: number | null
           stage?: string | null
           title: string
           updated_at?: string
@@ -620,6 +622,7 @@ export type Database = {
           id?: string
           notes?: string | null
           probability?: number | null
+          sort_order?: number | null
           stage?: string | null
           title?: string
           updated_at?: string
@@ -2344,10 +2347,10 @@ export type Database = {
       check_trial_status: {
         Args: { user_id_param: string }
         Returns: {
-          is_trial_active: boolean
-          trial_expired: boolean
           days_remaining: number
+          is_trial_active: boolean
           trial_ends_at: string
+          trial_expired: boolean
         }[]
       }
       cleanup_expired_2fa_codes: {
@@ -2363,8 +2366,8 @@ export type Database = {
       }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
@@ -2374,13 +2377,13 @@ export type Database = {
       }
       log_user_action: {
         Args: {
-          p_user_id: string
           p_action: string
-          p_resource_type: string
-          p_resource_id?: string
           p_details?: Json
           p_ip_address?: unknown
+          p_resource_id?: string
+          p_resource_type: string
           p_user_agent?: string
+          p_user_id: string
         }
         Returns: string
       }
