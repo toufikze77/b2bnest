@@ -920,11 +920,11 @@ const ProjectManagement = () => {
       </Card>
 
       {/* Kanban Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {statusColumns.map(column => (
           <div 
             key={column.id} 
-            className={`${column.color} rounded-lg p-4 min-h-[700px] animate-fade-in`}
+            className={`${column.color} rounded-lg p-3 min-h-[400px] animate-fade-in`}
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, column.id)}
           >

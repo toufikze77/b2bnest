@@ -102,23 +102,65 @@ const DealsView = ({ deals, onRefresh }: DealsViewProps) => {
     }
   };
 
+  // Group deals by stage
+  const stages = ['lead', 'qualified', 'proposal', 'negotiation', 'closed'];
+  const stageColors = {
+    lead: 'bg-gray-100',
+    qualified: 'bg-blue-100', 
+    proposal: 'bg-yellow-100',
+    negotiation: 'bg-purple-100',
+    closed: 'bg-green-100'
+  };
+
+  const dealsByStage = stages.reduce((acc, stage) => {
+    acc[stage] = localDeals.filter(deal => deal.stage === stage);
+    return acc;
+  }, {} as Record<string, Deal[]>);
+
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <SortableContext items={localDeals.map((d) => d.id)} strategy={verticalListSortingStrategy}>
-        <div className="space-y-2">
-          {localDeals.map((deal) => (
-            <SortableItem key={deal.id} id={deal.id}>
-              <div className="p-4 bg-white rounded shadow cursor-move">
-                <h3 className="font-semibold">{deal.title}</h3>
-                <p className="text-sm text-gray-500">
-                  Value: ${deal.value || 0} | Stage: {deal.stage}
-                </p>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      {stages.map(stage => (
+        <div 
+          key={stage} 
+          className={`${stageColors[stage]} rounded-lg p-3 min-h-[400px] animate-fade-in`}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold capitalize">{stage}</h3>
+            <div className="bg-white/60 rounded px-2 py-1 text-sm font-medium">
+              {dealsByStage[stage].length}
+            </div>
+          </div>
+          
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={dealsByStage[stage].map((d) => d.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-2">
+                {dealsByStage[stage].map((deal) => (
+                  <SortableItem key={deal.id} id={deal.id}>
+                    <div className="p-3 bg-white rounded-lg shadow-sm cursor-move hover:shadow-md transition-shadow">
+                      <h4 className="font-medium text-sm mb-1">{deal.title}</h4>
+                      <p className="text-xs text-gray-600">
+                        ${deal.value || 0}
+                      </p>
+                      {deal.probability && (
+                        <div className="mt-1">
+                          <div className="w-full bg-gray-200 rounded-full h-1">
+                            <div 
+                              className="bg-blue-600 h-1 rounded-full" 
+                              style={{ width: `${deal.probability}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-xs text-gray-500">{deal.probability}%</span>
+                        </div>
+                      )}
+                    </div>
+                  </SortableItem>
+                ))}
               </div>
-            </SortableItem>
-          ))}
+            </SortableContext>
+          </DndContext>
         </div>
-      </SortableContext>
-    </DndContext>
+      ))}
+    </div>
   );
 };
 
