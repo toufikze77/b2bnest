@@ -347,57 +347,84 @@ const ProjectManagement = () => {
       id: '1',
       title: 'Design Homepage Mockup',
       description: 'Create responsive homepage design with modern aesthetics',
-      status: 'in-progress',
-      priority: 'high',
-      assignee: 'John Doe',
-      dueDate: new Date(2024, 2, 15),
-      project: 'Website Redesign',
-      tags: ['design', 'ui/ux', 'homepage'],
-      estimatedHours: 20,
-      actualHours: 12,
-      progress: 60,
-      subtasks: [
-        { id: 's1', title: 'Research competitor designs', completed: true, assignee: 'John Doe' },
-        { id: 's2', title: 'Create wireframes', completed: true, assignee: 'John Doe' },
-        { id: 's3', title: 'Design high-fidelity mockup', completed: false, assignee: 'John Doe' }
-      ],
-      comments: [
-        { id: 'c1', content: 'Great progress on the wireframes!', author: 'Jane Smith', timestamp: new Date() }
-      ]
-    },
-    {
-      id: '2',
-      title: 'Setup Authentication System',
-      description: 'Implement secure user authentication with JWT',
-      status: 'todo',
-      priority: 'urgent',
-      assignee: 'Jane Smith',
-      dueDate: new Date(2024, 2, 20),
-      project: 'Website Redesign',
-      tags: ['backend', 'security', 'auth'],
-      estimatedHours: 15,
-      dependencies: ['1']
-    }
-  ]);
+     const saveGoal = async () => {
+  if (!newGoal.title.trim()) {
+    toast({
+      title: "Missing Information",
+      description: "Please enter a goal title.",
+      variant: "destructive",
+    });
+    return;
+  }
 
-  const [milestones, setMilestones] = useState<Milestone[]>([
-    {
-      id: '1',
-      title: 'Design Phase Complete',
-      description: 'All UI/UX designs approved by client',
-      dueDate: new Date(2024, 2, 25),
-      project: 'Website Redesign',
-      completed: false,
-      progress: 80,
-      tasks: ['1'],
-      aiInsights: 'Design milestone is 80% complete. Consider client review meeting to finalize remaining designs.'
-    }
-  ]);
+  if (!user?.id) {
+    toast({
+      title: "Authentication Error",
+      description: "Please sign in to create goals.",
+      variant: "destructive",
+    });
+    return;
+  }
 
-  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([
-    {
-      id: '1',
-      type: 'task_created',
+  try {
+    const goal: Goal = {
+      id: Date.now().toString(),
+      title: newGoal.title.trim(),
+      description: (newGoal.description || '').trim(),
+      targetValue: newGoal.targetValue || 100,
+      currentValue: 0,
+      deadline: newGoal.deadline,
+      projectId: selectedProject?.id || '',
+      userId: user.id,
+    };
+
+    // Save to localStorage first
+    let existingGoals: Goal[] = [];
+    try {
+      const savedGoals = localStorage.getItem('projectGoals');
+      existingGoals = savedGoals ? JSON.parse(savedGoals) : [];
+    } catch (parseError) {
+      console.warn('Corrupted localStorage goals data, resetting...', parseError);
+    }
+
+    const updatedGoals = [goal, ...existingGoals];
+    localStorage.setItem('projectGoals', JSON.stringify(updatedGoals));
+
+    setGoals(updatedGoals);
+    setNewGoal({ title: '', description: '', targetValue: 100, deadline: '' });
+    setIsAddingGoal(false);
+
+    toast({
+      title: "Goal Created",
+      description: `"${goal.title}" has been added successfully.`,
+    });
+
+    // Try database save
+    try {
+      await supabase.from('goals').insert([
+        {
+          title: goal.title,
+          description: goal.description,
+          target_value: goal.targetValue,
+          current_value: goal.currentValue,
+          deadline: goal.deadline,
+          project_id: goal.projectId,
+          user_id: goal.userId,
+        },
+      ]);
+    } catch (dbError) {
+      console.log('Database save failed, but goal saved locally:', dbError);
+    }
+  } catch (error) {
+    console.error('Error creating goal:', error);
+    toast({
+      title: "Error",
+      description: "Failed to create goal. Please try again.",
+      variant: "destructive",
+    });
+  }
+};
+
       description: 'Created new task: Design Homepage Mockup',
       user: 'John Doe',
       timestamp: new Date(),
