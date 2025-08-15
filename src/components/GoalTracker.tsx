@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Target, Plus, CheckCircle, Circle, Calendar, TrendingUp, Edit, Trash2, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,15 +11,23 @@ interface Goal {
   id: string;
   title: string;
   description: string;
-  targetDate: string;
+  targetDate: Date;
   progress: number;
   category: string;
   isCompleted: boolean;
-  createdAt: string;
+  createdAt: Date;
 }
 
 const GoalTracker = () => {
-  const [goals, setGoals] = useState<Goal[]>([]);
+  const [goals, setGoals] = useState<Goal[]>(() => {
+    // Load goals from localStorage on initialization
+    const saved = localStorage.getItem('goalTrackerGoals');
+    return saved ? JSON.parse(saved).map((goal: any) => ({
+      ...goal,
+      targetDate: new Date(goal.targetDate),
+      createdAt: new Date(goal.createdAt)
+    })) : [];
+  });
   const [isAddingGoal, setIsAddingGoal] = useState(false);
   const [newGoal, setNewGoal] = useState({
     title: '',
@@ -30,29 +37,9 @@ const GoalTracker = () => {
   });
   const { toast } = useToast();
 
-  // Load goals from localStorage on initialization
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('goalTrackerGoals');
-      if (saved) {
-        const parsedGoals = JSON.parse(saved);
-        console.log('Loading goals from localStorage:', parsedGoals);
-        setGoals(parsedGoals);
-      }
-    } catch (error) {
-      console.error('Error loading goals from localStorage:', error);
-      setGoals([]);
-    }
-  }, []);
-
   // Save goals to localStorage whenever goals change
   useEffect(() => {
-    try {
-      console.log('Saving goals to localStorage:', goals);
-      localStorage.setItem('goalTrackerGoals', JSON.stringify(goals));
-    } catch (error) {
-      console.error('Error saving goals to localStorage:', error);
-    }
+    localStorage.setItem('goalTrackerGoals', JSON.stringify(goals));
   }, [goals]);
 
   const categories = [
@@ -83,21 +70,14 @@ const GoalTracker = () => {
       id: Date.now().toString(),
       title: newGoal.title.trim(),
       description: newGoal.description.trim(),
-      targetDate: newGoal.targetDate,
+      targetDate: new Date(newGoal.targetDate),
       progress: 0,
       category: newGoal.category,
       isCompleted: false,
-      createdAt: new Date().toISOString()
+      createdAt: new Date()
     };
 
-    console.log('Adding new goal:', goal);
-
-    setGoals(prev => {
-      const newGoals = [goal, ...prev];
-      console.log('Updated goals array:', newGoals);
-      return newGoals;
-    });
-
+    setGoals(prev => [goal, ...prev]);
     setNewGoal({
       title: '',
       description: '',
@@ -136,12 +116,20 @@ const GoalTracker = () => {
     });
   };
 
-  const getDaysUntilTarget = (targetDate: string) => {
+  const getDaysUntilTarget = (targetDate: Date) => {
     const today = new Date();
-    const target = new Date(targetDate);
-    const diffTime = target.getTime() - today.getTime();
+    const diffTime = targetDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
+  };
+
+  const getGoalsByCategory = () => {
+    const categoryMap = new Map();
+    goals.forEach(goal => {
+      const current = categoryMap.get(goal.category) || [];
+      categoryMap.set(goal.category, [...current, goal]);
+    });
+    return categoryMap;
   };
 
   const completedGoals = goals.filter(goal => goal.isCompleted).length;
@@ -254,7 +242,7 @@ const GoalTracker = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Target className="h-5 w-5" />
-            Your Goals ({goals.length})
+            Your Goals
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -304,7 +292,7 @@ const GoalTracker = () => {
                         <div className="flex items-center gap-4 text-sm text-gray-600">
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            Target: {new Date(goal.targetDate).toLocaleDateString()}
+                            Target: {goal.targetDate.toLocaleDateString()}
                           </span>
                           <span className={`flex items-center gap-1 ${
                             isOverdue ? 'text-red-600' : isDueSoon ? 'text-yellow-600' : 'text-gray-600'
