@@ -19,41 +19,8 @@ interface Goal {
 }
 
 const GoalTracker = () => {
-  const [goals, setGoals] = useState<Goal[]>(() => {
-    // Load goals from localStorage on initialization
-    const saved = localStorage.getItem('goalTrackerGoals');
-    return saved ? JSON.parse(saved).map((goal: any) => ({
-      ...goal,
-      targetDate: new Date(goal.targetDate),
-      createdAt: new Date(goal.createdAt)
-    })) : [];
-  });
-  const [isAddingGoal, setIsAddingGoal] = useState(false);
-  const [newGoal, setNewGoal] = useState({
-    title: '',
-    description: '',
-    targetDate: '',
-    category: 'Business'
-  });
-  const { toast } = useToast();
+  Fix localStorage persistence in GoalTracker.tsx
 
-  // Save goals to localStorage whenever goals change
-  useEffect(() => {
-    localStorage.setItem('goalTrackerGoals', JSON.stringify(goals));
-  }, [goals]);
-
-  const categories = [
-    'Business', 'Financial', 'Marketing', 'Sales', 'Product', 'Team', 'Personal'
-  ];
-
-  const addGoal = () => {
-    if (!newGoal.title.trim() || !newGoal.targetDate) {
-      toast({
-        title: "Missing Information",
-        description: "Please enter a goal title and target date.",
-        variant: "destructive"
-      });
-      return;
     }
 
     // Free plan limitation: 10 goals max
