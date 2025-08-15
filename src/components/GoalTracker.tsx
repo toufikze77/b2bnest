@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Target, Plus, CheckCircle, Circle, Calendar, TrendingUp, Edit, Trash2, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,15 @@ interface Goal {
 }
 
 const GoalTracker = () => {
-  const [goals, setGoals] = useState<Goal[]>([]);
+  const [goals, setGoals] = useState<Goal[]>(() => {
+    // Load goals from localStorage on initialization
+    const saved = localStorage.getItem('goalTrackerGoals');
+    return saved ? JSON.parse(saved).map((goal: any) => ({
+      ...goal,
+      targetDate: new Date(goal.targetDate),
+      createdAt: new Date(goal.createdAt)
+    })) : [];
+  });
   const [isAddingGoal, setIsAddingGoal] = useState(false);
   const [newGoal, setNewGoal] = useState({
     title: '',
@@ -28,6 +36,11 @@ const GoalTracker = () => {
     category: 'Business'
   });
   const { toast } = useToast();
+
+  // Save goals to localStorage whenever goals change
+  useEffect(() => {
+    localStorage.setItem('goalTrackerGoals', JSON.stringify(goals));
+  }, [goals]);
 
   const categories = [
     'Business', 'Financial', 'Marketing', 'Sales', 'Product', 'Team', 'Personal'

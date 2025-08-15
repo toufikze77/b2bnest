@@ -982,9 +982,10 @@ const ProjectManagement = () => {
                 .map(task => (
                   <Card 
                     key={task.id} 
-                    className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]"
+                    className="cursor-move hover:shadow-lg transition-all hover:scale-[1.02] bg-white"
                     draggable
                     onDragStart={(e) => handleDragStart(e, task)}
+                    onDragOver={(e) => e.preventDefault()}
                     onClick={(e) => {
                       e.preventDefault();
                       console.log('Task card clicked:', task.id, task.title);
@@ -992,78 +993,45 @@ const ProjectManagement = () => {
                       setShowEditTask(true);
                     }}
                   >
-                    <CardContent className="p-4">
+                    <CardContent className="p-3">
                       <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-medium text-sm">{task.title}</h4>
+                        <h4 className="font-medium text-sm line-clamp-2">{task.title}</h4>
                         <div className="flex items-center gap-1">
                           <div className={`w-2 h-2 rounded-full ${priorityColors[task.priority]}`}></div>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
-                                <MoreHorizontal className="w-3 h-3" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-40 p-1" align="end">
-                              <div className="space-y-1">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="w-full justify-start"
-                                  onClick={() => {
-                                    setEditingTask(task);
-                                    setShowEditTask(true);
-                                  }}
-                                >
-                                  <Edit className="w-3 h-3 mr-2" />
-                                  Edit
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="w-full justify-start text-red-600 hover:text-red-700"
-                                  onClick={() => handleTaskDelete(task.id)}
-                                >
-                                  <Trash2 className="w-3 h-3 mr-2" />
-                                  Delete
-                                </Button>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleTaskDelete(task.id);
+                            }}
+                            className="text-red-500 hover:text-red-600 h-5 w-5 p-0"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
                         </div>
                       </div>
                       
-                      <p className="text-xs text-gray-600 mb-3 line-clamp-2">{task.description}</p>
+                      <p className="text-xs text-gray-600 mb-2 line-clamp-2">{task.description}</p>
                       
                       {/* Progress Bar */}
-                      {task.progress && (
-                        <div className="mb-3">
+                      {task.progress && task.progress > 0 && (
+                        <div className="mb-2">
                           <div className="flex justify-between text-xs mb-1">
                             <span>Progress</span>
                             <span>{task.progress}%</span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                          <div className="w-full bg-gray-200 rounded-full h-1">
                             <div 
-                              className="bg-blue-600 h-1.5 rounded-full transition-all" 
+                              className="bg-blue-600 h-1 rounded-full transition-all" 
                               style={{ width: `${task.progress}%` }}
                             ></div>
                           </div>
                         </div>
                       )}
 
-                      {/* Subtasks */}
-                      {task.subtasks && task.subtasks.length > 0 && (
-                        <div className="mb-3">
-                          <div className="flex items-center gap-1 text-xs text-gray-500">
-                            <ListCheck className="w-3 h-3" />
-                            <span>
-                              {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length} subtasks
-                            </span>
-                          </div>
-                        </div>
-                      )}
-
                       {/* Tags */}
-                      <div className="flex flex-wrap gap-1 mb-3">
+                      <div className="flex flex-wrap gap-1 mb-2">
                         {task.tags.slice(0, 2).map(tag => (
                           <Badge key={tag} variant="outline" className="text-xs px-1 py-0">
                             {tag}
@@ -1078,33 +1046,18 @@ const ProjectManagement = () => {
 
                       {/* Footer */}
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1">
-                          {task.attachments && task.attachments.length > 0 && (
-                            <Paperclip className="w-3 h-3 text-gray-400" />
-                          )}
-                          {task.comments && task.comments.length > 0 && (
-                            <div className="flex items-center gap-1">
-                              <MessageCircle className="w-3 h-3 text-gray-400" />
-                              <span className="text-xs text-gray-500">{task.comments.length}</span>
-                            </div>
-                          )}
-                        </div>
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${priorityColors[task.priority]} text-white`}
+                        >
+                          {task.priority}
+                        </Badge>
                         
-                        <div className="flex items-center gap-1">
-                          {task.dueDate && (
-                            <div className="flex items-center gap-1">
-                              <CalendarIcon className="w-3 h-3 text-gray-400" />
-                              <span className="text-xs text-gray-500">
-                                {format(task.dueDate, 'MMM dd')}
-                              </span>
-                            </div>
-                          )}
-                          <Avatar className="w-6 h-6">
-                            <AvatarFallback className="text-xs">
-                              {task.assignee.split(' ').map(n => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                        </div>
+                        <Avatar className="w-5 h-5">
+                          <AvatarFallback className="text-xs">
+                            {task.assignee?.charAt(0) || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
                       </div>
                     </CardContent>
                   </Card>
@@ -2025,19 +1978,63 @@ const ProjectManagement = () => {
     setGoalDialogOpen(true);
   };
   const saveGoal = async () => {
-    if (!goalForm.title.trim()) return;
-    if (editingGoal) {
-      const { data, error } = await supabase.from('goals' as any)
-        .update({ title: goalForm.title, description: goalForm.description, target_date: goalForm.target_date || null, progress: goalForm.progress })
-        .eq('id', editingGoal.id).select().single();
-      if (!error && data) setGoals(prev => prev.map(x => x.id === editingGoal.id ? data as any : x));
-    } else {
-      const { data, error } = await supabase.from('goals' as any)
-        .insert({ title: goalForm.title, description: goalForm.description, target_date: goalForm.target_date || null, progress: goalForm.progress })
-        .select().single();
-      if (!error && data) setGoals(prev => [data as any, ...prev]);
+    if (!goalForm.title.trim()) {
+      toast({
+        title: "Error",
+        description: "Goal title is required.",
+        variant: "destructive",
+      });
+      return;
     }
-    setGoalDialogOpen(false);
+    
+    try {
+      if (editingGoal) {
+        const { data, error } = await supabase.from('goals' as any)
+          .update({ 
+            title: goalForm.title, 
+            description: goalForm.description, 
+            target_date: goalForm.target_date || null, 
+            progress: goalForm.progress 
+          })
+          .eq('id', editingGoal.id).select().single();
+        
+        if (error) throw error;
+        if (data) {
+          setGoals(prev => prev.map(x => x.id === editingGoal.id ? data as any : x));
+          toast({
+            title: "Success",
+            description: "Goal updated successfully!",
+          });
+        }
+      } else {
+        const { data, error } = await supabase.from('goals' as any)
+          .insert({ 
+            title: goalForm.title, 
+            description: goalForm.description, 
+            target_date: goalForm.target_date || null, 
+            progress: goalForm.progress,
+            user_id: user?.id 
+          })
+          .select().single();
+        
+        if (error) throw error;
+        if (data) {
+          setGoals(prev => [data as any, ...prev]);
+          toast({
+            title: "Success",
+            description: "Goal created successfully!",
+          });
+        }
+      }
+      setGoalDialogOpen(false);
+    } catch (error) {
+      console.error('Error saving goal:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save goal. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
   const deleteGoal = async (g: GoalItem) => {
     const { error } = await supabase.from('goals' as any).delete().eq('id', g.id);
