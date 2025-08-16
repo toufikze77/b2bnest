@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Plus, CheckCircle, Circle, Calendar, TrendingUp, Edit, Trash2, Zap } from 'lucide-react';
+import { Target, Plus, CheckCircle, Circle, Calendar, Trash2, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,12 +18,50 @@ interface Goal {
   createdAt: Date;
 }
 
+const categories = ["Business", "Health", "Learning", "Personal"];
+
 const GoalTracker = () => {
-  Fix localStorage persistence in GoalTracker.tsx
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [isAddingGoal, setIsAddingGoal] = useState(false);
+  const [newGoal, setNewGoal] = useState({
+    title: '',
+    description: '',
+    targetDate: '',
+    category: 'Business'
+  });
+  const { toast } = useToast();
 
+  // Load goals from localStorage on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const saved = window.localStorage.getItem('goalTrackerGoals');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Restore dates properly
+        const restored = parsed.map((g: any) => ({
+          ...g,
+          targetDate: new Date(g.targetDate),
+          createdAt: new Date(g.createdAt),
+        }));
+        setGoals(restored);
+      }
+    } catch (err) {
+      console.error('Error loading goals:', err);
     }
+  }, []);
 
-    // Free plan limitation: 10 goals max
+  // Save goals to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem('goalTrackerGoals', JSON.stringify(goals));
+    } catch (err) {
+      console.error('Error saving goals:', err);
+    }
+  }, [goals]);
+
+  const addGoal = () => {
     if (goals.length >= 10) {
       toast({
         title: "Goal Limit Reached",
@@ -86,21 +124,11 @@ const GoalTracker = () => {
   const getDaysUntilTarget = (targetDate: Date) => {
     const today = new Date();
     const diffTime = targetDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
-
-  const getGoalsByCategory = () => {
-    const categoryMap = new Map();
-    goals.forEach(goal => {
-      const current = categoryMap.get(goal.category) || [];
-      categoryMap.set(goal.category, [...current, goal]);
-    });
-    return categoryMap;
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
   const completedGoals = goals.filter(goal => goal.isCompleted).length;
-  const averageProgress = goals.length > 0 ? goals.reduce((sum, goal) => sum + goal.progress, 0) / goals.length : 0;
+  const averageProgress = goals.length > 0 ? goals.reduce((sum, g) => sum + g.progress, 0) / goals.length : 0;
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -112,22 +140,21 @@ const GoalTracker = () => {
         </Badge>
       </div>
 
+      {/* Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        {/* Overview Stats */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Overview</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="text-center">
+            <div className="space-y-4 text-center">
+              <div>
                 <div className="text-3xl font-bold text-blue-600 mb-1">
                   {goals.length}
                 </div>
                 <p className="text-gray-600 text-sm">Total Goals</p>
               </div>
-              
-              <div className="grid grid-cols-2 gap-4 text-center">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="bg-green-50 p-3 rounded-lg">
                   <div className="text-xl font-semibold text-green-600">{completedGoals}</div>
                   <div className="text-xs text-green-700">Completed</div>
@@ -141,7 +168,7 @@ const GoalTracker = () => {
           </CardContent>
         </Card>
 
-        {/* Add New Goal */}
+        {/* Add Goal */}
         <Card className="lg:col-span-2">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center justify-between">
@@ -153,23 +180,18 @@ const GoalTracker = () => {
           </CardHeader>
           <CardContent>
             {!isAddingGoal ? (
-              <Button 
-                onClick={() => setIsAddingGoal(true)} 
-                className="w-full"
-                disabled={goals.length >= 10}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add New Goal
+              <Button onClick={() => setIsAddingGoal(true)} className="w-full" disabled={goals.length >= 10}>
+                <Plus className="h-4 w-4 mr-2" /> Add New Goal
               </Button>
             ) : (
               <div className="space-y-4">
                 <Input
-                  placeholder="Goal title (e.g., Reach $10K monthly revenue)"
+                  placeholder="Goal title"
                   value={newGoal.title}
                   onChange={(e) => setNewGoal(prev => ({ ...prev, title: e.target.value }))}
                 />
                 <Input
-                  placeholder="Description (optional)"
+                  placeholder="Description"
                   value={newGoal.description}
                   onChange={(e) => setNewGoal(prev => ({ ...prev, description: e.target.value }))}
                 />
@@ -179,9 +201,7 @@ const GoalTracker = () => {
                     value={newGoal.category}
                     onChange={(e) => setNewGoal(prev => ({ ...prev, category: e.target.value }))}
                   >
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
+                    {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                   </select>
                   <Input
                     type="date"
@@ -191,12 +211,9 @@ const GoalTracker = () => {
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={addGoal} className="flex-1">
-                    <Target className="h-4 w-4 mr-2" />
-                    Add Goal
+                    <Target className="h-4 w-4 mr-2" /> Add Goal
                   </Button>
-                  <Button onClick={() => setIsAddingGoal(false)} variant="outline">
-                    Cancel
-                  </Button>
+                  <Button onClick={() => setIsAddingGoal(false)} variant="outline">Cancel</Button>
                 </div>
               </div>
             )}
@@ -208,8 +225,7 @@ const GoalTracker = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5" />
-            Your Goals
+            <Target className="h-5 w-5" /> Your Goals
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -249,13 +265,9 @@ const GoalTracker = () => {
                           <h3 className={`font-semibold ${goal.isCompleted ? 'line-through text-gray-600' : 'text-gray-900'}`}>
                             {goal.title}
                           </h3>
-                          <Badge variant="outline" className="text-xs">
-                            {goal.category}
-                          </Badge>
+                          <Badge variant="outline" className="text-xs">{goal.category}</Badge>
                         </div>
-                        {goal.description && (
-                          <p className="text-sm text-gray-600 mb-2">{goal.description}</p>
-                        )}
+                        {goal.description && <p className="text-sm text-gray-600 mb-2">{goal.description}</p>}
                         <div className="flex items-center gap-4 text-sm text-gray-600">
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
@@ -271,12 +283,7 @@ const GoalTracker = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteGoal(goal.id)}
-                          className="text-red-500 hover:text-red-600"
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => deleteGoal(goal.id)} className="text-red-500 hover:text-red-600">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -287,18 +294,10 @@ const GoalTracker = () => {
                         <div className="flex items-center justify-between text-sm">
                           <span>Progress: {goal.progress}%</span>
                           <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => updateProgress(goal.id, Math.min(100, goal.progress + 10))}
-                            >
+                            <Button variant="outline" size="sm" onClick={() => updateProgress(goal.id, Math.min(100, goal.progress + 10))}>
                               +10%
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => updateProgress(goal.id, Math.max(0, goal.progress - 10))}
-                            >
+                            <Button variant="outline" size="sm" onClick={() => updateProgress(goal.id, Math.max(0, goal.progress - 10))}>
                               -10%
                             </Button>
                           </div>
