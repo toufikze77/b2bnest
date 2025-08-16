@@ -347,84 +347,64 @@ const ProjectManagement = () => {
     {
       id: '1',
       title: 'Design Homepage Mockup',
-      description: 'Create responsive homepage design with modern aesthetics',
-     const saveGoal = async () => {
-  if (!newGoal.title.trim()) {
-    toast({
-      title: "Missing Information",
-      description: "Please enter a goal title.",
-      variant: "destructive",
-    });
+     // --- saveGoal (safe, local only) ---
+const saveGoal = async () => {
+  const title = (newGoal.title || '').trim();
+  if (!title) {
+    toast({ title: 'Missing Information', description: 'Please enter a goal title.', variant: 'destructive' });
     return;
   }
-
   if (!user?.id) {
-    toast({
-      title: "Authentication Error",
-      description: "Please sign in to create goals.",
-      variant: "destructive",
-    });
+    toast({ title: 'Authentication Error', description: 'Please sign in to create goals.', variant: 'destructive' });
     return;
   }
 
   try {
     const goal: Goal = {
       id: Date.now().toString(),
-      title: newGoal.title.trim(),
+      title,
       description: (newGoal.description || '').trim(),
       targetValue: newGoal.targetValue || 100,
       currentValue: 0,
-      deadline: newGoal.deadline,
+      deadline: newGoal.deadline || '',
       projectId: selectedProject?.id || '',
       userId: user.id,
     };
 
-    // Save to localStorage first
-    let existingGoals: Goal[] = [];
-    try {
-      const savedGoals = localStorage.getItem('projectGoals');
-      existingGoals = savedGoals ? JSON.parse(savedGoals) : [];
-    } catch (parseError) {
-      console.warn('Corrupted localStorage goals data, resetting...', parseError);
+    // Read existing, then write (SSR-safe)
+    let existing: Goal[] = [];
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = window.localStorage.getItem('projectGoals');
+        existing = raw ? JSON.parse(raw) : [];
+      } catch {}
+      const updated = [goal, ...existing];
+      window.localStorage.setItem('projectGoals', JSON.stringify(updated));
+      setGoals(updated);
+    } else {
+      setGoals([goal, ...existing]);
     }
 
-    const updatedGoals = [goal, ...existingGoals];
-    localStorage.setItem('projectGoals', JSON.stringify(updatedGoals));
-
-    setGoals(updatedGoals);
     setNewGoal({ title: '', description: '', targetValue: 100, deadline: '' });
     setIsAddingGoal(false);
+    toast({ title: 'Goal Created', description: `"${goal.title}" has been added successfully.` });
 
-    toast({
-      title: "Goal Created",
-      description: `"${goal.title}" has been added successfully.`,
-    });
-
-    // Try database save
-    try {
-      await supabase.from('goals').insert([
-        {
-          title: goal.title,
-          description: goal.description,
-          target_value: goal.targetValue,
-          current_value: goal.currentValue,
-          deadline: goal.deadline,
-          project_id: goal.projectId,
-          user_id: goal.userId,
-        },
-      ]);
-    } catch (dbError) {
-      console.log('Database save failed, but goal saved locally:', dbError);
-    }
+    // ---- TEMP: comment DB write until supabase client is correctly imported/initialized ----
+    // await supabase.from('goals').insert([{
+    //   title: goal.title,
+    //   description: goal.description,
+    //   target_value: goal.targetValue,
+    //   current_value: goal.currentValue,
+    //   deadline: goal.deadline,
+    //   project_id: goal.projectId,
+    //   user_id: goal.userId,
+    // }]);
   } catch (error) {
     console.error('Error creating goal:', error);
-    toast({
-      title: "Error",
-      description: "Failed to create goal. Please try again.",
-      variant: "destructive",
-    });
+    toast({ title: 'Error', description: 'Failed to create goal. Please try again.', variant: 'destructive' });
   }
 };
+
 
       description: 'Created new task: Design Homepage Mockup',
       user: 'John Doe',
