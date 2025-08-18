@@ -26,12 +26,12 @@ const AnalyticsTab = ({ totalRevenue }: AnalyticsTabProps) => {
   const [timeRange, setTimeRange] = useState('30d');
   const [currency, setCurrency] = useState('USD');
 
-  // Pie chart data for lead sources with modern gradients
+  // Pie chart data for lead sources
   const pieData = [
-    { name: 'Website', value: 45, color: 'hsl(var(--primary))' },
-    { name: 'Referrals', value: 30, color: 'hsl(var(--chart-2))' },
-    { name: 'Social Media', value: 15, color: 'hsl(var(--chart-3))' },
-    { name: 'Email Campaign', value: 10, color: 'hsl(var(--chart-4))' },
+    { name: 'Website', value: 45, color: '#3B82F6' },
+    { name: 'Referrals', value: 30, color: '#10B981' },
+    { name: 'Social Media', value: 15, color: '#F59E0B' },
+    { name: 'Email Campaign', value: 10, color: '#EF4444' },
   ];
   
   // Sample analytics data (in a real app, this would come from API)
@@ -258,59 +258,24 @@ const AnalyticsTab = ({ totalRevenue }: AnalyticsTabProps) => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-80 relative">
+            <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <defs>
-                    <linearGradient id="gradientWebsite" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={1} />
-                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.7} />
-                    </linearGradient>
-                    <linearGradient id="gradientReferrals" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="hsl(var(--chart-2))" stopOpacity={1} />
-                      <stop offset="100%" stopColor="hsl(var(--chart-2))" stopOpacity={0.7} />
-                    </linearGradient>
-                    <linearGradient id="gradientSocial" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="hsl(var(--chart-3))" stopOpacity={1} />
-                      <stop offset="100%" stopColor="hsl(var(--chart-3))" stopOpacity={0.7} />
-                    </linearGradient>
-                    <linearGradient id="gradientEmail" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="hsl(var(--chart-4))" stopOpacity={1} />
-                      <stop offset="100%" stopColor="hsl(var(--chart-4))" stopOpacity={0.7} />
-                    </linearGradient>
-                  </defs>
                   <Pie
                     data={pieData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={120}
-                    paddingAngle={8}
+                    innerRadius={40}
+                    outerRadius={80}
+                    paddingAngle={5}
                     dataKey="value"
-                    stroke="none"
                   >
                     {pieData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={`url(#gradient${entry.name.replace(' ', '')})`}
-                      />
+                      <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip 
-                    formatter={(value) => [`${value}%`, 'Percentage']} 
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                    }}
-                  />
-                  <Legend 
-                    wrapperStyle={{
-                      paddingTop: '20px',
-                      fontSize: '14px'
-                    }}
-                  />
+                  <Tooltip formatter={(value) => [`${value}%`, 'Percentage']} />
+                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -357,56 +322,21 @@ const AnalyticsTab = ({ totalRevenue }: AnalyticsTabProps) => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-80">
+            <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyData} barGap={10}>
-                  <defs>
-                    <linearGradient id="dealGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={1} />
-                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.6} />
-                    </linearGradient>
-                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(var(--chart-2))" stopOpacity={1} />
-                      <stop offset="100%" stopColor="hsl(var(--chart-2))" stopOpacity={0.6} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" strokeOpacity={0.3} />
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                  />
-                  <YAxis 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                  />
+                <BarChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
                   <Tooltip 
                     formatter={(value, name) => [
                       name === 'deals' ? value : `$${Number(value).toLocaleString()}`,
                       name === 'deals' ? 'Deals Closed' : 'Revenue'
                     ]}
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                    }}
                   />
                   <Legend />
-                  <Bar 
-                    dataKey="deals" 
-                    fill="url(#dealGradient)" 
-                    name="deals" 
-                    radius={[4, 4, 0, 0]}
-                  />
-                  <Bar 
-                    dataKey="revenue" 
-                    fill="url(#revenueGradient)" 
-                    name="revenue" 
-                    radius={[4, 4, 0, 0]}
-                  />
+                  <Bar dataKey="deals" fill="#3B82F6" name="deals" />
+                  <Bar dataKey="revenue" fill="#10B981" name="revenue" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -421,57 +351,27 @@ const AnalyticsTab = ({ totalRevenue }: AnalyticsTabProps) => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-80">
+            <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={conversionTrends}>
-                  <defs>
-                    <linearGradient id="leadsArea" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(var(--chart-3))" stopOpacity={0.3} />
-                      <stop offset="100%" stopColor="hsl(var(--chart-3))" stopOpacity={0.1} />
-                    </linearGradient>
-                    <linearGradient id="conversionsArea" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(var(--chart-4))" stopOpacity={0.3} />
-                      <stop offset="100%" stopColor="hsl(var(--chart-4))" stopOpacity={0.1} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" strokeOpacity={0.3} />
-                  <XAxis 
-                    dataKey="month" 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                  />
-                  <YAxis 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                  />
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                    }}
-                  />
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
                   <Legend />
                   <Line 
                     type="monotone" 
                     dataKey="leads" 
-                    stroke="hsl(var(--chart-3))" 
-                    strokeWidth={3}
+                    stroke="#F59E0B" 
+                    strokeWidth={2}
                     name="Total Leads"
-                    dot={{ fill: 'hsl(var(--chart-3))', strokeWidth: 2, r: 5 }}
-                    activeDot={{ r: 7, stroke: 'hsl(var(--chart-3))', strokeWidth: 2 }}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="conversions" 
-                    stroke="hsl(var(--chart-4))" 
-                    strokeWidth={3}
+                    stroke="#EF4444" 
+                    strokeWidth={2}
                     name="Conversions"
-                    dot={{ fill: 'hsl(var(--chart-4))', strokeWidth: 2, r: 5 }}
-                    activeDot={{ r: 7, stroke: 'hsl(var(--chart-4))', strokeWidth: 2 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
