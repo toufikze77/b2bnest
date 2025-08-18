@@ -427,8 +427,26 @@ const ProjectManagement = () => {
   ]);
 
   const [workRequests, setWorkRequests] = useState<WorkRequest[]>([]);
-  const [goals, setGoals] = useState<GoalItem[]>([]);
-  const [teams, setTeams] = useState<TeamItem[]>([]);
+  // Initialize goals from localStorage
+  const [goals, setGoals] = useState<GoalItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('projectGoals');
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error('Error loading goals:', error);
+      return [];
+    }
+  });
+  // Initialize teams from localStorage
+  const [teams, setTeams] = useState<TeamItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('projectTeams');
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error('Error loading teams:', error);
+      return [];
+    }
+  });
   const [teamMembers, setTeamMembers] = useState<Record<string, TeamMemberItem[]>>({});
   const [calendarEvents, setCalendarEvents] = useState<CalendarEventItem[]>([]);
 
@@ -508,16 +526,79 @@ const ProjectManagement = () => {
     const title = window.prompt('Goal title');
     if (!title) return;
     const target = window.prompt('Target date (YYYY-MM-DD) optional') || null;
-    const { data, error } = await supabase.from('goals' as any).insert({ title, target_date: target, progress: 0 }).select().single();
-    if (!error && data) setGoals(prev => [data as unknown as GoalItem, ...prev]);
+    
+    const newGoal: GoalItem = {
+      id: Date.now().toString(),
+      title,
+      description: '',
+      target_date: target,
+      progress: 0,
+      created_at: new Date().toISOString(),
+      user_id: 'local-user'
+    };
+    
+    setGoals(prev => [newGoal, ...prev]);
+    
+    // Save to localStorage
+    try {
+      const savedGoals = localStorage.getItem('projectGoals');
+      const existingGoals = savedGoals ? JSON.parse(savedGoals) : [];
+      localStorage.setItem('projectGoals', JSON.stringify([newGoal, ...existingGoals]));
+      
+      toast({
+        title: "Goal Created",
+        description: `"${title}" has been added successfully.`
+      });
+    } catch (error) {
+      console.error('Error saving goal:', error);
+    }
   };
 
   const createTeam = async () => {
     const name = window.prompt('Team name');
     if (!name) return;
-    const { data, error } = await supabase.from('teams' as any).insert({ name }).select().single();
-    if (!error && data) setTeams(prev => [data as unknown as TeamItem, ...prev]);
+    
+    const newTeam: TeamItem = {
+      id: Date.now().toString(),
+      name,
+      created_at: new Date().toISOString(),
+      owner_id: 'local-user'
+    };
+    
+    setTeams(prev => [newTeam, ...prev]);
+    
+    // Save to localStorage
+    try {
+      const savedTeams = localStorage.getItem('projectTeams');
+      const existingTeams = savedTeams ? JSON.parse(savedTeams) : [];
+      localStorage.setItem('projectTeams', JSON.stringify([newTeam, ...existingTeams]));
+      
+      toast({
+        title: "Team Created",
+        description: `"${name}" team has been created successfully.`
+      });
+    } catch (error) {
+      console.error('Error saving team:', error);
+    }
   };
+
+  // Save teams to localStorage whenever teams change
+  useEffect(() => {
+    try {
+      localStorage.setItem('projectTeams', JSON.stringify(teams));
+    } catch (error) {
+      console.error('Error saving teams:', error);
+    }
+  }, [teams]);
+
+  // Save goals to localStorage whenever goals change  
+  useEffect(() => {
+    try {
+      localStorage.setItem('projectGoals', JSON.stringify(goals));
+    } catch (error) {
+      console.error('Error saving goals:', error);
+    }
+  }, [goals]);
 
   const addPersonToTeam = async (teamId: string) => {
     const email = window.prompt('Member email to add');
@@ -1994,22 +2075,74 @@ const ProjectManagement = () => {
   };
   const saveGoal = async () => {
     if (!goalForm.title.trim()) return;
+    
     if (editingGoal) {
-      const { data, error } = await supabase.from('goals' as any)
-        .update({ title: goalForm.title, description: goalForm.description, target_date: goalForm.target_date || null, progress: goalForm.progress })
-        .eq('id', editingGoal.id).select().single();
-      if (!error && data) setGoals(prev => prev.map(x => x.id === editingGoal.id ? data as any : x));
+      const updatedGoal = {
+        ...editingGoal,
+        title: goalForm.title,
+        description: goalForm.description,
+        target_date: goalForm.target_date || null,
+        progress: goalForm.progress
+      };
+      setGoals(prev => prev.map(x => x.id === editingGoal.id ? updatedGoal : x));
+      
+      // Update localStorage
+      try {
+        const savedGoals = localStorage.getItem('projectGoals');
+        const existingGoals = savedGoals ? JSON.parse(savedGoals) : [];
+        const updatedGoals = existingGoals.map((g: any) => g.id === editingGoal.id ? updatedGoal : g);
+        localStorage.setItem('projectGoals', JSON.stringify(updatedGoals));
+      } catch (error) {
+        console.error('Error updating goal:', error);
+      }
     } else {
-      const { data, error } = await supabase.from('goals' as any)
-        .insert({ title: goalForm.title, description: goalForm.description, target_date: goalForm.target_date || null, progress: goalForm.progress })
-        .select().single();
-      if (!error && data) setGoals(prev => [data as any, ...prev]);
+      const newGoal: GoalItem = {
+        id: Date.now().toString(),
+        title: goalForm.title,
+        description: goalForm.description,
+        target_date: goalForm.target_date || null,
+        progress: goalForm.progress,
+        created_at: new Date().toISOString(),
+        user_id: 'local-user'
+      };
+      setGoals(prev => [newGoal, ...prev]);
+      
+      // Save to localStorage
+      try {
+        const savedGoals = localStorage.getItem('projectGoals');
+        const existingGoals = savedGoals ? JSON.parse(savedGoals) : [];
+        localStorage.setItem('projectGoals', JSON.stringify([newGoal, ...existingGoals]));
+      } catch (error) {
+        console.error('Error saving goal:', error);
+      }
     }
+    
     setGoalDialogOpen(false);
+    setEditingGoal(null);
+    setGoalForm({ title: '', description: '', target_date: '', progress: 0 });
+    
+    toast({
+      title: editingGoal ? "Goal Updated" : "Goal Created",
+      description: `"${goalForm.title}" has been ${editingGoal ? 'updated' : 'created'} successfully.`
+    });
   };
   const deleteGoal = async (g: GoalItem) => {
-    const { error } = await supabase.from('goals' as any).delete().eq('id', g.id);
-    if (!error) setGoals(prev => prev.filter(x => x.id !== g.id));
+    setGoals(prev => prev.filter(x => x.id !== g.id));
+    
+    // Update localStorage
+    try {
+      const savedGoals = localStorage.getItem('projectGoals');
+      const existingGoals = savedGoals ? JSON.parse(savedGoals) : [];
+      const updatedGoals = existingGoals.filter((goal: any) => goal.id !== g.id);
+      localStorage.setItem('projectGoals', JSON.stringify(updatedGoals));
+      
+      toast({
+        title: "Goal Deleted",
+        description: `"${g.title}" has been deleted successfully.`
+      });
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+    }
   };
   const sortedGoals = [...goals].sort((a,b) => goalsSort === 'newest' ? (b.created_at.localeCompare(a.created_at)) : (a.created_at.localeCompare(b.created_at)));
   const pagedGoals = sortedGoals.slice((goalsPage-1)*PAGE_SIZE, goalsPage*PAGE_SIZE);

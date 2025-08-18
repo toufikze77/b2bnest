@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Target, Plus, CheckCircle, Circle, Calendar, TrendingUp, Edit, Trash2, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,26 @@ interface Goal {
 }
 
 const GoalTracker = () => {
-  const [goals, setGoals] = useState<Goal[]>([]);
+  // Initialize goals from localStorage
+  const [goals, setGoals] = useState<Goal[]>(() => {
+    try {
+      const saved = localStorage.getItem('goalTrackerGoals');
+      if (saved) {
+        const parsedGoals = JSON.parse(saved);
+        // Convert date strings back to Date objects
+        return parsedGoals.map((goal: any) => ({
+          ...goal,
+          targetDate: new Date(goal.targetDate),
+          createdAt: new Date(goal.createdAt)
+        }));
+      }
+      return [];
+    } catch (error) {
+      console.error('Error loading goals from localStorage:', error);
+      return [];
+    }
+  });
+
   const [isAddingGoal, setIsAddingGoal] = useState(false);
   const [newGoal, setNewGoal] = useState({
     title: '',
@@ -28,6 +47,15 @@ const GoalTracker = () => {
     category: 'Business'
   });
   const { toast } = useToast();
+
+  // Save goals to localStorage whenever goals change
+  useEffect(() => {
+    try {
+      localStorage.setItem('goalTrackerGoals', JSON.stringify(goals));
+    } catch (error) {
+      console.error('Error saving goals to localStorage:', error);
+    }
+  }, [goals]);
 
   const categories = [
     'Business', 'Financial', 'Marketing', 'Sales', 'Product', 'Team', 'Personal'
