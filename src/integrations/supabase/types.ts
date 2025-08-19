@@ -352,6 +352,36 @@ export type Database = {
           },
         ]
       }
+      banking_audit_logs: {
+        Row: {
+          action: string
+          bank_account_id: string | null
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          bank_account_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          bank_account_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       bills: {
         Row: {
           amount: number
@@ -2429,8 +2459,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      decrypt_banking_data: {
+        Args: { encrypted_data: string }
+        Returns: string
+      }
       decrypt_integration_token: {
         Args: { encrypted_token: string }
+        Returns: string
+      }
+      encrypt_banking_data: {
+        Args: { data: string }
         Returns: string
       }
       encrypt_integration_token: {
@@ -2442,6 +2480,28 @@ export type Database = {
         Returns: {
           contact_email: string
           contact_phone: string
+        }[]
+      }
+      get_bank_account_details: {
+        Args: { p_account_id: string; p_user_id?: string }
+        Returns: {
+          account_number: string
+          sort_code: string
+        }[]
+      }
+      get_bank_accounts_safe: {
+        Args: { p_user_id?: string }
+        Returns: {
+          account_id: string
+          account_type: string
+          available_balance: number
+          balance: number
+          created_at: string
+          currency: string
+          id: string
+          is_active: boolean
+          last_synced_at: string
+          provider_name: string
         }[]
       }
       get_integration_tokens: {
@@ -2472,6 +2532,21 @@ export type Database = {
           p_resource_type: string
           p_user_agent?: string
           p_user_id: string
+        }
+        Returns: string
+      }
+      store_bank_account: {
+        Args: {
+          p_account_id: string
+          p_account_number?: string
+          p_account_type: string
+          p_available_balance?: number
+          p_balance?: number
+          p_currency?: string
+          p_provider_id: string
+          p_provider_name: string
+          p_sort_code?: string
+          p_user_id?: string
         }
         Returns: string
       }

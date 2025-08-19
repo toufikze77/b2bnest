@@ -47,6 +47,20 @@ type Outgoing = Tables<'outgoings'>;
 type BankAccount = Tables<'bank_accounts'>;
 type BankTransaction = Tables<'bank_transactions'>;
 
+// Safe bank account type without sensitive data
+type SafeBankAccount = {
+  id: string;
+  account_id: string;
+  provider_name: string;
+  account_type: string;
+  currency: string;
+  balance: number | null;
+  available_balance: number | null;
+  last_synced_at: string | null;
+  is_active: boolean;
+  created_at: string;
+};
+
 interface FinanceItem {
   [key: string]: any;
   id: string;
@@ -390,7 +404,7 @@ const BusinessFinanceAssistant = () => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [outgoings, setOutgoings] = useState<Outgoing[]>([]);
-  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+  const [bankAccounts, setBankAccounts] = useState<SafeBankAccount[]>([]);
   const [bankTransactions, setBankTransactions] = useState<BankTransaction[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<Quote | Invoice | null>(null);
   const [isDocumentViewOpen, setIsDocumentViewOpen] = useState(false);
@@ -454,15 +468,12 @@ const BusinessFinanceAssistant = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedAccountForUpload, setSelectedAccountForUpload] = useState<string>('');
 
-  // Load bank accounts function
+  // Load bank accounts function - using secure function
   const loadBankAccounts = async () => {
     if (!user) return;
     
     const { data: accounts, error } = await supabase
-      .from('bank_accounts')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('is_active', true);
+      .rpc('get_bank_accounts_safe', { p_user_id: user.id });
 
     if (!error && accounts) {
       setBankAccounts(accounts);
@@ -1928,7 +1939,7 @@ const BusinessFinanceAssistant = () => {
                         <div className="flex-1">
                           <h3 className="font-medium">{account.provider_name}</h3>
                           <p className="text-sm text-muted-foreground">
-                            {account.account_type.toUpperCase()} • ****{account.account_number?.slice(-4)} • {account.currency}
+                            {account.account_type.toUpperCase()} • {account.account_id} • {account.currency}
                           </p>
                         </div>
                         <div className="text-right">
