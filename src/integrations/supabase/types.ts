@@ -2431,48 +2431,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_integrations_safe: {
-        Row: {
-          connected_at: string | null
-          created_at: string | null
-          expires_at: string | null
-          has_access_token: boolean | null
-          has_refresh_token: boolean | null
-          id: string | null
-          integration_name: string | null
-          is_connected: boolean | null
-          metadata: Json | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          connected_at?: string | null
-          created_at?: string | null
-          expires_at?: string | null
-          has_access_token?: never
-          has_refresh_token?: never
-          id?: string | null
-          integration_name?: string | null
-          is_connected?: boolean | null
-          metadata?: Json | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          connected_at?: string | null
-          created_at?: string | null
-          expires_at?: string | null
-          has_access_token?: never
-          has_refresh_token?: never
-          id?: string | null
-          integration_name?: string | null
-          is_connected?: boolean | null
-          metadata?: Json | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
     }
     Functions: {
       check_2fa_rate_limit: {
@@ -2584,6 +2542,22 @@ export type Database = {
           payment_method: string
           status: string
           stripe_session_id: string
+        }[]
+      }
+      get_user_integrations_safe: {
+        Args: { p_user_id?: string }
+        Returns: {
+          connected_at: string
+          created_at: string
+          expires_at: string
+          has_access_token: boolean
+          has_refresh_token: boolean
+          id: string
+          integration_name: string
+          is_connected: boolean
+          metadata: Json
+          updated_at: string
+          user_id: string
         }[]
       }
       get_user_payments: {
