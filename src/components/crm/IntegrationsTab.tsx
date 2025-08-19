@@ -136,9 +136,7 @@ const IntegrationsTab = () => {
     if (!user?.id) return;
 
     const { data, error } = await supabase
-      .from('user_integrations_safe')
-      .select('*')
-      .eq('user_id', user.id);
+      .rpc('get_user_integrations_safe', { p_user_id: user.id });
 
     if (!error && data) {
       setIntegrations(prev => 

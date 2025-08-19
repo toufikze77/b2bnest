@@ -18,17 +18,24 @@ const GoogleCalendarConnectCard = ({ userId }: Props) => {
   const fetchStatus = async () => {
     try {
       const { data, error } = await supabase
-        .from('user_integrations_safe')
-        .select('is_connected, metadata')
-        .eq('user_id', userId)
-        .eq('integration_name', 'google_calendar')
-        .maybeSingle();
+        .rpc('get_user_integrations_safe', { p_user_id: userId });
 
-      if (!error && data?.is_connected) {
-        setConnected(true);
-        if (data.metadata) {
-          const metadata = typeof data.metadata === 'string' ? JSON.parse(data.metadata) : data.metadata;
-          setUserEmail(metadata?.email || null);
+      if (!error && data) {
+        const googleCalendarIntegration = data.find(
+          integration => integration.integration_name === 'google_calendar'
+        );
+        
+        if (googleCalendarIntegration?.is_connected) {
+          setConnected(true);
+          if (googleCalendarIntegration.metadata) {
+            const metadata = typeof googleCalendarIntegration.metadata === 'string' 
+              ? JSON.parse(googleCalendarIntegration.metadata) 
+              : googleCalendarIntegration.metadata;
+            setUserEmail(metadata?.email || null);
+          }
+        } else {
+          setConnected(false);
+          setUserEmail(null);
         }
       } else {
         setConnected(false);

@@ -20,17 +20,24 @@ const NotionConnectCard = ({ userId }: Props) => {
   const fetchStatus = async () => {
     try {
       const { data, error } = await supabase
-        .from('user_integrations_safe')
-        .select('is_connected, metadata')
-        .eq('user_id', userId)
-        .eq('integration_name', 'notion')
-        .maybeSingle();
+        .rpc('get_user_integrations_safe', { p_user_id: userId });
 
-      if (!error && data?.is_connected) {
-        setConnected(true);
-        if (data.metadata) {
-          const metadata = typeof data.metadata === 'string' ? JSON.parse(data.metadata) : data.metadata;
-          setUserEmail(metadata?.user_email || null);
+      if (!error && data) {
+        const notionIntegration = data.find(
+          integration => integration.integration_name === 'notion'
+        );
+        
+        if (notionIntegration?.is_connected) {
+          setConnected(true);
+          if (notionIntegration.metadata) {
+            const metadata = typeof notionIntegration.metadata === 'string' 
+              ? JSON.parse(notionIntegration.metadata) 
+              : notionIntegration.metadata;
+            setUserEmail(metadata?.user_email || null);
+          }
+        } else {
+          setConnected(false);
+          setUserEmail(null);
         }
       } else {
         setConnected(false);

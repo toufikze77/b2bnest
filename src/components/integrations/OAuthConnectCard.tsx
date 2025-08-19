@@ -23,14 +23,18 @@ const OAuthConnectCard = ({ provider, userId }: Props) => {
     try {
       const integrationName = provider === 'google' ? 'google_calendar' : provider;
       const { data, error } = await supabase
-        .from('user_integrations_safe')
-        .select('is_connected')
-        .eq('user_id', userId)
-        .eq('integration_name', integrationName)
-        .maybeSingle();
+        .rpc('get_user_integrations_safe', { p_user_id: userId });
 
-      if (!error && data?.is_connected) {
-        setConnected(true);
+      if (!error && data) {
+        const integration = data.find(
+          int => int.integration_name === integrationName
+        );
+        
+        if (integration?.is_connected) {
+          setConnected(true);
+        } else {
+          setConnected(false);
+        }
       } else {
         setConnected(false);
       }

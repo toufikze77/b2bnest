@@ -18,17 +18,24 @@ const SlackConnectCard = ({ userId }: Props) => {
   const fetchStatus = async () => {
     try {
       const { data, error } = await supabase
-        .from('user_integrations_safe')
-        .select('is_connected, metadata')
-        .eq('user_id', userId)
-        .eq('integration_name', 'slack')
-        .maybeSingle();
+        .rpc('get_user_integrations_safe', { p_user_id: userId });
 
-      if (!error && data?.is_connected) {
-        setConnected(true);
-        if (data.metadata) {
-          const metadata = typeof data.metadata === 'string' ? JSON.parse(data.metadata) : data.metadata;
-          setTeamName(metadata?.team_name || null);
+      if (!error && data) {
+        const slackIntegration = data.find(
+          integration => integration.integration_name === 'slack'
+        );
+        
+        if (slackIntegration?.is_connected) {
+          setConnected(true);
+          if (slackIntegration.metadata) {
+            const metadata = typeof slackIntegration.metadata === 'string' 
+              ? JSON.parse(slackIntegration.metadata) 
+              : slackIntegration.metadata;
+            setTeamName(metadata?.team_name || null);
+          }
+        } else {
+          setConnected(false);
+          setTeamName(null);
         }
       } else {
         setConnected(false);
