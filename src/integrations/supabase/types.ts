@@ -859,6 +859,36 @@ export type Database = {
           },
         ]
       }
+      integration_audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          integration_name: string
+          ip_address: unknown | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          integration_name: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          integration_name?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       integration_settings: {
         Row: {
           created_at: string
@@ -2338,6 +2368,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_integrations_safe: {
+        Row: {
+          connected_at: string | null
+          created_at: string | null
+          expires_at: string | null
+          has_access_token: boolean | null
+          has_refresh_token: boolean | null
+          id: string | null
+          integration_name: string | null
+          is_connected: boolean | null
+          metadata: Json | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          connected_at?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          has_access_token?: never
+          has_refresh_token?: never
+          id?: string | null
+          integration_name?: string | null
+          is_connected?: boolean | null
+          metadata?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          connected_at?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          has_access_token?: never
+          has_refresh_token?: never
+          id?: string | null
+          integration_name?: string | null
+          is_connected?: boolean | null
+          metadata?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_2fa_rate_limit: {
@@ -2357,11 +2429,27 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      decrypt_integration_token: {
+        Args: { encrypted_token: string }
+        Returns: string
+      }
+      encrypt_integration_token: {
+        Args: { token: string }
+        Returns: string
+      }
       get_advertisement_contact_info: {
         Args: { ad_id: string }
         Returns: {
           contact_email: string
           contact_phone: string
+        }[]
+      }
+      get_integration_tokens: {
+        Args: { p_integration_name: string; p_user_id?: string }
+        Returns: {
+          access_token: string
+          expires_at: string
+          refresh_token: string
         }[]
       }
       has_role: {
@@ -2384,6 +2472,17 @@ export type Database = {
           p_resource_type: string
           p_user_agent?: string
           p_user_id: string
+        }
+        Returns: string
+      }
+      store_integration_tokens: {
+        Args: {
+          p_access_token: string
+          p_expires_at?: string
+          p_integration_name: string
+          p_metadata?: Json
+          p_refresh_token?: string
+          p_user_id?: string
         }
         Returns: string
       }

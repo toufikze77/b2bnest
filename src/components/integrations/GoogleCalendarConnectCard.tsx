@@ -18,7 +18,7 @@ const GoogleCalendarConnectCard = ({ userId }: Props) => {
   const fetchStatus = async () => {
     try {
       const { data, error } = await supabase
-        .from('user_integrations')
+        .from('user_integrations_safe')
         .select('is_connected, metadata')
         .eq('user_id', userId)
         .eq('integration_name', 'google_calendar')

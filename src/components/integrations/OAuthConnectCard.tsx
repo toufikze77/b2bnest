@@ -23,7 +23,7 @@ const OAuthConnectCard = ({ provider, userId }: Props) => {
     try {
       const integrationName = provider === 'google' ? 'google_calendar' : provider;
       const { data, error } = await supabase
-        .from('user_integrations')
+        .from('user_integrations_safe')
         .select('is_connected')
         .eq('user_id', userId)
         .eq('integration_name', integrationName)

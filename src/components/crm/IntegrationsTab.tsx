@@ -136,7 +136,7 @@ const IntegrationsTab = () => {
     if (!user?.id) return;
 
     const { data, error } = await supabase
-      .from('user_integrations')
+      .from('user_integrations_safe')
       .select('*')
       .eq('user_id', user.id);
 
@@ -168,14 +168,12 @@ const IntegrationsTab = () => {
     
     try {
       if (newConnectedState) {
-        // Connect the integration
-        const { error } = await supabase
-          .from('user_integrations')
-          .upsert({
-            user_id: user.id,
-            integration_name: integration.integration_name,
-            is_connected: true,
-          });
+        // Connect the integration - use secure function
+        const { error } = await supabase.rpc('store_integration_tokens', {
+          p_integration_name: integration.integration_name,
+          p_access_token: 'placeholder_token', // This should be set during OAuth flow
+          p_user_id: user.id
+        });
 
         if (error) throw error;
       } else {
