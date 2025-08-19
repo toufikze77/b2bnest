@@ -96,35 +96,31 @@ serve(async (req) => {
 
     console.log("Stripe payment session created:", session.id);
 
-    // Store payment record in database
+    // Store payment record in database using secure function
     try {
-      const { data: paymentRecord, error: paymentError } = await supabaseService
-        .from("payments")
-        .insert({
-          stripe_session_id: session.id,
-          user_id: user?.id || null,
-          customer_email: customerEmail,
-          customer_name: buyerInfo?.fullName || null,
-          company_name: buyerInfo?.companyName || null,
-          contact_number: buyerInfo?.contactNumber || null,
-          amount: amount,
-          currency: currency,
-          status: "pending",
-          item_name: itemName,
-          stripe_customer_id: customerId || null,
-          metadata: {
+      const { data: paymentId, error: paymentError } = await supabaseService
+        .rpc('create_payment_record', {
+          p_stripe_session_id: session.id,
+          p_customer_email: customerEmail,
+          p_amount: amount,
+          p_item_name: itemName,
+          p_user_id: user?.id || null,
+          p_customer_name: buyerInfo?.fullName || null,
+          p_company_name: buyerInfo?.companyName || null,
+          p_contact_number: buyerInfo?.contactNumber || null,
+          p_currency: currency,
+          p_metadata: {
             session_created_at: new Date().toISOString(),
-            origin: req.headers.get("origin")
+            origin: req.headers.get("origin"),
+            stripe_customer_id: customerId || null
           }
-        })
-        .select()
-        .single();
+        });
 
       if (paymentError) {
         console.error("Error storing payment record:", paymentError);
         // Continue anyway - don't fail the payment creation
       } else {
-        console.log("Payment record stored:", paymentRecord.id);
+        console.log("Payment record stored with ID:", paymentId);
       }
     } catch (dbError) {
       console.error("Database error:", dbError);

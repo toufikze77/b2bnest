@@ -1229,6 +1229,39 @@ export type Database = {
           },
         ]
       }
+      payment_audit_logs: {
+        Row: {
+          action: string
+          admin_user_id: string | null
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          payment_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          admin_user_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          payment_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          payment_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       payment_notifications: {
         Row: {
           created_at: string
@@ -2459,6 +2492,22 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      create_payment_record: {
+        Args: {
+          p_amount: number
+          p_company_name?: string
+          p_contact_number?: string
+          p_currency?: string
+          p_customer_email: string
+          p_customer_name?: string
+          p_item_name: string
+          p_metadata?: Json
+          p_payment_method?: string
+          p_stripe_session_id: string
+          p_user_id?: string
+        }
+        Returns: string
+      }
       decrypt_banking_data: {
         Args: { encrypted_data: string }
         Returns: string
@@ -2467,12 +2516,20 @@ export type Database = {
         Args: { encrypted_token: string }
         Returns: string
       }
+      decrypt_payment_data: {
+        Args: { encrypted_data: string }
+        Returns: string
+      }
       encrypt_banking_data: {
         Args: { data: string }
         Returns: string
       }
       encrypt_integration_token: {
         Args: { token: string }
+        Returns: string
+      }
+      encrypt_payment_data: {
+        Args: { data: string }
         Returns: string
       }
       get_advertisement_contact_info: {
@@ -2510,6 +2567,37 @@ export type Database = {
           access_token: string
           expires_at: string
           refresh_token: string
+        }[]
+      }
+      get_payment_details_admin: {
+        Args: { p_payment_id: string }
+        Returns: {
+          amount: number
+          company_name: string
+          contact_number: string
+          created_at: string
+          currency: string
+          customer_email: string
+          customer_name: string
+          id: string
+          item_name: string
+          payment_method: string
+          status: string
+          stripe_session_id: string
+        }[]
+      }
+      get_user_payments: {
+        Args: { p_user_id?: string }
+        Returns: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          item_name: string
+          payment_method: string
+          status: string
+          stripe_session_id: string
+          updated_at: string
         }[]
       }
       has_role: {
@@ -2560,6 +2648,16 @@ export type Database = {
           p_user_id?: string
         }
         Returns: string
+      }
+      update_payment_status: {
+        Args: {
+          p_metadata?: Json
+          p_payment_method?: string
+          p_status: string
+          p_stripe_payment_intent_id?: string
+          p_stripe_session_id?: string
+        }
+        Returns: boolean
       }
     }
     Enums: {
