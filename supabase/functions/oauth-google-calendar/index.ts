@@ -1,5 +1,4 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
-import { encrypt } from '../shared/crypto.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -71,34 +70,25 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Encrypt tokens
-    const encryptedAccessToken = await encrypt(googleData.access_token, Deno.env.get('ENCRYPTION_SECRET') || 'default-secret-key-32-chars-long')
-    const encryptedRefreshToken = googleData.refresh_token 
-      ? await encrypt(googleData.refresh_token, Deno.env.get('ENCRYPTION_SECRET') || 'default-secret-key-32-chars-long')
-      : null
-
     // Calculate expiration
     const expiresAt = googleData.expires_in 
       ? new Date(Date.now() + googleData.expires_in * 1000).toISOString()
       : null
 
-    // Store integration in database
-    const { error: dbError } = await supabase
-      .from('user_integrations')
-      .upsert({
-        user_id: state,
-        integration_name: 'google_calendar',
-        access_token: encryptedAccessToken,
-        refresh_token: encryptedRefreshToken,
-        expires_at: expiresAt,
-        is_connected: true,
-        metadata: {
-          email: userInfo.email,
-          name: userInfo.name,
-          picture: userInfo.picture,
-          scope: googleData.scope,
-        },
-      })
+    // Store integration in database using secure function
+    const { error: dbError } = await supabase.rpc('store_integration_tokens', {
+      p_integration_name: 'google_calendar',
+      p_access_token: googleData.access_token,
+      p_refresh_token: googleData.refresh_token || null,
+      p_expires_at: expiresAt,
+      p_metadata: {
+        email: userInfo.email,
+        name: userInfo.name,
+        picture: userInfo.picture,
+        scope: googleData.scope,
+      },
+      p_user_id: state
+    })
 
     if (dbError) {
       console.error('Database error:', dbError)
