@@ -52,11 +52,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Email + password sign-up
   const signUp = async (email: string, password: string, fullName?: string, companyName?: string) => {
+    const redirectUrl = window.location.origin.replace('http://', 'https://');
     return await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/`,
+        emailRedirectTo: `${redirectUrl}/`,
         data: { full_name: fullName, company_name: companyName }
       }
     });
@@ -71,10 +72,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // OAuth (Google, GitHub, etc.)
   const signInWithOAuth = async (provider: 'google' | 'github' | 'twitter', options = {}) => {
+    const redirectUrl = window.location.origin.replace('http://', 'https://');
     return await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: window.location.origin + '/',
+        redirectTo: redirectUrl + '/',
         ...options
       }
     });
@@ -82,8 +84,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Reset password
   const resetPassword = async (email: string) => {
+    const redirectUrl = window.location.origin.replace('http://', 'https://');
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`
+      redirectTo: `${redirectUrl}/reset-password`
     });
     return { error };
   };
@@ -108,10 +111,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Placeholder SSO method
   const signInWithSSO = async (domain: string) => {
+    const redirectUrl = window.location.origin.replace('http://', 'https://');
     const { data, error } = await supabase.auth.signInWithSSO({
       domain,
       options: {
-        redirectTo: `${window.location.origin}/`
+        redirectTo: `${redirectUrl}/`
       }
     });
     return { error };
