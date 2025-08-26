@@ -230,29 +230,6 @@ const Auth = () => {
                     </Button>
                   </form>
 
-                  {/* OAuth Providers */}
-                  <div className="my-6 flex items-center">
-                    <div className="flex-grow border-t border-gray-200"></div>
-                    <span className="px-3 text-xs text-gray-500">or continue with</span>
-                    <div className="flex-grow border-t border-gray-200"></div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button
-                      variant="outline"
-                      onClick={() => signInWithOAuth('google')}
-                      disabled={loading}
-                    >
-                      Continue with Google
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => signInWithOAuth('github')}
-                      disabled={loading}
-                    >
-                      Continue with GitHub
-                    </Button>
-                  </div>
 
                   {/* Enterprise SSO by Domain */}
                   <div className="mt-4">
