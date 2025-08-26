@@ -11,7 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import TwoFactorAuth from '@/components/TwoFactorAuth';
 
 const Auth = () => {
-  const { user, signIn, signUp, loading, verify2FA, sendVerificationCode } = useAuth();
+  const { user, signIn, signUp, loading, verify2FA, sendVerificationCode, signInWithOAuth, signInWithSSO } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,6 +21,7 @@ const Auth = () => {
   const [showTwoFactor, setShowTwoFactor] = useState(false);
   const [twoFactorEmail, setTwoFactorEmail] = useState('');
   const [isVerification, setIsVerification] = useState(false);
+  const [ssoDomain, setSsoDomain] = useState('');
 
   // Debug effect to track state changes
   useEffect(() => {
@@ -228,6 +229,56 @@ const Auth = () => {
                       {isSubmitting ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
                     </Button>
                   </form>
+
+                  {/* OAuth Providers */}
+                  <div className="my-6 flex items-center">
+                    <div className="flex-grow border-t border-gray-200"></div>
+                    <span className="px-3 text-xs text-gray-500">or continue with</span>
+                    <div className="flex-grow border-t border-gray-200"></div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => signInWithOAuth('google')}
+                      disabled={loading}
+                    >
+                      Continue with Google
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => signInWithOAuth('github')}
+                      disabled={loading}
+                    >
+                      Continue with GitHub
+                    </Button>
+                  </div>
+
+                  {/* Enterprise SSO by Domain */}
+                  <div className="mt-4">
+                    <Label htmlFor="ssoDomain">Company SSO domain</Label>
+                    <div className="mt-2 flex gap-2">
+                      <Input
+                        id="ssoDomain"
+                        type="text"
+                        placeholder="example.com"
+                        value={ssoDomain}
+                        onChange={(e) => setSsoDomain(e.target.value)}
+                      />
+                      <Button
+                        type="button"
+                        onClick={async () => {
+                          const { error } = await signInWithSSO(ssoDomain);
+                          if (error) {
+                            toast({ title: 'SSO Failed', description: error.message, variant: 'destructive' });
+                          }
+                        }}
+                        disabled={loading || !ssoDomain.trim()}
+                      >
+                        Continue
+                      </Button>
+                    </div>
+                  </div>
 
                   <div className="mt-6 text-center space-y-2">
                     <button

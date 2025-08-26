@@ -15,6 +15,8 @@ interface AuthContextType {
   updatePassword: (password: string) => Promise<{ error: any }>;
   verify2FA: (email: string, code: string, isLogin: boolean) => Promise<{ error: any }>;
   sendVerificationCode: (email: string, type: 'verification' | 'login') => Promise<{ error: any, code?: string }>;
+  signInWithOAuth: (provider: 'google' | 'github') => Promise<{ error: any } | { error: null }>;
+  signInWithSSO: (domain: string) => Promise<{ error: any } | { error: null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -141,6 +143,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       console.log('❌ Unexpected error in signIn:', error);
       return { error };
+    }
+  };
+
+  const signInWithOAuth = async (provider: 'google' | 'github') => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}`
+        }
+      });
+      if (error) return { error };
+      return { error: null };
+    } catch (error) {
+      return { error } as { error: any };
+    }
+  };
+
+  const signInWithSSO = async (domain: string) => {
+    try {
+      const sanitizedDomain = sanitizeInput(domain.trim().toLowerCase());
+      if (!sanitizedDomain || !sanitizedDomain.includes('.')) {
+        return { error: { message: 'Enter a valid company domain' } };
+      }
+      const { error } = await supabase.auth.signInWithSSO({
+        domain: sanitizedDomain
+      } as any);
+      if (error) return { error };
+      return { error: null };
+    } catch (error) {
+      return { error } as { error: any };
     }
   };
 
@@ -316,7 +349,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     resetPassword,
     updatePassword,
     verify2FA,
-    sendVerificationCode
+    sendVerificationCode,
+    signInWithOAuth,
+    signInWithSSO
   };
 
   return (
