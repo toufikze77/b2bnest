@@ -164,16 +164,70 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signInWithSSO = async (domain: string) => {
     try {
       const sanitizedDomain = sanitizeInput(domain.trim().toLowerCase());
-      if (!sanitizedDomain || !sanitizedDomain.includes('.')) {
-        return { error: { message: 'Enter a valid company domain' } };
+      
+      // Enhanced domain validation
+      if (!sanitizedDomain) {
+        return { error: { message: 'Company domain is required' } };
       }
-      const { error } = await supabase.auth.signInWithSSO({
-        domain: sanitizedDomain
-      } as any);
-      if (error) return { error };
+      
+      if (!sanitizedDomain.includes('.')) {
+        return { error: { message: 'Please enter a valid domain (e.g., yourcompany.com)' } };
+      }
+      
+      // Check for common domain format issues
+      if (sanitizedDomain.startsWith('http://') || sanitizedDomain.startsWith('https://')) {
+        return { error: { message: 'Please enter just the domain name without http:// or https://' } };
+      }
+      
+      if (sanitizedDomain.includes('@')) {
+        return { error: { message: 'Please enter the domain name, not an email address' } };
+      }
+      
+      // Rate limiting for SSO attempts
+      if (!authRateLimiter.canAttempt(`sso:${sanitizedDomain}`, 3, 300000)) {
+        const remainingTime = Math.ceil(authRateLimiter.getRemainingTime(`sso:${sanitizedDomain}`) / 60000);
+        return { error: { message: `Too many SSO attempts. Please wait ${remainingTime} minutes.` } };
+      }
+      
+      console.log('🔐 Starting SSO authentication for domain:', sanitizedDomain);
+      
+      const { data, error } = await supabase.auth.signInWithSSO({
+        domain: sanitizedDomain,
+        options: {
+          redirectTo: `${window.location.origin}/`
+        }
+      });
+      
+      if (error) {
+        console.error('❌ SSO error:', error);
+        
+        // Provide more specific error messages
+        if (error.message?.includes('not found') || error.message?.includes('not configured')) {
+          return { error: { message: 'SSO is not configured for this domain. Please contact your administrator.' } };
+        }
+        
+        if (error.message?.includes('invalid') || error.message?.includes('malformed')) {
+          return { error: { message: 'Invalid domain format. Please check your company domain.' } };
+        }
+        
+        return { error: { message: error.message || 'SSO authentication failed' } };
+      }
+      
+      console.log('✅ SSO authentication initiated successfully');
+      
+      // If there's a URL in the response, we might need to redirect
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+      
       return { error: null };
-    } catch (error) {
-      return { error } as { error: any };
+    } catch (error: any) {
+      console.error('❌ Unexpected SSO error:', error);
+      return { 
+        error: { 
+          message: error?.message || 'An unexpected error occurred during SSO authentication' 
+        } 
+      };
     }
   };
 
