@@ -583,23 +583,7 @@ const ProjectManagement = () => {
     }
   };
 
-  // Save teams to localStorage whenever teams change
-  useEffect(() => {
-    try {
-      localStorage.setItem('projectTeams', JSON.stringify(teams));
-    } catch (error) {
-      console.error('Error saving teams:', error);
-    }
-  }, [teams]);
-
-  // Save goals to localStorage whenever goals change  
-  useEffect(() => {
-    try {
-      localStorage.setItem('projectGoals', JSON.stringify(goals));
-    } catch (error) {
-      console.error('Error saving goals:', error);
-    }
-  }, [goals]);
+  // Note: localStorage saving is handled in individual create/update functions to avoid infinite loops
 
   const addPersonToTeam = async (teamId: string) => {
     const email = window.prompt('Member email to add');
