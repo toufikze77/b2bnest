@@ -33,6 +33,7 @@ const PricingPlans = () => {
       monthly: 11,
       annual: 9, // 20% discount
       specialOffer: 11, // Discounted price
+      originalPrice: 32, // Original price before 66% discount
       userLimit: '1 user',
       features: [
         'AI Business Advisor',
@@ -62,6 +63,7 @@ const PricingPlans = () => {
       monthly: 19,
       annual: 15, // 20% discount
       specialOffer: 19, // Discounted price
+      originalPrice: 56, // Original price before 66% discount
       userLimit: '5 users',
       features: [
         'Everything in Starter',
@@ -90,6 +92,7 @@ const PricingPlans = () => {
       monthly: 29,
       annual: 23, // 20% discount
       specialOffer: 29, // Discounted price
+      originalPrice: 85, // Original price before 66% discount
       userLimit: '25 users',
       features: [
         'Everything in Professional',
@@ -232,7 +235,7 @@ const PricingPlans = () => {
           {plans.map((plan) => {
             const PlanIcon = plan.icon;
             const price = isSpecialOffer ? plan.specialOffer : (isAnnual ? plan.annual : plan.monthly);
-            const originalPrice = plan.monthly;
+            const originalPrice = plan.originalPrice;
             
             return (
               <Card 
@@ -273,20 +276,16 @@ const PricingPlans = () => {
                        <span className="text-4xl font-bold text-gray-900">
                          £{price}
                        </span>
-                       <div className="flex flex-col">
-                         <span className="text-sm text-gray-500">/month</span>
-                         {(isAnnual || isSpecialOffer) && plan.monthly > 0 && (
-                           <span className="text-xs text-gray-400 line-through">
-                             £{originalPrice}
-                           </span>
-                         )}
-                       </div>
-                     </div>
-                     {isSpecialOffer && (
-                       <Badge className="mt-2 bg-red-100 text-red-800">
-                         Limited Time: {Math.round(((originalPrice - price) / originalPrice) * 100)}% OFF
-                       </Badge>
-                     )}
+                        <div className="flex flex-col">
+                          <span className="text-sm text-gray-500">/month</span>
+                          <span className="text-xs text-gray-400 line-through">
+                            £{originalPrice}
+                          </span>
+                        </div>
+                      </div>
+                      <Badge className="mt-2 bg-red-100 text-red-800">
+                        Limited Time: 66% OFF
+                      </Badge>
                      {isAnnual && plan.savings && !isSpecialOffer && (
                        <Badge className="mt-2 bg-green-100 text-green-800">
                          {plan.savings}
