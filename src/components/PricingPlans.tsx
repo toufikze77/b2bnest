@@ -30,9 +30,9 @@ const PricingPlans = () => {
       description: 'Perfect for solopreneurs and small teams',
       icon: Zap,
       color: 'from-blue-500 to-cyan-500',
-      monthly: 54,
-      annual: 43, // 20% discount
-      specialOffer: 39, // Discounted price
+      monthly: 11,
+      annual: 9, // 20% discount
+      specialOffer: 11, // Discounted price
       userLimit: '1 user',
       features: [
         'AI Business Advisor',
@@ -59,9 +59,9 @@ const PricingPlans = () => {
       description: 'For growing teams and serious entrepreneurs',
       icon: Crown,
       color: 'from-purple-500 to-pink-500',
-      monthly: 69,
-      annual: 55, // 20% discount
-      specialOffer: 49, // Discounted price
+      monthly: 19,
+      annual: 15, // 20% discount
+      specialOffer: 19, // Discounted price
       userLimit: '5 users',
       features: [
         'Everything in Starter',
@@ -87,9 +87,9 @@ const PricingPlans = () => {
       description: 'For scaling businesses and larger teams',
       icon: Building2,
       color: 'from-emerald-500 to-teal-500',
-      monthly: 99,
-      annual: 79, // 20% discount
-      specialOffer: 79, // Discounted price
+      monthly: 29,
+      annual: 23, // 20% discount
+      specialOffer: 29, // Discounted price
       userLimit: '25 users',
       features: [
         'Everything in Professional',
