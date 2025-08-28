@@ -1131,23 +1131,9 @@ const ProjectManagement = () => {
                           {task.attachments && task.attachments.length > 0 && (
                             <Paperclip className="w-3 h-3 text-gray-400" />
                           )}
-                          {task.comments && task.comments.length > 0 && (
-                            <div className="flex items-center gap-1">
-                              <MessageCircle className="w-3 h-3 text-gray-400" />
-                              <span className="text-xs text-gray-500">{task.comments.length}</span>
-                            </div>
-                          )}
                         </div>
                         
                         <div className="flex items-center gap-1">
-                          {task.dueDate && (
-                            <div className="flex items-center gap-1">
-                              <CalendarIcon className="w-3 h-3 text-gray-400" />
-                              <span className="text-xs text-gray-500">
-                                {format(task.dueDate, 'MMM dd')}
-                              </span>
-                            </div>
-                          )}
                           <Avatar className="w-5 h-5">
                             <AvatarFallback className="text-xs">
                               {task.assignee.split(' ').map(n => n[0]).join('')}
