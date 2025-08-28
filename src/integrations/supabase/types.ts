@@ -2374,63 +2374,7 @@ export type Database = {
       }
     }
     Views: {
-      advertisements_public: {
-        Row: {
-          category: string | null
-          created_at: string | null
-          currency: string | null
-          description: string | null
-          featured_until: string | null
-          id: string | null
-          image_urls: string[] | null
-          is_active: boolean | null
-          is_service: boolean | null
-          price: number | null
-          subcategory: string | null
-          title: string | null
-          updated_at: string | null
-          user_id: string | null
-          view_count: number | null
-          website_url: string | null
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string | null
-          currency?: string | null
-          description?: string | null
-          featured_until?: string | null
-          id?: string | null
-          image_urls?: string[] | null
-          is_active?: boolean | null
-          is_service?: boolean | null
-          price?: number | null
-          subcategory?: string | null
-          title?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-          view_count?: number | null
-          website_url?: string | null
-        }
-        Update: {
-          category?: string | null
-          created_at?: string | null
-          currency?: string | null
-          description?: string | null
-          featured_until?: string | null
-          id?: string | null
-          image_urls?: string[] | null
-          is_active?: boolean | null
-          is_service?: boolean | null
-          price?: number | null
-          subcategory?: string | null
-          title?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-          view_count?: number | null
-          website_url?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       check_2fa_rate_limit: {
