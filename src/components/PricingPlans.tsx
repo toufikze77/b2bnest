@@ -30,9 +30,11 @@ const PricingPlans = () => {
       description: 'Perfect for solopreneurs and small teams',
       icon: Zap,
       color: 'from-blue-500 to-cyan-500',
-      monthly: 54,
-      annual: 43, // 20% discount
-      specialOffer: 39, // Discounted price
+      monthly: 11,
+      annual: 108, // 20% discount (£9/month * 12)
+      specialOffer: 11, // Discounted price
+      specialOfferAnnual: 132, // Annual special offer (£11 * 12)
+      originalPrice: 32, // Original price before 66% discount
       userLimit: '1 user',
       features: [
         'AI Business Advisor',
@@ -59,9 +61,11 @@ const PricingPlans = () => {
       description: 'For growing teams and serious entrepreneurs',
       icon: Crown,
       color: 'from-purple-500 to-pink-500',
-      monthly: 69,
-      annual: 55, // 20% discount
-      specialOffer: 49, // Discounted price
+      monthly: 19,
+      annual: 180, // 20% discount (£15/month * 12)
+      specialOffer: 19, // Discounted price
+      specialOfferAnnual: 228, // Annual special offer (£19 * 12)
+      originalPrice: 56, // Original price before 66% discount
       userLimit: '5 users',
       features: [
         'Everything in Starter',
@@ -87,9 +91,11 @@ const PricingPlans = () => {
       description: 'For scaling businesses and larger teams',
       icon: Building2,
       color: 'from-emerald-500 to-teal-500',
-      monthly: 99,
-      annual: 79, // 20% discount
-      specialOffer: 79, // Discounted price
+      monthly: 29,
+      annual: 276, // 20% discount (£23/month * 12)
+      specialOffer: 29, // Discounted price
+      specialOfferAnnual: 348, // Annual special offer (£29 * 12)
+      originalPrice: 85, // Original price before 66% discount
       userLimit: '25 users',
       features: [
         'Everything in Professional',
@@ -125,7 +131,9 @@ const PricingPlans = () => {
     const plan = plans.find(p => p.id === planId);
     if (!plan) return;
 
-    const price = isAnnual ? plan.annual : plan.monthly;
+    const price = isSpecialOffer 
+      ? (isAnnual ? plan.specialOfferAnnual : plan.specialOffer)
+      : (isAnnual ? plan.annual : plan.monthly);
     setPaymentAmount(price);
     setPaymentItemName(`${plan.name} Plan - ${isAnnual ? 'Annual' : 'Monthly'}`);
     setSelectedPlan(planId);
@@ -231,8 +239,10 @@ const PricingPlans = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
           {plans.map((plan) => {
             const PlanIcon = plan.icon;
-            const price = isSpecialOffer ? plan.specialOffer : (isAnnual ? plan.annual : plan.monthly);
-            const originalPrice = plan.monthly;
+            const price = isSpecialOffer 
+              ? (isAnnual ? plan.specialOfferAnnual : plan.specialOffer)
+              : (isAnnual ? plan.annual : plan.monthly);
+            const originalPrice = plan.originalPrice;
             
             return (
               <Card 
@@ -273,26 +283,25 @@ const PricingPlans = () => {
                        <span className="text-4xl font-bold text-gray-900">
                          £{price}
                        </span>
-                       <div className="flex flex-col">
-                         <span className="text-sm text-gray-500">/month</span>
-                         {(isAnnual || isSpecialOffer) && plan.monthly > 0 && (
-                           <span className="text-xs text-gray-400 line-through">
-                             £{originalPrice}
-                           </span>
-                         )}
-                       </div>
-                     </div>
-                     {isSpecialOffer && (
-                       <Badge className="mt-2 bg-red-100 text-red-800">
-                         Limited Time: {Math.round(((originalPrice - price) / originalPrice) * 100)}% OFF
-                       </Badge>
-                     )}
+                        <div className="flex flex-col">
+                          <span className="text-sm text-gray-500">{isAnnual ? '/year' : '/month'}</span>
+                          <span className="text-xs text-gray-400 line-through">
+                            £{originalPrice}
+                          </span>
+                        </div>
+                      </div>
+                      <Badge className="mt-2 bg-red-100 text-red-800">
+                        Limited Time: 66% OFF
+                      </Badge>
                      {isAnnual && plan.savings && !isSpecialOffer && (
                        <Badge className="mt-2 bg-green-100 text-green-800">
                          {plan.savings}
                        </Badge>
                      )}
-                     <p className="text-sm text-gray-500 mt-2">{plan.userLimit}</p>
+                      <p className="text-sm text-gray-500 mt-2">
+                        {plan.userLimit}
+                        {isAnnual && <span className="block text-xs">Billed annually (2 months free)</span>}
+                      </p>
                    </div>
                 </CardHeader>
 

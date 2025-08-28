@@ -79,34 +79,32 @@ serve(async (req) => {
           break;
         }
 
-        // Update payment record
-        const { data: paymentData, error: paymentError } = await supabase
-          .from("payments")
-          .update({
-            status: "completed",
-            stripe_payment_intent_id: session.payment_intent,
-            payment_method: session.payment_method_types?.[0] || "card",
-            updated_at: new Date().toISOString(),
-            metadata: {
+        // Update payment record using secure function
+        const { data: updateSuccess, error: paymentError } = await supabase
+          .rpc('update_payment_status', {
+            p_status: 'completed',
+            p_stripe_session_id: session.id,
+            p_stripe_payment_intent_id: session.payment_intent as string,
+            p_payment_method: session.payment_method_types?.[0] || 'card',
+            p_metadata: {
               webhook_event_id: event.id,
               payment_status: session.payment_status,
               amount_total: session.amount_total,
               currency: session.currency
             }
-          })
-          .eq("stripe_session_id", session.id)
-          .select()
-          .single();
+          });
 
         if (paymentError) {
           logStep("Error updating payment", { error: paymentError });
           // Don't fail the webhook, just log the error
+        } else if (!updateSuccess) {
+          logStep("Payment record not found for update", { sessionId: session.id });
         } else {
-          logStep("Payment updated successfully", { paymentId: paymentData?.id });
+          logStep("Payment updated successfully", { sessionId: session.id });
         }
 
-        // Send notification email if Resend is configured
-        if (resendApiKey && paymentData) {
+        // Send notification email if Resend is configured and payment was updated successfully
+        if (resendApiKey && updateSuccess) {
           try {
             const resend = new Resend(resendApiKey);
             
@@ -121,25 +119,14 @@ serve(async (req) => {
                 
                 <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
                   <h3>Payment Details:</h3>
-                  <p><strong>Item:</strong> ${paymentData.item_name}</p>
-                  <p><strong>Amount:</strong> ${session.currency?.toUpperCase()} ${(session.amount_total / 100).toFixed(2)}</p>
-                  <p><strong>Payment ID:</strong> ${paymentData.id}</p>
+                  <p><strong>Amount:</strong> ${session.currency?.toUpperCase()} ${(session.amount_total! / 100).toFixed(2)}</p>
+                  <p><strong>Session ID:</strong> ${session.id}</p>
                   <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
                 </div>
                 
                 <p>If you have any questions, please contact our support team.</p>
                 <p>Best regards,<br>BusinessForms Pro Team</p>
               `,
-            });
-
-            // Log customer email notification
-            await supabase.from("payment_notifications").insert({
-              payment_id: paymentData.id,
-              notification_type: "customer_confirmation",
-              recipient: customerEmail,
-              status: customerEmailResult.error ? "failed" : "sent",
-              error_message: customerEmailResult.error?.message,
-              sent_at: customerEmailResult.error ? null : new Date().toISOString()
             });
 
             logStep("Customer email sent", { emailId: customerEmailResult.data?.id });
@@ -157,26 +144,13 @@ serve(async (req) => {
                 <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
                   <h3>Payment Details:</h3>
                   <p><strong>Customer:</strong> ${customerName || 'N/A'} (${customerEmail})</p>
-                  <p><strong>Company:</strong> ${paymentData.company_name || 'N/A'}</p>
-                  <p><strong>Contact:</strong> ${paymentData.contact_number || 'N/A'}</p>
-                  <p><strong>Item:</strong> ${paymentData.item_name}</p>
-                  <p><strong>Amount:</strong> ${session.currency?.toUpperCase()} ${(session.amount_total / 100).toFixed(2)}</p>
-                  <p><strong>Payment ID:</strong> ${paymentData.id}</p>
+                  <p><strong>Amount:</strong> ${session.currency?.toUpperCase()} ${(session.amount_total! / 100).toFixed(2)}</p>
+                  <p><strong>Session ID:</strong> ${session.id}</p>
                   <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
                 </div>
                 
                 <p>View full details in the admin dashboard.</p>
               `,
-            });
-
-            // Log admin email notification
-            await supabase.from("payment_notifications").insert({
-              payment_id: paymentData.id,
-              notification_type: "admin_notification",
-              recipient: adminEmail,
-              status: adminEmailResult.error ? "failed" : "sent",
-              error_message: adminEmailResult.error?.message,
-              sent_at: adminEmailResult.error ? null : new Date().toISOString()
             });
 
             logStep("Admin email sent", { emailId: adminEmailResult.data?.id });
@@ -193,18 +167,16 @@ serve(async (req) => {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         logStep("Processing payment_intent.payment_failed", { paymentIntentId: paymentIntent.id });
 
-        // Update payment record as failed
+        // Update payment record as failed using secure function
         await supabase
-          .from("payments")
-          .update({
-            status: "failed",
-            updated_at: new Date().toISOString(),
-            metadata: {
+          .rpc('update_payment_status', {
+            p_status: 'failed',
+            p_stripe_payment_intent_id: paymentIntent.id,
+            p_metadata: {
               webhook_event_id: event.id,
               failure_reason: paymentIntent.last_payment_error?.message
             }
-          })
-          .eq("stripe_payment_intent_id", paymentIntent.id);
+          });
 
         logStep("Payment marked as failed");
         break;

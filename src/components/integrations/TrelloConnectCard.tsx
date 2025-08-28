@@ -18,20 +18,27 @@ const TrelloConnectCard = ({ userId }: Props) => {
   const fetchStatus = async () => {
     try {
       const { data, error } = await supabase
-        .from('user_integrations')
-        .select('access_token, is_connected, metadata')
-        .eq('user_id', userId)
-        .eq('integration_name', 'trello')
-        .maybeSingle();
+        .rpc('get_user_integrations_safe', { p_user_id: userId });
 
-      if (!error && data?.access_token) {
-        setConnected(true);
-        if (data.metadata) {
-          const metadata = typeof data.metadata === 'string' ? JSON.parse(data.metadata) : data.metadata;
-          setUserInfo({
-            username: metadata?.username,
-            fullName: metadata?.full_name
-          });
+      if (!error && data) {
+        const trelloIntegration = data.find(
+          integration => integration.integration_name === 'trello'
+        );
+        
+        if (trelloIntegration?.is_connected) {
+          setConnected(true);
+          if (trelloIntegration.metadata) {
+            const metadata = typeof trelloIntegration.metadata === 'string' 
+              ? JSON.parse(trelloIntegration.metadata) 
+              : trelloIntegration.metadata;
+            setUserInfo({
+              username: metadata?.username,
+              fullName: metadata?.full_name
+            });
+          }
+        } else {
+          setConnected(false);
+          setUserInfo(null);
         }
       } else {
         setConnected(false);

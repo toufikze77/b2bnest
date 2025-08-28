@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -352,6 +352,36 @@ export type Database = {
           },
         ]
       }
+      banking_audit_logs: {
+        Row: {
+          action: string
+          bank_account_id: string | null
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          bank_account_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          bank_account_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       bills: {
         Row: {
           amount: number
@@ -592,6 +622,7 @@ export type Database = {
           id: string
           notes: string | null
           probability: number | null
+          sort_order: number | null
           stage: string | null
           title: string
           updated_at: string
@@ -606,6 +637,7 @@ export type Database = {
           id?: string
           notes?: string | null
           probability?: number | null
+          sort_order?: number | null
           stage?: string | null
           title: string
           updated_at?: string
@@ -620,6 +652,7 @@ export type Database = {
           id?: string
           notes?: string | null
           probability?: number | null
+          sort_order?: number | null
           stage?: string | null
           title?: string
           updated_at?: string
@@ -855,6 +888,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      integration_audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          integration_name: string
+          ip_address: unknown | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          integration_name: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          integration_name?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       integration_settings: {
         Row: {
@@ -1166,6 +1229,39 @@ export type Database = {
           },
         ]
       }
+      payment_audit_logs: {
+        Row: {
+          action: string
+          admin_user_id: string | null
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          payment_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          admin_user_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          payment_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          payment_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       payment_notifications: {
         Row: {
           created_at: string
@@ -1398,6 +1494,7 @@ export type Database = {
           location: string | null
           position: string | null
           skills: string[] | null
+          theme: string | null
           time_format: string | null
           timezone: string | null
           trial_ends_at: string | null
@@ -1431,6 +1528,7 @@ export type Database = {
           location?: string | null
           position?: string | null
           skills?: string[] | null
+          theme?: string | null
           time_format?: string | null
           timezone?: string | null
           trial_ends_at?: string | null
@@ -1464,6 +1562,7 @@ export type Database = {
           location?: string | null
           position?: string | null
           skills?: string[] | null
+          theme?: string | null
           time_format?: string | null
           timezone?: string | null
           trial_ends_at?: string | null
@@ -2285,20 +2384,144 @@ export type Database = {
       check_trial_status: {
         Args: { user_id_param: string }
         Returns: {
-          is_trial_active: boolean
-          trial_expired: boolean
           days_remaining: number
+          is_trial_active: boolean
           trial_ends_at: string
+          trial_expired: boolean
         }[]
       }
       cleanup_expired_2fa_codes: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      create_payment_record: {
+        Args: {
+          p_amount: number
+          p_company_name?: string
+          p_contact_number?: string
+          p_currency?: string
+          p_customer_email: string
+          p_customer_name?: string
+          p_item_name: string
+          p_metadata?: Json
+          p_payment_method?: string
+          p_stripe_session_id: string
+          p_user_id?: string
+        }
+        Returns: string
+      }
+      decrypt_banking_data: {
+        Args: { encrypted_data: string }
+        Returns: string
+      }
+      decrypt_integration_token: {
+        Args: { encrypted_token: string }
+        Returns: string
+      }
+      decrypt_payment_data: {
+        Args: { encrypted_data: string }
+        Returns: string
+      }
+      encrypt_banking_data: {
+        Args: { data: string }
+        Returns: string
+      }
+      encrypt_integration_token: {
+        Args: { token: string }
+        Returns: string
+      }
+      encrypt_payment_data: {
+        Args: { data: string }
+        Returns: string
+      }
+      get_advertisement_contact_info: {
+        Args: { ad_id: string }
+        Returns: {
+          contact_email: string
+          contact_phone: string
+        }[]
+      }
+      get_bank_account_details: {
+        Args: { p_account_id: string; p_user_id?: string }
+        Returns: {
+          account_number: string
+          sort_code: string
+        }[]
+      }
+      get_bank_accounts_safe: {
+        Args: { p_user_id?: string }
+        Returns: {
+          account_id: string
+          account_type: string
+          available_balance: number
+          balance: number
+          created_at: string
+          currency: string
+          id: string
+          is_active: boolean
+          last_synced_at: string
+          provider_name: string
+        }[]
+      }
+      get_integration_tokens: {
+        Args: { p_integration_name: string; p_user_id?: string }
+        Returns: {
+          access_token: string
+          expires_at: string
+          refresh_token: string
+        }[]
+      }
+      get_payment_details_admin: {
+        Args: { p_payment_id: string }
+        Returns: {
+          amount: number
+          company_name: string
+          contact_number: string
+          created_at: string
+          currency: string
+          customer_email: string
+          customer_name: string
+          id: string
+          item_name: string
+          payment_method: string
+          status: string
+          stripe_session_id: string
+        }[]
+      }
+      get_user_integrations_safe: {
+        Args: { p_user_id?: string }
+        Returns: {
+          connected_at: string
+          created_at: string
+          expires_at: string
+          has_access_token: boolean
+          has_refresh_token: boolean
+          id: string
+          integration_name: string
+          is_connected: boolean
+          metadata: Json
+          updated_at: string
+          user_id: string
+        }[]
+      }
+      get_user_payments: {
+        Args: { p_user_id?: string }
+        Returns: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          item_name: string
+          payment_method: string
+          status: string
+          stripe_session_id: string
+          updated_at: string
+        }[]
+      }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
@@ -2308,15 +2531,51 @@ export type Database = {
       }
       log_user_action: {
         Args: {
-          p_user_id: string
           p_action: string
-          p_resource_type: string
-          p_resource_id?: string
           p_details?: Json
           p_ip_address?: unknown
+          p_resource_id?: string
+          p_resource_type: string
           p_user_agent?: string
+          p_user_id: string
         }
         Returns: string
+      }
+      store_bank_account: {
+        Args: {
+          p_account_id: string
+          p_account_number?: string
+          p_account_type: string
+          p_available_balance?: number
+          p_balance?: number
+          p_currency?: string
+          p_provider_id: string
+          p_provider_name: string
+          p_sort_code?: string
+          p_user_id?: string
+        }
+        Returns: string
+      }
+      store_integration_tokens: {
+        Args: {
+          p_access_token: string
+          p_expires_at?: string
+          p_integration_name: string
+          p_metadata?: Json
+          p_refresh_token?: string
+          p_user_id?: string
+        }
+        Returns: string
+      }
+      update_payment_status: {
+        Args: {
+          p_metadata?: Json
+          p_payment_method?: string
+          p_status: string
+          p_stripe_payment_intent_id?: string
+          p_stripe_session_id?: string
+        }
+        Returns: boolean
       }
     }
     Enums: {

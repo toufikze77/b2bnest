@@ -12,12 +12,14 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import LivePriceSidebars from '@/components/sidebars/LivePriceSidebars';
 
+
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isPriceSidebarOpen, setIsPriceSidebarOpen] = useState(false);
   const [activePriceTab, setActivePriceTab] = useState<'crypto' | 'forex'>('crypto');
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  
 
   const handleSignOut = async () => {
     await signOut();
@@ -145,6 +147,7 @@ const Header = () => {
 
           {/* Live Prices and User Menu */}
           <div className="flex items-center space-x-2">
+
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

@@ -84,23 +84,10 @@ import {
   Cloud,
   Loader2,
   ArrowUp,
-  ArrowDown,
-  Image as ImageIcon,
-  Tag as TagIcon
+  ArrowDown
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { Pie, Bar } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip as ChartTooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-} from 'chart.js';
-
-ChartJS.register(ArcElement, ChartTooltip, Legend, CategoryScale, LinearScale, BarElement);
+import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 
 // Enhanced interfaces
 interface Task {
@@ -122,9 +109,6 @@ interface Task {
   comments?: Comment[];
   dependencies?: string[];
   progress?: number;
-  archived?: boolean;
-  position?: number;
-  coverUrl?: string;
 }
 
 interface Subtask {
@@ -199,7 +183,6 @@ interface KanbanColumn {
   color: string;
   order: number;
   automationRules?: AutomationRule[];
-  wipLimit?: number;
 }
 
 interface AutomationRule {
@@ -228,36 +211,49 @@ interface Integration {
   lastSync?: Date;
 }
 
-// New interfaces for multitenancy and planning
-interface Team {
+interface WorkRequest {
   id: string;
-  name: string;
-  members: string[];
-}
-
-interface Epic {
-  id: string;
+  user_id: string;
   title: string;
   description?: string;
-  projectId?: string;
-  dueDate?: Date | null;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'new' | 'in_review' | 'approved' | 'rejected' | 'converted';
+  created_at: string;
 }
 
-interface Goal {
+interface GoalItem {
   id: string;
+  user_id: string;
   title: string;
   description?: string;
-  targetDate?: Date | null;
+  target_date?: string;
   progress: number;
-  owner?: string;
-  projectId?: string;
-  epicId?: string;
+  created_at: string;
 }
 
-interface LabelDef {
+interface TeamItem {
   id: string;
+  owner_id: string;
   name: string;
-  color: string; // tailwind bg-* class
+  created_at: string;
+}
+
+interface TeamMemberItem {
+  id?: string;
+  team_id: string;
+  member_email: string;
+  role: string;
+  created_at?: string;
+}
+
+interface CalendarEventItem {
+  id: string;
+  user_id: string;
+  title: string;
+  start_at: string;
+  end_at?: string;
+  project_id?: string | null;
+  created_at: string;
 }
 
 const ProjectManagement = () => {
@@ -265,6 +261,10 @@ const ProjectManagement = () => {
   const { user } = useAuth();
   const { canAccessFeature } = useSubscription();
   const { toast } = useToast();
+  
+  // Always call all hooks first to prevent hook violations
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
+  
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<'kanban' | 'list' | 'calendar' | 'timeline'>('kanban');
   const [activeTab, setActiveTab] = useState('summary');
@@ -277,38 +277,7 @@ const ProjectManagement = () => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showEditTask, setShowEditTask] = useState(false);
   const [showCreateProject, setShowCreateProject] = useState(false);
-  // Compact mode and multitenancy state
-  const [compactMode, setCompactMode] = useState<boolean>(true);
-  const [teams, setTeams] = useState<Team[]>([
-    { id: 'all', name: 'All Teams', members: [] },
-    { id: 'team-1', name: 'Product', members: ['John Doe', 'Jane Smith'] },
-    { id: 'team-2', name: 'Engineering', members: ['Mike Johnson', 'Alex Chen'] },
-  ]);
-  const [selectedTeam, setSelectedTeam] = useState<string>('all');
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [showCreateEpic, setShowCreateEpic] = useState<boolean>(false);
-  const [epics, setEpics] = useState<Epic[]>([]);
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [wipLimits, setWipLimits] = useState<Record<string, number>>({
-    backlog: 999,
-    todo: 8,
-    'in-progress': 5,
-    review: 4,
-    done: 999,
-  });
-  // Trello-like UI state
-  const [favoriteBoards, setFavoriteBoards] = useState<Record<string, boolean>>({});
-  const [listComposerOpen, setListComposerOpen] = useState<boolean>(false);
-  const [newListTitle, setNewListTitle] = useState<string>('');
-  const [cardComposerOpen, setCardComposerOpen] = useState<Record<string, boolean>>({});
-  const [newCardTitle, setNewCardTitle] = useState<Record<string, string>>({});
-  
-  const getTagColor = (tag: string) => {
-    const palette = ['bg-red-500','bg-orange-500','bg-amber-500','bg-yellow-500','bg-lime-500','bg-green-500','bg-emerald-500','bg-teal-500','bg-cyan-500','bg-sky-500','bg-blue-500','bg-indigo-500','bg-violet-500','bg-purple-500','bg-fuchsia-500','bg-pink-500','bg-rose-500'];
-    let hash = 0;
-    for (let i = 0; i < tag.length; i++) hash = (hash * 31 + tag.charCodeAt(i)) >>> 0;
-    return palette[hash % palette.length];
-  };
+  const [boardDensity, setBoardDensity] = useState<'comfortable' | 'compact' | 'condensed'>('comfortable');
 
   // Sample data with enhanced features - moved before conditional returns
   const [projects, setProjects] = useState<Project[]>([
@@ -458,63 +427,219 @@ const ProjectManagement = () => {
     }
   ]);
 
-  // Check if user can access Project Management features
-  const canAccessPM = canAccessFeature('project-management');
-  console.log('🔧 ProjectManagement - canAccessPM:', canAccessPM, 'user:', !!user);
+  const [workRequests, setWorkRequests] = useState<WorkRequest[]>([]);
+  // Initialize goals from localStorage
+  const [goals, setGoals] = useState<GoalItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('projectGoals');
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error('Error loading goals:', error);
+      return [];
+    }
+  });
+  // Initialize teams from localStorage
+  const [teams, setTeams] = useState<TeamItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('projectTeams');
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error('Error loading teams:', error);
+      return [];
+    }
+  });
+  const [teamMembers, setTeamMembers] = useState<Record<string, TeamMemberItem[]>>({});
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEventItem[]>([]);
+
+  // Work Requests dialogs and filters - moved before returns to satisfy hooks rules
+  const [workRequestDialogOpen, setWorkRequestDialogOpen] = useState(false);
+  const [editingWorkRequest, setEditingWorkRequest] = useState<WorkRequest | null>(null);
+  const [workRequestForm, setWorkRequestForm] = useState<{ title: string; description: string; priority: WorkRequest['priority']; status: WorkRequest['status']}>({ title: '', description: '', priority: 'medium', status: 'new' });
+  const [workRequestStatusFilter, setWorkRequestStatusFilter] = useState<'all' | WorkRequest['status']>('all');
+  const [workRequestPriorityFilter, setWorkRequestPriorityFilter] = useState<'all' | NonNullable<WorkRequest['priority']>>('all');
+  const [workRequestSort, setWorkRequestSort] = useState<'newest' | 'oldest'>('newest');
+  const [workRequestPage, setWorkRequestPage] = useState(1);
+
+  // Goals dialogs and filters
+  const [goalDialogOpen, setGoalDialogOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<GoalItem | null>(null);
+  const [goalForm, setGoalForm] = useState<{ title: string; description: string; target_date: string; progress: number }>({ title: '', description: '', target_date: '', progress: 0 });
+  const [goalsSort, setGoalsSort] = useState<'newest' | 'oldest'>('newest');
+  const [goalsPage, setGoalsPage] = useState(1);
+
+  // Calendar event dialogs and filters
+  const [eventDialogOpen, setEventDialogOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEventItem | null>(null);
+  const [eventForm, setEventForm] = useState<{ title: string; start_at: string; end_at: string }>({ title: '', start_at: '', end_at: '' });
+  const [eventsSort, setEventsSort] = useState<'newest' | 'oldest'>('newest');
+  const [eventsPage, setEventsPage] = useState(1);
+
+  // Fetch helpers
+  const fetchWorkRequests = async () => {
+    const { data, error } = await supabase.from('work_requests' as any).select('*').order('created_at', { ascending: false });
+    if (!error && data) setWorkRequests(data as unknown as WorkRequest[]);
+  };
+
+  const fetchGoals = async () => {
+    const { data, error } = await supabase.from('goals' as any).select('*').order('created_at', { ascending: false });
+    if (!error && data) setGoals(data as unknown as GoalItem[]);
+  };
+
+  const fetchTeams = async () => {
+    const { data, error } = await supabase.from('teams' as any).select('*').order('created_at', { ascending: false });
+    if (!error && data) {
+      const teamsData = data as unknown as TeamItem[];
+      setTeams(teamsData);
+      // load members per team
+      const { data: membersData } = await supabase.from('team_members' as any).select('*');
+      const grouped: Record<string, TeamMemberItem[]> = {};
+      (membersData || []).forEach((m: any) => {
+        const tm: TeamMemberItem = { team_id: m.team_id, member_email: m.member_email, role: m.role, created_at: m.created_at, id: m.id };
+        if (!grouped[tm.team_id]) grouped[tm.team_id] = [];
+        grouped[tm.team_id].push(tm);
+      });
+      setTeamMembers(grouped);
+    }
+  };
+
+  const fetchCalendarEvents = async () => {
+    const { data, error } = await supabase.from('calendar_events' as any).select('*').order('start_at', { ascending: true });
+    if (!error && data) setCalendarEvents(data as unknown as CalendarEventItem[]);
+  };
 
   useEffect(() => {
-    console.log('🔧 ProjectManagement useEffect triggered', { user: !!user, canAccessPM });
-    if (user && canAccessPM) {
+    fetchWorkRequests();
+    fetchGoals();
+    fetchTeams();
+    fetchCalendarEvents();
+  }, []);
+
+  // Create helpers
+  const createWorkRequest = async () => {
+    const title = window.prompt('Work request title');
+    if (!title) return;
+    const description = window.prompt('Description (optional)') || '';
+    const { data, error } = await supabase.from('work_requests' as any).insert({ title, description, priority: 'medium', status: 'new' }).select().single();
+    if (!error && data) setWorkRequests(prev => [data as unknown as WorkRequest, ...prev]);
+  };
+
+  const createGoal = async () => {
+    const title = window.prompt('Goal title');
+    if (!title) return;
+    const target = window.prompt('Target date (YYYY-MM-DD) optional') || null;
+    
+    const newGoal: GoalItem = {
+      id: Date.now().toString(),
+      title,
+      description: '',
+      target_date: target,
+      progress: 0,
+      created_at: new Date().toISOString(),
+      user_id: 'local-user'
+    };
+    
+    setGoals(prev => [newGoal, ...prev]);
+    
+    // Save to localStorage
+    try {
+      const savedGoals = localStorage.getItem('projectGoals');
+      const existingGoals = savedGoals ? JSON.parse(savedGoals) : [];
+      localStorage.setItem('projectGoals', JSON.stringify([newGoal, ...existingGoals]));
+      
+      toast({
+        title: "Goal Created",
+        description: `"${title}" has been added successfully.`
+      });
+    } catch (error) {
+      console.error('Error saving goal:', error);
+    }
+  };
+
+  const createTeam = async () => {
+    const name = window.prompt('Team name');
+    if (!name) return;
+    
+    const newTeam: TeamItem = {
+      id: Date.now().toString(),
+      name,
+      created_at: new Date().toISOString(),
+      owner_id: 'local-user'
+    };
+    
+    setTeams(prev => [newTeam, ...prev]);
+    
+    // Save to localStorage
+    try {
+      const savedTeams = localStorage.getItem('projectTeams');
+      const existingTeams = savedTeams ? JSON.parse(savedTeams) : [];
+      localStorage.setItem('projectTeams', JSON.stringify([newTeam, ...existingTeams]));
+      
+      toast({
+        title: "Team Created",
+        description: `"${name}" team has been created successfully.`
+      });
+    } catch (error) {
+      console.error('Error saving team:', error);
+    }
+  };
+
+  // Save teams to localStorage whenever teams change
+  useEffect(() => {
+    try {
+      localStorage.setItem('projectTeams', JSON.stringify(teams));
+    } catch (error) {
+      console.error('Error saving teams:', error);
+    }
+  }, [teams]);
+
+  // Save goals to localStorage whenever goals change  
+  useEffect(() => {
+    try {
+      localStorage.setItem('projectGoals', JSON.stringify(goals));
+    } catch (error) {
+      console.error('Error saving goals:', error);
+    }
+  }, [goals]);
+
+  const addPersonToTeam = async (teamId: string) => {
+    const email = window.prompt('Member email to add');
+    if (!email) return;
+    const role = window.prompt('Role (e.g., member, admin)') || 'member';
+    const { data, error } = await supabase.from('team_members' as any).insert({ team_id: teamId, member_email: email, role }).select().single();
+    if (!error && data) setTeamMembers(prev => ({ ...prev, [teamId]: [...(prev[teamId] || []), data as unknown as TeamMemberItem] }));
+  };
+
+  const createCalendarEvent = async () => {
+    const title = window.prompt('Event title');
+    if (!title) return;
+    const start = window.prompt('Start (YYYY-MM-DD HH:MM)');
+    if (!start) return;
+    const end = window.prompt('End (YYYY-MM-DD HH:MM, optional)') || null;
+    const { data, error } = await supabase.from('calendar_events' as any).insert({ title, start_at: start, end_at: end }).select().single();
+    if (!error && data) setCalendarEvents(prev => [...prev, data as unknown as CalendarEventItem]);
+  };
+
+  // Check access after hooks are initialized
+  useEffect(() => {
+    const canAccessPM = canAccessFeature('project-management');
+    console.log('🔧 ProjectManagement - Access check:', canAccessPM, 'user:', !!user);
+    setHasAccess(canAccessPM);
+  }, [canAccessFeature, user]);
+
+  useEffect(() => {
+    console.log('🔧 ProjectManagement useEffect triggered', { user: !!user, hasAccess });
+    if (user && hasAccess) {
       loadProjects();
       loadTasks();
     } else {
       setLoading(false);
     }
-  }, [user, canAccessPM, selectedTeam]);
+  }, [user, hasAccess]);
 
   // Load projects from database
   const loadProjects = async () => {
     try {
       setLoading(true);
-      // Try team-scoped query first if a specific team is selected
-      if (selectedTeam !== 'all') {
-        try {
-          const { data, error } = await supabase
-            .from('projects')
-            .select('*')
-            // @ts-ignore optional column
-            .eq('team_id', selectedTeam)
-            .order('created_at', { ascending: false });
-          if (error) throw error;
-          if (data) {
-            const formattedProjects: Project[] = data.map(project => ({
-              id: project.id,
-              name: project.name,
-              description: project.description || '',
-              color: project.color,
-              progress: project.progress,
-              members: Array.isArray(project.members) ? project.members as string[] : [],
-              deadline: project.deadline ? new Date(project.deadline) : null,
-              budget: project.budget ? parseFloat(project.budget.toString()) : undefined,
-              client: project.client,
-              status: project.status as 'planning' | 'active' | 'on-hold' | 'completed',
-              customColumns: Array.isArray(project.custom_columns) ? project.custom_columns as unknown as KanbanColumn[] : [
-                { id: 'backlog', title: 'Backlog', color: 'bg-gray-100', order: 1 },
-                { id: 'todo', title: 'To Do', color: 'bg-blue-100', order: 2 },
-                { id: 'in-progress', title: 'In Progress', color: 'bg-yellow-100', order: 3 },
-                { id: 'review', title: 'Review', color: 'bg-purple-100', order: 4 },
-                { id: 'done', title: 'Done', color: 'bg-green-100', order: 5 }
-              ]
-            }));
-            setProjects(formattedProjects);
-            return;
-          }
-        } catch (teamScopedErr) {
-          console.warn('Team-scoped projects query failed, falling back to all projects:', teamScopedErr);
-        }
-      }
-
-      // Fallback: no team filter
       const { data, error } = await supabase
         .from('projects')
         .select('*')
@@ -558,50 +683,6 @@ const ProjectManagement = () => {
 
   const loadTasks = async () => {
     try {
-      // Try team-scoped query first if a specific team is selected
-      if (selectedTeam !== 'all') {
-        try {
-          const { data, error } = await supabase
-            .from('todos')
-            .select(`
-              *,
-              project:projects(id, name)
-            `)
-            .eq('user_id', user?.id)
-            // @ts-ignore optional column
-            .eq('team_id', selectedTeam)
-            .order('created_at', { ascending: false });
-
-          if (error) throw error;
-
-          if (data) {
-            const formattedTasks: Task[] = data.map(todo => ({
-              id: todo.id,
-              title: todo.title,
-              description: todo.description || '',
-              status: todo.status as 'backlog' | 'todo' | 'in-progress' | 'review' | 'done',
-              priority: todo.priority as 'low' | 'medium' | 'high' | 'urgent',
-              assignee: todo.assigned_to || 'Unassigned',
-              dueDate: todo.due_date ? new Date(todo.due_date) : null,
-              project: todo.project?.id || 'no-project',
-              tags: todo.labels || [],
-              estimatedHours: todo.estimated_hours,
-              subtasks: [],
-              progress: 0,
-              comments: [],
-              archived: Boolean((todo as any).is_archived) || false,
-              position: (todo as any).position ?? undefined,
-              coverUrl: (todo as any).cover_url ?? undefined,
-            }));
-            setTasks(formattedTasks);
-            return;
-          }
-        } catch (teamScopedErr) {
-          console.warn('Team-scoped tasks query failed, falling back to all tasks:', teamScopedErr);
-        }
-      }
-
-      // Fallback: no team filter
       const { data, error } = await supabase
         .from('todos')
         .select(`
@@ -627,10 +708,7 @@ const ProjectManagement = () => {
           estimatedHours: todo.estimated_hours,
           subtasks: [],
           progress: 0,
-          comments: [],
-          archived: Boolean((todo as any).is_archived) || false,
-          position: (todo as any).position ?? undefined,
-          coverUrl: (todo as any).cover_url ?? undefined,
+          comments: []
         }));
         setTasks(formattedTasks);
       }
@@ -702,126 +780,75 @@ const ProjectManagement = () => {
   // Handle creating new tasks
   const handleCreateTask = async (taskData: any) => {
     try {
+      // Determine which project to assign the task to
       const targetProjectId = selectedProject !== 'all' ? selectedProject : projects[0]?.id || null;
+      
+      const { data, error } = await supabase
+        .from('todos')
+        .insert({
+          title: taskData.title,
+          description: taskData.description || '',
+          status: 'todo',
+          priority: taskData.priority || 'medium',
+          due_date: taskData.due_date || null,
+          labels: taskData.labels || [],
+          estimated_hours: taskData.estimated_hours,
+          project_id: targetProjectId,
+          user_id: user?.id
+        })
+        .select(`
+          *,
+          project:projects(id, name)
+        `)
+        .single();
 
-      // Try with team_id if available
-      try {
-        const { data, error } = await supabase
-          .from('todos')
-          .insert({
-            title: taskData.title,
-            description: taskData.description || '',
-            status: taskData.status || 'todo',
-            priority: taskData.priority || 'medium',
-            due_date: taskData.due_date || null,
-            labels: taskData.labels || [],
-            estimated_hours: taskData.estimated_hours,
-            project_id: targetProjectId,
-            user_id: user?.id,
-            // @ts-ignore optional column
-            team_id: selectedTeam !== 'all' ? selectedTeam : null,
-          })
-          .select(`
-            *,
-            project:projects(id, name)
-          `)
-          .single();
+      if (error) throw error;
 
-        if (error) throw error;
+      const newTask: Task = {
+        id: data.id,
+        title: data.title,
+        description: data.description || '',
+        status: data.status as 'backlog' | 'todo' | 'in-progress' | 'review' | 'done',
+        priority: data.priority as 'low' | 'medium' | 'high' | 'urgent',
+        assignee: data.assigned_to || 'Unassigned',
+        dueDate: data.due_date ? new Date(data.due_date) : null,
+        project: data.project?.id || 'no-project',
+        tags: data.labels || [],
+        estimatedHours: data.estimated_hours,
+        subtasks: [],
+        progress: 0,
+        comments: []
+      };
 
-        const newTask: Task = {
-          id: data.id,
-          title: data.title,
-          description: data.description || '',
-          status: data.status as 'backlog' | 'todo' | 'in-progress' | 'review' | 'done',
-          priority: data.priority as 'low' | 'medium' | 'high' | 'urgent',
-          assignee: data.assigned_to || 'Unassigned',
-          dueDate: data.due_date ? new Date(data.due_date) : null,
-          project: data.project?.id || 'no-project',
-          tags: data.labels || [],
-          estimatedHours: data.estimated_hours,
-          subtasks: [],
-          progress: 0,
-          comments: [],
-          archived: Boolean((data as any).is_archived) || false,
-          position: (data as any).position ?? undefined,
-          coverUrl: (data as any).cover_url ?? undefined,
-        };
-
-        setTasks(prev => [...prev, newTask]);
-      } catch (withTeamErr) {
-        console.warn('Insert with team_id failed, retrying without:', withTeamErr);
-        const { data, error } = await supabase
-          .from('todos')
-          .insert({
-            title: taskData.title,
-            description: taskData.description || '',
-            status: taskData.status || 'todo',
-            priority: taskData.priority || 'medium',
-            due_date: taskData.due_date || null,
-            labels: taskData.labels || [],
-            estimated_hours: taskData.estimated_hours,
-            project_id: targetProjectId,
-            user_id: user?.id,
-          })
-          .select(`
-            *,
-            project:projects(id, name)
-          `)
-          .single();
-
-        if (error) throw error;
-
-        const newTaskFallback: Task = {
-          id: data.id,
-          title: data.title,
-          description: data.description || '',
-          status: data.status as 'backlog' | 'todo' | 'in-progress' | 'review' | 'done',
-          priority: data.priority as 'low' | 'medium' | 'high' | 'urgent',
-          assignee: data.assigned_to || 'Unassigned',
-          dueDate: data.due_date ? new Date(data.due_date) : null,
-          project: data.project?.id || 'no-project',
-          tags: data.labels || [],
-          estimatedHours: data.estimated_hours,
-          subtasks: [],
-          progress: 0,
-          comments: [],
-          archived: Boolean((data as any).is_archived) || false,
-          position: (data as any).position ?? undefined,
-          coverUrl: (data as any).cover_url ?? undefined,
-        };
-
-        setTasks(prev => [...prev, newTaskFallback]);
-      }
-
+      setTasks(prev => [...prev, newTask]);
+      
       // Add activity log
-      const activity: ActivityLog = {
+      const newActivity: ActivityLog = {
         id: `activity-${Date.now()}`,
         type: 'task_created',
-        description: `Created new task: ${taskData.title}`,
+        description: `Created new task: ${newTask.title}`,
         user: user?.email || 'Unknown User',
         timestamp: new Date(),
-        projectId: targetProjectId || 'no-project',
+        projectId: newTask.project,
+        taskId: newTask.id
       };
-      setActivityLogs(prev => [activity, ...prev]);
+      setActivityLogs(prev => [newActivity, ...prev]);
 
-      toast({ title: 'Task Created', description: `Successfully created task: ${taskData.title}` });
+      toast({
+        title: "Task Created",
+        description: `Successfully created task: ${newTask.title}`,
+      });
     } catch (error) {
       console.error('Error creating task:', error);
-      toast({ title: 'Error', description: 'Failed to create task. Please try again.', variant: 'destructive' });
+      toast({
+        title: "Error",
+        description: "Failed to create task. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
-  if (!canAccessPM) {
-    return (
-      <div className="max-w-4xl mx-auto p-6">
-        <SubscriptionUpgrade 
-          featureName="Project Management" 
-          onUpgrade={() => window.location.reload()}
-        />
-      </div>
-    );
-  }
+  // Access check moved to top of component
 
   if (loading) {
     return (
@@ -831,13 +858,13 @@ const ProjectManagement = () => {
     );
   }
 
-  const statusColumns = (projects.find(p => p.id === selectedProject && selectedProject !== 'all')?.customColumns || [
+  const statusColumns = projects.find(p => p.id === selectedProject && selectedProject !== 'all')?.customColumns || [
     { id: 'backlog', title: 'Backlog', color: 'bg-gray-100', order: 1 },
     { id: 'todo', title: 'To Do', color: 'bg-blue-100', order: 2 },
     { id: 'in-progress', title: 'In Progress', color: 'bg-yellow-100', order: 3 },
     { id: 'review', title: 'Review', color: 'bg-purple-100', order: 4 },
     { id: 'done', title: 'Done', color: 'bg-green-100', order: 5 }
-  ]).sort((a,b)=>a.order - b.order);
+  ];
 
   const priorityColors = {
     low: 'bg-green-500',
@@ -850,16 +877,69 @@ const ProjectManagement = () => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          task.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesProject = selectedProject === 'all' || task.project === selectedProject;
-    const notArchived = !task.archived;
     console.log('Filtering task:', task.title, 'project:', task.project, 'selectedProject:', selectedProject, 'matches:', matchesProject);
-    return matchesSearch && matchesProject && notArchived;
+    return matchesSearch && matchesProject;
   });
+
+  // Track visual order of tasks within each column
+  const [taskPositions, setTaskPositions] = useState<Record<string, string[]>>({});
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+
+  // Initialize/merge taskPositions when tasks or columns change
+  useEffect(() => {
+    setTaskPositions(prev => {
+      const next: Record<string, string[]> = { ...prev };
+      const columnIds = (projects.find(p => p.id === selectedProject && selectedProject !== 'all')?.customColumns || [
+        { id: 'backlog' },
+        { id: 'todo' },
+        { id: 'in-progress' },
+        { id: 'review' },
+        { id: 'done' }
+      ] as any).map((c: any) => c.id);
+
+      for (const columnId of columnIds) {
+        const existing = next[columnId] || [];
+        const currentTaskIds = tasks.filter(t => t.status === columnId).map(t => t.id);
+        // Preserve existing order where possible, append any new ids
+        const ordered = existing.filter(id => currentTaskIds.includes(id));
+        for (const id of currentTaskIds) {
+          if (!ordered.includes(id)) ordered.push(id);
+        }
+        next[columnId] = ordered;
+      }
+      return next;
+    });
+  }, [tasks, selectedProject, projects]);
+
+  const tasksById = Object.fromEntries(tasks.map(t => [t.id, t]));
+
+  // Density-based classes
+  const densityClasses = {
+    columnGap: boardDensity === 'comfortable' ? 'gap-3' : boardDensity === 'compact' ? 'gap-2' : 'gap-1',
+    columnPadding: boardDensity === 'comfortable' ? 'p-3' : boardDensity === 'compact' ? 'p-2' : 'p-1.5',
+    headerMb: boardDensity === 'comfortable' ? 'mb-3' : boardDensity === 'compact' ? 'mb-2' : 'mb-1.5',
+    listSpacing: boardDensity === 'comfortable' ? 'space-y-2' : boardDensity === 'compact' ? 'space-y-1.5' : 'space-y-1',
+    cardHoverScale: boardDensity === 'comfortable' ? 'hover:scale-[1.02]' : 'hover:scale-[1.01]',
+    cardPadding: boardDensity === 'comfortable' ? 'p-3' : boardDensity === 'compact' ? 'p-2' : 'p-1.5',
+    titleText: boardDensity === 'comfortable' ? 'text-sm' : boardDensity === 'compact' ? 'text-[11px]' : 'text-[10px]',
+    headerInnerMb: boardDensity === 'comfortable' ? 'mb-2' : 'mb-1',
+    descText: boardDensity === 'comfortable' ? 'text-xs leading-tight' : boardDensity === 'compact' ? 'text-[11px] leading-snug' : 'text-[10px] leading-snug',
+    descMb: boardDensity === 'comfortable' ? 'mb-2' : 'mb-1',
+    progressText: boardDensity === 'comfortable' ? 'text-xs' : 'text-[10px]',
+    progressMb: boardDensity === 'comfortable' ? 'mb-2' : 'mb-1',
+    subtaskText: boardDensity === 'comfortable' ? 'text-xs' : 'text-[10px]',
+    tagsMb: boardDensity === 'comfortable' ? 'mb-2' : 'mb-1',
+    tagBadge: boardDensity === 'comfortable' ? 'text-xs px-1 py-0 h-5' : boardDensity === 'compact' ? 'text-[10px] px-1 py-0 h-4' : 'text-[10px] px-[2px] py-0 h-4',
+    avatar: boardDensity === 'comfortable' ? 'w-5 h-5' : 'w-4 h-4',
+    avatarFallback: boardDensity === 'comfortable' ? 'text-xs' : 'text-[10px]',
+    popoverBtn: boardDensity === 'comfortable' ? '' : 'h-6 w-6 p-0',
+  } as const;
 
   // Handle drag and drop
   const handleDragStart = (e: React.DragEvent, task: Task) => {
-    const payload = JSON.stringify({ type: 'card', taskId: task.id, fromCol: task.status });
-    e.dataTransfer.setData('application/json', payload);
+    e.dataTransfer.setData('text/plain', task.id);
     e.dataTransfer.effectAllowed = 'move';
+    setDraggingTaskId(task.id);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -867,15 +947,61 @@ const ProjectManagement = () => {
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDrop = (e: React.DragEvent, columnId: string, beforeTaskId?: string) => {
+  const removeFromAllColumns = (taskId: string) => {
+    setTaskPositions(prev => {
+      const next: Record<string, string[]> = {};
+      for (const [colId, ids] of Object.entries(prev)) {
+        next[colId] = ids.filter(id => id !== taskId);
+      }
+      return next;
+    });
+  };
+
+  const insertIntoColumnBefore = (columnId: string, taskId: string, beforeTaskId: string | null) => {
+    setTaskPositions(prev => {
+      const next = { ...prev };
+      const ids = (next[columnId] || []).filter(id => id !== taskId);
+      if (beforeTaskId && ids.includes(beforeTaskId)) {
+        const idx = ids.indexOf(beforeTaskId);
+        ids.splice(idx, 0, taskId);
+      } else {
+        ids.push(taskId);
+      }
+      next[columnId] = ids;
+      return next;
+    });
+  };
+
+  const handleDropOnCard = async (e: React.DragEvent, targetTaskId: string, columnId: string) => {
     e.preventDefault();
-    const j = e.dataTransfer.getData('application/json');
-    if (!j) return;
-    const data = JSON.parse(j);
-    if (data.type !== 'card') return;
-    const taskId = data.taskId as string;
-    const fromCol = data.fromCol as string;
-    handleTaskMove(taskId, fromCol, columnId, beforeTaskId);
+    const movingTaskId = e.dataTransfer.getData('text/plain');
+    if (!movingTaskId || movingTaskId === targetTaskId) return;
+
+    const movingTask = tasksById[movingTaskId];
+    if (!movingTask) return;
+
+    // Update status if moving across columns
+    if (movingTask.status !== columnId) {
+      await handleTaskStatusUpdate(movingTaskId, columnId);
+    }
+
+    removeFromAllColumns(movingTaskId);
+    insertIntoColumnBefore(columnId, movingTaskId, targetTaskId);
+    setDraggingTaskId(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, columnId: string) => {
+    e.preventDefault();
+    const taskId = e.dataTransfer.getData('text/plain');
+    if (!taskId) return;
+    const movingTask = tasksById[taskId];
+    if (!movingTask) return;
+    if (movingTask.status !== columnId) {
+      await handleTaskStatusUpdate(taskId, columnId);
+    }
+    removeFromAllColumns(taskId);
+    insertIntoColumnBefore(columnId, taskId, null);
+    setDraggingTaskId(null);
   };
 
   // Handle task status updates  
@@ -949,308 +1075,200 @@ const ProjectManagement = () => {
     }
   };
 
-  // Handle full move with ordering
-  const handleTaskMove = async (taskId: string, fromCol: string, toCol: string, beforeTaskId?: string) => {
-    // Update local order map
-    setColumnTaskOrder(prev => {
-      const next = { ...prev };
-      // remove from source
-      next[fromCol] = (next[fromCol] || []).filter(id => id !== taskId);
-      // insert into destination
-      const dest = new Set(next[toCol] || []);
-      if (!dest.has(taskId)) {
-        const arr = next[toCol] ? [...next[toCol]] : [];
-        if (beforeTaskId) {
-          const idx = arr.indexOf(beforeTaskId);
-          if (idx >= 0) arr.splice(idx, 0, taskId); else arr.push(taskId);
-        } else {
-          arr.push(taskId);
-        }
-        next[toCol] = arr;
-      }
-      return next;
-    });
-    // Update task status and optional position
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: toCol } : t));
-    try {
-      const pos = (columnTaskOrder[toCol] || []).indexOf(taskId);
-      const updateData: any = { status: toCol };
-      if (!isNaN(pos) && pos >= 0) updateData.position = pos;
-      await supabase.from('todos').update(updateData).eq('id', taskId);
-    } catch (e) {
-      console.warn('Move persist failed', e);
-    }
-  };
-
-  const EnhancedKanbanBoard = () => {
-    const currentProject = projects.find(p => p.id === selectedProject);
-    const isFav = favoriteBoards[selectedProject] || false;
-    const toggleFav = () => setFavoriteBoards(prev => ({ ...prev, [selectedProject]: !prev[selectedProject] }));
-
-    const handleAddList = async () => {
-      const title = newListTitle.trim();
-      if (!title || selectedProject === 'all') return;
-      const nextOrder = (currentProject?.customColumns || statusColumns).length + 1;
-      const newCol: KanbanColumn = { id: `list-${Date.now()}`, title, color: 'bg-gray-100', order: nextOrder };
-      setProjects(prev => prev.map(p => p.id === selectedProject ? { ...p, customColumns: [ ...(p.customColumns || statusColumns), newCol ] } : p));
-      setListComposerOpen(false); setNewListTitle('');
-      try {
-        // Persist if possible
-        // @ts-ignore
-        await supabase.from('projects').update({ custom_columns: [ ...((currentProject?.customColumns)||statusColumns), newCol ] }).eq('id', selectedProject);
-      } catch(e) { console.warn('Add list persist failed', e); }
-    };
-
-    const openCardComposer = (colId: string) => setCardComposerOpen(prev => ({ ...prev, [colId]: true }));
-    const closeCardComposer = (colId: string) => setCardComposerOpen(prev => ({ ...prev, [colId]: false }));
-    const updateCardTitle = (colId: string, v: string) => setNewCardTitle(prev => ({ ...prev, [colId]: v }));
-    const addCard = async (colId: string) => {
-      const title = (newCardTitle[colId] || '').trim();
-      if (!title) return;
-      await handleCreateTask({ title, status: colId });
-      updateCardTitle(colId, '');
-      closeCardComposer(colId);
-    };
-
-    return (
-      <div className="space-y-4">
-        {/* Board Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={toggleFav}>
-              <Star className={`w-4 h-4 ${isFav ? 'text-yellow-500 fill-yellow-500' : ''}`} />
-            </Button>
-            <h2 className="text-xl font-semibold">
-              {currentProject ? currentProject.name : 'All Projects'}
-            </h2>
-            {selectedTaskIds.size > 0 && (
-              <div className="ml-4 flex items-center gap-2 bg-blue-50 border border-blue-200 rounded px-2 py-1 text-xs">
-                <span>{selectedTaskIds.size} selected</span>
-                <Select onValueChange={(newStatus:any)=>{
-                  const ids = Array.from(selectedTaskIds);
-                  ids.forEach(id => handleTaskStatusUpdate(id, newStatus));
-                  setSelectedTaskIds(new Set());
-                }}>
-                  <SelectTrigger className="h-7 w-[130px]"><SelectValue placeholder="Move to..." /></SelectTrigger>
-                  <SelectContent>
-                    {statusColumns.map(col => <SelectItem key={col.id} value={col.id}>{col.title}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <Button size="sm" variant="outline" onClick={()=>{
-                  const ids = Array.from(selectedTaskIds);
-                  ids.forEach(id => handleTaskArchive(id));
-                  setSelectedTaskIds(new Set());
-                }}>Archive</Button>
-                <Button size="sm" variant="outline" onClick={()=>setSelectedTaskIds(new Set())}>Clear</Button>
-              </div>
-            )}
-            {currentProject && (
-              <div className="flex -space-x-2 ml-2">
-                {currentProject.members.slice(0,4).map(m => (
-                  <Avatar key={m} className="w-6 h-6 border">
-                    <AvatarFallback className="text-[10px]">{m.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
-                  </Avatar>
-                ))}
-                {currentProject.members.length > 4 && (
-                  <Badge variant="secondary" className="ml-2">+{currentProject.members.length - 4}</Badge>
-                )}
-              </div>
-            )}
+  const EnhancedKanbanBoard = () => (
+    <div className="space-y-6">
+      {/* Custom Board Controls */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="outline" size="sm" onClick={() => {
+                console.log('Opening board customizer');
+                setShowBoardCustomizer(true);
+              }}>
+                <Settings className="w-4 h-4 mr-2" />
+                Customize Board
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => {
+                console.log('Opening automation builder');
+                setShowAutomationBuilder(true);
+              }}>
+                <Zap className="w-4 h-4 mr-2" />
+                Automation Rules
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select value={boardDensity} onValueChange={(v: any) => setBoardDensity(v)}>
+                <SelectTrigger className="w-[170px] h-8 text-xs">
+                  <SelectValue placeholder="Density" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="comfortable">Comfortable</SelectItem>
+                  <SelectItem value="compact">Compact</SelectItem>
+                  <SelectItem value="condensed">Condensed</SelectItem>
+                </SelectContent>
+              </Select>
+              <Badge className="bg-blue-100 text-blue-800">Auto-Assignment: ON</Badge>
+              <Badge className="bg-green-100 text-green-800">Notifications: ON</Badge>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={()=>setShowBoardCustomizer(true)}>
-              <Settings className="w-4 h-4 mr-2" /> Customize
-            </Button>
-            <Button variant="outline" size="sm" onClick={()=>setShowAutomationBuilder(true)}>
-              <Zap className="w-4 h-4 mr-2" /> Automations
-            </Button>
-          </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Lists horizontally scrollable */}
-        <div className="overflow-x-auto pb-4">
-          <div className="flex items-start gap-4 min-h-[70vh]">
-            {statusColumns.map(column => {
-              const columnTasks = filteredTasks.filter(task => task.status === column.id);
-              // sort by columnTaskOrder
-              const order = columnTaskOrder[column.id] || [];
-              columnTasks.sort((a,b) => {
-                const ia = order.indexOf(a.id);
-                const ib = order.indexOf(b.id);
-                return (ia === -1 ? 1 : ia) - (ib === -1 ? 1 : ib);
-              });
-              const limit = wipLimits[column.id] ?? (column as any).wipLimit ?? 999;
-              const isOver = columnTasks.length > limit;
-              const composerOpen = cardComposerOpen[column.id];
-              return (
-                <div key={column.id} className={`w-80 flex-shrink-0 ${isOver ? 'ring-2 ring-red-400 rounded' : ''}`} onDragOver={handleDragOver} onDrop={(e)=>handleDrop(e, column.id)} draggable onDragStart={(e)=>{
-                  const payload = JSON.stringify({ type: 'list', columnId: column.id });
-                  e.dataTransfer.setData('application/list', payload);
-                  e.dataTransfer.effectAllowed = 'move';
-                }} onDropCapture={(e)=>{
-                  const p = e.dataTransfer.getData('application/list');
-                  if (!p) return;
-                  const data = JSON.parse(p);
-                  if (data.type !== 'list') return;
-                  const fromId = data.columnId as string;
-                  const toId = column.id;
-                  if (fromId === toId) return;
-                  // reorder lists
-                  if (selectedProject !== 'all') {
-                    setProjects(prev => prev.map(project => {
-                      if (project.id !== selectedProject) return project;
-                      const cols = [...(project.customColumns || statusColumns)];
-                      const fromIdx = cols.findIndex(c => c.id === fromId);
-                      const toIdx = cols.findIndex(c => c.id === toId);
-                      if (fromIdx === -1 || toIdx === -1) return project;
-                      const [moved] = cols.splice(fromIdx, 1);
-                      cols.splice(toIdx, 0, moved);
-                      // renumber order
-                      const renum = cols.map((c, i) => ({ ...c, order: i + 1 }));
-                      // persist best-effort
-                      try { // @ts-ignore
-                        supabase.from('projects').update({ custom_columns: renum }).eq('id', selectedProject);
-                      } catch {}
-                      return { ...project, customColumns: renum };
-                    }));
-                  }
+      {/* Kanban Columns */}
+      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 ${densityClasses.columnGap}`}>
+        {statusColumns.map(column => (
+          <div 
+            key={column.id} 
+            className={`${column.color} rounded-lg ${densityClasses.columnPadding} min-h-[700px] animate-fade-in`}
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, column.id)}
+          >
+            <div className={`flex items-center justify-between ${densityClasses.headerMb}`}>
+              <h3 className="font-semibold text-sm">{column.title}</h3>
+              <div className="flex items-center gap-1">
+                <Badge variant="secondary" className="text-xs px-2 py-0">
+                  {filteredTasks.filter(task => task.status === column.id).length}
+                </Badge>
+                <Button variant="ghost" size="sm" onClick={(e) => {
+                  e.stopPropagation();
+                  console.log('Plus button clicked, opening create task dialog');
+                  setShowCreateTask(true);
                 }}>
-                  <div className="px-3 py-2 bg-gray-100 rounded-t flex items-center justify-between">
-                    <div className="font-medium text-sm truncate flex items-center gap-2">
-                      {column.title}
-                      <Badge variant={isOver ? 'destructive' : 'secondary'} className="text-[10px]">{columnTasks.length}/{limit===999?'∞':limit}</Badge>
-                    </div>
-                    <Button variant="ghost" size="icon" onClick={(e)=>{ e.stopPropagation(); openCardComposer(column.id); }}>
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <div className={`bg-gray-50 p-2 space-y-2 ${compactMode ? '' : ''}`}>
-                    {columnTasks.map(task => (
-                      <div key={task.id} onDragOver={handleDragOver} onDrop={(e)=>handleDrop(e, column.id, task.id)}>
-                        <Card className={`cursor-pointer hover:shadow transition ${selectedTaskIds.has(task.id) ? 'ring-2 ring-blue-400' : ''}`} draggable onDragStart={(e)=>handleDragStart(e, task)} onClick={(e)=>{ e.preventDefault(); setLastFocusedTaskId(task.id); if (e.metaKey || e.ctrlKey) { const s = new Set(selectedTaskIds); s.has(task.id) ? s.delete(task.id) : s.add(task.id); setSelectedTaskIds(s); } else { setEditingTask(task); setShowEditTask(true); } }}>
-                          <CardContent className="p-3">
-                            {/* Cover image */}
-                            {task.coverUrl && (
-                              <div className="mb-2 overflow-hidden rounded">
-                                <img src={task.coverUrl} alt="cover" className="w-full h-24 object-cover" />
+                  <Plus className="w-3 h-3" />
+                </Button>
+              </div>
+            </div>
+            
+            <div className={`${densityClasses.listSpacing}`}>
+              {(taskPositions[column.id] || filteredTasks.filter(t => t.status === column.id).map(t => t.id))
+                .map(taskId => tasksById[taskId])
+                .filter(Boolean)
+                .filter(task => filteredTasks.some(ft => ft.id === task.id) && task.status === column.id)
+                .map(task => (
+                  <Card 
+                    key={task.id} 
+                    className={`cursor-pointer hover:shadow-lg transition-all ${densityClasses.cardHoverScale}`}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, task)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDropOnCard(e, task.id, column.id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      console.log('Task card clicked:', task.id, task.title);
+                      setEditingTask(task);
+                      setShowEditTask(true);
+                    }}
+                  >
+                    <CardContent className={`${densityClasses.cardPadding}`}>
+                      <div className={`flex items-start justify-between ${densityClasses.headerInnerMb}`}>
+                        <h4 className={`font-medium ${densityClasses.titleText} leading-tight`}>{task.title}</h4>
+                        <div className="flex items-center gap-1">
+                          <div className={`w-2 h-2 rounded-full ${priorityColors[task.priority]}`}></div>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm" className={densityClasses.popoverBtn} onClick={(e) => e.stopPropagation()}>
+                                <MoreHorizontal className="w-3 h-3" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-40 p-1" align="end">
+                              <div className="space-y-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="w-full justify-start h-7"
+                                  onClick={() => {
+                                    setEditingTask(task);
+                                    setShowEditTask(true);
+                                  }}
+                                >
+                                  <Edit className="w-3 h-3 mr-2" />
+                                  Edit
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="w-full justify-start h-7 text-red-600 hover:text-red-700"
+                                  onClick={() => handleTaskDelete(task.id)}
+                                >
+                                  <Trash2 className="w-3 h-3 mr-2" />
+                                  Delete
+                                </Button>
                               </div>
-                            )}
-                            {/* Labels */}
-                            {task.tags && task.tags.length > 0 && (
-                              <div className="flex gap-1 mb-2">
-                                {task.tags.slice(0,4).map(tag => (
-                                  <span key={tag} className={`${getTagColor(tag)} h-1.5 w-8 rounded`}></span>
-                                ))}
-                              </div>
-                            )}
-                            <div className="flex items-start justify-between">
-                              <h4 className="font-medium text-sm">{task.title}</h4>
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <Button variant="ghost" size="sm" onClick={(e)=>e.stopPropagation()}>
-                                    <MoreHorizontal className="w-3 h-3" />
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-40 p-1" align="end">
-                                  <div className="space-y-1">
-                                    <Button variant="ghost" size="sm" className="w-full justify-start" onClick={()=>{ setEditingTask(task); setShowEditTask(true); }}>
-                                      <Edit className="w-3 h-3 mr-2" /> Edit
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="w-full justify-start" onClick={()=>{ setLabelsTask(task); setLabelsDialogOpen(true); }}>
-                                      <TagIcon className="w-3 h-3 mr-2" /> Labels
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="w-full justify-start" onClick={()=>{ setChecklistTask(task); setChecklistDialogOpen(true); }}>
-                                      <ListCheck className="w-3 h-3 mr-2" /> Checklist
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="w-full justify-start" onClick={()=>{ setDueDateTask(task); setDueDateDialogOpen(true); }}>
-                                      <CalendarIcon className="w-3 h-3 mr-2" /> Due date
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="w-full justify-start" onClick={()=>handleTaskArchive(task.id)}>
-                                      <FolderOpen className="w-3 h-3 mr-2" /> Archive
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="w-full justify-start" onClick={async()=>{
-                                      const url = window.prompt('Cover image URL');
-                                      if (!url) return;
-                                      setTasks(prev => prev.map(t => t.id===task.id ? ({ ...t, coverUrl: url }) : t));
-                                      try { await supabase.from('todos').update({ cover_url: url }).eq('id', task.id); } catch (e) { console.warn('Cover persist failed', e); }
-                                    }}>
-                                      <ImageIcon className="w-3 h-3 mr-2" /> Add cover
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="w-full justify-start text-red-600 hover:text-red-700" onClick={()=>handleTaskDelete(task.id)}>
-                                      <Trash2 className="w-3 h-3 mr-2" /> Delete
-                                    </Button>
-                                  </div>
-                                </PopoverContent>
-                              </Popover>
-                            </div>
-                            {task.description && <p className="text-xs text-gray-600 mt-1 line-clamp-2">{task.description}</p>}
-                            <div className="mt-2 flex items-center justify-between">
-                              <div className="flex items-center gap-2 text-gray-500">
-                                {task.attachments && task.attachments.length > 0 && <Paperclip className="w-3 h-3" />}
-                                {task.comments && task.comments.length > 0 && (
-                                  <div className="flex items-center gap-1">
-                                    <MessageCircle className="w-3 h-3" />
-                                    <span className="text-[10px]">{task.comments.length}</span>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-1">
-                                {task.dueDate && (
-                                  <div className="flex items-center gap-1 text-gray-500">
-                                    <CalendarIcon className="w-3 h-3" />
-                                    <span className="text-[10px]">{format(task.dueDate, 'MMM dd')}</span>
-                                  </div>
-                                )}
-                                <Avatar className="w-6 h-6"><AvatarFallback className="text-[10px]">{task.assignee.split(' ').map(n=>n[0]).join('')}</AvatarFallback></Avatar>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    ))}
-
-                    {/* Card composer */}
-                    {composerOpen ? (
-                      <div className="bg-white rounded border p-2 space-y-2">
-                        <Input placeholder="Card title" value={newCardTitle[column.id] || ''} onChange={(e)=>updateCardTitle(column.id, e.target.value)} />
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={()=>addCard(column.id)}>Add card</Button>
-                          <Button size="sm" variant="ghost" onClick={()=>closeCardComposer(column.id)}>Cancel</Button>
+                            </PopoverContent>
+                          </Popover>
                         </div>
                       </div>
-                    ) : (
-                      <Button variant="ghost" size="sm" className="w-full justify-start" onClick={()=>openCardComposer(column.id)}>
-                        <Plus className="w-4 h-4 mr-1" /> Add a card
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                      
+                      <p className={`${densityClasses.descText} text-gray-600 ${densityClasses.descMb} line-clamp-2`}>{task.description}</p>
+                      
+                      {/* Progress Bar */}
+                      {task.progress && (
+                        <div className={`${densityClasses.progressMb}`}>
+                          <div className={`flex justify-between ${densityClasses.progressText} mb-1`}>
+                            <span>Progress</span>
+                            <span>{task.progress}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-1">
+                            <div 
+                              className="bg-blue-600 h-1 rounded-full transition-all" 
+                              style={{ width: `${task.progress}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
 
-            {/* Add list composer */}
-            {selectedProject !== 'all' && (
-              <div className="w-80 flex-shrink-0">
-                {listComposerOpen ? (
-                  <div className="bg-gray-50 p-2 rounded border space-y-2">
-                    <Input placeholder="List title" value={newListTitle} onChange={(e)=>setNewListTitle(e.target.value)} />
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={handleAddList}>Add list</Button>
-                      <Button size="sm" variant="ghost" onClick={()=>{ setListComposerOpen(false); setNewListTitle(''); }}>Cancel</Button>
-                    </div>
-                  </div>
-                ) : (
-                  <Button variant="outline" className="w-full justify-start" onClick={()=>setListComposerOpen(true)}>
-                    <Plus className="w-4 h-4 mr-1" /> Add another list
-                  </Button>
-                )}
-              </div>
-            )}
+                      {/* Subtasks */}
+                      {task.subtasks && task.subtasks.length > 0 && (
+                        <div className={`${densityClasses.descMb}`}>
+                          <div className={`flex items-center gap-1 ${densityClasses.subtaskText} text-gray-500`}>
+                            <ListCheck className="w-3 h-3" />
+                            <span>
+                              {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length} subtasks
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tags */}
+                      <div className={`flex flex-wrap gap-1 ${densityClasses.tagsMb}`}>
+                        {task.tags.slice(0, 2).map(tag => (
+                          <Badge key={tag} variant="outline" className={densityClasses.tagBadge}>
+                            {tag}
+                          </Badge>
+                        ))}
+                        {task.tags.length > 2 && (
+                          <Badge variant="outline" className={densityClasses.tagBadge}>
+                            +{task.tags.length - 2}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Footer */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1">
+                          {task.attachments && task.attachments.length > 0 && (
+                            <Paperclip className="w-3 h-3 text-gray-400" />
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-1">
+                          <Avatar className={densityClasses.avatar}>
+                            <AvatarFallback className={densityClasses.avatarFallback}>
+                              {task.assignee.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
           </div>
-        </div>
+        ))}
       </div>
-    );
-  };
+    </div>
+  );
 
   const MilestonesView = () => (
     <div className="space-y-6">
@@ -2044,474 +2062,227 @@ const ProjectManagement = () => {
     </div>
   );
 
-  const SummaryView = () => {
-    const statusOrder: Task['status'][] = ['backlog', 'todo', 'in-progress', 'review', 'done'];
-    const statusCounts = statusOrder.map(s => tasks.filter(t => !t.archived && t.status === s).length);
-    const total = statusCounts.reduce((a, b) => a + b, 0) || 1;
-    const priorityOrder: Task['priority'][] = ['low', 'medium', 'high', 'urgent'];
-    const priorityCounts = priorityOrder.map(p => tasks.filter(t => !t.archived && t.priority === p).length);
-    const assigneeMap = tasks.filter(t => !t.archived).reduce<Record<string, number>>((acc, t) => {
-      acc[t.assignee] = (acc[t.assignee] || 0) + 1;
-      return acc;
-    }, {});
-    const hoursByAssignee = tasks.filter(t=>!t.archived).reduce<Record<string, number>>((acc, t) => {
-      const h = t.estimatedHours || 0;
-      acc[t.assignee] = (acc[t.assignee] || 0) + h;
-      return acc;
-    }, {});
-    const topTags = Object.entries(
-      tasks.filter(t => !t.archived).flatMap(t => t.tags).reduce<Record<string, number>>((acc, tag) => {
-        acc[tag] = (acc[tag] || 0) + 1;
-        return acc;
-      }, {})
-    ).sort((a,b) => b[1]-a[1]).slice(0,6);
+  const statusPieData = [
+    { name: 'Backlog', value: tasks.filter(t => t.status === 'backlog').length },
+    { name: 'To Do', value: tasks.filter(t => t.status === 'todo').length },
+    { name: 'In Progress', value: tasks.filter(t => t.status === 'in-progress').length },
+    { name: 'Review', value: tasks.filter(t => t.status === 'review').length },
+    { name: 'Done', value: tasks.filter(t => t.status === 'done').length },
+  ];
 
-    // Real charts datasets
-    const pieData = {
-      labels: statusOrder.map(s => s.replace('-', ' ')),
-      datasets: [{
-        data: statusCounts,
-        backgroundColor: ['#9ca3af','#3b82f6','#f59e0b','#a855f7','#22c55e'],
-        borderWidth: 0,
-      }]
-    };
-    const barData = {
-      labels: priorityOrder,
-      datasets: [{
-        label: 'Tasks',
-        data: priorityCounts,
-        backgroundColor: ['#22c55e','#eab308','#f97316','#ef4444']
-      }]
-    };
+  const statusColors = ['#9CA3AF', '#3B82F6', '#F59E0B', '#8B5CF6', '#10B981'];
 
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card><CardContent className="p-4">
-            <CardTitle className="text-sm mb-2">Status Overview</CardTitle>
-            <Pie data={pieData} />
-          </CardContent></Card>
+  const priorityBarData = [
+    { name: 'Low', count: tasks.filter(t => t.priority === 'low').length },
+    { name: 'Medium', count: tasks.filter(t => t.priority === 'medium').length },
+    { name: 'High', count: tasks.filter(t => t.priority === 'high').length },
+    { name: 'Urgent', count: tasks.filter(t => t.priority === 'urgent').length },
+  ];
 
-          <Card><CardContent className="p-4">
-            <CardTitle className="text-sm mb-2">Priority Breakdown</CardTitle>
-            <Bar data={barData} options={{ plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }} />
-          </CardContent></Card>
+  const teamWorkload = [
+    { name: 'John Doe', load: tasks.filter(t => t.assignee === 'John Doe').length, capacity: 10 },
+    { name: 'Jane Smith', load: tasks.filter(t => t.assignee === 'Jane Smith').length, capacity: 8 },
+    { name: 'Mike Johnson', load: tasks.filter(t => t.assignee === 'Mike Johnson').length, capacity: 12 },
+  ];
 
-          <Card><CardContent className="p-4">
-            <CardTitle className="text-sm mb-2">Team Workload (Tasks)</CardTitle>
-            <div className="space-y-2">
-              {Object.entries(assigneeMap).map(([name, count]) => (
-                <div key={name} className="flex items-center gap-2 text-xs">
-                  <Avatar className="w-6 h-6"><AvatarFallback className="text-[10px]">{name.split(' ').map(n=>n[0]).join('')}</AvatarFallback></Avatar>
-                  <span className="truncate">{name}</span>
-                  <div className="ml-auto flex items-center gap-2">
-                    <Badge variant="secondary">{count}</Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent></Card>
+  const typesOfWork = ['Development', 'Design', 'QA', 'Documentation', 'Client Communication'];
 
-          <Card><CardContent className="p-4">
-            <CardTitle className="text-sm mb-2">Team Workload (Hours)</CardTitle>
-            <div className="space-y-2">
-              {Object.entries(hoursByAssignee).map(([name, hours]) => (
-                <div key={name} className="flex items-center gap-2 text-xs">
-                  <span className="truncate">{name}</span>
-                  <div className="ml-auto flex items-center gap-2">
-                    <Badge variant="outline">{hours}h</Badge>
-                  </div>
-                </div>
-              ))}
-              {Object.keys(hoursByAssignee).length === 0 && (
-                <div className="text-xs text-gray-500">No estimated hours set.</div>
-              )}
-            </div>
-          </CardContent></Card>
-        </div>
-
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Recent Activity</CardTitle></CardHeader>
-          <CardContent className="p-4">
-            <div className="space-y-3">
-              {activityLogs.slice(0,8).map(log => (
-                <div key={log.id} className="flex items-start gap-2">
-                  <Avatar className="w-6 h-6"><AvatarFallback className="text-[10px]">{log.user === 'AI Assistant' ? 'AI' : log.user.split(' ').map(n => n[0]).join('')}</AvatarFallback></Avatar>
-                  <div className="text-xs">
-                    <div className="font-medium">{log.description}</div>
-                    <div className="text-gray-500">{format(log.timestamp, 'MMM dd, HH:mm')}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Types of Work</CardTitle></CardHeader>
-          <CardContent className="p-4">
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              {topTags.map(([tag, count]) => (
-                <div key={tag} className="p-2 border rounded flex items-center justify-between">
-                  <span className="truncate">#{tag}</span>
-                  <Badge variant="outline">{count}</Badge>
-                </div>
-              ))}
-              {topTags.length === 0 && <div className="text-xs text-gray-500">No tags yet</div>}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  // Archive handlers
+  const archiveTask = async (taskId: string) => {
+    const { error } = await supabase.from('todos' as any).update({ archived_at: new Date().toISOString() }).eq('id', taskId);
+    if (!error) setTasks(prev => prev.filter(t => t.id !== taskId));
+  };
+  const unarchiveTask = async (taskId: string) => {
+    const { error } = await supabase.from('todos' as any).update({ archived_at: null }).eq('id', taskId);
+    if (!error) loadTasks();
   };
 
-  const TimelineView = () => (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xl font-semibold">Timeline</h3>
-        <Button onClick={() => setShowCreateEpic(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Create Epic
-        </Button>
-      </div>
-      <ProjectActivityTimeline projectId={selectedProject !== 'all' ? selectedProject : (projects[0]?.id || 'project-1')} projectName={projects.find(p=>p.id===selectedProject)?.name || projects[0]?.name || 'Project'} />
-    </div>
-  );
-
-  const CalendarView = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <Card className="lg:col-span-1">
-        <CardContent className="p-4">
-          <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} className="rounded-md border" />
-        </CardContent>
-      </Card>
-      <Card className="lg:col-span-2">
-        <CardHeader>
-          <CardTitle className="text-sm">Tasks on {selectedDate ? format(selectedDate, 'MMM dd, yyyy') : 'Select a date'}</CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 space-y-2">
-          {filteredTasks.filter(t => t.dueDate && selectedDate && format(t.dueDate, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')).map(t => (
-            <div key={t.id} className="flex items-center justify-between p-2 border rounded text-sm">
-              <div className="flex items-center gap-2">
-                <span className={`inline-block w-2 h-2 rounded-full ${priorityColors[t.priority]}`} />
-                <span className="font-medium">{t.title}</span>
-                <Badge variant="outline" className="capitalize">{t.status.replace('-', ' ')}</Badge>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">{projects.find(p=>p.id===t.project)?.name || 'No project'}</span>
-                <Button size="sm" variant="outline" onClick={() => { setEditingTask(t); setShowEditTask(true); }}>Edit</Button>
-              </div>
-            </div>
-          ))}
-          {filteredTasks.filter(t => t.dueDate && selectedDate && format(t.dueDate, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')).length === 0 && (
-            <div className="text-sm text-gray-500">No tasks scheduled for this date.</div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-
-  const ListView = () => (
-    <Card>
-      <CardContent className="p-0 overflow-x-auto">
-        <div className="min-w-[700px]">
-          <div className="grid grid-cols-8 gap-2 px-3 py-2 text-xs font-medium bg-gray-50 border-b">
-            <div>Task</div>
-            <div>Status</div>
-            <div>Priority</div>
-            <div>Project</div>
-            <div>Assignee</div>
-            <div>Due</div>
-            <div>Tags</div>
-            <div>Actions</div>
-          </div>
-          {filteredTasks.map(t => (
-            <div key={t.id} className="grid grid-cols-8 gap-2 px-3 py-2 text-sm border-b items-center">
-              <div className="truncate">{t.title}</div>
-              <div className="capitalize text-xs"><Badge variant="outline">{t.status.replace('-', ' ')}</Badge></div>
-              <div className="text-xs"><Badge className={`${priorityColors[t.priority]} text-white`}>{t.priority}</Badge></div>
-              <div className="text-xs truncate">{projects.find(p=>p.id===t.project)?.name || '—'}</div>
-              <div className="text-xs truncate">{t.assignee}</div>
-              <div className="text-xs">{t.dueDate ? format(t.dueDate,'MMM dd') : '—'}</div>
-              <div className="text-xs truncate">{t.tags.slice(0,3).join(', ')}</div>
-              <div className="flex gap-1">
-                <Button size="sm" variant="outline" onClick={() => { setEditingTask(t); setShowEditTask(true); }}>Edit</Button>
-                <Button size="sm" variant="outline" onClick={() => handleTaskArchive(t.id)}>Archive</Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const FormsView = () => {
-    const [title, setTitle] = useState('');
-    const [desc, setDesc] = useState('');
-    const [priority, setPriority] = useState<'low'|'medium'|'high'|'urgent'>('medium');
-    const [submitting, setSubmitting] = useState(false);
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2">
-          <CardHeader><CardTitle className="text-sm">Submit a Work Request</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            <Input placeholder="Title" value={title} onChange={(e)=>setTitle(e.target.value)} />
-            <Textarea placeholder="Describe your request" value={desc} onChange={(e)=>setDesc(e.target.value)} />
-            <div className="grid grid-cols-2 gap-2">
-              <Select value={priority} onValueChange={(v:any)=>setPriority(v)}>
-                <SelectTrigger><SelectValue placeholder="Priority" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={selectedProject} onValueChange={setSelectedProject}>
-                <SelectTrigger><SelectValue placeholder="Project" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Auto-select</SelectItem>
-                  {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={async ()=>{
-                setSubmitting(true);
-                try {
-                  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/public-work-request`, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-                    },
-                    body: JSON.stringify({
-                      title,
-                      description: desc,
-                      priority,
-                      project_id: selectedProject !== 'all' ? selectedProject : null,
-                      team_id: selectedTeam !== 'all' ? selectedTeam : null,
-                    })
-                  });
-                  if (!res.ok) throw new Error('Submission failed');
-                  const json = await res.json();
-                  toast({ title: 'Submitted', description: `Request ID ${json.id}` });
-                  setTitle(''); setDesc(''); setPriority('medium');
-                  // Refresh tasks
-                  loadTasks();
-                } catch (e:any) {
-                  toast({ title: 'Error', description: e.message, variant: 'destructive' });
-                } finally {
-                  setSubmitting(false);
-                }
-              }} disabled={!title.trim() || submitting}>{submitting ? 'Submitting...' : 'Submit'}</Button>
-              <Button variant="outline" onClick={()=>{ setTitle(''); setDesc(''); setPriority('medium'); }}>Reset</Button>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Public Form</CardTitle></CardHeader>
-          <CardContent className="text-sm space-y-2">
-            <p>Share this link to collect requests:</p>
-            <div className="p-2 border rounded text-xs break-all">{window.location.origin}/forms/work-request</div>
-            <p className="text-gray-500">New submissions create tasks automatically.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  // Convert work request to task
+  const convertWorkRequestToTask = async (req: WorkRequest) => {
+    const targetProjectId = selectedProject !== 'all' ? selectedProject : projects[0]?.id || null;
+    const { data: task, error } = await supabase.from('todos' as any).insert({
+      title: req.title,
+      description: req.description || '',
+      status: 'todo',
+      priority: req.priority || 'medium',
+      project_id: targetProjectId
+    }).select().single();
+    
+    if (error) {
+      console.error('Error creating task:', error);
+      return;
+    }
+    
+    if (task && 'id' in task) {
+      await supabase.from('work_requests' as any).update({ 
+        status: 'converted', 
+        created_task_id: task.id 
+      }).eq('id', req.id);
+    }
+    setWorkRequests(prev => prev.map(w => w.id === req.id ? { ...w, status: 'converted' } : w));
+    // add task to local state for immediate visibility
+    loadTasks();
   };
 
-  const GoalsView = () => (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xl font-semibold">Goals</h3>
-        <Button onClick={() => {
-          const g: Goal = { id: `goal-${Date.now()}`, title: `New Goal ${goals.length+1}`, progress: 0, targetDate: null, projectId: selectedProject !== 'all' ? selectedProject : undefined };
-          setGoals(prev => [g, ...prev]);
-        }}>
-          <Plus className="w-4 h-4 mr-2" /> Add Goal
-        </Button>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {goals.map(g => (
-          <Card key={g.id}>
-            <CardContent className="p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="font-medium">{g.title}</div>
-                <Badge variant="outline">{g.progress}%</Badge>
-              </div>
-              <div className="text-xs text-gray-500 flex items-center gap-2">
-                {g.projectId && <span>Project: {projects.find(p=>p.id===g.projectId)?.name || g.projectId}</span>}
-                {g.epicId && <span>Epic: {epics.find(e=>e.id===g.epicId)?.title || g.epicId}</span>}
-              </div>
-              <div className="w-full bg-gray-200 h-2 rounded">
-                <div className="h-2 rounded bg-blue-600" style={{ width: `${g.progress}%` }} />
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={()=>setGoals(prev => prev.map(x => x.id===g.id ? { ...x, progress: Math.min(100, x.progress + 10) } : x))}>+10%</Button>
-                <Button size="sm" variant="outline" onClick={()=>setGoals(prev => prev.map(x => x.id===g.id ? { ...x, progress: Math.max(0, x.progress - 10) } : x))}>-10%</Button>
-                <Select value={g.epicId || ''} onValueChange={(v:any)=> setGoals(prev => prev.map(x => x.id===g.id ? { ...x, epicId: v || undefined } : x))}>
-                  <SelectTrigger className="w-[140px]"><SelectValue placeholder="Link Epic" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">No epic</SelectItem>
-                    {epics.map(e => <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        {goals.length === 0 && (
-          <Card><CardContent className="p-6 text-sm text-gray-500">No goals yet.</CardContent></Card>
-        )}
-      </div>
-    </div>
-  );
+  const PAGE_SIZE = 10;
 
-  const AllWorkView = () => (
-    <div className="space-y-4">
-      <h3 className="text-xl font-semibold">All Work</h3>
-      <ListView />
-    </div>
-  );
 
-  const ArchivedView = () => (
-    <Card>
-      <CardHeader><CardTitle className="text-sm">Archived Work Items</CardTitle></CardHeader>
-      <CardContent className="p-0">
-        {tasks.filter(t => t.archived).length === 0 ? (
-          <div className="p-6 text-sm text-gray-500">No archived items.</div>
-        ) : (
-          <div className="divide-y">
-            {tasks.filter(t => t.archived).map(t => (
-              <div key={t.id} className="flex items-center justify-between px-4 py-3 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className={`inline-block w-2 h-2 rounded-full ${priorityColors[t.priority]}`} />
-                  <span className="font-medium">{t.title}</span>
-                  <Badge variant="outline" className="capitalize">{t.status.replace('-', ' ')}</Badge>
-                </div>
-                <div className="text-xs text-gray-500">{t.dueDate ? format(t.dueDate, 'MMM dd') : '—'}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-
-  const TeamsView = () => {
-    const [newTeamName, setNewTeamName] = useState('');
-    const [newMember, setNewMember] = useState('');
-    const [selectedTeamLocal, setSelectedTeamLocal] = useState<string>('all');
-
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xl font-semibold">Teams</h3>
-          <div className="flex gap-2">
-            <Select value={selectedTeamLocal} onValueChange={setSelectedTeamLocal}>
-              <SelectTrigger className="w-[200px]"><SelectValue placeholder="Select team" /></SelectTrigger>
-              <SelectContent>
-                {teams.map(t => (<SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>))}
-              </SelectContent>
-            </Select>
-            <Button onClick={() => setSelectedTeam(selectedTeamLocal)}>Apply</Button>
-          </div>
-        </div>
-
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Create Team</CardTitle></CardHeader>
-          <CardContent className="flex gap-2">
-            <Input placeholder="Team name" value={newTeamName} onChange={(e)=>setNewTeamName(e.target.value)} />
-            <Button onClick={async () => {
-              if (!newTeamName.trim()) return;
-              const name = newTeamName.trim();
-              let createdTeam: Team | null = null;
-              try {
-                const { data } = await supabase
-                  .from('teams')
-                  // @ts-ignore optional teams table
-                  .insert({ name, members: [], user_id: user?.id })
-                  .select()
-                  .single();
-                if (data) {
-                  createdTeam = { id: data.id, name: data.name, members: Array.isArray(data.members) ? data.members : [] } as Team;
-                }
-              } catch (e) {
-                console.warn('Supabase team insert failed, using local-only team:', e);
-              }
-              const team: Team = createdTeam ?? { id: `team-${Date.now()}`, name, members: [] };
-              setTeams(prev => [...prev, team]);
-              setSelectedTeam(team.id);
-              setSelectedTeamLocal(team.id);
-              setNewTeamName('');
-              toast({ title: 'Team created', description: `${team.name} created.` });
-            }}>Create team</Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Manage Users</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex gap-2">
-              <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                <SelectTrigger className="w-[200px]"><SelectValue placeholder="Team" /></SelectTrigger>
-                <SelectContent>
-                  {teams.map(t => (<SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>))}
-                </SelectContent>
-              </Select>
-              <Input placeholder="Add person (name)" value={newMember} onChange={(e)=>setNewMember(e.target.value)} />
-              <Button onClick={async () => {
-                if (!newMember.trim()) return;
-                const targetTeamId = selectedTeam !== 'all' ? selectedTeam : selectedTeamLocal;
-                if (!targetTeamId || targetTeamId === 'all') {
-                  toast({ title: 'Select a team', description: 'Please select a team to add members.', variant: 'destructive' });
-                  return;
-                }
-                const memberName = newMember.trim();
-                setTeams(prev => prev.map(t => t.id === targetTeamId ? { ...t, members: [...t.members, memberName] } : t));
-                setNewMember('');
-                try {
-                  // Persist best-effort
-                  const teamRec = teams.find(t => t.id === targetTeamId);
-                  const nextMembers = [...(teamRec?.members || []), memberName];
-                  await supabase
-                    .from('teams')
-                    // @ts-ignore optional teams table
-                    .update({ members: nextMembers })
-                    .eq('id', targetTeamId);
-                } catch (e) {
-                  console.warn('Persist team members failed:', e);
-                }
-                toast({ title: 'Member added', description: 'Person added to team.' });
-              }}>Add person</Button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {teams.filter(t => t.id === selectedTeam).map(team => (
-                <Card key={team.id}>
-                  <CardHeader><CardTitle className="text-sm">{team.name} Members</CardTitle></CardHeader>
-                  <CardContent className="space-y-2">
-                    {team.members.length === 0 && <div className="text-xs text-gray-500">No members yet.</div>}
-                    {team.members.map(m => (
-                      <div key={m} className="flex items-center justify-between text-sm p-2 border rounded">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="w-6 h-6"><AvatarFallback className="text-[10px]">{m.split(' ').map(n=>n[0]).join('')}</AvatarFallback></Avatar>
-                          <span>{m}</span>
-                        </div>
-                        <Button size="sm" variant="outline" onClick={() => {
-                          setTeams(prev => prev.map(t => t.id === team.id ? { ...t, members: t.members.filter(x => x !== m) } : t));
-                        }}>Remove</Button>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  const openNewWorkRequestDialog = () => {
+    setEditingWorkRequest(null);
+    setWorkRequestForm({ title: '', description: '', priority: 'medium', status: 'new' });
+    setWorkRequestDialogOpen(true);
   };
+  const openEditWorkRequestDialog = (req: WorkRequest) => {
+    setEditingWorkRequest(req);
+    setWorkRequestForm({ title: req.title, description: req.description || '', priority: req.priority || 'medium', status: req.status });
+    setWorkRequestDialogOpen(true);
+  };
+  const saveWorkRequest = async () => {
+    if (!workRequestForm.title.trim()) return;
+    if (editingWorkRequest) {
+      const { data, error } = await supabase.from('work_requests' as any)
+        .update({ title: workRequestForm.title, description: workRequestForm.description, priority: workRequestForm.priority, status: workRequestForm.status })
+        .eq('id', editingWorkRequest.id).select().single();
+      if (!error && data) {
+        setWorkRequests(prev => prev.map(w => w.id === editingWorkRequest.id ? data as any : w));
+      }
+    } else {
+      const { data, error } = await supabase.from('work_requests' as any)
+        .insert({ title: workRequestForm.title, description: workRequestForm.description, priority: workRequestForm.priority, status: workRequestForm.status })
+        .select().single();
+      if (!error && data) setWorkRequests(prev => [data as any, ...prev]);
+    }
+    setWorkRequestDialogOpen(false);
+  };
+  const deleteWorkRequest = async (req: WorkRequest) => {
+    const { error } = await supabase.from('work_requests' as any).delete().eq('id', req.id);
+    if (!error) setWorkRequests(prev => prev.filter(w => w.id !== req.id));
+  };
+  const filteredSortedWorkRequests = (() => {
+    let arr = [...workRequests];
+    if (workRequestStatusFilter !== 'all') arr = arr.filter(w => w.status === workRequestStatusFilter);
+    if (workRequestPriorityFilter !== 'all') arr = arr.filter(w => (w.priority || 'medium') === workRequestPriorityFilter);
+    arr.sort((a,b) => workRequestSort === 'newest' ? (b.created_at.localeCompare(a.created_at)) : (a.created_at.localeCompare(b.created_at)));
+    return arr;
+  })();
+  const pagedWorkRequests = filteredSortedWorkRequests.slice((workRequestPage-1)*PAGE_SIZE, workRequestPage*PAGE_SIZE);
+
+  // Goals dialogs and filters
+  const openNewGoalDialog = () => {
+    setEditingGoal(null);
+    setGoalForm({ title: '', description: '', target_date: '', progress: 0 });
+    setGoalDialogOpen(true);
+  };
+  const openEditGoalDialog = (g: GoalItem) => {
+    setEditingGoal(g);
+    setGoalForm({ title: g.title, description: g.description || '', target_date: g.target_date || '', progress: g.progress });
+    setGoalDialogOpen(true);
+  };
+  const saveGoal = async () => {
+    if (!goalForm.title.trim()) return;
+    
+    if (editingGoal) {
+      const updatedGoal = {
+        ...editingGoal,
+        title: goalForm.title,
+        description: goalForm.description,
+        target_date: goalForm.target_date || null,
+        progress: goalForm.progress
+      };
+      setGoals(prev => prev.map(x => x.id === editingGoal.id ? updatedGoal : x));
+      
+      // Update localStorage
+      try {
+        const savedGoals = localStorage.getItem('projectGoals');
+        const existingGoals = savedGoals ? JSON.parse(savedGoals) : [];
+        const updatedGoals = existingGoals.map((g: any) => g.id === editingGoal.id ? updatedGoal : g);
+        localStorage.setItem('projectGoals', JSON.stringify(updatedGoals));
+      } catch (error) {
+        console.error('Error updating goal:', error);
+      }
+    } else {
+      const newGoal: GoalItem = {
+        id: Date.now().toString(),
+        title: goalForm.title,
+        description: goalForm.description,
+        target_date: goalForm.target_date || null,
+        progress: goalForm.progress,
+        created_at: new Date().toISOString(),
+        user_id: 'local-user'
+      };
+      setGoals(prev => [newGoal, ...prev]);
+      
+      // Save to localStorage
+      try {
+        const savedGoals = localStorage.getItem('projectGoals');
+        const existingGoals = savedGoals ? JSON.parse(savedGoals) : [];
+        localStorage.setItem('projectGoals', JSON.stringify([newGoal, ...existingGoals]));
+      } catch (error) {
+        console.error('Error saving goal:', error);
+      }
+    }
+    
+    setGoalDialogOpen(false);
+    setEditingGoal(null);
+    setGoalForm({ title: '', description: '', target_date: '', progress: 0 });
+    
+    toast({
+      title: editingGoal ? "Goal Updated" : "Goal Created",
+      description: `"${goalForm.title}" has been ${editingGoal ? 'updated' : 'created'} successfully.`
+    });
+  };
+  const deleteGoal = async (g: GoalItem) => {
+    setGoals(prev => prev.filter(x => x.id !== g.id));
+    
+    // Update localStorage
+    try {
+      const savedGoals = localStorage.getItem('projectGoals');
+      const existingGoals = savedGoals ? JSON.parse(savedGoals) : [];
+      const updatedGoals = existingGoals.filter((goal: any) => goal.id !== g.id);
+      localStorage.setItem('projectGoals', JSON.stringify(updatedGoals));
+      
+      toast({
+        title: "Goal Deleted",
+        description: `"${g.title}" has been deleted successfully.`
+      });
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+    }
+  };
+  const sortedGoals = [...goals].sort((a,b) => goalsSort === 'newest' ? (b.created_at.localeCompare(a.created_at)) : (a.created_at.localeCompare(b.created_at)));
+  const pagedGoals = sortedGoals.slice((goalsPage-1)*PAGE_SIZE, goalsPage*PAGE_SIZE);
+
+  // Calendar event dialogs and filters
+  const openNewEventDialog = () => {
+    setEditingEvent(null);
+    setEventForm({ title: '', start_at: '', end_at: '' });
+    setEventDialogOpen(true);
+  };
+  const openEditEventDialog = (ev: CalendarEventItem) => {
+    setEditingEvent(ev);
+    setEventForm({ title: ev.title, start_at: ev.start_at?.slice(0,16) || '', end_at: ev.end_at?.slice(0,16) || '' });
+    setEventDialogOpen(true);
+  };
+  const saveEvent = async () => {
+    if (!eventForm.title.trim() || !eventForm.start_at) return;
+    const payload = { title: eventForm.title, start_at: eventForm.start_at, end_at: eventForm.end_at || null } as any;
+    if (editingEvent) {
+      const { data, error } = await supabase.from('calendar_events' as any)
+        .update(payload).eq('id', editingEvent.id).select().single();
+      if (!error && data) setCalendarEvents(prev => prev.map(e => e.id === editingEvent.id ? data as any : e));
+    } else {
+      const { data, error } = await supabase.from('calendar_events' as any)
+        .insert(payload).select().single();
+      if (!error && data) setCalendarEvents(prev => [...prev, data as any]);
+    }
+    setEventDialogOpen(false);
+  };
+  const deleteEvent = async (ev: CalendarEventItem) => {
+    const { error } = await supabase.from('calendar_events' as any).delete().eq('id', ev.id);
+    if (!error) setCalendarEvents(prev => prev.filter(e => e.id !== ev.id));
+  };
+  const sortedEvents = [...calendarEvents].sort((a,b) => eventsSort === 'newest' ? (b.start_at.localeCompare(a.start_at)) : (a.start_at.localeCompare(b.start_at)));
+  const pagedEvents = sortedEvents.slice((eventsPage-1)*PAGE_SIZE, eventsPage*PAGE_SIZE);
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
@@ -2623,19 +2394,6 @@ const ProjectManagement = () => {
                 className="pl-10"
               />
             </div>
-            {/* Team selector for multitenancy */}
-            <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filter by team" />
-              </SelectTrigger>
-              <SelectContent>
-                {teams.map(team => (
-                  <SelectItem key={team.id} value={team.id}>
-                    {team.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <Select value={selectedProject} onValueChange={setSelectedProject}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Filter by project" />
@@ -2651,23 +2409,23 @@ const ProjectManagement = () => {
             </Select>
             <div className="flex gap-2">
               <Button
-                variant={activeView === 'kanban' && activeTab === 'board' ? 'default' : 'outline'}
+                variant={activeView === 'kanban' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => { setActiveView('kanban'); setActiveTab('board'); }}
+                onClick={() => setActiveView('kanban')}
               >
                 <KanbanSquare className="w-4 h-4" />
               </Button>
               <Button
-                variant={activeView === 'list' && activeTab === 'list' ? 'default' : 'outline'}
+                variant={activeView === 'list' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => { setActiveView('list'); setActiveTab('list'); }}
+                onClick={() => setActiveView('list')}
               >
                 <List className="w-4 h-4" />
               </Button>
               <Button
-                variant={activeView === 'calendar' && activeTab === 'calendar' ? 'default' : 'outline'}
+                variant={activeView === 'calendar' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => { setActiveView('calendar'); setActiveTab('calendar'); }}
+                onClick={() => setActiveView('calendar')}
               >
                 <CalendarIcon className="w-4 h-4" />
               </Button>
@@ -2681,64 +2439,421 @@ const ProjectManagement = () => {
         <TabsList className="grid w-full grid-cols-10">
           <TabsTrigger value="summary">Summary</TabsTrigger>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
-          <TabsTrigger value="board">Board</TabsTrigger>
+          <TabsTrigger value="kanban">Board</TabsTrigger>
           <TabsTrigger value="calendar">Calendar</TabsTrigger>
           <TabsTrigger value="list">List</TabsTrigger>
           <TabsTrigger value="forms">Forms</TabsTrigger>
           <TabsTrigger value="goals">Goals</TabsTrigger>
-          <TabsTrigger value="all-work">All work</TabsTrigger>
+          <TabsTrigger value="all">All work</TabsTrigger>
           <TabsTrigger value="archived">Archived</TabsTrigger>
           <TabsTrigger value="teams">Teams</TabsTrigger>
         </TabsList>
 
         <TabsContent value="summary" className="mt-6">
-          <SummaryView />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Status Overview</CardTitle>
+              </CardHeader>
+              <CardContent className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={statusPieData} dataKey="value" nameKey="name" outerRadius={80} label>
+                      {statusPieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={statusColors[index % statusColors.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Priority Breakdown</CardTitle>
+              </CardHeader>
+              <CardContent className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={priorityBarData}>
+                    <XAxis dataKey="name" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#3b82f6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Team Workload</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {teamWorkload.map(member => (
+                    <div key={member.name} className="p-4 border rounded-lg flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-8 h-8"><AvatarFallback>{member.name[0]}</AvatarFallback></Avatar>
+                        <div>
+                          <div className="font-medium">{member.name}</div>
+                          <div className="text-xs text-gray-500">Capacity: {member.capacity}%</div>
+                        </div>
+                      </div>
+                      <Badge variant={member.load > member.capacity ? 'destructive' : 'secondary'}>
+                        {member.load} tasks
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {activityLogs.slice(0, 6).map(log => (
+                    <div key={log.id} className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg">
+                      <Avatar className="w-8 h-8"><AvatarFallback>{log.user[0]}</AvatarFallback></Avatar>
+                      <div>
+                        <div className="text-sm">{log.description}</div>
+                        <div className="text-xs text-gray-500">{format(log.timestamp, 'MMM dd, HH:mm')}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Types of Work</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-gray-600">
+                <ul className="list-disc pl-5 space-y-1">
+                  {typesOfWork.map(item => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="timeline" className="mt-6">
-          <TimelineView />
+          <div className="mb-4">
+            <Button onClick={() => setShowCreateProject(true)} size="sm">
+              <Plus className="w-4 h-4 mr-2" /> Create Epic
+            </Button>
+          </div>
+          <ProjectActivityTimeline projectId={selectedProject || 'default'} projectName={selectedProject ? projects.find(p => p.id === selectedProject)?.name || 'Project' : 'All Projects'} />
         </TabsContent>
 
-        <TabsContent value="board" className="mt-6">
+        <TabsContent value="kanban" className="mt-6">
           <EnhancedKanbanBoard />
         </TabsContent>
 
         <TabsContent value="calendar" className="mt-6">
-          <CalendarView />
+          <Card>
+            <CardHeader><CardTitle>Calendar</CardTitle></CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Select value={eventsSort} onValueChange={(v:any)=>setEventsSort(v)}>
+                  <SelectTrigger className="w-[150px]"><SelectValue placeholder="Sort" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="newest">Newest</SelectItem>
+                    <SelectItem value="oldest">Oldest</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button size="sm" variant="outline" onClick={openNewEventDialog}>Add Event</Button>
+              </div>
+              <div className="space-y-2">
+                {pagedEvents.map(ev => (
+                  <div key={ev.id} className="p-3 border rounded-lg flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{ev.title}</div>
+                      <div className="text-xs text-gray-500">{ev.start_at}{ev.end_at ? ` → ${ev.end_at}` : ''}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="ghost" onClick={()=>openEditEventDialog(ev)}>Edit</Button>
+                      <Button size="sm" variant="ghost" onClick={()=>deleteEvent(ev)}>Delete</Button>
+                    </div>
+                  </div>
+                ))}
+                {sortedEvents.length === 0 && <div className="text-sm text-gray-500">No events yet.</div>}
+              </div>
+              <div className="flex justify-end gap-2 mt-3">
+                <Button size="sm" variant="outline" disabled={eventsPage===1} onClick={()=>setEventsPage(p=>Math.max(1,p-1))}>Prev</Button>
+                <Button size="sm" variant="outline" disabled={eventsPage*PAGE_SIZE>=sortedEvents.length} onClick={()=>setEventsPage(p=>p+1)}>Next</Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="list" className="mt-6">
-          <ListView />
+          <Card>
+            <CardHeader><CardTitle>All Tasks (List)</CardTitle></CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {tasks.filter(t => !(t as any).archived_at).map(t => (
+                  <div key={t.id} className="p-3 border rounded-lg flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{t.title}</div>
+                      <div className="text-xs text-gray-500">{t.status} • {t.priority}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{t.project}</Badge>
+                      <Button size="sm" variant="ghost" onClick={() => archiveTask(t.id)}>Archive</Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="forms" className="mt-6">
-          <FormsView />
+          <Card>
+            <CardHeader>
+              <CardTitle>Forms: Collect and track work requests</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-4">Create simple forms to collect work requests and automatically create tasks.</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Select value={workRequestStatusFilter} onValueChange={(v: any) => setWorkRequestStatusFilter(v)}>
+                  <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="in_review">In review</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                    <SelectItem value="converted">Converted</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={workRequestPriorityFilter} onValueChange={(v: any) => setWorkRequestPriorityFilter(v)}>
+                  <SelectTrigger className="w-[150px]"><SelectValue placeholder="Priority" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All priorities</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={workRequestSort} onValueChange={(v: any) => setWorkRequestSort(v)}>
+                  <SelectTrigger className="w-[150px]"><SelectValue placeholder="Sort" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="newest">Newest</SelectItem>
+                    <SelectItem value="oldest">Oldest</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" onClick={openNewWorkRequestDialog}>New Work Request</Button>
+              </div>
+              <div className="space-y-2">
+                {pagedWorkRequests.map(req => (
+                  <div key={req.id} className="p-3 border rounded-lg flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{req.title}</div>
+                      <div className="text-xs text-gray-500">{req.status} • {req.priority || 'medium'}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => openEditWorkRequestDialog(req)}>Edit</Button>
+                      <Button size="sm" variant="ghost" onClick={() => deleteWorkRequest(req)}>Delete</Button>
+                      {req.status !== 'converted' && (
+                        <Button size="sm" variant="ghost" onClick={() => convertWorkRequestToTask(req)}>Convert to Task</Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {filteredSortedWorkRequests.length === 0 && <div className="text-sm text-gray-500">No work requests yet.</div>}
+              </div>
+              <div className="flex justify-end gap-2 mt-3">
+                <Button size="sm" variant="outline" disabled={workRequestPage===1} onClick={()=>setWorkRequestPage(p=>Math.max(1,p-1))}>Prev</Button>
+                <Button size="sm" variant="outline" disabled={workRequestPage*PAGE_SIZE>=filteredSortedWorkRequests.length} onClick={()=>setWorkRequestPage(p=>p+1)}>Next</Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="goals" className="mt-6">
-          <GoalsView />
+          <Card>
+            <CardHeader>
+              <CardTitle>Goals</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-4">Define measurable goals and link tasks and epics to track progress.</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Select value={goalsSort} onValueChange={(v:any)=>setGoalsSort(v)}>
+                  <SelectTrigger className="w-[150px]"><SelectValue placeholder="Sort" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="newest">Newest</SelectItem>
+                    <SelectItem value="oldest">Oldest</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" onClick={openNewGoalDialog}>Create Goal</Button>
+              </div>
+              <div className="space-y-2">
+                {pagedGoals.map(g => (
+                  <div key={g.id} className="p-3 border rounded-lg flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{g.title}</div>
+                      <div className="text-xs text-gray-500">Target: {g.target_date || '—'} • Progress: {g.progress}%</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">{g.progress}%</Badge>
+                      <Button size="sm" variant="ghost" onClick={()=>openEditGoalDialog(g)}>Edit</Button>
+                      <Button size="sm" variant="ghost" onClick={()=>deleteGoal(g)}>Delete</Button>
+                    </div>
+                  </div>
+                ))}
+                {sortedGoals.length === 0 && <div className="text-sm text-gray-500">No goals yet.</div>}
+              </div>
+              <div className="flex justify-end gap-2 mt-3">
+                <Button size="sm" variant="outline" disabled={goalsPage===1} onClick={()=>setGoalsPage(p=>Math.max(1,p-1))}>Prev</Button>
+                <Button size="sm" variant="outline" disabled={goalsPage*PAGE_SIZE>=sortedGoals.length} onClick={()=>setGoalsPage(p=>p+1)}>Next</Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        <TabsContent value="all-work" className="mt-6">
-          <AllWorkView />
+        <TabsContent value="all" className="mt-6">
+          <Card>
+            <CardHeader><CardTitle>All Work Items</CardTitle></CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {[...tasks].filter(t => !(t as any).archived_at).map(t => (
+                  <div key={t.id} className="p-3 border rounded-lg flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{t.title}</div>
+                      <div className="text-xs text-gray-500">{t.status} • {t.priority}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{t.project}</Badge>
+                      <Button size="sm" variant="ghost" onClick={() => archiveTask(t.id)}>Archive</Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="archived" className="mt-6">
-          <ArchivedView />
+          <Card>
+            <CardHeader><CardTitle>Archived Work Items</CardTitle></CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {tasks.filter(t => (t as any).archived_at).map(t => (
+                  <div key={t.id} className="p-3 border rounded-lg flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{t.title}</div>
+                      <div className="text-xs text-gray-500">Archived</div>
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => unarchiveTask(t.id)}>Unarchive</Button>
+                  </div>
+                ))}
+                {tasks.filter(t => (t as any).archived_at).length === 0 && (
+                  <div className="text-sm text-gray-500">No archived items.</div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        <TabsContent value="teams" className="mt-6">
-          <TeamsView />
+                <TabsContent value="teams" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Teams</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Button variant="outline" size="sm" onClick={createTeam}>Create team</Button>
+                {teams.map(team => (
+                  <Button key={team.id} variant="outline" size="sm" onClick={() => addPersonToTeam(team.id)}>Add people to {team.name}</Button>
+                ))}
+              </div>
+              <div className="space-y-4">
+                {teams.map(team => (
+                  <div key={team.id} className="p-3 border rounded-lg">
+                    <div className="font-medium mb-2">{team.name}</div>
+                    <div className="text-xs text-gray-500 mb-2">Members:</div>
+                    <div className="space-y-1">
+                      {(teamMembers[team.id] || []).map(m => (
+                        <div key={team.id + m.member_email} className="text-sm">{m.member_email} — {m.role}</div>
+                      ))}
+                      {(teamMembers[team.id] || []).length === 0 && (<div className="text-sm text-gray-500">No members yet.</div>)}
+                    </div>
+                  </div>
+                ))}
+                {teams.length === 0 && <div className="text-sm text-gray-500">No teams yet.</div>}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
-      {/* Create Task Dialog */}
+      {/* Projects Overview Section */}
+      <div className="mt-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-semibold">Active Projects</h3>
+              <Button variant="outline" onClick={() => setShowCreateProject(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                New Project
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {projects.map(project => {
+                // Convert project format to match ProjectCard expectations
+                const projectCardData = {
+                  ...project,
+                  team_members: project.members,
+                  deadline: project.deadline?.toISOString().split('T')[0]
+                };
+                
+                return (
+                  <ProjectCard
+                    key={project.id}
+                    project={projectCardData}
+                    onClick={() => {
+                      console.log('Selecting project:', project.id);
+                      setSelectedProject(project.id);
+                                             setActiveTab('summary');
+                      toast({
+                        title: "Project Selected",
+                        description: `Now viewing: ${project.name}`,
+                      });
+                    }}
+                  />
+                );
+              })}
+              
+              {projects.length === 0 && (
+                <Card className="border-dashed border-2 border-gray-300">
+                  <CardContent className="p-6 text-center">
+                    <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h4 className="font-medium text-gray-900 mb-2">No projects yet</h4>
+                    <p className="text-sm text-gray-600 mb-4">Get started by creating your first project</p>
+                    <Button onClick={() => setShowCreateProject(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Project
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+        
+      {/* Enhanced Create Task Dialog */}
       <CreateTodoDialog
         isOpen={showCreateTask}
         onOpenChange={setShowCreateTask}
         onCreateTodo={handleCreateTask}
-        teamId={selectedTeam}
-        teamMembers={(teams.find(t=>t.id===selectedTeam)?.members)||[]}
       />
 
       {/* Edit Task Dialog */}
@@ -2757,8 +2872,6 @@ const ProjectManagement = () => {
             setEditingTask(null);
             toast({ title: "Task Updated", description: "Task updated successfully." });
           }}
-          teamId={selectedTeam}
-          teamMembers={(teams.find(t=>t.id===selectedTeam)?.members)||[]}
         />
       )}
 
@@ -3021,25 +3134,7 @@ const ProjectManagement = () => {
                       <label className="text-sm font-medium">Compact mode</label>
                       <p className="text-xs text-gray-600">Reduce card spacing and padding</p>
                     </div>
-                    <Button variant="outline" size="sm" onClick={()=>setCompactMode(v=>!v)}>{compactMode ? 'ON' : 'OFF'}</Button>
-                  </div>
-                  <div className="space-y-2 pt-3">
-                    <label className="text-sm font-medium">WIP limits</label>
-                    {statusColumns.map(col => (
-                      <div key={col.id} className="flex items-center gap-2 text-sm">
-                        <span className="w-24 capitalize">{col.title}</span>
-                        <Input
-                          type="number"
-                          min={1}
-                          className="w-24"
-                          value={wipLimits[col.id] ?? 999}
-                          onChange={(e)=>{
-                            const val = parseInt(e.target.value || '0', 10);
-                            setWipLimits(prev => ({ ...prev, [col.id]: isNaN(val) ? 999 : val }));
-                          }}
-                        />
-                      </div>
-                    ))}
+                    <Button variant="outline" size="sm">OFF</Button>
                   </div>
                 </div>
               </CardContent>
@@ -3051,26 +3146,6 @@ const ProjectManagement = () => {
                   title: "Board Customized",
                   description: "Your board settings have been saved.",
                 });
-                // Persist WIP limits into selected project's customColumns if a project is selected
-                if (selectedProject !== 'all') {
-                  setProjects(prev => prev.map(p => {
-                    if (p.id !== selectedProject) return p;
-                    const updated = { ...p };
-                    updated.customColumns = (p.customColumns || statusColumns).map(col => ({
-                      ...col,
-                      // @ts-ignore store limit
-                      wipLimit: wipLimits[col.id] ?? 999,
-                    }));
-                    return updated;
-                  }));
-                  try {
-                    // Best-effort server persistence (optional custom_columns column)
-                    // @ts-ignore
-                    supabase.from('projects').update({ custom_columns: (projects.find(p=>p.id===selectedProject)?.customColumns || statusColumns).map(col => ({ ...col, wipLimit: wipLimits[col.id] ?? 999 })) }).eq('id', selectedProject);
-                  } catch (e) {
-                    console.warn('Could not persist custom_columns wip limits:', e);
-                  }
-                }
                 setShowBoardCustomizer(false);
               }}>
                 Save Changes
@@ -3083,7 +3158,27 @@ const ProjectManagement = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Create Task Dialog */}
+      <CreateTodoDialog
+        isOpen={showCreateTask}
+        onOpenChange={setShowCreateTask}
+        onCreateTodo={handleCreateTask}
+      />
 
+      <CreateTodoDialog
+        isOpen={showEditTask}
+        onOpenChange={setShowEditTask}
+        editTask={editingTask}
+        onCreateTodo={(taskData) => {
+          setTasks(prev => prev.map(t => 
+            t.id === editingTask.id 
+              ? { ...t, ...taskData }
+              : t
+          ));
+          setEditingTask(null);
+          setShowEditTask(false);
+        }}
+      />
 
       {/* Create Project Dialog */}
       <CreateProjectDialog
@@ -3092,121 +3187,74 @@ const ProjectManagement = () => {
         onCreateProject={handleCreateProject}
       />
 
-      {/* Create Epic Dialog */}
-      <Dialog open={showCreateEpic} onOpenChange={setShowCreateEpic}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Create Epic</DialogTitle>
-          </DialogHeader>
-          <CreateEpicForm onCancel={()=>setShowCreateEpic(false)} onCreate={(epic)=>{
-            setEpics(prev => [epic, ...prev]);
-            setShowCreateEpic(false);
-            toast({ title: 'Epic Created', description: epic.title });
-          }} />
-        </DialogContent>
-      </Dialog>
-
-      {/* Labels Editor Dialog */}
-      <Dialog open={labelsDialogOpen} onOpenChange={setLabelsDialogOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Edit Labels</DialogTitle>
-          </DialogHeader>
+      {/* Work Request Dialog */}
+      <Dialog open={workRequestDialogOpen} onOpenChange={setWorkRequestDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingWorkRequest ? 'Edit Work Request' : 'New Work Request'}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              {(boardLabels[selectedProject] || []).map(lbl => (
-                <button key={lbl.id} className={`h-8 rounded text-white text-xs px-2 flex items-center justify-between ${lbl.color}`} onClick={()=>{
-                  if (!labelsTask) return;
-                  const has = labelsTask.tags.includes(lbl.id);
-                  const nextTags = has ? labelsTask.tags.filter(t=>t!==lbl.id) : [...labelsTask.tags, lbl.id];
-                  setTasks(prev => prev.map(t => t.id===labelsTask.id ? { ...t, tags: nextTags } : t));
-                }}>
-                  <span className="truncate">{lbl.name}</span>
-                  {labelsTask && labelsTask.tags.includes(lbl.id) && <CheckCircle className="w-3 h-3" />}
-                </button>
-              ))}
-            </div>
+            <Input placeholder="Title" value={workRequestForm.title} onChange={e=>setWorkRequestForm({...workRequestForm, title: e.target.value})} />
+            <Textarea placeholder="Description" value={workRequestForm.description} onChange={e=>setWorkRequestForm({...workRequestForm, description: e.target.value})} />
             <div className="flex gap-2">
-              <Input placeholder="New label name" onKeyDown={(e)=>{
-                if (e.key==='Enter') {
-                  const name = (e.target as HTMLInputElement).value.trim();
-                  if (!name) return; (e.target as HTMLInputElement).value='';
-                  const color = getTagColor(name);
-                  const newLbl: LabelDef = { id: `lbl-${Date.now()}`, name, color };
-                  setBoardLabels(prev => ({ ...prev, [selectedProject]: [ ...(prev[selectedProject]||[]), newLbl ] }));
-                  try { // best-effort persist in projects.custom_columns
-                    const proj = projects.find(p=>p.id===selectedProject);
-                    if (proj) {
-                      const payload = { labels: [ ...((boardLabels[selectedProject])||[]), newLbl ] };
-                      // @ts-ignore
-                      supabase.from('projects').update({ custom_columns: (proj.customColumns||statusColumns), custom_labels: payload }).eq('id', selectedProject);
-                    }
-                  } catch {}
-                }
-              }} />
-              <Button variant="outline" onClick={()=>setLabelsDialogOpen(false)}>Done</Button>
+              <Select value={workRequestForm.priority||'medium'} onValueChange={(v:any)=>setWorkRequestForm({...workRequestForm, priority: v})}>
+                <SelectTrigger className="w-[150px]"><SelectValue placeholder="Priority" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={workRequestForm.status} onValueChange={(v:any)=>setWorkRequestForm({...workRequestForm, status: v})}>
+                <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="new">New</SelectItem>
+                  <SelectItem value="in_review">In review</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="converted">Converted</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Checklist Dialog */}
-      <Dialog open={checklistDialogOpen} onOpenChange={setChecklistDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Checklist</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            {checklistTask?.subtasks?.map(st => (
-              <div key={st.id} className="flex items-center gap-2">
-                <Checkbox checked={st.completed} onCheckedChange={(v)=>{
-                  if (!checklistTask) return;
-                  const next = (checklistTask.subtasks||[]).map(x => x.id===st.id ? { ...x, completed: Boolean(v) } : x);
-                  setTasks(prev => prev.map(t => t.id===checklistTask.id ? { ...t, subtasks: next } : t));
-                }} />
-                <Input defaultValue={st.title} onBlur={(e)=>{
-                  if (!checklistTask) return;
-                  const next = (checklistTask.subtasks||[]).map(x => x.id===st.id ? { ...x, title: e.target.value } : x);
-                  setTasks(prev => prev.map(t => t.id===checklistTask.id ? { ...t, subtasks: next } : t));
-                }} />
-              </div>
-            ))}
-            <Button variant="outline" size="sm" onClick={()=>{
-              if (!checklistTask) return;
-              const next = [ ...(checklistTask.subtasks||[]), { id: `st-${Date.now()}`, title: 'New item', completed: false, assignee: checklistTask.assignee } ];
-              setTasks(prev => prev.map(t => t.id===checklistTask.id ? { ...t, subtasks: next } : t));
-            }}>Add item</Button>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={()=>setChecklistDialogOpen(false)}>Close</Button>
-              <Button onClick={async()=>{
-                if (!checklistTask) return;
-                try { await supabase.from('todos').update({ subtasks: checklistTask.subtasks || [] }).eq('id', checklistTask.id); } catch{}
-                setChecklistDialogOpen(false);
-              }}>Save</Button>
+              <Button variant="outline" onClick={()=>setWorkRequestDialogOpen(false)}>Cancel</Button>
+              <Button onClick={saveWorkRequest}>Save</Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Due Date Dialog */}
-      <Dialog open={dueDateDialogOpen} onOpenChange={setDueDateDialogOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Set Due Date</DialogTitle>
-          </DialogHeader>
-          <div className="p-2">
-            <Calendar mode="single" selected={dueDateTask?.dueDate || undefined} onSelect={(d)=>{
-              if (dueDateTask && d) {
-                setTasks(prev => prev.map(t => t.id===dueDateTask.id ? { ...t, dueDate: d } : t));
-              }
-            }} />
-            <div className="mt-3 flex justify-end gap-2">
-              <Button variant="outline" onClick={()=>setDueDateDialogOpen(false)}>Cancel</Button>
-              <Button onClick={async()=>{
-                if (!dueDateTask) return;
-                try { await supabase.from('todos').update({ due_date: dueDateTask.dueDate ? dueDateTask.dueDate.toISOString().slice(0,10) : null }).eq('id', dueDateTask.id); } catch{}
-                setDueDateDialogOpen(false);
-              }}>Save</Button>
+      {/* Goal Dialog */}
+      <Dialog open={goalDialogOpen} onOpenChange={setGoalDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingGoal ? 'Edit Goal' : 'New Goal'}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Title" value={goalForm.title} onChange={e=>setGoalForm({...goalForm, title: e.target.value})} />
+            <Textarea placeholder="Description" value={goalForm.description} onChange={e=>setGoalForm({...goalForm, description: e.target.value})} />
+            <div className="flex gap-2">
+              <Input type="date" value={goalForm.target_date} onChange={e=>setGoalForm({...goalForm, target_date: e.target.value})} />
+              <Input type="number" min={0} max={100} value={goalForm.progress} onChange={e=>setGoalForm({...goalForm, progress: Number(e.target.value)})} />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={()=>setGoalDialogOpen(false)}>Cancel</Button>
+              <Button onClick={saveGoal}>Save</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Event Dialog */}
+      <Dialog open={eventDialogOpen} onOpenChange={setEventDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingEvent ? 'Edit Event' : 'New Event'}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Title" value={eventForm.title} onChange={e=>setEventForm({...eventForm, title: e.target.value})} />
+            <div className="flex gap-2">
+              <Input type="datetime-local" value={eventForm.start_at} onChange={e=>setEventForm({...eventForm, start_at: e.target.value})} />
+              <Input type="datetime-local" value={eventForm.end_at} onChange={e=>setEventForm({...eventForm, end_at: e.target.value})} />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={()=>setEventDialogOpen(false)}>Cancel</Button>
+              <Button onClick={saveEvent}>Save</Button>
             </div>
           </div>
         </DialogContent>
@@ -3215,36 +3263,23 @@ const ProjectManagement = () => {
   );
 };
 
-export default ProjectManagement;
-
-// Lightweight inline CreateEpicForm used by the Create Epic dialog
-interface CreateEpicFormProps {
-  onCreate: (epic: { id: string; title: string; description?: string; dueDate?: Date | null }) => void;
-  onCancel: () => void;
-}
-
-function CreateEpicForm({ onCreate, onCancel }: CreateEpicFormProps) {
-  const [title, setTitle] = React.useState('');
-  const [description, setDescription] = React.useState('');
-  const [date, setDate] = React.useState<Date | undefined>(undefined);
-
-  return (
-    <div className="space-y-3">
-      <Input placeholder="Epic title" value={title} onChange={(e)=>setTitle(e.target.value)} />
-      <Textarea placeholder="Epic description" value={description} onChange={(e)=>setDescription(e.target.value)} />
-      <div>
-        <label className="text-xs text-gray-600">Target date</label>
-        <div className="mt-2 border rounded p-2">
-          <Calendar mode="single" selected={date} onSelect={setDate} />
-        </div>
+// Add access check wrapper at the end
+const ProjectManagementWrapper = () => {
+  const { canAccessFeature } = useSubscription();
+  
+  // Check access before rendering
+  if (!canAccessFeature('project-management')) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <SubscriptionUpgrade 
+          featureName="Project Management" 
+          onUpgrade={() => window.location.reload()}
+        />
       </div>
-      <div className="flex gap-2">
-        <Button onClick={()=>{
-          if (!title.trim()) return;
-          onCreate({ id: `epic-${Date.now()}`, title: title.trim(), description: description.trim() || undefined, dueDate: date || null });
-        }} disabled={!title.trim()}>Create</Button>
-        <Button variant="outline" onClick={onCancel}>Cancel</Button>
-      </div>
-    </div>
-  );
+    );
+  }
+  
+  return <ProjectManagement />;
 };
+
+export default ProjectManagementWrapper;
