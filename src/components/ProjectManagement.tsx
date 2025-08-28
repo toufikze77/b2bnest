@@ -428,26 +428,9 @@ const ProjectManagement = () => {
   ]);
 
   const [workRequests, setWorkRequests] = useState<WorkRequest[]>([]);
-  // Initialize goals from localStorage
-  const [goals, setGoals] = useState<GoalItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('projectGoals');
-      return saved ? JSON.parse(saved) : [];
-    } catch (error) {
-      console.error('Error loading goals:', error);
-      return [];
-    }
-  });
-  // Initialize teams from localStorage
-  const [teams, setTeams] = useState<TeamItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('projectTeams');
-      return saved ? JSON.parse(saved) : [];
-    } catch (error) {
-      console.error('Error loading teams:', error);
-      return [];
-    }
-  });
+  // Initialize with empty arrays, load from localStorage in useEffect
+  const [goals, setGoals] = useState<GoalItem[]>([]);
+  const [teams, setTeams] = useState<TeamItem[]>([]);
   const [teamMembers, setTeamMembers] = useState<Record<string, TeamMemberItem[]>>({});
   const [calendarEvents, setCalendarEvents] = useState<CalendarEventItem[]>([]);
 
@@ -506,6 +489,29 @@ const ProjectManagement = () => {
     const { data, error } = await supabase.from('calendar_events' as any).select('*').order('start_at', { ascending: true });
     if (!error && data) setCalendarEvents(data as unknown as CalendarEventItem[]);
   };
+
+  // Load localStorage data on mount
+  useEffect(() => {
+    // Load goals from localStorage
+    try {
+      const savedGoals = localStorage.getItem('projectGoals');
+      if (savedGoals) {
+        setGoals(JSON.parse(savedGoals));
+      }
+    } catch (error) {
+      console.error('Error loading goals from localStorage:', error);
+    }
+
+    // Load teams from localStorage  
+    try {
+      const savedTeams = localStorage.getItem('projectTeams');
+      if (savedTeams) {
+        setTeams(JSON.parse(savedTeams));
+      }
+    } catch (error) {
+      console.error('Error loading teams from localStorage:', error);
+    }
+  }, []); // Only run once on mount
 
   useEffect(() => {
     fetchWorkRequests();
