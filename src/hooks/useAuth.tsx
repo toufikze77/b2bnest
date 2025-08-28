@@ -15,7 +15,7 @@ type AuthContextType = {
   updatePassword: (password: string) => Promise<{ error: any }>;
   verify2FA: (email: string, code: string, isLogin: boolean) => Promise<{ error: any }>;
   sendVerificationCode: (email: string, type: 'verification' | 'login') => Promise<{ error: any, code?: string }>;
-  signInWithSSO: (domain: string) => Promise<{ error: any }>;
+  
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -118,20 +118,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: null, code };
   };
 
-  // Placeholder SSO method
-  const signInWithSSO = async (domain: string) => {
-    // Only force HTTPS for production, keep localhost as HTTP for development
-    const redirectUrl = window.location.origin.includes('localhost') 
-      ? window.location.origin 
-      : window.location.origin.replace('http://', 'https://');
-    const { data, error } = await supabase.auth.signInWithSSO({
-      domain,
-      options: {
-        redirectTo: `${redirectUrl}/`
-      }
-    });
-    return { error };
-  };
 
   const value: AuthContextType = {
     user,
@@ -145,7 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     updatePassword,
     verify2FA,
     sendVerificationCode,
-    signInWithSSO
+    
   };
 
   return (

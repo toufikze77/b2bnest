@@ -11,7 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import TwoFactorAuth from '@/components/TwoFactorAuth';
 
 const Auth = () => {
-  const { user, signIn, signUp, loading, verify2FA, sendVerificationCode, signInWithOAuth, signInWithSSO } = useAuth();
+  const { user, signIn, signUp, loading, verify2FA, sendVerificationCode, signInWithOAuth } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,8 +21,6 @@ const Auth = () => {
   const [showTwoFactor, setShowTwoFactor] = useState(false);
   const [twoFactorEmail, setTwoFactorEmail] = useState('');
   const [isVerification, setIsVerification] = useState(false);
-  const [ssoDomain, setSsoDomain] = useState('');
-  const [ssoLoading, setSsoLoading] = useState(false);
 
   // Debug effect to track state changes
   useEffect(() => {
@@ -278,67 +276,6 @@ const Auth = () => {
                     </div>
                   </div>
 
-                  {/* Enterprise SSO Section */}
-                  <div className="mt-6">
-                    <div className="border-t border-gray-200 pt-6">
-                      <div className="mb-4">
-                        <h3 className="text-sm font-medium text-gray-900 mb-2">Enterprise Sign-In</h3>
-                        <p className="text-xs text-gray-600">Sign in with your company's SSO provider</p>
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <Label htmlFor="ssoDomain">Company Domain</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            id="ssoDomain"
-                            type="text"
-                            placeholder="yourcompany.com"
-                            value={ssoDomain}
-                            onChange={(e) => setSsoDomain(e.target.value)}
-                            className="flex-1"
-                            disabled={ssoLoading}
-                          />
-                          <Button
-                            type="button"
-                            onClick={async () => {
-                              setSsoLoading(true);
-                              try {
-                                const { error } = await signInWithSSO(ssoDomain);
-                                if (error) {
-                                  toast({ 
-                                    title: 'SSO Failed', 
-                                    description: error.message || 'Unable to connect with SSO provider', 
-                                    variant: 'destructive' 
-                                  });
-                                } else {
-                                  toast({ 
-                                    title: 'Redirecting...', 
-                                    description: 'You will be redirected to your company\'s SSO provider' 
-                                  });
-                                }
-                              } catch (err) {
-                                toast({ 
-                                  title: 'SSO Error', 
-                                  description: 'An unexpected error occurred', 
-                                  variant: 'destructive' 
-                                });
-                              } finally {
-                                setSsoLoading(false);
-                              }
-                            }}
-                            disabled={ssoLoading || !ssoDomain.trim() || loading}
-                            className="whitespace-nowrap"
-                          >
-                            {ssoLoading ? 'Connecting...' : 'Sign In with SSO'}
-                          </Button>
-                        </div>
-                        
-                        <p className="text-xs text-gray-500 mt-2">
-                          Contact your IT administrator if you need help with your company domain
-                        </p>
-                      </div>
-                    </div>
-                  </div>
 
                   <div className="mt-6 text-center space-y-2">
                     <button
