@@ -869,13 +869,7 @@ const ProjectManagement = () => {
 
   // Access check moved to top of component
 
-  if (loading) {
-    return (
-      <div className="max-w-7xl mx-auto p-6 flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin" />
-      </div>
-    );
-  }
+  // Avoid early return to maintain stable hook order across renders
 
   const statusColumns = projects.find(p => p.id === selectedProject && selectedProject !== 'all')?.customColumns || [
     { id: 'backlog', title: 'Backlog', color: 'bg-gray-100', order: 1 },
