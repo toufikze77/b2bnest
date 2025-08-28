@@ -33,6 +33,7 @@ const PricingPlans = () => {
       monthly: 11,
       annual: 108, // 20% discount (£9/month * 12)
       specialOffer: 11, // Discounted price
+      specialOfferAnnual: 132, // Annual special offer (£11 * 12)
       originalPrice: 32, // Original price before 66% discount
       userLimit: '1 user',
       features: [
@@ -63,6 +64,7 @@ const PricingPlans = () => {
       monthly: 19,
       annual: 180, // 20% discount (£15/month * 12)
       specialOffer: 19, // Discounted price
+      specialOfferAnnual: 228, // Annual special offer (£19 * 12)
       originalPrice: 56, // Original price before 66% discount
       userLimit: '5 users',
       features: [
@@ -92,6 +94,7 @@ const PricingPlans = () => {
       monthly: 29,
       annual: 276, // 20% discount (£23/month * 12)
       specialOffer: 29, // Discounted price
+      specialOfferAnnual: 348, // Annual special offer (£29 * 12)
       originalPrice: 85, // Original price before 66% discount
       userLimit: '25 users',
       features: [
@@ -128,7 +131,9 @@ const PricingPlans = () => {
     const plan = plans.find(p => p.id === planId);
     if (!plan) return;
 
-    const price = isAnnual ? plan.annual : plan.monthly;
+    const price = isSpecialOffer 
+      ? (isAnnual ? plan.specialOfferAnnual : plan.specialOffer)
+      : (isAnnual ? plan.annual : plan.monthly);
     setPaymentAmount(price);
     setPaymentItemName(`${plan.name} Plan - ${isAnnual ? 'Annual' : 'Monthly'}`);
     setSelectedPlan(planId);
@@ -234,7 +239,9 @@ const PricingPlans = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
           {plans.map((plan) => {
             const PlanIcon = plan.icon;
-            const price = isSpecialOffer ? plan.specialOffer : (isAnnual ? plan.annual : plan.monthly);
+            const price = isSpecialOffer 
+              ? (isAnnual ? plan.specialOfferAnnual : plan.specialOffer)
+              : (isAnnual ? plan.annual : plan.monthly);
             const originalPrice = plan.originalPrice;
             
             return (
