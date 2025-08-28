@@ -880,10 +880,43 @@ const ProjectManagement = () => {
     return matchesSearch && matchesProject;
   });
 
+  // Track visual order of tasks within each column
+  const [taskPositions, setTaskPositions] = useState<Record<string, string[]>>({});
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+
+  // Initialize/merge taskPositions when tasks or columns change
+  useEffect(() => {
+    setTaskPositions(prev => {
+      const next: Record<string, string[]> = { ...prev };
+      const columnIds = (projects.find(p => p.id === selectedProject && selectedProject !== 'all')?.customColumns || [
+        { id: 'backlog' },
+        { id: 'todo' },
+        { id: 'in-progress' },
+        { id: 'review' },
+        { id: 'done' }
+      ] as any).map((c: any) => c.id);
+
+      for (const columnId of columnIds) {
+        const existing = next[columnId] || [];
+        const currentTaskIds = tasks.filter(t => t.status === columnId).map(t => t.id);
+        // Preserve existing order where possible, append any new ids
+        const ordered = existing.filter(id => currentTaskIds.includes(id));
+        for (const id of currentTaskIds) {
+          if (!ordered.includes(id)) ordered.push(id);
+        }
+        next[columnId] = ordered;
+      }
+      return next;
+    });
+  }, [tasks, selectedProject, projects]);
+
+  const tasksById = Object.fromEntries(tasks.map(t => [t.id, t]));
+
   // Handle drag and drop
   const handleDragStart = (e: React.DragEvent, task: Task) => {
     e.dataTransfer.setData('text/plain', task.id);
     e.dataTransfer.effectAllowed = 'move';
+    setDraggingTaskId(task.id);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -891,12 +924,61 @@ const ProjectManagement = () => {
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDrop = (e: React.DragEvent, columnId: string) => {
+  const removeFromAllColumns = (taskId: string) => {
+    setTaskPositions(prev => {
+      const next: Record<string, string[]> = {};
+      for (const [colId, ids] of Object.entries(prev)) {
+        next[colId] = ids.filter(id => id !== taskId);
+      }
+      return next;
+    });
+  };
+
+  const insertIntoColumnBefore = (columnId: string, taskId: string, beforeTaskId: string | null) => {
+    setTaskPositions(prev => {
+      const next = { ...prev };
+      const ids = (next[columnId] || []).filter(id => id !== taskId);
+      if (beforeTaskId && ids.includes(beforeTaskId)) {
+        const idx = ids.indexOf(beforeTaskId);
+        ids.splice(idx, 0, taskId);
+      } else {
+        ids.push(taskId);
+      }
+      next[columnId] = ids;
+      return next;
+    });
+  };
+
+  const handleDropOnCard = async (e: React.DragEvent, targetTaskId: string, columnId: string) => {
+    e.preventDefault();
+    const movingTaskId = e.dataTransfer.getData('text/plain');
+    if (!movingTaskId || movingTaskId === targetTaskId) return;
+
+    const movingTask = tasksById[movingTaskId];
+    if (!movingTask) return;
+
+    // Update status if moving across columns
+    if (movingTask.status !== columnId) {
+      await handleTaskStatusUpdate(movingTaskId, columnId);
+    }
+
+    removeFromAllColumns(movingTaskId);
+    insertIntoColumnBefore(columnId, movingTaskId, targetTaskId);
+    setDraggingTaskId(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, columnId: string) => {
     e.preventDefault();
     const taskId = e.dataTransfer.getData('text/plain');
-    if (taskId) {
-      handleTaskStatusUpdate(taskId, columnId);
+    if (!taskId) return;
+    const movingTask = tasksById[taskId];
+    if (!movingTask) return;
+    if (movingTask.status !== columnId) {
+      await handleTaskStatusUpdate(taskId, columnId);
     }
+    removeFromAllColumns(taskId);
+    insertIntoColumnBefore(columnId, taskId, null);
+    setDraggingTaskId(null);
   };
 
   // Handle task status updates  
@@ -1001,11 +1083,11 @@ const ProjectManagement = () => {
       </Card>
 
       {/* Kanban Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2">
         {statusColumns.map(column => (
           <div 
             key={column.id} 
-            className={`${column.color} rounded-lg p-3 min-h-[700px] animate-fade-in`}
+            className={`${column.color} rounded-lg p-2 min-h-[700px] animate-fade-in`}
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, column.id)}
           >
@@ -1025,15 +1107,19 @@ const ProjectManagement = () => {
               </div>
             </div>
             
-            <div className="space-y-2">
-              {filteredTasks
-                .filter(task => task.status === column.id)
+            <div className="space-y-1">
+              {(taskPositions[column.id] || filteredTasks.filter(t => t.status === column.id).map(t => t.id))
+                .map(taskId => tasksById[taskId])
+                .filter(Boolean)
+                .filter(task => filteredTasks.some(ft => ft.id === task.id) && task.status === column.id)
                 .map(task => (
                   <Card 
                     key={task.id} 
-                    className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]"
+                    className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.01]"
                     draggable
                     onDragStart={(e) => handleDragStart(e, task)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDropOnCard(e, task.id, column.id)}
                     onClick={(e) => {
                       e.preventDefault();
                       console.log('Task card clicked:', task.id, task.title);
@@ -1041,14 +1127,14 @@ const ProjectManagement = () => {
                       setShowEditTask(true);
                     }}
                   >
-                    <CardContent className="p-3">
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-medium text-xs leading-tight">{task.title}</h4>
+                    <CardContent className="p-2">
+                      <div className="flex items-start justify-between mb-1">
+                        <h4 className="font-medium text-[11px] leading-tight">{task.title}</h4>
                         <div className="flex items-center gap-1">
                           <div className={`w-2 h-2 rounded-full ${priorityColors[task.priority]}`}></div>
                           <Popover>
                             <PopoverTrigger asChild>
-                              <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => e.stopPropagation()}>
                                 <MoreHorizontal className="w-3 h-3" />
                               </Button>
                             </PopoverTrigger>
@@ -1057,7 +1143,7 @@ const ProjectManagement = () => {
                                 <Button 
                                   variant="ghost" 
                                   size="sm" 
-                                  className="w-full justify-start"
+                                  className="w-full justify-start h-7"
                                   onClick={() => {
                                     setEditingTask(task);
                                     setShowEditTask(true);
@@ -1069,7 +1155,7 @@ const ProjectManagement = () => {
                                 <Button 
                                   variant="ghost" 
                                   size="sm" 
-                                  className="w-full justify-start text-red-600 hover:text-red-700"
+                                  className="w-full justify-start h-7 text-red-600 hover:text-red-700"
                                   onClick={() => handleTaskDelete(task.id)}
                                 >
                                   <Trash2 className="w-3 h-3 mr-2" />
@@ -1081,12 +1167,12 @@ const ProjectManagement = () => {
                         </div>
                       </div>
                       
-                      <p className="text-xs text-gray-600 mb-2 line-clamp-2 leading-tight">{task.description}</p>
+                      <p className="text-[11px] text-gray-600 mb-1 line-clamp-2 leading-snug">{task.description}</p>
                       
                       {/* Progress Bar */}
                       {task.progress && (
-                        <div className="mb-2">
-                          <div className="flex justify-between text-xs mb-1">
+                        <div className="mb-1">
+                          <div className="flex justify-between text-[10px] mb-1">
                             <span>Progress</span>
                             <span>{task.progress}%</span>
                           </div>
@@ -1101,8 +1187,8 @@ const ProjectManagement = () => {
 
                       {/* Subtasks */}
                       {task.subtasks && task.subtasks.length > 0 && (
-                        <div className="mb-2">
-                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <div className="mb-1">
+                          <div className="flex items-center gap-1 text-[10px] text-gray-500">
                             <ListCheck className="w-3 h-3" />
                             <span>
                               {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length} subtasks
@@ -1112,14 +1198,14 @@ const ProjectManagement = () => {
                       )}
 
                       {/* Tags */}
-                      <div className="flex flex-wrap gap-1 mb-2">
+                      <div className="flex flex-wrap gap-1 mb-1">
                         {task.tags.slice(0, 2).map(tag => (
-                          <Badge key={tag} variant="outline" className="text-xs px-1 py-0 h-5">
+                          <Badge key={tag} variant="outline" className="text-[10px] px-1 py-0 h-4">
                             {tag}
                           </Badge>
                         ))}
                         {task.tags.length > 2 && (
-                          <Badge variant="outline" className="text-xs px-1 py-0 h-5">
+                          <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
                             +{task.tags.length - 2}
                           </Badge>
                         )}
@@ -1134,8 +1220,8 @@ const ProjectManagement = () => {
                         </div>
                         
                         <div className="flex items-center gap-1">
-                          <Avatar className="w-5 h-5">
-                            <AvatarFallback className="text-xs">
+                          <Avatar className="w-4 h-4">
+                            <AvatarFallback className="text-[10px]">
                               {task.assignee.split(' ').map(n => n[0]).join('')}
                             </AvatarFallback>
                           </Avatar>
