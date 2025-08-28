@@ -277,6 +277,7 @@ const ProjectManagement = () => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showEditTask, setShowEditTask] = useState(false);
   const [showCreateProject, setShowCreateProject] = useState(false);
+  const [boardDensity, setBoardDensity] = useState<'comfortable' | 'compact' | 'condensed'>('comfortable');
 
   // Sample data with enhanced features - moved before conditional returns
   const [projects, setProjects] = useState<Project[]>([
@@ -912,6 +913,28 @@ const ProjectManagement = () => {
 
   const tasksById = Object.fromEntries(tasks.map(t => [t.id, t]));
 
+  // Density-based classes
+  const densityClasses = {
+    columnGap: boardDensity === 'comfortable' ? 'gap-3' : boardDensity === 'compact' ? 'gap-2' : 'gap-1',
+    columnPadding: boardDensity === 'comfortable' ? 'p-3' : boardDensity === 'compact' ? 'p-2' : 'p-1.5',
+    headerMb: boardDensity === 'comfortable' ? 'mb-3' : boardDensity === 'compact' ? 'mb-2' : 'mb-1.5',
+    listSpacing: boardDensity === 'comfortable' ? 'space-y-2' : boardDensity === 'compact' ? 'space-y-1.5' : 'space-y-1',
+    cardHoverScale: boardDensity === 'comfortable' ? 'hover:scale-[1.02]' : 'hover:scale-[1.01]',
+    cardPadding: boardDensity === 'comfortable' ? 'p-3' : boardDensity === 'compact' ? 'p-2' : 'p-1.5',
+    titleText: boardDensity === 'comfortable' ? 'text-sm' : boardDensity === 'compact' ? 'text-[11px]' : 'text-[10px]',
+    headerInnerMb: boardDensity === 'comfortable' ? 'mb-2' : 'mb-1',
+    descText: boardDensity === 'comfortable' ? 'text-xs leading-tight' : boardDensity === 'compact' ? 'text-[11px] leading-snug' : 'text-[10px] leading-snug',
+    descMb: boardDensity === 'comfortable' ? 'mb-2' : 'mb-1',
+    progressText: boardDensity === 'comfortable' ? 'text-xs' : 'text-[10px]',
+    progressMb: boardDensity === 'comfortable' ? 'mb-2' : 'mb-1',
+    subtaskText: boardDensity === 'comfortable' ? 'text-xs' : 'text-[10px]',
+    tagsMb: boardDensity === 'comfortable' ? 'mb-2' : 'mb-1',
+    tagBadge: boardDensity === 'comfortable' ? 'text-xs px-1 py-0 h-5' : boardDensity === 'compact' ? 'text-[10px] px-1 py-0 h-4' : 'text-[10px] px-[2px] py-0 h-4',
+    avatar: boardDensity === 'comfortable' ? 'w-5 h-5' : 'w-4 h-4',
+    avatarFallback: boardDensity === 'comfortable' ? 'text-xs' : 'text-[10px]',
+    popoverBtn: boardDensity === 'comfortable' ? '' : 'h-6 w-6 p-0',
+  } as const;
+
   // Handle drag and drop
   const handleDragStart = (e: React.DragEvent, task: Task) => {
     e.dataTransfer.setData('text/plain', task.id);
@@ -1075,6 +1098,16 @@ const ProjectManagement = () => {
               </Button>
             </div>
             <div className="flex items-center gap-2">
+              <Select value={boardDensity} onValueChange={(v: any) => setBoardDensity(v)}>
+                <SelectTrigger className="w-[170px] h-8 text-xs">
+                  <SelectValue placeholder="Density" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="comfortable">Comfortable</SelectItem>
+                  <SelectItem value="compact">Compact</SelectItem>
+                  <SelectItem value="condensed">Condensed</SelectItem>
+                </SelectContent>
+              </Select>
               <Badge className="bg-blue-100 text-blue-800">Auto-Assignment: ON</Badge>
               <Badge className="bg-green-100 text-green-800">Notifications: ON</Badge>
             </div>
@@ -1083,15 +1116,15 @@ const ProjectManagement = () => {
       </Card>
 
       {/* Kanban Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2">
+      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 ${densityClasses.columnGap}`}>
         {statusColumns.map(column => (
           <div 
             key={column.id} 
-            className={`${column.color} rounded-lg p-2 min-h-[700px] animate-fade-in`}
+            className={`${column.color} rounded-lg ${densityClasses.columnPadding} min-h-[700px] animate-fade-in`}
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, column.id)}
           >
-            <div className="flex items-center justify-between mb-3">
+            <div className={`flex items-center justify-between ${densityClasses.headerMb}`}>
               <h3 className="font-semibold text-sm">{column.title}</h3>
               <div className="flex items-center gap-1">
                 <Badge variant="secondary" className="text-xs px-2 py-0">
@@ -1107,7 +1140,7 @@ const ProjectManagement = () => {
               </div>
             </div>
             
-            <div className="space-y-1">
+            <div className={`${densityClasses.listSpacing}`}>
               {(taskPositions[column.id] || filteredTasks.filter(t => t.status === column.id).map(t => t.id))
                 .map(taskId => tasksById[taskId])
                 .filter(Boolean)
@@ -1115,7 +1148,7 @@ const ProjectManagement = () => {
                 .map(task => (
                   <Card 
                     key={task.id} 
-                    className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.01]"
+                    className={`cursor-pointer hover:shadow-lg transition-all ${densityClasses.cardHoverScale}`}
                     draggable
                     onDragStart={(e) => handleDragStart(e, task)}
                     onDragOver={handleDragOver}
@@ -1127,14 +1160,14 @@ const ProjectManagement = () => {
                       setShowEditTask(true);
                     }}
                   >
-                    <CardContent className="p-2">
-                      <div className="flex items-start justify-between mb-1">
-                        <h4 className="font-medium text-[11px] leading-tight">{task.title}</h4>
+                    <CardContent className={`${densityClasses.cardPadding}`}>
+                      <div className={`flex items-start justify-between ${densityClasses.headerInnerMb}`}>
+                        <h4 className={`font-medium ${densityClasses.titleText} leading-tight`}>{task.title}</h4>
                         <div className="flex items-center gap-1">
                           <div className={`w-2 h-2 rounded-full ${priorityColors[task.priority]}`}></div>
                           <Popover>
                             <PopoverTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="sm" className={densityClasses.popoverBtn} onClick={(e) => e.stopPropagation()}>
                                 <MoreHorizontal className="w-3 h-3" />
                               </Button>
                             </PopoverTrigger>
@@ -1167,12 +1200,12 @@ const ProjectManagement = () => {
                         </div>
                       </div>
                       
-                      <p className="text-[11px] text-gray-600 mb-1 line-clamp-2 leading-snug">{task.description}</p>
+                      <p className={`${densityClasses.descText} text-gray-600 ${densityClasses.descMb} line-clamp-2`}>{task.description}</p>
                       
                       {/* Progress Bar */}
                       {task.progress && (
-                        <div className="mb-1">
-                          <div className="flex justify-between text-[10px] mb-1">
+                        <div className={`${densityClasses.progressMb}`}>
+                          <div className={`flex justify-between ${densityClasses.progressText} mb-1`}>
                             <span>Progress</span>
                             <span>{task.progress}%</span>
                           </div>
@@ -1187,8 +1220,8 @@ const ProjectManagement = () => {
 
                       {/* Subtasks */}
                       {task.subtasks && task.subtasks.length > 0 && (
-                        <div className="mb-1">
-                          <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                        <div className={`${densityClasses.descMb}`}>
+                          <div className={`flex items-center gap-1 ${densityClasses.subtaskText} text-gray-500`}>
                             <ListCheck className="w-3 h-3" />
                             <span>
                               {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length} subtasks
@@ -1198,14 +1231,14 @@ const ProjectManagement = () => {
                       )}
 
                       {/* Tags */}
-                      <div className="flex flex-wrap gap-1 mb-1">
+                      <div className={`flex flex-wrap gap-1 ${densityClasses.tagsMb}`}>
                         {task.tags.slice(0, 2).map(tag => (
-                          <Badge key={tag} variant="outline" className="text-[10px] px-1 py-0 h-4">
+                          <Badge key={tag} variant="outline" className={densityClasses.tagBadge}>
                             {tag}
                           </Badge>
                         ))}
                         {task.tags.length > 2 && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
+                          <Badge variant="outline" className={densityClasses.tagBadge}>
                             +{task.tags.length - 2}
                           </Badge>
                         )}
@@ -1220,8 +1253,8 @@ const ProjectManagement = () => {
                         </div>
                         
                         <div className="flex items-center gap-1">
-                          <Avatar className="w-4 h-4">
-                            <AvatarFallback className="text-[10px]">
+                          <Avatar className={densityClasses.avatar}>
+                            <AvatarFallback className={densityClasses.avatarFallback}>
                               {task.assignee.split(' ').map(n => n[0]).join('')}
                             </AvatarFallback>
                           </Avatar>
