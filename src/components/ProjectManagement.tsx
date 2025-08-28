@@ -1001,18 +1001,18 @@ const ProjectManagement = () => {
       </Card>
 
       {/* Kanban Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
         {statusColumns.map(column => (
           <div 
             key={column.id} 
-            className={`${column.color} rounded-lg p-4 min-h-[700px] animate-fade-in`}
+            className={`${column.color} rounded-lg p-3 min-h-[700px] animate-fade-in`}
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, column.id)}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold">{column.title}</h3>
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-sm">{column.title}</h3>
+              <div className="flex items-center gap-1">
+                <Badge variant="secondary" className="text-xs px-2 py-0">
                   {filteredTasks.filter(task => task.status === column.id).length}
                 </Badge>
                 <Button variant="ghost" size="sm" onClick={(e) => {
@@ -1020,12 +1020,12 @@ const ProjectManagement = () => {
                   console.log('Plus button clicked, opening create task dialog');
                   setShowCreateTask(true);
                 }}>
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-3 h-3" />
                 </Button>
               </div>
             </div>
             
-            <div className="space-y-3">
+            <div className="space-y-2">
               {filteredTasks
                 .filter(task => task.status === column.id)
                 .map(task => (
@@ -1041,9 +1041,9 @@ const ProjectManagement = () => {
                       setShowEditTask(true);
                     }}
                   >
-                    <CardContent className="p-4">
+                    <CardContent className="p-3">
                       <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-medium text-sm">{task.title}</h4>
+                        <h4 className="font-medium text-xs leading-tight">{task.title}</h4>
                         <div className="flex items-center gap-1">
                           <div className={`w-2 h-2 rounded-full ${priorityColors[task.priority]}`}></div>
                           <Popover>
@@ -1081,18 +1081,18 @@ const ProjectManagement = () => {
                         </div>
                       </div>
                       
-                      <p className="text-xs text-gray-600 mb-3 line-clamp-2">{task.description}</p>
+                      <p className="text-xs text-gray-600 mb-2 line-clamp-2 leading-tight">{task.description}</p>
                       
                       {/* Progress Bar */}
                       {task.progress && (
-                        <div className="mb-3">
+                        <div className="mb-2">
                           <div className="flex justify-between text-xs mb-1">
                             <span>Progress</span>
                             <span>{task.progress}%</span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                          <div className="w-full bg-gray-200 rounded-full h-1">
                             <div 
-                              className="bg-blue-600 h-1.5 rounded-full transition-all" 
+                              className="bg-blue-600 h-1 rounded-full transition-all" 
                               style={{ width: `${task.progress}%` }}
                             ></div>
                           </div>
@@ -1101,7 +1101,7 @@ const ProjectManagement = () => {
 
                       {/* Subtasks */}
                       {task.subtasks && task.subtasks.length > 0 && (
-                        <div className="mb-3">
+                        <div className="mb-2">
                           <div className="flex items-center gap-1 text-xs text-gray-500">
                             <ListCheck className="w-3 h-3" />
                             <span>
@@ -1112,14 +1112,14 @@ const ProjectManagement = () => {
                       )}
 
                       {/* Tags */}
-                      <div className="flex flex-wrap gap-1 mb-3">
+                      <div className="flex flex-wrap gap-1 mb-2">
                         {task.tags.slice(0, 2).map(tag => (
-                          <Badge key={tag} variant="outline" className="text-xs px-1 py-0">
+                          <Badge key={tag} variant="outline" className="text-xs px-1 py-0 h-5">
                             {tag}
                           </Badge>
                         ))}
                         {task.tags.length > 2 && (
-                          <Badge variant="outline" className="text-xs px-1 py-0">
+                          <Badge variant="outline" className="text-xs px-1 py-0 h-5">
                             +{task.tags.length - 2}
                           </Badge>
                         )}
@@ -1148,7 +1148,7 @@ const ProjectManagement = () => {
                               </span>
                             </div>
                           )}
-                          <Avatar className="w-6 h-6">
+                          <Avatar className="w-5 h-5">
                             <AvatarFallback className="text-xs">
                               {task.assignee.split(' ').map(n => n[0]).join('')}
                             </AvatarFallback>
