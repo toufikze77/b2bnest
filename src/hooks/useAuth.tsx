@@ -52,7 +52,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Email + password sign-up
   const signUp = async (email: string, password: string, fullName?: string, companyName?: string) => {
-    const redirectUrl = window.location.origin.replace('http://', 'https://');
+    // Only force HTTPS for production, keep localhost as HTTP for development
+    const redirectUrl = window.location.origin.includes('localhost') 
+      ? window.location.origin 
+      : window.location.origin.replace('http://', 'https://');
     return await supabase.auth.signUp({
       email,
       password,
@@ -72,7 +75,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // OAuth (Google, GitHub, etc.)
   const signInWithOAuth = async (provider: 'google' | 'github' | 'twitter', options = {}) => {
-    const redirectUrl = window.location.origin.replace('http://', 'https://');
+    // Only force HTTPS for production, keep localhost as HTTP for development
+    const redirectUrl = window.location.origin.includes('localhost') 
+      ? window.location.origin 
+      : window.location.origin.replace('http://', 'https://');
     return await supabase.auth.signInWithOAuth({
       provider,
       options: {
@@ -84,7 +90,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Reset password
   const resetPassword = async (email: string) => {
-    const redirectUrl = window.location.origin.replace('http://', 'https://');
+    // Only force HTTPS for production, keep localhost as HTTP for development
+    const redirectUrl = window.location.origin.includes('localhost') 
+      ? window.location.origin 
+      : window.location.origin.replace('http://', 'https://');
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${redirectUrl}/reset-password`
     });
@@ -111,7 +120,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Placeholder SSO method
   const signInWithSSO = async (domain: string) => {
-    const redirectUrl = window.location.origin.replace('http://', 'https://');
+    // Only force HTTPS for production, keep localhost as HTTP for development
+    const redirectUrl = window.location.origin.includes('localhost') 
+      ? window.location.origin 
+      : window.location.origin.replace('http://', 'https://');
     const { data, error } = await supabase.auth.signInWithSSO({
       domain,
       options: {
