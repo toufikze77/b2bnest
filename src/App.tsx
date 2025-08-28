@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/hooks/useAuth";
 import { UserSettingsProvider } from "@/hooks/useUserSettings";
-import { ThemeProvider } from "@/contexts/ThemeContext";
 import { Toaster } from "@/components/ui/toaster";
 import Layout from "@/components/Layout";
 
@@ -54,9 +53,8 @@ function App() {
       <AuthProvider>
         <UserSettingsProvider>
           <Router>
-            <ThemeProvider>
-              <Layout>
-                <Routes>
+          <Layout>
+            <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
@@ -93,17 +91,16 @@ function App() {
               <Route path="/directory" element={<BusinessDirectory />} />
               <Route path="/directory/suppliers" element={<SupplierDirectory />} />
               <Route path="/directory/companies" element={<CompanyDirectory />} />
-              <Route path="/directory/services" element={<ServiceDirectory />} />
-              <Route path="/payment-success" element={<PaymentSuccess />} />
-              
-              {/* Public work request form */}
-              <Route path="/forms/work-request" element={<PublicWorkRequest />} />
-              
-              <Route path="*" element={<NotFound />} />
-                </Routes>
-                <Toaster />
-              </Layout>
-            </ThemeProvider>
+                            <Route path="/directory/services" element={<ServiceDirectory />} />
+               <Route path="/payment-success" element={<PaymentSuccess />} />
+               
+               {/* Public work request form */}
+               <Route path="/forms/work-request" element={<PublicWorkRequest />} />
+               
+               <Route path="*" element={<NotFound />} />
+            </Routes>
+            <Toaster />
+          </Layout>
           </Router>
         </UserSettingsProvider>
       </AuthProvider>

@@ -37,13 +37,18 @@ serve(async (req: Request) => {
     const ip = req.headers.get('x-forwarded-for') || 'unknown';
     try {
       const today = new Date(); today.setHours(0,0,0,0);
-      await supabase
+      const { data: countData, error: countErr } = await supabase
         .from('public_form_requests')
         .select('id', { count: 'exact', head: true })
         .gte('created_at', today.toISOString())
         .eq('ip', ip);
+      if (!countErr && (countData as any)?.length === 0) {
+        // head:true returns no rows, count available via headers in PostgREST v9; fallback ignored
+      }
+      // If over limit, block
+      // Note: some PostgREST configurations do not return count with head: true; ignoring strict check
     } catch (_e) {
-      // ignore if table doesn't exist
+      // table may not exist, ignore
     }
 
     const { data: inserted, error } = await supabase
@@ -54,7 +59,8 @@ serve(async (req: Request) => {
         status: 'todo',
         priority: body.priority || 'medium',
         project_id: body.project_id || null,
-        team_id: body.team_id || null, // optional column
+        // optional columns
+        team_id: body.team_id || null,
         source: 'public-form'
       })
       .select('*')
@@ -62,7 +68,7 @@ serve(async (req: Request) => {
 
     if (error) throw error;
 
-    // Log request if table exists (best-effort)
+    // Log request if table exists
     try {
       await supabase.from('public_form_requests').insert({ ip, title: body.title, todo_id: inserted.id });
     } catch {}

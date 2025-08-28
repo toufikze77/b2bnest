@@ -838,6 +838,35 @@ const ProjectManagement = () => {
     }
   };
 
+  // Track visual order of tasks within each column (must be before any early returns)
+  const [taskPositions, setTaskPositions] = useState<Record<string, string[]>>({});
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+
+  // Initialize/merge taskPositions when tasks or columns change (hook must not be after an early return)
+  useEffect(() => {
+    setTaskPositions(prev => {
+      const next: Record<string, string[]> = { ...prev };
+      const columnIds = (projects.find(p => p.id === selectedProject && selectedProject !== 'all')?.customColumns || [
+        { id: 'backlog' },
+        { id: 'todo' },
+        { id: 'in-progress' },
+        { id: 'review' },
+        { id: 'done' }
+      ] as any).map((c: any) => c.id);
+
+      for (const columnId of columnIds) {
+        const existing = next[columnId] || [];
+        const currentTaskIds = tasks.filter(t => t.status === columnId).map(t => t.id);
+        const ordered = existing.filter(id => currentTaskIds.includes(id));
+        for (const id of currentTaskIds) {
+          if (!ordered.includes(id)) ordered.push(id);
+        }
+        next[columnId] = ordered;
+      }
+      return next;
+    });
+  }, [tasks, selectedProject, projects]);
+
   // Access check moved to top of component
 
   if (loading) {
@@ -871,35 +900,7 @@ const ProjectManagement = () => {
     return matchesSearch && matchesProject;
   });
 
-  // Track visual order of tasks within each column
-  const [taskPositions, setTaskPositions] = useState<Record<string, string[]>>({});
-  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
-
-  // Initialize/merge taskPositions when tasks or columns change
-  useEffect(() => {
-    setTaskPositions(prev => {
-      const next: Record<string, string[]> = { ...prev };
-      const columnIds = (projects.find(p => p.id === selectedProject && selectedProject !== 'all')?.customColumns || [
-        { id: 'backlog' },
-        { id: 'todo' },
-        { id: 'in-progress' },
-        { id: 'review' },
-        { id: 'done' }
-      ] as any).map((c: any) => c.id);
-
-      for (const columnId of columnIds) {
-        const existing = next[columnId] || [];
-        const currentTaskIds = tasks.filter(t => t.status === columnId).map(t => t.id);
-        // Preserve existing order where possible, append any new ids
-        const ordered = existing.filter(id => currentTaskIds.includes(id));
-        for (const id of currentTaskIds) {
-          if (!ordered.includes(id)) ordered.push(id);
-        }
-        next[columnId] = ordered;
-      }
-      return next;
-    });
-  }, [tasks, selectedProject, projects]);
+  // moved up: taskPositions hooks
 
   const tasksById = Object.fromEntries(tasks.map(t => [t.id, t]));
 
