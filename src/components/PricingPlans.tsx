@@ -31,7 +31,7 @@ const PricingPlans = () => {
       icon: Zap,
       color: 'from-blue-500 to-cyan-500',
       monthly: 11,
-      annual: 9, // 20% discount
+      annual: 108, // 20% discount (£9/month * 12)
       specialOffer: 11, // Discounted price
       originalPrice: 32, // Original price before 66% discount
       userLimit: '1 user',
@@ -61,7 +61,7 @@ const PricingPlans = () => {
       icon: Crown,
       color: 'from-purple-500 to-pink-500',
       monthly: 19,
-      annual: 15, // 20% discount
+      annual: 180, // 20% discount (£15/month * 12)
       specialOffer: 19, // Discounted price
       originalPrice: 56, // Original price before 66% discount
       userLimit: '5 users',
@@ -90,7 +90,7 @@ const PricingPlans = () => {
       icon: Building2,
       color: 'from-emerald-500 to-teal-500',
       monthly: 29,
-      annual: 23, // 20% discount
+      annual: 276, // 20% discount (£23/month * 12)
       specialOffer: 29, // Discounted price
       originalPrice: 85, // Original price before 66% discount
       userLimit: '25 users',
@@ -277,7 +277,7 @@ const PricingPlans = () => {
                          £{price}
                        </span>
                         <div className="flex flex-col">
-                          <span className="text-sm text-gray-500">/month</span>
+                          <span className="text-sm text-gray-500">{isAnnual ? '/year' : '/month'}</span>
                           <span className="text-xs text-gray-400 line-through">
                             £{originalPrice}
                           </span>
@@ -291,7 +291,10 @@ const PricingPlans = () => {
                          {plan.savings}
                        </Badge>
                      )}
-                     <p className="text-sm text-gray-500 mt-2">{plan.userLimit}</p>
+                      <p className="text-sm text-gray-500 mt-2">
+                        {plan.userLimit}
+                        {isAnnual && <span className="block text-xs">Billed annually (2 months free)</span>}
+                      </p>
                    </div>
                 </CardHeader>
 
