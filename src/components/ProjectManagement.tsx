@@ -277,7 +277,17 @@ const ProjectManagement = () => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showEditTask, setShowEditTask] = useState(false);
   const [showCreateProject, setShowCreateProject] = useState(false);
-  const [boardDensity, setBoardDensity] = useState<'comfortable' | 'compact' | 'condensed'>('comfortable');
+  const [boardDensity, setBoardDensity] = useState<'comfortable' | 'compact' | 'condensed'>(() => {
+    try {
+      const saved = localStorage.getItem('pm_board_density');
+      if (saved === 'comfortable' || saved === 'compact' || saved === 'condensed') return saved;
+    } catch {}
+    return 'compact';
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem('pm_board_density', boardDensity); } catch {}
+  }, [boardDensity]);
 
   // Sample data with enhanced features - moved before conditional returns
   const [projects, setProjects] = useState<Project[]>([
