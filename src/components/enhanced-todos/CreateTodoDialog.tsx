@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 // Fixed DatePicker Component
 const DatePicker = ({ value, onChange, placeholder, id }) => {
@@ -204,6 +205,7 @@ const projectManagementTemplate = {
 
 // Main Component - exported as default export
 const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null, teamId = 'all', teamMembers = [] }) => {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -260,26 +262,39 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
       try {
         let query = supabase
           .from('profiles')
-          .select('id, display_name, email, full_name, team_id')
-          .eq('is_active', true)
-          .order('display_name');
-
-        if (teamId && teamId !== 'all') {
-          // Best-effort team scoping if column exists
-          try {
-            // @ts-ignore optional column
-            query = query.eq('team_id', teamId);
-          } catch {}
-        }
+          .select('id, display_name, email, full_name')
+          .order('display_name', { ascending: true });
 
         const { data, error } = await query;
 
         if (error) {
           console.error('Error fetching users:', error);
-          // fallback: no profiles filtering
+          // Create fallback user from current authenticated user
+          const currentUser = supabase.auth.getUser();
+          setAvailableUsers([
+            {
+              id: 'current-user',
+              display_name: user?.email?.split('@')[0] || 'Current User',
+              email: user?.email || 'user@example.com',
+              full_name: user?.email?.split('@')[0] || 'Current User'
+            }
+          ]);
+          return;
         }
 
         let users = data || [];
+        
+        // If no users found, create fallback
+        if (users.length === 0) {
+          users = [
+            {
+              id: 'current-user',
+              display_name: user?.email?.split('@')[0] || 'Current User',
+              email: user?.email || 'user@example.com',
+              full_name: user?.email?.split('@')[0] || 'Current User'
+            }
+          ];
+        }
         // If teamId is set but query did not filter, attempt client-side filter by provided teamMembers names
         if (teamId && teamId !== 'all' && Array.isArray(teamMembers) && teamMembers.length > 0) {
           const names = new Set(teamMembers.map((n:string)=>n.toLowerCase()));

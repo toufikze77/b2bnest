@@ -1246,6 +1246,33 @@ const ProjectManagement = () => {
                             <Paperclip className="w-3 h-3 text-gray-400" />
                           )}
                         </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs text-gray-500 hover:text-gray-700"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const comment = window.prompt('Add a comment:');
+                              if (comment) {
+                                const newComment = {
+                                  id: `comment-${Date.now()}`,
+                                  content: comment,
+                                  author: user?.email || 'You',
+                                  timestamp: new Date()
+                                };
+                                setTasks(prev => prev.map(t => 
+                                  t.id === task.id 
+                                    ? { ...t, comments: [...(t.comments || []), newComment] }
+                                    : t
+                                ));
+                              }
+                            }}
+                          >
+                            <MessageCircle className="w-3 h-3 mr-1" />
+                            {task.comments?.length || 0}
+                          </Button>
+                        </div>
                         
                         <div className="flex items-center gap-1">
                           <Avatar className={densityClasses.avatar}>
