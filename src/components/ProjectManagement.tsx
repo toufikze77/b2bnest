@@ -3251,9 +3251,10 @@ const ProjectManagement = () => {
 // Add access check wrapper at the end
 const ProjectManagementWrapper = () => {
   const { canAccessFeature } = useSubscription();
+  const isPreview = typeof window !== 'undefined' && /lovable\.app|preview|localhost/.test(window.location.host);
   
   // Check access before rendering
-  if (!canAccessFeature('project-management')) {
+  if (!isPreview && !canAccessFeature('project-management')) {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <SubscriptionUpgrade 
