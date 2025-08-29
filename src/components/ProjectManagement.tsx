@@ -267,7 +267,7 @@ const ProjectManagement = () => {
   
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<'kanban' | 'list' | 'calendar' | 'timeline'>('kanban');
-  const [activeTab, setActiveTab] = useState('summary');
+  const [activeTab, setActiveTab] = useState('kanban');
   const [selectedProject, setSelectedProject] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateTask, setShowCreateTask] = useState(false);
