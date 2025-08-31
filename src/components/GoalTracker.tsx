@@ -11,34 +11,15 @@ interface Goal {
   id: string;
   title: string;
   description: string;
-  targetDate: Date;
+  targetDate: string; // stored as string for easy persistence
   progress: number;
   category: string;
   isCompleted: boolean;
-  createdAt: Date;
+  createdAt: string;
 }
 
 const GoalTracker = () => {
-  // Initialize goals from localStorage
-  const [goals, setGoals] = useState<Goal[]>(() => {
-    try {
-      const saved = localStorage.getItem('goalTrackerGoals');
-      if (saved) {
-        const parsedGoals = JSON.parse(saved);
-        // Convert date strings back to Date objects
-        return parsedGoals.map((goal: any) => ({
-          ...goal,
-          targetDate: new Date(goal.targetDate),
-          createdAt: new Date(goal.createdAt)
-        }));
-      }
-      return [];
-    } catch (error) {
-      console.error('Error loading goals from localStorage:', error);
-      return [];
-    }
-  });
-
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [isAddingGoal, setIsAddingGoal] = useState(false);
   const [newGoal, setNewGoal] = useState({
     title: '',
@@ -48,12 +29,27 @@ const GoalTracker = () => {
   });
   const { toast } = useToast();
 
+  // Load goals once on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = window.localStorage.getItem('goalTrackerGoals');
+        setGoals(raw ? JSON.parse(raw) : []);
+      } catch (error) {
+        console.error('Error loading goals from localStorage:', error);
+        setGoals([]);
+      }
+    }
+  }, []);
+
   // Save goals to localStorage whenever goals change
   useEffect(() => {
-    try {
-      localStorage.setItem('goalTrackerGoals', JSON.stringify(goals));
-    } catch (error) {
-      console.error('Error saving goals to localStorage:', error);
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem('goalTrackerGoals', JSON.stringify(goals));
+      } catch (error) {
+        console.error('Error saving goals to localStorage:', error);
+      }
     }
   }, [goals]);
 
@@ -85,11 +81,11 @@ const GoalTracker = () => {
       id: Date.now().toString(),
       title: newGoal.title.trim(),
       description: newGoal.description.trim(),
-      targetDate: new Date(newGoal.targetDate),
+      targetDate: newGoal.targetDate,
       progress: 0,
       category: newGoal.category,
       isCompleted: false,
-      createdAt: new Date()
+      createdAt: new Date().toISOString()
     };
 
     setGoals(prev => [goal, ...prev]);
@@ -131,11 +127,14 @@ const GoalTracker = () => {
     });
   };
 
-  const getDaysUntilTarget = (targetDate: Date) => {
+  const getDaysUntilTarget = (targetDateStr: string) => {
+    if (!targetDateStr) return NaN;
+    const target = new Date(targetDateStr);
     const today = new Date();
-    const diffTime = targetDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+    today.setHours(0, 0, 0, 0);
+    target.setHours(0, 0, 0, 0);
+    const diff = target.getTime() - today.getTime();
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
   };
 
   const getGoalsByCategory = () => {
@@ -307,7 +306,7 @@ const GoalTracker = () => {
                         <div className="flex items-center gap-4 text-sm text-gray-600">
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            Target: {goal.targetDate.toLocaleDateString()}
+                            Target: {goal.targetDate || '—'}
                           </span>
                           <span className={`flex items-center gap-1 ${
                             isOverdue ? 'text-red-600' : isDueSoon ? 'text-yellow-600' : 'text-gray-600'
