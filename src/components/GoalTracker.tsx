@@ -190,8 +190,8 @@ const GoalTracker: React.FC = () => {
                   {!g.isCompleted && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
-                        <span>Progress: {g.progress}%</span>
-                        <div className="flex gap-2">
+                        {g.progress > 0 && <span>Progress: {g.progress}%</span>}
+                        <div className="flex gap-2 ml-auto">
                           <button className="px-2 py-1 border border-border rounded" onClick={() => updateProgress(g.id, g.progress + 10)}>
                             +10%
                           </button>
