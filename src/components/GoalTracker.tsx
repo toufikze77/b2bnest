@@ -14,18 +14,15 @@ type Goal = {
 const categories = ['Business', 'Health', 'Learning', 'Personal'];
 
 const GoalTracker: React.FC = () => {
-  // Load goals from localStorage on mount with SSR safety
+  // Load goals from localStorage on mount
   const [goals, setGoals] = useState<Goal[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const raw = localStorage.getItem('goalTrackerGoals');
-        return raw ? JSON.parse(raw) : [];
-      } catch (error) {
-        console.error('Failed to load goals:', error);
-        return [];
-      }
+    try {
+      const raw = localStorage.getItem('goalTrackerGoals');
+      return raw ? JSON.parse(raw) : [];
+    } catch (error) {
+      console.error('Failed to load goals:', error);
+      return [];
     }
-    return [];
   });
 
   const [isAddingGoal, setIsAddingGoal] = useState(false);
@@ -38,12 +35,10 @@ const GoalTracker: React.FC = () => {
 
   // Persist goals to localStorage whenever they change
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('goalTrackerGoals', JSON.stringify(goals));
-      } catch (error) {
-        console.error('Failed to save goals:', error);
-      }
+    try {
+      localStorage.setItem('goalTrackerGoals', JSON.stringify(goals));
+    } catch (error) {
+      console.error('Failed to save goals:', error);
     }
   }, [goals]);
 
@@ -78,7 +73,7 @@ const GoalTracker: React.FC = () => {
   };
 
   const deleteGoal = (goalId: string) => {
-    setGoals((prev) => prev.filter((g) => g.id !== goalId));
+    setGoals(goals.filter((g) => g.id !== goalId));
   };
 
   const daysLeft = (targetDateStr: string) => {
@@ -206,10 +201,7 @@ const GoalTracker: React.FC = () => {
                         </div>
                       </div>
                       <div className="h-2 bg-muted rounded">
-                        <div
-                          className="h-2 rounded bg-primary"
-                          style={{ width: `${g.progress}%` }}
-                        />
+                        <div className="h-2 rounded bg-primary" style={{ width: `${g.progress}%` }} />
                       </div>
                     </div>
                   )}
