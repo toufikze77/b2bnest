@@ -854,11 +854,12 @@ const ProjectManagement = () => {
 
   // Initialize/merge taskPositions when tasks or columns change (hook must not be after an early return)
   useEffect(() => {
+    console.log('🔧 TaskPositions useEffect - tasks:', tasks?.length, 'projects:', (projects || []).length);
     if (!tasks) return; // Guard against undefined tasks
     
     setTaskPositions(prev => {
       const next: Record<string, string[]> = { ...prev };
-      const columnIds = (projects.find(p => p.id === selectedProject && selectedProject !== 'all')?.customColumns || [
+      const columnIds = ((projects || []).find(p => p.id === selectedProject && selectedProject !== 'all')?.customColumns || [
         { id: 'backlog' },
         { id: 'todo' },
         { id: 'in-progress' },
@@ -883,7 +884,7 @@ const ProjectManagement = () => {
 
   // Avoid early return to maintain stable hook order across renders
 
-  const statusColumns = projects.find(p => p.id === selectedProject && selectedProject !== 'all')?.customColumns || [
+  const statusColumns = (projects || []).find(p => p.id === selectedProject && selectedProject !== 'all')?.customColumns || [
     { id: 'backlog', title: 'Backlog', color: 'bg-gray-100', order: 1 },
     { id: 'todo', title: 'To Do', color: 'bg-blue-100', order: 2 },
     { id: 'in-progress', title: 'In Progress', color: 'bg-yellow-100', order: 3 },
