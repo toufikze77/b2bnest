@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganization } from '@/hooks/useOrganization';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ interface Todo {
 
 const TodoList = () => {
   const { user } = useAuth();
+  const { currentOrganization, members } = useOrganization();
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -40,23 +42,26 @@ const TodoList = () => {
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (user && currentOrganization) {
       fetchTodos();
-    } else {
+    } else if (!user) {
       // For non-authenticated users, show empty state
       setLoading(false);
     }
-  }, [user]);
+  }, [user, currentOrganization]);
 
   const fetchTodos = async () => {
-    if (!user) return;
+    if (!user || !currentOrganization) return;
     
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('todos')
-        .select('*')
-        .eq('user_id', user.id)
+        .select(`
+          *,
+          assigned_user:profiles!todos_assigned_to_fkey(display_name, email)
+        `)
+        .eq('organization_id', currentOrganization.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -85,10 +90,10 @@ const TodoList = () => {
   };
 
   const createTodo = async (todoData: any) => {
-    if (!user) {
+    if (!user || !currentOrganization) {
       toast({
-        title: "Sign Up Required",
-        description: "Please sign up to save your tasks permanently.",
+        title: "Organization Required",
+        description: "Please select an organization to create tasks.",
         variant: "destructive"
       });
       return;
@@ -102,6 +107,7 @@ const TodoList = () => {
         .insert({
           ...todoData,
           user_id: user.id,
+          organization_id: currentOrganization.id,
           status: 'todo',
           reporter_id: user.id
         });
@@ -125,14 +131,14 @@ const TodoList = () => {
   };
 
   const updateTodo = async (id: string, updates: Partial<Todo>) => {
-    if (!user) return;
+    if (!user || !currentOrganization) return;
 
     try {
       const { error } = await supabase
         .from('todos')
         .update(updates)
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('organization_id', currentOrganization.id);
 
       if (error) throw error;
 
@@ -153,14 +159,14 @@ const TodoList = () => {
   };
 
   const deleteTodo = async (id: string) => {
-    if (!user) return;
+    if (!user || !currentOrganization) return;
 
     try {
       const { error } = await supabase
         .from('todos')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('organization_id', currentOrganization.id);
 
       if (error) throw error;
 
@@ -331,6 +337,7 @@ const TodoList = () => {
               onCreateTodo={createTodo}
               isOpen={isCreateDialogOpen}
               onOpenChange={setIsCreateDialogOpen}
+              organizationMembers={members}
             />
           </div>
         </CardContent>

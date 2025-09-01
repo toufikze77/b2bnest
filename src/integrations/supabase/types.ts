@@ -1179,6 +1179,139 @@ export type Database = {
         }
         Relationships: []
       }
+      organization_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string | null
+          id: string
+          invited_by: string | null
+          organization_id: string | null
+          role: string | null
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string | null
+          id?: string
+          invited_by?: string | null
+          organization_id?: string | null
+          role?: string | null
+          token: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string | null
+          id?: string
+          invited_by?: string | null
+          organization_id?: string | null
+          role?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_invitations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_members: {
+        Row: {
+          created_at: string
+          id: string
+          invited_by: string | null
+          is_active: boolean | null
+          joined_at: string | null
+          organization_id: string | null
+          permissions: Json | null
+          role: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          is_active?: boolean | null
+          joined_at?: string | null
+          organization_id?: string | null
+          permissions?: Json | null
+          role?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          is_active?: boolean | null
+          joined_at?: string | null
+          organization_id?: string | null
+          permissions?: Json | null
+          role?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          name: string
+          settings: Json | null
+          slug: string
+          subscription_tier: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name: string
+          settings?: Json | null
+          slug: string
+          subscription_tier?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name?: string
+          settings?: Json | null
+          slug?: string
+          subscription_tier?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       outgoings: {
         Row: {
           amount: number
@@ -1683,6 +1816,7 @@ export type Database = {
           id: string
           members: Json | null
           name: string
+          organization_id: string | null
           priority: string | null
           progress: number
           stage: string | null
@@ -1704,6 +1838,7 @@ export type Database = {
           id?: string
           members?: Json | null
           name: string
+          organization_id?: string | null
           priority?: string | null
           progress?: number
           stage?: string | null
@@ -1725,6 +1860,7 @@ export type Database = {
           id?: string
           members?: Json | null
           name?: string
+          organization_id?: string | null
           priority?: string | null
           progress?: number
           stage?: string | null
@@ -1732,7 +1868,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quotes: {
         Row: {
@@ -2031,6 +2175,7 @@ export type Database = {
           estimated_hours: number | null
           id: string
           labels: string[] | null
+          organization_id: string | null
           parent_id: string | null
           priority: string
           project_id: string | null
@@ -2051,6 +2196,7 @@ export type Database = {
           estimated_hours?: number | null
           id?: string
           labels?: string[] | null
+          organization_id?: string | null
           parent_id?: string | null
           priority?: string
           project_id?: string | null
@@ -2071,6 +2217,7 @@ export type Database = {
           estimated_hours?: number | null
           id?: string
           labels?: string[] | null
+          organization_id?: string | null
           parent_id?: string | null
           priority?: string
           project_id?: string | null
@@ -2082,6 +2229,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "todos_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "todos_parent_id_fkey"
             columns: ["parent_id"]

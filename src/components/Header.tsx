@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
+import { OrganizationSwitcher } from '@/components/OrganizationSwitcher';
 import LivePriceSidebars from '@/components/sidebars/LivePriceSidebars';
 
 
@@ -147,6 +148,11 @@ const Header = () => {
 
           {/* Live Prices and User Menu */}
           <div className="flex items-center space-x-2">
+            {user && (
+              <div className="hidden lg:block">
+                <OrganizationSwitcher />
+              </div>
+            )}
 
             {user ? (
               <DropdownMenu>
