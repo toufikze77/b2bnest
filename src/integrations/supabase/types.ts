@@ -2731,6 +2731,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      user_is_organization_admin: {
+        Args: { check_user_id?: string; org_id: string }
+        Returns: boolean
+      }
+      user_is_organization_member: {
+        Args: { check_user_id?: string; org_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "owner" | "admin" | "moderator" | "user" | "manager"
