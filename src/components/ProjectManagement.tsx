@@ -1138,11 +1138,17 @@ const ProjectManagement = () => {
             </div>
             
             <div className={`${densityClasses.listSpacing}`}>
-              {(taskPositions[column.id] || filteredTasks.filter(t => t.status === column.id).map(t => t.id))
-                .map(taskId => tasksById[taskId])
-                .filter(Boolean)
-                .filter(task => filteredTasks.some(ft => ft.id === task.id) && task.status === column.id)
-                .map(task => (
+              {(() => {
+                // Safely get task IDs for this column
+                const columnTaskIds = taskPositions[column.id] || 
+                  (filteredTasks || []).filter(t => t.status === column.id).map(t => t.id);
+                
+                // Safely map to tasks and filter
+                return (columnTaskIds || [])
+                  .map(taskId => tasksById[taskId])
+                  .filter(Boolean)
+                  .filter(task => (filteredTasks || []).some(ft => ft.id === task.id) && task.status === column.id)
+                  .map(task => (
                   <Card 
                     key={task.id} 
                     className={`cursor-pointer hover:shadow-lg transition-all ${densityClasses.cardHoverScale}`}
@@ -1285,8 +1291,9 @@ const ProjectManagement = () => {
                         </div>
                       </div>
                     </CardContent>
-                  </Card>
-                ))}
+                    </Card>
+                  ))
+              })()}
             </div>
           </div>
         ))}
