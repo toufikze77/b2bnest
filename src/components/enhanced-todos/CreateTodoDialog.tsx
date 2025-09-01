@@ -256,15 +256,17 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
     }
   }, [editTask]);
 
-  // Use organization members directly
+  // Use organization members directly - only update when members actually change
   useEffect(() => {
-    setAvailableUsers(organizationMembers.map(member => ({
-      id: member.user_id,
-      display_name: member.profile?.display_name || member.profile?.full_name || 'Unknown',
-      email: member.profile?.email || '',
-      full_name: member.profile?.full_name || ''
-    })));
-  }, [organizationMembers, isOpen]);
+    if (organizationMembers && organizationMembers.length > 0) {
+      setAvailableUsers(organizationMembers.map(member => ({
+        id: member.user_id,
+        display_name: member.profile?.display_name || member.profile?.full_name || 'Unknown',
+        email: member.profile?.email || '',
+        full_name: member.profile?.full_name || ''
+      })));
+    }
+  }, [organizationMembers?.length]); // Only depend on length to prevent infinite loops
 
   const handleSubmit = (e) => {
     e.preventDefault();
