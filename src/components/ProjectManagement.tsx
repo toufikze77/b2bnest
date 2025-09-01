@@ -854,6 +854,8 @@ const ProjectManagement = () => {
 
   // Initialize/merge taskPositions when tasks or columns change (hook must not be after an early return)
   useEffect(() => {
+    if (!tasks) return; // Guard against undefined tasks
+    
     setTaskPositions(prev => {
       const next: Record<string, string[]> = { ...prev };
       const columnIds = (projects.find(p => p.id === selectedProject && selectedProject !== 'all')?.customColumns || [
@@ -896,7 +898,7 @@ const ProjectManagement = () => {
     urgent: 'bg-red-500'
   };
 
-  const filteredTasks = tasks.filter(task => {
+  const filteredTasks = (tasks || []).filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          task.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesProject = selectedProject === 'all' || task.project === selectedProject;
@@ -906,7 +908,7 @@ const ProjectManagement = () => {
 
   // moved up: taskPositions hooks
 
-  const tasksById = Object.fromEntries(tasks.map(t => [t.id, t]));
+  const tasksById = Object.fromEntries((tasks || []).map(t => [t.id, t]));
 
   // Density-based classes
   const densityClasses = {
@@ -1579,25 +1581,25 @@ const ProjectManagement = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
                 <p className="text-2xl font-bold text-blue-600">
-                  {tasks.filter(t => t.status === 'todo').length}
+                  {(tasks || []).filter(t => t.status === 'todo').length}
                 </p>
                 <p className="text-sm text-gray-600">To Do</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-yellow-600">
-                  {tasks.filter(t => t.status === 'in-progress').length}
+                  {(tasks || []).filter(t => t.status === 'in-progress').length}
                 </p>
                 <p className="text-sm text-gray-600">In Progress</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-purple-600">
-                  {tasks.filter(t => t.status === 'review').length}
+                  {(tasks || []).filter(t => t.status === 'review').length}
                 </p>
                 <p className="text-sm text-gray-600">Review</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-green-600">
-                  {tasks.filter(t => t.status === 'done').length}
+                  {(tasks || []).filter(t => t.status === 'done').length}
                 </p>
                 <p className="text-sm text-gray-600">Done</p>
               </div>
@@ -2095,16 +2097,16 @@ const ProjectManagement = () => {
   const statusColors = ['#9CA3AF', '#3B82F6', '#F59E0B', '#8B5CF6', '#10B981'];
 
   const priorityBarData = [
-    { name: 'Low', count: tasks.filter(t => t.priority === 'low').length },
-    { name: 'Medium', count: tasks.filter(t => t.priority === 'medium').length },
-    { name: 'High', count: tasks.filter(t => t.priority === 'high').length },
-    { name: 'Urgent', count: tasks.filter(t => t.priority === 'urgent').length },
+    { name: 'Low', count: (tasks || []).filter(t => t.priority === 'low').length },
+    { name: 'Medium', count: (tasks || []).filter(t => t.priority === 'medium').length },
+    { name: 'High', count: (tasks || []).filter(t => t.priority === 'high').length },
+    { name: 'Urgent', count: (tasks || []).filter(t => t.priority === 'urgent').length },
   ];
 
   const teamWorkload = [
-    { name: 'John Doe', load: tasks.filter(t => t.assignee === 'John Doe').length, capacity: 10 },
-    { name: 'Jane Smith', load: tasks.filter(t => t.assignee === 'Jane Smith').length, capacity: 8 },
-    { name: 'Mike Johnson', load: tasks.filter(t => t.assignee === 'Mike Johnson').length, capacity: 12 },
+    { name: 'John Doe', load: (tasks || []).filter(t => t.assignee === 'John Doe').length, capacity: 10 },
+    { name: 'Jane Smith', load: (tasks || []).filter(t => t.assignee === 'Jane Smith').length, capacity: 8 },
+    { name: 'Mike Johnson', load: (tasks || []).filter(t => t.assignee === 'Mike Johnson').length, capacity: 12 },
   ];
 
   const typesOfWork = ['Development', 'Design', 'QA', 'Documentation', 'Client Communication'];
@@ -2181,7 +2183,7 @@ const ProjectManagement = () => {
     if (!error) setWorkRequests(prev => prev.filter(w => w.id !== req.id));
   };
   const filteredSortedWorkRequests = (() => {
-    let arr = [...workRequests];
+    let arr = [...(workRequests || [])];
     if (workRequestStatusFilter !== 'all') arr = arr.filter(w => w.status === workRequestStatusFilter);
     if (workRequestPriorityFilter !== 'all') arr = arr.filter(w => (w.priority || 'medium') === workRequestPriorityFilter);
     arr.sort((a,b) => workRequestSort === 'newest' ? (b.created_at.localeCompare(a.created_at)) : (a.created_at.localeCompare(b.created_at)));
@@ -2271,7 +2273,7 @@ const ProjectManagement = () => {
       console.error('Error deleting goal:', error);
     }
   };
-  const sortedGoals = [...goals].sort((a,b) => goalsSort === 'newest' ? (b.created_at.localeCompare(a.created_at)) : (a.created_at.localeCompare(b.created_at)));
+  const sortedGoals = [...(goals || [])].sort((a,b) => goalsSort === 'newest' ? (b.created_at.localeCompare(a.created_at)) : (a.created_at.localeCompare(b.created_at)));
   const pagedGoals = sortedGoals.slice((goalsPage-1)*PAGE_SIZE, goalsPage*PAGE_SIZE);
 
   // Calendar event dialogs and filters
@@ -2303,7 +2305,7 @@ const ProjectManagement = () => {
     const { error } = await supabase.from('calendar_events' as any).delete().eq('id', ev.id);
     if (!error) setCalendarEvents(prev => prev.filter(e => e.id !== ev.id));
   };
-  const sortedEvents = [...calendarEvents].sort((a,b) => eventsSort === 'newest' ? (b.start_at.localeCompare(a.start_at)) : (a.start_at.localeCompare(b.start_at)));
+  const sortedEvents = [...(calendarEvents || [])].sort((a,b) => eventsSort === 'newest' ? (b.start_at.localeCompare(a.start_at)) : (a.start_at.localeCompare(b.start_at)));
   const pagedEvents = sortedEvents.slice((eventsPage-1)*PAGE_SIZE, eventsPage*PAGE_SIZE);
 
   return (
@@ -2340,7 +2342,7 @@ const ProjectManagement = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Active Projects</p>
-                <p className="text-2xl font-bold">{projects.filter(p => p.status === 'active').length}</p>
+                <p className="text-2xl font-bold">{(projects || []).filter(p => p.status === 'active').length}</p>
               </div>
             </div>
           </CardContent>
@@ -2354,7 +2356,7 @@ const ProjectManagement = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Completed Tasks</p>
-                <p className="text-2xl font-bold">{tasks.filter(t => t.status === 'done').length}</p>
+                <p className="text-2xl font-bold">{(tasks || []).filter(t => t.status === 'done').length}</p>
               </div>
             </div>
           </CardContent>
@@ -2368,7 +2370,7 @@ const ProjectManagement = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-600">In Progress</p>
-                <p className="text-2xl font-bold">{tasks.filter(t => t.status === 'in-progress').length}</p>
+                <p className="text-2xl font-bold">{(tasks || []).filter(t => t.status === 'in-progress').length}</p>
               </div>
             </div>
           </CardContent>
@@ -2382,7 +2384,7 @@ const ProjectManagement = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Milestones</p>
-                <p className="text-2xl font-bold">{milestones.length}</p>
+                <p className="text-2xl font-bold">{(milestones || []).length}</p>
               </div>
             </div>
           </CardContent>
@@ -2621,7 +2623,7 @@ const ProjectManagement = () => {
             <CardHeader><CardTitle>All Tasks (List)</CardTitle></CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {tasks.filter(t => !(t as any).archived_at).map(t => (
+                {(tasks || []).filter(t => !(t as any).archived_at).map(t => (
                   <div key={t.id} className="p-3 border rounded-lg flex items-center justify-between">
                     <div>
                       <div className="font-medium">{t.title}</div>
@@ -2748,7 +2750,7 @@ const ProjectManagement = () => {
             <CardHeader><CardTitle>All Work Items</CardTitle></CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {[...tasks].filter(t => !(t as any).archived_at).map(t => (
+                {[...(tasks || [])].filter(t => !(t as any).archived_at).map(t => (
                   <div key={t.id} className="p-3 border rounded-lg flex items-center justify-between">
                     <div>
                       <div className="font-medium">{t.title}</div>
@@ -2770,7 +2772,7 @@ const ProjectManagement = () => {
             <CardHeader><CardTitle>Archived Work Items</CardTitle></CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {tasks.filter(t => (t as any).archived_at).map(t => (
+                {(tasks || []).filter(t => (t as any).archived_at).map(t => (
                   <div key={t.id} className="p-3 border rounded-lg flex items-center justify-between">
                     <div>
                       <div className="font-medium">{t.title}</div>
@@ -2779,7 +2781,7 @@ const ProjectManagement = () => {
                     <Button size="sm" variant="ghost" onClick={() => unarchiveTask(t.id)}>Unarchive</Button>
                   </div>
                 ))}
-                {tasks.filter(t => (t as any).archived_at).length === 0 && (
+                {(tasks || []).filter(t => (t as any).archived_at).length === 0 && (
                   <div className="text-sm text-gray-500">No archived items.</div>
                 )}
               </div>
