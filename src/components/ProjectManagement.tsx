@@ -855,7 +855,7 @@ const ProjectManagement = () => {
   // Initialize/merge taskPositions when tasks or columns change (hook must not be after an early return)
   useEffect(() => {
     console.log('🔧 TaskPositions useEffect - tasks:', tasks?.length, 'projects:', (projects || []).length);
-    if (!tasks) return; // Guard against undefined tasks
+    if (!tasks || !Array.isArray(tasks)) return; // Guard against undefined tasks
     
     setTaskPositions(prev => {
       const next: Record<string, string[]> = { ...prev };
@@ -869,7 +869,7 @@ const ProjectManagement = () => {
 
       for (const columnId of columnIds) {
         const existing = next[columnId] || [];
-        const currentTaskIds = tasks.filter(t => t.status === columnId).map(t => t.id);
+        const currentTaskIds = (tasks || []).filter(t => t.status === columnId).map(t => t.id);
         const ordered = existing.filter(id => currentTaskIds.includes(id));
         for (const id of currentTaskIds) {
           if (!ordered.includes(id)) ordered.push(id);
@@ -2095,11 +2095,11 @@ const ProjectManagement = () => {
   );
 
   const statusPieData = [
-    { name: 'Backlog', value: tasks.filter(t => t.status === 'backlog').length },
-    { name: 'To Do', value: tasks.filter(t => t.status === 'todo').length },
-    { name: 'In Progress', value: tasks.filter(t => t.status === 'in-progress').length },
-    { name: 'Review', value: tasks.filter(t => t.status === 'review').length },
-    { name: 'Done', value: tasks.filter(t => t.status === 'done').length },
+    { name: 'Backlog', value: (tasks || []).filter(t => t.status === 'backlog').length },
+    { name: 'To Do', value: (tasks || []).filter(t => t.status === 'todo').length },
+    { name: 'In Progress', value: (tasks || []).filter(t => t.status === 'in-progress').length },
+    { name: 'Review', value: (tasks || []).filter(t => t.status === 'review').length },
+    { name: 'Done', value: (tasks || []).filter(t => t.status === 'done').length },
   ];
 
   const statusColors = ['#9CA3AF', '#3B82F6', '#F59E0B', '#8B5CF6', '#10B981'];
