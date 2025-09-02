@@ -48,6 +48,9 @@ const DatePicker = ({ value, onChange, placeholder, id }) => {
 const SubtaskManager = ({ subtasks, onSubtasksChange }) => {
   const [newSubtask, setNewSubtask] = useState('');
 
+  // Ensure subtasks is always an array
+  const safeSubtasks = Array.isArray(subtasks) ? subtasks : [];
+
   const addSubtask = () => {
     if (newSubtask.trim()) {
       const subtask = {
@@ -56,17 +59,17 @@ const SubtaskManager = ({ subtasks, onSubtasksChange }) => {
         completed: false,
         estimated_hours: 1
       };
-      onSubtasksChange([...subtasks, subtask]);
+      onSubtasksChange([...safeSubtasks, subtask]);
       setNewSubtask('');
     }
   };
 
   const removeSubtask = (id) => {
-    onSubtasksChange(subtasks.filter(st => st.id !== id));
+    onSubtasksChange(safeSubtasks.filter(st => st.id !== id));
   };
 
   const updateSubtask = (id, field, value) => {
-    onSubtasksChange(subtasks.map(st =>
+    onSubtasksChange(safeSubtasks.map(st =>
       st.id === id ? { ...st, [field]: value } : st
     ));
   };
@@ -85,7 +88,7 @@ const SubtaskManager = ({ subtasks, onSubtasksChange }) => {
         </Button>
       </div>
      
-      {subtasks.map((subtask) => (
+      {safeSubtasks.map((subtask) => (
         <div key={subtask.id} className="flex items-center gap-2 p-2 border rounded">
           <Input
             value={subtask.title}
@@ -331,7 +334,7 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="create-todo-description">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             {editTask ? 'Edit Task' : 'Create New Task'}
