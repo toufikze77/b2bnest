@@ -84,8 +84,10 @@ import {
   Cloud,
   Loader2,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  History
 } from 'lucide-react';
+import { TodoComments } from './enhanced-todos/TodoComments';
 import { format } from 'date-fns';
 import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 
@@ -466,6 +468,10 @@ const ProjectManagement = () => {
   const [eventForm, setEventForm] = useState<{ title: string; start_at: string; end_at: string }>({ title: '', start_at: '', end_at: '' });
   const [eventsSort, setEventsSort] = useState<'newest' | 'oldest'>('newest');
   const [eventsPage, setEventsPage] = useState(1);
+
+  // Comment dialog state
+  const [showComments, setShowComments] = useState(false);
+  const [commentTaskId, setCommentTaskId] = useState<string | null>(null);
 
   // Fetch helpers
   const fetchWorkRequests = async () => {
@@ -1250,24 +1256,13 @@ const ProjectManagement = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-6 px-2 text-xs text-gray-500 hover:text-gray-700"
+                            className="h-6 px-2 text-xs text-gray-500 hover:text-gray-700 hover:bg-blue-50 hover:text-blue-600"
                             onClick={(e) => {
                               e.stopPropagation();
-                              const comment = window.prompt('Add a comment:');
-                              if (comment) {
-                                const newComment = {
-                                  id: `comment-${Date.now()}`,
-                                  content: comment,
-                                  author: user?.email || 'You',
-                                  timestamp: new Date()
-                                };
-                                setTasks(prev => prev.map(t => 
-                                  t.id === task.id 
-                                    ? { ...t, comments: [...(t.comments || []), newComment] }
-                                    : t
-                                ));
-                              }
+                              setCommentTaskId(task.id);
+                              setShowComments(true);
                             }}
+                            title="View Comments"
                           >
                             <MessageCircle className="w-3 h-3 mr-1" />
                             {task.comments?.length || 0}
@@ -3278,6 +3273,21 @@ const ProjectManagement = () => {
               <Button variant="outline" onClick={()=>setEventDialogOpen(false)}>Cancel</Button>
               <Button onClick={saveEvent}>Save</Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Comments Dialog */}
+      <Dialog open={showComments} onOpenChange={setShowComments}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="text-left flex items-center gap-2">
+              <MessageCircle className="h-5 w-5" />
+              Comments - {tasks.find(t => t.id === commentTaskId)?.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            {commentTaskId && <TodoComments todoId={commentTaskId} />}
           </div>
         </DialogContent>
       </Dialog>
