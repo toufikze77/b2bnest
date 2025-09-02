@@ -63,22 +63,22 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onEdit, onDelete, onStatusCha
   };
 
   return (
-    <Card className="mb-3 hover:shadow-md transition-all">
+    <Card className="mb-3 hover:shadow-md transition-all relative">
       <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleStatusToggle}
-                className="h-6 w-6 p-0"
+                className="h-6 w-6 p-0 flex-shrink-0"
               >
                 <CheckCircle 
                   className={`h-4 w-4 ${todo.status === 'done' ? 'text-green-600 fill-green-100' : 'text-gray-400'}`} 
                 />
               </Button>
-              <h3 className={`font-medium ${todo.status === 'done' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+              <h3 className={`font-medium ${todo.status === 'done' ? 'line-through text-gray-500' : 'text-gray-900'} truncate`}>
                 {todo.title}
               </h3>
             </div>
@@ -91,7 +91,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onEdit, onDelete, onStatusCha
               </p>
             )}
 
-            <div className="flex items-center gap-2 mb-2 ml-8">
+            <div className="flex items-center gap-2 mb-2 ml-8 flex-wrap">
               <Badge variant="outline" className={getStatusColor(todo.status)}>
                 {todo.status.replace('-', ' ')}
               </Badge>
@@ -106,7 +106,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onEdit, onDelete, onStatusCha
               ))}
             </div>
 
-            <div className="flex items-center gap-4 text-xs text-gray-500 ml-8">
+            <div className="flex items-center gap-4 text-xs text-gray-500 ml-8 flex-wrap">
               {todo.due_date && (
                 <div className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
@@ -122,24 +122,36 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onEdit, onDelete, onStatusCha
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-shrink-0">
             <Dialog open={showComments} onOpenChange={setShowComments}>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600"
+                  title="View Comments"
+                >
                   <MessageCircle className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Comments - {todo.title}</DialogTitle>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+                <DialogHeader className="flex-shrink-0">
+                  <DialogTitle className="text-left">Comments - {todo.title}</DialogTitle>
                 </DialogHeader>
-                <TodoComments todoId={todo.id} />
+                <div className="flex-1 overflow-hidden">
+                  <TodoComments todoId={todo.id} />
+                </div>
               </DialogContent>
             </Dialog>
 
             <Dialog open={showHistory} onOpenChange={setShowHistory}>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0 hover:bg-purple-50 hover:text-purple-600"
+                  title="View History"
+                >
                   <History className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
@@ -153,7 +165,12 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onEdit, onDelete, onStatusCha
 
             <Dialog open={showDetails} onOpenChange={setShowDetails}>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0 hover:bg-green-50 hover:text-green-600"
+                  title="View Details"
+                >
                   <User className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
@@ -167,7 +184,12 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onEdit, onDelete, onStatusCha
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0 hover:bg-gray-50"
+                  title="More Options"
+                >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>

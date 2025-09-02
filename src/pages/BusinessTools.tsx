@@ -447,7 +447,8 @@ const BusinessTools = () => {
       case 'business-resources':
         return <BusinessResources />;
       case 'project-management':
-        return <ProjectManagement />;
+        navigate('/project-management');
+        return null;
       case 'crm':
         return <CRM />;
       case 'currency-converter':

@@ -162,8 +162,8 @@ export const TodoComments: React.FC<TodoCommentsProps> = ({ todoId }) => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="max-h-96 overflow-y-auto space-y-3">
+    <div className="flex flex-col h-full space-y-4">
+      <div className="flex-1 overflow-y-auto space-y-3">
         {comments.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -186,7 +186,7 @@ export const TodoComments: React.FC<TodoCommentsProps> = ({ todoId }) => {
                     {new Date(comment.created_at).toLocaleDateString()}
                   </span>
                 </div>
-                <p className="text-sm text-foreground">{comment.content}</p>
+                <p className="text-sm text-foreground whitespace-pre-wrap break-words">{comment.content}</p>
               </div>
             </div>
           ))
@@ -194,13 +194,19 @@ export const TodoComments: React.FC<TodoCommentsProps> = ({ todoId }) => {
       </div>
 
       {user && (
-        <div className="border-t pt-4">
+        <div className="border-t pt-4 flex-shrink-0">
           <div className="flex gap-2">
             <Textarea
               placeholder="Add a comment..."
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              className="min-h-[80px]"
+              className="min-h-[80px] resize-none"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                  e.preventDefault();
+                  addComment();
+                }
+              }}
             />
             <Button 
               onClick={addComment} 
@@ -208,9 +214,16 @@ export const TodoComments: React.FC<TodoCommentsProps> = ({ todoId }) => {
               size="sm"
               className="self-end"
             >
-              <Send className="h-4 w-4" />
+              {loading ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
             </Button>
           </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Press Ctrl+Enter to send
+          </p>
         </div>
       )}
     </div>
