@@ -237,7 +237,7 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
         due_date: editTask.due_date || '',
         start_date: editTask.start_date || '',
         estimated_hours: editTask.estimated_hours ? String(editTask.estimated_hours) : '',
-        labels: (Array.isArray(editTask.labels) && editTask.labels.length > 0) ? editTask.labels.join(', ') : '',
+        labels: editTask.labels ? editTask.labels.join(', ') : '',
         assigned_to: editTask.assigned_to || '',
         phone: editTask.phone || ''
       });
@@ -261,15 +261,13 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
 
   // Use organization members directly - only update when members actually change
   useEffect(() => {
-    if (Array.isArray(organizationMembers) && organizationMembers.length > 0) {
+    if (organizationMembers && organizationMembers.length > 0) {
       setAvailableUsers(organizationMembers.map(member => ({
-        id: member?.user_id || '',
-        display_name: member?.profile?.display_name || member?.profile?.full_name || 'Unknown',
-        email: member?.profile?.email || '',
-        full_name: member?.profile?.full_name || ''
+        id: member.user_id,
+        display_name: member.profile?.display_name || member.profile?.full_name || 'Unknown',
+        email: member.profile?.email || '',
+        full_name: member.profile?.full_name || ''
       })));
-    } else {
-      setAvailableUsers([]);
     }
   }, [organizationMembers?.length]); // Only depend on length to prevent infinite loops
 
@@ -285,9 +283,7 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
       due_date: formData.due_date || undefined,
       start_date: formData.start_date || undefined,
       estimated_hours: formData.estimated_hours ? parseInt(formData.estimated_hours) : undefined,
-      labels: (formData.labels && typeof formData.labels === 'string') 
-        ? formData.labels.split(',').map(label => label.trim()).filter(Boolean) 
-        : [],
+      labels: formData.labels.split(',').map(label => label.trim()).filter(Boolean),
       assigned_to: formData.assigned_to === 'unassigned' ? undefined : formData.assigned_to
     };
 
