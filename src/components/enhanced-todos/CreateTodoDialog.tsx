@@ -12,7 +12,6 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { UserSelector } from '@/components/UserSelector';
 
 // Fixed DatePicker Component
 const DatePicker = ({ value, onChange, placeholder, id }) => {
@@ -48,9 +47,6 @@ const DatePicker = ({ value, onChange, placeholder, id }) => {
 const SubtaskManager = ({ subtasks, onSubtasksChange }) => {
   const [newSubtask, setNewSubtask] = useState('');
 
-  // Ensure subtasks is always an array
-  const safeSubtasks = Array.isArray(subtasks) ? subtasks : [];
-
   const addSubtask = () => {
     if (newSubtask.trim()) {
       const subtask = {
@@ -59,17 +55,17 @@ const SubtaskManager = ({ subtasks, onSubtasksChange }) => {
         completed: false,
         estimated_hours: 1
       };
-      onSubtasksChange([...safeSubtasks, subtask]);
+      onSubtasksChange([...subtasks, subtask]);
       setNewSubtask('');
     }
   };
 
   const removeSubtask = (id) => {
-    onSubtasksChange(safeSubtasks.filter(st => st.id !== id));
+    onSubtasksChange(subtasks.filter(st => st.id !== id));
   };
 
   const updateSubtask = (id, field, value) => {
-    onSubtasksChange(safeSubtasks.map(st =>
+    onSubtasksChange(subtasks.map(st =>
       st.id === id ? { ...st, [field]: value } : st
     ));
   };
@@ -88,7 +84,7 @@ const SubtaskManager = ({ subtasks, onSubtasksChange }) => {
         </Button>
       </div>
      
-      {safeSubtasks.map((subtask) => (
+      {subtasks.map((subtask) => (
         <div key={subtask.id} className="flex items-center gap-2 p-2 border rounded">
           <Input
             value={subtask.title}
@@ -208,7 +204,7 @@ const projectManagementTemplate = {
 };
 
 // Main Component - exported as default export
-const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null, organizationMembers = [] }) => {
+const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null, teamId = 'all', teamMembers = [] }) => {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
@@ -237,7 +233,7 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
         due_date: editTask.due_date || '',
         start_date: editTask.start_date || '',
         estimated_hours: editTask.estimated_hours ? String(editTask.estimated_hours) : '',
-        labels: Array.isArray(editTask.labels) ? editTask.labels.join(', ') : '',
+        labels: editTask.labels ? editTask.labels.join(', ') : '',
         assigned_to: editTask.assigned_to || '',
         phone: editTask.phone || ''
       });
@@ -259,17 +255,67 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
     }
   }, [editTask]);
 
-  // Use organization members directly - only update when members actually change
+  // Fetch available users from Supabase, scoped by team when possible
   useEffect(() => {
-    if (Array.isArray(organizationMembers) && organizationMembers.length > 0) {
-      setAvailableUsers(organizationMembers.map(member => ({
-        id: member.user_id,
-        display_name: member.profile?.display_name || member.profile?.full_name || 'Unknown',
-        email: member.profile?.email || '',
-        full_name: member.profile?.full_name || ''
-      })));
+    const fetchUsers = async () => {
+      setLoadingUsers(true);
+      try {
+        let query = supabase
+          .from('profiles')
+          .select('id, display_name, email, full_name')
+          .order('display_name', { ascending: true });
+
+        const { data, error } = await query;
+
+        if (error) {
+          console.error('Error fetching users:', error);
+          // Create fallback user from current authenticated user
+          const currentUser = supabase.auth.getUser();
+          setAvailableUsers([
+            {
+              id: 'current-user',
+              display_name: user?.email?.split('@')[0] || 'Current User',
+              email: user?.email || 'user@example.com',
+              full_name: user?.email?.split('@')[0] || 'Current User'
+            }
+          ]);
+          return;
+        }
+
+        let users = data || [];
+        
+        // If no users found, create fallback
+        if (users.length === 0) {
+          users = [
+            {
+              id: 'current-user',
+              display_name: user?.email?.split('@')[0] || 'Current User',
+              email: user?.email || 'user@example.com',
+              full_name: user?.email?.split('@')[0] || 'Current User'
+            }
+          ];
+        }
+        // If teamId is set but query did not filter, attempt client-side filter by provided teamMembers names
+        if (teamId && teamId !== 'all' && Array.isArray(teamMembers) && teamMembers.length > 0) {
+          const names = new Set(teamMembers.map((n:string)=>n.toLowerCase()));
+          users = users.filter((u:any) => {
+            const dn = (u.display_name || u.full_name || '').toLowerCase();
+            return names.has(dn);
+          });
+        }
+
+        setAvailableUsers(users);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    if (isOpen) {
+      fetchUsers();
     }
-  }, [organizationMembers?.length]); // Only depend on length to prevent infinite loops
+  }, [isOpen, teamId, Array.isArray(teamMembers) ? teamMembers.join('|') : '']);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -283,7 +329,7 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
       due_date: formData.due_date || undefined,
       start_date: formData.start_date || undefined,
       estimated_hours: formData.estimated_hours ? parseInt(formData.estimated_hours) : undefined,
-      labels: formData.labels ? formData.labels.split(',').map(label => label.trim()).filter(Boolean) : [],
+      labels: formData.labels.split(',').map(label => label.trim()).filter(Boolean),
       assigned_to: formData.assigned_to === 'unassigned' ? undefined : formData.assigned_to
     };
 
@@ -334,7 +380,7 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="create-todo-description">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             {editTask ? 'Edit Task' : 'Create New Task'}
@@ -451,11 +497,36 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
 
             <div className="space-y-2">
               <Label htmlFor="task-assignee">Assign To</Label>
-              <UserSelector
-                value={formData.assigned_to}
-                onChange={(userId) => handleChange('assigned_to', userId)}
-                placeholder="Select team member..."
-              />
+              <Select value={formData.assigned_to} onValueChange={(value) => handleChange('assigned_to', value)}>
+                <SelectTrigger id="task-assignee">
+                  <SelectValue placeholder="Select assignee" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border shadow-md z-[200]">
+                  <SelectItem value="unassigned">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Unassigned
+                    </div>
+                  </SelectItem>
+                  {loadingUsers ? (
+                    <SelectItem value="loading" disabled>
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Loading users...
+                      </div>
+                    </SelectItem>
+                  ) : (
+                    availableUsers.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          {user.display_name || user.full_name || user.email} ({user.email})
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

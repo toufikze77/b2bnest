@@ -19,10 +19,6 @@ interface Todo {
   due_date?: string;
   start_date?: string;
   assigned_to?: string;
-  assigned_user?: {
-    display_name?: string;
-    email?: string;
-  };
   created_at: string;
   updated_at: string;
   estimated_hours?: number;
@@ -110,13 +106,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onEdit, onDelete, onStatusCha
               ))}
             </div>
 
-            <div className="flex items-center gap-4 text-xs text-muted-foreground ml-8">
-              {todo.assigned_to && (
-                <div className="flex items-center gap-1">
-                  <User className="h-3 w-3" />
-                  Assigned to: {todo.assigned_user?.display_name || todo.assigned_user?.email || 'Unknown'}
-                </div>
-              )}
+            <div className="flex items-center gap-4 text-xs text-gray-500 ml-8">
               {todo.due_date && (
                 <div className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
