@@ -88,6 +88,7 @@ import {
   History
 } from 'lucide-react';
 import { TodoComments } from './enhanced-todos/TodoComments';
+import { CommentButton } from './CommentButton';
 import { format } from 'date-fns';
 import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 
@@ -1253,20 +1254,13 @@ const ProjectManagement = () => {
                           )}
                         </div>
                         <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 px-2 text-xs text-gray-500 hover:text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-                            onClick={(e) => {
-                              e.stopPropagation();
+                          <CommentButton
+                            taskId={task.id}
+                            onOpenComments={() => {
                               setCommentTaskId(task.id);
                               setShowComments(true);
                             }}
-                            title="View Comments"
-                          >
-                            <MessageCircle className="w-3 h-3 mr-1" />
-                            {task.comments?.length || 0}
-                          </Button>
+                          />
                         </div>
                         
                         <div className="flex items-center gap-1">
@@ -3279,14 +3273,14 @@ const ProjectManagement = () => {
 
       {/* Comments Dialog */}
       <Dialog open={showComments} onOpenChange={setShowComments}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
-          <DialogHeader className="flex-shrink-0">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="flex-shrink-0 p-6 pb-4">
             <DialogTitle className="text-left flex items-center gap-2">
               <MessageCircle className="h-5 w-5" />
               Comments - {tasks.find(t => t.id === commentTaskId)?.title}
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden px-6 pb-6">
             {commentTaskId && <TodoComments todoId={commentTaskId} />}
           </div>
         </DialogContent>

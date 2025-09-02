@@ -194,13 +194,13 @@ export const TodoComments: React.FC<TodoCommentsProps> = ({ todoId }) => {
       </div>
 
       {user && (
-        <div className="border-t pt-4 flex-shrink-0">
-          <div className="flex gap-2">
+        <div className="border-t pt-4 flex-shrink-0 px-1">
+          <div className="flex gap-2 w-full">
             <Textarea
               placeholder="Add a comment..."
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              className="min-h-[80px] resize-none"
+              className="min-h-[80px] resize-none flex-1 border-border"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                   e.preventDefault();
