@@ -12,6 +12,11 @@ interface Comment {
   content: string;
   created_at: string;
   user_id: string;
+  user_profile?: {
+    full_name?: string;
+    display_name?: string;
+    email?: string;
+  };
 }
 
 interface TodoCommentsProps {
@@ -26,20 +31,76 @@ export const TodoComments: React.FC<TodoCommentsProps> = ({ todoId }) => {
 
   useEffect(() => {
     fetchComments();
+
+    // Subscribe to real-time updates for comments
+    const channel = supabase
+      .channel(`todo-comments-${todoId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'todo_comments',
+          filter: `todo_id=eq.${todoId}`
+        },
+        () => {
+          fetchComments(); // Refetch comments when changes occur
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [todoId]);
 
   const fetchComments = async () => {
     try {
-      const { data, error } = await supabase
+      // First, fetch comments
+      const { data: commentsData, error: commentsError } = await supabase
         .from('todo_comments')
         .select('*')
         .eq('todo_id', todoId)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
-      setComments(data || []);
+      if (commentsError) throw commentsError;
+
+      if (!commentsData || commentsData.length === 0) {
+        setComments([]);
+        return;
+      }
+
+      // Get unique user IDs
+      const userIds = [...new Set(commentsData.map(comment => comment.user_id))];
+
+      // Fetch user profiles
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, display_name, email')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        // Still show comments without user info if profiles fail
+        setComments(commentsData.map(comment => ({ ...comment, user_profile: null })));
+        return;
+      }
+
+      // Create a map of user profiles by ID
+      const profilesMap = new Map(
+        (profilesData || []).map(profile => [profile.id, profile])
+      );
+
+      // Merge comments with user profiles
+      const commentsWithProfiles = commentsData.map(comment => ({
+        ...comment,
+        user_profile: profilesMap.get(comment.user_id) || null
+      }));
+
+      setComments(commentsWithProfiles);
     } catch (error) {
       console.error('Error fetching comments:', error);
+      setComments([]);
     }
   };
 
@@ -77,39 +138,55 @@ export const TodoComments: React.FC<TodoCommentsProps> = ({ todoId }) => {
   };
 
   const getUserDisplayName = (comment: Comment) => {
+    if (comment.user_profile?.display_name) {
+      return comment.user_profile.display_name;
+    }
+    if (comment.user_profile?.full_name) {
+      return comment.user_profile.full_name;
+    }
+    if (comment.user_profile?.email) {
+      return comment.user_profile.email.split('@')[0];
+    }
     return 'User';
   };
 
   const getUserInitials = (comment: Comment) => {
-    return 'U';
+    const name = getUserDisplayName(comment);
+    if (name === 'User') return 'U';
+    
+    const words = name.split(' ');
+    if (words.length >= 2) {
+      return `${words[0][0]}${words[1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
   };
 
   return (
     <div className="space-y-4">
       <div className="max-h-96 overflow-y-auto space-y-3">
         {comments.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-muted-foreground">
             <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p>No comments yet. Be the first to comment!</p>
           </div>
         ) : (
           comments.map((comment) => (
-            <div key={comment.id} className="flex gap-3 p-3 bg-gray-50 rounded-lg">
+            <div key={comment.id} className="flex gap-3 p-3 bg-muted/30 rounded-lg border">
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="text-xs">
+                <AvatarFallback className="text-xs bg-primary/10 text-primary">
                   {getUserInitials(comment)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-sm">
+                  <span className="font-medium text-sm text-foreground">
                     {getUserDisplayName(comment)}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-muted-foreground">
                     {new Date(comment.created_at).toLocaleDateString()}
                   </span>
                 </div>
-                <p className="text-sm text-gray-700">{comment.content}</p>
+                <p className="text-sm text-foreground">{comment.content}</p>
               </div>
             </div>
           ))
