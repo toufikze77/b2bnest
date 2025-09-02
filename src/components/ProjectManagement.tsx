@@ -1227,31 +1227,35 @@ const ProjectManagement = () => {
                         <div className={`${densityClasses.descMb}`}>
                           <div className={`flex items-center gap-1 ${densityClasses.subtaskText} text-gray-500`}>
                             <ListCheck className="w-3 h-3" />
+                          {task.subtasks && task.subtasks.length > 0 && (
                             <span>
-                              {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length} subtasks
+                              {(task.subtasks || []).filter(st => st.completed).length}/{(task.subtasks || []).length} subtasks
                             </span>
+                          )}
                           </div>
                         </div>
                       )}
 
                       {/* Tags */}
-                      <div className={`flex flex-wrap gap-1 ${densityClasses.tagsMb}`}>
-                        {task.tags.slice(0, 2).map(tag => (
-                          <Badge key={tag} variant="outline" className={densityClasses.tagBadge}>
-                            {tag}
-                          </Badge>
-                        ))}
-                        {task.tags.length > 2 && (
-                          <Badge variant="outline" className={densityClasses.tagBadge}>
-                            +{task.tags.length - 2}
-                          </Badge>
-                        )}
-                      </div>
+                      {task.tags && task.tags.length > 0 && (
+                        <div className={`flex flex-wrap gap-1 ${densityClasses.tagsMb}`}>
+                          {(task.tags || []).slice(0, 2).map(tag => (
+                            <Badge key={tag} variant="outline" className={densityClasses.tagBadge}>
+                              {tag}
+                            </Badge>
+                          ))}
+                          {(task.tags || []).length > 2 && (
+                            <Badge variant="outline" className={densityClasses.tagBadge}>
+                              +{(task.tags || []).length - 2}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
 
                       {/* Footer */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1">
-                          {task.attachments && task.attachments.length > 0 && (
+                          {task.attachments && Array.isArray(task.attachments) && task.attachments.length > 0 && (
                             <Paperclip className="w-3 h-3 text-gray-400" />
                           )}
                         </div>
@@ -1272,21 +1276,21 @@ const ProjectManagement = () => {
                                 };
                                 setTasks(prev => prev.map(t => 
                                   t.id === task.id 
-                                    ? { ...t, comments: [...(t.comments || []), newComment] }
+                                     ? { ...t, comments: [...(t.comments || []), newComment] }
                                     : t
                                 ));
                               }
                             }}
                           >
                             <MessageCircle className="w-3 h-3 mr-1" />
-                            {task.comments?.length || 0}
+                            {(task.comments || []).length || 0}
                           </Button>
                         </div>
                         
                         <div className="flex items-center gap-1">
                           <Avatar className={densityClasses.avatar}>
                             <AvatarFallback className={densityClasses.avatarFallback}>
-                              {task.assignee.split(' ').map(n => n[0]).join('')}
+                              {(task.assignee || 'U').split(' ').map(n => n[0] || 'U').join('')}
                             </AvatarFallback>
                           </Avatar>
                         </div>
