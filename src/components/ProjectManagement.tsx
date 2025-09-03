@@ -1252,8 +1252,6 @@ const ProjectManagement = () => {
                           {task.attachments && task.attachments.length > 0 && (
                             <Paperclip className="w-3 h-3 text-gray-400" />
                           )}
-                        </div>
-                        <div className="flex items-center gap-1">
                           <CommentButton
                             taskId={task.id}
                             onOpenComments={() => {

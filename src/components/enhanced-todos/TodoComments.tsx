@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Send, MessageCircle } from 'lucide-react';
+import { Send, MessageCircle, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface Comment {
@@ -137,6 +137,33 @@ export const TodoComments: React.FC<TodoCommentsProps> = ({ todoId }) => {
     }
   };
 
+  const deleteComment = async (commentId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('todo_comments')
+        .delete()
+        .eq('id', commentId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      fetchComments();
+      toast({
+        title: "Success",
+        description: "Comment deleted successfully!"
+      });
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete comment.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getUserDisplayName = (comment: Comment) => {
     if (comment.user_profile?.display_name) {
       return comment.user_profile.display_name;
@@ -178,13 +205,25 @@ export const TodoComments: React.FC<TodoCommentsProps> = ({ todoId }) => {
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-sm text-foreground">
-                    {getUserDisplayName(comment)}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(comment.created_at).toLocaleDateString()}
-                  </span>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm text-foreground">
+                      {getUserDisplayName(comment)}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(comment.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  {user && comment.user_id === user.id && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => deleteComment(comment.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
                 </div>
                 <p className="text-sm text-foreground whitespace-pre-wrap break-words">{comment.content}</p>
               </div>
