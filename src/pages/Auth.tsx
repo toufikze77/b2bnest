@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate, Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,9 +9,11 @@ import { FileText, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import TwoFactorAuth from '@/components/TwoFactorAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const { user, signIn, signUp, loading, verify2FA, sendVerificationCode, signInWithOAuth } = useAuth();
+  const [searchParams] = useSearchParams();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,6 +23,21 @@ const Auth = () => {
   const [showTwoFactor, setShowTwoFactor] = useState(false);
   const [twoFactorEmail, setTwoFactorEmail] = useState('');
   const [isVerification, setIsVerification] = useState(false);
+  
+  // Check for invitation parameters
+  const isInvited = searchParams.get('invited') === 'true';
+  const invitationOrgId = searchParams.get('org');
+  
+  // Auto-switch to signup for invited users
+  useEffect(() => {
+    if (isInvited && invitationOrgId) {
+      setIsLogin(false); // Switch to signup mode for invited users
+      toast({
+        title: "Welcome!",
+        description: "You've been invited to join an organization. Please create your account.",
+      });
+    }
+  }, [isInvited, invitationOrgId]);
 
   // Debug effect to track state changes
   useEffect(() => {
@@ -46,13 +63,20 @@ const Auth = () => {
           setTwoFactorEmail('');
           setIsVerification(false);
           if (isVerification) {
+            // Handle invitation acceptance after email verification for signup
+            if (isInvited && invitationOrgId) {
+              setTimeout(() => handleInvitationAcceptance(invitationOrgId), 1000);
+            }
             toast({
               title: "Email Verified!",
-              description: "You can now sign in to your account."
+              description: isInvited ? "Welcome to the organization! You can now access the team." : "You can now sign in to your account."
             });
             setIsLogin(true);
           } else {
             // For login 2FA, user should be authenticated now
+            if (isInvited && invitationOrgId) {
+              setTimeout(() => handleInvitationAcceptance(invitationOrgId), 1000);
+            }
             window.location.href = '/';
           }
         }}
@@ -94,6 +118,10 @@ const Auth = () => {
             description: "Please check your email for the verification code."
           });
         } else {
+          // Handle invitation acceptance for login
+          if (isInvited && invitationOrgId) {
+            await handleInvitationAcceptance(invitationOrgId);
+          }
           toast({
             title: "Welcome back!",
             description: "You have been signed in successfully."
@@ -126,14 +154,73 @@ const Auth = () => {
             description: "Please check your email for the verification code."
           });
         } else {
+          // Handle invitation acceptance for signup
+          if (isInvited && invitationOrgId) {
+            await handleInvitationAcceptance(invitationOrgId);
+          }
           toast({
             title: "Account Created!",
-            description: "You can now sign in to your account."
+            description: isInvited ? "Welcome to the organization! You can now access the team." : "You can now sign in to your account."
           });
         }
       }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleInvitationAcceptance = async (organizationId: string) => {
+    try {
+      console.log('Accepting invitation for organization:', organizationId);
+      
+      // Get current user - need to fetch fresh user data
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (!currentUser?.id) {
+        console.error('No authenticated user found');
+        return;
+      }
+      
+      // Check if user is already a member
+      const { data: existingMember } = await supabase
+        .from('organization_members')
+        .select('id')
+        .eq('organization_id', organizationId)
+        .eq('user_id', currentUser.id)
+        .eq('is_active', true)
+        .single();
+        
+      if (existingMember) {
+        console.log('User is already a member of this organization');
+        return;
+      }
+      
+      // Add user to organization
+      const { error: memberError } = await supabase
+        .from('organization_members')
+        .insert({
+          organization_id: organizationId,
+          user_id: currentUser.id,
+          role: 'member',
+          is_active: true
+        });
+
+      if (memberError) {
+        console.error('Error adding user to organization:', memberError);
+        toast({
+          title: "Error",
+          description: "Failed to join organization. Please contact your admin.",
+          variant: "destructive"
+        });
+      } else {
+        console.log('Successfully added user to organization');
+        toast({
+          title: "Success!",
+          description: "You've been added to the organization team!",
+        });
+      }
+    } catch (error) {
+      console.error('Error handling invitation:', error);
     }
   };
 
@@ -254,6 +341,9 @@ const Auth = () => {
                                 description: error.message,
                                 variant: "destructive"
                               });
+                            } else if (isInvited && invitationOrgId) {
+                              // Handle invitation after OAuth login
+                              setTimeout(() => handleInvitationAcceptance(invitationOrgId), 2000);
                             }
                           } catch (err) {
                             toast({
