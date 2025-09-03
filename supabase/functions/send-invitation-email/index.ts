@@ -22,11 +22,28 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  console.log("Function called with method:", req.method);
+
   try {
-    const { email, organization_id, role, invited_by }: InvitationRequest = await req.json();
+    const body = await req.text();
+    console.log("Raw request body:", body);
+    
+    const { email, organization_id, role, invited_by }: InvitationRequest = JSON.parse(body);
+    console.log("Parsed request:", { email, organization_id, role, invited_by });
+
+    if (!email || !organization_id || !role) {
+      throw new Error("Missing required fields: email, organization_id, or role");
+    }
 
     const inviteUrl = `${req.headers.get('origin') || 'https://b2bnest.online'}/auth?invited=true&org=${organization_id}`;
+    console.log("Invite URL:", inviteUrl);
 
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      throw new Error("RESEND_API_KEY environment variable is not set");
+    }
+
+    console.log("Sending email via Resend...");
     const emailResponse = await resend.emails.send({
       from: "B2BNest <noreply@b2bnest.online>",
       to: [email],
@@ -77,7 +94,7 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error in send-invitation-email function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message, details: error.stack }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },

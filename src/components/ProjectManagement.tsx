@@ -677,17 +677,22 @@ const ProjectManagement = () => {
     const role = window.prompt('Role (owner, admin, member)') || 'member';
     
     try {
-      // Send invitation email directly without storing in DB first since table might have different schema
-      const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
+      console.log('Sending invitation...', { email, teamId, role, invitedBy: user?.email });
+      
+      // Send invitation email
+      const { data, error: emailError } = await supabase.functions.invoke('send-invitation-email', {
         body: {
           email: email,
           organization_id: teamId,
           role: role,
-          invited_by: user?.email
+          invited_by: user?.email || user?.user_metadata?.full_name || 'Someone'
         }
       });
 
+      console.log('Function response:', { data, emailError });
+
       if (emailError) {
+        console.error('Email error:', emailError);
         toast({
           title: "Error",
           description: "Failed to send invitation: " + emailError.message,
@@ -705,6 +710,7 @@ const ProjectManagement = () => {
       fetchTeams();
 
     } catch (error: any) {
+      console.error('Catch error:', error);
       toast({
         title: "Error", 
         description: error.message,
