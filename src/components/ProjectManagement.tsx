@@ -1129,9 +1129,14 @@ const ProjectManagement = () => {
             <div className={`flex items-center justify-between ${densityClasses.headerMb}`}>
               <h3 className="font-semibold text-sm">{column.title}</h3>
               <div className="flex items-center gap-1">
-                <Badge variant="secondary" className="text-xs px-2 py-0">
-                  {filteredTasks.filter(task => task.status === column.id).length}
-                </Badge>
+                {(() => {
+                  const taskCount = filteredTasks.filter(task => task.status === column.id).length;
+                  return taskCount > 0 ? (
+                    <Badge variant="secondary" className="text-xs px-2 py-0">
+                      {taskCount}
+                    </Badge>
+                  ) : null;
+                })()}
                 <Button variant="ghost" size="sm" onClick={(e) => {
                   e.stopPropagation();
                   console.log('Plus button clicked, opening create task dialog');
