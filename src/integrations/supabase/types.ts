@@ -2008,6 +2008,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "social_posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       subscribers: {
@@ -2528,7 +2535,45 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          connection_count: number | null
+          created_at: string | null
+          display_name: string | null
+          experience_years: number | null
+          headline: string | null
+          id: string | null
+          industry: string | null
+          skills: string[] | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          connection_count?: number | null
+          created_at?: string | null
+          display_name?: string | null
+          experience_years?: number | null
+          headline?: string | null
+          id?: string | null
+          industry?: string | null
+          skills?: string[] | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          connection_count?: number | null
+          created_at?: string | null
+          display_name?: string | null
+          experience_years?: number | null
+          headline?: string | null
+          id?: string | null
+          industry?: string | null
+          skills?: string[] | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_2fa_rate_limit: {
@@ -2681,6 +2726,10 @@ export type Database = {
       }
       is_admin_or_owner: {
         Args: { _user_id: string }
+        Returns: boolean
+      }
+      is_safe_profile_field: {
+        Args: { field_name: string }
         Returns: boolean
       }
       log_user_action: {
