@@ -1,56 +1,132 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import React, { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
-interface ProjectManagementProps {
-  projects?: any[];
-  teams?: any[];
+// Types
+interface Task {
+  id: string;
+  title: string;
+  description: string;
+  status: 'backlog' | 'todo' | 'in-progress' | 'review' | 'done';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  assignee: string;
+  dueDate: Date | null;
+  project: string;
+  tags: string[];
+  comments?: Comment[];
+  progress?: number;
 }
 
-const ProjectManagement: React.FC<ProjectManagementProps> = ({ projects = [], teams = [] }) => {
+interface Comment {
+  id: string;
+  content: string;
+  author: string;
+  timestamp: Date;
+}
+
+interface Project {
+  id: string;
+  name: string;
+  description: string;
+  status: 'planning' | 'active' | 'on-hold' | 'completed';
+  members: string[];
+  deadline: Date | null;
+}
+
+interface Team {
+  id: string;
+  name: string;
+  members: string[];
+}
+
+interface ProjectManagementProps {
+  projects?: Project[];
+  teams?: Team[];
+  tasks?: Task[];
+}
+
+const columns = [
+  { id: 'backlog', title: 'Backlog' },
+  { id: 'todo', title: 'Todo' },
+  { id: 'in-progress', title: 'In Progress' },
+  { id: 'review', title: 'Review' },
+  { id: 'done', title: 'Done' },
+];
+
+const ProjectManagement: React.FC<ProjectManagementProps> = ({
+  projects = [],
+  teams = [],
+  tasks = [],
+}) => {
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState('kanban');
+
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="projects" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="projects">Projects</TabsTrigger>
-          <TabsTrigger value="teams">Teams</TabsTrigger>
+          <TabsTrigger value="kanban">Kanban</TabsTrigger>
+          <TabsTrigger value="list">List</TabsTrigger>
+          <TabsTrigger value="stats">Stats</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="projects">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {projects.length > 0 ? (
-              projects.map((project) => (
-                <Card key={project.id} className="shadow-md">
-                  <CardHeader>
-                    <CardTitle>{project.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-600">{project.description || 'No description'}</p>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <p className="text-gray-500">No projects yet.</p>
-            )}
+        {/* Kanban Board */}
+        <TabsContent value="kanban">
+          <div className="grid grid-cols-5 gap-4">
+            {columns.map((col) => (
+              <div key={col.id} className="bg-gray-50 rounded-lg p-3 border">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold">{col.title}</h3>
+                  <Button size="sm" variant="ghost">
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {tasks
+                    .filter((task) => task.status === col.id)
+                    .map((task) => (
+                      <div
+                        key={task.id}
+                        className="bg-white p-3 rounded shadow-sm border hover:shadow-md transition"
+                      >
+                        <h4 className="font-medium text-sm">{task.title}</h4>
+                        {task.description && (
+                          <p className="text-xs text-gray-500">{task.description}</p>
+                        )}
+                        <div className="flex justify-between items-center mt-2 text-xs text-gray-400">
+                          <span>{task.priority}</span>
+                          <span>
+                            💬 {task.comments ? task.comments.length : 0}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            ))}
           </div>
         </TabsContent>
 
-        <TabsContent value="teams">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {teams.length > 0 ? (
-              teams.map((team) => (
-                <Card key={team.id} className="shadow-md">
-                  <CardHeader>
-                    <CardTitle>{team.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-600">Team ID: {team.id}</p>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <p className="text-gray-500">No teams yet.</p>
-            )}
+        {/* List View */}
+        <TabsContent value="list">
+          <ul className="divide-y">
+            {tasks.map((task) => (
+              <li key={task.id} className="p-3">
+                <strong>{task.title}</strong> — {task.status}
+              </li>
+            ))}
+          </ul>
+        </TabsContent>
+
+        {/* Stats */}
+        <TabsContent value="stats">
+          <div className="p-6 bg-white rounded-lg border">
+            <h2 className="text-lg font-bold mb-4">Stats</h2>
+            <p className="text-gray-500">Projects: {projects.length}</p>
+            <p className="text-gray-500">Teams: {teams.length}</p>
+            <p className="text-gray-500">Tasks: {tasks.length}</p>
           </div>
         </TabsContent>
       </Tabs>
