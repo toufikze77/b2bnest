@@ -23,7 +23,7 @@ export const CommentButton: React.FC<CommentButtonProps> = ({ taskId, onOpenComm
       title="View Comments"
     >
       <MessageCircle className="w-3 h-3 mr-1" />
-      {commentCount}
+      {commentCount > 0 && commentCount}
     </Button>
   );
 };
