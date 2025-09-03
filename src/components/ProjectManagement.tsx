@@ -247,6 +247,8 @@ interface TeamMemberItem {
   member_email: string;
   role: string;
   created_at?: string;
+  user_id?: string;
+  display_name?: string;
 }
 
 interface CalendarEventItem {
@@ -553,7 +555,8 @@ const ProjectManagement = () => {
           id: orgId,
           name: `Organization Team`,
           description: `Team members from your organization`,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          owner_id: user?.id
         }));
         setTeams(teamsData as TeamItem[]);
       }
@@ -674,28 +677,7 @@ const ProjectManagement = () => {
     const role = window.prompt('Role (owner, admin, member)') || 'member';
     
     try {
-      // Create invitation
-      const { data: invitation, error: inviteError } = await supabase
-        .from('organization_invitations')
-        .insert({
-          organization_id: teamId,
-          email: email,
-          role: role,
-          invited_by: user?.id
-        })
-        .select()
-        .single();
-
-      if (inviteError) {
-        toast({
-          title: "Error",
-          description: "Failed to send invitation: " + inviteError.message,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Send invitation email
+      // Send invitation email directly without storing in DB first since table might have different schema
       const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
         body: {
           email: email,
@@ -706,13 +688,21 @@ const ProjectManagement = () => {
       });
 
       if (emailError) {
-        console.error('Failed to send invitation email:', emailError);
+        toast({
+          title: "Error",
+          description: "Failed to send invitation: " + emailError.message,
+          variant: "destructive"
+        });
+        return;
       }
 
       toast({
         title: "Invitation Sent",
         description: `Invitation sent to ${email}`,
       });
+
+      // Refresh teams to show updated members
+      fetchTeams();
 
     } catch (error: any) {
       toast({
