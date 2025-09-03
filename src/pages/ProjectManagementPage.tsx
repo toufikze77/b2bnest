@@ -1,18 +1,44 @@
 import { 
-  addUserToTeam, 
-  addUserToProject, 
   fetchUserTeams, 
-  fetchUserProjects 
-} from '@/lib/supabase/teamProjectHelpers';
-import React from 'react';
+  fetchUserProjects
+} from '@/lib/teamProjectHelpers';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import ProjectManagement from '@/components/ProjectManagement';
 import Footer from '@/components/Footer';
+import { useAuth } from '@/hooks/useAuth';
 
 const ProjectManagementPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [projects, setProjects] = useState([]);
+  const [teams, setTeams] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      if (!user?.id) return;
+      
+      try {
+        setLoading(true);
+        const [userProjects, userTeams] = await Promise.all([
+          fetchUserProjects(user.id),
+          fetchUserTeams(user.id)
+        ]);
+        
+        setProjects(userProjects);
+        setTeams(userTeams);
+      } catch (error) {
+        console.error('Error loading projects and teams:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [user?.id]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -32,7 +58,13 @@ const ProjectManagementPage = () => {
           </div>
         </div>
         
-        <ProjectManagement />
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-gray-500">Loading projects and teams...</div>
+          </div>
+        ) : (
+          <ProjectManagement projects={projects} teams={teams} />
+        )}
       </div>
       <Footer />
     </div>
