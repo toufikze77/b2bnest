@@ -1188,37 +1188,43 @@ const ProjectManagement = () => {
 
                     {/* Description */}
                     {task.description && (
-                      <p className="text-xs text-gray-600 mb-2">{task.description}</p>
+                      <p className="text-xs text-gray-600 mb-2 line-clamp-2">
+                        {task.description.length > 80 
+                          ? `${task.description.substring(0, 80)}...` 
+                          : task.description
+                        }
+                      </p>
                     )}
 
                     {/* Footer */}
                     <div className="flex items-center justify-between gap-2">
-                      {/* Priority badge */}
-                      {task.priority && (
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${priorityColors[task.priority]}`}
-                        >
-                          {priorityLabels[task.priority]}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {/* Priority badge */}
+                        {task.priority && (
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${priorityColors[task.priority]}`}
+                          >
+                            {priorityLabels[task.priority]}
+                          </span>
+                        )}
+                        
+                        {/* Comment button */}
+                        <CommentButton
+                          taskId={task.id}
+                          onOpenComments={() => {
+                            setCommentTaskId(task.id);
+                            setShowComments(true);
+                          }}
+                        />
+                      </div>
 
                       {/* Assignee avatar – only render if assignee exists */}
-                      {task.assignee ? (
+                      {task.assignee && (
                         <Avatar className="w-6 h-6">
                           <AvatarFallback className="text-xs">
                             {task.assignee.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                      ) : (
-                        <span />
-                      )}
-
-                      {/* Comments count – only if > 0 */}
-                      {task.comments && task.comments.length > 0 && (
-                        <div className="flex items-center text-gray-500 text-xs gap-1">
-                          <MessageSquare className="w-3 h-3" />
-                          {task.comments.length}
-                        </div>
                       )}
                     </div>
                   </div>
