@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface ProjectManagementProps {
-  projects: any[];
-  teams: any[];
+  projects?: any[];
+  teams?: any[];
 }
 
 const ProjectManagement: React.FC<ProjectManagementProps> = ({ projects = [], teams = [] }) => {
@@ -18,7 +18,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ projects = [], te
 
         <TabsContent value="projects">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {projects && projects.length > 0 ? (
+            {projects.length > 0 ? (
               projects.map((project) => (
                 <Card key={project.id} className="shadow-md">
                   <CardHeader>
@@ -30,30 +30,26 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ projects = [], te
                 </Card>
               ))
             ) : (
-              <div className="col-span-full text-center py-8">
-                <p className="text-gray-500">No projects yet. Create your first project to get started!</p>
-              </div>
+              <p className="text-gray-500">No projects yet.</p>
             )}
           </div>
         </TabsContent>
 
         <TabsContent value="teams">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {teams && teams.length > 0 ? (
+            {teams.length > 0 ? (
               teams.map((team) => (
                 <Card key={team.id} className="shadow-md">
                   <CardHeader>
                     <CardTitle>{team.name}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-600">{team.description || 'No description'}</p>
+                    <p className="text-gray-600">Team ID: {team.id}</p>
                   </CardContent>
                 </Card>
               ))
             ) : (
-              <div className="col-span-full text-center py-8">
-                <p className="text-gray-500">No teams yet. Create your first team to start collaborating!</p>
-              </div>
+              <p className="text-gray-500">No teams yet.</p>
             )}
           </div>
         </TabsContent>
