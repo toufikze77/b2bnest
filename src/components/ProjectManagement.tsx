@@ -3,11 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface ProjectManagementProps {
-  projects: any[];
-  teams: any[];
+  projects?: any[];
+  teams?: any[];
 }
 
-const ProjectManagement: React.FC<ProjectManagementProps> = ({ projects, teams }) => {
+const ProjectManagement: React.FC<ProjectManagementProps> = ({ projects = [], teams = [] }) => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="projects" className="w-full">
