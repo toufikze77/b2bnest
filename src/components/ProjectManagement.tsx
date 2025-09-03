@@ -258,6 +258,20 @@ interface CalendarEventItem {
   project_id?: string | null;
   created_at: string;
 }
+// ---- Priority badge styles & labels ----
+const priorityColors: Record<Task['priority'], string> = {
+  low: 'bg-green-500 text-white',
+  medium: 'bg-yellow-500 text-black',
+  high: 'bg-orange-500 text-white',
+  urgent: 'bg-red-500 text-white',
+};
+
+const priorityLabels: Record<Task['priority'], string> = {
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+  urgent: 'Urgent',
+};
 
 const ProjectManagement = () => {
   console.log('🔧 ProjectManagement component loading...');
