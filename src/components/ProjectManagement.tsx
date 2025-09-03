@@ -1167,9 +1167,9 @@ const ProjectManagement = () => {
                 .filter(Boolean)
                 .filter(task => filteredTasks.some(ft => ft.id === task.id) && task.status === column.id)
                 .map(task => (
-                  <Card 
-                    key={task.id} 
-                    className={`cursor-pointer hover:shadow-lg transition-all ${densityClasses.cardHoverScale}`}
+                  <div
+                    key={task.id}
+                    className="bg-white p-3 rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                     draggable
                     onDragStart={(e) => handleDragStart(e, task)}
                     onDragOver={handleDragOver}
@@ -1181,115 +1181,47 @@ const ProjectManagement = () => {
                       setShowEditTask(true);
                     }}
                   >
-                    <CardContent className={`${densityClasses.cardPadding}`}>
-                      <div className={`flex items-start justify-between ${densityClasses.headerInnerMb}`}>
-                        <h4 className={`font-medium ${densityClasses.titleText} leading-tight`}>{task.title}</h4>
-                        <div className="flex items-center gap-1">
-                          <div className={`w-2 h-2 rounded-full ${priorityColors[task.priority]}`}></div>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="ghost" size="sm" className={densityClasses.popoverBtn} onClick={(e) => e.stopPropagation()}>
-                                <MoreHorizontal className="w-3 h-3" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-40 p-1" align="end">
-                              <div className="space-y-1">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="w-full justify-start h-7"
-                                  onClick={() => {
-                                    setEditingTask(task);
-                                    setShowEditTask(true);
-                                  }}
-                                >
-                                  <Edit className="w-3 h-3 mr-2" />
-                                  Edit
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="w-full justify-start h-7 text-red-600 hover:text-red-700"
-                                  onClick={() => handleTaskDelete(task.id)}
-                                >
-                                  <Trash2 className="w-3 h-3 mr-2" />
-                                  Delete
-                                </Button>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                      </div>
-                      
-                      <p className={`${densityClasses.descText} text-gray-600 ${densityClasses.descMb} line-clamp-2`}>{task.description}</p>
-                      
-                      {/* Progress Bar */}
-                      {task.progress && (
-                        <div className={`${densityClasses.progressMb}`}>
-                          <div className={`flex justify-between ${densityClasses.progressText} mb-1`}>
-                            <span>Progress</span>
-                            <span>{task.progress}%</span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-1">
-                            <div 
-                              className="bg-blue-600 h-1 rounded-full transition-all" 
-                              style={{ width: `${task.progress}%` }}
-                            ></div>
-                          </div>
-                        </div>
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="font-medium text-sm">{task.title}</h4>
+                    </div>
+
+                    {/* Description */}
+                    {task.description && (
+                      <p className="text-xs text-gray-600 mb-2">{task.description}</p>
+                    )}
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between gap-2">
+                      {/* Priority badge */}
+                      {task.priority && (
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${priorityColors[task.priority]}`}
+                        >
+                          {priorityLabels[task.priority]}
+                        </span>
                       )}
 
-                      {/* Subtasks */}
-                      {task.subtasks && task.subtasks.length > 0 && (
-                        <div className={`${densityClasses.descMb}`}>
-                          <div className={`flex items-center gap-1 ${densityClasses.subtaskText} text-gray-500`}>
-                            <ListCheck className="w-3 h-3" />
-                            <span>
-                              {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length} subtasks
-                            </span>
-                          </div>
-                        </div>
+                      {/* Assignee avatar – only render if assignee exists */}
+                      {task.assignee ? (
+                        <Avatar className="w-6 h-6">
+                          <AvatarFallback className="text-xs">
+                            {task.assignee.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      ) : (
+                        <span />
                       )}
 
-                      {/* Tags */}
-                      <div className={`flex flex-wrap gap-1 ${densityClasses.tagsMb}`}>
-                        {task.tags.slice(0, 2).map(tag => (
-                          <Badge key={tag} variant="outline" className={densityClasses.tagBadge}>
-                            {tag}
-                          </Badge>
-                        ))}
-                        {task.tags.length > 2 && (
-                          <Badge variant="outline" className={densityClasses.tagBadge}>
-                            +{task.tags.length - 2}
-                          </Badge>
-                        )}
-                      </div>
-
-                      {/* Footer */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1">
-                          {task.attachments && task.attachments.length > 0 && (
-                            <Paperclip className="w-3 h-3 text-gray-400" />
-                          )}
-                          <CommentButton
-                            taskId={task.id}
-                            onOpenComments={() => {
-                              setCommentTaskId(task.id);
-                              setShowComments(true);
-                            }}
-                          />
+                      {/* Comments count – only if > 0 */}
+                      {task.comments && task.comments.length > 0 && (
+                        <div className="flex items-center text-gray-500 text-xs gap-1">
+                          <MessageSquare className="w-3 h-3" />
+                          {task.comments.length}
                         </div>
-                        
-                        <div className="flex items-center gap-1">
-                          <Avatar className={densityClasses.avatar}>
-                            <AvatarFallback className={densityClasses.avatarFallback}>
-                              {task.assignee.split(' ').map(n => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      )}
+                    </div>
+                  </div>
                 ))}
             </div>
           </div>
