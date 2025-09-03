@@ -500,19 +500,65 @@ const ProjectManagement = () => {
   };
 
   const fetchTeams = async () => {
-    const { data, error } = await supabase.from('teams' as any).select('*').order('created_at', { ascending: false });
-    if (!error && data) {
-      const teamsData = data as unknown as TeamItem[];
-      setTeams(teamsData);
-      // load members per team
-      const { data: membersData } = await supabase.from('team_members' as any).select('*');
-      const grouped: Record<string, TeamMemberItem[]> = {};
-      (membersData || []).forEach((m: any) => {
-        const tm: TeamMemberItem = { team_id: m.team_id, member_email: m.member_email, role: m.role, created_at: m.created_at, id: m.id };
-        if (!grouped[tm.team_id]) grouped[tm.team_id] = [];
-        grouped[tm.team_id].push(tm);
-      });
-      setTeamMembers(grouped);
+    try {
+      // Get user's organizations first
+      const { data: userOrgs } = await supabase
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', user?.id)
+        .eq('is_active', true);
+
+      if (!userOrgs?.length) return;
+
+      // Get organization members from user's organizations
+      const orgIds = userOrgs.map(org => org.organization_id);
+      const { data: membersData, error } = await supabase
+        .from('organization_members')
+        .select(`
+          id,
+          user_id,
+          role,
+          created_at,
+          organization_id,
+          profiles:user_id (
+            id,
+            display_name,
+            email,
+            full_name
+          )
+        `)
+        .in('organization_id', orgIds)
+        .eq('is_active', true);
+
+      if (!error && membersData) {
+        // Group by organization for display as "teams"
+        const grouped: Record<string, TeamMemberItem[]> = {};
+        membersData.forEach((member: any) => {
+          const tm: TeamMemberItem = {
+            id: member.id,
+            team_id: member.organization_id,
+            member_email: member.profiles?.email || '',
+            role: member.role,
+            created_at: member.created_at,
+            user_id: member.user_id,
+            display_name: member.profiles?.display_name || member.profiles?.full_name
+          };
+          if (!grouped[member.organization_id]) grouped[member.organization_id] = [];
+          grouped[member.organization_id].push(tm);
+        });
+        setTeamMembers(grouped);
+
+        // Create team entries based on organizations
+        const teamsData = orgIds.map(orgId => ({
+          id: orgId,
+          name: `Organization Team`,
+          description: `Team members from your organization`,
+          created_at: new Date().toISOString()
+        }));
+        setTeams(teamsData as TeamItem[]);
+      }
+    } catch (error) {
+      console.error('Error fetching teams:', error);
     }
   };
 
@@ -623,11 +669,58 @@ const ProjectManagement = () => {
   // Note: localStorage saving is handled in individual create/update functions to avoid infinite loops
 
   const addPersonToTeam = async (teamId: string) => {
-    const email = window.prompt('Member email to add');
+    const email = window.prompt('Member email to invite');
     if (!email) return;
-    const role = window.prompt('Role (e.g., member, admin)') || 'member';
-    const { data, error } = await supabase.from('team_members' as any).insert({ team_id: teamId, member_email: email, role }).select().single();
-    if (!error && data) setTeamMembers(prev => ({ ...prev, [teamId]: [...(prev[teamId] || []), data as unknown as TeamMemberItem] }));
+    const role = window.prompt('Role (owner, admin, member)') || 'member';
+    
+    try {
+      // Create invitation
+      const { data: invitation, error: inviteError } = await supabase
+        .from('organization_invitations')
+        .insert({
+          organization_id: teamId,
+          email: email,
+          role: role,
+          invited_by: user?.id
+        })
+        .select()
+        .single();
+
+      if (inviteError) {
+        toast({
+          title: "Error",
+          description: "Failed to send invitation: " + inviteError.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Send invitation email
+      const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
+        body: {
+          email: email,
+          organization_id: teamId,
+          role: role,
+          invited_by: user?.email
+        }
+      });
+
+      if (emailError) {
+        console.error('Failed to send invitation email:', emailError);
+      }
+
+      toast({
+        title: "Invitation Sent",
+        description: `Invitation sent to ${email}`,
+      });
+
+    } catch (error: any) {
+      toast({
+        title: "Error", 
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
   const createCalendarEvent = async () => {
@@ -2748,12 +2841,17 @@ const ProjectManagement = () => {
                   <div key={team.id} className="p-3 border rounded-lg">
                     <div className="font-medium mb-2">{team.name}</div>
                     <div className="text-xs text-gray-500 mb-2">Members:</div>
-                    <div className="space-y-1">
-                      {(teamMembers[team.id] || []).map(m => (
-                        <div key={team.id + m.member_email} className="text-sm">{m.member_email} — {m.role}</div>
-                      ))}
-                      {(teamMembers[team.id] || []).length === 0 && (<div className="text-sm text-gray-500">No members yet.</div>)}
-                    </div>
+                     <div className="space-y-1">
+                       {(teamMembers[team.id] || []).map(m => (
+                         <div key={team.id + m.member_email} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
+                           <div>
+                             <div className="font-medium">{m.display_name || m.member_email}</div>
+                             <div className="text-gray-500 text-xs">{m.member_email} — {m.role}</div>
+                           </div>
+                         </div>
+                       ))}
+                       {(teamMembers[team.id] || []).length === 0 && (<div className="text-sm text-gray-500">No members yet. Click "Invite Members" to get started.</div>)}
+                     </div>
                   </div>
                 ))}
                 {teams.length === 0 && <div className="text-sm text-gray-500">No teams yet.</div>}
