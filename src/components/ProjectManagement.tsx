@@ -297,6 +297,11 @@ const ProjectManagement = () => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showEditTask, setShowEditTask] = useState(false);
   const [showCreateProject, setShowCreateProject] = useState(false);
+  
+  // Database-loaded state
+  const [dbProjects, setDbProjects] = useState<any[]>([]);
+  const [dbTeams, setDbTeams] = useState<any[]>([]);
+  const [dbTeamMembers, setDbTeamMembers] = useState<Record<string, any[]>>({});
   const [boardDensity, setBoardDensity] = useState<'comfortable' | 'compact' | 'condensed'>(() => {
     try {
       const saved = localStorage.getItem('pm_board_density');
@@ -502,6 +507,27 @@ const ProjectManagement = () => {
     if (!error && data) setGoals(data as unknown as GoalItem[]);
   };
 
+  const fetchProjects = async () => {
+    try {
+      if (!user?.id) return;
+      
+      // Use the new helper function to get user projects
+      const data = await getUserProjects(user.id);
+      
+      if (data && Array.isArray(data)) {
+        setDbProjects(data);
+        console.log('Loaded projects from database:', data);
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to load projects. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const fetchTeams = async () => {
     try {
       if (!user?.id) return;
@@ -510,32 +536,19 @@ const ProjectManagement = () => {
       const data = await getUserTeams(user.id);
       
       if (data && Array.isArray(data)) {
-        const teamsData = data.map((team: any) => ({
-          id: team.id,
-          name: team.name,
-          description: team.description || '',
-          created_at: team.created_at,
-          owner_id: user?.id
-        }));
-        setTeams(teamsData as TeamItem[]);
+        setDbTeams(data);
+        console.log('Loaded teams from database:', data);
         
         // Load team members for each team
-        const teamMembersData: Record<string, TeamMemberItem[]> = {};
+        const teamMembersData: Record<string, any[]> = {};
         for (const team of data) {
           const members = await getTeamMembers(team.id);
           if (members && Array.isArray(members)) {
-            teamMembersData[team.id] = members.map((member: any) => ({
-              id: member.id,
-              team_id: team.id,
-              user_id: member.user_id,
-              member_email: member.user?.email || '',
-              role: member.role || 'member',
-              created_at: member.created_at,
-              display_name: member.user?.display_name || member.user?.full_name || member.user?.email || 'Unknown User'
-            }));
+            teamMembersData[team.id] = members;
           }
         }
-        setTeamMembers(teamMembersData);
+        setDbTeamMembers(teamMembersData);
+        console.log('Loaded team members from database:', teamMembersData);
       }
     } catch (error) {
       console.error('Error fetching teams:', error);
@@ -552,35 +565,17 @@ const ProjectManagement = () => {
     if (!error && data) setCalendarEvents(data as unknown as CalendarEventItem[]);
   };
 
-  // Load localStorage data on mount
+  // Load data when user is available
   useEffect(() => {
-    // Load goals from localStorage
-    try {
-      const savedGoals = localStorage.getItem('projectGoals');
-      if (savedGoals) {
-        setGoals(JSON.parse(savedGoals));
-      }
-    } catch (error) {
-      console.error('Error loading goals from localStorage:', error);
+    if (user?.id) {
+      console.log('🔧 ProjectManagement - Loading data for user:', user.id);
+      fetchProjects();
+      fetchTeams();
+      fetchWorkRequests();
+      fetchGoals();
+      fetchCalendarEvents();
     }
-
-    // Load teams from localStorage  
-    try {
-      const savedTeams = localStorage.getItem('projectTeams');
-      if (savedTeams) {
-        setTeams(JSON.parse(savedTeams));
-      }
-    } catch (error) {
-      console.error('Error loading teams from localStorage:', error);
-    }
-  }, []); // Only run once on mount
-
-  useEffect(() => {
-    fetchWorkRequests();
-    fetchGoals();
-    fetchTeams();
-    fetchCalendarEvents();
-  }, []);
+  }, [user?.id]);
 
   // Create helpers
   const createWorkRequest = async () => {
@@ -627,27 +622,50 @@ const ProjectManagement = () => {
     const name = window.prompt('Team name');
     if (!name) return;
     
-    const newTeam: TeamItem = {
-      id: Date.now().toString(),
-      name,
-      created_at: new Date().toISOString(),
-      owner_id: 'local-user'
-    };
-    
-    setTeams(prev => [newTeam, ...prev]);
-    
-    // Save to localStorage
     try {
-      const savedTeams = localStorage.getItem('projectTeams');
-      const existingTeams = savedTeams ? JSON.parse(savedTeams) : [];
-      localStorage.setItem('projectTeams', JSON.stringify([newTeam, ...existingTeams]));
-      
+      if (!user?.id) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to create a team.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Create team in database
+      const { data, error } = await supabase
+        .from('teams')
+        .insert({
+          name,
+          owner_id: user.id
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating team:', error);
+        toast({
+          title: "Error",
+          description: "Failed to create team: " + error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
       toast({
         title: "Team Created",
         description: `"${name}" team has been created successfully.`
       });
-    } catch (error) {
-      console.error('Error saving team:', error);
+
+      // Refresh teams to show the new team
+      fetchTeams();
+    } catch (error: any) {
+      console.error('Error creating team:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create team. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -2435,7 +2453,7 @@ const ProjectManagement = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Projects</SelectItem>
-                {projects.map(project => (
+                {dbProjects.map((project: any) => (
                   <SelectItem key={project.id} value={project.id}>
                     {project.name}
                   </SelectItem>
@@ -2808,29 +2826,29 @@ const ProjectManagement = () => {
             <CardContent>
               <div className="flex flex-wrap gap-2 mb-4">
                 <Button variant="outline" size="sm" onClick={createTeam}>Create team</Button>
-                {teams.map(team => (
+                {dbTeams.map(team => (
                   <Button key={team.id} variant="outline" size="sm" onClick={() => addPersonToTeam(team.id)}>Add people to {team.name}</Button>
                 ))}
               </div>
               <div className="space-y-4">
-                {teams.map(team => (
+                {dbTeams.map(team => (
                   <div key={team.id} className="p-3 border rounded-lg">
                     <div className="font-medium mb-2">{team.name}</div>
                     <div className="text-xs text-gray-500 mb-2">Members:</div>
                      <div className="space-y-1">
-                       {(teamMembers[team.id] || []).map(m => (
-                         <div key={team.id + m.member_email} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
+                       {(dbTeamMembers[team.id] || []).map((m: any) => (
+                         <div key={team.id + (m.user?.email || m.id)} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
                            <div>
-                             <div className="font-medium">{m.display_name || m.member_email}</div>
-                             <div className="text-gray-500 text-xs">{m.member_email} — {m.role}</div>
+                             <div className="font-medium">{m.user?.display_name || m.user?.full_name || m.user?.email || 'Unknown User'}</div>
+                             <div className="text-gray-500 text-xs">{m.user?.email || 'No email'} — {m.role}</div>
                            </div>
                          </div>
                        ))}
-                       {(teamMembers[team.id] || []).length === 0 && (<div className="text-sm text-gray-500">No members yet. Click "Invite Members" to get started.</div>)}
+                       {(dbTeamMembers[team.id] || []).length === 0 && (<div className="text-sm text-gray-500">No members yet. Click "Add people to {team.name}" to get started.</div>)}
                      </div>
                   </div>
                 ))}
-                {teams.length === 0 && <div className="text-sm text-gray-500">No teams yet.</div>}
+                {dbTeams.length === 0 && <div className="text-sm text-gray-500">No teams yet. Create your first team to get started!</div>}
               </div>
             </CardContent>
           </Card>
@@ -2848,32 +2866,30 @@ const ProjectManagement = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {projects.map(project => {
+              {dbProjects.map((project: any) => {
                 // Convert project format to match ProjectCard expectations
                 const projectCardData = {
                   ...project,
-                  team_members: project.members,
-                  deadline: project.deadline?.toISOString().split('T')[0]
+                  team_members: project.members || [],
+                  deadline: project.deadline || null,
+                  color: project.color || 'bg-blue-500'
                 };
                 
                 return (
                   <ProjectCard
                     key={project.id}
                     project={projectCardData}
-                    onClick={() => {
-                      console.log('Selecting project:', project.id);
-                      setSelectedProject(project.id);
-                                             setActiveTab('summary');
-                      toast({
-                        title: "Project Selected",
-                        description: `Now viewing: ${project.name}`,
-                      });
-                    }}
+                    onEdit={(proj) => console.log('Edit project:', proj)}
                   />
                 );
               })}
+              {dbProjects.length === 0 && (
+                <div className="col-span-full text-center py-8 text-gray-500">
+                  No projects yet. Create your first project to get started!
+                </div>
+              )}
               
-              {projects.length === 0 && (
+              {dbProjects.length === 0 && (
                 <Card className="border-dashed border-2 border-gray-300">
                   <CardContent className="p-6 text-center">
                     <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
