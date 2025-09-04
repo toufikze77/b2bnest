@@ -2661,6 +2661,14 @@ export type Database = {
       }
     }
     Functions: {
+      add_project_member: {
+        Args: { p_project_id: string; p_role?: string; p_user_id: string }
+        Returns: Json
+      }
+      add_team_member: {
+        Args: { p_role?: string; p_team_id: string; p_user_id: string }
+        Returns: Json
+      }
       check_2fa_rate_limit: {
         Args: { p_email: string }
         Returns: boolean
@@ -2772,6 +2780,10 @@ export type Database = {
           stripe_session_id: string
         }[]
       }
+      get_team_members_with_profiles: {
+        Args: { p_team_id: string }
+        Returns: Json
+      }
       get_user_integrations_safe: {
         Args: { p_user_id?: string }
         Returns: {
@@ -2801,6 +2813,14 @@ export type Database = {
           stripe_session_id: string
           updated_at: string
         }[]
+      }
+      get_user_projects: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
+      get_user_teams: {
+        Args: { p_user_id: string }
+        Returns: Json
       }
       has_role: {
         Args: {

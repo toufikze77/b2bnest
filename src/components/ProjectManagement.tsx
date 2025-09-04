@@ -23,6 +23,7 @@ import ProjectTimeTracker from './ProjectTimeTracker';
 import ProjectActivityTimeline from './ProjectActivityTimeline';
 import StatsCard from './cards/StatsCard';
 import ProjectCard from './cards/ProjectCard';
+import { getUserProjects, getUserTeams, getTeamMembers } from '@/lib/teamProjectHelpers';
 import { 
   Plus, 
   Calendar as CalendarIcon, 
@@ -503,65 +504,46 @@ const ProjectManagement = () => {
 
   const fetchTeams = async () => {
     try {
-      // Get user's organizations first
-      const { data: userOrgs } = await supabase
-        .from('organization_members')
-        .select('organization_id')
-        .eq('user_id', user?.id)
-        .eq('is_active', true);
-
-      if (!userOrgs?.length) return;
-
-      // Get organization members from user's organizations
-      const orgIds = userOrgs.map(org => org.organization_id);
-      const { data: membersData, error } = await supabase
-        .from('organization_members')
-        .select(`
-          id,
-          user_id,
-          role,
-          created_at,
-          organization_id,
-          profiles:user_id (
-            id,
-            display_name,
-            email,
-            full_name
-          )
-        `)
-        .in('organization_id', orgIds)
-        .eq('is_active', true);
-
-      if (!error && membersData) {
-        // Group by organization for display as "teams"
-        const grouped: Record<string, TeamMemberItem[]> = {};
-        membersData.forEach((member: any) => {
-          const tm: TeamMemberItem = {
-            id: member.id,
-            team_id: member.organization_id,
-            member_email: member.profiles?.email || '',
-            role: member.role,
-            created_at: member.created_at,
-            user_id: member.user_id,
-            display_name: member.profiles?.display_name || member.profiles?.full_name
-          };
-          if (!grouped[member.organization_id]) grouped[member.organization_id] = [];
-          grouped[member.organization_id].push(tm);
-        });
-        setTeamMembers(grouped);
-
-        // Create team entries based on organizations
-        const teamsData = orgIds.map(orgId => ({
-          id: orgId,
-          name: `Organization Team`,
-          description: `Team members from your organization`,
-          created_at: new Date().toISOString(),
+      if (!user?.id) return;
+      
+      // Use the new helper function to get user teams
+      const data = await getUserTeams(user.id);
+      
+      if (data && Array.isArray(data)) {
+        const teamsData = data.map((team: any) => ({
+          id: team.id,
+          name: team.name,
+          description: team.description || '',
+          created_at: team.created_at,
           owner_id: user?.id
         }));
         setTeams(teamsData as TeamItem[]);
+        
+        // Load team members for each team
+        const teamMembersData: Record<string, TeamMemberItem[]> = {};
+        for (const team of data) {
+          const members = await getTeamMembers(team.id);
+          if (members && Array.isArray(members)) {
+            teamMembersData[team.id] = members.map((member: any) => ({
+              id: member.id,
+              team_id: team.id,
+              user_id: member.user_id,
+              member_email: member.user?.email || '',
+              role: member.role || 'member',
+              created_at: member.created_at,
+              display_name: member.user?.display_name || member.user?.full_name || member.user?.email || 'Unknown User'
+            }));
+          }
+        }
+        setTeamMembers(teamMembersData);
       }
     } catch (error) {
       console.error('Error fetching teams:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to load teams. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -750,26 +732,24 @@ const ProjectManagement = () => {
   const loadProjects = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      if (data) {
-        const formattedProjects: Project[] = data.map(project => ({
+      if (!user?.id) return;
+      
+      // Use the new helper function to get user projects
+      const data = await getUserProjects(user.id);
+      
+      if (data && Array.isArray(data)) {
+        const formattedProjects: Project[] = data.map((project: any) => ({
           id: project.id,
           name: project.name,
           description: project.description || '',
-          color: project.color,
-          progress: project.progress,
-          members: Array.isArray(project.members) ? project.members as string[] : [],
+          color: project.color || 'bg-blue-500',
+          progress: project.progress || 0,
+          members: [], // This will be populated from team_members
           deadline: project.deadline ? new Date(project.deadline) : null,
-          budget: project.budget ? parseFloat(project.budget.toString()) : undefined,
+          budget: undefined, // Not in the current schema
           client: project.client,
           status: project.status as 'planning' | 'active' | 'on-hold' | 'completed',
-          customColumns: Array.isArray(project.custom_columns) ? project.custom_columns as unknown as KanbanColumn[] : [
+          customColumns: [
             { id: 'backlog', title: 'Backlog', color: 'bg-gray-100', order: 1 },
             { id: 'todo', title: 'To Do', color: 'bg-blue-100', order: 2 },
             { id: 'in-progress', title: 'In Progress', color: 'bg-yellow-100', order: 3 },
