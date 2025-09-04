@@ -510,34 +510,40 @@ const ProjectManagement = () => {
   const fetchProjects = async () => {
     try {
       if (!user?.id) return;
+      console.log('🔧 Fetching projects for user:', user.id);
       
-      // Use the new helper function to get user projects
+      // Use the helper function to get user projects
       const data = await getUserProjects(user.id);
       
       if (data && Array.isArray(data)) {
         setDbProjects(data);
-        console.log('Loaded projects from database:', data);
+        console.log('✅ Loaded projects from database:', data);
+      } else {
+        console.log('❌ No projects data received:', data);
+        setDbProjects([]);
       }
     } catch (error) {
-      console.error('Error fetching projects:', error);
+      console.error('❌ Error fetching projects:', error);
       toast({
         title: "Error", 
         description: "Failed to load projects. Please try again.",
         variant: "destructive"
       });
+      setDbProjects([]);
     }
   };
 
   const fetchTeams = async () => {
     try {
       if (!user?.id) return;
+      console.log('🔧 Fetching teams for user:', user.id);
       
-      // Use the new helper function to get user teams
+      // Use the helper function to get user teams
       const data = await getUserTeams(user.id);
       
       if (data && Array.isArray(data)) {
         setDbTeams(data);
-        console.log('Loaded teams from database:', data);
+        console.log('✅ Loaded teams from database:', data);
         
         // Load team members for each team
         const teamMembersData: Record<string, any[]> = {};
@@ -548,15 +554,21 @@ const ProjectManagement = () => {
           }
         }
         setDbTeamMembers(teamMembersData);
-        console.log('Loaded team members from database:', teamMembersData);
+        console.log('✅ Loaded team members from database:', teamMembersData);
+      } else {
+        console.log('❌ No teams data received:', data);
+        setDbTeams([]);
+        setDbTeamMembers({});
       }
     } catch (error) {
-      console.error('Error fetching teams:', error);
+      console.error('❌ Error fetching teams:', error);
       toast({
         title: "Error", 
         description: "Failed to load teams. Please try again.",
         variant: "destructive"
       });
+      setDbTeams([]);
+      setDbTeamMembers({});
     }
   };
 
@@ -569,11 +581,17 @@ const ProjectManagement = () => {
   useEffect(() => {
     if (user?.id) {
       console.log('🔧 ProjectManagement - Loading data for user:', user.id);
-      fetchProjects();
-      fetchTeams();
-      fetchWorkRequests();
-      fetchGoals();
-      fetchCalendarEvents();
+      setLoading(true);
+      
+      Promise.all([
+        fetchProjects(),
+        fetchTeams(),
+        fetchWorkRequests(),
+        fetchGoals(),
+        fetchCalendarEvents()
+      ]).finally(() => {
+        setLoading(false);
+      });
     }
   }, [user?.id]);
 
@@ -735,6 +753,18 @@ const ProjectManagement = () => {
     console.log('🔧 ProjectManagement - Access check:', canAccessPM, 'user:', !!user);
     setHasAccess(canAccessPM);
   }, [canAccessFeature, user]);
+
+  // Show loading state while data is being fetched
+  if (hasAccess === null || loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading project management...</p>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     console.log('🔧 ProjectManagement useEffect triggered', { user: !!user, hasAccess });
@@ -2371,7 +2401,7 @@ const ProjectManagement = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Active Projects</p>
-                <p className="text-2xl font-bold">{projects.filter(p => p.status === 'active').length}</p>
+                <p className="text-2xl font-bold">{dbProjects.filter((p: any) => p.status === 'active').length}</p>
               </div>
             </div>
           </CardContent>
@@ -2821,7 +2851,19 @@ const ProjectManagement = () => {
                 <TabsContent value="teams" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Teams</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Teams</CardTitle>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    fetchTeams();
+                  }}
+                >
+                  <ArrowDown className="w-4 h-4 mr-2" />
+                  Refresh
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2 mb-4">
@@ -2859,10 +2901,23 @@ const ProjectManagement = () => {
       <div className="mt-6 space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-semibold">Active Projects</h3>
-              <Button variant="outline" onClick={() => setShowCreateProject(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                New Project
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setLoading(true);
+                    fetchProjects().finally(() => setLoading(false));
+                  }}
+                >
+                  <ArrowDown className="w-4 h-4 mr-2" />
+                  Refresh
+                </Button>
+                <Button variant="outline" onClick={() => setShowCreateProject(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Project
+                </Button>
+              </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
