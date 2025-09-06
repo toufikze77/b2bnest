@@ -797,9 +797,8 @@ const ProjectManagement = () => {
         .from('todos')
         .select(`
           *,
-          project:projects(id, name)
+          projects!left(id, name)
         `)
-        .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -813,7 +812,7 @@ const ProjectManagement = () => {
           priority: todo.priority as 'low' | 'medium' | 'high' | 'urgent',
           assignee: todo.assigned_to || 'Unassigned',
           dueDate: todo.due_date ? new Date(todo.due_date) : null,
-          project: todo.project?.id || 'no-project',
+          project: todo.projects?.id || 'no-project',
           tags: todo.labels || [],
           estimatedHours: todo.estimated_hours,
           subtasks: [],
@@ -824,6 +823,11 @@ const ProjectManagement = () => {
       }
     } catch (error) {
       console.error('Error loading tasks:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load tasks. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
