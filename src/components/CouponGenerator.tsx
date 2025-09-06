@@ -234,7 +234,9 @@ const CouponGenerator = () => {
         setTagsCsv(parsed.tagsCsv ?? '');
         setIsStackable(parsed.isStackable ?? false);
       }
-    } catch {}
+    } catch (error) {
+      // ignore persistence read errors
+    }
   }, []);
 
   // Persist state
@@ -259,7 +261,9 @@ const CouponGenerator = () => {
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch {}
+    } catch (error) {
+      // ignore persistence write errors
+    }
   }, [coupons, effectivePreset, discountType, value, currency, minSpend, maxUses, perCustomerLimit, startDate, endDate, description, tagsCsv, isStackable, prefix, suffix, sampleQuantity]);
 
   const existingCodes = useMemo(() => new Set(coupons.map(c => c.code)), [coupons]);

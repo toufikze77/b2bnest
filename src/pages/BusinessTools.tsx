@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, BarChart, File, Globe, CreditCard, Layout, Mail, Megaphone, Quote, Receipt, Eye, Download, Star } from 'lucide-react';
+import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, BarChart, File, Globe, CreditCard, Layout, Mail, Megaphone, Quote, Receipt, Eye, Download, Star, Tag } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,7 @@ import CRM from '@/components/CRM';
 import TodoList from '@/components/TodoList';
 import BusinessNameGenerator from '@/components/BusinessNameGenerator';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
+import CouponGenerator from '@/components/CouponGenerator';
 import TimeTracker from '@/components/TimeTracker';
 import CashFlowTracker from '@/components/CashFlowTracker';
 import GoalTracker from '@/components/GoalTracker';
@@ -38,7 +39,7 @@ import StartupIdeaGenerator from '@/components/StartupIdeaGenerator';
 import DomainAvailability from '@/components/DomainAvailability';
 import { AdvertisementSection } from '@/components/AdvertisementSection';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'domain-availability' | 'qr-code-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'premium-marketplace' | 'currency-converter' | 'crypto-converter';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'domain-availability' | 'qr-code-generator' | 'coupon-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'premium-marketplace' | 'currency-converter' | 'crypto-converter';
 
 type FilterType = 'all' | 'premium' | 'favorites' | 'free';
 
@@ -93,6 +94,15 @@ const BusinessTools = () => {
       color: 'bg-green-600',
       benefits: ['Stay organized', 'Track progress', 'Boost productivity'],
       isPremium: true
+    },
+    {
+      id: 'coupon-generator' as ToolType,
+      title: 'Create Coupon',
+      description: 'Generate and manage coupon codes with validation and CSV export/import',
+      icon: Tag,
+      color: 'bg-rose-600',
+      benefits: ['Unique code patterns', 'Bulk generation', 'CSV import/export', 'Validation rules'],
+      isPremium: false
     },
     {
       id: 'startup-idea-generator' as ToolType,
@@ -410,6 +420,8 @@ const BusinessTools = () => {
         return <DomainAvailability />;
       case 'qr-code-generator':
         return <QRCodeGenerator />;
+      case 'coupon-generator':
+        return <CouponGenerator />;
       case 'time-tracker':
         return <TimeTracker />;
       case 'cash-flow-tracker':
