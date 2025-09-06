@@ -1,4 +1,4 @@
-// src/lib/teamProjectHelpers.ts
+// src/lib/supabase/teamProjectHelpers.ts
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -11,23 +11,18 @@ export async function addUserToTeam(
   role: string = 'member'
 ) {
   try {
-    // Use rpc with type assertion since TypeScript types are not updated yet
-    const { data, error } = await supabase.rpc('add_team_member' as any, {
-      p_team_id: teamId,
-      p_user_id: userId,
-      p_role: role
-    });
+    const payload = { team_id: teamId, user_id: userId, role };
+    const { data, error } = await supabase
+      .from('team_members')
+      .upsert([payload], { onConflict: ['team_id', 'user_id'] })
+      .select()
+      .single();
 
-    if (error) {
-      console.error('addUserToTeam RPC error:', error);
-      // Return mock data for now
-      return { team_id: teamId, user_id: userId, role };
-    }
+    if (error) throw error;
     return data;
   } catch (err) {
     console.error('addUserToTeam error', err);
-    // Fallback: return a mock response for now
-    return { team_id: teamId, user_id: userId, role };
+    throw err;
   }
 }
 
@@ -40,23 +35,18 @@ export async function addUserToProject(
   role: string = 'contributor'
 ) {
   try {
-    // Use rpc with type assertion since TypeScript types are not updated yet
-    const { data, error } = await supabase.rpc('add_project_member' as any, {
-      p_project_id: projectId,
-      p_user_id: userId,
-      p_role: role
-    });
+    const payload = { project_id: projectId, user_id: userId, role };
+    const { data, error } = await supabase
+      .from('project_members')
+      .upsert([payload], { onConflict: ['project_id', 'user_id'] })
+      .select()
+      .single();
 
-    if (error) {
-      console.error('addUserToProject RPC error:', error);
-      // Return mock data for now
-      return { project_id: projectId, user_id: userId, role };
-    }
+    if (error) throw error;
     return data;
   } catch (err) {
     console.error('addUserToProject error', err);
-    // Fallback: return a mock response for now
-    return { project_id: projectId, user_id: userId, role };
+    throw err;
   }
 }
 
@@ -66,20 +56,17 @@ export async function addUserToProject(
  */
 export async function getUserProjects(userId: string) {
   try {
-    // Use rpc with type assertion since TypeScript types are not updated yet
-    const { data, error } = await supabase.rpc('get_user_projects' as any, { 
-      p_user_id: userId 
-    });
+    const { data, error } = await supabase
+      .from('project_members')
+      .select('project_id, projects(*)')
+      .eq('user_id', userId);
 
-    if (error) {
-      console.error('getUserProjects RPC error:', error);
-      return [];
-    }
-    return data || [];
+    if (error) throw error;
+    // data is an array of { project_id, projects: { ... } }
+    return (data || []).map((row: any) => row.projects).filter(Boolean);
   } catch (err) {
     console.error('getUserProjects error', err);
-    // Fallback: return empty array for now
-    return [];
+    throw err;
   }
 }
 
@@ -89,41 +76,42 @@ export async function getUserProjects(userId: string) {
  */
 export async function getTeamMembers(teamId: string) {
   try {
-    // Use rpc with type assertion since TypeScript types are not updated yet
-    const { data, error } = await supabase.rpc('get_team_members_with_profiles' as any, { 
-      p_team_id: teamId 
-    });
+    // 1) get the team_members rows
+    const { data: members, error: membersErr } = await supabase
+      .from('team_members')
+      .select('*')
+      .eq('team_id', teamId);
 
-    if (error) {
-      console.error('getTeamMembers RPC error:', error);
-      return [];
+    if (membersErr) throw membersErr;
+    if (!members || members.length === 0) return [];
+
+    const userIds = members.map((m: any) => m.user_id);
+
+    // 2) try to fetch from 'users' table (or auth.users via a view)
+    let { data: usersData, error: usersErr } = await supabase
+      .from('users')
+      .select('id, email, raw_user_meta_data')
+      .in('id', userIds);
+
+    // 3) fallback to 'profiles' if 'users' table doesn't exist / returned nothing
+    if (!usersData || usersData.length === 0) {
+      const resp = await supabase
+        .from('profiles')
+        .select('id, email, full_name')
+        .in('id', userIds);
+      usersData = resp.data || [];
+      usersErr = resp.error;
     }
-    return data || [];
+
+    // 4) merge team_members + user info
+    const merged = (members || []).map((m: any) => ({
+      ...m,
+      user: (usersData || []).find((u: any) => u.id === m.user_id) || null,
+    }));
+
+    return merged;
   } catch (err) {
     console.error('getTeamMembers error', err);
-    // Fallback: return empty array for now
-    return [];
-  }
-}
-
-/**
- * Get all teams for current user's organization
- */
-export async function getUserTeams(userId: string) {
-  try {
-    // Use rpc with type assertion since TypeScript types are not updated yet
-    const { data, error } = await supabase.rpc('get_user_teams' as any, { 
-      p_user_id: userId 
-    });
-
-    if (error) {
-      console.error('getUserTeams RPC error:', error);
-      return [];
-    }
-    return data || [];
-  } catch (err) {
-    console.error('getUserTeams error', err);
-    // Fallback: return empty array for now
-    return [];
+    throw err;
   }
 }

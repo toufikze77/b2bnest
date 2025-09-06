@@ -1748,38 +1748,6 @@ export type Database = {
           },
         ]
       }
-      project_members: {
-        Row: {
-          created_at: string | null
-          id: string
-          project_id: string
-          role: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          project_id: string
-          role?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          project_id?: string
-          role?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_members_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       project_time_entries: {
         Row: {
           created_at: string
@@ -2127,59 +2095,6 @@ export type Database = {
           updated_at?: string
           user_id?: string
           website?: string | null
-        }
-        Relationships: []
-      }
-      team_members: {
-        Row: {
-          created_at: string | null
-          id: string
-          role: string | null
-          team_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          role?: string | null
-          team_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          role?: string | null
-          team_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "team_members_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      teams: {
-        Row: {
-          created_at: string | null
-          id: string
-          name: string
-          owner_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          name: string
-          owner_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          name?: string
-          owner_id?: string
         }
         Relationships: []
       }
@@ -2661,14 +2576,6 @@ export type Database = {
       }
     }
     Functions: {
-      add_project_member: {
-        Args: { p_project_id: string; p_role?: string; p_user_id: string }
-        Returns: Json
-      }
-      add_team_member: {
-        Args: { p_role?: string; p_team_id: string; p_user_id: string }
-        Returns: Json
-      }
       check_2fa_rate_limit: {
         Args: { p_email: string }
         Returns: boolean
@@ -2780,10 +2687,6 @@ export type Database = {
           stripe_session_id: string
         }[]
       }
-      get_team_members_with_profiles: {
-        Args: { p_team_id: string }
-        Returns: Json
-      }
       get_user_integrations_safe: {
         Args: { p_user_id?: string }
         Returns: {
@@ -2813,14 +2716,6 @@ export type Database = {
           stripe_session_id: string
           updated_at: string
         }[]
-      }
-      get_user_projects: {
-        Args: { p_user_id: string }
-        Returns: Json
-      }
-      get_user_teams: {
-        Args: { p_user_id: string }
-        Returns: Json
       }
       has_role: {
         Args: {
