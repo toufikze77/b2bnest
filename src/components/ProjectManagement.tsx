@@ -1010,10 +1010,21 @@ const ProjectManagement = () => {
     urgent: 'bg-red-500'
   };
 
-  const filteredTasks = tasks.filter(task => {
+  const filteredTasks = (tasks || []).filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          task.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesProject = selectedProject === 'all' || task.project === selectedProject;
+    
+    // Handle project filtering with proper UUID matching
+    let matchesProject = false;
+    if (selectedProject === 'all') {
+      matchesProject = true;
+    } else {
+      // Check if task.project is a UUID (from database) or a string (legacy)
+      const selectedProjectData = (projects || []).find(p => p.id === selectedProject);
+      matchesProject = task.project === selectedProject || 
+                      (selectedProjectData && task.project === selectedProjectData.name);
+    }
+    
     console.log('Filtering task:', task.title, 'project:', task.project, 'selectedProject:', selectedProject, 'matches:', matchesProject);
     return matchesSearch && matchesProject;
   });
