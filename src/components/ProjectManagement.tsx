@@ -532,7 +532,7 @@ const ProjectManagement = () => {
         .in('organization_id', orgIds)
         .eq('is_active', true);
 
-      if (!error && membersData) {
+      if (!error && membersData && Array.isArray(membersData)) {
         // Group by organization for display as "teams"
         const grouped: Record<string, TeamMemberItem[]> = {};
         membersData.forEach((member: any) => {
