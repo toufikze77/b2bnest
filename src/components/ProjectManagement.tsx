@@ -2118,26 +2118,26 @@ const ProjectManagement = () => {
   );
 
   const statusPieData = [
-    { name: 'Backlog', value: tasks.filter(t => t.status === 'backlog').length },
-    { name: 'To Do', value: tasks.filter(t => t.status === 'todo').length },
-    { name: 'In Progress', value: tasks.filter(t => t.status === 'in-progress').length },
-    { name: 'Review', value: tasks.filter(t => t.status === 'review').length },
-    { name: 'Done', value: tasks.filter(t => t.status === 'done').length },
+    { name: 'Backlog', value: (tasks || []).filter(t => t.status === 'backlog').length },
+    { name: 'To Do', value: (tasks || []).filter(t => t.status === 'todo').length },
+    { name: 'In Progress', value: (tasks || []).filter(t => t.status === 'in-progress').length },
+    { name: 'Review', value: (tasks || []).filter(t => t.status === 'review').length },
+    { name: 'Done', value: (tasks || []).filter(t => t.status === 'done').length },
   ];
 
   const statusColors = ['#9CA3AF', '#3B82F6', '#F59E0B', '#8B5CF6', '#10B981'];
 
   const priorityBarData = [
-    { name: 'Low', count: tasks.filter(t => t.priority === 'low').length },
-    { name: 'Medium', count: tasks.filter(t => t.priority === 'medium').length },
-    { name: 'High', count: tasks.filter(t => t.priority === 'high').length },
-    { name: 'Urgent', count: tasks.filter(t => t.priority === 'urgent').length },
+    { name: 'Low', count: (tasks || []).filter(t => t.priority === 'low').length },
+    { name: 'Medium', count: (tasks || []).filter(t => t.priority === 'medium').length },
+    { name: 'High', count: (tasks || []).filter(t => t.priority === 'high').length },
+    { name: 'Urgent', count: (tasks || []).filter(t => t.priority === 'urgent').length },
   ];
 
   const teamWorkload = [
-    { name: 'John Doe', load: tasks.filter(t => t.assignee === 'John Doe').length, capacity: 10 },
-    { name: 'Jane Smith', load: tasks.filter(t => t.assignee === 'Jane Smith').length, capacity: 8 },
-    { name: 'Mike Johnson', load: tasks.filter(t => t.assignee === 'Mike Johnson').length, capacity: 12 },
+    { name: 'John Doe', load: (tasks || []).filter(t => t.assignee === 'John Doe').length, capacity: 10 },
+    { name: 'Jane Smith', load: (tasks || []).filter(t => t.assignee === 'Jane Smith').length, capacity: 8 },
+    { name: 'Mike Johnson', load: (tasks || []).filter(t => t.assignee === 'Mike Johnson').length, capacity: 12 },
   ];
 
   const typesOfWork = ['Development', 'Design', 'QA', 'Documentation', 'Client Communication'];
@@ -2812,7 +2812,7 @@ const ProjectManagement = () => {
                     <Button size="sm" variant="ghost" onClick={() => unarchiveTask(t.id)}>Unarchive</Button>
                   </div>
                 ))}
-                {tasks.filter(t => (t as any).archived_at).length === 0 && (
+                {(tasks || []).filter(t => (t as any).archived_at).length === 0 && (
                   <div className="text-sm text-gray-500">No archived items.</div>
                 )}
               </div>
@@ -2828,12 +2828,12 @@ const ProjectManagement = () => {
             <CardContent>
               <div className="flex flex-wrap gap-2 mb-4">
                 <Button variant="outline" size="sm" onClick={createTeam}>Create team</Button>
-                {teams.map(team => (
+                {(teams || []).map(team => (
                   <Button key={team.id} variant="outline" size="sm" onClick={() => addPersonToTeam(team.id)}>Add people to {team.name}</Button>
                 ))}
               </div>
               <div className="space-y-4">
-                {teams.map(team => (
+                {(teams || []).map(team => (
                   <div key={team.id} className="p-3 border rounded-lg">
                     <div className="font-medium mb-2">{team.name}</div>
                     <div className="text-xs text-gray-500 mb-2">Members:</div>
@@ -2850,7 +2850,7 @@ const ProjectManagement = () => {
                      </div>
                   </div>
                 ))}
-                {teams.length === 0 && <div className="text-sm text-gray-500">No teams yet.</div>}
+                {(teams || []).length === 0 && <div className="text-sm text-gray-500">No teams yet.</div>}
               </div>
             </CardContent>
           </Card>
@@ -2868,7 +2868,7 @@ const ProjectManagement = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {projects.map(project => {
+              {(projects || []).map(project => {
                 // Convert project format to match ProjectCard expectations
                 const projectCardData = {
                   ...project,
@@ -2893,7 +2893,7 @@ const ProjectManagement = () => {
                 );
               })}
               
-              {projects.length === 0 && (
+              {(projects || []).length === 0 && (
                 <Card className="border-dashed border-2 border-gray-300">
                   <CardContent className="p-6 text-center">
                     <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
