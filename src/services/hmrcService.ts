@@ -33,6 +33,37 @@ type FPSSumbission = {
 const TOKEN_STORAGE_KEY = 'hmrc_mock_auth_v1';
 
 export const hmrcService = {
+  // --- OAuth scaffolding (mock) ---
+  getAuthorizeUrl(clientId: string, redirectUri: string, state: string): string {
+    // In production, return HMRC OAuth authorize endpoint with scopes & state
+    const url = new URL('https://test-accounts.hmrc.gov.uk/oauth/authorize');
+    url.searchParams.set('response_type', 'code');
+    url.searchParams.set('client_id', clientId);
+    url.searchParams.set('redirect_uri', redirectUri);
+    url.searchParams.set('state', state);
+    url.searchParams.set('scope', 'read:employment read:employments write:employments');
+    return url.toString();
+  },
+
+  async startOAuth(clientId: string, redirectUri: string): Promise<{ authUrl: string; state: string }>{
+    const state = Math.random().toString(36).slice(2);
+    try { localStorage.setItem('hmrc_oauth_state', state); } catch {}
+    const authUrl = this.getAuthorizeUrl(clientId, redirectUri, state);
+    return { authUrl, state };
+  },
+
+  async handleOAuthCallback(params: URLSearchParams, clientId: string, clientSecret: string, redirectUri: string): Promise<HMRCAuth> {
+    // In production, exchange code for token against HMRC token endpoint
+    const stateExpected = localStorage.getItem('hmrc_oauth_state');
+    const code = params.get('code');
+    const state = params.get('state');
+    if (!code || !state || state !== stateExpected) {
+      throw new Error('Invalid OAuth callback');
+    }
+    // Mock token
+    return this.authenticate(clientId, clientSecret);
+  },
+
   async authenticate(clientId: string, clientSecret: string): Promise<HMRCAuth> {
     const now = Date.now();
     const token: HMRCAuth = {

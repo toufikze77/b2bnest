@@ -14,6 +14,7 @@ import { payrollUKRates, getMonthlyAllowance, TaxYear } from '@/services/payroll
 import { supabase } from '@/integrations/supabase/client';
 import jsPDF from 'jspdf';
 import { useAuth } from '@/hooks/useAuth';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 type Employee = {
   id: string;
@@ -91,6 +92,9 @@ const PayrollUK = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [epsAdjustments, setEpsAdjustments] = useState<{ [k: string]: number }>({});
   const { user } = useAuth();
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewType, setPreviewType] = useState<'FPS' | 'EPS' | null>(null);
+  const [previewPayload, setPreviewPayload] = useState<any>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -291,6 +295,36 @@ const PayrollUK = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const openPreviewFPS = (run: PayRun) => {
+    const submissions = run.items.map(item => {
+      const emp = employees.find(e => e.id === item.employeeId)!;
+      return {
+        employeeId: emp.id,
+        niNumber: emp.niNumber,
+        firstName: emp.firstName,
+        lastName: emp.lastName,
+        payDate: run.payDate,
+        taxCode: emp.taxCode,
+        niCategory: emp.niCategory,
+        payFrequency: emp.payFrequency,
+        grossPay: item.grossPay,
+        taxablePay: item.taxablePay,
+        taxDeducted: item.taxDeducted,
+        employeeNIC: item.employeeNIC,
+        employerNIC: item.employerNIC,
+      };
+    });
+    setPreviewType('FPS');
+    setPreviewPayload({ employer, period: run.period, submissions });
+    setShowPreview(true);
+  };
+
+  const openPreviewEPS = () => {
+    setPreviewType('EPS');
+    setPreviewPayload({ employer, period, adjustments: epsAdjustments });
+    setShowPreview(true);
   };
 
   const downloadPayslip = (run: PayRun, item: PayRun['items'][number]) => {
@@ -513,6 +547,7 @@ const PayrollUK = () => {
                                         <Button size="sm" onClick={() => submitFPS(run)} disabled={submitting || !authOk} className="h-8 px-2">
                                           <FileUp className="h-4 w-4 mr-1"/> Submit FPS
                                         </Button>
+                                        <Button size="sm" variant="outline" onClick={() => openPreviewFPS(run)} className="h-8 px-2">Preview</Button>
                                       </div>
                                     </td>
                                   </tr>
@@ -568,8 +603,9 @@ const PayrollUK = () => {
                     <Input type="number" step="0.01" value={epsAdjustments['sspRecovered'] || ''} onChange={(e) => setEpsAdjustments({ ...epsAdjustments, sspRecovered: Number(e.target.value) })} />
                   </div>
                 </div>
-                <div className="mt-3">
+                <div className="mt-3 flex gap-2">
                   <Button onClick={submitEPS} disabled={!authOk || submitting}>Submit EPS</Button>
+                  <Button variant="outline" onClick={openPreviewEPS}>Preview EPS</Button>
                 </div>
               </div>
               <div className="text-sm text-gray-600 mt-4">
@@ -578,6 +614,15 @@ const PayrollUK = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>RTI {previewType} Payload Preview</DialogTitle>
+          </DialogHeader>
+          <pre className="text-xs bg-gray-50 p-3 rounded overflow-auto max-h-[60vh]">{JSON.stringify(previewPayload, null, 2)}</pre>
+        </DialogContent>
+      </Dialog>
 
         <TabsContent value="history">
           <Card>
