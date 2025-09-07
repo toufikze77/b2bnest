@@ -11,6 +11,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { FileUp, Shield, Check, Users, Calculator } from 'lucide-react';
 import { hmrcService, EmployeeFPSRecord, EmployerDetails } from '@/services/hmrcService';
 import { payrollUKRates, getMonthlyAllowance, TaxYear } from '@/services/payrollUKRates';
+import { supabase } from '@/integrations/supabase/client';
+import jsPDF from 'jspdf';
+import { useAuth } from '@/hooks/useAuth';
 
 type Employee = {
   id: string;
@@ -85,17 +88,75 @@ const PayrollUK = () => {
   const [authOk, setAuthOk] = useState<boolean>(!!hmrcService.getToken());
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [lastSubmissionId, setLastSubmissionId] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [epsAdjustments, setEpsAdjustments] = useState<{ [k: string]: number }>({});
+  const { user } = useAuth();
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as { employer: EmployerDetails; employees: Employee[]; payRuns: PayRun[] };
-        setEmployer(parsed.employer || { payeReference: '', accountsOfficeRef: '' });
-        setEmployees(parsed.employees || []);
-        setPayRuns(parsed.payRuns || []);
+    const load = async () => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as { employer: EmployerDetails };
+          setEmployer(parsed.employer || { payeReference: '', accountsOfficeRef: '' });
+        }
+      } catch {}
+      if (!user) return;
+      setLoading(true);
+      try {
+        const { data: emps } = await supabase
+          .from('payroll_employees')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+        if (emps) {
+          setEmployees(emps.map((e: any) => ({
+            id: e.id,
+            firstName: e.first_name,
+            lastName: e.last_name,
+            niNumber: e.ni_number || undefined,
+            taxCode: e.tax_code || '1257L',
+            niCategory: e.ni_category || 'A',
+            annualSalary: Number(e.annual_salary) || 0,
+            payFrequency: e.pay_frequency || 'MTH'
+          })));
+        }
+        const { data: runs } = await supabase
+          .from('payroll_runs')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(12);
+        const runWithItems: PayRun[] = [];
+        if (runs) {
+          for (const r of runs) {
+            const { data: items } = await supabase
+              .from('payroll_run_items')
+              .select('*')
+              .eq('run_id', r.id);
+            runWithItems.push({
+              id: r.id,
+              period: r.period,
+              payDate: r.pay_date,
+              notes: r.notes || undefined,
+              items: (items || []).map((it: any) => ({
+                employeeId: it.employee_id,
+                grossPay: Number(it.gross_pay),
+                taxablePay: Number(it.taxable_pay),
+                taxDeducted: Number(it.tax_deducted),
+                employeeNIC: Number(it.employee_nic),
+                employerNIC: Number(it.employer_nic),
+                netPay: Number(it.net_pay)
+              }))
+            });
+          }
+          setPayRuns(runWithItems);
+        }
+      } finally {
+        setLoading(false);
       }
-    } catch {}
+    };
+    load();
   }, []);
 
   useEffect(() => {
@@ -105,14 +166,37 @@ const PayrollUK = () => {
   }, [employer, employees, payRuns]);
 
   const addEmployee = () => {
-    if (!newEmp.firstName || !newEmp.lastName || !newEmp.annualSalary) return;
-    const e: Employee = { ...newEmp, id: crypto.randomUUID() };
-    setEmployees(prev => [e, ...prev]);
-    setNewEmp({ id: '', firstName: '', lastName: '', niNumber: '', taxCode: '1257L', niCategory: 'A', annualSalary: 30000, payFrequency: 'MTH' });
+    if (!user || !newEmp.firstName || !newEmp.lastName || !newEmp.annualSalary) return;
+    const payload = {
+      user_id: user.id,
+      first_name: newEmp.firstName,
+      last_name: newEmp.lastName,
+      ni_number: newEmp.niNumber || null,
+      tax_code: newEmp.taxCode,
+      ni_category: newEmp.niCategory,
+      annual_salary: newEmp.annualSalary,
+      pay_frequency: newEmp.payFrequency
+    };
+    supabase.from('payroll_employees').insert([payload]).select('*').single().then(({ data, error }) => {
+      if (!error && data) {
+        const e: Employee = {
+          id: data.id,
+          firstName: data.first_name,
+          lastName: data.last_name,
+          niNumber: data.ni_number || undefined,
+          taxCode: data.tax_code,
+          niCategory: data.ni_category,
+          annualSalary: Number(data.annual_salary),
+          payFrequency: data.pay_frequency
+        };
+        setEmployees(prev => [e, ...prev]);
+        setNewEmp({ id: '', firstName: '', lastName: '', niNumber: '', taxCode: '1257L', niCategory: 'A', annualSalary: 30000, payFrequency: 'MTH' });
+      }
+    });
   };
 
-  const generatePayRun = () => {
-    if (employees.length === 0) return;
+  const generatePayRun = async () => {
+    if (!user || employees.length === 0) return;
     const items = employees.map(emp => {
       const grossMonthly = emp.payFrequency === 'MTH' ? emp.annualSalary / 12 : emp.annualSalary / 52;
       const pay = Math.round(grossMonthly * 100) / 100;
@@ -129,7 +213,25 @@ const PayrollUK = () => {
         netPay: net,
       };
     });
-    const run: PayRun = { id: crypto.randomUUID(), period, payDate, notes: '', items };
+    const { data: runRow, error } = await supabase
+      .from('payroll_runs')
+      .insert([{ user_id: user.id, period, pay_date: payDate, tax_year: taxYear, notes: '' }])
+      .select('*')
+      .single();
+    if (error || !runRow) return;
+    const runId = runRow.id;
+    const itemRows = items.map(it => ({
+      run_id: runId,
+      employee_id: it.employeeId,
+      gross_pay: it.grossPay,
+      taxable_pay: it.taxablePay,
+      tax_deducted: it.taxDeducted,
+      employee_nic: it.employeeNIC,
+      employer_nic: it.employerNIC,
+      net_pay: it.netPay
+    }));
+    await supabase.from('payroll_run_items').insert(itemRows);
+    const run: PayRun = { id: runId, period, payDate, notes: '', items };
     setPayRuns(prev => [run, ...prev]);
   };
 
@@ -157,6 +259,11 @@ const PayrollUK = () => {
       });
       const res = await hmrcService.submitFPS({ employer, period: run.period, submissions });
       setLastSubmissionId(res.submissionId);
+      if (user) {
+        await supabase.from('payroll_submissions').insert([
+          { user_id: user.id, run_id: run.id, type: 'FPS', submission_id: res.submissionId }
+        ]);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -167,6 +274,47 @@ const PayrollUK = () => {
   const authenticate = async () => {
     await hmrcService.authenticate(clientId, clientSecret);
     setAuthOk(true);
+  };
+
+  const submitEPS = async () => {
+    if (!user || !employer.payeReference || !employer.accountsOfficeRef) return;
+    setSubmitting(true);
+    try {
+      const res = await hmrcService.submitEPS(period, employer, epsAdjustments);
+      setLastSubmissionId(res.submissionId);
+      // Attach to most recent run (if exists)
+      const recent = payRuns[0];
+      const runId = recent ? recent.id : null;
+      await supabase.from('payroll_submissions').insert([
+        { user_id: user.id, run_id: runId, type: 'EPS', submission_id: res.submissionId }
+      ]);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const downloadPayslip = (run: PayRun, item: PayRun['items'][number]) => {
+    const emp = employees.find(e => e.id === item.employeeId);
+    if (!emp) return;
+    const pdf = new jsPDF();
+    pdf.setFontSize(16);
+    pdf.text('Payslip', 20, 20);
+    pdf.setFontSize(11);
+    pdf.text(`Employer PAYE: ${employer.payeReference || 'N/A'}`, 20, 30);
+    pdf.text(`Employee: ${emp.firstName} ${emp.lastName}`, 20, 40);
+    if (emp.niNumber) pdf.text(`NI No: ${emp.niNumber}`, 20, 50);
+    pdf.text(`Period: ${run.period}`, 20, 60);
+    pdf.text(`Pay date: ${run.payDate}`, 20, 70);
+    let y = 90;
+    pdf.text('Earnings & Deductions', 20, y); y += 10;
+    pdf.text(`Gross Pay: £${item.grossPay.toFixed(2)}`, 20, y); y += 8;
+    pdf.text(`PAYE Tax: £${item.taxDeducted.toFixed(2)}`, 20, y); y += 8;
+    pdf.text(`Employee NIC: £${item.employeeNIC.toFixed(2)}`, 20, y); y += 8;
+    pdf.text(`Employer NIC: £${item.employerNIC.toFixed(2)}`, 20, y); y += 12;
+    pdf.setFontSize(12);
+    pdf.text(`Net Pay: £${item.netPay.toFixed(2)}`, 20, y);
+    y += 10;
+    pdf.save(`payslip_${emp.lastName}_${run.period}.pdf`);
   };
 
   return (
@@ -323,7 +471,9 @@ const PayrollUK = () => {
                 </div>
               </div>
 
-              {payRuns.length === 0 ? (
+              {loading ? (
+                <div className="text-gray-500 text-sm">Loading…</div>
+              ) : payRuns.length === 0 ? (
                 <div className="text-gray-500 text-sm">No pay runs yet.</div>
               ) : (
                 <div className="space-y-4">
@@ -358,9 +508,12 @@ const PayrollUK = () => {
                                     <td className="py-2 pr-2">£{item.employerNIC.toFixed(2)}</td>
                                     <td className="py-2 pr-2">£{item.netPay.toFixed(2)}</td>
                                     <td className="py-2 pr-2">
-                                      <Button size="sm" onClick={() => submitFPS(run)} disabled={submitting || !authOk} className="h-8 px-2">
-                                        <FileUp className="h-4 w-4 mr-1"/> Submit FPS
-                                      </Button>
+                                      <div className="flex gap-2">
+                                        <Button size="sm" onClick={() => downloadPayslip(run, item)} variant="outline" className="h-8 px-2">Payslip PDF</Button>
+                                        <Button size="sm" onClick={() => submitFPS(run)} disabled={submitting || !authOk} className="h-8 px-2">
+                                          <FileUp className="h-4 w-4 mr-1"/> Submit FPS
+                                        </Button>
+                                      </div>
                                     </td>
                                   </tr>
                                 );
@@ -385,19 +538,41 @@ const PayrollUK = () => {
             <CardHeader>
               <CardTitle>HMRC Integration (Mock)</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label className="mb-1 block">Client ID</Label>
-                <Input value={clientId} onChange={(e) => setClientId(e.target.value)} />
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label className="mb-1 block">Client ID</Label>
+                  <Input value={clientId} onChange={(e) => setClientId(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="mb-1 block">Client Secret</Label>
+                  <Input value={clientSecret} onChange={(e) => setClientSecret(e.target.value)} />
+                </div>
+                <div className="flex items-end">
+                  <Button onClick={authenticate} disabled={authOk} className="w-full">{authOk ? 'Authenticated' : 'Authenticate'}</Button>
+                </div>
               </div>
-              <div>
-                <Label className="mb-1 block">Client Secret</Label>
-                <Input value={clientSecret} onChange={(e) => setClientSecret(e.target.value)} />
+              <div className="mt-6">
+                <h4 className="font-semibold mb-2">EPS Adjustments (optional)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <Label className="mb-1 block">Apprenticeship Levy</Label>
+                    <Input type="number" step="0.01" value={epsAdjustments['apprenticeshipLevy'] || ''} onChange={(e) => setEpsAdjustments({ ...epsAdjustments, apprenticeshipLevy: Number(e.target.value) })} />
+                  </div>
+                  <div>
+                    <Label className="mb-1 block">SMP Recovered</Label>
+                    <Input type="number" step="0.01" value={epsAdjustments['smpRecovered'] || ''} onChange={(e) => setEpsAdjustments({ ...epsAdjustments, smpRecovered: Number(e.target.value) })} />
+                  </div>
+                  <div>
+                    <Label className="mb-1 block">SSP Recovered</Label>
+                    <Input type="number" step="0.01" value={epsAdjustments['sspRecovered'] || ''} onChange={(e) => setEpsAdjustments({ ...epsAdjustments, sspRecovered: Number(e.target.value) })} />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <Button onClick={submitEPS} disabled={!authOk || submitting}>Submit EPS</Button>
+                </div>
               </div>
-              <div className="flex items-end">
-                <Button onClick={authenticate} disabled={authOk} className="w-full">{authOk ? 'Authenticated' : 'Authenticate'}</Button>
-              </div>
-              <div className="md:col-span-3 text-sm text-gray-600">
+              <div className="text-sm text-gray-600 mt-4">
                 This mock demonstrates RTI submission flow (FPS/EPS). For production, implement OAuth with HMRC MTD.
               </div>
             </CardContent>
