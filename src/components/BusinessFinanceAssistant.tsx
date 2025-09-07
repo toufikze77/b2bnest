@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Download, Eye, Send, FileText, DollarSign, TrendingUp, Users, Package, Truck, Receipt, CreditCard, BarChart3, Home, Building, Calendar, ShoppingCart, Banknote, Edit, Trash2, Repeat } from 'lucide-react';
+import { Plus, Download, Eye, Send, FileText, DollarSign, TrendingUp, Users, Package, Truck, Receipt, CreditCard, BarChart3, Home, Building, Calendar, ShoppingCart, Banknote, Edit, Trash2, Repeat, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import QuoteInvoiceCreationSection from '@/components/QuoteInvoiceCreationSection';
+import PayrollUK from '@/components/payroll/PayrollUK';
 import DocumentList from '@/components/DocumentList';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { Tables } from '@/integrations/supabase/types';
@@ -393,7 +394,7 @@ const BusinessFinanceAssistant = () => {
   const { user } = useAuth();
   const { settings } = useUserSettings();
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'quotes' | 'invoices' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'banking' | 'reports' | 'analytics'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'quotes' | 'invoices' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'banking' | 'payroll' | 'reports' | 'analytics'>('dashboard');
   const [documentType, setDocumentType] = useState<'invoice' | 'quote'>('quote');
   const [editingDocument, setEditingDocument] = useState<Quote | Invoice | null>(null);
   const [showDocumentList, setShowDocumentList] = useState(false);
@@ -1054,7 +1055,7 @@ const BusinessFinanceAssistant = () => {
         console.log('Tab changed to:', value);
         setActiveTab(value as any);
       }} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-11">
+        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-12">
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <Home className="h-4 w-4" />
             Dashboard
@@ -1094,6 +1095,10 @@ const BusinessFinanceAssistant = () => {
           <TabsTrigger value="reports" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Reports
+          </TabsTrigger>
+          <TabsTrigger value="payroll" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Payroll (UK)
           </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <PieChart className="h-4 w-4" />
@@ -2041,6 +2046,10 @@ const BusinessFinanceAssistant = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="payroll">
+          <PayrollUK />
         </TabsContent>
 
         <TabsContent value="analytics">
