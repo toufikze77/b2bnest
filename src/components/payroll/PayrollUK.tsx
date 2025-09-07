@@ -12,6 +12,7 @@ import { FileUp, Shield, Check, Users, Calculator } from 'lucide-react';
 import { hmrcService, EmployeeFPSRecord, EmployerDetails } from '@/services/hmrcService';
 import { payrollUKRates, getMonthlyAllowance, TaxYear } from '@/services/payrollUKRates';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import { useAuth } from '@/hooks/useAuth';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -182,7 +183,12 @@ const PayrollUK = () => {
       pay_frequency: newEmp.payFrequency
     };
     supabase.from('payroll_employees').insert([payload]).select('*').single().then(({ data, error }) => {
-      if (!error && data) {
+      if (error) {
+        console.error('Create employee error:', error);
+        toast.error('Failed to create employee');
+        return;
+      }
+      if (data) {
         const e: Employee = {
           id: data.id,
           firstName: data.first_name,
@@ -195,6 +201,7 @@ const PayrollUK = () => {
         };
         setEmployees(prev => [e, ...prev]);
         setNewEmp({ id: '', firstName: '', lastName: '', niNumber: '', taxCode: '1257L', niCategory: 'A', annualSalary: 30000, payFrequency: 'MTH' });
+        toast.success('Employee created');
       }
     });
   };
