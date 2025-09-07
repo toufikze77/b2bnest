@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, BarChart, File, Globe, CreditCard, Layout, Mail, Megaphone, Quote, Receipt, Eye, Download, Star, Tag } from 'lucide-react';
+import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, BarChart, File, Globe, CreditCard, Layout, Mail, Megaphone, Quote, Receipt, Eye, Download, Star, Tag, Trophy, Link2, Calendar as CalIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +20,11 @@ import TodoList from '@/components/TodoList';
 import BusinessNameGenerator from '@/components/BusinessNameGenerator';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
 import CouponGenerator from '@/components/CouponGenerator';
+import LoyaltyRewardsManager from '@/components/LoyaltyRewardsManager';
+import ReferralProgramBuilder from '@/components/ReferralProgramBuilder';
+import GiftCardManager from '@/components/GiftCardManager';
+import UTMBuilder from '@/components/UTMBuilder';
+import MarketingCalendar from '@/components/MarketingCalendar';
 import TimeTracker from '@/components/TimeTracker';
 import CashFlowTracker from '@/components/CashFlowTracker';
 import GoalTracker from '@/components/GoalTracker';
@@ -39,7 +44,7 @@ import StartupIdeaGenerator from '@/components/StartupIdeaGenerator';
 import DomainAvailability from '@/components/DomainAvailability';
 import { AdvertisementSection } from '@/components/AdvertisementSection';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'domain-availability' | 'qr-code-generator' | 'coupon-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'premium-marketplace' | 'currency-converter' | 'crypto-converter';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'domain-availability' | 'qr-code-generator' | 'coupon-generator' | 'loyalty-rewards' | 'referral-program' | 'gift-card-manager' | 'utm-builder' | 'marketing-calendar' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'premium-marketplace' | 'currency-converter' | 'crypto-converter';
 
 type FilterType = 'all' | 'premium' | 'favorites' | 'free';
 
@@ -102,6 +107,51 @@ const BusinessTools = () => {
       icon: Tag,
       color: 'bg-rose-600',
       benefits: ['Unique code patterns', 'Bulk generation', 'CSV import/export', 'Validation rules'],
+      isPremium: false
+    },
+    {
+      id: 'loyalty-rewards' as ToolType,
+      title: 'Loyalty & Rewards',
+      description: 'Points engine, tiers, and redemption planning',
+      icon: Trophy,
+      color: 'bg-emerald-600',
+      benefits: ['Points per purchase', 'Tier multipliers', 'CSV export'],
+      isPremium: false
+    },
+    {
+      id: 'referral-program' as ToolType,
+      title: 'Referral Program',
+      description: 'Create referral links and track performance',
+      icon: Link2,
+      color: 'bg-cyan-600',
+      benefits: ['Unique links', 'Clicks & signups', 'CSV export'],
+      isPremium: false
+    },
+    {
+      id: 'gift-card-manager' as ToolType,
+      title: 'Gift Card Manager',
+      description: 'Create, manage, and export gift cards',
+      icon: CreditCard,
+      color: 'bg-violet-600',
+      benefits: ['Codes & balances', 'Expiry', 'Export'],
+      isPremium: false
+    },
+    {
+      id: 'utm-builder' as ToolType,
+      title: 'UTM Builder',
+      description: 'Generate campaign URLs with UTM parameters',
+      icon: Link2,
+      color: 'bg-indigo-600',
+      benefits: ['Source/medium/campaign', 'Copy link', 'Standards'],
+      isPremium: false
+    },
+    {
+      id: 'marketing-calendar' as ToolType,
+      title: 'Marketing Calendar',
+      description: 'Plan promotions across channels',
+      icon: CalIcon,
+      color: 'bg-rose-600',
+      benefits: ['Dates & channels', 'Quick overview', 'Lightweight'],
       isPremium: false
     },
     {
@@ -422,6 +472,16 @@ const BusinessTools = () => {
         return <QRCodeGenerator />;
       case 'coupon-generator':
         return <CouponGenerator />;
+      case 'loyalty-rewards':
+        return <LoyaltyRewardsManager />;
+      case 'referral-program':
+        return <ReferralProgramBuilder />;
+      case 'gift-card-manager':
+        return <GiftCardManager />;
+      case 'utm-builder':
+        return <UTMBuilder />;
+      case 'marketing-calendar':
+        return <MarketingCalendar />;
       case 'time-tracker':
         return <TimeTracker />;
       case 'cash-flow-tracker':
