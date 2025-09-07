@@ -10,6 +10,7 @@ import { Table, Tbody, Td, Th, Thead, Tr } from '@/components/ui/table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { FileUp, Shield, Check, Users, Calculator } from 'lucide-react';
 import { hmrcService, EmployeeFPSRecord, EmployerDetails } from '@/services/hmrcService';
+import { payrollUKRates, getMonthlyAllowance, TaxYear } from '@/services/payrollUKRates';
 
 type Employee = {
   id: string;
@@ -41,29 +42,29 @@ type PayRun = {
 const STORAGE_KEY = 'payroll_uk_state_v1';
 
 // Simplified PAYE calculator: basic rate assumptions for demo purposes
-const calculatePAYE = (taxablePayMonthly: number, taxCode: string) => {
+const calculatePAYE = (taxablePayMonthly: number, taxCode: string, year: TaxYear) => {
   // 1257L => personal allowance ~ 12570/year => 1047.5/month
-  const allowanceMonthly = /^(\d{4})L|^(1257L)/.test(taxCode) ? 1047.5 : 0;
+  const allowanceMonthly = /^(\d{4})L|^(1257L)/.test(taxCode) ? getMonthlyAllowance(year) : 0;
   const taxable = Math.max(0, taxablePayMonthly - allowanceMonthly);
   // simple 20% basic rate for demo
-  const tax = taxable * 0.2;
+  const tax = taxable * payrollUKRates[year].basicRate;
   return Math.round(tax * 100) / 100;
 };
 
 // Simplified NI calculator for Category A (employee and employer) with 2024-style thresholds (approx)
-const calculateNI = (grossMonthly: number, category: string) => {
+const calculateNI = (grossMonthly: number, category: string, year: TaxYear) => {
   // Primary threshold ~ 1048/month; employee 12% above to upper ~ 4189/month; employer 13.8% above ~ 758/month
-  const pt = 1048;
-  const upper = 4189;
+  const pt = payrollUKRates[year].ni.primaryThresholdMonthly;
+  const upper = payrollUKRates[year].ni.upperEarningsMonthly;
   let employeeNIC = 0;
   let employerNIC = 0;
   if (grossMonthly > pt) {
     const mainBand = Math.min(grossMonthly, upper) - pt;
-    if (mainBand > 0) employeeNIC += mainBand * 0.12;
-    if (grossMonthly > upper) employeeNIC += (grossMonthly - upper) * 0.02;
+    if (mainBand > 0) employeeNIC += mainBand * payrollUKRates[year].ni.employeeMainRate;
+    if (grossMonthly > upper) employeeNIC += (grossMonthly - upper) * payrollUKRates[year].ni.employeeUpperRate;
   }
-  if (grossMonthly > 758) {
-    employerNIC += (grossMonthly - 758) * 0.138;
+  if (grossMonthly > payrollUKRates[year].ni.employerThresholdMonthly) {
+    employerNIC += (grossMonthly - payrollUKRates[year].ni.employerThresholdMonthly) * payrollUKRates[year].ni.employerRate;
   }
   return {
     employeeNIC: Math.round(employeeNIC * 100) / 100,
@@ -78,6 +79,7 @@ const PayrollUK = () => {
   const [payRuns, setPayRuns] = useState<PayRun[]>([]);
   const [period, setPeriod] = useState<string>(new Date().toISOString().slice(0,7));
   const [payDate, setPayDate] = useState<string>(new Date().toISOString().slice(0,10));
+  const [taxYear, setTaxYear] = useState<TaxYear>('2024-2025');
   const [clientId, setClientId] = useState<string>('demo-client');
   const [clientSecret, setClientSecret] = useState<string>('demo-secret');
   const [authOk, setAuthOk] = useState<boolean>(!!hmrcService.getToken());
@@ -114,8 +116,8 @@ const PayrollUK = () => {
     const items = employees.map(emp => {
       const grossMonthly = emp.payFrequency === 'MTH' ? emp.annualSalary / 12 : emp.annualSalary / 52;
       const pay = Math.round(grossMonthly * 100) / 100;
-      const tax = calculatePAYE(pay, emp.taxCode);
-      const ni = calculateNI(pay, emp.niCategory);
+      const tax = calculatePAYE(pay, emp.taxCode, taxYear);
+      const ni = calculateNI(pay, emp.niCategory, taxYear);
       const net = Math.round((pay - tax - ni.employeeNIC) * 100) / 100;
       return {
         employeeId: emp.id,
@@ -295,7 +297,7 @@ const PayrollUK = () => {
               <CardTitle>Pay Run</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
                 <div>
                   <Label className="mb-1 block">Period (YYYY-MM)</Label>
                   <Input value={period} onChange={(e) => setPeriod(e.target.value)} />
@@ -303,6 +305,18 @@ const PayrollUK = () => {
                 <div>
                   <Label className="mb-1 block">Pay date</Label>
                   <Input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="mb-1 block">Tax year</Label>
+                  <Select value={taxYear} onValueChange={(v: any) => setTaxYear(v)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2024-2025">2024-2025</SelectItem>
+                      <SelectItem value="2025-2026">2025-2026</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="md:col-span-2 flex items-end">
                   <Button onClick={generatePayRun} className="flex items-center gap-2"><Calculator className="h-4 w-4"/> Calculate</Button>
