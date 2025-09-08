@@ -1496,6 +1496,170 @@ export type Database = {
         }
         Relationships: []
       }
+      payroll_employees: {
+        Row: {
+          annual_salary: number
+          created_at: string
+          first_name: string
+          id: string
+          is_active: boolean
+          last_name: string
+          ni_category: string
+          ni_number: string
+          pay_frequency: string
+          tax_code: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          annual_salary?: number
+          created_at?: string
+          first_name: string
+          id?: string
+          is_active?: boolean
+          last_name: string
+          ni_category?: string
+          ni_number: string
+          pay_frequency?: string
+          tax_code?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          annual_salary?: number
+          created_at?: string
+          first_name?: string
+          id?: string
+          is_active?: boolean
+          last_name?: string
+          ni_category?: string
+          ni_number?: string
+          pay_frequency?: string
+          tax_code?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      payroll_run_items: {
+        Row: {
+          created_at: string
+          employee_id: string
+          gross_pay: number
+          id: string
+          net_pay: number
+          ni_deduction: number
+          run_id: string
+          tax_deduction: number
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          gross_pay?: number
+          id?: string
+          net_pay?: number
+          ni_deduction?: number
+          run_id: string
+          tax_deduction?: number
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          gross_pay?: number
+          id?: string
+          net_pay?: number
+          ni_deduction?: number
+          run_id?: string
+          tax_deduction?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_run_items_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_run_items_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_runs: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          pay_date: string
+          period: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          pay_date: string
+          period: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          pay_date?: string
+          period?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      payroll_submissions: {
+        Row: {
+          id: string
+          reference_number: string | null
+          run_id: string
+          status: string
+          submission_type: string
+          submitted_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          reference_number?: string | null
+          run_id: string
+          status?: string
+          submission_type: string
+          submitted_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          reference_number?: string | null
+          run_id?: string
+          status?: string
+          submission_type?: string
+          submitted_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_submissions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_comments: {
         Row: {
           content: string

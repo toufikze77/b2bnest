@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, Tbody, Td, Th, Thead, Tr } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { FileUp, Shield, Check, Users, Calculator } from 'lucide-react';
 import { hmrcService, EmployeeFPSRecord, EmployerDetails } from '@/services/hmrcService';
@@ -77,7 +77,7 @@ const calculateNI = (grossMonthly: number, category: string, year: TaxYear) => {
   };
 };
 
-const PayrollUK = () => {
+const Payroll = () => {
   const [employer, setEmployer] = useState<EmployerDetails>({ payeReference: '', accountsOfficeRef: '' });
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [newEmp, setNewEmp] = useState<Employee>({ id: '', firstName: '', lastName: '', niNumber: '', taxCode: '1257L', niCategory: 'A', annualSalary: 30000, payFrequency: 'MTH' });
@@ -123,7 +123,7 @@ const PayrollUK = () => {
             taxCode: e.tax_code || '1257L',
             niCategory: e.ni_category || 'A',
             annualSalary: Number(e.annual_salary) || 0,
-            payFrequency: e.pay_frequency || 'MTH'
+            payFrequency: e.pay_frequency === 'WK' ? 'WK' : 'MTH'
           })));
         }
         const { data: runs } = await supabase
@@ -147,10 +147,10 @@ const PayrollUK = () => {
               items: (items || []).map((it: any) => ({
                 employeeId: it.employee_id,
                 grossPay: Number(it.gross_pay),
-                taxablePay: Number(it.taxable_pay),
-                taxDeducted: Number(it.tax_deducted),
-                employeeNIC: Number(it.employee_nic),
-                employerNIC: Number(it.employer_nic),
+                taxablePay: Number(it.gross_pay), // Using gross_pay for taxable for simplicity
+                taxDeducted: Number(it.tax_deduction),
+                employeeNIC: Number(it.ni_deduction),
+                employerNIC: Number(it.gross_pay) * 0.138, // Approximate employer NI
                 netPay: Number(it.net_pay)
               }))
             });
@@ -162,7 +162,7 @@ const PayrollUK = () => {
       }
     };
     load();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     try {
@@ -197,11 +197,11 @@ const PayrollUK = () => {
           taxCode: data.tax_code,
           niCategory: data.ni_category,
           annualSalary: Number(data.annual_salary),
-          payFrequency: data.pay_frequency
+          payFrequency: data.pay_frequency === 'WK' ? 'WK' : 'MTH'
         };
         setEmployees(prev => [e, ...prev]);
         setNewEmp({ id: '', firstName: '', lastName: '', niNumber: '', taxCode: '1257L', niCategory: 'A', annualSalary: 30000, payFrequency: 'MTH' });
-        toast.success('Employee created');
+        toast.success('Employee created successfully!');
       }
     });
   };
@@ -226,7 +226,7 @@ const PayrollUK = () => {
     });
     const { data: runRow, error } = await supabase
       .from('payroll_runs')
-      .insert([{ user_id: user.id, period, pay_date: payDate, tax_year: taxYear, notes: '' }])
+      .insert([{ user_id: user.id, period, pay_date: payDate, notes: '' }])
       .select('*')
       .single();
     if (error || !runRow) return;
@@ -235,15 +235,14 @@ const PayrollUK = () => {
       run_id: runId,
       employee_id: it.employeeId,
       gross_pay: it.grossPay,
-      taxable_pay: it.taxablePay,
-      tax_deducted: it.taxDeducted,
-      employee_nic: it.employeeNIC,
-      employer_nic: it.employerNIC,
+      tax_deduction: it.taxDeducted,
+      ni_deduction: it.employeeNIC,
       net_pay: it.netPay
     }));
     await supabase.from('payroll_run_items').insert(itemRows);
     const run: PayRun = { id: runId, period, payDate, notes: '', items };
     setPayRuns(prev => [run, ...prev]);
+    toast.success('Pay run generated successfully!');
   };
 
   const submitFPS = async (run: PayRun) => {
@@ -272,11 +271,13 @@ const PayrollUK = () => {
       setLastSubmissionId(res.submissionId);
       if (user) {
         await supabase.from('payroll_submissions').insert([
-          { user_id: user.id, run_id: run.id, type: 'FPS', submission_id: res.submissionId }
+          { user_id: user.id, run_id: run.id, submission_type: 'FPS', reference_number: res.submissionId }
         ]);
       }
+      toast.success('FPS submitted successfully!');
     } catch (e) {
       console.error(e);
+      toast.error('Failed to submit FPS');
     } finally {
       setSubmitting(false);
     }
@@ -285,6 +286,7 @@ const PayrollUK = () => {
   const authenticate = async () => {
     await hmrcService.authenticate(clientId, clientSecret);
     setAuthOk(true);
+    toast.success('HMRC authentication successful!');
   };
 
   const submitEPS = async () => {
@@ -297,8 +299,12 @@ const PayrollUK = () => {
       const recent = payRuns[0];
       const runId = recent ? recent.id : null;
       await supabase.from('payroll_submissions').insert([
-        { user_id: user.id, run_id: runId, type: 'EPS', submission_id: res.submissionId }
+        { user_id: user.id, run_id: runId, submission_type: 'EPS', reference_number: res.submissionId }
       ]);
+      toast.success('EPS submitted successfully!');
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to submit EPS');
     } finally {
       setSubmitting(false);
     }
@@ -361,7 +367,7 @@ const PayrollUK = () => {
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2 flex items-center gap-2"><Shield className="h-6 w-6"/> UK Payroll</h1>
+        <h1 className="text-3xl font-bold mb-2 flex items-center gap-2"><Calculator className="h-6 w-6"/> Payroll</h1>
         <div className="flex gap-2 flex-wrap">
           <Badge>PAYE/NIC</Badge>
           <Badge variant="secondary">HMRC RTI (mock)</Badge>
@@ -407,7 +413,10 @@ const PayrollUK = () => {
         <TabsContent value="employees">
           <Card>
             <CardHeader>
-              <CardTitle>Employees</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Employees
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -429,7 +438,16 @@ const PayrollUK = () => {
                 </div>
                 <div>
                   <Label className="mb-1 block">NI category</Label>
-                  <Input value={newEmp.niCategory} onChange={(e) => setNewEmp({ ...newEmp, niCategory: e.target.value as any })} />
+                  <Select value={newEmp.niCategory} onValueChange={(value) => setNewEmp({ ...newEmp, niCategory: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="A">A - Standard</SelectItem>
+                      <SelectItem value="B">B - Married women/widows</SelectItem>
+                      <SelectItem value="C">C - Over state pension age</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label className="mb-1 block">Annual salary</Label>
@@ -437,7 +455,7 @@ const PayrollUK = () => {
                 </div>
                 <div>
                   <Label className="mb-1 block">Pay frequency</Label>
-                  <Select value={newEmp.payFrequency} onValueChange={(v: any) => setNewEmp({ ...newEmp, payFrequency: v })}>
+                  <Select value={newEmp.payFrequency} onValueChange={(value: 'MTH' | 'WK') => setNewEmp({ ...newEmp, payFrequency: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -448,34 +466,42 @@ const PayrollUK = () => {
                   </Select>
                 </div>
                 <div className="md:col-span-3">
-                  <Button onClick={addEmployee} className="flex items-center gap-2"><Users className="h-4 w-4"/> Add employee</Button>
+                  <Button onClick={addEmployee} disabled={!newEmp.firstName || !newEmp.lastName}>
+                    Add Employee
+                  </Button>
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left border-b">
-                      <th className="py-2 pr-2">Name</th>
-                      <th className="py-2 pr-2">Tax code</th>
-                      <th className="py-2 pr-2">NI cat</th>
-                      <th className="py-2 pr-2">Salary</th>
-                      <th className="py-2 pr-2">Freq</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {employees.map(e => (
-                      <tr key={e.id} className="border-b last:border-0">
-                        <td className="py-2 pr-2">{e.firstName} {e.lastName}</td>
-                        <td className="py-2 pr-2">{e.taxCode}</td>
-                        <td className="py-2 pr-2">{e.niCategory}</td>
-                        <td className="py-2 pr-2">£{e.annualSalary.toFixed(2)}</td>
-                        <td className="py-2 pr-2">{e.payFrequency}</td>
-                      </tr>
+              {employees.length > 0 && (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>NI Number</TableHead>
+                      <TableHead>Tax Code</TableHead>
+                      <TableHead>NI Category</TableHead>
+                      <TableHead>Annual Salary</TableHead>
+                      <TableHead>Pay Frequency</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {employees.map((emp) => (
+                      <TableRow key={emp.id}>
+                        <TableCell>{emp.firstName} {emp.lastName}</TableCell>
+                        <TableCell>{emp.niNumber || 'N/A'}</TableCell>
+                        <TableCell>{emp.taxCode}</TableCell>
+                        <TableCell>{emp.niCategory}</TableCell>
+                        <TableCell>£{emp.annualSalary.toLocaleString()}</TableCell>
+                        <TableCell>{emp.payFrequency === 'MTH' ? 'Monthly' : 'Weekly'}</TableCell>
+                        <TableCell>
+                          <Button size="sm" variant="outline">Edit</Button>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -483,12 +509,12 @@ const PayrollUK = () => {
         <TabsContent value="payrun">
           <Card>
             <CardHeader>
-              <CardTitle>Pay Run</CardTitle>
+              <CardTitle>Generate Pay Run</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label className="mb-1 block">Period (YYYY-MM)</Label>
+                  <Label className="mb-1 block">Pay period (YYYY-MM)</Label>
                   <Input value={period} onChange={(e) => setPeriod(e.target.value)} />
                 </div>
                 <div>
@@ -497,177 +523,192 @@ const PayrollUK = () => {
                 </div>
                 <div>
                   <Label className="mb-1 block">Tax year</Label>
-                  <Select value={taxYear} onValueChange={(v: any) => setTaxYear(v)}>
+                  <Select value={taxYear} onValueChange={(value: TaxYear) => setTaxYear(value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="2024-2025">2024-2025</SelectItem>
-                      <SelectItem value="2025-2026">2025-2026</SelectItem>
+                      <SelectItem value="2023-2024">2023-2024</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="md:col-span-2 flex items-end">
-                  <Button onClick={generatePayRun} className="flex items-center gap-2"><Calculator className="h-4 w-4"/> Calculate</Button>
-                </div>
               </div>
-
-              {loading ? (
-                <div className="text-gray-500 text-sm">Loading…</div>
-              ) : payRuns.length === 0 ? (
-                <div className="text-gray-500 text-sm">No pay runs yet.</div>
-              ) : (
-                <div className="space-y-4">
-                  {payRuns.map(run => (
-                    <Card key={run.id}>
-                      <CardHeader>
-                        <CardTitle>Period {run.period} • Pay date {run.payDate}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="text-left border-b">
-                                <th className="py-2 pr-2">Employee</th>
-                                <th className="py-2 pr-2">Gross</th>
-                                <th className="py-2 pr-2">Tax</th>
-                                <th className="py-2 pr-2">Emp NIC</th>
-                                <th className="py-2 pr-2">Er NIC</th>
-                                <th className="py-2 pr-2">Net</th>
-                                <th className="py-2 pr-2">Actions</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {run.items.map(item => {
-                                const emp = employees.find(e => e.id === item.employeeId)!;
-                                return (
-                                  <tr key={item.employeeId} className="border-b last:border-0">
-                                    <td className="py-2 pr-2">{emp.firstName} {emp.lastName}</td>
-                                    <td className="py-2 pr-2">£{item.grossPay.toFixed(2)}</td>
-                                    <td className="py-2 pr-2">£{item.taxDeducted.toFixed(2)}</td>
-                                    <td className="py-2 pr-2">£{item.employeeNIC.toFixed(2)}</td>
-                                    <td className="py-2 pr-2">£{item.employerNIC.toFixed(2)}</td>
-                                    <td className="py-2 pr-2">£{item.netPay.toFixed(2)}</td>
-                                    <td className="py-2 pr-2">
-                                      <div className="flex gap-2">
-                                        <Button size="sm" onClick={() => downloadPayslip(run, item)} variant="outline" className="h-8 px-2">Payslip PDF</Button>
-                                        <Button size="sm" onClick={() => submitFPS(run)} disabled={submitting || !authOk} className="h-8 px-2">
-                                          <FileUp className="h-4 w-4 mr-1"/> Submit FPS
-                                        </Button>
-                                        <Button size="sm" variant="outline" onClick={() => openPreviewFPS(run)} className="h-8 px-2">Preview</Button>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                        {lastSubmissionId && (
-                          <div className="text-xs text-green-700 mt-2">Last submission: {lastSubmissionId}</div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
+              <Button onClick={generatePayRun} disabled={employees.length === 0}>
+                Generate Pay Run
+              </Button>
             </CardContent>
           </Card>
+
+          {payRuns.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Pay Runs</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Period</TableHead>
+                      <TableHead>Pay Date</TableHead>
+                      <TableHead>Employees</TableHead>
+                      <TableHead>Total Gross</TableHead>
+                      <TableHead>Total Tax</TableHead>
+                      <TableHead>Total NI</TableHead>
+                      <TableHead>Total Net</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {payRuns.map((run) => (
+                      <TableRow key={run.id}>
+                        <TableCell>{run.period}</TableCell>
+                        <TableCell>{new Date(run.payDate).toLocaleDateString()}</TableCell>
+                        <TableCell>{run.items.length}</TableCell>
+                        <TableCell>£{run.items.reduce((sum, item) => sum + item.grossPay, 0).toFixed(2)}</TableCell>
+                        <TableCell>£{run.items.reduce((sum, item) => sum + item.taxDeducted, 0).toFixed(2)}</TableCell>
+                        <TableCell>£{run.items.reduce((sum, item) => sum + item.employeeNIC, 0).toFixed(2)}</TableCell>
+                        <TableCell>£{run.items.reduce((sum, item) => sum + item.netPay, 0).toFixed(2)}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => openPreviewFPS(run)}>View</Button>
+                            <Button size="sm" variant="outline" onClick={() => submitFPS(run)} disabled={submitting}>
+                              Submit FPS
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="hmrc">
           <Card>
             <CardHeader>
-              <CardTitle>HMRC Integration (Mock)</CardTitle>
+              <CardTitle>HMRC Integration</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label className="mb-1 block">Client ID</Label>
                   <Input value={clientId} onChange={(e) => setClientId(e.target.value)} />
                 </div>
                 <div>
                   <Label className="mb-1 block">Client Secret</Label>
-                  <Input value={clientSecret} onChange={(e) => setClientSecret(e.target.value)} />
-                </div>
-                <div className="flex items-end">
-                  <Button onClick={authenticate} disabled={authOk} className="w-full">{authOk ? 'Authenticated' : 'Authenticate'}</Button>
+                  <Input type="password" value={clientSecret} onChange={(e) => setClientSecret(e.target.value)} />
                 </div>
               </div>
-              <div className="mt-6">
-                <h4 className="font-semibold mb-2">EPS Adjustments (optional)</h4>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label className="mb-1 block">Apprenticeship Levy</Label>
-                    <Input type="number" step="0.01" value={epsAdjustments['apprenticeshipLevy'] || ''} onChange={(e) => setEpsAdjustments({ ...epsAdjustments, apprenticeshipLevy: Number(e.target.value) })} />
-                  </div>
-                  <div>
-                    <Label className="mb-1 block">SMP Recovered</Label>
-                    <Input type="number" step="0.01" value={epsAdjustments['smpRecovered'] || ''} onChange={(e) => setEpsAdjustments({ ...epsAdjustments, smpRecovered: Number(e.target.value) })} />
-                  </div>
-                  <div>
-                    <Label className="mb-1 block">SSP Recovered</Label>
-                    <Input type="number" step="0.01" value={epsAdjustments['sspRecovered'] || ''} onChange={(e) => setEpsAdjustments({ ...epsAdjustments, sspRecovered: Number(e.target.value) })} />
-                  </div>
-                </div>
-                <div className="mt-3 flex gap-2">
-                  <Button onClick={submitEPS} disabled={!authOk || submitting}>Submit EPS</Button>
-                  <Button variant="outline" onClick={openPreviewEPS}>Preview EPS</Button>
-                </div>
+              
+              <div className="flex gap-2">
+                <Button onClick={authenticate} disabled={!clientId || !clientSecret}>
+                  {authOk ? <Check className="h-4 w-4 mr-2" /> : <Shield className="h-4 w-4 mr-2" />}
+                  {authOk ? 'Authenticated' : 'Authenticate'}
+                </Button>
+                <Button onClick={submitEPS} disabled={!authOk || submitting}>
+                  Submit EPS
+                </Button>
+                <Button onClick={openPreviewEPS} variant="outline">
+                  Preview EPS
+                </Button>
               </div>
-              <div className="text-sm text-gray-600 mt-4">
-                This mock demonstrates RTI submission flow (FPS/EPS). For production, implement OAuth with HMRC MTD.
-              </div>
+
+              {lastSubmissionId && (
+                <Alert>
+                  <Check className="h-4 w-4" />
+                  <AlertTitle>Submission Successful</AlertTitle>
+                  <AlertDescription>
+                    Submission ID: {lastSubmissionId}
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-      <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>RTI {previewType} Payload Preview</DialogTitle>
-          </DialogHeader>
-          <pre className="text-xs bg-gray-50 p-3 rounded overflow-auto max-h-[60vh]">{JSON.stringify(previewPayload, null, 2)}</pre>
-        </DialogContent>
-      </Dialog>
-
         <TabsContent value="history">
           <Card>
             <CardHeader>
-              <CardTitle>Pay Runs History</CardTitle>
+              <CardTitle>Payroll History</CardTitle>
             </CardHeader>
             <CardContent>
               {payRuns.length === 0 ? (
-                <div className="text-gray-500 text-sm">No history yet.</div>
+                <p className="text-muted-foreground">No payroll runs yet. Generate your first pay run to see history.</p>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left border-b">
-                        <th className="py-2 pr-2">Period</th>
-                        <th className="py-2 pr-2">Pay date</th>
-                        <th className="py-2 pr-2">Employees</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {payRuns.map(r => (
-                        <tr key={r.id} className="border-b last:border-0">
-                          <td className="py-2 pr-2">{r.period}</td>
-                          <td className="py-2 pr-2">{r.payDate}</td>
-                          <td className="py-2 pr-2">{r.items.length}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="space-y-4">
+                  {payRuns.map((run) => (
+                    <div key={run.id} className="border rounded p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="font-medium">Pay Period: {run.period}</h3>
+                          <p className="text-sm text-muted-foreground">Pay Date: {new Date(run.payDate).toLocaleDateString()}</p>
+                        </div>
+                        <Badge variant="outline">{run.items.length} employees</Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Total Gross:</span>
+                          <p className="font-medium">£{run.items.reduce((sum, item) => sum + item.grossPay, 0).toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Total Tax:</span>
+                          <p className="font-medium">£{run.items.reduce((sum, item) => sum + item.taxDeducted, 0).toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Total NI:</span>
+                          <p className="font-medium">£{run.items.reduce((sum, item) => sum + item.employeeNIC, 0).toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Total Net:</span>
+                          <p className="font-medium">£{run.items.reduce((sum, item) => sum + item.netPay, 0).toFixed(2)}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => openPreviewFPS(run)}>
+                          View Details
+                        </Button>
+                        {run.items.map((item) => {
+                          const emp = employees.find(e => e.id === item.employeeId);
+                          return (
+                            <Button 
+                              key={item.employeeId}
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => downloadPayslip(run, item)}
+                            >
+                              Payslip: {emp?.firstName}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{previewType} Preview</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-96 overflow-auto">
+            <pre className="text-xs bg-muted p-4 rounded">
+              {JSON.stringify(previewPayload, null, 2)}
+            </pre>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
-export default PayrollUK;
-
+export default Payroll;
