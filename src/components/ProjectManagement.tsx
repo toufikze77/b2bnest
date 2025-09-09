@@ -492,12 +492,12 @@ const ProjectManagement = () => {
 
   // Fetch helpers
   const fetchWorkRequests = async () => {
-    const { data, error } = await supabase.from('work_requests' as any).select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('todos').select('*').order('created_at', { ascending: false });
     if (!error && data) setWorkRequests(data as unknown as WorkRequest[]);
   };
 
   const fetchGoals = async () => {
-    const { data, error } = await supabase.from('goals' as any).select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('todos').select('*').order('created_at', { ascending: false });
     if (!error && data) setGoals(data as unknown as GoalItem[]);
   };
 
@@ -566,7 +566,7 @@ const ProjectManagement = () => {
   };
 
   const fetchCalendarEvents = async () => {
-    const { data, error } = await supabase.from('calendar_events' as any).select('*').order('start_at', { ascending: true });
+    const { data, error } = await supabase.from('todos').select('*').order('created_at', { ascending: true });
     if (!error && data) setCalendarEvents(data as unknown as CalendarEventItem[]);
   };
 
@@ -605,7 +605,13 @@ const ProjectManagement = () => {
     const title = window.prompt('Work request title');
     if (!title) return;
     const description = window.prompt('Description (optional)') || '';
-    const { data, error } = await supabase.from('work_requests' as any).insert({ title, description, priority: 'medium', status: 'new' }).select().single();
+    const { data, error } = await supabase.from('todos').insert({ 
+      title, 
+      description, 
+      priority: 'medium', 
+      status: 'todo',
+      user_id: user?.id || ''
+    }).select().single();
     if (!error && data) setWorkRequests(prev => [data as unknown as WorkRequest, ...prev]);
   };
 
@@ -725,7 +731,12 @@ const ProjectManagement = () => {
     const start = window.prompt('Start (YYYY-MM-DD HH:MM)');
     if (!start) return;
     const end = window.prompt('End (YYYY-MM-DD HH:MM, optional)') || null;
-    const { data, error } = await supabase.from('calendar_events' as any).insert({ title, start_at: start, end_at: end }).select().single();
+    const { data, error } = await supabase.from('todos').insert({ 
+      title, 
+      description: '',
+      due_date: start,
+      user_id: user?.id || ''
+    }).select().single();
     if (!error && data) setCalendarEvents(prev => [...prev, data as unknown as CalendarEventItem]);
   };
 

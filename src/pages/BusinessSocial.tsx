@@ -171,14 +171,14 @@ const BusinessSocial = () => {
 
         const likedPostIds = new Set(likedPosts?.map(like => like.post_id) || []);
         
-        const postsWithLikes = (data as any)?.map((post: any) => ({
+        const postsWithLikes = data?.map((post: any) => ({
           ...post,
           user_liked: likedPostIds.has(post.id)
         })) || [];
 
         setPosts(postsWithLikes);
       } else {
-        setPosts((data as any) || []);
+        setPosts(data || []);
       }
     } catch (error) {
       console.error('Error fetching posts:', error);

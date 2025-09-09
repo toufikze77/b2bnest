@@ -1053,7 +1053,7 @@ const BusinessFinanceAssistant = () => {
 
       <Tabs value={activeTab} onValueChange={(value) => {
         console.log('Tab changed to:', value);
-        setActiveTab(value as any);
+        setActiveTab(value as "expenses" | "suppliers" | "invoices" | "outgoings" | "quotes" | "dashboard" | "create" | "products" | "banking" | "payroll" | "reports" | "analytics");
       }} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5 lg:grid-cols-12">
           <TabsTrigger value="dashboard" className="flex items-center gap-2">

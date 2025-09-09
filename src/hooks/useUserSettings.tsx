@@ -52,7 +52,7 @@ export const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
           language_code: data.language_code || 'en',
           date_format: data.date_format || 'MM/DD/YYYY',
           time_format: data.time_format || '12h',
-          theme: (data as any).theme || 'light'
+          theme: data?.theme || 'light'
         });
       }
     } catch (error) {

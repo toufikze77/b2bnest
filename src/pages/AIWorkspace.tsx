@@ -64,7 +64,7 @@ const AIWorkspace = () => {
     if (!user) return;
     
     const { data, error } = await supabase
-      .from('ai_workspaces' as any)
+      .from('ai_workspaces')
       .select('*')
       .eq('user_id', user.id)
       .order('updated_at', { ascending: false });
@@ -171,7 +171,7 @@ const AIWorkspace = () => {
         .from('ai_workspaces')
         .update({
           title: currentWorkspace.title,
-          blocks: currentWorkspace.blocks as any,
+          blocks: JSON.stringify(currentWorkspace.blocks),
           updated_at: new Date().toISOString()
         })
         .eq('id', currentWorkspace.id);
@@ -218,7 +218,7 @@ const AIWorkspace = () => {
         .insert({
           user_id: user.id,
           title: `${currentWorkspace.title} (Copy)`,
-          blocks: currentWorkspace.blocks as any
+          blocks: JSON.stringify(currentWorkspace.blocks)
         })
         .select()
         .single();

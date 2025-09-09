@@ -334,7 +334,7 @@ const FeedbackManagement = () => {
 
                               <Button 
                                 onClick={() => handleUpdateRequest(selectedRequest.id, {
-                                  status: newStatus as any,
+                                  status: newStatus as "open" | "in_progress" | "completed" | "closed",
                                   admin_response: adminResponse
                                 })}
                                 className="w-full"

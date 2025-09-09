@@ -104,7 +104,7 @@ const Forum = () => {
         .order('created_at', { ascending: false });
 
       if (selectedCategory !== 'all') {
-        query = query.eq('category', selectedCategory as any);
+        query = query.eq('category', selectedCategory as "startup" | "marketing" | "finance" | "legal" | "operations" | "hr" | "sales" | "technology" | "networking" | "general");
       }
 
       if (searchTerm) {
@@ -114,7 +114,7 @@ const Forum = () => {
       const { data, error } = await query;
 
       if (error) throw error;
-      setPosts((data as any) || []);
+      setPosts(data as any || []);
     } catch (error) {
       console.error('Error fetching posts:', error);
       toast({
@@ -142,7 +142,7 @@ const Forum = () => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setReplies((data as any) || []);
+      setReplies(data as any || []);
     } catch (error) {
       console.error('Error fetching replies:', error);
       toast({
