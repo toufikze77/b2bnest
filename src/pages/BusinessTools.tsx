@@ -42,9 +42,10 @@ import CustomerSurveyBuilder from '@/components/CustomerSurveyBuilder';
 import BusinessFinanceAssistant from '@/components/BusinessFinanceAssistant';
 import StartupIdeaGenerator from '@/components/StartupIdeaGenerator';
 import DomainAvailability from '@/components/DomainAvailability';
+import HMRCIntegration from '@/components/HMRCIntegration';
 import { AdvertisementSection } from '@/components/AdvertisementSection';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'domain-availability' | 'qr-code-generator' | 'coupon-generator' | 'loyalty-rewards' | 'referral-program' | 'gift-card-manager' | 'utm-builder' | 'marketing-calendar' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'premium-marketplace' | 'currency-converter' | 'crypto-converter';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'domain-availability' | 'qr-code-generator' | 'coupon-generator' | 'loyalty-rewards' | 'referral-program' | 'gift-card-manager' | 'utm-builder' | 'marketing-calendar' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'premium-marketplace' | 'currency-converter' | 'crypto-converter' | 'hmrc-integration';
 
 type FilterType = 'all' | 'premium' | 'favorites' | 'free';
 
@@ -73,6 +74,15 @@ const BusinessTools = () => {
   }, []);
 
   const tools = [
+    {
+      id: 'hmrc-integration' as ToolType,
+      title: 'HMRC Integration Suite',
+      description: 'Complete UK tax compliance - VAT returns, payroll submissions, corporation tax (Free Agent/Sage inspired)',
+      icon: Building2,
+      color: 'bg-gradient-to-r from-green-600 to-blue-600',
+      benefits: ['VAT Returns (MTD)', 'Payroll RTI Submissions', 'Corporation Tax', 'Income Tax', 'HMRC Obligations', 'Government Gateway'],
+      isPremium: true
+    },
     {
       id: 'premium-marketplace' as ToolType,
       title: 'Premium Marketplace',
@@ -506,6 +516,8 @@ const BusinessTools = () => {
         return <SocialMediaPostScheduler />;
       case 'customer-survey-builder':
         return <CustomerSurveyBuilder />;
+      case 'hmrc-integration':
+        return <HMRCIntegration />;
       case 'cost-calculator':
         return <CostCalculator />;
       case 'setup-checklist':
