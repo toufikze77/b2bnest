@@ -4,6 +4,7 @@ import { templateService } from "@/services/templateService";
 import HeroSection from "@/components/HeroSection";
 import StatsSection from "@/components/StatsSection";
 import SEOHead from "@/components/SEOHead";
+import AdvancedSEOSchema from "@/components/AdvancedSEOSchema";
 
 import FeaturedTemplatesSection from "@/components/FeaturedTemplatesSection";
 import CTASection from "@/components/CTASection";
@@ -41,6 +42,7 @@ const IndexContent = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <SEOHead />
+      <AdvancedSEOSchema page="home" />
       <HeroSection onSearch={handleSearch} />
 
       {/* Unified Search Results - Show immediately below search bar */}

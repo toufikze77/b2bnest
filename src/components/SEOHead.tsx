@@ -15,9 +15,9 @@ interface SEOHeadProps {
 }
 
 const SEOHead = ({
-  title = "Your Complete AI-Powered Business Tools Hub",
-  description = "Everything your business needs in one intelligent platform. From AI-powered document generation to smart financial tracking - streamline your entire workflow with cutting-edge tools designed for modern entrepreneurs.",
-  keywords = "business templates, document templates, business forms, legal documents, HR templates, financial forms, marketing materials, business tools, CRM, project management, SaaS deals, lifetime deals, business software, startup tools, entrepreneur resources, digital marketing tools, productivity software, app discovery, growth hacking, marketing automation, affiliate marketing, B2B SaaS, free business tools, tech discounts, online business, founder tools, business growth, software curation, software reviews, deal aggregator",
+  title = "Affordable Business Tools & Free AI-Powered Solutions | B2BNest",
+  description = "Discover 50+ free and affordable business tools in one intelligent platform. From AI document generation to financial tracking - everything modern entrepreneurs need without breaking the bank. Try free tools now!",
+  keywords = "affordable business tools, free business tools, cheap business software, low cost business solutions, budget business tools, free CRM, free project management, free invoice generator, affordable SaaS, business tools under $10, small business tools, startup tools free, entrepreneur tools, free document templates, cheap business software, business automation tools, free marketing tools, budget CRM software, affordable project management, free business calculator, cheap business forms, low cost HR tools, free financial tracking, budget business solutions, affordable business apps, free productivity tools, cheap document generator, business tools for startups, free business resources, affordable business platform, cheap business suite, free all-in-one business tools, budget friendly business software",
   canonical,
   canonicalUrl,
   ogImage = "https://b2bnest.com/lovable-uploads/86c25eed-4258-4e9e-9fd3-c368f065e452.png",

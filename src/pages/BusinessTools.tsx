@@ -44,6 +44,7 @@ import StartupIdeaGenerator from '@/components/StartupIdeaGenerator';
 import DomainAvailability from '@/components/DomainAvailability';
 import HMRCIntegration from '@/components/HMRCIntegration';
 import { AdvertisementSection } from '@/components/AdvertisementSection';
+import BusinessToolsSEO from '@/components/BusinessToolsSEO';
 
 type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'domain-availability' | 'qr-code-generator' | 'coupon-generator' | 'loyalty-rewards' | 'referral-program' | 'gift-card-manager' | 'utm-builder' | 'marketing-calendar' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'premium-marketplace' | 'currency-converter' | 'crypto-converter' | 'hmrc-integration';
 
@@ -759,6 +760,7 @@ const BusinessTools = () => {
 
   return (
     <div className="min-h-screen">
+      <BusinessToolsSEO />
       {currentTool !== 'overview' && (
         <div className="sticky top-0 z-10 bg-white border-b">
           <div className="max-w-6xl mx-auto px-6 py-4">
