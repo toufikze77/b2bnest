@@ -2863,6 +2863,10 @@ export type Database = {
         Args: { p_role?: string; p_team_id: string; p_user_id: string }
         Returns: Json
       }
+      audit_profile_access: {
+        Args: { access_type?: string; accessed_user_id: string }
+        Returns: undefined
+      }
       check_2fa_rate_limit: {
         Args: { p_email: string }
         Returns: boolean
