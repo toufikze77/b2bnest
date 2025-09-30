@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Menu, X, User, LogOut, Settings, BarChart3, Users, KanbanSquare, Building2, ShoppingCart, Briefcase, Network, Brain, Bitcoin, Globe, Newspaper } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import logo from '@/assets/b2bnest-logo.png';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,9 +34,9 @@ const Header = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center">
             <img 
-              src="/lovable-uploads/ac6d0f2a-e033-4bfc-b1e3-f5f14c1106e9.png" 
+              src={logo} 
               alt="AI-Powered Business Automation Platform Logo" 
-              style={{width: "125px", height: "auto"}}
+              style={{width: "200px", height: "auto"}}
             />
           </Link>
 
