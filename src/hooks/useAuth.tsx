@@ -106,16 +106,82 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  // Placeholder 2FA methods (simplified for now)
+  // 2FA verification - verify code from database
   const verify2FA = async (email: string, code: string, isLogin: boolean) => {
-    // Simplified implementation - in production you'd verify against your database
-    return { error: null };
+    try {
+      const { data, error } = await supabase
+        .from('user_2fa_codes')
+        .select('*')
+        .eq('code', code)
+        .eq('code_type', isLogin ? 'login' : 'verification')
+        .eq('used', false)
+        .gt('expires_at', new Date().toISOString())
+        .single();
+
+      if (error || !data) {
+        return { error: { message: 'Invalid or expired verification code' } };
+      }
+
+      // Mark code as used
+      await supabase
+        .from('user_2fa_codes')
+        .update({ used: true })
+        .eq('id', data.id);
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: { message: error.message || 'Verification failed' } };
+    }
   };
 
+  // Send verification code - generate and store in database, then send via email
   const sendVerificationCode = async (email: string, type: 'verification' | 'login') => {
-    // Simplified implementation - in production you'd send actual codes
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    return { error: null, code };
+    try {
+      // Generate 6-digit code
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Get user ID from email if they exist
+      const { data: userData } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .single();
+
+      // Store code in database
+      const { error: insertError } = await supabase
+        .from('user_2fa_codes')
+        .insert({
+          user_id: userData?.id || '00000000-0000-0000-0000-000000000000', // Temporary ID for new users
+          code: code,
+          code_type: type,
+          expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes
+        });
+
+      if (insertError) {
+        console.error('Error storing 2FA code:', insertError);
+        return { error: insertError };
+      }
+
+      // Send code via email
+      const { data, error } = await supabase.functions.invoke('send-2fa-email', {
+        body: {
+          email,
+          code,
+          type,
+          name: email.split('@')[0]
+        }
+      });
+
+      if (error) {
+        console.error('Error sending 2FA email:', error);
+        return { error };
+      }
+
+      return { error: null };
+    } catch (error: any) {
+      console.error('Error in sendVerificationCode:', error);
+      return { error: { message: error.message || 'Failed to send verification code' } };
+    }
   };
 
 

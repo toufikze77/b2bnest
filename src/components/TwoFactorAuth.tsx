@@ -80,7 +80,7 @@ const TwoFactorAuth = ({ email, isVerification = false, onSuccess, onBack }: Two
 
       toast({
         title: "Code Sent",
-        description: `A new verification code has been sent to ${email}. Demo code: ${code}`,
+        description: `A new verification code has been sent to ${email}. Please check your inbox.`,
         duration: 10000
       });
     } catch (error) {
