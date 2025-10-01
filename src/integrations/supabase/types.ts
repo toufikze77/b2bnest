@@ -3031,8 +3031,16 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      is_project_member: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_safe_profile_field: {
         Args: { field_name: string }
+        Returns: boolean
+      }
+      is_team_member: {
+        Args: { _team_id: string; _user_id: string }
         Returns: boolean
       }
       log_user_action: {
@@ -3046,6 +3054,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: string
+      }
+      owns_team: {
+        Args: { _team_id: string; _user_id: string }
+        Returns: boolean
       }
       store_bank_account: {
         Args: {
