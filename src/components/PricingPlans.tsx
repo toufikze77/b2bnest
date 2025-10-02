@@ -117,7 +117,7 @@ const PricingPlans = () => {
     },
   ];
 
-  const handlePlanSelect = async (planId: string, isFreeTrial: boolean = false) => {
+  const handlePlanSelect = async (planId: string) => {
     if (!user) {
       toast({
         title: "Sign In Required",
@@ -125,15 +125,6 @@ const PricingPlans = () => {
         variant: "destructive"
       });
       window.location.href = '/auth';
-      return;
-    }
-
-    // If it's a free trial request, just show success message
-    if (isFreeTrial) {
-      toast({
-        title: "Free Trial Started!",
-        description: "Your 14-day free trial has been activated. Explore all premium features!",
-      });
       return;
     }
 
@@ -393,7 +384,7 @@ const PricingPlans = () => {
               Join thousands of entrepreneurs already using our AI-powered platform
             </p>
             <Button 
-              onClick={() => !user ? (window.location.href = '/auth') : handlePlanSelect('professional', true)}
+              onClick={() => window.location.href = '/auth'}
               className="bg-white text-blue-600 hover:bg-gray-100 font-semibold px-8 py-3"
             >
               Start Your Free Trial

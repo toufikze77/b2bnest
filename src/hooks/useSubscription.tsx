@@ -7,6 +7,7 @@ export interface SubscriptionData {
   subscribed: boolean;
   subscription_tier: string;
   subscription_end: string | null;
+  trial_ends_at: string | null;
   loading: boolean;
 }
 
@@ -17,6 +18,7 @@ export const useSubscription = () => {
     subscribed: false,
     subscription_tier: 'free',
     subscription_end: null,
+    trial_ends_at: null,
     loading: true
   });
 
@@ -26,6 +28,7 @@ export const useSubscription = () => {
         subscribed: false,
         subscription_tier: 'free',
         subscription_end: null,
+        trial_ends_at: null,
         loading: false
       });
       return;
@@ -49,6 +52,7 @@ export const useSubscription = () => {
             subscribed: data.subscribed,
             subscription_tier: data.subscription_tier || 'free',
             subscription_end: data.subscription_end,
+            trial_ends_at: (data as any).trial_ends_at || null,
             loading: false
           });
         } else {
@@ -70,6 +74,7 @@ export const useSubscription = () => {
             subscribed: false,
             subscription_tier: 'free',
             subscription_end: null,
+            trial_ends_at: null,
             loading: false
           });
         }
@@ -86,7 +91,10 @@ export const useSubscription = () => {
   const specialAccessEmails = ['toufikze@gmail.com', 'toufik.zemri@outlook.com'];
   const hasSpecialAccess = user?.email && specialAccessEmails.includes(user.email);
   
-  const isPremium = isAdmin || hasSpecialAccess || (subscription.subscribed && subscription.subscription_tier !== 'free');
+  // Check if user has active trial
+  const hasActiveTrial = subscription.trial_ends_at && new Date(subscription.trial_ends_at) > new Date();
+  
+  const isPremium = isAdmin || hasSpecialAccess || hasActiveTrial || (subscription.subscribed && subscription.subscription_tier !== 'free');
   const canAccessFeature = (featureId: string) => {
     // Admin users have access to all features
     if (isAdmin) return true;
