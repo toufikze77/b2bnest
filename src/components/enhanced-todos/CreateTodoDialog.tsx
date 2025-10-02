@@ -292,53 +292,59 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
         // Get all user IDs from the same organization(s) - strict security segregation
         const { data: orgMembers, error: membersError } = await supabase
           .from('organization_members')
-          .select(`
-            user_id,
-            profiles:user_id (
-              id,
-              display_name,
-              email,
-              full_name
-            )
-          `)
+          .select('user_id')
           .in('organization_id', organizationIds)
           .eq('is_active', true);
 
         if (membersError) {
           console.error('Error fetching organization members:', membersError);
-          // Fallback to current user only for security
-          setAvailableUsers([
-            {
-              id: user?.id || 'current-user',
-              display_name: user?.email?.split('@')[0] || 'Current User',
-              email: user?.email || 'user@example.com',
-              full_name: user?.email?.split('@')[0] || 'Current User'
-            }
-          ]);
+          setAvailableUsers([{
+            id: user?.id || 'current-user',
+            display_name: user?.email?.split('@')[0] || 'Current User',
+            email: user?.email || 'user@example.com',
+            full_name: user?.email?.split('@')[0] || 'Current User'
+          }]);
+          setLoadingUsers(false);
           return;
         }
 
-        // Map org members to user format with profile data
-        let users = (orgMembers || [])
-          .filter((member: any) => member.profiles) // Only include members with profile data
-          .map((member: any) => ({
-            id: member.profiles.id,
-            display_name: member.profiles.display_name || member.profiles.full_name || 'Unknown User',
-            email: member.profiles.email || null,
-            full_name: member.profiles.full_name || member.profiles.display_name || 'Unknown User'
-          }));
+        const userIds = orgMembers?.map(member => member.user_id) || [];
+        
+        // Now fetch profile data for these users
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, display_name, email, full_name')
+          .in('id', userIds);
+
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          // Fallback to current user only
+          setAvailableUsers([{
+            id: user?.id || 'current-user',
+            display_name: user?.email?.split('@')[0] || 'Current User',
+            email: user?.email || 'user@example.com',
+            full_name: user?.email?.split('@')[0] || 'Current User'
+          }]);
+          setLoadingUsers(false);
+          return;
+        }
+
+        // Map profiles to user format
+        let users = (profilesData || []).map((profile: any) => ({
+          id: profile.id,
+          display_name: profile.display_name || profile.full_name || 'Unknown User',
+          email: profile.email || null,
+          full_name: profile.full_name || profile.display_name || 'Unknown User'
+        }));
         
         if (users.length === 0) {
-          console.error('No users with profiles found');
-          // Fallback to current user only
-          users = [
-            {
-              id: user?.id || 'current-user',
-              display_name: user?.email?.split('@')[0] || 'Current User',
-              email: user?.email || 'user@example.com',
-              full_name: user?.email?.split('@')[0] || 'Current User'
-            }
-          ];
+          console.error('No users found');
+          users = [{
+            id: user?.id || 'current-user',
+            display_name: user?.email?.split('@')[0] || 'Current User',
+            email: user?.email || 'user@example.com',
+            full_name: user?.email?.split('@')[0] || 'Current User'
+          }];
         }
         
         // Always ensure current user is in the list
