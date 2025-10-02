@@ -52,18 +52,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Email + password sign-up
   const signUp = async (email: string, password: string, fullName?: string, companyName?: string) => {
-    // Only force HTTPS for production, keep localhost as HTTP for development
-    const redirectUrl = window.location.origin.includes('localhost') 
-      ? window.location.origin 
-      : window.location.origin.replace('http://', 'https://');
-    return await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${redirectUrl}/`,
-        data: { full_name: fullName, company_name: companyName }
+    try {
+      // Only force HTTPS for production, keep localhost as HTTP for development
+      const redirectUrl = window.location.origin.includes('localhost') 
+        ? window.location.origin 
+        : window.location.origin.replace('http://', 'https://');
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${redirectUrl}/`,
+          data: { full_name: fullName, company_name: companyName }
+        }
+      });
+
+      if (error) {
+        return { error, needsVerification: false };
       }
-    });
+
+      // Send verification code via email
+      const { error: codeError } = await sendVerificationCode(email, 'verification');
+      
+      if (codeError) {
+        console.error('Failed to send verification code:', codeError);
+        return { error: codeError, needsVerification: false };
+      }
+
+      // Return success with verification flag
+      return { error: null, needsVerification: true };
+    } catch (err: any) {
+      return { error: err, needsVerification: false };
+    }
   };
 
   // Sign out
