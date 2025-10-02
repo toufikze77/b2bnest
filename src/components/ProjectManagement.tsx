@@ -287,7 +287,13 @@ const ProjectManagement = () => {
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<'kanban' | 'list' | 'calendar' | 'timeline'>('kanban');
   const [activeTab, setActiveTab] = useState('kanban');
-  const [selectedProject, setSelectedProject] = useState('all');
+  const [selectedProject, setSelectedProject] = useState(() => {
+    // Always start with 'all' to show all tasks by default
+    try {
+      localStorage.removeItem('pm_selected_project'); // Clear any saved project filter
+    } catch {}
+    return 'all';
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
@@ -1073,18 +1079,16 @@ const ProjectManagement = () => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          task.description.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Handle project filtering with proper UUID matching
+    // Handle project filtering - show all tasks when 'all' is selected
     let matchesProject = false;
     if (selectedProject === 'all') {
+      // Show all tasks including those without a project
       matchesProject = true;
     } else {
-      // Check if task.project is a UUID (from database) or a string (legacy)
-      const selectedProjectData = (projects || []).find(p => p.id === selectedProject);
-      matchesProject = task.project === selectedProject || 
-                      (selectedProjectData && task.project === selectedProjectData.name);
+      // Check if task.project matches the selected project UUID
+      matchesProject = task.project === selectedProject;
     }
     
-    console.log('Filtering task:', task.title, 'project:', task.project, 'selectedProject:', selectedProject, 'matches:', matchesProject);
     return matchesSearch && matchesProject;
   });
 
