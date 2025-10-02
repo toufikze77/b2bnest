@@ -21,7 +21,12 @@ export async function getUserDisplayInfo(userId: string): Promise<UserDisplayInf
       return null;
     }
     
-    return data?.[0] || null;
+    // RPC returns a table (array), get first result
+    if (Array.isArray(data) && data.length > 0) {
+      return data[0];
+    }
+    
+    return null;
   } catch (error) {
     console.error('Error in getUserDisplayInfo:', error);
     return null;

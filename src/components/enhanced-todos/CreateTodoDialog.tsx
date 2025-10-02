@@ -292,7 +292,15 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
         // Get all user IDs from the same organization(s) - strict security segregation
         const { data: orgMembers, error: membersError } = await supabase
           .from('organization_members')
-          .select('user_id')
+          .select(`
+            user_id,
+            profiles:user_id (
+              id,
+              display_name,
+              email,
+              full_name
+            )
+          `)
           .in('organization_id', organizationIds)
           .eq('is_active', true);
 
@@ -310,51 +318,37 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
           return;
         }
 
-        const userIds = orgMembers?.map(member => member.user_id) || [];
-
-        // Use secure function to get display info
-        const { batchGetUserDisplayInfo } = await import('@/utils/profileUtils');
-        const displayInfo = await batchGetUserDisplayInfo(userIds);
-
-        if (!displayInfo || displayInfo.length === 0) {
-          console.error('No user display info returned');
-          // Fallback to current user only for security
-          setAvailableUsers([
+        // Map org members to user format with profile data
+        let users = (orgMembers || [])
+          .filter((member: any) => member.profiles) // Only include members with profile data
+          .map((member: any) => ({
+            id: member.profiles.id,
+            display_name: member.profiles.display_name || member.profiles.full_name || 'Unknown User',
+            email: member.profiles.email || null,
+            full_name: member.profiles.full_name || member.profiles.display_name || 'Unknown User'
+          }));
+        
+        if (users.length === 0) {
+          console.error('No users with profiles found');
+          // Fallback to current user only
+          users = [
             {
               id: user?.id || 'current-user',
               display_name: user?.email?.split('@')[0] || 'Current User',
               email: user?.email || 'user@example.com',
               full_name: user?.email?.split('@')[0] || 'Current User'
             }
-          ]);
-          return;
+          ];
         }
-
-        // Map displayInfo to expected format
-        let users = displayInfo.map(info => ({
-          id: info.id,
-          display_name: info.display_name || 'Unknown User',
-          email: null, // Not exposed for security
-          full_name: info.display_name || 'Unknown User'
-        }));
         
         // Always ensure current user is in the list
         const currentUserExists = users.some(u => u.id === user?.id);
-        if (!currentUserExists) {
+        if (!currentUserExists && user?.id) {
           users.unshift({
-            id: user?.id || 'current-user',
+            id: user.id,
             display_name: user?.email?.split('@')[0] || 'Current User',
             email: user?.email || 'user@example.com',
             full_name: user?.email?.split('@')[0] || 'Current User'
-          });
-        }
-
-        // If teamId is set but query did not filter, attempt client-side filter by provided teamMembers names
-        if (teamId && teamId !== 'all' && Array.isArray(teamMembers) && teamMembers.length > 0) {
-          const names = new Set(teamMembers.map((n:string)=>n.toLowerCase()));
-          users = users.filter((u:any) => {
-            const dn = (u.display_name || u.full_name || '').toLowerCase();
-            return names.has(dn);
           });
         }
 
