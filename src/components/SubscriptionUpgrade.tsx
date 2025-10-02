@@ -81,11 +81,11 @@ const SubscriptionUpgrade = ({ featureName, onUpgrade }: SubscriptionUpgradeProp
                 </div>
                 <CardDescription>Full access to AI Studio</CardDescription>
                 <div className="flex items-center justify-center gap-2">
-                  <div className="text-2xl font-bold">£11<span className="text-sm font-normal">/month</span></div>
-                  <span className="text-sm text-gray-400 line-through">£39</span>
+                  <div className="text-2xl font-bold">£19<span className="text-sm font-normal">/month</span></div>
+                  <span className="text-sm text-gray-400 line-through">£56</span>
                 </div>
                 <Badge className="mt-2 bg-red-100 text-red-800">
-                  Limited Time: 72% OFF
+                  Limited Time: 66% OFF
                 </Badge>
               </CardHeader>
               <CardContent>
@@ -130,7 +130,7 @@ const SubscriptionUpgrade = ({ featureName, onUpgrade }: SubscriptionUpgradeProp
       <CheckoutModal
         isOpen={isCheckoutOpen}
         onClose={() => setIsCheckoutOpen(false)}
-        amount={11}
+        amount={19}
         currency="GBP"
         itemName="AI Studio Premium Subscription"
         onPaymentSuccess={handlePaymentSuccess}

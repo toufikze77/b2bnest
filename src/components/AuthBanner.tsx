@@ -24,7 +24,7 @@ const AuthBanner = () => {
             </Link>
             <Link to="/auth">
               <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                Sign Up
+                Start Free Trial
               </Button>
             </Link>
           </div>
