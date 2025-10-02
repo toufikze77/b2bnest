@@ -1017,6 +1017,27 @@ const ProjectManagement = () => {
       };
       setActivityLogs(prev => [newActivity, ...prev]);
 
+      // Send email notification if task is assigned to someone
+      if (taskData.assigned_to && taskData.assigned_to !== user?.id) {
+        try {
+          await supabase.functions.invoke('send-task-notification', {
+            body: {
+              taskId: data.id,
+              taskTitle: data.title,
+              taskDescription: data.description,
+              priority: data.priority,
+              dueDate: data.due_date,
+              assignedToId: taskData.assigned_to,
+              assignedByName: user?.email?.split('@')[0] || 'Someone',
+              projectName: data.project?.name
+            }
+          });
+        } catch (notificationError) {
+          console.error('Failed to send task notification:', notificationError);
+          // Don't block task creation if notification fails
+        }
+      }
+
       toast({
         title: "Task Created",
         description: `Successfully created task: ${newTask.title}`,
