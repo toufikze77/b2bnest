@@ -2982,6 +2982,15 @@ export type Database = {
         Args: { p_team_id: string }
         Returns: Json
       }
+      get_user_display_info: {
+        Args: { p_user_id: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          headline: string
+          id: string
+        }[]
+      }
       get_user_integrations_safe: {
         Args: { p_user_id?: string }
         Returns: {

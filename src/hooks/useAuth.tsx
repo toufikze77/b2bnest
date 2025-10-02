@@ -154,7 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           user_id: userData?.id || '00000000-0000-0000-0000-000000000000', // Temporary ID for new users
           code: code,
           code_type: type,
-          expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes
+          expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString() // 5 minutes (matches documentation)
         });
 
       if (insertError) {
