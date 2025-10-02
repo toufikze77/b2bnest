@@ -2299,7 +2299,11 @@ const ProjectManagement = () => {
     let arr = [...workRequests];
     if (workRequestStatusFilter !== 'all') arr = arr.filter(w => w.status === workRequestStatusFilter);
     if (workRequestPriorityFilter !== 'all') arr = arr.filter(w => (w.priority || 'medium') === workRequestPriorityFilter);
-    arr.sort((a,b) => workRequestSort === 'newest' ? (b.created_at.localeCompare(a.created_at)) : (a.created_at.localeCompare(b.created_at)));
+    arr.sort((a,b) => {
+      const aDate = a.created_at || '';
+      const bDate = b.created_at || '';
+      return workRequestSort === 'newest' ? bDate.localeCompare(aDate) : aDate.localeCompare(bDate);
+    });
     return arr;
   })();
   const pagedWorkRequests = filteredSortedWorkRequests.slice((workRequestPage-1)*PAGE_SIZE, workRequestPage*PAGE_SIZE);
@@ -2386,7 +2390,11 @@ const ProjectManagement = () => {
       console.error('Error deleting goal:', error);
     }
   };
-  const sortedGoals = [...goals].sort((a,b) => goalsSort === 'newest' ? (b.created_at.localeCompare(a.created_at)) : (a.created_at.localeCompare(b.created_at)));
+  const sortedGoals = [...goals].sort((a,b) => {
+    const aDate = a.created_at || '';
+    const bDate = b.created_at || '';
+    return goalsSort === 'newest' ? bDate.localeCompare(aDate) : aDate.localeCompare(bDate);
+  });
   const pagedGoals = sortedGoals.slice((goalsPage-1)*PAGE_SIZE, goalsPage*PAGE_SIZE);
 
   // Calendar event dialogs and filters
@@ -2418,7 +2426,11 @@ const ProjectManagement = () => {
     const { error } = await supabase.from('calendar_events' as any).delete().eq('id', ev.id);
     if (!error) setCalendarEvents(prev => prev.filter(e => e.id !== ev.id));
   };
-  const sortedEvents = [...calendarEvents].sort((a,b) => eventsSort === 'newest' ? (b.start_at.localeCompare(a.start_at)) : (a.start_at.localeCompare(b.start_at)));
+  const sortedEvents = [...calendarEvents].sort((a,b) => {
+    const aDate = a.start_at || '';
+    const bDate = b.start_at || '';
+    return eventsSort === 'newest' ? bDate.localeCompare(aDate) : aDate.localeCompare(bDate);
+  });
   const pagedEvents = sortedEvents.slice((eventsPage-1)*PAGE_SIZE, eventsPage*PAGE_SIZE);
 
   return (
