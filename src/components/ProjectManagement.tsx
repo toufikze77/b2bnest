@@ -731,13 +731,45 @@ const ProjectManagement = () => {
     const start = window.prompt('Start (YYYY-MM-DD HH:MM)');
     if (!start) return;
     const end = window.prompt('End (YYYY-MM-DD HH:MM, optional)') || null;
+    
+    // Get user's organization
+    const { data: orgData, error: orgError } = await supabase
+      .from('organization_members')
+      .select('organization_id')
+      .eq('user_id', user?.id)
+      .eq('is_active', true)
+      .limit(1)
+      .single();
+
+    if (orgError || !orgData) {
+      toast({
+        title: "Error",
+        description: "You must belong to an organization to create events.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const { data, error } = await supabase.from('todos').insert({ 
       title, 
       description: '',
+      status: 'todo',
+      priority: 'medium',
       due_date: start,
-      user_id: user?.id || ''
+      user_id: user?.id || '',
+      organization_id: orgData.organization_id
     }).select().single();
-    if (!error && data) setCalendarEvents(prev => [...prev, data as unknown as CalendarEventItem]);
+    
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create event: " + error.message,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (data) setCalendarEvents(prev => [...prev, data as unknown as CalendarEventItem]);
   };
 
   // Check access after hooks are initialized
@@ -905,6 +937,19 @@ const ProjectManagement = () => {
   // Handle creating new tasks
   const handleCreateTask = async (taskData: any) => {
     try {
+      // Get user's organization
+      const { data: orgData, error: orgError } = await supabase
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', user?.id)
+        .eq('is_active', true)
+        .limit(1)
+        .single();
+
+      if (orgError || !orgData) {
+        throw new Error('You must belong to an organization to create tasks. Please contact your administrator.');
+      }
+
       // Determine which project to assign the task to
       const targetProjectId = selectedProject !== 'all' ? selectedProject : projects[0]?.id || null;
       
@@ -916,10 +961,13 @@ const ProjectManagement = () => {
           status: 'todo',
           priority: taskData.priority || 'medium',
           due_date: taskData.due_date || null,
+          start_date: taskData.start_date || null,
           labels: taskData.labels || [],
           estimated_hours: taskData.estimated_hours,
+          assigned_to: taskData.assigned_to || null,
           project_id: targetProjectId,
-          user_id: user?.id
+          user_id: user?.id,
+          organization_id: orgData.organization_id
         })
         .select(`
           *,
