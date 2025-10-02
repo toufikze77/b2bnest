@@ -73,14 +73,12 @@ export const TodoComments: React.FC<TodoCommentsProps> = ({ todoId }) => {
       // Get unique user IDs
       const userIds = [...new Set(commentsData.map(comment => comment.user_id))];
 
-      // Fetch user profiles
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, display_name, email')
-        .in('id', userIds);
+      // Use secure function to get display info
+      const { batchGetUserDisplayInfo } = await import('@/utils/profileUtils');
+      const profilesData = await batchGetUserDisplayInfo(userIds);
 
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
+      if (!profilesData || profilesData.length === 0) {
+        console.error('No profiles returned');
         // Still show comments without user info if profiles fail
         setComments(commentsData.map(comment => ({ ...comment, user_profile: null })));
         return;

@@ -59,12 +59,10 @@ const UserRoleManagement = () => {
 
       if (error) throw error;
 
-      // Get profile data separately
+      // Get profile data using secure function
       const userIds = data.map(item => item.user_id);
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, email, full_name')
-        .in('id', userIds);
+      const { batchGetUserDisplayInfo } = await import('@/utils/profileUtils');
+      const profiles = await batchGetUserDisplayInfo(userIds);
 
       const formattedUsers = data.map(item => {
         const profile = profiles?.find(p => p.id === item.user_id);
@@ -73,8 +71,8 @@ const UserRoleManagement = () => {
           user_id: item.user_id,
           role: item.role as 'owner' | 'admin' | 'manager' | 'user' | 'moderator',
           created_at: item.created_at,
-          email: profile?.email,
-          full_name: profile?.full_name
+          email: null, // Not exposed for security
+          full_name: profile?.display_name || 'Unknown User'
         };
       });
 

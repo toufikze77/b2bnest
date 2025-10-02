@@ -66,13 +66,29 @@ const CreateProjectDialog = ({ isOpen, onOpenChange, onCreateProject }: CreatePr
       
       setLoadingUsers(true);
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, display_name, email, full_name')
-          .order('full_name');
+        // Get organization members to find available users
+        const { data: orgMembers, error: orgError } = await supabase
+          .from('organization_members')
+          .select('user_id')
+          .eq('is_active', true);
         
-        if (error) throw error;
-        setUsers(data || []);
+        if (orgError) throw orgError;
+        
+        const userIds = orgMembers?.map(m => m.user_id) || [];
+        
+        // Use secure function to get display info
+        const { batchGetUserDisplayInfo } = await import('@/utils/profileUtils');
+        const displayInfo = await batchGetUserDisplayInfo(userIds);
+        
+        // Map to expected format
+        const formattedUsers = displayInfo.map(info => ({
+          id: info.id,
+          display_name: info.display_name,
+          email: null, // Not exposed for security
+          full_name: info.display_name
+        }));
+        
+        setUsers(formattedUsers);
       } catch (error) {
         console.error('Error fetching users:', error);
       } finally {

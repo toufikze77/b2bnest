@@ -312,15 +312,12 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
 
         const userIds = orgMembers?.map(member => member.user_id) || [];
 
-        // Fetch users only from the same organization(s)
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, display_name, email, full_name')
-          .in('id', userIds)
-          .order('display_name', { ascending: true });
+        // Use secure function to get display info
+        const { batchGetUserDisplayInfo } = await import('@/utils/profileUtils');
+        const displayInfo = await batchGetUserDisplayInfo(userIds);
 
-        if (error) {
-          console.error('Error fetching organization users:', error);
+        if (!displayInfo || displayInfo.length === 0) {
+          console.error('No user display info returned');
           // Fallback to current user only for security
           setAvailableUsers([
             {
@@ -333,7 +330,13 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
           return;
         }
 
-        let users = data || [];
+        // Map displayInfo to expected format
+        let users = displayInfo.map(info => ({
+          id: info.id,
+          display_name: info.display_name || 'Unknown User',
+          email: null, // Not exposed for security
+          full_name: info.display_name || 'Unknown User'
+        }));
         
         // Always ensure current user is in the list
         const currentUserExists = users.some(u => u.id === user?.id);
