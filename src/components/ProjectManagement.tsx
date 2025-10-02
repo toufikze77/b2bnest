@@ -853,16 +853,32 @@ const ProjectManagement = () => {
       if (error) throw error;
 
       if (data) {
-        const formattedTasks: Task[] = data.map(todo => {
+        const formattedTasks: Task[] = await Promise.all(data.map(async todo => {
           const raw = String(todo.status || 'todo').toLowerCase().replace(/_/g, '-').replace(/\s+/g, '-');
           const normalizedStatus = (['backlog','todo','in-progress','review','done'].includes(raw) ? raw : 'todo') as Task['status'];
+          
+          // Fetch assignee display name
+          let assigneeName = 'Unassigned';
+          if (todo.assigned_to) {
+            try {
+              const { data: assigneeData } = await supabase.rpc('get_user_display_info', { 
+                p_user_id: todo.assigned_to 
+              });
+              if (Array.isArray(assigneeData) && assigneeData.length > 0) {
+                assigneeName = assigneeData[0].display_name || 'User';
+              }
+            } catch (err) {
+              console.error('Error fetching assignee:', err);
+            }
+          }
+          
           return {
             id: todo.id,
             title: todo.title,
             description: todo.description || '',
             status: normalizedStatus,
             priority: (String(todo.priority || 'medium').toLowerCase() as 'low'|'medium'|'high'|'urgent'),
-            assignee: todo.assigned_to || 'Unassigned',
+            assignee: assigneeName,
             dueDate: todo.due_date ? new Date(todo.due_date) : null,
             project: todo.projects?.id || 'no-project',
             tags: todo.labels || [],
@@ -871,7 +887,7 @@ const ProjectManagement = () => {
             progress: 0,
             comments: []
           };
-        });
+        }));
         setTasks(formattedTasks);
       }
     } catch (error) {
@@ -987,13 +1003,28 @@ const ProjectManagement = () => {
 
       if (error) throw error;
 
+      // Fetch assignee display name
+      let assigneeName = 'Unassigned';
+      if (data.assigned_to) {
+        try {
+          const { data: assigneeData } = await supabase.rpc('get_user_display_info', { 
+            p_user_id: data.assigned_to 
+          });
+          if (Array.isArray(assigneeData) && assigneeData.length > 0) {
+            assigneeName = assigneeData[0].display_name || 'User';
+          }
+        } catch (err) {
+          console.error('Error fetching assignee:', err);
+        }
+      }
+
       const newTask: Task = {
         id: data.id,
         title: data.title,
         description: data.description || '',
         status: data.status as 'backlog' | 'todo' | 'in-progress' | 'review' | 'done',
         priority: data.priority as 'low' | 'medium' | 'high' | 'urgent',
-        assignee: data.assigned_to || 'Unassigned',
+        assignee: assigneeName,
         dueDate: data.due_date ? new Date(data.due_date) : null,
         project: data.project?.id || 'no-project',
         tags: data.labels || [],
