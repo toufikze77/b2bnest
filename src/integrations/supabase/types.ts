@@ -2924,6 +2924,10 @@ export type Database = {
         Args: { data: string }
         Returns: string
       }
+      ensure_user_has_org: {
+        Args: { p_user_id?: string }
+        Returns: string
+      }
       get_advertisement_contact_info: {
         Args: { ad_id: string }
         Returns: {
