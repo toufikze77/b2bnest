@@ -853,21 +853,25 @@ const ProjectManagement = () => {
       if (error) throw error;
 
       if (data) {
-        const formattedTasks: Task[] = data.map(todo => ({
-          id: todo.id,
-          title: todo.title,
-          description: todo.description || '',
-          status: todo.status as 'backlog' | 'todo' | 'in-progress' | 'review' | 'done',
-          priority: todo.priority as 'low' | 'medium' | 'high' | 'urgent',
-          assignee: todo.assigned_to || 'Unassigned',
-          dueDate: todo.due_date ? new Date(todo.due_date) : null,
-          project: todo.projects?.id || 'no-project',
-          tags: todo.labels || [],
-          estimatedHours: todo.estimated_hours,
-          subtasks: [],
-          progress: 0,
-          comments: []
-        }));
+        const formattedTasks: Task[] = data.map(todo => {
+          const raw = String(todo.status || 'todo').toLowerCase().replace(/_/g, '-').replace(/\s+/g, '-');
+          const normalizedStatus = (['backlog','todo','in-progress','review','done'].includes(raw) ? raw : 'todo') as Task['status'];
+          return {
+            id: todo.id,
+            title: todo.title,
+            description: todo.description || '',
+            status: normalizedStatus,
+            priority: (String(todo.priority || 'medium').toLowerCase() as 'low'|'medium'|'high'|'urgent'),
+            assignee: todo.assigned_to || 'Unassigned',
+            dueDate: todo.due_date ? new Date(todo.due_date) : null,
+            project: todo.projects?.id || 'no-project',
+            tags: todo.labels || [],
+            estimatedHours: todo.estimated_hours,
+            subtasks: [],
+            progress: 0,
+            comments: []
+          };
+        });
         setTasks(formattedTasks);
       }
     } catch (error) {
@@ -2507,7 +2511,7 @@ const ProjectManagement = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Overdue</p>
-                <p className="text-2xl font-bold">3</p>
+                <p className="text-2xl font-bold">{tasks.filter(t => t.dueDate && t.status !== 'done' && t.dueDate < new Date()).length}</p>
               </div>
             </div>
           </CardContent>
