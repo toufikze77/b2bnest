@@ -60,13 +60,21 @@ export const useSubscription = () => {
           .from('subscribers')
           .select('*')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
         if (error && error.code !== 'PGRST116') {
           console.error('Error fetching subscription:', error);
         }
 
-        const trialEndsAt = profile?.trial_ends_at || null;
+        // Prefer secure RPC to get trial status bypassing RLS safely
+        const { data: trialData, error: trialError } = await supabase.rpc('check_trial_status', { user_id_param: user.id });
+        if (trialError) {
+          console.error('Error checking trial status via RPC:', trialError);
+        }
+        const trialRow: any = Array.isArray(trialData) ? trialData[0] : trialData;
+        const trialEndsAt = (trialRow?.is_trial_active && (trialRow?.days_remaining ?? 0) > 0)
+          ? (trialRow?.trial_ends_at as string)
+          : (profile?.trial_ends_at || null);
         const hasActiveTrial = trialEndsAt && new Date(trialEndsAt) > new Date();
         
         console.log('✅ Subscription State:', {

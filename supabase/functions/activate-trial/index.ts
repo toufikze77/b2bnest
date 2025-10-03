@@ -12,8 +12,10 @@ serve(async (req: Request) => {
   }
 
   try {
+    console.log("activate-trial: request received");
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
+      console.warn("activate-trial: missing Authorization header");
       return new Response(JSON.stringify({ error: "Missing Authorization header" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -30,6 +32,7 @@ serve(async (req: Request) => {
     // Resolve user from token
     const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(accessToken);
     if (userError || !userData?.user) {
+      console.error("activate-trial: invalid user auth", userError);
       return new Response(JSON.stringify({ error: "Invalid user auth" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -37,6 +40,7 @@ serve(async (req: Request) => {
     }
 
     const user = userData.user;
+    console.log("activate-trial: user resolved", { userId: user.id, email: user.email });
 
     // Fetch profile
     const { data: profile, error: profileError } = await supabaseAdmin
@@ -56,6 +60,11 @@ serve(async (req: Request) => {
     const now = new Date();
     const existingEnds = profile?.trial_ends_at ? new Date(profile.trial_ends_at as any) : null;
     const active = profile?.is_trial_active && existingEnds && existingEnds > now;
+    console.log("activate-trial: current trial status", {
+      is_trial_active: profile?.is_trial_active,
+      trial_ends_at: profile?.trial_ends_at,
+      active,
+    });
 
     if (active) {
       return new Response(
@@ -64,8 +73,6 @@ serve(async (req: Request) => {
       );
     }
 
-    // One-time guard: if explicitly marked expired, we can still allow re-activation if business rules permit
-    // For now, allow activation if not currently active
     const endsAt = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
 
     const { error: updateError } = await supabaseAdmin
@@ -85,6 +92,7 @@ serve(async (req: Request) => {
       });
     }
 
+    console.log("activate-trial: trial activated", { userId: user.id, trial_ends_at: endsAt.toISOString() });
     return new Response(
       JSON.stringify({ status: "activated", trial_ends_at: endsAt.toISOString() }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
