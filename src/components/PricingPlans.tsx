@@ -157,6 +157,32 @@ const PricingPlans = () => {
     });
   };
 
+  const handleStartTrial = async () => {
+    if (!user) {
+      window.location.href = '/auth';
+      return;
+    }
+    try {
+      const { data, error } = await supabase.functions.invoke('activate-trial', { body: { source: 'pricing' } });
+      if (error) throw error;
+      toast({
+        title: data?.status === 'already_active' ? 'Trial Already Active' : 'Free Trial Activated!',
+        description: data?.trial_ends_at
+          ? `Enterprise access until ${new Date(data.trial_ends_at).toLocaleString()}`
+          : 'You now have Enterprise access for 14 days.',
+      });
+      // Refresh subscription and trial state
+      try { (window as any).gtag?.('event', 'trial_activated'); } catch {}
+      window.location.reload();
+    } catch (err: any) {
+      console.error('activate-trial error', err);
+      toast({
+        title: 'Could not start trial',
+        description: err?.message || 'Please try again later.',
+        variant: 'destructive',
+      });
+    }
+  };
   const getCurrentPlanBadge = (planId: string) => {
     if (!isPremium && planId === 'starter') {
       return <Badge className="absolute -top-1 -right-2 bg-green-500">Current Plan</Badge>;
@@ -384,7 +410,7 @@ const PricingPlans = () => {
               Join thousands of entrepreneurs already using our AI-powered platform
             </p>
             <Button 
-              onClick={() => window.location.href = '/auth'}
+              onClick={handleStartTrial}
               className="bg-white text-blue-600 hover:bg-gray-100 font-semibold px-8 py-3"
             >
               Start Your Free Trial
