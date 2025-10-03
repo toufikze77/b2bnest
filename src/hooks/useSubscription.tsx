@@ -42,6 +42,13 @@ export const useSubscription = () => {
           .eq('user_id', user.id)
           .single();
 
+        // Fetch trial info from profiles
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('trial_ends_at, is_trial_active')
+          .eq('id', user.id)
+          .single();
+
         if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
           console.error('Error fetching subscription:', error);
           return;
@@ -52,7 +59,7 @@ export const useSubscription = () => {
             subscribed: data.subscribed,
             subscription_tier: data.subscription_tier || 'free',
             subscription_end: data.subscription_end,
-            trial_ends_at: (data as any).trial_ends_at || null,
+            trial_ends_at: profile?.trial_ends_at || null,
             loading: false
           });
         } else {
@@ -74,7 +81,7 @@ export const useSubscription = () => {
             subscribed: false,
             subscription_tier: 'free',
             subscription_end: null,
-            trial_ends_at: null,
+            trial_ends_at: profile?.trial_ends_at || null,
             loading: false
           });
         }
