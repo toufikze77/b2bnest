@@ -156,7 +156,7 @@ const BusinessToolsSection = () => {
             ✨ Plus Many More Tools
           </h3>
           <p className="text-center text-gray-600 mb-8">Discover additional features to supercharge your business</p>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 justify-items-center max-w-3xl mx-auto">
             {additionalTools.map((tool, index) => {
               const Icon = tool.icon;
               const colors = [
