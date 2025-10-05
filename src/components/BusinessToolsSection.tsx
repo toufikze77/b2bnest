@@ -174,9 +174,9 @@ const BusinessToolsSection = () => {
                 "shadow-neutral-300"
               ];
               return (
-                <div key={index} className="text-center">
-                  <div className={`bg-gradient-to-br ${colors[index % colors.length]} p-4 rounded-2xl mb-3 ${shadowColors[index % shadowColors.length]} shadow-lg`}>
-                    <Icon className="h-7 w-7 text-white mx-auto drop-shadow-sm" />
+                <div key={index} className="text-center w-full max-w-[200px]">
+                  <div className={`bg-gradient-to-br ${colors[index % colors.length]} p-4 rounded-2xl mb-3 ${shadowColors[index % shadowColors.length]} shadow-lg h-16 w-16 mx-auto flex items-center justify-center`}>
+                    <Icon className="h-7 w-7 text-white drop-shadow-sm" />
                   </div>
                   <h4 className="font-semibold text-sm text-gray-900 mb-1">{tool.title}</h4>
                   <p className="text-xs text-gray-500">{tool.count}</p>
