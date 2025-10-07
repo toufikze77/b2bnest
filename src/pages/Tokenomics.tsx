@@ -1,5 +1,5 @@
 import React from 'react';
-import { Coins, PieChart, TrendingUp, Lock, Users, Zap, Target, Clock } from 'lucide-react';
+import { Coins, PieChart, TrendingUp, Lock, Users, Zap, Target, Clock, Link } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import Footer from '@/components/Footer';
@@ -295,6 +295,24 @@ const Tokenomics = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Future Partnerships */}
+          <Card className="mb-16">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Link className="h-5 w-5 text-blue-600" />
+                🔗 Future Partnerships
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-700 mb-6">
+                B2BNEST is expanding its ecosystem through strategic collaborations with leading platforms in the crypto and blockchain space. Our future partnerships aim to enhance visibility, accessibility, and real-world utility for our community. B2BNEST plans to integrate with and be listed on major partners such as <strong>DEXView</strong>, <strong>Pinksale</strong>, <strong>Birdseye</strong>, <strong>OKX</strong>, <strong>CoinGecko</strong>, <strong>CoinMarketCap</strong>, <strong>Phantom</strong>, <strong>Alchemy Pay</strong>, <strong>Binance</strong>, and <strong>Bitget</strong>.
+              </p>
+              <p className="text-gray-700">
+                These partnerships will strengthen our liquidity, transparency, and multi-chain presence — empowering users with seamless trading, analytics, and global payment options as we continue to grow in the decentralized finance ecosystem.
+              </p>
+            </CardContent>
+          </Card>
 
           {/* Call to Action */}
           <Card className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
