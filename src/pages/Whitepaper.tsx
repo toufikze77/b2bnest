@@ -401,9 +401,43 @@ const Whitepaper = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-700 mb-6">
-                B2BNEST is expanding its ecosystem through strategic collaborations with leading platforms in the crypto and blockchain space. Our future partnerships aim to enhance visibility, accessibility, and real-world utility for our community. B2BNEST plans to integrate with and be listed on major partners such as <strong>DEXView</strong>, <strong>Pinksale</strong>, <strong>Birdseye</strong>, <strong>OKX</strong>, <strong>CoinGecko</strong>, <strong>CoinMarketCap</strong>, <strong>Phantom</strong>, <strong>Alchemy Pay</strong>, <strong>Binance</strong>, and <strong>Bitget</strong>.
+              <p className="text-gray-700 mb-8">
+                B2BNEST is expanding its ecosystem through strategic collaborations with leading platforms in the crypto and blockchain space. Our future partnerships aim to enhance visibility, accessibility, and real-world utility for our community.
               </p>
+              
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mb-8">
+                <div className="flex items-center justify-center p-4 bg-gray-50 rounded-lg hover:shadow-lg transition-shadow">
+                  <img src="/partners/binance-logo.png" alt="Binance" className="h-12 w-auto object-contain" />
+                </div>
+                <div className="flex items-center justify-center p-4 bg-gray-50 rounded-lg hover:shadow-lg transition-shadow">
+                  <img src="/partners/okx-logo.png" alt="OKX" className="h-12 w-auto object-contain" />
+                </div>
+                <div className="flex items-center justify-center p-4 bg-gray-50 rounded-lg hover:shadow-lg transition-shadow">
+                  <img src="/partners/coingecko-logo.png" alt="CoinGecko" className="h-12 w-auto object-contain" />
+                </div>
+                <div className="flex items-center justify-center p-4 bg-gray-50 rounded-lg hover:shadow-lg transition-shadow">
+                  <img src="/partners/coinmarketcap-logo.png" alt="CoinMarketCap" className="h-12 w-auto object-contain" />
+                </div>
+                <div className="flex items-center justify-center p-4 bg-gray-50 rounded-lg hover:shadow-lg transition-shadow">
+                  <img src="/partners/bitget-logo.png" alt="Bitget" className="h-12 w-auto object-contain" />
+                </div>
+                <div className="flex items-center justify-center p-4 bg-gray-50 rounded-lg hover:shadow-lg transition-shadow">
+                  <img src="/partners/phantom-logo.png" alt="Phantom" className="h-12 w-auto object-contain" />
+                </div>
+                <div className="flex items-center justify-center p-4 bg-gray-50 rounded-lg hover:shadow-lg transition-shadow">
+                  <img src="/partners/pinksale-logo.png" alt="PinkSale" className="h-12 w-auto object-contain" />
+                </div>
+                <div className="flex items-center justify-center p-4 bg-gray-50 rounded-lg hover:shadow-lg transition-shadow">
+                  <img src="/partners/dexview-logo.png" alt="DEXView" className="h-12 w-auto object-contain" />
+                </div>
+                <div className="flex items-center justify-center p-4 bg-gray-50 rounded-lg hover:shadow-lg transition-shadow">
+                  <img src="/partners/birdseye-logo.png" alt="Birdseye" className="h-12 w-auto object-contain" />
+                </div>
+                <div className="flex items-center justify-center p-4 bg-gray-50 rounded-lg hover:shadow-lg transition-shadow">
+                  <img src="/partners/alchemypay-logo.png" alt="Alchemy Pay" className="h-12 w-auto object-contain" />
+                </div>
+              </div>
+
               <p className="text-gray-700">
                 These partnerships will strengthen our liquidity, transparency, and multi-chain presence — empowering users with seamless trading, analytics, and global payment options as we continue to grow in the decentralized finance ecosystem.
               </p>
