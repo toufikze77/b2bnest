@@ -3,23 +3,27 @@ import { Download, FileText, Target, Zap, Users, TrendingUp, Shield, Globe, Chec
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Footer from '@/components/Footer';
+import TokenSEO from '@/components/TokenSEO';
 
 const Whitepaper = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="pt-20 pb-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Hero Section */}
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center justify-center p-2 bg-blue-100 rounded-full mb-6">
-              <FileText className="h-8 w-8 text-blue-600" />
-            </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-6">
-              B2BNest Whitepaper
-            </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              AI-Powered Business Automation Platform - Streamlining Operations for Modern Enterprises
-            </p>
+    <>
+      <TokenSEO page="whitepaper" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="pt-20 pb-16">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Hero Section */}
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center justify-center p-2 bg-blue-100 rounded-full mb-6">
+                <FileText className="h-8 w-8 text-blue-600" />
+              </div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-6">
+                B2BNEST Whitepaper | Roadmap & Security Audit
+              </h1>
+              <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+                Official B2BNEST whitepaper covering our secure blockchain token technology, B2BNEST roadmap, 
+                crypto project audit details, and cross-border business solutions in the decentralized finance space.
+              </p>
             <div className="flex justify-center gap-4">
               <Button size="lg" className="flex items-center gap-2">
                 <Download className="h-5 w-5" />
@@ -418,6 +422,7 @@ const Whitepaper = () => {
 
       <Footer />
     </div>
+  </>
   );
 };
 

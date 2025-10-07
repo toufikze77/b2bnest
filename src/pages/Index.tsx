@@ -3,7 +3,7 @@ import { SearchProvider, useSearch } from "@/contexts/SearchContext";
 import { templateService } from "@/services/templateService";
 import HeroSection from "@/components/HeroSection";
 import StatsSection from "@/components/StatsSection";
-import SEOHead from "@/components/SEOHead";
+import TokenSEO from "@/components/TokenSEO";
 import AdvancedSEOSchema from "@/components/AdvancedSEOSchema";
 
 import FeaturedTemplatesSection from "@/components/FeaturedTemplatesSection";
@@ -41,7 +41,7 @@ const IndexContent = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <SEOHead />
+      <TokenSEO page="home" />
       <AdvancedSEOSchema page="home" />
       <HeroSection onSearch={handleSearch} />
 

@@ -3,24 +3,27 @@ import { Coins, PieChart, TrendingUp, Lock, Users, Zap, Target, Clock } from 'lu
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import Footer from '@/components/Footer';
+import TokenSEO from '@/components/TokenSEO';
 
 const Tokenomics = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="pt-20 pb-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Hero Section */}
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center justify-center p-2 bg-purple-100 rounded-full mb-6">
-              <Coins className="h-8 w-8 text-purple-600" />
-            </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-6">
-              B2BN Token Economics
-            </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Powering the future of business automation through decentralized tokenomics 
-              and sustainable economic incentives.
-            </p>
+    <>
+      <TokenSEO page="tokenomics" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="pt-20 pb-16">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Hero Section */}
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center justify-center p-2 bg-purple-100 rounded-full mb-6">
+                <Coins className="h-8 w-8 text-purple-600" />
+              </div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-6">
+                B2BNEST Tokenomics | Staking & Yield Farming
+              </h1>
+              <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+                Complete guide to B2BNEST tokenomics. Learn about staking B2BNEST token rewards, yield farming opportunities, 
+                and the real utility of our cross-border business token in the decentralized finance ecosystem.
+              </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
               <div className="text-center">
                 <div className="text-3xl font-bold text-purple-600 mb-2">1B</div>
@@ -317,6 +320,7 @@ const Tokenomics = () => {
 
       <Footer />
     </div>
+  </>
   );
 };
 

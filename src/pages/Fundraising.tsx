@@ -9,6 +9,7 @@ import TokenInformation from '@/components/fundraising/TokenInformation';
 import PurchasePanel from '@/components/fundraising/PurchasePanel';
 import PresaleStats from '@/components/fundraising/PresaleStats';
 import VideoExplanation from '@/components/fundraising/VideoExplanation';
+import TokenSEO from '@/components/TokenSEO';
 
 const Fundraising = () => {
   const navigate = useNavigate();
@@ -29,26 +30,28 @@ const Fundraising = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Header Section */}
-        <div className="text-center mb-12">
-          <div className="flex justify-end mb-4">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/')}
-              className="flex items-center gap-2"
-            >
-              <Home className="h-4 w-4" />
-              Go Back Home
-            </Button>
-          </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            {presaleData.tokenName} Presale
-          </h1>
-          <p className="text-xl text-gray-600 mb-6">
-            Join the future of AI-powered business automation platform
-          </p>
+    <>
+      <TokenSEO page="presale" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          {/* Header Section */}
+          <div className="text-center mb-12">
+            <div className="flex justify-end mb-4">
+              <Button
+                variant="outline"
+                onClick={() => navigate('/')}
+                className="flex items-center gap-2"
+              >
+                <Home className="h-4 w-4" />
+                Go Back Home
+              </Button>
+            </div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              Buy B2BNEST Token - Best New Crypto 2025 Presale
+            </h1>
+            <p className="text-xl text-gray-600 mb-6">
+              Invest in B2BNEST - A promising blockchain project for cross-border business transactions with real utility
+            </p>
           <div className="flex items-center justify-center space-x-2 mb-8">
             <Badge variant="secondary" className="bg-green-100 text-green-800">
               <Shield className="h-4 w-4 mr-1" />
@@ -120,8 +123,9 @@ const Fundraising = () => {
         </div>
       </main>
 
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </>
   );
 };
 
