@@ -33,7 +33,7 @@ const TokenSEO = ({ page = 'home' }: TokenSEOProps) => {
     tokenomics: {
       title: "B2BNEST Tokenomics | Staking B2BNEST Token & Yield Farming",
       description: "Complete B2BNEST tokenomics breakdown. Learn about staking B2BNEST token, yield farming rewards, B2BNEST utility token benefits, and token distribution model.",
-      keywords: "B2BNEST tokenomics, staking B2BNEST token, yield farming B2BNEST, B2BNEST utility token, B2BNEST token, crypto for B2B transactions, decentralized finance project",
+      keywords: "B2BNEST tokenomics, staking B2BNEST token, yield farming B2BNEST, B2BNEST utility token, B2BNEST token, crypto for B2B transactions, decentralized finance project, MemeCoin, DeFi, CryptoCommunity, Crypto, Genuine Token, Genuine Crypto Project, Blockchain, Web3, CryptoNews, CryptoLife, CryptoWorld, BlockchainTechnology, Altcoins, CryptoTrends, CryptoTrading, CryptoMarket",
       canonical: "https://b2bnest.online/tokenomics",
       schema: {
         "@context": "https://schema.org",
@@ -57,7 +57,7 @@ const TokenSEO = ({ page = 'home' }: TokenSEOProps) => {
     whitepaper: {
       title: "B2BNEST Whitepaper | B2BNEST Roadmap & Crypto Project Audit",
       description: "Read the complete B2BNEST whitepaper. Explore B2BNEST roadmap, crypto project audit & security details, and technical architecture of this cross-border business token.",
-      keywords: "B2BNEST whitepaper, B2BNEST roadmap, crypto project audit & security, B2BNEST token, cross-border business token, decentralized finance project, secure blockchain token",
+      keywords: "B2BNEST whitepaper, B2BNEST roadmap, crypto project audit & security, B2BNEST token, cross-border business token, decentralized finance project, secure blockchain token, MemeCoin, DeFi, CryptoCommunity, Crypto, Genuine Token, Genuine Crypto Project, Blockchain, Web3, CryptoNews, CryptoLife, CryptoWorld, BlockchainTechnology, Altcoins, CryptoTrends, CryptoTrading, CryptoMarket",
       canonical: "https://b2bnest.online/whitepaper",
       schema: {
         "@context": "https://schema.org",
