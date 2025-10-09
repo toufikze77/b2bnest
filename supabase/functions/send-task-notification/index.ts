@@ -43,22 +43,47 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get assignee's email
+    // Get assignee's email and info
     const { data: assigneeData, error: assigneeError } = await supabase
       .from('profiles')
       .select('email, display_name, full_name')
       .eq('id', assignedToId)
-      .single();
+      .maybeSingle();
+    
+    console.log('Fetching assignee profile for ID:', assignedToId);
+    console.log('Assignee data:', assigneeData);
+    console.log('Assignee error:', assigneeError);
 
-    if (assigneeError || !assigneeData?.email) {
-      console.error('Error fetching assignee email:', assigneeError);
+    if (assigneeError) {
+      console.error('Error fetching assignee profile:', assigneeError);
       return new Response(
-        JSON.stringify({ error: 'Could not find assignee email' }),
+        JSON.stringify({ error: 'Database error fetching assignee', details: assigneeError.message }),
         {
-          status: 400,
+          status: 500,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         }
       );
+    }
+    
+    if (!assigneeData?.email) {
+      console.error('No email found for assignee ID:', assignedToId);
+      // Get user email from auth.users as fallback
+      const { data: authData, error: authError } = await supabase.auth.admin.getUserById(assignedToId);
+      
+      if (authError || !authData?.user?.email) {
+        console.error('Could not find email in auth either:', authError);
+        return new Response(
+          JSON.stringify({ error: 'Could not find assignee email' }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+      
+      // Use auth email as fallback
+      assigneeData.email = authData.user.email;
+      console.log('Using email from auth.users:', authData.user.email);
     }
 
     const assigneeName = assigneeData.display_name || assigneeData.full_name || 'there';
@@ -154,13 +179,19 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Task notification email sent successfully:", emailResponse);
 
-    // Create in-app notification
-    await supabase.from('notifications').insert({
-      user_id: assignedToId,
-      title: 'New Task Assigned',
-      message: `${assignedByName} assigned you: ${taskTitle}`,
-      type: 'task_assigned'
-    });
+    // Create in-app notification (if notifications table exists)
+    try {
+      await supabase.from('notifications').insert({
+        user_id: assignedToId,
+        title: 'New Task Assigned',
+        message: `${assignedByName} assigned you: ${taskTitle}`,
+        type: 'task_assigned'
+      });
+      console.log('In-app notification created');
+    } catch (notifError) {
+      console.error('Failed to create in-app notification (non-critical):', notifError);
+      // Don't fail the whole request if notifications table doesn't exist
+    }
 
     return new Response(
       JSON.stringify({ 

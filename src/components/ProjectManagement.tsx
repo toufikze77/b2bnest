@@ -1058,11 +1058,15 @@ const ProjectManagement = () => {
         
         try {
           // Get current user's display name
-          const { data: currentUserProfile } = await supabase
+          const { data: currentUserProfile, error: profileError } = await supabase
             .from('profiles')
             .select('display_name, full_name')
             .eq('id', user?.id)
-            .single();
+            .maybeSingle();
+          
+          if (profileError) {
+            console.warn('Could not fetch user profile for notification:', profileError);
+          }
           
           const assignedByName = currentUserProfile?.display_name || 
                                  currentUserProfile?.full_name || 
