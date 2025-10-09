@@ -11,6 +11,8 @@ import TodoItem from './enhanced-todos/TodoItem';
 import CreateTodoDialog from './enhanced-todos/CreateTodoDialog';
 import { PlanUpgradeDialog } from './enhanced-todos/PlanUpgradeDialog';
 import { toast } from '@/hooks/use-toast';
+import { getUserDisplayInfo } from '@/utils/profileUtils';
+import { sendTaskNotification } from '@/utils/taskNotifications';
 
 interface Todo {
   id: string;
@@ -97,16 +99,43 @@ const TodoList = () => {
     if (checkFreePlanLimit()) return;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('todos')
         .insert({
           ...todoData,
           user_id: user.id,
           status: 'todo',
           reporter_id: user.id
-        });
+        })
+        .select('*')
+        .single();
 
       if (error) throw error;
+
+      // Send email notification if task is assigned to someone else
+      if (todoData.assigned_to && todoData.assigned_to !== user.id && data) {
+        try {
+          const display = await getUserDisplayInfo(user.id);
+          const assignedByName = display?.display_name || user.email?.split('@')[0] || 'Someone';
+
+          const res = await sendTaskNotification({
+            taskId: data.id,
+            taskTitle: data.title,
+            taskDescription: data.description,
+            priority: data.priority,
+            dueDate: data.due_date,
+            assignedToId: todoData.assigned_to,
+            assignedByName,
+            projectName: null,
+          });
+
+          if (!res.ok) {
+            console.error('Notification failed after task create:', res.error);
+          }
+        } catch (notifyErr) {
+          console.error('Failed to send task notification:', notifyErr);
+        }
+      }
 
       toast({
         title: "Success",
@@ -135,6 +164,37 @@ const TodoList = () => {
         .eq('user_id', user.id);
 
       if (error) throw error;
+
+      // If assignment changed (or provided), attempt to send notification
+      if (updates.assigned_to && updates.assigned_to !== user.id) {
+        try {
+          const { data: updatedTask } = await supabase
+            .from('todos')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+          if (updatedTask) {
+            const display = await getUserDisplayInfo(user.id);
+            const assignedByName = display?.display_name || user.email?.split('@')[0] || 'Someone';
+            const res = await sendTaskNotification({
+              taskId: updatedTask.id,
+              taskTitle: updatedTask.title,
+              taskDescription: updatedTask.description,
+              priority: updatedTask.priority,
+              dueDate: updatedTask.due_date,
+              assignedToId: updates.assigned_to,
+              assignedByName,
+              projectName: null,
+            });
+            if (!res.ok) {
+              console.error('Notification failed after task update:', res.error);
+            }
+          }
+        } catch (notifyErr) {
+          console.error('Failed to send task notification (update):', notifyErr);
+        }
+      }
 
       toast({
         title: "Success",
