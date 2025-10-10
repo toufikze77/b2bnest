@@ -91,13 +91,13 @@ export const EnhancedTodoView: React.FC<EnhancedTodoViewProps> = ({ todo, onUpda
   const fetchSubtasks = async () => {
     try {
       const { data, error } = await supabase
-        .from('todo_subtasks')
+        .from('todo_subtasks' as any)
         .select('*')
         .eq('todo_id', todo.id)
         .order('created_at', { ascending: true });
       
       if (error) throw error;
-      setSubtasks(data || []);
+      setSubtasks((data as any) || []);
     } catch (error) {
       console.error('Error fetching subtasks:', error);
     }
@@ -136,13 +136,13 @@ export const EnhancedTodoView: React.FC<EnhancedTodoViewProps> = ({ todo, onUpda
 
     try {
       const { error } = await supabase
-        .from('todo_subtasks')
+        .from('todo_subtasks' as any)
         .insert({
           todo_id: todo.id,
           title: newSubtask.trim(),
           completed: false,
           user_id: user.id
-        });
+        } as any);
 
       if (error) throw error;
       setNewSubtask('');
@@ -155,8 +155,8 @@ export const EnhancedTodoView: React.FC<EnhancedTodoViewProps> = ({ todo, onUpda
   const handleToggleSubtask = async (subtaskId: string, completed: boolean) => {
     try {
       const { error } = await supabase
-        .from('todo_subtasks')
-        .update({ completed: !completed })
+        .from('todo_subtasks' as any)
+        .update({ completed: !completed } as any)
         .eq('id', subtaskId);
 
       if (error) throw error;

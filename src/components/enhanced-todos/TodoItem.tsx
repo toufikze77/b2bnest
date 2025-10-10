@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { TodoComments } from './TodoComments';
 import { TodoHistory } from './TodoHistory';
-import { TodoDetails } from './TodoDetails';
+import { EnhancedTodoView } from './EnhancedTodoView';
 
 interface Todo {
   id: string;
@@ -36,7 +36,7 @@ interface TodoItemProps {
 const TodoItem: React.FC<TodoItemProps> = ({ todo, onEdit, onDelete, onStatusChange, onUpdate }) => {
   const [showComments, setShowComments] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
+  const [showEnhancedView, setShowEnhancedView] = useState(false);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -163,24 +163,15 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onEdit, onDelete, onStatusCha
               </DialogContent>
             </Dialog>
 
-            <Dialog open={showDetails} onOpenChange={setShowDetails}>
-              <DialogTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-8 w-8 p-0 hover:bg-green-50 hover:text-green-600"
-                  title="View Details"
-                >
-                  <User className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-3xl">
-                <DialogHeader>
-                  <DialogTitle>Details - {todo.title}</DialogTitle>
-                </DialogHeader>
-                <TodoDetails todo={todo} onUpdate={onUpdate} />
-              </DialogContent>
-            </Dialog>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 w-8 p-0 hover:bg-green-50 hover:text-green-600"
+              title="View Details"
+              onClick={() => setShowEnhancedView(true)}
+            >
+              <User className="h-4 w-4" />
+            </Button>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -210,6 +201,14 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onEdit, onDelete, onStatusCha
           </div>
         </div>
       </CardContent>
+      
+      {showEnhancedView && (
+        <EnhancedTodoView
+          todo={todo}
+          onUpdate={onUpdate}
+          onClose={() => setShowEnhancedView(false)}
+        />
+      )}
     </Card>
   );
 };
