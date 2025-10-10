@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Flag, Calendar as CalendarIcon, Users, Brain, X, Check } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -310,31 +310,16 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
 
         const userIds = orgMembers?.map(member => member.user_id) || [];
         
-        // Now fetch profile data for these users
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, display_name, email, full_name')
-          .in('id', userIds);
+        // Now fetch profile data for these users without direct table access
+        const { batchGetUserDisplayInfo } = await import('@/utils/profileUtils');
+        const profilesData = await batchGetUserDisplayInfo(userIds as string[]);
 
-        if (profilesError) {
-          console.error('Error fetching profiles:', profilesError);
-          // Fallback to current user only
-          setAvailableUsers([{
-            id: user?.id || 'current-user',
-            display_name: user?.email?.split('@')[0] || 'Current User',
-            email: user?.email || 'user@example.com',
-            full_name: user?.email?.split('@')[0] || 'Current User'
-          }]);
-          setLoadingUsers(false);
-          return;
-        }
-
-        // Map profiles to user format
+        // Map profiles to user format (email may be hidden by RLS)
         let users = (profilesData || []).map((profile: any) => ({
           id: profile.id,
-          display_name: profile.display_name || profile.full_name || 'Unknown User',
-          email: profile.email || null,
-          full_name: profile.full_name || profile.display_name || 'Unknown User'
+          display_name: profile.display_name || 'Unknown User',
+          email: null,
+          full_name: profile.display_name || 'Unknown User'
         }));
         
         if (users.length === 0) {

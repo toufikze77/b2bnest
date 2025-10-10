@@ -91,6 +91,7 @@ import { TodoComments } from './enhanced-todos/TodoComments';
 import { CommentButton } from './CommentButton';
 import { format } from 'date-fns';
 import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import { EnhancedTodoView } from './enhanced-todos/EnhancedTodoView';
 
 // Enhanced interfaces
 interface Task {
