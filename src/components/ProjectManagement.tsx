@@ -1039,6 +1039,11 @@ const ProjectManagement = () => {
       };
 
       setTasks(prev => [...prev, newTask]);
+      setShowCreateTask(false);
+      
+      // Open the newly created task in Jira view
+      setSelectedTaskForJira(newTask);
+      setShowJiraTask(true);
       
       // Add activity log
       const newActivity: ActivityLog = {

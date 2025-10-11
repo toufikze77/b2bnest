@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Link2, Flag, Calendar, User, Clock, Tag, MoreHorizontal, Share2, Star, Trash2, Archive, Copy, AlertCircle, CheckCircle2, Circle, Timer, MessageSquare, Paperclip, History, Send } from 'lucide-react';
+import { X, Link2, Flag, Calendar, User, Clock, Tag, MoreHorizontal, Share2, Star, Trash2, Archive, Copy, AlertCircle, CheckCircle2, Circle, Timer, MessageSquare, Paperclip, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,6 +9,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { TodoComments } from './enhanced-todos/TodoComments';
+import { TodoHistory } from './enhanced-todos/TodoHistory';
 
 interface JiraTaskViewProps {
   task: any;
@@ -48,16 +50,9 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
   });
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [activeTab, setActiveTab] = useState('comments');
-  const [newComment, setNewComment] = useState('');
-  const [comments, setComments] = useState<any[]>([]);
-  const [subtasks, setSubtasks] = useState<any[]>([]);
-  const [history, setHistory] = useState<any[]>([]);
 
   useEffect(() => {
     setLocalTask(task);
-    // Load comments, subtasks, and history from your database here
-    setComments(task.comments || []);
-    setSubtasks(task.subtasks || []);
   }, [task]);
 
   const handleFieldUpdate = async (field: string, value: any) => {
@@ -222,16 +217,7 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
                 </Button>
               </div>
               <div className="space-y-2">
-                {subtasks.length === 0 ? (
-                  <p className="text-sm text-gray-500">No subtasks yet</p>
-                ) : (
-                  subtasks.map((subtask: any) => (
-                    <div key={subtask.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded">
-                      <input type="checkbox" checked={subtask.completed} className="w-4 h-4" />
-                      <span className="text-sm flex-1">{subtask.title}</span>
-                    </div>
-                  ))
-                )}
+                <p className="text-sm text-gray-500">No subtasks yet</p>
               </div>
             </div>
 
@@ -250,97 +236,11 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
                 </TabsList>
 
                 <TabsContent value="comments" className="mt-4">
-                  {/* Add Comment */}
-                  <div className="mb-4">
-                    <div className="flex gap-3">
-                      <Avatar className="w-8 h-8 shrink-0">
-                        <AvatarFallback className="bg-blue-600 text-white text-xs">
-                          U
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <Textarea
-                          placeholder="Add a comment..."
-                          value={newComment}
-                          onChange={(e) => setNewComment(e.target.value)}
-                          className="min-h-[80px] mb-2"
-                        />
-                        <div className="flex justify-end">
-                          <Button 
-                            size="sm"
-                            disabled={!newComment.trim()}
-                            onClick={() => {
-                              const comment = {
-                                id: Date.now().toString(),
-                                content: newComment,
-                                author: 'Current User',
-                                timestamp: new Date().toISOString()
-                              };
-                              setComments([...comments, comment]);
-                              setNewComment('');
-                            }}
-                          >
-                            <Send className="w-4 h-4 mr-2" />
-                            Comment
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Comments List */}
-                  <div className="space-y-4">
-                    {comments.length === 0 ? (
-                      <p className="text-sm text-gray-500 text-center py-8">
-                        No comments yet. Be the first to comment!
-                      </p>
-                    ) : (
-                      comments.map((comment: any) => (
-                        <div key={comment.id} className="flex gap-3">
-                          <Avatar className="w-8 h-8 shrink-0">
-                            <AvatarFallback className="text-xs">
-                              {comment.author?.[0] || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm font-medium">{comment.author}</span>
-                              <span className="text-xs text-gray-500">
-                                {formatDateTime(comment.timestamp)}
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-700">{comment.content}</p>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                  <TodoComments todoId={localTask.id} />
                 </TabsContent>
 
                 <TabsContent value="history" className="mt-4">
-                  <div className="space-y-3">
-                    {history.length === 0 ? (
-                      <p className="text-sm text-gray-500 text-center py-8">
-                        No activity history
-                      </p>
-                    ) : (
-                      history.map((item: any) => (
-                        <div key={item.id} className="flex gap-3 text-sm">
-                          <Avatar className="w-6 h-6 shrink-0">
-                            <AvatarFallback className="text-xs">
-                              {item.user?.[0] || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="text-gray-700">{item.description}</p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {formatDateTime(item.timestamp)}
-                            </p>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                  <TodoHistory todoId={localTask.id} />
                 </TabsContent>
               </Tabs>
             </div>
