@@ -1,7 +1,8 @@
-
+import { TodoComments } from './enhanced-todos/TodoComments';
+import JiraTaskView from './JiraTaskView';
+import { CommentButton } from './CommentButton';
 import { CheckSquare, Users, Clock, Folder } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
 const ProjectManagementSection = () => {
   return (
     <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-green-50 to-emerald-100">
