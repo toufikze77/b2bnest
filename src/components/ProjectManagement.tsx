@@ -23,6 +23,7 @@ import ProjectTimeTracker from './ProjectTimeTracker';
 import ProjectActivityTimeline from './ProjectActivityTimeline';
 import StatsCard from './cards/StatsCard';
 import ProjectCard from './cards/ProjectCard';
+import JiraTaskView from './JiraTaskView';
 import { 
   Plus, 
   Calendar as CalendarIcon, 
@@ -303,6 +304,8 @@ const ProjectManagement = () => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showEditTask, setShowEditTask] = useState(false);
   const [showCreateProject, setShowCreateProject] = useState(false);
+  const [showJiraTask, setShowJiraTask] = useState(false);
+  const [selectedTaskForJira, setSelectedTaskForJira] = useState<Task | null>(null);
   const [boardDensity, setBoardDensity] = useState<'comfortable' | 'compact' | 'condensed'>(() => {
     try {
       const saved = localStorage.getItem('pm_board_density');
@@ -1447,8 +1450,8 @@ const ProjectManagement = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       console.log('Task card clicked:', task.id, task.title);
-                      setEditingTask(task);
-                      setShowEditTask(true);
+                      setSelectedTaskForJira(task);
+                      setShowJiraTask(true);
                     }}
                   >
                     {/* Header */}
@@ -3527,6 +3530,42 @@ const ProjectManagement = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Jira-Style Task View */}
+      {showJiraTask && selectedTaskForJira && (
+        <JiraTaskView
+          task={selectedTaskForJira}
+          onClose={() => {
+            setShowJiraTask(false);
+            setSelectedTaskForJira(null);
+          }}
+          onUpdate={async (taskId, updates) => {
+            const { error } = await supabase
+              .from('todos')
+              .update(updates)
+              .eq('id', taskId);
+
+            if (!error) {
+              setTasks(prev => prev.map(t => 
+                t.id === taskId ? { ...t, ...updates } : t
+              ));
+              toast({ 
+                title: "Task Updated", 
+                description: "Changes saved successfully" 
+              });
+            } else {
+              toast({ 
+                title: "Error", 
+                description: "Failed to update task",
+                variant: "destructive"
+              });
+            }
+          }}
+          onDelete={handleTaskDelete}
+          projects={projects}
+          teamMembers={teamMembers[selectedProject] || []}
+        />
+      )}
     </div>
   );
 };
