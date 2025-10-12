@@ -290,15 +290,18 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
                     <SelectValue>
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4" />
-                        <span>{localTask.assignee || 'Unassigned'}</span>
+                        <span>{
+                          (localTask.assigned_to && (teamMembers.find((m: any) => (m.user_id || m.id) === localTask.assigned_to)?.display_name || teamMembers.find((m: any) => (m.user_id || m.id) === localTask.assigned_to)?.member_email))
+                          || localTask.assignee || 'Unassigned'
+                        }</span>
                       </div>
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="unassigned">Unassigned</SelectItem>
                     {teamMembers.map((member: any) => (
-                      <SelectItem key={member.id} value={member.id}>
-                        {member.display_name || member.email}
+                      <SelectItem key={member.user_id || member.id} value={member.user_id || member.id}>
+                        {member.display_name || member.member_email || member.email || 'Unknown User'}
                       </SelectItem>
                     ))}
                   </SelectContent>

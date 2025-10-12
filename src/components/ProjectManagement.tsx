@@ -3568,7 +3568,17 @@ const ProjectManagement = () => {
           }}
           onDelete={handleTaskDelete}
           projects={projects}
-          teamMembers={teamMembers[selectedProject] || []}
+          teamMembers={
+            selectedProject === 'all'
+              ? Array.from(
+                  new Map(
+                    Object.values(teamMembers)
+                      .flat()
+                      .map((m: any) => [m.user_id || m.id, m])
+                  ).values()
+                )
+              : (teamMembers[selectedProject] || [])
+          }
         />
       )}
     </div>
