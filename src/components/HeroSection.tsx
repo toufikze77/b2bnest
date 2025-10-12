@@ -11,10 +11,10 @@ const HeroSection = ({ onSearch }: HeroSectionProps) => {
     <section className="py-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto text-center">
         <h1 className="text-5xl font-bold text-gray-900 mb-6">
-          Powerful Business <span className="text-blue-600">Tools</span>
+          Your Complete AI-Powered Business <span className="text-blue-600">Tools Hub</span>
         </h1>
         <p className="text-xl text-gray-600 mb-6 max-w-3xl mx-auto">
-          Everything you need to start, manage, and grow your business in one integrated platform. From project management to CRM, we've got you covered.
+          Everything your business needs in one intelligent platform. From AI-powered document generation to smart financial tracking - streamline your entire workflow with cutting-edge tools designed for modern entrepreneurs.
         </p>
         <div className="flex justify-center gap-4 mb-8">
           <div className="bg-purple-100 text-purple-800 px-4 py-2 rounded-full font-semibold">
