@@ -11,11 +11,11 @@ const HeroSection = ({ onSearch }: HeroSectionProps) => {
     <section className="py-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto text-center">
         <h1 className="text-5xl font-bold text-gray-900 mb-6">
-          B2BNEST - Best New Crypto 2025 <span className="text-blue-600">AI-Powered Business Platform</span>
+          Professional Business Documents & <span className="text-blue-600">Templates</span>
         </h1>
         <p className="text-xl text-gray-600 mb-6 max-w-3xl mx-auto">
-          A promising blockchain project combining AI business tools with real utility crypto token. Buy B2BNEST token for cross-border business transactions, 
-          staking rewards, and access to our decentralized finance platform. Secure blockchain technology with crypto project audit.
+          Access thousands of professional business templates, forms, and documents. 
+          Streamline your workflow with AI-powered tools designed for modern businesses.
         </p>
         <div className="flex justify-center gap-4 mb-8">
           <div className="bg-purple-100 text-purple-800 px-4 py-2 rounded-full font-semibold">
