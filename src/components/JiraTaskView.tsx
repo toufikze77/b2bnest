@@ -51,9 +51,49 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [activeTab, setActiveTab] = useState('comments');
 
-  useEffect(() => {
-    setLocalTask(task);
-  }, [task]);
+useEffect(() => {
+  setLocalTask(task);
+  setComments(task.comments || []);
+  setSubtasks(task.subtasks || []);
+  
+  // Load team members from organization
+  loadTeamMembers();
+}, [task]);
+
+const loadTeamMembers = async () => {
+  try {
+    // Get organization members
+    const { data: membersData, error } = await supabase
+      .from('organization_members')
+      .select(`
+        user_id,
+        role,
+        profiles:user_id (
+          id,
+          display_name,
+          email,
+          full_name
+        )
+      `)
+      .eq('is_active', true);
+
+    if (!error && membersData) {
+      // Format members for dropdown
+      const formattedMembers = membersData.map((member: any) => ({
+        id: member.user_id,
+        display_name: member.profiles?.display_name || member.profiles?.full_name || member.profiles?.email,
+        email: member.profiles?.email,
+        role: member.role
+      }));
+      
+      // Update teamMembers state if parent provided setter
+      // For now, we'll store in local state
+      setLocalTeamMembers(formattedMembers);
+    }
+  } catch (error) {
+    console.error('Error loading team members:', error);
+  }
+};
 
   const handleFieldUpdate = async (field: string, value: any) => {
     const updates = { [field]: value };
