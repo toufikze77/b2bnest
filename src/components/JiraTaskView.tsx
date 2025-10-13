@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Link2, Flag, Calendar, User, Clock, Tag, MoreHorizontal, Share2, Star, Trash2, Archive, Copy, AlertCircle, CheckCircle2, Circle, Timer, MessageSquare, Paperclip, History } from 'lucide-react';
+import { X, Link2, Flag, Calendar, User, Clock, Tag, MoreHorizontal, Share2, Star, Trash2, Archive, Copy, AlertCircle, CheckCircle2, Circle, Timer, MessageSquare, Paperclip, History, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,8 +9,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { TodoComments } from './enhanced-todos/TodoComments';
-import { TodoHistory } from './enhanced-todos/TodoHistory';
+import { supabase } from '@/integrations/supabase/client';
 
 interface JiraTaskViewProps {
   task: any;
@@ -50,50 +49,49 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
   });
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [activeTab, setActiveTab] = useState('comments');
+  const [newComment, setNewComment] = useState('');
+  const [comments, setComments] = useState<any[]>([]);
+  const [subtasks, setSubtasks] = useState<any[]>([]);
+  const [localTeamMembers, setLocalTeamMembers] = useState<any[]>([]);
+  const [history, setHistory] = useState<any[]>([]);
 
-useEffect(() => {
-  setLocalTask(task);
-  setComments(task.comments || []);
-  setSubtasks(task.subtasks || []);
-  
-  // Load team members from organization
-  loadTeamMembers();
-}, [task]);
+  useEffect(() => {
+    setLocalTask(task);
+    setComments(task.comments || []);
+    setSubtasks(task.subtasks || []);
+    loadTeamMembers();
+  }, [task]);
 
-const loadTeamMembers = async () => {
-  try {
-    // Get organization members
-    const { data: membersData, error } = await supabase
-      .from('organization_members')
-      .select(`
-        user_id,
-        role,
-        profiles:user_id (
-          id,
-          display_name,
-          email,
-          full_name
-        )
-      `)
-      .eq('is_active', true);
+  const loadTeamMembers = async () => {
+    try {
+      const { data: membersData, error } = await supabase
+        .from('organization_members')
+        .select(`
+          user_id,
+          role,
+          profiles:user_id (
+            id,
+            display_name,
+            email,
+            full_name
+          )
+        `)
+        .eq('is_active', true);
 
-    if (!error && membersData) {
-      // Format members for dropdown
-      const formattedMembers = membersData.map((member: any) => ({
-        id: member.user_id,
-        display_name: member.profiles?.display_name || member.profiles?.full_name || member.profiles?.email,
-        email: member.profiles?.email,
-        role: member.role
-      }));
-      
-      // Update teamMembers state if parent provided setter
-      // For now, we'll store in local state
-      setLocalTeamMembers(formattedMembers);
+      if (!error && membersData) {
+        const formattedMembers = membersData.map((member: any) => ({
+          id: member.user_id,
+          display_name: member.profiles?.display_name || member.profiles?.full_name || member.profiles?.email,
+          email: member.profiles?.email,
+          role: member.role
+        }));
+        
+        setLocalTeamMembers(formattedMembers);
+      }
+    } catch (error) {
+      console.error('Error loading team members:', error);
     }
-  } catch (error) {
-    console.error('Error loading team members:', error);
-  }
-};
+  };
 
   const handleFieldUpdate = async (field: string, value: any) => {
     const updates = { [field]: value };
@@ -118,6 +116,9 @@ const loadTeamMembers = async () => {
 
   const CurrentStatusIcon = statusOptions.find(s => s.value === localTask.status)?.icon || Circle;
   const currentStatusColor = statusOptions.find(s => s.value === localTask.status)?.color || 'text-gray-500';
+
+  // Use localTeamMembers if available, otherwise fall back to props
+  const displayTeamMembers = localTeamMembers.length > 0 ? localTeamMembers : teamMembers;
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-8 overflow-y-auto">
@@ -257,7 +258,16 @@ const loadTeamMembers = async () => {
                 </Button>
               </div>
               <div className="space-y-2">
-                <p className="text-sm text-gray-500">No subtasks yet</p>
+                {subtasks.length === 0 ? (
+                  <p className="text-sm text-gray-500">No subtasks yet</p>
+                ) : (
+                  subtasks.map((subtask: any) => (
+                    <div key={subtask.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded">
+                      <input type="checkbox" checked={subtask.completed} className="w-4 h-4" />
+                      <span className="text-sm flex-1">{subtask.title}</span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
@@ -276,11 +286,97 @@ const loadTeamMembers = async () => {
                 </TabsList>
 
                 <TabsContent value="comments" className="mt-4">
-                  <TodoComments todoId={localTask.id} />
+                  {/* Add Comment */}
+                  <div className="mb-4">
+                    <div className="flex gap-3">
+                      <Avatar className="w-8 h-8 shrink-0">
+                        <AvatarFallback className="bg-blue-600 text-white text-xs">
+                          U
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <Textarea
+                          placeholder="Add a comment..."
+                          value={newComment}
+                          onChange={(e) => setNewComment(e.target.value)}
+                          className="min-h-[80px] mb-2"
+                        />
+                        <div className="flex justify-end">
+                          <Button 
+                            size="sm"
+                            disabled={!newComment.trim()}
+                            onClick={() => {
+                              const comment = {
+                                id: Date.now().toString(),
+                                content: newComment,
+                                author: 'Current User',
+                                timestamp: new Date().toISOString()
+                              };
+                              setComments([...comments, comment]);
+                              setNewComment('');
+                            }}
+                          >
+                            <Send className="w-4 h-4 mr-2" />
+                            Comment
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Comments List */}
+                  <div className="space-y-4">
+                    {comments.length === 0 ? (
+                      <p className="text-sm text-gray-500 text-center py-8">
+                        No comments yet. Be the first to comment!
+                      </p>
+                    ) : (
+                      comments.map((comment: any) => (
+                        <div key={comment.id} className="flex gap-3">
+                          <Avatar className="w-8 h-8 shrink-0">
+                            <AvatarFallback className="text-xs">
+                              {comment.author?.[0] || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-sm font-medium">{comment.author}</span>
+                              <span className="text-xs text-gray-500">
+                                {formatDateTime(comment.timestamp)}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-700">{comment.content}</p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="history" className="mt-4">
-                  <TodoHistory todoId={localTask.id} />
+                  <div className="space-y-3">
+                    {history.length === 0 ? (
+                      <p className="text-sm text-gray-500 text-center py-8">
+                        No activity history
+                      </p>
+                    ) : (
+                      history.map((item: any) => (
+                        <div key={item.id} className="flex gap-3 text-sm">
+                          <Avatar className="w-6 h-6 shrink-0">
+                            <AvatarFallback className="text-xs">
+                              {item.user?.[0] || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="text-gray-700">{item.description}</p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {formatDateTime(item.timestamp)}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </TabsContent>
               </Tabs>
             </div>
@@ -330,18 +426,22 @@ const loadTeamMembers = async () => {
                     <SelectValue>
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4" />
-                        <span>{
-                          (localTask.assigned_to && (teamMembers.find((m: any) => (m.user_id || m.id) === localTask.assigned_to)?.display_name || teamMembers.find((m: any) => (m.user_id || m.id) === localTask.assigned_to)?.member_email))
-                          || localTask.assignee || 'Unassigned'
-                        }</span>
+                        <span>{localTask.assignee || 'Unassigned'}</span>
                       </div>
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="unassigned">Unassigned</SelectItem>
-                    {teamMembers.map((member: any) => (
-                      <SelectItem key={member.user_id || member.id} value={member.user_id || member.id}>
-                        {member.display_name || member.member_email || member.email || 'Unknown User'}
+                    {displayTeamMembers.map((member: any) => (
+                      <SelectItem key={member.id} value={member.id}>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="w-5 h-5">
+                            <AvatarFallback className="text-xs">
+                              {(member.display_name || member.email)?.[0]?.toUpperCase() || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>{member.display_name || member.email}</span>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
