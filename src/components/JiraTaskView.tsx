@@ -64,7 +64,7 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
 
 const loadTeamMembers = async () => {
   try {
-    console.log('🔍 Loading team members...');
+    console.log('Loading team members...');
     
     const { data: membersData, error } = await supabase
       .from('organization_members')
@@ -81,8 +81,8 @@ const loadTeamMembers = async () => {
       `)
       .eq('is_active', true);
 
-    console.log('📊 Raw members data:', membersData);
-    console.log('❌ Error (if any):', error);
+    console.log('Raw members data:', membersData);
+    console.log('Error (if any):', error);
 
     if (error) {
       console.error('Error loading team members:', error);
@@ -90,15 +90,32 @@ const loadTeamMembers = async () => {
     }
 
     if (!membersData || membersData.length === 0) {
-      console.warn('⚠️ No team members found');
+      console.warn('No team members found');
       return;
     }
 
     const formattedMembers = membersData.map((member: any) => {
       const profile = member.profiles;
-      console.log('👤 Processing member:', { 
+      console.log('Processing member:', { 
         user_id: member.user_id, 
         profile 
+      });
+      
+      return {
+        id: member.user_id,
+        display_name: profile?.display_name || profile?.full_name || profile?.email || 'Unknown User',
+        email: profile?.email,
+        role: member.role,
+        organization_id: member.organization_id
+      };
+    });
+    
+    console.log('Formatted members:', formattedMembers);
+    setLocalTeamMembers(formattedMembers);
+  } catch (error) {
+    console.error('Catch error loading team members:', error);
+  }
+};
       });
       
       return {
