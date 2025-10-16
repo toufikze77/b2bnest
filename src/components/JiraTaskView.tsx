@@ -62,21 +62,78 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
     loadTeamMembers();
   }, [task]);
 
-  const loadTeamMembers = async () => {
-    try {
-      const { data: membersData, error } = await supabase
-        .from('organization_members')
-        .select(`
-          user_id,
-          role,
-          profiles:user_id (
-            id,
-            display_name,
-            email,
-            full_name
-          )
-        `)
-        .eq('is_active', true);
+const loadTeamMembers = async () => {
+  try {
+    console.log('🔍 Loading team members...');
+    
+    const { data: membersData, error } = await supabase
+      .from('organization_members')
+      .select(`
+        user_id,
+        role,
+        organization_id,
+        profiles!organization_members_user_id_fkey (
+          id,
+          display_name,
+          email,
+          full_name
+        )
+      `)
+      .eq('is_active', true);
+
+    console.log('📊 Raw members data:', membersData);
+    console.log('❌ Error (if any):', error);
+
+    if (error) {
+      console.error('Error loading team members:', error);
+      return;
+    }
+
+    if (!membersData || membersData.length === 0) {
+      console.warn('⚠️ No team members found');
+      return;
+    }
+
+    const formattedMembers = membersData.map((member: any) => {
+      const profile = member.profiles;
+      console.log('👤 Processing member:', { 
+        user_id: member.user_id, 
+        profile 
+      });
+      
+      return {
+        id: member.user_id,
+        display_name: profile?.display_name || profile?.full_name || profile?.email || 'Unknown User',
+        email: profile?.email,
+        role: member.role,
+        organization_id: member.organization_id
+      };
+    });
+    
+    console.log('✅ Formatted members:', formattedMembers);
+    setLocalTeamMembers(formattedMembers);
+  } catch (error) {
+    console.error('💥 Catch error loading team members:', error);
+  }
+};
+```
+
+5. **Save the file** (Ctrl+S)
+
+---
+
+## Step 2: Test It
+
+1. **Refresh your browser** (F5)
+2. **Open browser console** (Press F12)
+3. **Go to Project Management**
+4. **Click on a task**
+5. **Look at the console** - you should see logs like:
+```
+   🔍 Loading team members...
+   📊 Raw members data: [...]
+   👤 Processing member: {...}
+   ✅ Formatted members: [...]
 
       if (!error && membersData) {
         const formattedMembers = membersData.map((member: any) => ({
