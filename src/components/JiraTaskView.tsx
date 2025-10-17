@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Link2, Flag, Calendar, User, Clock, Tag, MoreHorizontal, Share2, Star, Trash2, Archive, Copy, AlertCircle, CheckCircle2, Circle, Timer, MessageSquare, Paperclip, History, Send } from 'lucide-react';
+import { X, Link2, Flag, Calendar, User, Clock, Tag, MoreHorizontal, Share2, Star, Trash2, Archive, Copy, AlertCircle, CheckCircle2, Circle, Timer, MessageSquare, History, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,7 +17,7 @@ interface JiraTaskViewProps {
   onUpdate: (taskId: string, updates: any) => Promise<void>;
   onDelete?: (taskId: string) => void;
   projects?: any[];
-  teamMembers?: any[];
+  teamMembers?: any[]; // optional external list if provided by parent
 }
 
 const formatDate = (date: Date | string) => {
@@ -41,11 +41,8 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
   projects = [],
   teamMembers = []
 }) => {
-  const [localTask, setLocalTask] = useState(task);
-  const [isEditing, setIsEditing] = useState({
-    title: false,
-    description: false
-  });
+  const [localTask, setLocalTask] = useState(task || {});
+  const [isEditing, setIsEditing] = useState({ title: false, description: false });
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [activeTab, setActiveTab] = useState('comments');
   const [newComment, setNewComment] = useState('');
@@ -54,24 +51,30 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
   const [localTeamMembers, setLocalTeamMembers] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
 
+  // When task prop changes, refresh localTask and other pieces
   useEffect(() => {
-    setLocalTask(task);
-    setComments(task.comments || []);
-    setSubtasks(task.subtasks || []);
+    setLocalTask(task || {});
+    setComments(task?.comments || []);
+    setSubtasks(task?.subtasks || []);
     loadTeamMembers();
   }, [task]);
 
+  // Robust loader for organization members with profile join
   const loadTeamMembers = async () => {
     try {
-      console.log('Loading team members...');
-      
+      console.log('Loading team members from Supabase...');
+      // reset while loading
+      setLocalTeamMembers([]);
+
+      // Use safer join syntax: profiles(...) — but adjust if your FK relation uses a different alias
       const { data: membersData, error } = await supabase
         .from('organization_members')
         .select(`
           user_id,
           role,
           organization_id,
-          profiles!organization_members_user_id_fkey (
+          is_active,
+          profiles (
             id,
             display_name,
             email,
@@ -80,8 +83,7 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
         `)
         .eq('is_active', true);
 
-      console.log('Raw members data:', membersData);
-      console.log('Error (if any):', error);
+      console.log('Supabase response for organization_members:', { membersData, error });
 
       if (error) {
         console.error('Error loading team members:', error);
@@ -89,37 +91,39 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
       }
 
       if (!membersData || membersData.length === 0) {
-        console.warn('No team members found');
+        console.warn('No team members found from organization_members table.');
         return;
       }
 
-      const formattedMembers = membersData.map((member: any) => {
-        const profile = member.profiles;
-        console.log('Processing member:', { 
-          user_id: member.user_id, 
-          profile 
-        });
-        
+      // normalize members
+      const formatted = membersData.map((m: any) => {
+        const profile = m.profiles || {};
+        const id = (m.user_id ?? profile.id ?? '').toString();
+        const display_name = profile.display_name || profile.full_name || profile.email || `User ${id.slice(0, 6)}`;
         return {
-          id: member.user_id,
-          display_name: profile?.display_name || profile?.full_name || profile?.email || 'Unknown User',
-          email: profile?.email,
-          role: member.role,
-          organization_id: member.organization_id
+          id,
+          display_name,
+          email: profile.email,
+          role: m.role,
+          organization_id: m.organization_id
         };
-      });
-      
-      console.log('Formatted members:', formattedMembers);
-      setLocalTeamMembers(formattedMembers);
-    } catch (error) {
-      console.error('Catch error loading team members:', error);
+      }).filter(Boolean);
+
+      console.log('Formatted team members:', formatted);
+      setLocalTeamMembers(formatted);
+    } catch (e) {
+      console.error('Unexpected error loading team members:', e);
     }
   };
 
   const handleFieldUpdate = async (field: string, value: any) => {
     const updates = { [field]: value };
     setLocalTask({ ...localTask, ...updates });
-    await onUpdate(localTask.id, updates);
+    try {
+      await onUpdate(localTask.id, updates);
+    } catch (e) {
+      console.error('Error saving update for field', field, e);
+    }
   };
 
   const statusOptions = [
@@ -140,7 +144,16 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
   const CurrentStatusIcon = statusOptions.find(s => s.value === localTask.status)?.icon || Circle;
   const currentStatusColor = statusOptions.find(s => s.value === localTask.status)?.color || 'text-gray-500';
 
-  const displayTeamMembers = localTeamMembers.length > 0 ? localTeamMembers : teamMembers;
+  // choose whichever list is available; prefer loaded localTeamMembers
+  const displayTeamMembers = (localTeamMembers && localTeamMembers.length > 0) ? localTeamMembers : (teamMembers || []);
+
+  // compute the displayed assignee name from assigned_to
+  const selectedAssigneeName = () => {
+    const id = localTask?.assigned_to;
+    if (!id) return 'Unassigned';
+    const member = displayTeamMembers.find((m: any) => String(m.id) === String(id));
+    return member?.display_name || member?.email || 'Unknown User';
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-8 overflow-y-auto">
@@ -148,50 +161,14 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
         <div className="flex items-center justify-between px-6 py-4 border-b bg-gray-50 shrink-0">
           <div className="flex items-center gap-3">
             <CurrentStatusIcon className={`w-5 h-5 ${currentStatusColor}`} />
-            <span className="text-sm font-medium text-gray-600">
-              {localTask.project || 'No Project'}
-            </span>
+            <span className="text-sm font-medium text-gray-600">{localTask.project || 'No Project'}</span>
             <span className="text-sm text-gray-400">/</span>
-            <span className="text-sm text-gray-600">TASK-{localTask.id.slice(0, 8)}</span>
+            <span className="text-sm text-gray-600">TASK-{(localTask.id || '').toString().slice(0, 8)}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm">
-              <Share2 className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="sm">
-              <Star className="w-4 h-4" />
-            </Button>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="w-4 h-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-48">
-                <div className="space-y-1">
-                  <Button variant="ghost" size="sm" className="w-full justify-start">
-                    <Copy className="w-4 h-4 mr-2" />
-                    Copy link
-                  </Button>
-                  <Button variant="ghost" size="sm" className="w-full justify-start">
-                    <Archive className="w-4 h-4 mr-2" />
-                    Archive
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-                    onClick={() => onDelete?.(localTask.id)}
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="w-4 h-4" />
-            </Button>
+            <Button variant="ghost" size="sm"><Share2 className="w-4 h-4" /></Button>
+            <Button variant="ghost" size="sm"><Star className="w-4 h-4" /></Button>
+            <Button variant="ghost" size="sm" onClick={onClose}><X className="w-4 h-4" /></Button>
           </div>
         </div>
 
@@ -200,7 +177,7 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
             <div className="mb-6">
               {isEditing.title ? (
                 <Input
-                  value={localTask.title}
+                  value={localTask.title || ''}
                   onChange={(e) => setLocalTask({ ...localTask, title: e.target.value })}
                   onBlur={() => {
                     setIsEditing({ ...isEditing, title: false });
@@ -220,7 +197,7 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
                   className="text-2xl font-semibold cursor-pointer hover:bg-gray-50 px-2 py-1 -mx-2 rounded"
                   onClick={() => setIsEditing({ ...isEditing, title: true })}
                 >
-                  {localTask.title}
+                  {localTask.title || 'Untitled Task'}
                 </h1>
               )}
             </div>
@@ -249,7 +226,7 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
                       size="sm" 
                       variant="ghost"
                       onClick={() => {
-                        setLocalTask({ ...localTask, description: task.description });
+                        setLocalTask({ ...localTask, description: task?.description });
                         setIsEditing({ ...isEditing, description: false });
                       }}
                     >
@@ -267,37 +244,14 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
               )}
             </div>
 
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-gray-700">Subtasks</h3>
-                <Button variant="ghost" size="sm">
-                  <span className="text-xs">Add subtask</span>
-                </Button>
-              </div>
-              <div className="space-y-2">
-                {subtasks.length === 0 ? (
-                  <p className="text-sm text-gray-500">No subtasks yet</p>
-                ) : (
-                  subtasks.map((subtask: any) => (
-                    <div key={subtask.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded">
-                      <input type="checkbox" checked={subtask.completed} className="w-4 h-4" />
-                      <span className="text-sm flex-1">{subtask.title}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
             <div>
               <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList>
                   <TabsTrigger value="comments">
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    Comments
+                    <MessageSquare className="w-4 h-4 mr-2" /> Comments
                   </TabsTrigger>
                   <TabsTrigger value="history">
-                    <History className="w-4 h-4 mr-2" />
-                    History
+                    <History className="w-4 h-4 mr-2" /> History
                   </TabsTrigger>
                 </TabsList>
 
@@ -305,9 +259,7 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
                   <div className="mb-4">
                     <div className="flex gap-3">
                       <Avatar className="w-8 h-8 shrink-0">
-                        <AvatarFallback className="bg-blue-600 text-white text-xs">
-                          U
-                        </AvatarFallback>
+                        <AvatarFallback className="bg-blue-600 text-white text-xs">U</AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
                         <Textarea
@@ -331,8 +283,7 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
                               setNewComment('');
                             }}
                           >
-                            <Send className="w-4 h-4 mr-2" />
-                            Comment
+                            <Send className="w-4 h-4 mr-2" /> Comment
                           </Button>
                         </div>
                       </div>
@@ -348,16 +299,12 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
                       comments.map((comment: any) => (
                         <div key={comment.id} className="flex gap-3">
                           <Avatar className="w-8 h-8 shrink-0">
-                            <AvatarFallback className="text-xs">
-                              {comment.author?.[0] || 'U'}
-                            </AvatarFallback>
+                            <AvatarFallback className="text-xs">{comment.author?.[0] || 'U'}</AvatarFallback>
                           </Avatar>
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-sm font-medium">{comment.author}</span>
-                              <span className="text-xs text-gray-500">
-                                {formatDateTime(comment.timestamp)}
-                              </span>
+                              <span className="text-xs text-gray-500">{formatDateTime(comment.timestamp)}</span>
                             </div>
                             <p className="text-sm text-gray-700">{comment.content}</p>
                           </div>
@@ -370,22 +317,16 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
                 <TabsContent value="history" className="mt-4">
                   <div className="space-y-3">
                     {history.length === 0 ? (
-                      <p className="text-sm text-gray-500 text-center py-8">
-                        No activity history
-                      </p>
+                      <p className="text-sm text-gray-500 text-center py-8">No activity history</p>
                     ) : (
                       history.map((item: any) => (
                         <div key={item.id} className="flex gap-3 text-sm">
                           <Avatar className="w-6 h-6 shrink-0">
-                            <AvatarFallback className="text-xs">
-                              {item.user?.[0] || 'U'}
-                            </AvatarFallback>
+                            <AvatarFallback className="text-xs">{item.user?.[0] || 'U'}</AvatarFallback>
                           </Avatar>
                           <div>
                             <p className="text-gray-700">{item.description}</p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {formatDateTime(item.timestamp)}
-                            </p>
+                            <p className="text-xs text-gray-500 mt-1">{formatDateTime(item.timestamp)}</p>
                           </div>
                         </div>
                       ))
@@ -399,16 +340,9 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
           <div className="w-80 border-l bg-gray-50 p-6 overflow-y-auto shrink-0">
             <div className="space-y-6">
               <div>
-                <label className="text-xs font-semibold text-gray-600 uppercase mb-2 block">
-                  Status
-                </label>
-                <Select 
-                  value={localTask.status} 
-                  onValueChange={(value) => handleFieldUpdate('status', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                <label className="text-xs font-semibold text-gray-600 uppercase mb-2 block">Status</label>
+                <Select value={localTask.status} onValueChange={(value) => handleFieldUpdate('status', value)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {statusOptions.map(option => {
                       const Icon = option.icon;
@@ -426,29 +360,27 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-gray-600 uppercase mb-2 block">
-                  Assignee
-                </label>
+                <label className="text-xs font-semibold text-gray-600 uppercase mb-2 block">Assignee</label>
                 <Select 
-                  value={localTask.assigned_to || 'unassigned'} 
+                  value={localTask.assigned_to ? String(localTask.assigned_to) : 'unassigned'} 
                   onValueChange={(value) => handleFieldUpdate('assigned_to', value === 'unassigned' ? null : value)}
                 >
                   <SelectTrigger>
                     <SelectValue>
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4" />
-                        <span>{localTask.assignee || 'Unassigned'}</span>
+                        <span>{selectedAssigneeName()}</span>
                       </div>
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="unassigned">Unassigned</SelectItem>
                     {displayTeamMembers.map((member: any) => (
-                      <SelectItem key={member.id} value={member.id}>
+                      <SelectItem key={String(member.id)} value={String(member.id)}>
                         <div className="flex items-center gap-2">
                           <Avatar className="w-5 h-5">
                             <AvatarFallback className="text-xs">
-                              {(member.display_name || member.email)?.[0]?.toUpperCase() || 'U'}
+                              {(member.display_name || member.email || 'U')[0]?.toUpperCase() || 'U'}
                             </AvatarFallback>
                           </Avatar>
                           <span>{member.display_name || member.email}</span>
@@ -460,22 +392,13 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-gray-600 uppercase mb-2 block">
-                  Priority
-                </label>
-                <Select 
-                  value={localTask.priority} 
-                  onValueChange={(value) => handleFieldUpdate('priority', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                <label className="text-xs font-semibold text-gray-600 uppercase mb-2 block">Priority</label>
+                <Select value={localTask.priority} onValueChange={(value) => handleFieldUpdate('priority', value)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {priorityOptions.map(option => (
                       <SelectItem key={option.value} value={option.value}>
-                        <Badge className={option.color}>
-                          {option.label}
-                        </Badge>
+                        <Badge className={option.color}>{option.label}</Badge>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -483,40 +406,30 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-gray-600 uppercase mb-2 block">
-                  Labels
-                </label>
+                <label className="text-xs font-semibold text-gray-600 uppercase mb-2 block">Labels</label>
                 <div className="flex flex-wrap gap-2">
                   {(localTask.tags || []).map((tag: string) => (
-                    <Badge key={tag} variant="secondary" className="text-xs">
-                      {tag}
-                    </Badge>
+                    <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
                   ))}
                   <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
-                    <Tag className="w-3 h-3 mr-1" />
-                    Add label
+                    <Tag className="w-3 h-3 mr-1" /> Add label
                   </Button>
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-gray-600 uppercase mb-2 block">
-                  Due Date
-                </label>
+                <label className="text-xs font-semibold text-gray-600 uppercase mb-2 block">Due Date</label>
                 <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="w-full justify-start text-sm">
                       <Calendar className="w-4 h-4 mr-2" />
-                      {localTask.dueDate 
-                        ? formatDate(new Date(localTask.dueDate))
-                        : 'Set due date'
-                      }
+                      {localTask.due_date ? formatDate(new Date(localTask.due_date)) : 'Set due date'}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <CalendarComponent
                       mode="single"
-                      selected={localTask.dueDate ? new Date(localTask.dueDate) : undefined}
+                      selected={localTask.due_date ? new Date(localTask.due_date) : undefined}
                       onSelect={(date) => {
                         handleFieldUpdate('due_date', date?.toISOString());
                         setShowDatePicker(false);
@@ -527,9 +440,7 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-gray-600 uppercase mb-2 block">
-                  Time Tracking
-                </label>
+                <label className="text-xs font-semibold text-gray-600 uppercase mb-2 block">Time Tracking</label>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">Estimated</span>
@@ -551,9 +462,7 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-gray-600 uppercase mb-2 block">
-                  Reporter
-                </label>
+                <label className="text-xs font-semibold text-gray-600 uppercase mb-2 block">Reporter</label>
                 <div className="flex items-center gap-2 text-sm">
                   <Avatar className="w-6 h-6">
                     <AvatarFallback className="text-xs">U</AvatarFallback>
