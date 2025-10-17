@@ -83,6 +83,13 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
       console.log('Raw members data:', membersData);
       console.log('Error (if any):', error);
 
+      if (membersData && membersData.length > 0) {
+  // Pretty-print only the first row to the browser console
+  console.log('membersData[0] JSON:', JSON.stringify(membersData[0], null, 2));
+} else {
+  console.log('membersData is empty or undefined');
+}
+
       if (error) {
         console.error('Error loading team members:', error);
         return;
