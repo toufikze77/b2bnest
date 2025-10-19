@@ -432,7 +432,7 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
                 </Select>
               </div>
 
-              <div>
+<div>
                 <label className="text-xs font-semibold text-gray-600 uppercase mb-2 block">
                   Assignee
                 </label>
@@ -451,21 +451,16 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
                   <SelectContent>
                     <SelectItem value="unassigned">Unassigned</SelectItem>
                     {displayTeamMembers.map((member: any) => (
-                     <SelectItem key={member.id} value={member.id}>
-  <div className="flex items-center gap-2">
-    <Avatar className="w-5 h-5">
-      <AvatarFallback className="text-xs">
-        {(member.display_name || member.email)?.[0]?.toUpperCase() || 'U'}
-      </AvatarFallback>
-    </Avatar>
-    <div className="flex flex-col">
-      <span className="text-sm">{member.display_name || member.email}</span>
-      {member.email && member.email !== member.display_name && (
-        <span className="text-xs text-gray-500">{member.email}</span>
-      )}
-    </div>
-  </div>
-</SelectItem> 
+                      <SelectItem key={member.id} value={member.id}>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="w-5 h-5">
+                            <AvatarFallback className="text-xs">
+                              {(member.display_name || member.email)?.[0]?.toUpperCase() || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>{member.display_name || member.email || 'Unknown User'}</span>
+                        </div>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
