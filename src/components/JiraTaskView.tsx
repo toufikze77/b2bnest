@@ -81,14 +81,6 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
         .eq('is_active', true);
 
       console.log('Raw members data:', membersData);
-      console.log('Error (if any):', error);
-
-      if (membersData && membersData.length > 0) {
-  // Pretty-print only the first row to the browser console
-  console.log('membersData[0] JSON:', JSON.stringify(membersData[0], null, 2));
-} else {
-  console.log('membersData is empty or undefined');
-}
 
       if (error) {
         console.error('Error loading team members:', error);
@@ -102,10 +94,6 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
 
       const formattedMembers = membersData.map((member: any) => {
         const profile = member.profiles;
-        console.log('Processing member:', { 
-          user_id: member.user_id, 
-          profile 
-        });
         
         return {
           id: member.user_id,
@@ -148,6 +136,13 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
   const currentStatusColor = statusOptions.find(s => s.value === localTask.status)?.color || 'text-gray-500';
 
   const displayTeamMembers = localTeamMembers.length > 0 ? localTeamMembers : teamMembers;
+
+  // Clean up assignee name - remove any parentheses and extra content
+  const cleanAssigneeName = (name: string) => {
+    if (!name || name === 'Unassigned') return 'Unassigned';
+    // Remove anything in parentheses including the parentheses
+    return name.replace(/\s*\([^)]*\)\s*/g, '').trim();
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-8 overflow-y-auto">
@@ -432,7 +427,7 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
                 </Select>
               </div>
 
-<div>
+              <div>
                 <label className="text-xs font-semibold text-gray-600 uppercase mb-2 block">
                   Assignee
                 </label>
@@ -444,7 +439,7 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
                     <SelectValue>
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4" />
-                        <span>{localTask.assignee || 'Unassigned'}</span>
+                        <span>{cleanAssigneeName(localTask.assignee || 'Unassigned')}</span>
                       </div>
                     </SelectValue>
                   </SelectTrigger>
