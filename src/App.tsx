@@ -40,6 +40,7 @@ import CompanyDirectory from "@/pages/CompanyDirectory";
 import ServiceDirectory from "@/pages/ServiceDirectory";
 import Settings from "@/pages/Settings";
 import PaymentSuccess from "@/pages/PaymentSuccess";
+import TodoDashboard from "@/pages/TodoDashboard";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Market from '@/pages/Market';
 import BusinessNews from '@/pages/BusinessNews';
@@ -62,6 +63,7 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/todo" element={<ProtectedRoute><TodoDashboard /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/business-social" element={<ProtectedRoute><BusinessSocial /></ProtectedRoute>} />
             <Route path="/profile-setup" element={<ProtectedRoute><ProfileSetup /></ProtectedRoute>} />

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo Hub - Preview Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .tab-active { @apply bg-blue-600 text-white; }
+        .tab-inactive { @apply bg-gray-100 text-gray-700 hover:bg-gray-200; }
+        .integration-icon { width: 24px; height: 24px; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-2xl font-bold text-gray-900">Todo Hub</h1>
+                    <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                        Connected to 5 apps
+                    </span>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <!-- Search -->
+                    <div class="relative">
+                        <input type="text" placeholder="Search tasks, projects, or people..." 
+                               class="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-80 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                            🔍
+                        </div>
+                    </div>
+                    
+                    <!-- Notifications -->
+                    <button class="relative p-2 text-gray-400 hover:text-gray-600">
+                        🔔
+                        <span class="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">3</span>
+                    </button>
+                    
+                    <!-- New Task Button -->
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium">
+                        ➕ New Task
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <div class="flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        📅
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Today's Tasks</p>
+                        <p class="text-2xl font-bold text-gray-900">12</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow">
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-lg">
+                        👥
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Team Tasks</p>
+                        <p class="text-2xl font-bold text-gray-900">28</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow">
+                <div class="flex items-center">
+                    <div class="p-2 bg-purple-100 rounded-lg">
+                        ⚡
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Automated</p>
+                        <p class="text-2xl font-bold text-gray-900">45</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow">
+                <div class="flex items-center">
+                    <div class="p-2 bg-orange-100 rounded-lg">
+                        📊
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Completion Rate</p>
+                        <p class="text-2xl font-bold text-gray-900">87%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="-mb-px flex space-x-8">
+                    <button onclick="showTab('tasks')" id="tab-tasks" class="tab-active py-2 px-1 border-b-2 border-blue-500 font-medium text-sm">
+                        Tasks
+                    </button>
+                    <button onclick="showTab('calendar')" id="tab-calendar" class="tab-inactive py-2 px-1 border-b-2 border-transparent font-medium text-sm">
+                        Calendar
+                    </button>
+                    <button onclick="showTab('team')" id="tab-team" class="tab-inactive py-2 px-1 border-b-2 border-transparent font-medium text-sm">
+                        Team
+                    </button>
+                    <button onclick="showTab('integrations')" id="tab-integrations" class="tab-inactive py-2 px-1 border-b-2 border-transparent font-medium text-sm">
+                        Integrations
+                    </button>
+                    <button onclick="showTab('analytics')" id="tab-analytics" class="tab-inactive py-2 px-1 border-b-2 border-transparent font-medium text-sm">
+                        Analytics
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Tab Content -->
+        <div id="content-tasks" class="tab-content">
+            <!-- Tasks View -->
+            <div class="bg-white rounded-lg shadow mb-6">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium">Tasks</h3>
+                        <span class="text-sm text-gray-500">12/15 completed</span>
+                    </div>
+                    
+                    <!-- Filters -->
+                    <div class="flex space-x-4 mb-6">
+                        <select class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+                            <option>All Tasks</option>
+                            <option>Pending</option>
+                            <option>Completed</option>
+                        </select>
+                        <select class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+                            <option>All Priorities</option>
+                            <option>Urgent</option>
+                            <option>High</option>
+                            <option>Medium</option>
+                        </select>
+                        <select class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+                            <option>All Projects</option>
+                            <option>Website Redesign</option>
+                            <option>Mobile App</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Task Cards -->
+            <div class="space-y-4">
+                <!-- Task 1 -->
+                <div class="bg-white rounded-lg shadow p-4 border-l-4 border-orange-500">
+                    <div class="flex items-start space-x-3">
+                        <input type="checkbox" class="mt-1">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <span class="text-purple-600">🎨</span>
+                                <h4 class="font-medium text-gray-900">Review Figma design mockups</h4>
+                                <span class="bg-orange-100 text-orange-800 text-xs font-medium px-2 py-1 rounded">HIGH</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-3">Check the new landing page designs and provide feedback</p>
+                            <div class="flex items-center space-x-4 text-sm text-gray-500">
+                                <span>📅 Jan 15</span>
+                                <span>👤 John Doe</span>
+                                <span>🏷️ design, review</span>
+                                <span>⏱️ 120min</span>
+                            </div>
+                            <div class="mt-2 text-xs text-blue-600">
+                                🎨 Figma: Landing Page V2
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task 2 -->
+                <div class="bg-white rounded-lg shadow p-4 border-l-4 border-yellow-500">
+                    <div class="flex items-start space-x-3">
+                        <input type="checkbox" class="mt-1">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <span class="text-blue-600">📁</span>
+                                <h4 class="font-medium text-gray-900">Sync with OneDrive documents</h4>
+                                <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded">MEDIUM</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-3">Update project documentation in shared folder</p>
+                            <div class="flex items-center space-x-4 text-sm text-gray-500">
+                                <span>📅 Jan 16</span>
+                                <span>🏷️ documentation, sync</span>
+                                <span>⏱️ 60min</span>
+                            </div>
+                            <div class="mt-2 text-xs text-blue-600">
+                                💼 OneDrive: Project Docs/Requirements.docx
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task 3 -->
+                <div class="bg-white rounded-lg shadow p-4 border-l-4 border-green-500 opacity-60">
+                    <div class="flex items-start space-x-3">
+                        <input type="checkbox" checked class="mt-1">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <span class="text-purple-600">💬</span>
+                                <h4 class="font-medium text-gray-900 line-through">Respond to Slack team discussion</h4>
+                                <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">COMPLETED</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-3 line-through">Address questions about the new feature implementation</p>
+                            <div class="flex items-center space-x-4 text-sm text-gray-500">
+                                <span>👤 Jane Smith</span>
+                                <span>🏷️ communication, team</span>
+                                <span>⏱️ 30min</span>
+                            </div>
+                            <div class="mt-2 text-xs text-blue-600">
+                                💬 Slack: #development
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Integrations Tab Content -->
+        <div id="content-integrations" class="tab-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Connected Apps -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-medium mb-4">Connected Apps (3)</h3>
+                    
+                    <!-- Slack -->
+                    <div class="border border-gray-200 rounded-lg p-4 mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-purple-600 text-2xl">💬</span>
+                                <div>
+                                    <h4 class="font-medium">Slack</h4>
+                                    <p class="text-sm text-gray-600">Message to task conversion</p>
+                                </div>
+                            </div>
+                            <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">✅ Connected</span>
+                        </div>
+                        <div class="text-sm text-gray-500 mb-2">
+                            Last Sync: 2 hours ago | Tasks Created: 23
+                        </div>
+                        <div class="flex space-x-2">
+                            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">🔄 Sync On</span>
+                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">🤖 Auto-create On</span>
+                        </div>
+                    </div>
+
+                    <!-- OneDrive -->
+                    <div class="border border-gray-200 rounded-lg p-4 mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-blue-600 text-2xl">📁</span>
+                                <div>
+                                    <h4 class="font-medium">Microsoft OneDrive</h4>
+                                    <p class="text-sm text-gray-600">Document tracking</p>
+                                </div>
+                            </div>
+                            <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">✅ Connected</span>
+                        </div>
+                        <div class="text-sm text-gray-500 mb-2">
+                            Last Sync: 1 hour ago | Tasks Created: 12
+                        </div>
+                        <div class="flex space-x-2">
+                            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">🔄 Sync On</span>
+                            <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">🤖 Auto-create Off</span>
+                        </div>
+                    </div>
+
+                    <!-- Figma -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-purple-600 text-2xl">🎨</span>
+                                <div>
+                                    <h4 class="font-medium">Figma</h4>
+                                    <p class="text-sm text-gray-600">Design comment tracking</p>
+                                </div>
+                            </div>
+                            <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">✅ Connected</span>
+                        </div>
+                        <div class="text-sm text-gray-500 mb-2">
+                            Last Sync: 30 minutes ago | Tasks Created: 8
+                        </div>
+                        <div class="flex space-x-2">
+                            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">🔄 Sync On</span>
+                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">🤖 Auto-create On</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Available Apps -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-medium mb-4">Available Apps (5)</h3>
+                    
+                    <div class="space-y-4">
+                        <!-- ChatGPT -->
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-green-600 text-2xl">🤖</span>
+                                    <div>
+                                        <h4 class="font-medium">ChatGPT</h4>
+                                        <p class="text-sm text-gray-600">AI-powered task suggestions</p>
+                                    </div>
+                                </div>
+                                <button class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                                    Connect
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- GitHub -->
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-gray-800 text-2xl">🐙</span>
+                                    <div>
+                                        <h4 class="font-medium">GitHub</h4>
+                                        <p class="text-sm text-gray-600">Issue and PR tracking</p>
+                                    </div>
+                                </div>
+                                <button class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                                    Connect
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Gmail -->
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-red-600 text-2xl">📧</span>
+                                    <div>
+                                        <h4 class="font-medium">Gmail</h4>
+                                        <p class="text-sm text-gray-600">Email to task conversion</p>
+                                    </div>
+                                </div>
+                                <button class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                                    Connect
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Tab Content -->
+        <div id="content-analytics" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <h3 class="text-lg font-medium mb-4">Analytics Dashboard</h3>
+                
+                <!-- Key Metrics -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-gray-900">156</div>
+                        <div class="text-sm text-gray-600">Total Tasks</div>
+                        <div class="text-xs text-green-600">📈 12% from last week</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-gray-900">85.9%</div>
+                        <div class="text-sm text-gray-600">Completion Rate</div>
+                        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                            <div class="bg-green-500 h-2 rounded-full" style="width: 85.9%"></div>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-gray-900">2.3h</div>
+                        <div class="text-sm text-gray-600">Avg. Completion Time</div>
+                        <div class="text-xs text-green-600">2.1h faster than last week</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-red-600">8</div>
+                        <div class="text-sm text-gray-600">Overdue Tasks</div>
+                        <div class="text-xs text-red-600">Needs attention</div>
+                    </div>
+                </div>
+
+                <!-- Insights -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-medium mb-3">📈 Key Insights</h4>
+                        <div class="space-y-3">
+                            <div class="p-3 bg-green-50 border border-green-200 rounded-lg">
+                                <p class="text-sm font-medium text-green-800">🎯 High Performance</p>
+                                <p class="text-sm text-green-700 mt-1">Your completion rate is 15% higher than average this week!</p>
+                            </div>
+                            <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                <p class="text-sm font-medium text-blue-800">⚡ Integration Success</p>
+                                <p class="text-sm text-blue-700 mt-1">Slack integration is creating the most actionable tasks.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium mb-3">🎯 Recommendations</h4>
+                        <div class="space-y-3">
+                            <div class="p-3 border border-gray-200 rounded-lg">
+                                <p class="text-sm font-medium">1. Schedule focused time blocks</p>
+                                <p class="text-sm text-gray-600 mt-1">Your most productive time is 10 AM - consider blocking this time for high-priority tasks.</p>
+                            </div>
+                            <div class="p-3 border border-gray-200 rounded-lg">
+                                <p class="text-sm font-medium">2. Enable more integrations</p>
+                                <p class="text-sm text-gray-600 mt-1">Connect GitHub and Calendar to automatically track more tasks.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Other tab contents (Calendar, Team) -->
+        <div id="content-calendar" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium mb-4">📅 Calendar View</h3>
+                <p class="text-gray-600 mb-4">Monthly calendar with task scheduling and time blocking</p>
+                <div class="bg-gray-50 p-8 rounded-lg text-center">
+                    <p class="text-gray-500">Calendar component with drag-and-drop task scheduling</p>
+                    <p class="text-sm text-gray-400 mt-2">Features: Monthly/Weekly/Daily views, Time blocking, Meeting integration</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="content-team" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium mb-4">👥 Team Management</h3>
+                <p class="text-gray-600 mb-4">Team member profiles, workload distribution, and collaboration</p>
+                <div class="bg-gray-50 p-8 rounded-lg text-center">
+                    <p class="text-gray-500">Team member cards with performance metrics and task assignments</p>
+                    <p class="text-sm text-gray-400 mt-2">Features: Member profiles, Workload balancing, Activity tracking</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            // Hide all tab contents
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.add('hidden'));
+            
+            // Show selected tab content
+            document.getElementById('content-' + tabName).classList.remove('hidden');
+            
+            // Update tab styles
+            const tabs = document.querySelectorAll('[id^="tab-"]');
+            tabs.forEach(tab => {
+                tab.className = 'tab-inactive py-2 px-1 border-b-2 border-transparent font-medium text-sm';
+            });
+            
+            // Activate selected tab
+            const activeTab = document.getElementById('tab-' + tabName);
+            activeTab.className = 'tab-active py-2 px-1 border-b-2 border-blue-500 font-medium text-sm bg-blue-600 text-white px-3 rounded-t';
+        }
+    </script>
+</body>
+</html>
