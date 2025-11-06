@@ -31,6 +31,22 @@ type FPSSumbission = {
 };
 
 const TOKEN_STORAGE_KEY = 'hmrc_mock_auth_v1';
+const SETTINGS_STORAGE_KEY = 'hmrc_settings_v1';
+
+type HMRCSettings = {
+  companyName: string;
+  companyNumber: string;
+  utr: string;
+  vatNumber: string;
+  payeReference: string;
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+  autoSubmitVAT: boolean;
+  emailNotifications: boolean;
+  reminderDays: number;
+  sandboxMode: boolean;
+};
 
 export const hmrcService = {
   // --- OAuth scaffolding (mock) ---
@@ -100,8 +116,41 @@ export const hmrcService = {
     if (!token) throw new Error('Not authenticated with HMRC');
     await new Promise((r) => setTimeout(r, 800));
     return { submissionId: `EPS-${Math.random().toString(36).slice(2, 10).toUpperCase()}` };
+  },
+
+  saveSettings(settings: HMRCSettings): void {
+    try {
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    } catch (error) {
+      console.error('Failed to save HMRC settings:', error);
+    }
+  },
+
+  getSettings(): HMRCSettings | null {
+    try {
+      const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw) as HMRCSettings;
+    } catch (error) {
+      console.error('Failed to load HMRC settings:', error);
+      return null;
+    }
+  },
+
+  clearSettings(): void {
+    try {
+      localStorage.removeItem(SETTINGS_STORAGE_KEY);
+    } catch (error) {
+      console.error('Failed to clear HMRC settings:', error);
+    }
+  },
+
+  isFullyConfigured(): boolean {
+    const settings = this.getSettings();
+    const token = this.getToken();
+    return !!(settings && token && settings.clientId && settings.clientSecret);
   }
 };
 
-export type { EmployerDetails, EmployeeFPSRecord, FPSSumbission };
+export type { EmployerDetails, EmployeeFPSRecord, FPSSumbission, HMRCSettings };
 

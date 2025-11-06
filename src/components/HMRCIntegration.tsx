@@ -37,9 +37,9 @@ const HMRCIntegration = () => {
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
 
   useEffect(() => {
-    // Check if user is already connected to HMRC
-    const token = hmrcService.getToken();
-    if (token) {
+    // Check if user is already connected to HMRC with valid settings
+    const isConfigured = hmrcService.isFullyConfigured();
+    if (isConfigured) {
       setIsConnected(true);
       setConnectionStatus('connected');
     }
@@ -82,6 +82,7 @@ const HMRCIntegration = () => {
     setIsConnected(false);
     setConnectionStatus('disconnected');
     localStorage.removeItem('hmrc_mock_auth_v1');
+    hmrcService.clearSettings();
     toast({
       title: "HMRC Disconnected",
       description: "Successfully disconnected from HMRC services",

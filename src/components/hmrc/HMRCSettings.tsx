@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { hmrcService } from '@/services/hmrcService';
 
 interface HMRCSettingsProps {
   onDisconnect: () => void;
@@ -30,15 +31,15 @@ const HMRCSettings = ({ onDisconnect }: HMRCSettingsProps) => {
   const [showClientSecret, setShowClientSecret] = useState(false);
   const [settings, setSettings] = useState({
     // Company Details
-    companyName: 'Demo Business Ltd',
-    companyNumber: '12345678',
-    utr: '1234567890',
-    vatNumber: 'GB123456789',
-    payeReference: '123/AB456',
+    companyName: '',
+    companyNumber: '',
+    utr: '',
+    vatNumber: '',
+    payeReference: '',
     
     // HMRC Connection
-    clientId: 'demo-client-id-12345',
-    clientSecret: '••••••••••••••••••••••••••••••••',
+    clientId: '',
+    clientSecret: '',
     redirectUri: `${window.location.origin}/business-tools?hmrc-callback=true`,
     
     // Preferences
@@ -48,7 +49,16 @@ const HMRCSettings = ({ onDisconnect }: HMRCSettingsProps) => {
     sandboxMode: true
   });
 
+  // Load saved settings on mount
+  useEffect(() => {
+    const savedSettings = hmrcService.getSettings();
+    if (savedSettings) {
+      setSettings(savedSettings);
+    }
+  }, []);
+
   const handleSaveSettings = () => {
+    hmrcService.saveSettings(settings);
     toast({
       title: "Settings Saved",
       description: "Your HMRC integration settings have been updated successfully.",
