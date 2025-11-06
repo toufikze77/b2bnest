@@ -116,7 +116,7 @@ const HMRCIntegration = () => {
           HMRC Integration Suite
         </h1>
         <p className="text-gray-600 mb-4">
-          Complete UK tax and compliance management inspired by Free Agent and Sage Online
+          Complete UK tax and compliance management
         </p>
         <div className="flex gap-2 flex-wrap">
           <Badge variant={isConnected ? 'default' : 'secondary'}>
