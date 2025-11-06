@@ -195,13 +195,15 @@ const HMRCIntegration = () => {
       ) : (
         <Tabs defaultValue="dashboard" className="space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 max-w-3xl">
+            <TabsList className={`grid w-full ${user?.email === 'toufikze@gmail.com' ? 'grid-cols-2 md:grid-cols-6' : 'grid-cols-2 md:grid-cols-5'} max-w-3xl`}>
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="vat">VAT Returns</TabsTrigger>
               <TabsTrigger value="payroll">Payroll</TabsTrigger>
               <TabsTrigger value="tax">Tax Returns</TabsTrigger>
               <TabsTrigger value="obligations">Obligations</TabsTrigger>
-              <TabsTrigger value="settings">Settings</TabsTrigger>
+              {user?.email === 'toufikze@gmail.com' && (
+                <TabsTrigger value="settings">Settings</TabsTrigger>
+              )}
             </TabsList>
             
             <Button 
@@ -345,9 +347,11 @@ const HMRCIntegration = () => {
             <HMRCObligations />
           </TabsContent>
 
-          <TabsContent value="settings">
-            <HMRCSettings onDisconnect={handleDisconnectHMRC} />
-          </TabsContent>
+          {user?.email === 'toufikze@gmail.com' && (
+            <TabsContent value="settings">
+              <HMRCSettings onDisconnect={handleDisconnectHMRC} />
+            </TabsContent>
+          )}
         </Tabs>
       )}
     </div>
