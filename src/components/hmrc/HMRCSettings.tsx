@@ -96,27 +96,41 @@ const HMRCSettings = ({ onDisconnect }: HMRCSettingsProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-            <div className="flex items-center gap-3">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <div>
-                <p className="font-medium">Connected to HMRC</p>
-                <p className="text-sm text-gray-600">Government Gateway (Demo Mode)</p>
-              </div>
-            </div>
-            <Badge variant="secondary">Demo Mode</Badge>
-          </div>
-          
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleTestConnection}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Test Connection
-            </Button>
-            <Button variant="destructive" onClick={onDisconnect}>
-              <Unlink className="h-4 w-4 mr-2" />
-              Disconnect
-            </Button>
-          </div>
+          {(() => {
+            const token = hmrcService.getToken();
+            const configured = hmrcService.isFullyConfigured();
+            return (
+              <>
+                <div className={`flex items-center justify-between p-4 ${configured ? 'bg-green-50' : 'bg-amber-50'} rounded-lg`}>
+                  <div className="flex items-center gap-3">
+                    {configured ? (
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                    ) : (
+                      <AlertTriangle className="h-5 w-5 text-amber-500" />
+                    )}
+                    <div>
+                      <p className="font-medium">{configured ? 'Connected to HMRC' : 'Not connected'}</p>
+                      <p className="text-sm text-gray-600">Government Gateway{settings.sandboxMode ? ' (Sandbox)' : ''}</p>
+                    </div>
+                  </div>
+                  <Badge variant="secondary">{settings.sandboxMode ? 'Sandbox' : 'Live'}</Badge>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={handleTestConnection}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Test Connection
+                  </Button>
+                  {token && (
+                    <Button variant="destructive" onClick={onDisconnect}>
+                      <Unlink className="h-4 w-4 mr-2" />
+                      Disconnect
+                    </Button>
+                  )}
+                </div>
+              </>
+            );
+          })()}
         </CardContent>
       </Card>
 

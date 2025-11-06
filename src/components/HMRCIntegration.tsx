@@ -48,29 +48,32 @@ const HMRCIntegration = () => {
   const handleConnectHMRC = async () => {
     setLoading(true);
     setConnectionStatus('connecting');
-    
     try {
-      // In a real implementation, this would use actual HMRC OAuth
-      const { authUrl } = await hmrcService.startOAuth(
-        'demo-client-id', 
-        `${window.location.origin}/business-tools?hmrc-callback=true`
-      );
-      
-      // For demo purposes, we'll simulate the connection
-      setTimeout(() => {
-        setIsConnected(true);
-        setConnectionStatus('connected');
+      const settings = hmrcService.getSettings();
+      if (!settings || !settings.clientId || !settings.clientSecret) {
+        setConnectionStatus('disconnected');
         toast({
-          title: "HMRC Connected",
-          description: "Successfully connected to HMRC services (Demo Mode)",
+          title: "Missing credentials",
+          description: "Please add your HMRC Client ID and Secret in Settings first.",
+          variant: "destructive",
         });
-      }, 2000);
-      
+        return;
+      }
+
+      // Authenticate and persist token (mock auth flow)
+      await hmrcService.authenticate(settings.clientId, settings.clientSecret);
+
+      setIsConnected(true);
+      setConnectionStatus('connected');
+      toast({
+        title: "HMRC Connected",
+        description: "Authentication successful. You're now connected.",
+      });
     } catch (error) {
       setConnectionStatus('disconnected');
       toast({
         title: "Connection Failed",
-        description: "Failed to connect to HMRC. Please try again.",
+        description: "Failed to authenticate with HMRC. Check credentials and try again.",
         variant: "destructive",
       });
     } finally {
@@ -132,67 +135,73 @@ const HMRCIntegration = () => {
       </div>
 
       {!isConnected ? (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Link className="h-5 w-5" />
-              Connect to HMRC
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Demo Mode</AlertTitle>
-                <AlertDescription>
-                  This is a demonstration of HMRC integration capabilities. 
-                  In production, this would connect to the actual HMRC Government Gateway.
-                </AlertDescription>
-              </Alert>
-              
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <h3 className="font-semibold mb-2">What you'll get:</h3>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• Automated VAT return submissions</li>
-                    <li>• Payroll RTI submissions (FPS/EPS)</li>
-                    <li>• Corporation tax submissions</li>
-                    <li>• Income tax self-assessment</li>
-                    <li>• Automatic deadline tracking</li>
-                    <li>• HMRC obligation monitoring</li>
-                  </ul>
+        <>
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Link className="h-5 w-5" />
+                Connect to HMRC
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>{'Sandbox Mode'}</AlertTitle>
+                  <AlertDescription>
+                    This is a demonstration of HMRC integration capabilities.
+                    In production, this would connect to the actual HMRC Government Gateway.
+                  </AlertDescription>
+                </Alert>
+                
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="font-semibold mb-2">What you'll get:</h3>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      <li>• Automated VAT return submissions</li>
+                      <li>• Payroll RTI submissions (FPS/EPS)</li>
+                      <li>• Corporation tax submissions</li>
+                      <li>• Income tax self-assessment</li>
+                      <li>• Automatic deadline tracking</li>
+                      <li>• HMRC obligation monitoring</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-2">Requirements:</h3>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      <li>• HMRC Government Gateway account</li>
+                      <li>• Making Tax Digital enrollment</li>
+                      <li>• Valid UTR or VAT number</li>
+                      <li>• Agent authorization (if applicable)</li>
+                    </ul>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold mb-2">Requirements:</h3>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• HMRC Government Gateway account</li>
-                    <li>• Making Tax Digital enrollment</li>
-                    <li>• Valid UTR or VAT number</li>
-                    <li>• Agent authorization (if applicable)</li>
-                  </ul>
-                </div>
+                
+                <Button 
+                  onClick={handleConnectHMRC} 
+                  disabled={loading || connectionStatus === 'connecting'}
+                  className="w-full md:w-auto"
+                >
+                  {connectionStatus === 'connecting' ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Connecting to HMRC...
+                    </>
+                  ) : (
+                    <>
+                      <Link className="h-4 w-4 mr-2" />
+                      Connect to HMRC Government Gateway
+                    </>
+                  )}
+                </Button>
               </div>
-              
-              <Button 
-                onClick={handleConnectHMRC} 
-                disabled={loading || connectionStatus === 'connecting'}
-                className="w-full md:w-auto"
-              >
-                {connectionStatus === 'connecting' ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Connecting to HMRC...
-                  </>
-                ) : (
-                  <>
-                    <Link className="h-4 w-4 mr-2" />
-                    Connect to HMRC Government Gateway
-                  </>
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {user?.email === 'toufikze@gmail.com' && (
+            <HMRCSettings onDisconnect={handleDisconnectHMRC} />
+          )}
+        </>
       ) : (
         <Tabs defaultValue="dashboard" className="space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
