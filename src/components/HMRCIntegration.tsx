@@ -22,34 +22,39 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useHMRCCallback } from '@/hooks/useHMRCCallback';
 import { hmrcService } from '@/services/hmrcService';
 import HMRCVATReturns from '@/components/hmrc/HMRCVATReturns';
 import HMRCPayrollSubmissions from '@/components/hmrc/HMRCPayrollSubmissions';
 import HMRCTaxReturns from '@/components/hmrc/HMRCTaxReturns';
 import HMRCObligations from '@/components/hmrc/HMRCObligations';
 import HMRCSettings from '@/components/hmrc/HMRCSettings';
+import HMRCSubmissionLogs from '@/components/hmrc/HMRCSubmissionLogs';
 
 const HMRCIntegration = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { processing: callbackProcessing } = useHMRCCallback();
   const [isConnected, setIsConnected] = useState(false);
   const [loading, setLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
 
   useEffect(() => {
-    // Check if user is already connected to HMRC with valid settings
-    const isConfigured = hmrcService.isFullyConfigured();
-    if (isConfigured) {
-      setIsConnected(true);
-      setConnectionStatus('connected');
-    }
+    const checkConnection = async () => {
+      const isConfigured = await hmrcService.isFullyConfigured();
+      if (isConfigured) {
+        setIsConnected(true);
+        setConnectionStatus('connected');
+      }
+    };
+    checkConnection();
   }, []);
 
   const handleConnectHMRC = async () => {
     setLoading(true);
     setConnectionStatus('connecting');
     try {
-      const settings = hmrcService.getSettings();
+      const settings = await hmrcService.getSettings();
       if (!settings || !settings.clientId || !settings.clientSecret) {
         setConnectionStatus('disconnected');
         toast({
@@ -60,32 +65,30 @@ const HMRCIntegration = () => {
         return;
       }
 
-      // Authenticate and persist token (mock auth flow)
-      await hmrcService.authenticate(settings.clientId, settings.clientSecret);
+      // Start OAuth flow
+      const { authUrl } = await hmrcService.startOAuth(
+        settings.clientId,
+        settings.redirectUri,
+        settings.sandboxMode
+      );
 
-      setIsConnected(true);
-      setConnectionStatus('connected');
-      toast({
-        title: "HMRC Connected",
-        description: "Authentication successful. You're now connected.",
-      });
+      // Redirect to HMRC OAuth
+      window.location.href = authUrl;
     } catch (error) {
       setConnectionStatus('disconnected');
       toast({
         title: "Connection Failed",
-        description: "Failed to authenticate with HMRC. Check credentials and try again.",
+        description: "Failed to initiate HMRC OAuth. Check credentials and try again.",
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   };
 
-  const handleDisconnectHMRC = () => {
+  const handleDisconnectHMRC = async () => {
     setIsConnected(false);
     setConnectionStatus('disconnected');
-    localStorage.removeItem('hmrc_mock_auth_v1');
-    hmrcService.clearSettings();
+    await hmrcService.clearSettings();
     toast({
       title: "HMRC Disconnected",
       description: "Successfully disconnected from HMRC services",
@@ -107,6 +110,20 @@ const HMRCIntegration = () => {
               Please sign in to access HMRC integration and tax management tools.
             </p>
           </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  if (callbackProcessing) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <Card>
+          <CardContent className="p-12 text-center">
+            <RefreshCw className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
+            <p className="text-lg font-semibold">Completing HMRC Authentication...</p>
+            <p className="text-muted-foreground mt-2">Please wait while we secure your connection.</p>
+          </CardContent>
         </Card>
       </div>
     );
@@ -363,6 +380,13 @@ const HMRCIntegration = () => {
             </TabsContent>
           )}
         </Tabs>
+      )}
+
+      {/* Add submission logs section when connected */}
+      {isConnected && (
+        <div className="mt-6">
+          <HMRCSubmissionLogs />
+        </div>
       )}
     </div>
   );

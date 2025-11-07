@@ -206,7 +206,7 @@ export type Database = {
           created_at: string
           details: Json | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           resource_id: string | null
           resource_type: string
           user_agent: string | null
@@ -217,7 +217,7 @@ export type Database = {
           created_at?: string
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           resource_id?: string | null
           resource_type: string
           user_agent?: string | null
@@ -228,7 +228,7 @@ export type Database = {
           created_at?: string
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           resource_id?: string | null
           resource_type?: string
           user_agent?: string | null
@@ -358,7 +358,7 @@ export type Database = {
           bank_account_id: string | null
           created_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           user_agent: string | null
           user_id: string
         }
@@ -367,7 +367,7 @@ export type Database = {
           bank_account_id?: string | null
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
           user_id: string
         }
@@ -376,7 +376,7 @@ export type Database = {
           bank_account_id?: string | null
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
           user_id?: string
         }
@@ -889,13 +889,193 @@ export type Database = {
           },
         ]
       }
+      hmrc_integrations: {
+        Row: {
+          access_token: string
+          connected_at: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          is_connected: boolean | null
+          last_refreshed_at: string | null
+          organization_id: string | null
+          refresh_token: string | null
+          scope: string | null
+          token_type: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          connected_at?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_connected?: boolean | null
+          last_refreshed_at?: string | null
+          organization_id?: string | null
+          refresh_token?: string | null
+          scope?: string | null
+          token_type?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          connected_at?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_connected?: boolean | null
+          last_refreshed_at?: string | null
+          organization_id?: string | null
+          refresh_token?: string | null
+          scope?: string | null
+          token_type?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hmrc_integrations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hmrc_settings: {
+        Row: {
+          auto_submit_vat: boolean | null
+          client_id: string
+          client_secret: string
+          company_name: string | null
+          company_number: string | null
+          created_at: string | null
+          email_notifications: boolean | null
+          id: string
+          organization_id: string | null
+          paye_reference: string | null
+          redirect_uri: string
+          reminder_days: number | null
+          sandbox_mode: boolean | null
+          updated_at: string | null
+          user_id: string
+          utr: string | null
+          vat_number: string | null
+        }
+        Insert: {
+          auto_submit_vat?: boolean | null
+          client_id: string
+          client_secret: string
+          company_name?: string | null
+          company_number?: string | null
+          created_at?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          organization_id?: string | null
+          paye_reference?: string | null
+          redirect_uri: string
+          reminder_days?: number | null
+          sandbox_mode?: boolean | null
+          updated_at?: string | null
+          user_id: string
+          utr?: string | null
+          vat_number?: string | null
+        }
+        Update: {
+          auto_submit_vat?: boolean | null
+          client_id?: string
+          client_secret?: string
+          company_name?: string | null
+          company_number?: string | null
+          created_at?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          organization_id?: string | null
+          paye_reference?: string | null
+          redirect_uri?: string
+          reminder_days?: number | null
+          sandbox_mode?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+          utr?: string | null
+          vat_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hmrc_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hmrc_submission_logs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string
+          organization_id: string | null
+          period: string | null
+          request_payload: Json | null
+          response_data: Json | null
+          status: string
+          submission_id: string | null
+          submission_type: string
+          submitted_at: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          organization_id?: string | null
+          period?: string | null
+          request_payload?: Json | null
+          response_data?: Json | null
+          status?: string
+          submission_id?: string | null
+          submission_type: string
+          submitted_at?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          organization_id?: string | null
+          period?: string | null
+          request_payload?: Json | null
+          response_data?: Json | null
+          status?: string
+          submission_id?: string | null
+          submission_type?: string
+          submitted_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hmrc_submission_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_audit_logs: {
         Row: {
           action: string
           created_at: string
           id: string
           integration_name: string
-          ip_address: unknown | null
+          ip_address: unknown
           user_agent: string | null
           user_id: string
         }
@@ -904,7 +1084,7 @@ export type Database = {
           created_at?: string
           id?: string
           integration_name: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
           user_id: string
         }
@@ -913,7 +1093,7 @@ export type Database = {
           created_at?: string
           id?: string
           integration_name?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
           user_id?: string
         }
@@ -1368,7 +1548,7 @@ export type Database = {
           admin_user_id: string | null
           created_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           payment_id: string | null
           user_agent: string | null
           user_id: string | null
@@ -1378,7 +1558,7 @@ export type Database = {
           admin_user_id?: string | null
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           payment_id?: string | null
           user_agent?: string | null
           user_id?: string | null
@@ -1388,7 +1568,7 @@ export type Database = {
           admin_user_id?: string | null
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           payment_id?: string | null
           user_agent?: string | null
           user_id?: string | null
@@ -2148,7 +2328,7 @@ export type Database = {
           action: string
           created_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           table_name: string
           user_agent: string | null
           user_id: string | null
@@ -2157,7 +2337,7 @@ export type Database = {
           action: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           table_name: string
           user_agent?: string | null
           user_id?: string | null
@@ -2166,7 +2346,7 @@ export type Database = {
           action?: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           table_name?: string
           user_agent?: string | null
           user_id?: string | null
@@ -2905,10 +3085,7 @@ export type Database = {
         Args: { access_type?: string; accessed_user_id: string }
         Returns: undefined
       }
-      check_2fa_rate_limit: {
-        Args: { p_email: string }
-        Returns: boolean
-      }
+      check_2fa_rate_limit: { Args: { p_email: string }; Returns: boolean }
       check_trial_status: {
         Args: { user_id_param: string }
         Returns: {
@@ -2918,10 +3095,7 @@ export type Database = {
           trial_expired: boolean
         }[]
       }
-      cleanup_expired_2fa_codes: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      cleanup_expired_2fa_codes: { Args: never; Returns: undefined }
       create_payment_record: {
         Args: {
           p_amount: number
@@ -2942,6 +3116,7 @@ export type Database = {
         Args: { encrypted_data: string }
         Returns: string
       }
+      decrypt_hmrc_token: { Args: { encrypted_token: string }; Returns: string }
       decrypt_integration_token: {
         Args: { encrypted_token: string }
         Returns: string
@@ -2950,22 +3125,11 @@ export type Database = {
         Args: { encrypted_data: string }
         Returns: string
       }
-      encrypt_banking_data: {
-        Args: { data: string }
-        Returns: string
-      }
-      encrypt_integration_token: {
-        Args: { token: string }
-        Returns: string
-      }
-      encrypt_payment_data: {
-        Args: { data: string }
-        Returns: string
-      }
-      ensure_user_has_org: {
-        Args: { p_user_id?: string }
-        Returns: string
-      }
+      encrypt_banking_data: { Args: { data: string }; Returns: string }
+      encrypt_hmrc_token: { Args: { token: string }; Returns: string }
+      encrypt_integration_token: { Args: { token: string }; Returns: string }
+      encrypt_payment_data: { Args: { data: string }; Returns: string }
+      ensure_user_has_org: { Args: { p_user_id?: string }; Returns: string }
       get_advertisement_contact_info: {
         Args: { ad_id: string }
         Returns: {
@@ -3063,14 +3227,8 @@ export type Database = {
           updated_at: string
         }[]
       }
-      get_user_projects: {
-        Args: { p_user_id: string }
-        Returns: Json
-      }
-      get_user_teams: {
-        Args: { p_user_id: string }
-        Returns: Json
-      }
+      get_user_projects: { Args: { p_user_id: string }; Returns: Json }
+      get_user_teams: { Args: { p_user_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -3078,18 +3236,12 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_admin_or_owner: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
+      is_admin_or_owner: { Args: { _user_id: string }; Returns: boolean }
       is_project_member: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
-      is_safe_profile_field: {
-        Args: { field_name: string }
-        Returns: boolean
-      }
+      is_safe_profile_field: { Args: { field_name: string }; Returns: boolean }
       is_team_member: {
         Args: { _team_id: string; _user_id: string }
         Returns: boolean

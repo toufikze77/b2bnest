@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.get-oauth-config]
 verify_jwt = false
+
+[functions.oauth-hmrc]
+verify_jwt = true

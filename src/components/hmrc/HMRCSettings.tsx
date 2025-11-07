@@ -29,6 +29,9 @@ interface HMRCSettingsProps {
 const HMRCSettings = ({ onDisconnect }: HMRCSettingsProps) => {
   const { toast } = useToast();
   const [showClientSecret, setShowClientSecret] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const [isConfigured, setIsConfigured] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState({
     // Company Details
     companyName: '',
@@ -51,18 +54,35 @@ const HMRCSettings = ({ onDisconnect }: HMRCSettingsProps) => {
 
   // Load saved settings on mount
   useEffect(() => {
-    const savedSettings = hmrcService.getSettings();
-    if (savedSettings) {
-      setSettings(savedSettings);
-    }
+    const loadSettings = async () => {
+      const saved = await hmrcService.getSettings();
+      if (saved) {
+        setSettings(saved);
+      }
+      const token = await hmrcService.getToken();
+      setIsConnected(!!token);
+      setIsConfigured(await hmrcService.isFullyConfigured());
+    };
+    loadSettings();
   }, []);
 
-  const handleSaveSettings = () => {
-    hmrcService.saveSettings(settings);
-    toast({
-      title: "Settings Saved",
-      description: "Your HMRC integration settings have been updated successfully.",
-    });
+  const handleSaveSettings = async () => {
+    try {
+      setSaving(true);
+      await hmrcService.saveSettings(settings);
+      toast({
+        title: "Settings Saved",
+        description: "HMRC settings have been saved successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Save Failed",
+        description: "Failed to save HMRC settings. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleTestConnection = async () => {
@@ -96,41 +116,33 @@ const HMRCSettings = ({ onDisconnect }: HMRCSettingsProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {(() => {
-            const token = hmrcService.getToken();
-            const configured = hmrcService.isFullyConfigured();
-            return (
-              <>
-                <div className={`flex items-center justify-between p-4 ${configured ? 'bg-green-50' : 'bg-amber-50'} rounded-lg`}>
-                  <div className="flex items-center gap-3">
-                    {configured ? (
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                    ) : (
-                      <AlertTriangle className="h-5 w-5 text-amber-500" />
-                    )}
-                    <div>
-                      <p className="font-medium">{configured ? 'Connected to HMRC' : 'Not connected'}</p>
-                      <p className="text-sm text-gray-600">Government Gateway{settings.sandboxMode ? ' (Sandbox)' : ''}</p>
-                    </div>
-                  </div>
-                  <Badge variant="secondary">{settings.sandboxMode ? 'Sandbox' : 'Live'}</Badge>
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleTestConnection}>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Test Connection
-                  </Button>
-                  {token && (
-                    <Button variant="destructive" onClick={onDisconnect}>
-                      <Unlink className="h-4 w-4 mr-2" />
-                      Disconnect
-                    </Button>
-                  )}
-                </div>
-              </>
-            );
-          })()}
+          <div className={`flex items-center justify-between p-4 ${isConfigured ? 'bg-green-50' : 'bg-amber-50'} rounded-lg`}>
+            <div className="flex items-center gap-3">
+              {isConfigured ? (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              ) : (
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+              )}
+              <div>
+                <p className="font-medium">{isConfigured ? 'Connected to HMRC' : 'Not connected'}</p>
+                <p className="text-sm text-gray-600">Government Gateway{settings.sandboxMode ? ' (Sandbox)' : ''}</p>
+              </div>
+            </div>
+            <Badge variant="secondary">{settings.sandboxMode ? 'Sandbox' : 'Live'}</Badge>
+          </div>
+          
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleTestConnection}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Test Connection
+            </Button>
+            {isConnected && (
+              <Button variant="destructive" onClick={onDisconnect}>
+                <Unlink className="h-4 w-4 mr-2" />
+                Disconnect
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -320,9 +332,9 @@ const HMRCSettings = ({ onDisconnect }: HMRCSettingsProps) => {
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button onClick={handleSaveSettings}>
+        <Button onClick={handleSaveSettings} disabled={saving}>
           <Settings className="h-4 w-4 mr-2" />
-          Save Settings
+          {saving ? 'Saving...' : 'Save Settings'}
         </Button>
       </div>
 
