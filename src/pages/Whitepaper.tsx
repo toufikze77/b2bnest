@@ -44,9 +44,14 @@ const Whitepaper = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-700 leading-relaxed">
-                B2BNest is an AI-powered platform designed to streamline business operations by offering an all-in-one hub for essential tools, document templates, project management, and collaborative solutions. By combining cutting-edge artificial intelligence with professional-grade documentation and business workflows, B2BNest enables startups and enterprises to operate efficiently, stay compliant, and focus on growth.
-              </p>
+              <div className="space-y-4">
+                <p className="text-gray-700 leading-relaxed">
+                  B2BNest is a revolutionary AI-powered business automation platform that delivers comprehensive solutions for modern enterprises. With 25+ integrated business tools ranging from project management and CRM to document generation and invoicing, we serve 8.2K+ active businesses across 15+ industries worldwide. Our platform combines cutting-edge artificial intelligence with professional-grade business workflows, enabling startups and Fortune 500 companies to operate efficiently, scale seamlessly, and focus on growth.
+                </p>
+                <p className="text-gray-700 leading-relaxed">
+                  Powered by our Ethereum-based B2BN token, the platform facilitates seamless business transactions, smart contracts, and premium feature access. With a proven 180% YoY growth rate, $420K ARR run rate, and 78% user retention, B2BNest is capturing significant market share in the $50B business process automation space. Our AI-powered suite saves businesses 10+ hours per week while maintaining 99.9% platform uptime.
+                </p>
+              </div>
             </CardContent>
           </Card>
 
@@ -59,27 +64,51 @@ const Whitepaper = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-700 mb-4">
-                Modern businesses are overwhelmed by fragmented tools, inefficient processes, and the time-consuming nature of document creation and project coordination. Key issues include:
+              <p className="text-gray-700 mb-6 leading-relaxed">
+                Today's businesses face an overwhelming challenge: managing operations across dozens of disconnected tools while trying to remain competitive in a fast-paced digital economy. This fragmentation leads to inefficiency, increased costs, and missed opportunities.
               </p>
-              <ul className="space-y-2 text-gray-700">
-                <li className="flex items-start gap-2">
-                  <span className="text-red-500 mt-1">•</span>
-                  Manual creation of essential business documents
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-500 mt-1">•</span>
-                  Scattered project management and collaboration platforms
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-500 mt-1">•</span>
-                  Compliance risks due to outdated or incomplete documentation
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-500 mt-1">•</span>
-                  Lack of automation in small business operations
-                </li>
-              </ul>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center mt-0.5">
+                      <span className="text-red-600 font-bold">1</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Tool Fragmentation Crisis</h4>
+                      <p className="text-sm text-gray-600">Businesses use 15-20+ separate platforms for CRM, project management, invoicing, document creation, and team collaboration—wasting valuable time switching between systems.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center mt-0.5">
+                      <span className="text-red-600 font-bold">2</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Manual Process Overload</h4>
+                      <p className="text-sm text-gray-600">Teams spend 10+ hours weekly on repetitive tasks like document formatting, data entry, invoice generation, and project tracking that could be automated.</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center mt-0.5">
+                      <span className="text-red-600 font-bold">3</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Compliance & Security Risks</h4>
+                      <p className="text-sm text-gray-600">Outdated templates, inconsistent documentation, and lack of audit trails expose businesses to legal, financial, and regulatory compliance risks.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center mt-0.5">
+                      <span className="text-red-600 font-bold">4</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Scaling Limitations</h4>
+                      <p className="text-sm text-gray-600">Traditional solutions fail to scale from startup to enterprise, forcing businesses to rebuild workflows and migrate data as they grow.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -88,43 +117,95 @@ const Whitepaper = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle className="h-6 w-6 text-green-600" />
-                3. Our Solution: B2BNest
+                3. Our Solution: B2BNest AI Business Platform
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-700 mb-4">
-                B2BNest is the one-stop AI-powered platform addressing these challenges. It integrates:
+              <p className="text-gray-700 mb-6 leading-relaxed">
+                B2BNest delivers a unified, AI-powered business automation platform that eliminates tool fragmentation and streamlines operations. From solo entrepreneurs to Fortune 500 companies, our comprehensive suite of 25+ integrated tools provides everything businesses need to operate efficiently, scale seamlessly, and focus on growth.
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 mb-6">
+                <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-yellow-500" />
+                  Core AI-Powered Business Tools
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
+                      <h5 className="font-semibold text-sm">Project Management</h5>
+                    </div>
+                    <p className="text-xs text-gray-600">Kanban boards, task assignments, progress tracking, and team collaboration</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
+                      <h5 className="font-semibold text-sm">CRM System</h5>
+                    </div>
+                    <p className="text-xs text-gray-600">Contact management, sales pipeline, lead tracking, and analytics</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                      <h5 className="font-semibold text-sm">Quote & Invoice Generator</h5>
+                    </div>
+                    <p className="text-xs text-gray-600">Professional templates, auto-generated codes, payment tracking</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <h5 className="font-semibold text-sm">AI Startup Idea Generator</h5>
+                    </div>
+                    <p className="text-xs text-gray-600">50+ industries, budget-based recommendations, instant generation</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <h5 className="font-semibold text-sm">Business Cost Calculator</h5>
+                    </div>
+                    <p className="text-xs text-gray-600">Accurate estimates, structure comparisons, budget planning</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                      <h5 className="font-semibold text-sm">Business Resources Hub</h5>
+                    </div>
+                    <p className="text-xs text-gray-600">Verified service providers, competitive rates, expert guidance</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
+                    <Brain className="h-6 w-6 text-purple-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <h4 className="font-semibold text-gray-900">Smart Document Templates</h4>
-                      <p className="text-sm text-gray-600">Access a library of professionally crafted, auto-updating templates.</p>
+                      <h4 className="font-semibold text-gray-900 mb-1">AI-Powered Intelligence</h4>
+                      <p className="text-sm text-gray-600">Advanced machine learning optimizes workflows, auto-fills documents, detects compliance issues, and provides smart recommendations based on industry best practices.</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <Brain className="h-5 w-5 text-blue-500 mt-0.5" />
+                    <Zap className="h-6 w-6 text-yellow-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <h4 className="font-semibold text-gray-900">AI-Powered Analysis</h4>
-                      <p className="text-sm text-gray-600">Analyze and enhance documents using machine learning and NLP.</p>
+                      <h4 className="font-semibold text-gray-900 mb-1">Automated Workflows</h4>
+                      <p className="text-sm text-gray-600">Save 10+ hours per week with automated task assignments, document generation, invoice creation, and compliance checks—eliminating repetitive manual work.</p>
                     </div>
                   </div>
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
-                    <Users className="h-5 w-5 text-purple-500 mt-0.5" />
+                    <Users className="h-6 w-6 text-blue-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <h4 className="font-semibold text-gray-900">Project & Task Management</h4>
-                      <p className="text-sm text-gray-600">Manage your team, assign tasks, and track progress in one place.</p>
+                      <h4 className="font-semibold text-gray-900 mb-1">Team Collaboration</h4>
+                      <p className="text-sm text-gray-600">Real-time editing, commenting, role-based permissions, version control, and seamless team coordination across all business functions.</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <Globe className="h-5 w-5 text-orange-500 mt-0.5" />
+                    <Rocket className="h-6 w-6 text-green-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <h4 className="font-semibold text-gray-900">Centralized Hub</h4>
-                      <p className="text-sm text-gray-600">Combine all your business operations and tools in a unified dashboard.</p>
+                      <h4 className="font-semibold text-gray-900 mb-1">Scalable Architecture</h4>
+                      <p className="text-sm text-gray-600">Built to scale from startup to enterprise with 99.9% uptime. Proven success across 8.2K+ businesses worldwide with 78% user retention.</p>
                     </div>
                   </div>
                 </div>
