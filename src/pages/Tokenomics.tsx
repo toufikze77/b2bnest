@@ -55,12 +55,12 @@ const Tokenomics = () => {
                     <div className="flex justify-between items-center mb-2">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                        <span className="text-sm font-medium">Community & Ecosystem</span>
+                        <span className="text-sm font-medium">Presale</span>
                       </div>
-                      <span className="text-sm text-gray-600">35%</span>
+                      <span className="text-sm text-gray-600">30%</span>
                     </div>
-                    <Progress value={35} className="h-2" />
-                    <div className="text-xs text-gray-500 mt-1">350M B2BN</div>
+                    <Progress value={30} className="h-2" />
+                    <div className="text-xs text-gray-500 mt-1">300M B2BN</div>
                   </div>
 
                   <div>
@@ -69,17 +69,29 @@ const Tokenomics = () => {
                         <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                         <span className="text-sm font-medium">Team & Advisors</span>
                       </div>
-                      <span className="text-sm text-gray-600">20%</span>
+                      <span className="text-sm text-gray-600">10%</span>
                     </div>
-                    <Progress value={20} className="h-2" />
-                    <div className="text-xs text-gray-500 mt-1">200M B2BN (4-year vesting)</div>
+                    <Progress value={10} className="h-2" />
+                    <div className="text-xs text-gray-500 mt-1">100M B2BN (4-year vesting)</div>
                   </div>
 
                   <div>
                     <div className="flex justify-between items-center mb-2">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium">Public Sale</span>
+                        <span className="text-sm font-medium">Development</span>
+                      </div>
+                      <span className="text-sm text-gray-600">22%</span>
+                    </div>
+                    <Progress value={22} className="h-2" />
+                    <div className="text-xs text-gray-500 mt-1">220M B2BN</div>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                        <span className="text-sm font-medium">Marketing</span>
                       </div>
                       <span className="text-sm text-gray-600">15%</span>
                     </div>
@@ -90,37 +102,25 @@ const Tokenomics = () => {
                   <div>
                     <div className="flex justify-between items-center mb-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                        <span className="text-sm font-medium">Private Sale</span>
-                      </div>
-                      <span className="text-sm text-gray-600">12%</span>
-                    </div>
-                    <Progress value={12} className="h-2" />
-                    <div className="text-xs text-gray-500 mt-1">120M B2BN</div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="flex items-center gap-2">
                         <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                        <span className="text-sm font-medium">Liquidity & Exchange</span>
+                        <span className="text-sm font-medium">Treasury/Liquidity</span>
                       </div>
-                      <span className="text-sm text-gray-600">10%</span>
+                      <span className="text-sm text-gray-600">20%</span>
                     </div>
-                    <Progress value={10} className="h-2" />
-                    <div className="text-xs text-gray-500 mt-1">100M B2BN</div>
+                    <Progress value={20} className="h-2" />
+                    <div className="text-xs text-gray-500 mt-1">200M B2BN</div>
                   </div>
 
                   <div>
                     <div className="flex justify-between items-center mb-2">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                        <span className="text-sm font-medium">Reserve Fund</span>
+                        <span className="text-sm font-medium">Unlocked</span>
                       </div>
-                      <span className="text-sm text-gray-600">8%</span>
+                      <span className="text-sm text-gray-600">3%</span>
                     </div>
-                    <Progress value={8} className="h-2" />
-                    <div className="text-xs text-gray-500 mt-1">80M B2BN</div>
+                    <Progress value={3} className="h-2" />
+                    <div className="text-xs text-gray-500 mt-1">30M B2BN</div>
                   </div>
                 </div>
               </CardContent>
