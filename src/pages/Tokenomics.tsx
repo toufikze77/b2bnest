@@ -215,74 +215,74 @@ const Tokenomics = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-8 items-center justify-items-center">
-                  <div className="group transition-transform hover:scale-110 duration-200">
+                  <div>
                     <img 
                       src="/logos/pinksale-logo.png" 
                       alt="PinkSale" 
-                      className="h-16 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                      className="h-16 w-auto object-contain"
                     />
                   </div>
-                  <div className="group transition-transform hover:scale-110 duration-200">
+                  <div>
                     <img 
                       src="/logos/coingecko-logo.png" 
                       alt="CoinGecko" 
-                      className="h-16 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                      className="h-16 w-auto object-contain"
                     />
                   </div>
-                  <div className="group transition-transform hover:scale-110 duration-200">
+                  <div>
                     <img 
                       src="/logos/coinmarketcap-logo.png" 
                       alt="CoinMarketCap" 
-                      className="h-16 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                      className="h-16 w-auto object-contain"
                     />
                   </div>
-                  <div className="group transition-transform hover:scale-110 duration-200">
+                  <div>
                     <img 
                       src="/logos/dexview-logo.png" 
                       alt="DEXView" 
-                      className="h-16 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                      className="h-16 w-auto object-contain"
                     />
                   </div>
-                  <div className="group transition-transform hover:scale-110 duration-200">
+                  <div>
                     <img 
                       src="/logos/birdseye-logo.png" 
                       alt="BirdsEye" 
-                      className="h-16 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                      className="h-16 w-auto object-contain"
                     />
                   </div>
-                  <div className="group transition-transform hover:scale-110 duration-200">
+                  <div>
                     <img 
                       src="/logos/okx-logo.png" 
                       alt="OKX" 
-                      className="h-16 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                      className="h-16 w-auto object-contain"
                     />
                   </div>
-                  <div className="group transition-transform hover:scale-110 duration-200">
+                  <div>
                     <img 
                       src="/logos/binance-logo.png" 
                       alt="Binance" 
-                      className="h-16 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                      className="h-16 w-auto object-contain"
                     />
                   </div>
-                  <div className="group transition-transform hover:scale-110 duration-200">
+                  <div>
                     <img 
                       src="/logos/bitget-logo.png" 
                       alt="Bitget" 
-                      className="h-16 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                      className="h-16 w-auto object-contain"
                     />
                   </div>
-                  <div className="group transition-transform hover:scale-110 duration-200">
+                  <div>
                     <img 
                       src="/logos/alchemypay-logo.png" 
                       alt="Alchemy Pay" 
-                      className="h-16 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                      className="h-16 w-auto object-contain"
                     />
                   </div>
-                  <div className="group transition-transform hover:scale-110 duration-200">
+                  <div>
                     <img 
                       src="/logos/phantom-logo.png" 
                       alt="Phantom" 
-                      className="h-16 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                      className="h-16 w-auto object-contain"
                     />
                   </div>
                 </div>
