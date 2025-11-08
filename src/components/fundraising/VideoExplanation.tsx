@@ -9,7 +9,7 @@ const VideoExplanation = () => {
       <CardHeader>
         <CardTitle className="flex items-center text-center justify-center">
           <Play className="h-6 w-6 mr-2 text-primary" />
-          About Us - Who We Are
+          About B2BNEST
         </CardTitle>
       </CardHeader>
       <CardContent>
