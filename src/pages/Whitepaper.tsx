@@ -415,7 +415,7 @@ const Whitepaper = () => {
                     <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">Q4 2025</div>
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900">$B2BN Token Pre-Sale + Governance Integration</h4>
+                    <h4 className="font-semibold text-gray-900">$B2BN Token Pre-Sale + HMRC Integration</h4>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
