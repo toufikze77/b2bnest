@@ -462,13 +462,67 @@ const Whitepaper = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-700 mb-4">We follow best-in-class security protocols including:</p>
-                <ul className="space-y-1 text-sm text-gray-600">
-                  <li>• End-to-end encryption</li>
-                  <li>• Secure cloud storage</li>
-                  <li>• GDPR & CCPA compliance</li>
-                  <li>• Role-based access controls</li>
-                </ul>
+                <p className="text-gray-700 mb-4">B2BNest is built on enterprise-grade infrastructure with comprehensive security protocols:</p>
+                
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-blue-600" />
+                      Data Protection
+                    </h4>
+                    <ul className="space-y-1 text-sm text-gray-600 ml-6">
+                      <li>• End-to-end SSL/TLS encryption for all data in transit</li>
+                      <li>• AES-256 encryption for data at rest</li>
+                      <li>• Automated database backups with point-in-time recovery</li>
+                      <li>• Row-level security (RLS) policies protecting user data</li>
+                      <li>• Secure cloud storage with isolated buckets per tenant</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <Users className="h-4 w-4 text-purple-600" />
+                      Authentication & Access Control
+                    </h4>
+                    <ul className="space-y-1 text-sm text-gray-600 ml-6">
+                      <li>• Multi-factor authentication (MFA) support</li>
+                      <li>• OAuth 2.0 integration (Google, GitHub, etc.)</li>
+                      <li>• Role-based access control (RBAC) with granular permissions</li>
+                      <li>• Session management with automatic timeout</li>
+                      <li>• JWT token-based authentication with refresh tokens</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-green-600" />
+                      Infrastructure & Compliance
+                    </h4>
+                    <ul className="space-y-1 text-sm text-gray-600 ml-6">
+                      <li>• SOC 2 Type II certified infrastructure</li>
+                      <li>• GDPR, CCPA, and HIPAA compliant architecture</li>
+                      <li>• ISO 27001 security standards</li>
+                      <li>• 99.9% uptime SLA with redundant systems</li>
+                      <li>• Auto-scaling serverless architecture</li>
+                      <li>• DDoS protection and WAF (Web Application Firewall)</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <Lock className="h-4 w-4 text-red-600" />
+                      Application Security
+                    </h4>
+                    <ul className="space-y-1 text-sm text-gray-600 ml-6">
+                      <li>• Input validation and sanitization on all endpoints</li>
+                      <li>• SQL injection and XSS attack prevention</li>
+                      <li>• Secure secrets management for API keys and tokens</li>
+                      <li>• Regular security audits and penetration testing</li>
+                      <li>• Automated vulnerability scanning</li>
+                      <li>• Content Security Policy (CSP) headers</li>
+                    </ul>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
