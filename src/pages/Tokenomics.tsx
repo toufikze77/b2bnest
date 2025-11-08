@@ -157,6 +157,55 @@ const Tokenomics = () => {
             </Card>
           </div>
 
+          {/* Security & Compliance */}
+          <div className="max-w-4xl mx-auto mb-16">
+            <Card className="border-2 border-green-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lock className="h-5 w-5 text-green-600" />
+                  Security & Compliance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-700 mb-6">
+                  B2BN token prioritizes security and transparency. Our smart contract has undergone rigorous auditing and our team has completed KYC verification to ensure trust and compliance.
+                </p>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="bg-green-50 rounded-lg p-6 border border-green-200">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
+                        <Lock className="h-6 w-6 text-green-600" />
+                      </div>
+                      <h4 className="font-semibold text-gray-900 text-lg">Smart Contract Audited</h4>
+                    </div>
+                    <p className="text-sm text-gray-700">
+                      Our ERC-20 smart contract has been professionally audited by leading blockchain security firms to identify and eliminate potential vulnerabilities, ensuring your investment is protected.
+                    </p>
+                  </div>
+
+                  <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                        <Users className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <h4 className="font-semibold text-gray-900 text-lg">KYC Verified</h4>
+                    </div>
+                    <p className="text-sm text-gray-700">
+                      The B2BNest team has successfully completed Know Your Customer (KYC) verification, providing full transparency and accountability to our community and investors.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4 border border-green-100">
+                  <p className="text-sm text-gray-700 text-center">
+                    <strong>Your Security is Our Priority:</strong> These measures demonstrate our commitment to operating with the highest standards of security, transparency, and regulatory compliance in the blockchain space.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Token Distribution */}
           <div className="max-w-3xl mx-auto mb-16">
             <Card>
