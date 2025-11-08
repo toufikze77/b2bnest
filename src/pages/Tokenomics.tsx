@@ -316,7 +316,7 @@ const Tokenomics = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  <div>
+                  <div className="animate-fade-in" style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}>
                     <div className="flex justify-between items-center mb-2">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
@@ -327,7 +327,7 @@ const Tokenomics = () => {
                     <Progress value={30} className="h-2" />
                   </div>
 
-                  <div>
+                  <div className="animate-fade-in" style={{ animationDelay: '0.2s', animationFillMode: 'backwards' }}>
                     <div className="flex justify-between items-center mb-2">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
@@ -338,7 +338,7 @@ const Tokenomics = () => {
                     <Progress value={10} className="h-2" />
                   </div>
 
-                  <div>
+                  <div className="animate-fade-in" style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}>
                     <div className="flex justify-between items-center mb-2">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -349,7 +349,7 @@ const Tokenomics = () => {
                     <Progress value={22} className="h-2" />
                   </div>
 
-                  <div>
+                  <div className="animate-fade-in" style={{ animationDelay: '0.4s', animationFillMode: 'backwards' }}>
                     <div className="flex justify-between items-center mb-2">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
@@ -360,7 +360,7 @@ const Tokenomics = () => {
                     <Progress value={15} className="h-2" />
                   </div>
 
-                  <div>
+                  <div className="animate-fade-in" style={{ animationDelay: '0.5s', animationFillMode: 'backwards' }}>
                     <div className="flex justify-between items-center mb-2">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 bg-red-500 rounded-full"></div>
@@ -371,7 +371,7 @@ const Tokenomics = () => {
                     <Progress value={20} className="h-2" />
                   </div>
 
-                  <div>
+                  <div className="animate-fade-in" style={{ animationDelay: '0.6s', animationFillMode: 'backwards' }}>
                     <div className="flex justify-between items-center mb-2">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
