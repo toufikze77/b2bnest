@@ -24,11 +24,11 @@ const Tokenomics = () => {
                 <Coins className="h-8 w-8 text-purple-600" />
               </div>
               <h1 className="text-4xl font-bold text-gray-900 mb-6">
-                B2BNEST Tokenomics | Staking & Yield Farming
+                B2BNEST Tokenomics
               </h1>
               <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-                Complete guide to B2BNEST tokenomics. Learn about staking B2BNEST token rewards, yield farming opportunities, 
-                and the real utility of our cross-border business token in the decentralized finance ecosystem.
+                Complete guide to B2BNEST tokenomics. Learn about B2BNEST token distribution, utility, 
+                and the real value of our cross-border business token in the decentralized finance ecosystem.
               </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-12">
               <div className="text-center">
@@ -195,7 +195,7 @@ const Tokenomics = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
                   <Target className="h-8 w-8 text-blue-600 mx-auto mb-4" />
                   <h3 className="font-semibold text-gray-900 mb-2">Platform Access</h3>
@@ -208,12 +208,6 @@ const Tokenomics = () => {
                   <p className="text-sm text-gray-600">Vote on platform upgrades, feature requests, and community proposals</p>
                 </div>
 
-                <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
-                  <TrendingUp className="h-8 w-8 text-purple-600 mx-auto mb-4" />
-                  <h3 className="font-semibold text-gray-900 mb-2">Staking Rewards</h3>
-                  <p className="text-sm text-gray-600">Stake tokens to earn rewards and unlock premium features</p>
-                </div>
-
                 <div className="text-center p-6 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg">
                   <Lock className="h-8 w-8 text-orange-600 mx-auto mb-4" />
                   <h3 className="font-semibold text-gray-900 mb-2">Enterprise Licensing</h3>
@@ -224,7 +218,7 @@ const Tokenomics = () => {
           </Card>
 
           {/* Economics Model */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -260,7 +254,7 @@ const Tokenomics = () => {
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-sm text-gray-600">Staker Rewards</span>
+                    <span className="text-sm text-gray-600">Token Holder Rewards</span>
                     <span className="font-medium text-green-600">30% of Revenue</span>
                   </div>
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
@@ -270,31 +264,6 @@ const Tokenomics = () => {
                   <div className="flex justify-between items-center py-2">
                     <span className="text-sm text-gray-600">Community Treasury</span>
                     <span className="font-medium text-purple-600">20% of Revenue</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-purple-600" />
-                  Staking Tiers
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <div className="font-medium text-gray-900">Bronze Tier</div>
-                    <div className="text-sm text-gray-600">1,000+ B2BN • 5% APY</div>
-                  </div>
-                  <div className="p-3 bg-blue-50 rounded-lg">
-                    <div className="font-medium text-blue-900">Silver Tier</div>
-                    <div className="text-sm text-blue-600">10,000+ B2BN • 8% APY</div>
-                  </div>
-                  <div className="p-3 bg-purple-50 rounded-lg">
-                    <div className="font-medium text-purple-900">Gold Tier</div>
-                    <div className="text-sm text-purple-600">50,000+ B2BN • 12% APY</div>
                   </div>
                 </div>
               </CardContent>

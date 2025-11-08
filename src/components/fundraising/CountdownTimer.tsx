@@ -61,7 +61,7 @@ const CountdownTimer = () => {
             <div className="text-3xl md:text-5xl font-bold text-white mb-2">{timeLeft.minutes}</div>
             <div className="text-xs md:text-sm text-purple-100 font-medium">Minutes</div>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm p-4 md:p-6 rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105 animate-pulse">
+          <div className="bg-white/10 backdrop-blur-sm p-4 md:p-6 rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105">
             <div className="text-3xl md:text-5xl font-bold text-white mb-2">{timeLeft.seconds}</div>
             <div className="text-xs md:text-sm text-purple-100 font-medium">Seconds</div>
           </div>
