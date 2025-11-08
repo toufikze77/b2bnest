@@ -40,31 +40,36 @@ const CountdownTimer = () => {
   }, []);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <Clock className="h-5 w-5 mr-2" />
-          Presale Ends In
+    <Card className="bg-gradient-to-br from-purple-600 via-blue-600 to-purple-700 border-none shadow-2xl">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center justify-center text-white text-2xl md:text-3xl">
+          <Clock className="h-8 w-8 mr-3 animate-pulse" />
+          🚀 Presale Starts In
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-4 gap-4 text-center">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">{timeLeft.days}</div>
-            <div className="text-sm text-gray-600">Days</div>
+        <div className="grid grid-cols-4 gap-3 md:gap-6">
+          <div className="bg-white/10 backdrop-blur-sm p-4 md:p-6 rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105">
+            <div className="text-3xl md:text-5xl font-bold text-white mb-2">{timeLeft.days}</div>
+            <div className="text-xs md:text-sm text-purple-100 font-medium">Days</div>
           </div>
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">{timeLeft.hours}</div>
-            <div className="text-sm text-gray-600">Hours</div>
+          <div className="bg-white/10 backdrop-blur-sm p-4 md:p-6 rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105">
+            <div className="text-3xl md:text-5xl font-bold text-white mb-2">{timeLeft.hours}</div>
+            <div className="text-xs md:text-sm text-purple-100 font-medium">Hours</div>
           </div>
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">{timeLeft.minutes}</div>
-            <div className="text-sm text-gray-600">Minutes</div>
+          <div className="bg-white/10 backdrop-blur-sm p-4 md:p-6 rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105">
+            <div className="text-3xl md:text-5xl font-bold text-white mb-2">{timeLeft.minutes}</div>
+            <div className="text-xs md:text-sm text-purple-100 font-medium">Minutes</div>
           </div>
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">{timeLeft.seconds}</div>
-            <div className="text-sm text-gray-600">Seconds</div>
+          <div className="bg-white/10 backdrop-blur-sm p-4 md:p-6 rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105 animate-pulse">
+            <div className="text-3xl md:text-5xl font-bold text-white mb-2">{timeLeft.seconds}</div>
+            <div className="text-xs md:text-sm text-purple-100 font-medium">Seconds</div>
           </div>
+        </div>
+        <div className="mt-6 text-center">
+          <p className="text-white/90 text-sm md:text-base font-medium">
+            Tuesday, November 11th 2025 • 14:00 UK Time
+          </p>
         </div>
       </CardContent>
     </Card>
