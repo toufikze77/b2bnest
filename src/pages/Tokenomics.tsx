@@ -4,8 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import Footer from '@/components/Footer';
 import TokenSEO from '@/components/TokenSEO';
+import CountdownTimer from '@/components/fundraising/CountdownTimer';
+import { useCountUp } from '@/hooks/useCountUp';
 
 const Tokenomics = () => {
+  const totalSupply = useCountUp(10, 2000, 'M');
+  const initialPrice = useCountUp(8, 2000, '');
+  const marketCap = useCountUp(80, 2000, 'M');
+
   return (
     <>
       <TokenSEO page="tokenomics" />
@@ -24,19 +30,24 @@ const Tokenomics = () => {
                 Complete guide to B2BNEST tokenomics. Learn about staking B2BNEST token rewards, yield farming opportunities, 
                 and the real utility of our cross-border business token in the decentralized finance ecosystem.
               </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-12">
               <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600 mb-2">1B</div>
+                <div className="text-3xl font-bold text-purple-600 mb-2">{totalSupply}</div>
                 <div className="text-gray-600">Total Supply</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600 mb-2">$0.08</div>
+                <div className="text-3xl font-bold text-blue-600 mb-2">$0.0{initialPrice}</div>
                 <div className="text-gray-600">Initial Price</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-green-600 mb-2">$80M</div>
+                <div className="text-3xl font-bold text-green-600 mb-2">${marketCap}</div>
                 <div className="text-gray-600">Market Cap</div>
               </div>
+            </div>
+
+            {/* Countdown Timer */}
+            <div className="max-w-2xl mx-auto">
+              <CountdownTimer />
             </div>
           </div>
 
