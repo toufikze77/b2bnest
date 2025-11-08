@@ -15,9 +15,9 @@ const Fundraising = () => {
   
   // Mock presale data
   const presaleData = {
-    tokenName: 'AI Platform Token',
-    tokenSymbol: 'AIPT',
-    totalSupply: '100,000,000',
+    tokenName: 'B2BN',
+    tokenSymbol: 'B2BN',
+    totalSupply: '10,000,000',
     presalePrice: '0.0001',
     currentRaised: '245.8',
     hardCap: '500',
