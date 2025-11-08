@@ -388,14 +388,14 @@ const Tokenomics = () => {
 
           {/* Distribution Chart */}
           <Card className="mb-16">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <PieChart className="h-5 w-5 text-purple-600" />
+            <CardHeader className="text-center">
+              <CardTitle className="flex items-center justify-center gap-2 text-2xl">
+                <PieChart className="h-6 w-6 text-purple-600" />
                 Token Distribution Chart
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <ChartContainer config={chartConfig} className="h-[400px]">
+            <CardContent className="flex justify-center">
+              <ChartContainer config={chartConfig} className="h-[500px] w-full max-w-4xl">
                 <ResponsiveContainer width="100%" height="100%">
                   <RechartsePie>
                     <Pie
@@ -404,16 +404,17 @@ const Tokenomics = () => {
                       cy="50%"
                       labelLine={false}
                       label={({ name, value }) => `${name}: ${value}%`}
-                      outerRadius={120}
+                      outerRadius={140}
                       fill="#8884d8"
                       dataKey="value"
+                      style={{ fontSize: '16px', fontWeight: '500' }}
                     >
                       {distributionData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: '16px', paddingTop: '20px' }} />
                   </RechartsePie>
                 </ResponsiveContainer>
               </ChartContainer>
