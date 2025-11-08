@@ -206,6 +206,95 @@ const Tokenomics = () => {
             </Card>
           </div>
 
+          {/* Partner Exchanges & Platforms */}
+          <div className="max-w-6xl mx-auto mb-16">
+            <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50">
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl mb-2">Partner Exchanges & Platforms</CardTitle>
+                <p className="text-gray-600">B2BN will be listed on leading exchanges and tracked by major crypto data platforms</p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-8 items-center justify-items-center">
+                  <div className="group transition-transform hover:scale-110 duration-200">
+                    <img 
+                      src="/logos/pinksale-logo.png" 
+                      alt="PinkSale" 
+                      className="h-16 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                    />
+                  </div>
+                  <div className="group transition-transform hover:scale-110 duration-200">
+                    <img 
+                      src="/logos/coingecko-logo.png" 
+                      alt="CoinGecko" 
+                      className="h-16 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                    />
+                  </div>
+                  <div className="group transition-transform hover:scale-110 duration-200">
+                    <img 
+                      src="/logos/coinmarketcap-logo.png" 
+                      alt="CoinMarketCap" 
+                      className="h-16 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                    />
+                  </div>
+                  <div className="group transition-transform hover:scale-110 duration-200">
+                    <img 
+                      src="/logos/dexview-logo.png" 
+                      alt="DEXView" 
+                      className="h-16 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                    />
+                  </div>
+                  <div className="group transition-transform hover:scale-110 duration-200">
+                    <img 
+                      src="/logos/birdseye-logo.png" 
+                      alt="BirdsEye" 
+                      className="h-16 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                    />
+                  </div>
+                  <div className="group transition-transform hover:scale-110 duration-200">
+                    <img 
+                      src="/logos/okx-logo.png" 
+                      alt="OKX" 
+                      className="h-16 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                    />
+                  </div>
+                  <div className="group transition-transform hover:scale-110 duration-200">
+                    <img 
+                      src="/logos/binance-logo.png" 
+                      alt="Binance" 
+                      className="h-16 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                    />
+                  </div>
+                  <div className="group transition-transform hover:scale-110 duration-200">
+                    <img 
+                      src="/logos/bitget-logo.png" 
+                      alt="Bitget" 
+                      className="h-16 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                    />
+                  </div>
+                  <div className="group transition-transform hover:scale-110 duration-200">
+                    <img 
+                      src="/logos/alchemypay-logo.png" 
+                      alt="Alchemy Pay" 
+                      className="h-16 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                    />
+                  </div>
+                  <div className="group transition-transform hover:scale-110 duration-200">
+                    <img 
+                      src="/logos/phantom-logo.png" 
+                      alt="Phantom" 
+                      className="h-16 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                    />
+                  </div>
+                </div>
+                <div className="mt-8 text-center">
+                  <p className="text-sm text-gray-600">
+                    <strong>Wide Accessibility:</strong> B2BN will be available on multiple major exchanges and tracked across leading crypto data platforms, ensuring maximum liquidity and transparency for all token holders.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Token Distribution */}
           <div className="max-w-3xl mx-auto mb-16">
             <Card>
