@@ -157,23 +157,6 @@ const Tokenomics = () => {
                   </div>
                 </div>
 
-                <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-                  <div className="text-sm font-medium text-gray-900 mb-2">Circulating Supply Projection</div>
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <div className="text-lg font-bold text-blue-600">250M</div>
-                      <div className="text-xs text-gray-600">Year 1</div>
-                    </div>
-                    <div>
-                      <div className="text-lg font-bold text-green-600">550M</div>
-                      <div className="text-xs text-gray-600">Year 2</div>
-                    </div>
-                    <div>
-                      <div className="text-lg font-bold text-purple-600">850M</div>
-                      <div className="text-xs text-gray-600">Year 3</div>
-                    </div>
-                  </div>
-                </div>
               </CardContent>
             </Card>
           </div>
@@ -187,80 +170,16 @@ const Tokenomics = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
+              <div className="flex justify-center">
+                <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg max-w-md">
                   <Target className="h-8 w-8 text-blue-600 mx-auto mb-4" />
                   <h3 className="font-semibold text-gray-900 mb-2">Platform Access</h3>
                   <p className="text-sm text-gray-600">Pay for premium AI document processing and automation services</p>
-                </div>
-
-                <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
-                  <Users className="h-8 w-8 text-green-600 mx-auto mb-4" />
-                  <h3 className="font-semibold text-gray-900 mb-2">Governance</h3>
-                  <p className="text-sm text-gray-600">Vote on platform upgrades, feature requests, and community proposals</p>
-                </div>
-
-                <div className="text-center p-6 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg">
-                  <Lock className="h-8 w-8 text-orange-600 mx-auto mb-4" />
-                  <h3 className="font-semibold text-gray-900 mb-2">Enterprise Licensing</h3>
-                  <p className="text-sm text-gray-600">Enterprise customers pay in B2BN for advanced AI capabilities</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Economics Model */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-blue-600" />
-                  Deflationary Mechanism
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-sm text-gray-600">Quarterly Burn</span>
-                    <span className="font-medium text-red-600">2% of Revenue</span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-sm text-gray-600">Transaction Fees</span>
-                    <span className="font-medium text-orange-600">0.5% Burned</span>
-                  </div>
-                  <div className="flex justify-between items-center py-2">
-                    <span className="text-sm text-gray-600">Max Supply Reduction</span>
-                    <span className="font-medium text-purple-600">50% over 10 years</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-green-600" />
-                  Revenue Sharing
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-sm text-gray-600">Token Holder Rewards</span>
-                    <span className="font-medium text-green-600">30% of Revenue</span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-sm text-gray-600">Development Fund</span>
-                    <span className="font-medium text-blue-600">40% of Revenue</span>
-                  </div>
-                  <div className="flex justify-between items-center py-2">
-                    <span className="text-sm text-gray-600">Community Treasury</span>
-                    <span className="font-medium text-purple-600">20% of Revenue</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
 
           {/* Future Partnerships */}
           <Card className="mb-16">
