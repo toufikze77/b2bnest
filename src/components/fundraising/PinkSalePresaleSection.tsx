@@ -44,15 +44,10 @@ const PinkSalePresaleSection = () => {
         </div>
 
         {/* Key Stats */}
-        <div className="mx-auto mt-12 grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mx-auto mt-12 grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-2xl border border-border bg-card p-5 hover-scale">
             <p className="text-sm text-muted-foreground">Sale Type</p>
             <p className="mt-1 text-xl font-semibold text-foreground">Presale (Fixed Price)</p>
-          </div>
-          <div className="rounded-2xl border border-border bg-card p-5 hover-scale">
-            <p className="text-sm text-muted-foreground">Contract</p>
-            <p className="mt-1 text-xl font-semibold text-foreground">CONTRACT_ADDRESS</p>
-            <p className="text-xs text-muted-foreground mt-1">Replace after deployment</p>
           </div>
           <div className="rounded-2xl border border-border bg-card p-5 hover-scale">
             <p className="text-sm text-muted-foreground">Ticker</p>
@@ -117,37 +112,6 @@ const PinkSalePresaleSection = () => {
             <li>Community growth loops: referrals, ambassador rewards, engagement tiers.</li>
             <li>Treasury-backed liquidity for sustainable long-term growth.</li>
           </ul>
-        </div>
-
-        {/* Timeline / Placeholders */}
-        <div className="mx-auto mt-14 max-w-6xl">
-          <h2 className="text-2xl font-bold text-foreground">Presale Details</h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded-2xl border border-border bg-card p-5 hover-scale">
-              <p className="text-sm text-muted-foreground">Start</p>
-              <p className="mt-1 text-lg font-semibold text-foreground">PRESALE_START_DATE</p>
-            </div>
-            <div className="rounded-2xl border border-border bg-card p-5 hover-scale">
-              <p className="text-sm text-muted-foreground">End</p>
-              <p className="mt-1 text-lg font-semibold text-foreground">PRESALE_END_DATE</p>
-            </div>
-            <div className="rounded-2xl border border-border bg-card p-5 hover-scale">
-              <p className="text-sm text-muted-foreground">Presale Price</p>
-              <p className="mt-1 text-lg font-semibold text-foreground">PRESALE_RATE (e.g., 1 B2BN = 0.000X ETH)</p>
-            </div>
-            <div className="rounded-2xl border border-border bg-card p-5 hover-scale">
-              <p className="text-sm text-muted-foreground">Soft / Hard Cap</p>
-              <p className="mt-1 text-lg font-semibold text-foreground">SOFT_CAP / HARD_CAP</p>
-            </div>
-            <div className="rounded-2xl border border-border bg-card p-5 hover-scale">
-              <p className="text-sm text-muted-foreground">Vesting (if any)</p>
-              <p className="mt-1 text-lg font-semibold text-foreground">VESTING_DETAILS</p>
-            </div>
-            <div className="rounded-2xl border border-border bg-card p-5 hover-scale">
-              <p className="text-sm text-muted-foreground">DEX Listing</p>
-              <p className="mt-1 text-lg font-semibold text-foreground">POST-PRESALE_ETH/USDT POOL + TGE</p>
-            </div>
-          </div>
         </div>
 
         {/* Footer CTA */}
