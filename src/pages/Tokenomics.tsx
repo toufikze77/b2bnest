@@ -60,6 +60,103 @@ const Tokenomics = () => {
             </div>
           </div>
 
+          {/* ERC-20 Standard Section */}
+          <div className="max-w-4xl mx-auto mb-16">
+            <Card className="border-2 border-purple-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-purple-600" />
+                  ERC-20 Token Standard
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-700 mb-6">
+                  The B2BN token is built on the <strong>ERC-20 standard</strong>, the most widely adopted token protocol on the Ethereum blockchain. This ensures maximum compatibility, security, and accessibility for our users.
+                </p>
+                
+                <div className="grid md:grid-cols-2 gap-4 mb-6">
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                        <Lock className="h-5 w-5 text-purple-600" />
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Battle-Tested Security</h4>
+                      <p className="text-sm text-gray-600">Proven security model used by thousands of projects with billions in market cap</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                        <Users className="h-5 w-5 text-blue-600" />
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Universal Compatibility</h4>
+                      <p className="text-sm text-gray-600">Supported by all major wallets including MetaMask, Trust Wallet, and Coinbase Wallet</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                        <TrendingUp className="h-5 w-5 text-green-600" />
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Enhanced Liquidity</h4>
+                      <p className="text-sm text-gray-600">Easy listing on major exchanges and DEXs like Uniswap, SushiSwap, and centralized platforms</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
+                        <Target className="h-5 w-5 text-orange-600" />
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">DeFi Integration</h4>
+                      <p className="text-sm text-gray-600">Seamless integration with DeFi protocols for staking, lending, and yield farming</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                        <Zap className="h-5 w-5 text-red-600" />
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Smart Contract Functionality</h4>
+                      <p className="text-sm text-gray-600">Full programmable capabilities for automated transactions and business logic</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-yellow-100 flex items-center justify-center">
+                        <Clock className="h-5 w-5 text-yellow-600" />
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Transparent & Auditable</h4>
+                      <p className="text-sm text-gray-600">All transactions are publicly verifiable on the Ethereum blockchain</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
+                  <p className="text-sm text-gray-700">
+                    <strong>Why ERC-20 matters:</strong> By adhering to this industry-standard protocol, B2BN tokens benefit from established infrastructure, reduced integration costs, and instant compatibility with the broader Ethereum ecosystem—ensuring long-term viability and adoption.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Token Distribution */}
           <div className="max-w-3xl mx-auto mb-16">
             <Card>
