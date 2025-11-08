@@ -408,6 +408,10 @@ const Tokenomics = () => {
                       fill="#8884d8"
                       dataKey="value"
                       style={{ fontSize: '16px', fontWeight: '500' }}
+                      animationBegin={0}
+                      animationDuration={1200}
+                      animationEasing="ease-out"
+                      isAnimationActive={true}
                     >
                       {distributionData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
