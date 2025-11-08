@@ -7,6 +7,7 @@ import CountdownTimer from '@/components/fundraising/CountdownTimer';
 import TokenInformation from '@/components/fundraising/TokenInformation';
 import PurchasePanel from '@/components/fundraising/PurchasePanel';
 import VideoExplanation from '@/components/fundraising/VideoExplanation';
+import PinkSalePresaleSection from '@/components/fundraising/PinkSalePresaleSection';
 import TokenSEO from '@/components/TokenSEO';
 
 const Fundraising = () => {
@@ -56,10 +57,13 @@ const Fundraising = () => {
               Audited by PinkFinance
             </Badge>
             <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-              Fair Launch
+              Presale
             </Badge>
           </div>
         </div>
+
+        {/* PinkSale Presale Section */}
+        <PinkSalePresaleSection />
 
         {/* Video Explanation Section */}
         <div className="mb-12">
