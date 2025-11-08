@@ -6,11 +6,28 @@ import Footer from '@/components/Footer';
 import TokenSEO from '@/components/TokenSEO';
 import CountdownTimer from '@/components/fundraising/CountdownTimer';
 import { useCountUp } from '@/hooks/useCountUp';
+import { Pie, PieChart as RechartsePie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 const Tokenomics = () => {
   const totalSupply = useCountUp(10, 2000, 'M');
   const initialPrice = useCountUp(8, 2000, '');
   const marketCap = useCountUp(80, 2000, 'M');
+
+  const distributionData = [
+    { name: 'Presale', value: 30, color: '#a855f7' },
+    { name: 'Team & Advisors', value: 10, color: '#3b82f6' },
+    { name: 'Development', value: 22, color: '#10b981' },
+    { name: 'Marketing', value: 15, color: '#f97316' },
+    { name: 'Treasury/Liquidity', value: 20, color: '#ef4444' },
+    { name: 'Unlocked', value: 3, color: '#eab308' },
+  ];
+
+  const chartConfig = {
+    value: {
+      label: "Percentage",
+    },
+  };
 
   return (
     <>
@@ -160,6 +177,40 @@ const Tokenomics = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Distribution Chart */}
+          <Card className="mb-16">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <PieChart className="h-5 w-5 text-purple-600" />
+                Token Distribution Chart
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig} className="h-[400px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsePie>
+                    <Pie
+                      data={distributionData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, value }) => `${name}: ${value}%`}
+                      outerRadius={120}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {distributionData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Legend />
+                  </RechartsePie>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
 
           {/* Future Partnerships */}
           <Card className="mb-16">
