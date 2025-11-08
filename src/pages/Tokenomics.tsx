@@ -161,26 +161,6 @@ const Tokenomics = () => {
             </Card>
           </div>
 
-          {/* Token Utility */}
-          <Card className="mb-16">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-yellow-600" />
-                Token Utility & Use Cases
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-center">
-                <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg max-w-md">
-                  <Target className="h-8 w-8 text-blue-600 mx-auto mb-4" />
-                  <h3 className="font-semibold text-gray-900 mb-2">Platform Access</h3>
-                  <p className="text-sm text-gray-600">Pay for premium AI document processing and automation services</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-
           {/* Future Partnerships */}
           <Card className="mb-16">
             <CardHeader>
