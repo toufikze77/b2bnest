@@ -60,7 +60,6 @@ const Tokenomics = () => {
                       <span className="text-sm text-gray-600">30%</span>
                     </div>
                     <Progress value={30} className="h-2" />
-                    <div className="text-xs text-gray-500 mt-1">300M B2BN</div>
                   </div>
 
                   <div>
@@ -72,7 +71,6 @@ const Tokenomics = () => {
                       <span className="text-sm text-gray-600">10%</span>
                     </div>
                     <Progress value={10} className="h-2" />
-                    <div className="text-xs text-gray-500 mt-1">100M B2BN (4-year vesting)</div>
                   </div>
 
                   <div>
@@ -84,7 +82,6 @@ const Tokenomics = () => {
                       <span className="text-sm text-gray-600">22%</span>
                     </div>
                     <Progress value={22} className="h-2" />
-                    <div className="text-xs text-gray-500 mt-1">220M B2BN</div>
                   </div>
 
                   <div>
@@ -96,7 +93,6 @@ const Tokenomics = () => {
                       <span className="text-sm text-gray-600">15%</span>
                     </div>
                     <Progress value={15} className="h-2" />
-                    <div className="text-xs text-gray-500 mt-1">150M B2BN</div>
                   </div>
 
                   <div>
@@ -108,7 +104,6 @@ const Tokenomics = () => {
                       <span className="text-sm text-gray-600">20%</span>
                     </div>
                     <Progress value={20} className="h-2" />
-                    <div className="text-xs text-gray-500 mt-1">200M B2BN</div>
                   </div>
 
                   <div>
@@ -120,7 +115,6 @@ const Tokenomics = () => {
                       <span className="text-sm text-gray-600">3%</span>
                     </div>
                     <Progress value={3} className="h-2" />
-                    <div className="text-xs text-gray-500 mt-1">30M B2BN</div>
                   </div>
                 </div>
               </CardContent>
