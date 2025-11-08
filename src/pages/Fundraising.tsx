@@ -4,10 +4,8 @@ import { ExternalLink, Shield, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Footer from '@/components/Footer';
 import CountdownTimer from '@/components/fundraising/CountdownTimer';
-import PresaleProgress from '@/components/fundraising/PresaleProgress';
 import TokenInformation from '@/components/fundraising/TokenInformation';
 import PurchasePanel from '@/components/fundraising/PurchasePanel';
-import PresaleStats from '@/components/fundraising/PresaleStats';
 import VideoExplanation from '@/components/fundraising/VideoExplanation';
 import TokenSEO from '@/components/TokenSEO';
 
@@ -72,12 +70,6 @@ const Fundraising = () => {
           {/* Presale Information */}
           <div className="lg:col-span-2 space-y-6">
             <CountdownTimer />
-            <PresaleProgress 
-              currentRaised={presaleData.currentRaised}
-              hardCap={presaleData.hardCap}
-              softCap={presaleData.softCap}
-              progress={presaleData.progress}
-            />
             <TokenInformation 
               tokenName={presaleData.tokenName}
               tokenSymbol={presaleData.tokenSymbol}
@@ -93,11 +85,6 @@ const Fundraising = () => {
               tokenSymbol={presaleData.tokenSymbol}
               minContribution={presaleData.minContribution}
               maxContribution={presaleData.maxContribution}
-            />
-            <PresaleStats 
-              participants={presaleData.participants}
-              currentRaised={presaleData.currentRaised}
-              progress={presaleData.progress}
             />
 
             {/* PinkFinance Link */}
