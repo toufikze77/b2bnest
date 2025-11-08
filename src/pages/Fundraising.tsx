@@ -62,13 +62,13 @@ const Fundraising = () => {
           </div>
         </div>
 
-        {/* PinkSale Presale Section */}
-        <PinkSalePresaleSection />
-
         {/* Video Explanation Section */}
         <div className="mb-12">
           <VideoExplanation />
         </div>
+
+        {/* PinkSale Presale Section */}
+        <PinkSalePresaleSection />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Presale Information */}

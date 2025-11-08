@@ -1,27 +1,27 @@
 const PinkSalePresaleSection = () => {
   return (
-    <section className="relative isolate overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
+    <section className="relative isolate overflow-hidden bg-gradient-to-b from-background via-muted/30 to-background">
       {/* Glow */}
       <div 
-        className="pointer-events-none absolute inset-0 opacity-30"
-        style={{ background: "radial-gradient(60% 40% at 50% 0%, rgba(56,189,248,.35) 0%, rgba(0,0,0,0) 60%)" }}
+        className="pointer-events-none absolute inset-0 opacity-20"
+        style={{ background: "radial-gradient(60% 40% at 50% 0%, hsl(var(--primary) / 0.3) 0%, transparent 60%)" }}
       />
 
       <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8 lg:py-20">
         {/* Header */}
         <div className="mx-auto max-w-3xl text-center">
-          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
-            B2BN Token Presale — <span className="text-cyan-300">ERC-20 on Ethereum</span>
+          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl text-foreground">
+            B2BN Token Presale — <span className="text-primary">ERC-20 on Ethereum</span>
           </h1>
-          <p className="mt-4 text-slate-300">
-            B2BNEST is an <span className="font-semibold text-white">AI-powered, multitenant SaaS ecosystem</span> that helps founders build smarter.
-            The <span className="font-semibold">B2BN Token</span> fuels utility, incentives, and community growth across the platform.
+          <p className="mt-4 text-muted-foreground">
+            B2BNEST is an <span className="font-semibold text-foreground">AI-powered, multitenant SaaS ecosystem</span> that helps founders build smarter.
+            The <span className="font-semibold text-foreground">B2BN Token</span> fuels utility, incentives, and community growth across the platform.
           </p>
           {/* Badges */}
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-            <span className="rounded-full bg-slate-800/70 px-3 py-1 text-sm">Standard: ERC-20</span>
-            <span className="rounded-full bg-slate-800/70 px-3 py-1 text-sm">Network: Ethereum</span>
-            <span className="rounded-full bg-slate-800/70 px-3 py-1 text-sm">Focus: AI + SaaS</span>
+            <span className="rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-sm text-foreground">Standard: ERC-20</span>
+            <span className="rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-sm text-foreground">Network: Ethereum</span>
+            <span className="rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-sm text-foreground">Focus: AI + SaaS</span>
           </div>
         </div>
 
@@ -31,13 +31,13 @@ const PinkSalePresaleSection = () => {
             href="PINKSALE_PRESALE_URL" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center rounded-xl bg-cyan-400 px-5 py-3 font-semibold text-slate-900 hover:bg-cyan-300 transition"
+            className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground hover:bg-primary/90 transition"
           >
             Join Presale
           </a>
           <a 
             href="/whitepaper" 
-            className="inline-flex items-center justify-center rounded-xl border border-slate-700 px-5 py-3 font-semibold text-white hover:bg-slate-800 transition"
+            className="inline-flex items-center justify-center rounded-xl border border-border px-5 py-3 font-semibold text-foreground hover:bg-accent transition"
           >
             Read Whitepaper
           </a>
@@ -45,74 +45,74 @@ const PinkSalePresaleSection = () => {
 
         {/* Key Stats */}
         <div className="mx-auto mt-12 grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-            <p className="text-sm text-slate-400">Sale Type</p>
-            <p className="mt-1 text-xl font-semibold">Presale (Fixed Price)</p>
+          <div className="rounded-2xl border border-border bg-card p-5 hover-scale">
+            <p className="text-sm text-muted-foreground">Sale Type</p>
+            <p className="mt-1 text-xl font-semibold text-foreground">Presale (Fixed Price)</p>
           </div>
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-            <p className="text-sm text-slate-400">Contract</p>
-            <p className="mt-1 text-xl font-semibold">CONTRACT_ADDRESS</p>
-            <p className="text-xs text-slate-400 mt-1">Replace after deployment</p>
+          <div className="rounded-2xl border border-border bg-card p-5 hover-scale">
+            <p className="text-sm text-muted-foreground">Contract</p>
+            <p className="mt-1 text-xl font-semibold text-foreground">CONTRACT_ADDRESS</p>
+            <p className="text-xs text-muted-foreground mt-1">Replace after deployment</p>
           </div>
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-            <p className="text-sm text-slate-400">Ticker</p>
-            <p className="mt-1 text-xl font-semibold">B2BN</p>
+          <div className="rounded-2xl border border-border bg-card p-5 hover-scale">
+            <p className="text-sm text-muted-foreground">Ticker</p>
+            <p className="mt-1 text-xl font-semibold text-foreground">B2BN</p>
           </div>
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-            <p className="text-sm text-slate-400">Chain</p>
-            <p className="mt-1 text-xl font-semibold">Ethereum</p>
+          <div className="rounded-2xl border border-border bg-card p-5 hover-scale">
+            <p className="text-sm text-muted-foreground">Chain</p>
+            <p className="mt-1 text-xl font-semibold text-foreground">Ethereum</p>
           </div>
         </div>
 
         {/* Tokenomics */}
         <div className="mx-auto mt-14 max-w-6xl">
-          <h2 className="text-2xl font-bold">Tokenomics Allocation</h2>
-          <p className="mt-2 text-slate-300">Balanced for growth, liquidity, and long-term alignment.</p>
+          <h2 className="text-2xl font-bold text-foreground">Tokenomics Allocation</h2>
+          <p className="mt-2 text-muted-foreground">Balanced for growth, liquidity, and long-term alignment.</p>
 
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-              <p className="text-sm text-slate-400">Presale</p>
-              <p className="mt-1 text-2xl font-extrabold text-cyan-300">30%</p>
-              <p className="text-slate-300 text-sm mt-1">Early believers, fixed entry.</p>
+            <div className="rounded-2xl border border-border bg-card p-5 hover-scale animate-fade-in">
+              <p className="text-sm text-muted-foreground">Presale</p>
+              <p className="mt-1 text-2xl font-extrabold text-primary">30%</p>
+              <p className="text-muted-foreground text-sm mt-1">Early believers, fixed entry.</p>
             </div>
 
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-              <p className="text-sm text-slate-400">Team &amp; Advisors</p>
-              <p className="mt-1 text-2xl font-extrabold text-cyan-300">10%</p>
-              <p className="text-slate-300 text-sm mt-1">Long-term commitment (vesting recommended).</p>
+            <div className="rounded-2xl border border-border bg-card p-5 hover-scale animate-fade-in" style={{ animationDelay: '0.1s' }}>
+              <p className="text-sm text-muted-foreground">Team &amp; Advisors</p>
+              <p className="mt-1 text-2xl font-extrabold text-primary">10%</p>
+              <p className="text-muted-foreground text-sm mt-1">Long-term commitment (vesting recommended).</p>
             </div>
 
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-              <p className="text-sm text-slate-400">Development</p>
-              <p className="mt-1 text-2xl font-extrabold text-cyan-300">22%</p>
-              <p className="text-slate-300 text-sm mt-1">AI features, product upgrades, scalability.</p>
+            <div className="rounded-2xl border border-border bg-card p-5 hover-scale animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              <p className="text-sm text-muted-foreground">Development</p>
+              <p className="mt-1 text-2xl font-extrabold text-primary">22%</p>
+              <p className="text-muted-foreground text-sm mt-1">AI features, product upgrades, scalability.</p>
             </div>
 
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-              <p className="text-sm text-slate-400">Marketing</p>
-              <p className="mt-1 text-2xl font-extrabold text-cyan-300">15%</p>
-              <p className="text-slate-300 text-sm mt-1">Growth, partnerships, community.</p>
+            <div className="rounded-2xl border border-border bg-card p-5 hover-scale animate-fade-in" style={{ animationDelay: '0.3s' }}>
+              <p className="text-sm text-muted-foreground">Marketing</p>
+              <p className="mt-1 text-2xl font-extrabold text-primary">15%</p>
+              <p className="text-muted-foreground text-sm mt-1">Growth, partnerships, community.</p>
             </div>
 
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-              <p className="text-sm text-slate-400">Treasury / Liquidity</p>
-              <p className="mt-1 text-2xl font-extrabold text-cyan-300">20%</p>
-              <p className="text-slate-300 text-sm mt-1">Healthy liquidity and runway.</p>
+            <div className="rounded-2xl border border-border bg-card p-5 hover-scale animate-fade-in" style={{ animationDelay: '0.4s' }}>
+              <p className="text-sm text-muted-foreground">Treasury / Liquidity</p>
+              <p className="mt-1 text-2xl font-extrabold text-primary">20%</p>
+              <p className="text-muted-foreground text-sm mt-1">Healthy liquidity and runway.</p>
             </div>
 
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-              <p className="text-sm text-slate-400">Unlocked at TGE</p>
-              <p className="mt-1 text-2xl font-extrabold text-cyan-300">3%</p>
-              <p className="text-slate-300 text-sm mt-1">Initial ops &amp; seed liquidity.</p>
+            <div className="rounded-2xl border border-border bg-card p-5 hover-scale animate-fade-in" style={{ animationDelay: '0.5s' }}>
+              <p className="text-sm text-muted-foreground">Unlocked at TGE</p>
+              <p className="mt-1 text-2xl font-extrabold text-primary">3%</p>
+              <p className="text-muted-foreground text-sm mt-1">Initial ops &amp; seed liquidity.</p>
             </div>
           </div>
         </div>
 
         {/* Utility & Features */}
         <div className="mx-auto mt-14 max-w-6xl">
-          <h2 className="text-2xl font-bold">Utility &amp; Ecosystem</h2>
-          <ul className="mt-4 grid list-disc gap-3 pl-5 text-slate-300 sm:grid-cols-2">
-            <li>Token utility inside the <span className="font-semibold text-white">AI-powered B2BNEST</span> SaaS suite.</li>
+          <h2 className="text-2xl font-bold text-foreground">Utility &amp; Ecosystem</h2>
+          <ul className="mt-4 grid list-disc gap-3 pl-5 text-muted-foreground sm:grid-cols-2">
+            <li>Token utility inside the <span className="font-semibold text-foreground">AI-powered B2BNEST</span> SaaS suite.</li>
             <li>Access, discounts, and incentives across business tools and modules.</li>
             <li>Community growth loops: referrals, ambassador rewards, engagement tiers.</li>
             <li>Treasury-backed liquidity for sustainable long-term growth.</li>
@@ -121,31 +121,31 @@ const PinkSalePresaleSection = () => {
 
         {/* Timeline / Placeholders */}
         <div className="mx-auto mt-14 max-w-6xl">
-          <h2 className="text-2xl font-bold">Presale Details</h2>
+          <h2 className="text-2xl font-bold text-foreground">Presale Details</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-              <p className="text-sm text-slate-400">Start</p>
-              <p className="mt-1 text-lg font-semibold">PRESALE_START_DATE</p>
+            <div className="rounded-2xl border border-border bg-card p-5 hover-scale">
+              <p className="text-sm text-muted-foreground">Start</p>
+              <p className="mt-1 text-lg font-semibold text-foreground">PRESALE_START_DATE</p>
             </div>
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-              <p className="text-sm text-slate-400">End</p>
-              <p className="mt-1 text-lg font-semibold">PRESALE_END_DATE</p>
+            <div className="rounded-2xl border border-border bg-card p-5 hover-scale">
+              <p className="text-sm text-muted-foreground">End</p>
+              <p className="mt-1 text-lg font-semibold text-foreground">PRESALE_END_DATE</p>
             </div>
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-              <p className="text-sm text-slate-400">Presale Price</p>
-              <p className="mt-1 text-lg font-semibold">PRESALE_RATE (e.g., 1 B2BN = 0.000X ETH)</p>
+            <div className="rounded-2xl border border-border bg-card p-5 hover-scale">
+              <p className="text-sm text-muted-foreground">Presale Price</p>
+              <p className="mt-1 text-lg font-semibold text-foreground">PRESALE_RATE (e.g., 1 B2BN = 0.000X ETH)</p>
             </div>
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-              <p className="text-sm text-slate-400">Soft / Hard Cap</p>
-              <p className="mt-1 text-lg font-semibold">SOFT_CAP / HARD_CAP</p>
+            <div className="rounded-2xl border border-border bg-card p-5 hover-scale">
+              <p className="text-sm text-muted-foreground">Soft / Hard Cap</p>
+              <p className="mt-1 text-lg font-semibold text-foreground">SOFT_CAP / HARD_CAP</p>
             </div>
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-              <p className="text-sm text-slate-400">Vesting (if any)</p>
-              <p className="mt-1 text-lg font-semibold">VESTING_DETAILS</p>
+            <div className="rounded-2xl border border-border bg-card p-5 hover-scale">
+              <p className="text-sm text-muted-foreground">Vesting (if any)</p>
+              <p className="mt-1 text-lg font-semibold text-foreground">VESTING_DETAILS</p>
             </div>
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-              <p className="text-sm text-slate-400">DEX Listing</p>
-              <p className="mt-1 text-lg font-semibold">POST-PRESALE_ETH/USDT POOL + TGE</p>
+            <div className="rounded-2xl border border-border bg-card p-5 hover-scale">
+              <p className="text-sm text-muted-foreground">DEX Listing</p>
+              <p className="mt-1 text-lg font-semibold text-foreground">POST-PRESALE_ETH/USDT POOL + TGE</p>
             </div>
           </div>
         </div>
@@ -156,13 +156,13 @@ const PinkSalePresaleSection = () => {
             href="PINKSALE_PRESALE_URL" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center rounded-xl bg-cyan-400 px-5 py-3 font-semibold text-slate-900 hover:bg-cyan-300 transition"
+            className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground hover:bg-primary/90 transition hover-scale"
           >
             Join Presale Now
           </a>
           <a 
             href="/tokenomics" 
-            className="inline-flex items-center justify-center rounded-xl border border-slate-700 px-5 py-3 font-semibold text-white hover:bg-slate-800 transition"
+            className="inline-flex items-center justify-center rounded-xl border border-border px-5 py-3 font-semibold text-foreground hover:bg-accent transition hover-scale"
           >
             View Tokenomics
           </a>

@@ -8,8 +8,8 @@ const VideoExplanation = () => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center text-center justify-center">
-          <Play className="h-6 w-6 mr-2 text-blue-600" />
-          How to Invest
+          <Play className="h-6 w-6 mr-2 text-primary" />
+          About Us - Who We Are
         </CardTitle>
       </CardHeader>
       <CardContent>
