@@ -30,18 +30,10 @@ const Tokenomics = () => {
                 Complete guide to B2BNEST tokenomics. Learn about B2BNEST token distribution, utility, 
                 and the real value of our cross-border business token in the decentralized finance ecosystem.
               </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-12">
+            <div className="flex justify-center mb-12">
               <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600 mb-2">{totalSupply}</div>
-                <div className="text-gray-600">Total Supply</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600 mb-2">$0.0{initialPrice}</div>
-                <div className="text-gray-600">Initial Price</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-green-600 mb-2">${marketCap}</div>
-                <div className="text-gray-600">Market Cap</div>
+                <div className="text-4xl font-bold text-purple-600 mb-2">{totalSupply}</div>
+                <div className="text-xl text-gray-600">Total Supply</div>
               </div>
             </div>
 
