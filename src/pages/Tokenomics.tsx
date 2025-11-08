@@ -61,7 +61,7 @@ const Tokenomics = () => {
           </div>
 
           {/* Token Distribution */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+          <div className="max-w-3xl mx-auto mb-16">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -137,43 +137,6 @@ const Tokenomics = () => {
                     <Progress value={3} className="h-2" />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-green-600" />
-                  Release Schedule
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="border-l-4 border-green-500 pl-4">
-                    <div className="font-semibold text-gray-900">Token Generation Event (TGE)</div>
-                    <div className="text-sm text-gray-600 mt-1">25% of total supply released</div>
-                    <div className="text-xs text-green-600 mt-1">Q1 2025</div>
-                  </div>
-
-                  <div className="border-l-4 border-blue-500 pl-4">
-                    <div className="font-semibold text-gray-900">Monthly Vesting</div>
-                    <div className="text-sm text-gray-600 mt-1">Linear release over 36 months</div>
-                    <div className="text-xs text-blue-600 mt-1">Starting Q2 2025</div>
-                  </div>
-
-                  <div className="border-l-4 border-purple-500 pl-4">
-                    <div className="font-semibold text-gray-900">Team Cliff</div>
-                    <div className="text-sm text-gray-600 mt-1">12-month cliff, then 36-month vesting</div>
-                    <div className="text-xs text-purple-600 mt-1">Starting Q1 2026</div>
-                  </div>
-
-                  <div className="border-l-4 border-orange-500 pl-4">
-                    <div className="font-semibold text-gray-900">Ecosystem Rewards</div>
-                    <div className="text-sm text-gray-600 mt-1">Gradual release based on milestones</div>
-                    <div className="text-xs text-orange-600 mt-1">Ongoing</div>
-                  </div>
-                </div>
-
               </CardContent>
             </Card>
           </div>
