@@ -46,10 +46,10 @@ const Whitepaper = () => {
             <CardContent>
               <div className="space-y-4">
                 <p className="text-gray-700 leading-relaxed">
-                  B2BNest is a revolutionary AI-powered business automation platform that delivers comprehensive solutions for modern enterprises. With 25+ integrated business tools ranging from project management and CRM to document generation and invoicing, we serve 8.2K+ active businesses across 15+ industries worldwide. Our platform combines cutting-edge artificial intelligence with professional-grade business workflows, enabling startups and Fortune 500 companies to operate efficiently, scale seamlessly, and focus on growth.
+                  B2BNest is an emerging AI-powered business automation platform designed to deliver comprehensive solutions for modern enterprises. With 25+ integrated business tools ranging from project management and CRM to document generation and invoicing, we're building a unified ecosystem for businesses across multiple industries. Our platform combines cutting-edge artificial intelligence with professional-grade business workflows, positioning ourselves to serve startups and growing companies looking to operate efficiently, scale seamlessly, and focus on growth.
                 </p>
                 <p className="text-gray-700 leading-relaxed">
-                  Powered by our Ethereum-based B2BN token, the platform facilitates seamless business transactions, smart contracts, and premium feature access. With a proven 180% YoY growth rate, $420K ARR run rate, and 78% user retention, B2BNest is capturing significant market share in the $50B business process automation space. Our AI-powered suite saves businesses 10+ hours per week while maintaining 99.9% platform uptime.
+                  Powered by our Ethereum-based B2BN token, the platform is designed to facilitate seamless business transactions, smart contracts, and premium feature access. We're targeting the $50B business process automation market with a solution built to save businesses 10+ hours per week while maintaining enterprise-grade reliability. Our presale and early subscriber program offers founding members exclusive benefits as we scale toward mainstream adoption.
                 </p>
               </div>
             </CardContent>
@@ -205,7 +205,7 @@ const Whitepaper = () => {
                     <Rocket className="h-6 w-6 text-green-500 mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-1">Scalable Architecture</h4>
-                      <p className="text-sm text-gray-600">Built to scale from startup to enterprise with 99.9% uptime. Proven success across 8.2K+ businesses worldwide with 78% user retention.</p>
+                      <p className="text-sm text-gray-600">Built on enterprise-grade infrastructure designed to scale from startup to Fortune 500 with high availability. Our architecture supports future growth to serve thousands of businesses globally.</p>
                     </div>
                   </div>
                 </div>
