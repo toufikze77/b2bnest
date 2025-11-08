@@ -60,8 +60,9 @@ const Tokenomics = () => {
             </div>
           </div>
 
-          {/* Token Distribution */}
-          <div className="max-w-3xl mx-auto mb-16">
+          {/* Token Distribution and Chart */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+            {/* Token Distribution */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -139,10 +140,9 @@ const Tokenomics = () => {
                 </div>
               </CardContent>
             </Card>
-          </div>
 
-          {/* Distribution Chart */}
-          <Card className="mb-16">
+            {/* Distribution Chart */}
+            <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <PieChart className="h-5 w-5 text-purple-600" />
@@ -174,6 +174,7 @@ const Tokenomics = () => {
               </ChartContainer>
             </CardContent>
           </Card>
+          </div>
 
           {/* Future Partnerships */}
           <Card className="mb-16">
