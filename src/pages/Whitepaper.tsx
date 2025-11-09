@@ -336,42 +336,12 @@ const Whitepaper = () => {
             </CardContent>
           </Card>
 
-          {/* Token Utility */}
-          <Card className="mb-16">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-6 w-6 text-green-600" />
-                7. Token Utility & Governance
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-700 mb-6">We introduce the $B2BN token to support platform participation:</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200">
-                  <TrendingUp className="h-8 w-8 text-green-600 mx-auto mb-3" />
-                  <h4 className="font-semibold text-green-900 mb-2">Revenue Sharing</h4>
-                  <p className="text-sm text-green-700">First 500 holders share 20% of quarterly platform revenue.</p>
-                </div>
-                <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-sky-50 rounded-xl border border-blue-200">
-                  <Zap className="h-8 w-8 text-blue-600 mx-auto mb-3" />
-                  <h4 className="font-semibold text-blue-900 mb-2">Premium Access</h4>
-                  <p className="text-sm text-blue-700">First 100 holders get 1-year access to AI tools and premium templates.</p>
-                </div>
-                <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl border border-purple-200">
-                  <Users className="h-8 w-8 text-purple-600 mx-auto mb-3" />
-                  <h4 className="font-semibold text-purple-900 mb-2">Governance Rights</h4>
-                  <p className="text-sm text-purple-700">Token holders vote on feature priorities, integrations, and roadmap decisions.</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Business Model */}
           <Card className="mb-16">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Globe className="h-6 w-6 text-blue-600" />
-                8. Business Model
+                7. Business Model
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -397,7 +367,7 @@ const Whitepaper = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-6 w-6 text-orange-600" />
-                9. Roadmap
+                8. Roadmap
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -444,7 +414,7 @@ const Whitepaper = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-6 w-6 text-purple-600" />
-                  10. Team & Advisors
+                  9. Team & Advisors
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -458,7 +428,7 @@ const Whitepaper = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Lock className="h-6 w-6 text-red-600" />
-                  11. Security & Compliance
+                  10. Security & Compliance
                 </CardTitle>
               </CardHeader>
               <CardContent>
