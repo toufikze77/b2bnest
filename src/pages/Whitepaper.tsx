@@ -558,9 +558,15 @@ const Whitepaper = () => {
                   <Globe className="h-5 w-5" />
                   Visit www.b2bnest.online
                 </Button>
-                <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-blue-600">
-                  <ArrowRight className="h-5 w-5 mr-2" />
-                  Token Presale Coming Soon
+                <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-blue-600" asChild>
+                  <a 
+                    href="https://www.pinksale.finance/launchpad/ethereum/0xa3e47ea8bA047a848FF33Fa2292729327255b7B8"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ArrowRight className="h-5 w-5 mr-2" />
+                    Join Token Presale
+                  </a>
                 </Button>
               </div>
               <div className="flex justify-center gap-6 text-sm">
