@@ -15,12 +15,11 @@ const Tokenomics = () => {
   const marketCap = useCountUp(80, 2000, 'M');
 
   const distributionData = [
-    { name: 'Presale', value: 30, color: '#a855f7' },
-    { name: 'Team & Advisors', value: 10, color: '#3b82f6' },
-    { name: 'Development', value: 22, color: '#10b981' },
-    { name: 'Marketing', value: 15, color: '#f97316' },
-    { name: 'Treasury/Liquidity', value: 20, color: '#ef4444' },
-    { name: 'Unlocked', value: 3, color: '#eab308' },
+    { name: '💧 Liquidity', value: 51, color: '#3b82f6' },
+    { name: '🚀 Presale', value: 20, color: '#a855f7' },
+    { name: '🧠 Development', value: 10, color: '#10b981' },
+    { name: '📣 Marketing', value: 9, color: '#f97316' },
+    { name: '👥 Team & Advisors', value: 10, color: '#ef4444' },
   ];
 
   const chartConfig = {
@@ -319,67 +318,56 @@ const Tokenomics = () => {
                   <div className="animate-fade-in" style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}>
                     <div className="flex justify-between items-center mb-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                        <span className="text-sm font-medium">Presale</span>
+                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                        <span className="text-sm font-medium">💧 Liquidity</span>
                       </div>
-                      <span className="text-sm text-gray-600">30%</span>
+                      <span className="text-sm text-gray-600">51%</span>
                     </div>
-                    <Progress value={30} className="h-2" />
+                    <Progress value={51} className="h-2" />
                   </div>
 
                   <div className="animate-fade-in" style={{ animationDelay: '0.2s', animationFillMode: 'backwards' }}>
                     <div className="flex justify-between items-center mb-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                        <span className="text-sm font-medium">Team & Advisors</span>
-                      </div>
-                      <span className="text-sm text-gray-600">10%</span>
-                    </div>
-                    <Progress value={10} className="h-2" />
-                  </div>
-
-                  <div className="animate-fade-in" style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}>
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium">Development</span>
-                      </div>
-                      <span className="text-sm text-gray-600">22%</span>
-                    </div>
-                    <Progress value={22} className="h-2" />
-                  </div>
-
-                  <div className="animate-fade-in" style={{ animationDelay: '0.4s', animationFillMode: 'backwards' }}>
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                        <span className="text-sm font-medium">Marketing</span>
-                      </div>
-                      <span className="text-sm text-gray-600">15%</span>
-                    </div>
-                    <Progress value={15} className="h-2" />
-                  </div>
-
-                  <div className="animate-fade-in" style={{ animationDelay: '0.5s', animationFillMode: 'backwards' }}>
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                        <span className="text-sm font-medium">Treasury/Liquidity</span>
+                        <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                        <span className="text-sm font-medium">🚀 Presale</span>
                       </div>
                       <span className="text-sm text-gray-600">20%</span>
                     </div>
                     <Progress value={20} className="h-2" />
                   </div>
 
-                  <div className="animate-fade-in" style={{ animationDelay: '0.6s', animationFillMode: 'backwards' }}>
+                  <div className="animate-fade-in" style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}>
                     <div className="flex justify-between items-center mb-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                        <span className="text-sm font-medium">Unlocked</span>
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span className="text-sm font-medium">🧠 Development</span>
                       </div>
-                      <span className="text-sm text-gray-600">3%</span>
+                      <span className="text-sm text-gray-600">10%</span>
                     </div>
-                    <Progress value={3} className="h-2" />
+                    <Progress value={10} className="h-2" />
+                  </div>
+
+                  <div className="animate-fade-in" style={{ animationDelay: '0.4s', animationFillMode: 'backwards' }}>
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                        <span className="text-sm font-medium">📣 Marketing</span>
+                      </div>
+                      <span className="text-sm text-gray-600">9%</span>
+                    </div>
+                    <Progress value={9} className="h-2" />
+                  </div>
+
+                  <div className="animate-fade-in" style={{ animationDelay: '0.5s', animationFillMode: 'backwards' }}>
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                        <span className="text-sm font-medium">👥 Team & Advisors</span>
+                      </div>
+                      <span className="text-sm text-gray-600">10%</span>
+                    </div>
+                    <Progress value={10} className="h-2" />
                   </div>
                 </div>
               </CardContent>
