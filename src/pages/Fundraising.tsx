@@ -94,7 +94,7 @@ const Fundraising = () => {
             {/* PinkFinance Link */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <Button variant="outline" className="w-full" asChild>
-                <a href="https://www.pinksale.finance" target="_blank" rel="noopener noreferrer">
+                <a href="https://www.pinksale.finance/launchpad/ethereum/0xa3e47ea8bA047a848FF33Fa2292729327255b7B8" target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4 mr-2" />
                   View on PinkFinance
                 </a>

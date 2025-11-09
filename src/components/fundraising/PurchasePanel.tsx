@@ -26,7 +26,7 @@ const PurchasePanel = ({ presalePrice, tokenSymbol, minContribution, maxContribu
               Ready to invest in our AI Platform? Visit our official presale on PinkFinance to purchase {tokenSymbol} tokens securely.
             </p>
             <Button asChild className="w-full" size="lg">
-              <a href="https://www.pinksale.finance" target="_blank" rel="noopener noreferrer">
+              <a href="https://www.pinksale.finance/launchpad/ethereum/0xa3e47ea8bA047a848FF33Fa2292729327255b7B8" target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Invest on PinkFinance
               </a>

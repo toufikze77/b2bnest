@@ -28,7 +28,7 @@ const PinkSalePresaleSection = () => {
         {/* CTA */}
         <div className="mx-auto mt-8 flex max-w-md items-center justify-center gap-4">
           <a 
-            href="PINKSALE_PRESALE_URL" 
+            href="https://www.pinksale.finance/launchpad/ethereum/0xa3e47ea8bA047a848FF33Fa2292729327255b7B8" 
             target="_blank" 
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground hover:bg-primary/90 transition"
@@ -117,7 +117,7 @@ const PinkSalePresaleSection = () => {
         {/* Footer CTA */}
         <div className="mx-auto mt-12 flex max-w-md items-center justify-center gap-4">
           <a 
-            href="PINKSALE_PRESALE_URL" 
+            href="https://www.pinksale.finance/launchpad/ethereum/0xa3e47ea8bA047a848FF33Fa2292729327255b7B8" 
             target="_blank" 
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground hover:bg-primary/90 transition hover-scale"
