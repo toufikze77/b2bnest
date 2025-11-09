@@ -2,7 +2,6 @@ import React from 'react';
 import { SearchProvider, useSearch } from "@/contexts/SearchContext";
 import { templateService } from "@/services/templateService";
 import HeroSection from "@/components/HeroSection";
-import StatsSection from "@/components/StatsSection";
 import TokenSEO from "@/components/TokenSEO";
 import AdvancedSEOSchema from "@/components/AdvancedSEOSchema";
 
@@ -69,14 +68,6 @@ const IndexContent = () => {
         </section>
       )}
 
-      {/* Stats - Only show when not searching */}
-      {!showSearchResults && (
-        <section className="px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto">
-            <StatsSection />
-          </div>
-        </section>
-      )}
 
       {/* AI Investment Showcase - Only show when not searching */}
       {!showSearchResults && <AIInvestmentShowcase />}

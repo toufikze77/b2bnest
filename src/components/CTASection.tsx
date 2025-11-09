@@ -11,7 +11,6 @@ const CTASection = () => {
           Ready to Streamline Your Business Documentation?
         </h3>
         <p className="text-xl text-blue-100 mb-8">
-          Join over 10,000 businesses that trust B2BNest for their professional document needs. 
           Start with our free templates or unlock the full library with our premium plans.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">

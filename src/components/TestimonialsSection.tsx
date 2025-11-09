@@ -116,25 +116,6 @@ const TestimonialsSection = () => {
             </Card>
           ))}
         </div>
-
-        {/* Trust indicators */}
-        <div className="mt-16 text-center">
-          <p className="text-gray-600 mb-8">Trusted by businesses worldwide</p>
-          <div className="flex justify-center items-center space-x-8 text-gray-400">
-            <div className="text-2xl font-bold">10,000+</div>
-            <div className="text-gray-300">|</div>
-            <div className="text-2xl font-bold">50+</div>
-            <div className="text-gray-300">|</div>
-            <div className="text-2xl font-bold">99%</div>
-          </div>
-          <div className="flex justify-center items-center space-x-8 text-sm text-gray-500 mt-2">
-            <div>Happy Customers</div>
-            <div className="text-gray-300">|</div>
-            <div>Countries Served</div>
-            <div className="text-gray-300">|</div>
-            <div>Satisfaction Rate</div>
-          </div>
-        </div>
       </div>
     </section>
   );
