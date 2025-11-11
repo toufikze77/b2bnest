@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import Footer from '@/components/Footer';
 import TokenSEO from '@/components/TokenSEO';
-import CountdownTimer from '@/components/fundraising/CountdownTimer';
+
 import { useCountUp } from '@/hooks/useCountUp';
 import { Pie, PieChart as RechartsePie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -53,9 +53,20 @@ const Tokenomics = () => {
               </div>
             </div>
 
-            {/* Countdown Timer */}
-            <div className="max-w-2xl mx-auto">
-              <CountdownTimer />
+            {/* Video Tutorial */}
+            <div className="max-w-4xl mx-auto">
+              <div className="aspect-video rounded-lg overflow-hidden shadow-lg">
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src="https://www.youtube.com/embed/Q7phoH8FVNA"
+                  title="B2BNest Token Overview"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="w-full h-full"
+                ></iframe>
+              </div>
             </div>
           </div>
 
