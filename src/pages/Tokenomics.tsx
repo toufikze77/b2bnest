@@ -72,7 +72,7 @@ const Tokenomics = () => {
             {/* PinkSale CTA Button */}
             <div className="max-w-4xl mx-auto text-center">
               <a
-                href="https://www.pinksale.finance/launchpads"
+                href="https://www.pinksale.finance/launchpad/ethereum/0xa3e47ea8bA047a848FF33Fa2292729327255b7B8"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
