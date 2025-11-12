@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Footer from '@/components/Footer';
 import TokenSEO from '@/components/TokenSEO';
+import PinkSaleCTA from '@/components/PinkSaleCTA';
 
 const Whitepaper = () => {
   return (
@@ -549,9 +550,14 @@ const Whitepaper = () => {
         </div>
       </div>
 
+      {/* PinkSale CTA */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <PinkSaleCTA variant="large" />
+      </div>
+
       <Footer />
     </div>
-  </>
+   </>
   );
 };
 

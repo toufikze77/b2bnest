@@ -15,6 +15,7 @@ import ProvisionalServicesSlideshow from "@/components/ProvisionalServicesSlides
 import AIDocumentAssistant from "@/components/AIDocumentAssistant";
 import AIInvestmentShowcase from "@/components/AIInvestmentShowcase";
 import BusinessToolsSection from "@/components/BusinessToolsSection";
+import PinkSaleCTA from "@/components/PinkSaleCTA";
 import { Template } from "@/types/template";
 
 const IndexContent = () => {
@@ -83,6 +84,13 @@ const IndexContent = () => {
 
       {/* Testimonials Section - only show when not searching */}
       {!showSearchResults && <TestimonialsSection />}
+
+      {/* PinkSale CTA - Only show when not searching */}
+      {!showSearchResults && (
+        <section className="px-4 sm:px-6 lg:px-8 mb-16">
+          <PinkSaleCTA variant="large" />
+        </section>
+      )}
 
       <CTASection />
       <Footer />

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Footer from "@/components/Footer";
+import PinkSaleCTA from "@/components/PinkSaleCTA";
 
 const Blog = () => {
   const navigate = useNavigate();
@@ -211,6 +212,11 @@ const Blog = () => {
           </CardContent>
         </Card>
       </main>
+
+      {/* PinkSale CTA */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <PinkSaleCTA variant="large" />
+      </div>
 
       <Footer />
     </div>

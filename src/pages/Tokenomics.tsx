@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import Footer from '@/components/Footer';
 import TokenSEO from '@/components/TokenSEO';
+import PinkSaleCTA from '@/components/PinkSaleCTA';
 
 import { useCountUp } from '@/hooks/useCountUp';
 import { Pie, PieChart as RechartsePie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -70,18 +71,7 @@ const Tokenomics = () => {
             </div>
 
             {/* PinkSale CTA Button */}
-            <div className="max-w-4xl mx-auto text-center">
-              <a
-                href="https://www.pinksale.finance/launchpad/ethereum/0xa3e47ea8bA047a848FF33Fa2292729327255b7B8"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              >
-                <Zap className="h-5 w-5" />
-                Join Presale on PinkSale
-                <Link className="h-5 w-5" />
-              </a>
-            </div>
+            <PinkSaleCTA variant="large" />
           </div>
 
           {/* ERC-20 Standard Section */}

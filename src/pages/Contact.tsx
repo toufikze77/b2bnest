@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import ContactForm from '@/components/ContactForm';
 import Footer from '@/components/Footer';
+import PinkSaleCTA from '@/components/PinkSaleCTA';
 
 const Contact = () => {
   const navigate = useNavigate();
@@ -136,6 +137,11 @@ const Contact = () => {
           </CardContent>
         </Card>
       </main>
+
+      {/* PinkSale CTA */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <PinkSaleCTA variant="large" />
+      </div>
 
       <Footer />
     </div>
