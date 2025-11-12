@@ -34,6 +34,11 @@ const Whitepaper = () => {
                 Executive Summary
               </Button>
             </div>
+
+            {/* PinkSale CTA - Top */}
+            <div className="mt-12">
+              <PinkSaleCTA variant="large" />
+            </div>
           </div>
 
           {/* Executive Summary */}
