@@ -54,7 +54,7 @@ const Tokenomics = () => {
             </div>
 
             {/* Video Tutorial */}
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto mb-8">
               <div className="aspect-video rounded-lg overflow-hidden shadow-lg">
                 <iframe
                   width="100%"
@@ -67,6 +67,20 @@ const Tokenomics = () => {
                   className="w-full h-full"
                 ></iframe>
               </div>
+            </div>
+
+            {/* PinkSale CTA Button */}
+            <div className="max-w-4xl mx-auto text-center">
+              <a
+                href="https://www.pinksale.finance/launchpads"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
+                <Zap className="h-5 w-5" />
+                Join Presale on PinkSale
+                <Link className="h-5 w-5" />
+              </a>
             </div>
           </div>
 
