@@ -62,12 +62,12 @@ const ShareButton = ({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant={variant} size={size} className="gap-2">
+        <Button variant={variant} size={size} className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 opacity-100">
           <Share2 className="h-4 w-4" />
           {size !== 'icon' && 'Share'}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" className="w-56 bg-background border-border z-50">
         <DropdownMenuItem onClick={() => handleShare('facebook')} className="cursor-pointer">
           <Facebook className="h-4 w-4 mr-2 text-blue-600" />
           Share on Facebook
