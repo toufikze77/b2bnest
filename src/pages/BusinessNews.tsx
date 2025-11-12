@@ -230,6 +230,11 @@ const BusinessNewsPage = () => {
           </div>
         </div>
 
+        {/* PinkSale CTA - Top */}
+        <div className="mb-8">
+          <PinkSaleCTA variant="large" />
+        </div>
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card via-card to-primary/5 shadow-xl">
