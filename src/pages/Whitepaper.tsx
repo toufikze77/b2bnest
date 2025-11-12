@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Footer from '@/components/Footer';
 import TokenSEO from '@/components/TokenSEO';
 import PinkSaleCTA from '@/components/PinkSaleCTA';
+import ShareButton from '@/components/ShareButton';
 
 const Whitepaper = () => {
   return (
@@ -25,7 +26,7 @@ const Whitepaper = () => {
                 Official B2BNEST whitepaper covering our secure blockchain token technology, B2BNEST roadmap, 
                 crypto project audit details, and cross-border business solutions in the decentralized finance space.
               </p>
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-center gap-4 mb-8">
               <Button size="lg" className="flex items-center gap-2">
                 <Download className="h-5 w-5" />
                 Download PDF
@@ -33,6 +34,7 @@ const Whitepaper = () => {
               <Button variant="outline" size="lg">
                 Executive Summary
               </Button>
+              <ShareButton variant="outline" size="lg" />
             </div>
 
             {/* PinkSale CTA - Top */}

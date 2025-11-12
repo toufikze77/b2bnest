@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
 import LivePriceSidebars from '@/components/sidebars/LivePriceSidebars';
+import ShareButton from '@/components/ShareButton';
 
 
 const Header = () => {
@@ -146,8 +147,11 @@ const Header = () => {
             </Link>
           </nav>
 
-          {/* Live Prices and User Menu */}
+          {/* Share, Live Prices and User Menu */}
           <div className="flex items-center space-x-2">
+            <div className="hidden md:block">
+              <ShareButton variant="ghost" size="sm" />
+            </div>
 
             {user ? (
               <DropdownMenu>
@@ -333,11 +337,14 @@ const Header = () => {
                   >
                     <BarChart3 className="h-4 w-4 mr-2" />
                     Market
-                  </Link>
-                </div>
-              </div>
-              <Link
-                to="/pricing"
+                   </Link>
+                 </div>
+               </div>
+               <div className="px-2 py-2">
+                 <ShareButton variant="outline" size="default" />
+               </div>
+               <Link
+                 to="/pricing"
                 className="text-gray-700 hover:text-blue-600 transition-colors px-2"
                 onClick={() => setIsMenuOpen(false)}
               >

@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import Footer from '@/components/Footer';
 import TokenSEO from '@/components/TokenSEO';
 import PinkSaleCTA from '@/components/PinkSaleCTA';
+import ShareButton from '@/components/ShareButton';
 
 import { useCountUp } from '@/hooks/useCountUp';
 import { Pie, PieChart as RechartsePie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -47,10 +48,13 @@ const Tokenomics = () => {
                 Complete guide to B2BNEST tokenomics. Learn about B2BNEST token distribution, utility, 
                 and the real value of our cross-border business token in the decentralized finance ecosystem.
               </p>
-            <div className="flex justify-center mb-12">
+            <div className="flex justify-center mb-12 gap-4">
               <div className="text-center">
                 <div className="text-4xl font-bold text-purple-600 mb-2">{totalSupply}</div>
                 <div className="text-xl text-gray-600">Total Supply</div>
+              </div>
+              <div className="self-center">
+                <ShareButton variant="outline" size="default" />
               </div>
             </div>
 

@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import PinkSaleCTA from '@/components/PinkSaleCTA';
+import ShareButton from '@/components/ShareButton';
 
 interface NewsArticle {
   id: string;
@@ -216,16 +217,19 @@ const BusinessNewsPage = () => {
                   Stay ahead of the market with real-time business insights and crypto developments from trusted sources
                 </p>
               </div>
-              {isAdmin && (
-                <Button
-                  onClick={refreshNews}
-                  disabled={refreshing}
-                  className="flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
-                >
-                  <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                  {refreshing ? 'Refreshing...' : 'Refresh News'}
-                </Button>
-              )}
+              <div className="flex gap-2">
+                <ShareButton variant="outline" size="default" />
+                {isAdmin && (
+                  <Button
+                    onClick={refreshNews}
+                    disabled={refreshing}
+                    className="flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                    {refreshing ? 'Refreshing...' : 'Refresh News'}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>

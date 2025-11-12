@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import ShareButton from "./ShareButton";
 
 const Footer = () => {
   const navigate = useNavigate();
@@ -100,9 +101,17 @@ const Footer = () => {
             </ul>
           </div>
         </div>
-        <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-          <p>&copy; 2024 Edeals Master Ltd (Company No. 15242148) trading as B2BNEST. All rights reserved.</p>
-          <p className="text-sm mt-2">Incorporated in England & Wales on 27 October 2023</p>
+        <div className="border-t border-gray-800 mt-8 pt-8">
+          <div className="flex flex-col items-center gap-4 mb-6">
+            <div className="flex items-center gap-2">
+              <span className="text-gray-400 text-sm">Share B2BNEST:</span>
+              <ShareButton variant="outline" size="sm" />
+            </div>
+          </div>
+          <div className="text-center text-gray-400">
+            <p>&copy; 2024 Edeals Master Ltd (Company No. 15242148) trading as B2BNEST. All rights reserved.</p>
+            <p className="text-sm mt-2">Incorporated in England & Wales on 27 October 2023</p>
+          </div>
         </div>
       </div>
     </footer>

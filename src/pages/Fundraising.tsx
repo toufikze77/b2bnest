@@ -10,6 +10,7 @@ import VideoExplanation from '@/components/fundraising/VideoExplanation';
 import PinkSalePresaleSection from '@/components/fundraising/PinkSalePresaleSection';
 import TokenSEO from '@/components/TokenSEO';
 import PinkSaleCTA from '@/components/PinkSaleCTA';
+import ShareButton from '@/components/ShareButton';
 
 const Fundraising = () => {
   const navigate = useNavigate();
@@ -36,7 +37,7 @@ const Fundraising = () => {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Header Section */}
           <div className="text-center mb-12">
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-between items-center mb-4">
               <Button
                 variant="outline"
                 onClick={() => navigate('/')}
@@ -45,6 +46,7 @@ const Fundraising = () => {
                 <Home className="h-4 w-4" />
                 Go Back Home
               </Button>
+              <ShareButton variant="outline" size="sm" />
             </div>
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
               Buy B2BNEST Token - Best New Crypto 2025 Presale
