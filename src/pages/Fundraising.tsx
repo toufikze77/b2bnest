@@ -9,6 +9,7 @@ import PurchasePanel from '@/components/fundraising/PurchasePanel';
 import VideoExplanation from '@/components/fundraising/VideoExplanation';
 import PinkSalePresaleSection from '@/components/fundraising/PinkSalePresaleSection';
 import TokenSEO from '@/components/TokenSEO';
+import PinkSaleCTA from '@/components/PinkSaleCTA';
 
 const Fundraising = () => {
   const navigate = useNavigate();
@@ -91,15 +92,8 @@ const Fundraising = () => {
               maxContribution={presaleData.maxContribution}
             />
 
-            {/* PinkFinance Link */}
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <Button variant="outline" className="w-full" asChild>
-                <a href="https://www.pinksale.finance/launchpad/ethereum/0xa3e47ea8bA047a848FF33Fa2292729327255b7B8" target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  View on PinkFinance
-                </a>
-              </Button>
-            </div>
+            {/* PinkSale CTA */}
+            <PinkSaleCTA />
           </div>
         </div>
 

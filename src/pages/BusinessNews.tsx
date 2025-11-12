@@ -18,6 +18,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
+import PinkSaleCTA from '@/components/PinkSaleCTA';
 
 interface NewsArticle {
   id: string;
@@ -566,6 +567,11 @@ const BusinessNewsPage = () => {
               Last update: {new Date().toLocaleString()}
             </p>
           </div>
+        </div>
+
+        {/* PinkSale CTA */}
+        <div className="max-w-7xl mx-auto px-4 pb-16">
+          <PinkSaleCTA variant="large" />
         </div>
       </div>
     </div>
