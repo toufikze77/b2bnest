@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.oauth-hmrc]
 verify_jwt = true
+
+[functions.b2b-form-submit]
+verify_jwt = false
