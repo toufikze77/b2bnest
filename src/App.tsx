@@ -44,6 +44,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Market from '@/pages/Market';
 import BusinessNews from '@/pages/BusinessNews';
 import PublicWorkRequest from '@/pages/PublicWorkRequest';
+import B2BForm from '@/pages/B2BForm';
 
 const queryClient = new QueryClient();
 
@@ -96,6 +97,9 @@ function App() {
                
                {/* Public work request form */}
                <Route path="/forms/work-request" element={<PublicWorkRequest />} />
+               
+               {/* B2B Partnership Form */}
+               <Route path="/forms/b2b" element={<B2BForm />} />
                
                <Route path="*" element={<NotFound />} />
             </Routes>

@@ -236,6 +236,60 @@ export type Database = {
         }
         Relationships: []
       }
+      b2b_form_submissions: {
+        Row: {
+          ai_analysis: Json | null
+          ai_score: number | null
+          company_name: string
+          company_size: string | null
+          contact_name: string
+          created_at: string
+          email: string
+          id: string
+          industry: string | null
+          message: string
+          phone: string | null
+          priority: string | null
+          status: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          ai_score?: number | null
+          company_name: string
+          company_size?: string | null
+          contact_name: string
+          created_at?: string
+          email: string
+          id?: string
+          industry?: string | null
+          message: string
+          phone?: string | null
+          priority?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          ai_analysis?: Json | null
+          ai_score?: number | null
+          company_name?: string
+          company_size?: string | null
+          contact_name?: string
+          created_at?: string
+          email?: string
+          id?: string
+          industry?: string | null
+          message?: string
+          phone?: string | null
+          priority?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       bank_accounts: {
         Row: {
           account_id: string
