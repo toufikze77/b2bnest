@@ -45,9 +45,8 @@ import DomainAvailability from '@/components/DomainAvailability';
 import HMRCIntegration from '@/components/HMRCIntegration';
 import { AdvertisementSection } from '@/components/AdvertisementSection';
 import BusinessToolsSEO from '@/components/BusinessToolsSEO';
-import B2BForm from '@/pages/B2BForm';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'domain-availability' | 'qr-code-generator' | 'coupon-generator' | 'loyalty-rewards' | 'referral-program' | 'gift-card-manager' | 'utm-builder' | 'marketing-calendar' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'premium-marketplace' | 'currency-converter' | 'crypto-converter' | 'hmrc-integration' | 'b2b-form';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'domain-availability' | 'qr-code-generator' | 'coupon-generator' | 'loyalty-rewards' | 'referral-program' | 'gift-card-manager' | 'utm-builder' | 'marketing-calendar' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'premium-marketplace' | 'currency-converter' | 'crypto-converter' | 'hmrc-integration';
 
 type FilterType = 'all' | 'premium' | 'favorites' | 'free';
 
@@ -306,18 +305,9 @@ const BusinessTools = () => {
       title: 'Customer Survey Builder',
       description: 'Create and manage customer feedback surveys',
       icon: BarChart,
-      color: 'bg-teal-600',
-      benefits: ['Custom questions', 'Response analysis', 'Feedback collection', 'Export results'],
-      isPremium: true
-    },
-    {
-      id: 'b2b-form' as ToolType,
-      title: 'B2B Partnership Form',
-      description: 'AI-powered B2B lead qualification form with intelligent scoring',
-      icon: Building2,
       color: 'bg-violet-600',
-      benefits: ['AI Lead Scoring', 'Company Information Collection', 'Priority Management', 'Automatic Qualification'],
-      isPremium: false
+      benefits: ['Custom questions', 'Response tracking', 'Analytics dashboard'],
+      isPremium: true
     },
     {
       id: 'currency-converter' as ToolType,
@@ -527,8 +517,6 @@ const BusinessTools = () => {
         return <SocialMediaPostScheduler />;
       case 'customer-survey-builder':
         return <CustomerSurveyBuilder />;
-      case 'b2b-form':
-        return <B2BForm />;
       case 'hmrc-integration':
         return <HMRCIntegration />;
       case 'cost-calculator':
