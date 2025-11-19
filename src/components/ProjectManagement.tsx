@@ -93,6 +93,7 @@ import { CommentButton } from './CommentButton';
 import { format } from 'date-fns';
 import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { EnhancedTodoView } from './enhanced-todos/EnhancedTodoView';
+import { ProjectCalendarView } from './project-management/ProjectCalendarView';
 
 // Enhanced interfaces
 interface Task {
@@ -2814,40 +2815,32 @@ const ProjectManagement = () => {
         </TabsContent>
 
         <TabsContent value="calendar" className="mt-6">
-          <Card>
-            <CardHeader><CardTitle>Calendar</CardTitle></CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2 mb-4">
-                <Select value={eventsSort} onValueChange={(v:any)=>setEventsSort(v)}>
-                  <SelectTrigger className="w-[150px]"><SelectValue placeholder="Sort" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">Newest</SelectItem>
-                    <SelectItem value="oldest">Oldest</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button size="sm" variant="outline" onClick={openNewEventDialog}>Add Event</Button>
-              </div>
-              <div className="space-y-2">
-                {pagedEvents.map(ev => (
-                  <div key={ev.id} className="p-3 border rounded-lg flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">{ev.title}</div>
-                      <div className="text-xs text-gray-500">{ev.start_at}{ev.end_at ? ` → ${ev.end_at}` : ''}</div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" variant="ghost" onClick={()=>openEditEventDialog(ev)}>Edit</Button>
-                      <Button size="sm" variant="ghost" onClick={()=>deleteEvent(ev)}>Delete</Button>
-                    </div>
-                  </div>
-                ))}
-                {sortedEvents.length === 0 && <div className="text-sm text-gray-500">No events yet.</div>}
-              </div>
-              <div className="flex justify-end gap-2 mt-3">
-                <Button size="sm" variant="outline" disabled={eventsPage===1} onClick={()=>setEventsPage(p=>Math.max(1,p-1))}>Prev</Button>
-                <Button size="sm" variant="outline" disabled={eventsPage*PAGE_SIZE>=sortedEvents.length} onClick={()=>setEventsPage(p=>p+1)}>Next</Button>
-              </div>
-            </CardContent>
-          </Card>
+          <ProjectCalendarView
+            tasks={tasks}
+            events={calendarEvents}
+            onCreateEvent={(event) => {
+              if (!user?.id) return;
+              const newEvent: CalendarEventItem = {
+                id: crypto.randomUUID(),
+                user_id: user.id,
+                title: event.title || '',
+                start_at: event.start_at || new Date().toISOString(),
+                end_at: event.end_at,
+                project_id: event.project_id,
+                created_at: new Date().toISOString(),
+              };
+              setCalendarEvents(prev => [...prev, newEvent]);
+              toast({ title: 'Event created successfully' });
+            }}
+            onEditEvent={(event) => {
+              setCalendarEvents(prev => prev.map(e => e.id === event.id ? event : e));
+              toast({ title: 'Event updated successfully' });
+            }}
+            onDeleteEvent={(event) => {
+              setCalendarEvents(prev => prev.filter(e => e.id !== event.id));
+              toast({ title: 'Event deleted successfully' });
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="list" className="mt-6">
