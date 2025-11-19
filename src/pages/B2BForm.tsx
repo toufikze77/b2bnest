@@ -77,25 +77,25 @@ const B2BForm: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[hsl(195,100%,10%)] via-[hsl(195,100%,7%)] to-[hsl(195,80%,5%)] py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 py-12 px-4">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/20 border border-primary/30 rounded-full mb-4">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full mb-4">
             <Sparkles className="w-4 h-4 text-primary" />
             <span className="text-sm font-medium text-primary">AI-Powered Lead Qualification</span>
           </div>
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
             B2B Partnership Request
           </h1>
-          <p className="text-foreground/70 text-lg">
+          <p className="text-muted-foreground text-lg">
             Connect with us for business opportunities and collaborations
           </p>
         </div>
 
-        <Card className="border-2 border-primary/30 shadow-xl bg-card/50 backdrop-blur-sm">
+        <Card className="border-2 shadow-xl">
           <CardHeader>
-            <CardTitle className="text-primary">Business Information</CardTitle>
-            <CardDescription className="text-foreground/60">
+            <CardTitle>Business Information</CardTitle>
+            <CardDescription>
               Tell us about your company and how we can work together
             </CardDescription>
           </CardHeader>
@@ -244,7 +244,7 @@ const B2BForm: React.FC = () => {
               <Button 
                 onClick={handleSubmit} 
                 disabled={submitting}
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+                className="flex-1"
                 size="lg"
               >
                 {submitting ? (
@@ -269,13 +269,12 @@ const B2BForm: React.FC = () => {
                   priority: 'medium',
                 })}
                 size="lg"
-                className="border-primary/30 text-foreground hover:bg-primary/10"
               >
                 Reset
               </Button>
             </div>
 
-            <p className="text-xs text-foreground/50 text-center pt-2">
+            <p className="text-xs text-muted-foreground text-center pt-2">
               * Required fields. Your information will be processed securely with AI-powered lead qualification.
             </p>
           </CardContent>
