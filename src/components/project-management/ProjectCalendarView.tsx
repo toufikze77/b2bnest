@@ -65,6 +65,8 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
   const [statusFilter, setStatusFilter] = useState('all');
   const [showEventDialog, setShowEventDialog] = useState(false);
   const [newEvent, setNewEvent] = useState<Partial<CalendarEventItem>>({});
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [showItemDialog, setShowItemDialog] = useState(false);
 
   // Get unique assignees and statuses for filters
   const assignees = useMemo(() => {
@@ -141,6 +143,23 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
       onCreateEvent(newEvent);
       setShowEventDialog(false);
       setNewEvent({});
+    }
+  };
+
+  const handleItemClick = (item: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedItem(item);
+    setShowItemDialog(true);
+  };
+
+  const handleDeleteEvent = () => {
+    if (selectedItem && selectedItem.type === 'event') {
+      const fullEvent = events.find(e => e.id === selectedItem.id);
+      if (fullEvent) {
+        onDeleteEvent(fullEvent);
+        setShowItemDialog(false);
+        setSelectedItem(null);
+      }
     }
   };
 
@@ -264,8 +283,9 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
                       {dayItems.slice(0, 3).map(item => (
                         <div
                           key={item.id}
+                          onClick={(e) => handleItemClick(item, e)}
                           className={cn(
-                            "text-xs p-1 rounded truncate",
+                            "text-xs p-1 rounded truncate cursor-pointer hover:opacity-80 transition-opacity",
                             item.type === 'task' 
                               ? "bg-primary/10 text-primary border border-primary/20" 
                               : "bg-accent text-accent-foreground border border-border"
@@ -330,6 +350,58 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
             </Button>
             <Button onClick={handleCreateEvent}>
               Create Event
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View/Edit Item Dialog */}
+      <Dialog open={showItemDialog} onOpenChange={setShowItemDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {selectedItem?.type === 'task' ? 'Task Details' : 'Event Details'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Title</Label>
+              <div className="text-sm font-medium">{selectedItem?.title}</div>
+            </div>
+            <div>
+              <Label>Date</Label>
+              <div className="text-sm">{selectedItem?.date ? format(new Date(selectedItem.date), 'PPP') : ''}</div>
+            </div>
+            {selectedItem?.type === 'task' && (
+              <>
+                <div>
+                  <Label>Status</Label>
+                  <Badge variant="outline" className="ml-2">{selectedItem.status}</Badge>
+                </div>
+                <div>
+                  <Label>Priority</Label>
+                  <Badge variant="outline" className="ml-2">{selectedItem.priority}</Badge>
+                </div>
+                {selectedItem.assignee && (
+                  <div>
+                    <Label>Assignee</Label>
+                    <div className="text-sm flex items-center gap-2 mt-1">
+                      <User className="h-4 w-4" />
+                      {selectedItem.assignee}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            {selectedItem?.type === 'event' && (
+              <Button variant="destructive" onClick={handleDeleteEvent}>
+                Delete Event
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setShowItemDialog(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
