@@ -22,6 +22,28 @@ import b2bnExchange from "@/assets/tweets/b2bn-exchange.png";
 import b2bnRoadmap from "@/assets/tweets/b2bn-roadmap.png";
 import b2bnCommunity from "@/assets/tweets/b2bn-community.png";
 
+// New tweet-style images
+import tweetInvoiceTool from "@/assets/tweets/tweet-invoice-tool.png";
+import tweetTokenUtility from "@/assets/tweets/tweet-token-utility.png";
+import tweetCrmIntegration from "@/assets/tweets/tweet-crm-integration.png";
+import tweetPresaleAlert from "@/assets/tweets/tweet-presale-alert.png";
+import tweetProjectMgmt from "@/assets/tweets/tweet-project-mgmt.png";
+import tweetTokenomicsBreakdown from "@/assets/tweets/tweet-tokenomics-breakdown.png";
+import tweetAiDocuments from "@/assets/tweets/tweet-ai-documents.png";
+import tweetStakingRewards from "@/assets/tweets/tweet-staking-rewards.png";
+import tweetDirectorySuccess from "@/assets/tweets/tweet-directory-success.png";
+import tweetRoadmapUpdate from "@/assets/tweets/tweet-roadmap-update.png";
+import tweetExpenseTracking from "@/assets/tweets/tweet-expense-tracking.png";
+import tweetCommunityLove from "@/assets/tweets/tweet-community-love.png";
+import tweetEmailSignatures from "@/assets/tweets/tweet-email-signatures.png";
+import tweetSecurityAudit from "@/assets/tweets/tweet-security-audit.png";
+import tweetTimeTracking from "@/assets/tweets/tweet-time-tracking.png";
+import tweetExchangeListing from "@/assets/tweets/tweet-exchange-listing.png";
+import tweetContractGenerator from "@/assets/tweets/tweet-contract-generator.png";
+import tweetInvestorPerks from "@/assets/tweets/tweet-investor-perks.png";
+import tweetMarketingCalendar from "@/assets/tweets/tweet-marketing-calendar.png";
+import tweetPhantomPartnership from "@/assets/tweets/tweet-phantom-partnership.png";
+
 const tweetImages = [
   { src: businessTools2, alt: "Business Tools - Automation Features" },
   { src: businessTools3, alt: "Business Tools - CRM Integration" },
@@ -42,6 +64,26 @@ const tweetImages = [
   { src: b2bnExchange, alt: "B2BN Exchange Listing" },
   { src: b2bnRoadmap, alt: "B2BN Roadmap" },
   { src: b2bnCommunity, alt: "B2BN Community" },
+  { src: tweetInvoiceTool, alt: "Tweet: AI Invoice Generator Success Story" },
+  { src: tweetTokenUtility, alt: "Tweet: B2BN Token Holder Benefits" },
+  { src: tweetCrmIntegration, alt: "Tweet: CRM Integration Testimonial" },
+  { src: tweetPresaleAlert, alt: "Tweet: B2BN Presale Alert" },
+  { src: tweetProjectMgmt, alt: "Tweet: Project Management Features" },
+  { src: tweetTokenomicsBreakdown, alt: "Tweet: Tokenomics Transparency" },
+  { src: tweetAiDocuments, alt: "Tweet: AI Document Analysis" },
+  { src: tweetStakingRewards, alt: "Tweet: Staking Rewards Announcement" },
+  { src: tweetDirectorySuccess, alt: "Tweet: Business Directory Success" },
+  { src: tweetRoadmapUpdate, alt: "Tweet: B2BN Roadmap Update" },
+  { src: tweetExpenseTracking, alt: "Tweet: Automated Expense Tracking" },
+  { src: tweetCommunityLove, alt: "Tweet: Community Support" },
+  { src: tweetEmailSignatures, alt: "Tweet: Email Signature Generator" },
+  { src: tweetSecurityAudit, alt: "Tweet: Security Audit Results" },
+  { src: tweetTimeTracking, alt: "Tweet: Time Tracking Feature" },
+  { src: tweetExchangeListing, alt: "Tweet: Exchange Listing News" },
+  { src: tweetContractGenerator, alt: "Tweet: Contract Generator Tool" },
+  { src: tweetInvestorPerks, alt: "Tweet: Early Investor Perks" },
+  { src: tweetMarketingCalendar, alt: "Tweet: Marketing Calendar Feature" },
+  { src: tweetPhantomPartnership, alt: "Tweet: Phantom Wallet Partnership" },
 ];
 
 const MarketingMaterials = () => {
