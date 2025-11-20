@@ -1,89 +1,149 @@
 import { Card } from "@/components/ui/card";
 import SEOHead from "@/components/SEOHead";
 
-// Import all tweet images
-import businessTools2 from "@/assets/tweets/business-tools-2.png";
-import businessTools3 from "@/assets/tweets/business-tools-3.png";
-import businessTools4 from "@/assets/tweets/business-tools-4.png";
-import businessTools5 from "@/assets/tweets/business-tools-5.png";
-import businessTools6 from "@/assets/tweets/business-tools-6.png";
-import businessTools7 from "@/assets/tweets/business-tools-7.png";
-import businessTools8 from "@/assets/tweets/business-tools-8.png";
-import businessTools9 from "@/assets/tweets/business-tools-9.png";
-import businessTools10 from "@/assets/tweets/business-tools-10.png";
-import b2bnToken from "@/assets/tweets/b2bn-token-1.png";
-import b2bnInvestment from "@/assets/tweets/b2bn-investment-1.png";
-import b2bnEcosystem from "@/assets/tweets/b2bn-ecosystem.png";
-import b2bnPresale from "@/assets/tweets/b2bn-presale.png";
-import b2bnSecurity from "@/assets/tweets/b2bn-security.png";
-import b2bnBenefits from "@/assets/tweets/b2bn-benefits.png";
-import b2bnTokenomics from "@/assets/tweets/b2bn-tokenomics.png";
-import b2bnExchange from "@/assets/tweets/b2bn-exchange.png";
-import b2bnRoadmap from "@/assets/tweets/b2bn-roadmap.png";
-import b2bnCommunity from "@/assets/tweets/b2bn-community.png";
+// Import marketing promo images focused on Business & AI tools
+import promoInvoiceGenerator from "@/assets/tweets/promo-invoice-generator.png";
+import promoCrmSystem from "@/assets/tweets/promo-crm-system.png";
+import promoProjectManagement from "@/assets/tweets/promo-project-management.png";
+import promoAiDocuments from "@/assets/tweets/promo-ai-documents.png";
+import promoBusinessName from "@/assets/tweets/promo-business-name.png";
+import promoTimeTracker from "@/assets/tweets/promo-time-tracker.png";
+import promoEmailSignature from "@/assets/tweets/promo-email-signature.png";
+import promoMarketingCalendar from "@/assets/tweets/promo-marketing-calendar.png";
+import promoContractGenerator from "@/assets/tweets/promo-contract-generator.png";
+import promoHmrcIntegration from "@/assets/tweets/promo-hmrc-integration.png";
+import promoRoiCalculator from "@/assets/tweets/promo-roi-calculator.png";
+import promoCashFlow from "@/assets/tweets/promo-cash-flow.png";
+import promoBusinessCards from "@/assets/tweets/promo-business-cards.png";
+import promoLandingPages from "@/assets/tweets/promo-landing-pages.png";
+import promoQrCodes from "@/assets/tweets/promo-qr-codes.png";
+import promoDocumentLibrary from "@/assets/tweets/promo-document-library.png";
+import promoStartupIdeas from "@/assets/tweets/promo-startup-ideas.png";
+import promoPrivacyPolicy from "@/assets/tweets/promo-privacy-policy.png";
+import promoSurveys from "@/assets/tweets/promo-surveys.png";
+import promoSocialScheduler from "@/assets/tweets/promo-social-scheduler.png";
 
-// New tweet-style images
-import tweetInvoiceTool from "@/assets/tweets/tweet-invoice-tool.png";
-import tweetTokenUtility from "@/assets/tweets/tweet-token-utility.png";
-import tweetCrmIntegration from "@/assets/tweets/tweet-crm-integration.png";
-import tweetPresaleAlert from "@/assets/tweets/tweet-presale-alert.png";
-import tweetProjectMgmt from "@/assets/tweets/tweet-project-mgmt.png";
-import tweetTokenomicsBreakdown from "@/assets/tweets/tweet-tokenomics-breakdown.png";
-import tweetAiDocuments from "@/assets/tweets/tweet-ai-documents.png";
-import tweetStakingRewards from "@/assets/tweets/tweet-staking-rewards.png";
-import tweetDirectorySuccess from "@/assets/tweets/tweet-directory-success.png";
-import tweetRoadmapUpdate from "@/assets/tweets/tweet-roadmap-update.png";
-import tweetExpenseTracking from "@/assets/tweets/tweet-expense-tracking.png";
-import tweetCommunityLove from "@/assets/tweets/tweet-community-love.png";
-import tweetEmailSignatures from "@/assets/tweets/tweet-email-signatures.png";
-import tweetSecurityAudit from "@/assets/tweets/tweet-security-audit.png";
-import tweetTimeTracking from "@/assets/tweets/tweet-time-tracking.png";
-import tweetExchangeListing from "@/assets/tweets/tweet-exchange-listing.png";
-import tweetContractGenerator from "@/assets/tweets/tweet-contract-generator.png";
-import tweetInvestorPerks from "@/assets/tweets/tweet-investor-perks.png";
-import tweetMarketingCalendar from "@/assets/tweets/tweet-marketing-calendar.png";
-import tweetPhantomPartnership from "@/assets/tweets/tweet-phantom-partnership.png";
-
-const tweetImages = [
-  { src: businessTools2, alt: "Business Tools - Automation Features" },
-  { src: businessTools3, alt: "Business Tools - CRM Integration" },
-  { src: businessTools4, alt: "Business Tools - Invoice Management" },
-  { src: businessTools5, alt: "Business Tools - Project Tracking" },
-  { src: businessTools6, alt: "Business Tools - Analytics Dashboard" },
-  { src: businessTools7, alt: "Business Tools - Team Collaboration" },
-  { src: businessTools8, alt: "Business Tools - Document Management" },
-  { src: businessTools9, alt: "Business Tools - Financial Tools" },
-  { src: businessTools10, alt: "Business Tools - AI Assistant" },
-  { src: b2bnToken, alt: "B2BN Token Introduction" },
-  { src: b2bnInvestment, alt: "B2BN Investment Opportunity" },
-  { src: b2bnEcosystem, alt: "B2BN Ecosystem Overview" },
-  { src: b2bnPresale, alt: "B2BN Token Presale" },
-  { src: b2bnSecurity, alt: "B2BN Security Features" },
-  { src: b2bnBenefits, alt: "B2BN Token Benefits" },
-  { src: b2bnTokenomics, alt: "B2BN Tokenomics" },
-  { src: b2bnExchange, alt: "B2BN Exchange Listing" },
-  { src: b2bnRoadmap, alt: "B2BN Roadmap" },
-  { src: b2bnCommunity, alt: "B2BN Community" },
-  { src: tweetInvoiceTool, alt: "Tweet: AI Invoice Generator Success Story" },
-  { src: tweetTokenUtility, alt: "Tweet: B2BN Token Holder Benefits" },
-  { src: tweetCrmIntegration, alt: "Tweet: CRM Integration Testimonial" },
-  { src: tweetPresaleAlert, alt: "Tweet: B2BN Presale Alert" },
-  { src: tweetProjectMgmt, alt: "Tweet: Project Management Features" },
-  { src: tweetTokenomicsBreakdown, alt: "Tweet: Tokenomics Transparency" },
-  { src: tweetAiDocuments, alt: "Tweet: AI Document Analysis" },
-  { src: tweetStakingRewards, alt: "Tweet: Staking Rewards Announcement" },
-  { src: tweetDirectorySuccess, alt: "Tweet: Business Directory Success" },
-  { src: tweetRoadmapUpdate, alt: "Tweet: B2BN Roadmap Update" },
-  { src: tweetExpenseTracking, alt: "Tweet: Automated Expense Tracking" },
-  { src: tweetCommunityLove, alt: "Tweet: Community Support" },
-  { src: tweetEmailSignatures, alt: "Tweet: Email Signature Generator" },
-  { src: tweetSecurityAudit, alt: "Tweet: Security Audit Results" },
-  { src: tweetTimeTracking, alt: "Tweet: Time Tracking Feature" },
-  { src: tweetExchangeListing, alt: "Tweet: Exchange Listing News" },
-  { src: tweetContractGenerator, alt: "Tweet: Contract Generator Tool" },
-  { src: tweetInvestorPerks, alt: "Tweet: Early Investor Perks" },
-  { src: tweetMarketingCalendar, alt: "Tweet: Marketing Calendar Feature" },
-  { src: tweetPhantomPartnership, alt: "Tweet: Phantom Wallet Partnership" },
+const marketingMaterials = [
+  {
+    src: promoInvoiceGenerator,
+    title: "AI Invoice Generator",
+    category: "Business Tools",
+    description: "Create and send professional invoices in seconds with AI-powered templates.",
+  },
+  {
+    src: promoCrmSystem,
+    title: "Smart CRM Workspace",
+    category: "Business Tools",
+    description: "Track leads, deals, and client activity in one centralized CRM dashboard.",
+  },
+  {
+    src: promoProjectManagement,
+    title: "Project Management Hub",
+    category: "Business Tools",
+    description: "Plan projects, assign tasks, and follow progress with timelines and boards.",
+  },
+  {
+    src: promoAiDocuments,
+    title: "AI Document Assistant",
+    category: "AI Tools",
+    description: "Analyze, summarize, and extract key points from business documents using AI.",
+  },
+  {
+    src: promoBusinessName,
+    title: "Business Name Generator",
+    category: "AI Tools",
+    description: "Generate brandable business names with domain ideas in a few clicks.",
+  },
+  {
+    src: promoTimeTracker,
+    title: "Time Tracking & Billing",
+    category: "Business Tools",
+    description: "Log billable hours and turn your tracked time into invoices automatically.",
+  },
+  {
+    src: promoEmailSignature,
+    title: "Email Signature Builder",
+    category: "Business Tools",
+    description: "Create on-brand email signatures for your whole team instantly.",
+  },
+  {
+    src: promoMarketingCalendar,
+    title: "Marketing Calendar Planner",
+    category: "Business Tools",
+    description: "Plan campaigns, schedule content, and keep your marketing on track.",
+  },
+  {
+    src: promoContractGenerator,
+    title: "Contract Generator",
+    category: "AI Tools",
+    description: "Draft clean, ready-to-edit business contracts from simple prompts.",
+  },
+  {
+    src: promoHmrcIntegration,
+    title: "HMRC Integration",
+    category: "Business Tools",
+    description: "Connect your finances and stay compliant with HMRC-ready workflows.",
+  },
+  {
+    src: promoRoiCalculator,
+    title: "ROI Calculator",
+    category: "AI Tools",
+    description: "Estimate campaign ROI and forecast business impact with simple inputs.",
+  },
+  {
+    src: promoCashFlow,
+    title: "Cash Flow Dashboard",
+    category: "Business Tools",
+    description: "Monitor income, expenses, and runway with live cash flow insights.",
+  },
+  {
+    src: promoBusinessCards,
+    title: "Digital Business Cards",
+    category: "Business Tools",
+    description: "Design and share modern, scannable business cards for your brand.",
+  },
+  {
+    src: promoLandingPages,
+    title: "Landing Page Builder",
+    category: "Business Tools",
+    description: "Launch high-converting landing pages without touching any code.",
+  },
+  {
+    src: promoQrCodes,
+    title: "Smart QR Code Generator",
+    category: "Business Tools",
+    description: "Create branded QR codes for payments, menus, lead capture, and more.",
+  },
+  {
+    src: promoDocumentLibrary,
+    title: "Document Template Library",
+    category: "Business Tools",
+    description: "Access ready-made contracts, policies, and business document templates.",
+  },
+  {
+    src: promoStartupIdeas,
+    title: "Startup Idea Generator",
+    category: "AI Tools",
+    description: "Discover new startup ideas tailored to your skills and market niche.",
+  },
+  {
+    src: promoPrivacyPolicy,
+    title: "Privacy Policy Generator",
+    category: "AI Tools",
+    description: "Generate customizable privacy policies for your website or app.",
+  },
+  {
+    src: promoSurveys,
+    title: "Customer Survey Builder",
+    category: "Business Tools",
+    description: "Create branded surveys to collect feedback from customers and teams.",
+  },
+  {
+    src: promoSocialScheduler,
+    title: "Social Media Scheduler",
+    category: "Business Tools",
+    description: "Plan and schedule posts across channels from a single calendar.",
+  },
 ];
 
 const MarketingMaterials = () => {
@@ -123,22 +183,34 @@ const MarketingMaterials = () => {
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tweetImages.map((image, index) => (
+            {marketingMaterials.map((item, index) => (
               <Card key={index} className="overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="aspect-square relative bg-muted">
                   <img
-                    src={image.src}
-                    alt={image.alt}
+                    src={item.src}
+                    alt={`${item.title} - ${item.category} promo image`}
                     className="w-full h-full object-cover"
+                    loading="lazy"
                   />
                 </div>
                 <div className="p-4">
-                  <p className="text-sm font-medium mb-3">{image.alt}</p>
+                  <h2 className="text-base font-semibold mb-1">{item.title}</h2>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+                    {item.category}
+                  </p>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {item.description}
+                  </p>
                   <button
-                    onClick={() => handleDownload(image.src, `${image.alt.toLowerCase().replace(/\s+/g, '-')}.png`)}
+                    onClick={() =>
+                      handleDownload(
+                        item.src,
+                        `${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.png`
+                      )
+                    }
                     className="w-full bg-primary text-primary-foreground hover:bg-primary/90 py-2 px-4 rounded transition-colors"
                   >
-                    Download
+                    Download image
                   </button>
                 </div>
               </Card>
