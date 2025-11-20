@@ -149,7 +149,7 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
           </marker>
         </defs>
         {nodes.map(node =>
-          node.connections.map(toId => renderConnection(node, toId))
+          (node.connections || []).map(toId => renderConnection(node, toId))
         )}
       </svg>
 
