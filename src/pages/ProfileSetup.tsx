@@ -120,7 +120,7 @@ const ProfileSetup = () => {
         description: "Your profile has been updated."
       });
 
-      navigate('/business-social');
+      navigate('/dashboard');
     } catch (error) {
       console.error('Error saving profile:', error);
       toast({
@@ -384,7 +384,7 @@ const ProfileSetup = () => {
               </Button>
               <Button 
                 variant="outline" 
-                onClick={() => navigate('/business-social')}
+                onClick={() => navigate('/dashboard')}
                 disabled={saving}
               >
                 Skip for Now

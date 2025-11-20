@@ -223,16 +223,6 @@ const BusinessDirectory = () => {
       features: ['Expert professionals', 'Competitive pricing', 'Portfolio showcase', 'Client testimonials'],
       benefits: 'Access specialized expertise on demand'
     },
-    {
-      id: 'professionals',
-      title: 'Business Network',
-      description: 'Build meaningful connections with industry professionals and thought leaders',
-      icon: Users,
-      color: 'from-orange-500 to-red-500',
-      path: '/business-social',
-      features: ['Industry networking', 'Knowledge sharing', 'Collaboration tools', 'Event access'],
-      benefits: 'Accelerate growth through strategic connections'
-    }
   ];
 
   const successStories = [
