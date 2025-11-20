@@ -511,12 +511,6 @@ const Market = () => {
                     </p>
                     
                     <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-                      <Link to="/business-social">
-                        <Button size="lg" className="bg-white text-blue-600 hover:bg-cyan-100 hover:scale-110 transition-all duration-500 px-10 py-4 text-xl font-bold shadow-2xl hover:shadow-cyan-300/50">
-                          <Users className="h-5 w-5 mr-2" />
-                          Join Our Community
-                        </Button>
-                      </Link>
                       <Link to="/business-tools">
                         <Button size="lg" variant="outline" className="bg-white/10 text-white border-2 border-white/60 hover:bg-white/20 hover:scale-110 transition-all duration-500 px-10 py-4 text-xl font-bold backdrop-blur-md hover:shadow-lg hover:shadow-white/30">
                           <ArrowRight className="h-5 w-5 mr-2" />

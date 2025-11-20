@@ -22,14 +22,6 @@ const Footer = () => {
             <ul className="space-y-2 text-gray-400">
               <li>
                 <button 
-                  onClick={() => navigate('/business-social')}
-                  className="hover:text-white transition-colors"
-                >
-                  BizzLink
-                </button>
-              </li>
-              <li>
-                <button 
                   onClick={() => navigate('/business-tools')}
                   className="hover:text-white transition-colors"
                 >

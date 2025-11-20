@@ -237,10 +237,10 @@ const Auth = () => {
                   <div className="bg-blue-600 p-2 rounded-lg">
                     <FileText className="h-6 w-6 text-white" />
                   </div>
-                  <h1 className="text-2xl font-bold text-gray-900">BizzLink</h1>
+                  <h1 className="text-2xl font-bold text-gray-900">B2BNEST</h1>
                 </div>
                 <p className="text-gray-600">
-                  {isLogin ? 'Welcome back to your network!' : 'Connect with professionals, share insights, and grow your network - completely free!'}
+                  {isLogin ? 'Welcome back!' : 'Get started with professional business forms and tools'}
                 </p>
               </div>
 
@@ -402,120 +402,6 @@ const Auth = () => {
             </div>
           </div>
 
-          {/* Right Column - BizzLink Preview */}
-          <div className="lg:py-8">
-            <div className="text-center mb-6">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">See BizzLink in Action</h2>
-              <p className="text-lg text-gray-600">Professional networking made simple</p>
-            </div>
-
-            {/* Dashboard Preview */}
-            <Card className="shadow-xl border-2 border-blue-200">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-                <CardTitle className="flex items-center space-x-2">
-                  <FileText className="h-5 w-5" />
-                  <span>BizzLink Network</span>
-                </CardTitle>
-                <CardDescription className="text-blue-100">
-                  Your professional networking hub
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-6">
-                {/* Mock Dashboard Content */}
-                <div className="space-y-6">
-                  {/* Quick Stats */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <h3 className="text-sm font-medium text-green-800">Connections</h3>
-                      <p className="text-2xl font-bold text-green-900">247</p>
-                    </div>
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <h3 className="text-sm font-medium text-blue-800">Posts Shared</h3>
-                      <p className="text-2xl font-bold text-blue-900">89</p>
-                    </div>
-                  </div>
-
-                  {/* Networking Tools Preview */}
-                  <div className="border rounded-lg p-4">
-                    <h3 className="font-semibold text-gray-900 mb-3">Free Networking Features</h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-3 p-2 bg-gray-50 rounded">
-                        <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-                          <span className="text-blue-600 text-sm">👥</span>
-                        </div>
-                        <span className="text-sm text-gray-700">Professional Connections</span>
-                      </div>
-                      <div className="flex items-center space-x-3 p-2 bg-gray-50 rounded">
-                        <div className="w-8 h-8 bg-purple-100 rounded flex items-center justify-center">
-                          <span className="text-purple-600 text-sm">💬</span>
-                        </div>
-                        <span className="text-sm text-gray-700">Business Insights & Posts</span>
-                      </div>
-                      <div className="flex items-center space-x-3 p-2 bg-gray-50 rounded">
-                        <div className="w-8 h-8 bg-green-100 rounded flex items-center justify-center">
-                          <span className="text-green-600 text-sm">🌐</span>
-                        </div>
-                        <span className="text-sm text-gray-700">Industry Forums</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Recent Activity */}
-                  <div className="border rounded-lg p-4">
-                    <h3 className="font-semibold text-gray-900 mb-3">Recent Network Activity</h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span>Sarah connected with you</span>
-                        <span className="text-gray-400">2 min ago</span>
-                      </div>
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        <span>New post in Tech Forum</span>
-                        <span className="text-gray-400">15 min ago</span>
-                      </div>
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                        <span>Mike shared an insight</span>
-                        <span className="text-gray-400">1 hour ago</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Premium Upgrade Features */}
-            <div className="mt-6 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-lg shadow-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-gray-900">Upgrade to Premium</h3>
-                <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2 py-1 rounded-full">
-                  From £39/month
-                </span>
-              </div>
-              <p className="text-gray-600 mb-4">Unlock powerful business tools and AI features</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {[
-                  'AI Business Advisor',
-                  'Advanced Analytics',
-                  'Document Templates',
-                  'CRM & Project Management',
-                  'Invoice & Quote Generator',
-                  'Workflow Automation',
-                  'Priority Support',
-                  'Team Collaboration Tools'
-                ].map((feature, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-                    <span className="text-sm text-gray-700">{feature}</span>
-                  </div>
-                ))}
-              </div>
-              <Button className="w-full mt-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
-                Learn More About Premium
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
