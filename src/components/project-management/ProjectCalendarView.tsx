@@ -24,12 +24,22 @@ import { cn } from '@/lib/utils';
 interface Task {
   id: string;
   title: string;
+  description: string;
   status: 'backlog' | 'todo' | 'in-progress' | 'review' | 'done';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   assignee: string;
   dueDate: Date | null;
   project: string;
   tags: string[];
+  subtasks?: any[];
+  timeTracked?: number;
+  clientFeedback?: string;
+  attachments?: string[];
+  estimatedHours?: number;
+  actualHours?: number;
+  comments?: any[];
+  dependencies?: string[];
+  progress?: number;
 }
 
 interface CalendarEventItem {
@@ -48,6 +58,7 @@ interface ProjectCalendarViewProps {
   onCreateEvent: (event: Partial<CalendarEventItem>) => void;
   onEditEvent: (event: CalendarEventItem) => void;
   onDeleteEvent: (event: CalendarEventItem) => void;
+  onTaskClick: (task: Task) => void;
 }
 
 export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
@@ -55,7 +66,8 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
   events,
   onCreateEvent,
   onEditEvent,
-  onDeleteEvent
+  onDeleteEvent,
+  onTaskClick
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -148,8 +160,18 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
 
   const handleItemClick = (item: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    setSelectedItem(item);
-    setShowItemDialog(true);
+    
+    if (item.type === 'task') {
+      // Find the full task object and open it in the full task view
+      const fullTask = tasks.find(t => t.id === item.id);
+      if (fullTask) {
+        onTaskClick(fullTask);
+      }
+    } else {
+      // For events, show the simple dialog
+      setSelectedItem(item);
+      setShowItemDialog(true);
+    }
   };
 
   const handleDeleteEvent = () => {
@@ -355,13 +377,11 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* View/Edit Item Dialog */}
+      {/* View/Edit Event Dialog (Events only now) */}
       <Dialog open={showItemDialog} onOpenChange={setShowItemDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {selectedItem?.type === 'task' ? 'Task Details' : 'Event Details'}
-            </DialogTitle>
+            <DialogTitle>Event Details</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -372,34 +392,11 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
               <Label>Date</Label>
               <div className="text-sm">{selectedItem?.date ? format(new Date(selectedItem.date), 'PPP') : ''}</div>
             </div>
-            {selectedItem?.type === 'task' && (
-              <>
-                <div>
-                  <Label>Status</Label>
-                  <Badge variant="outline" className="ml-2">{selectedItem.status}</Badge>
-                </div>
-                <div>
-                  <Label>Priority</Label>
-                  <Badge variant="outline" className="ml-2">{selectedItem.priority}</Badge>
-                </div>
-                {selectedItem.assignee && (
-                  <div>
-                    <Label>Assignee</Label>
-                    <div className="text-sm flex items-center gap-2 mt-1">
-                      <User className="h-4 w-4" />
-                      {selectedItem.assignee}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
           </div>
           <DialogFooter>
-            {selectedItem?.type === 'event' && (
-              <Button variant="destructive" onClick={handleDeleteEvent}>
-                Delete Event
-              </Button>
-            )}
+            <Button variant="destructive" onClick={handleDeleteEvent}>
+              Delete Event
+            </Button>
             <Button variant="outline" onClick={() => setShowItemDialog(false)}>
               Close
             </Button>
