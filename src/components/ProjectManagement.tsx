@@ -2693,17 +2693,67 @@ const ProjectManagement = () => {
 
       {/* Enhanced Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-10">
-          <TabsTrigger value="summary">Summary</TabsTrigger>
-          <TabsTrigger value="timeline">Timeline</TabsTrigger>
-          <TabsTrigger value="kanban">Board</TabsTrigger>
-          <TabsTrigger value="calendar">Calendar</TabsTrigger>
-          <TabsTrigger value="list">List</TabsTrigger>
-          <TabsTrigger value="forms">Forms</TabsTrigger>
-          <TabsTrigger value="goals">Goals</TabsTrigger>
-          <TabsTrigger value="all">All work</TabsTrigger>
-          <TabsTrigger value="archived">Archived</TabsTrigger>
-          <TabsTrigger value="teams">Teams</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-10 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 p-1.5 rounded-xl shadow-md border-2 border-primary/30">
+          <TabsTrigger 
+            value="summary" 
+            className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:font-semibold hover:bg-primary/10 transition-all"
+          >
+            Summary
+          </TabsTrigger>
+          <TabsTrigger 
+            value="timeline"
+            className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:font-semibold hover:bg-primary/10 transition-all"
+          >
+            Timeline
+          </TabsTrigger>
+          <TabsTrigger 
+            value="kanban"
+            className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:font-semibold hover:bg-primary/10 transition-all"
+          >
+            Board
+          </TabsTrigger>
+          <TabsTrigger 
+            value="calendar"
+            className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:font-semibold hover:bg-primary/10 transition-all"
+          >
+            Calendar
+          </TabsTrigger>
+          <TabsTrigger 
+            value="list"
+            className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:font-semibold hover:bg-primary/10 transition-all"
+          >
+            List
+          </TabsTrigger>
+          <TabsTrigger 
+            value="forms"
+            className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:font-semibold hover:bg-primary/10 transition-all"
+          >
+            Forms
+          </TabsTrigger>
+          <TabsTrigger 
+            value="goals"
+            className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:font-semibold hover:bg-primary/10 transition-all"
+          >
+            Goals
+          </TabsTrigger>
+          <TabsTrigger 
+            value="all"
+            className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:font-semibold hover:bg-primary/10 transition-all"
+          >
+            All work
+          </TabsTrigger>
+          <TabsTrigger 
+            value="archived"
+            className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:font-semibold hover:bg-primary/10 transition-all"
+          >
+            Archived
+          </TabsTrigger>
+          <TabsTrigger 
+            value="teams"
+            className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:font-semibold hover:bg-primary/10 transition-all"
+          >
+            Teams
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="summary" className="mt-6">
