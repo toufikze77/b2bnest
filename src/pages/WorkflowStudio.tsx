@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Play, Save, Settings, History, Share2, Download } from 'lucide-react';
+import { ArrowLeft, Play, Save, Settings, History, Share2, Download, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +9,9 @@ import WorkflowCanvas from '@/components/workflow/WorkflowCanvas';
 import WorkflowSidebar from '@/components/workflow/WorkflowSidebar';
 import NodeConfigurator from '@/components/workflow/NodeConfigurator';
 import ExecutionHistory from '@/components/workflow/ExecutionHistory';
+import WorkflowTemplateSelector from '@/components/workflow/WorkflowTemplateSelector';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { WorkflowTemplate } from '@/data/workflowTemplates';
 
 export interface WorkflowNode {
   id: string;
@@ -43,6 +45,7 @@ const WorkflowStudio = () => {
   const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
 
   useEffect(() => {
     loadWorkflow();
@@ -189,6 +192,21 @@ const WorkflowStudio = () => {
     }));
   };
 
+  const handleTemplateSelect = (template: WorkflowTemplate) => {
+    setWorkflow({
+      name: template.name,
+      description: template.description,
+      nodes: template.presetNodes || [],
+      is_active: false,
+      execution_count: 0
+    });
+    toast.success(`Created workflow: ${template.name}`);
+  };
+
+  const createNewWorkflow = () => {
+    setShowTemplateSelector(true);
+  };
+
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
@@ -217,6 +235,14 @@ const WorkflowStudio = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={createNewWorkflow}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              New
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -318,6 +344,13 @@ const WorkflowStudio = () => {
           />
         )}
       </div>
+
+      {/* Template Selector Dialog */}
+      <WorkflowTemplateSelector
+        open={showTemplateSelector}
+        onSelect={handleTemplateSelect}
+        onClose={() => setShowTemplateSelector(false)}
+      />
     </div>
   );
 };
