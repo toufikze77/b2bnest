@@ -187,7 +187,16 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
 
   // Get color classes based on status/priority
   const getItemColorClasses = (item: any) => {
+    const now = new Date();
+    const itemDate = new Date(item.date);
+    
+    // Check if overdue
     if (item.type === 'task') {
+      const isOverdue = itemDate < now && item.status !== 'done';
+      if (isOverdue) {
+        return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-l-4 border-l-red-500';
+      }
+      
       switch (item.status) {
         case 'backlog':
           return 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-l-4 border-l-slate-400';
@@ -203,6 +212,10 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
           return 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-l-4 border-l-gray-400';
       }
     } else {
+      const isOverdue = itemDate < now;
+      if (isOverdue) {
+        return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-l-4 border-l-red-500';
+      }
       return 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-l-4 border-l-indigo-500';
     }
   };
