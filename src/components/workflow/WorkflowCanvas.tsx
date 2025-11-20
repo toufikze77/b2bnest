@@ -63,7 +63,7 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
     if ((e.target as HTMLElement).closest('button')) return;
     
     const node = nodes.find(n => n.id === nodeId);
-    if (node) {
+    if (node && node.position) {
       setDraggingNode(nodeId);
       setDragOffset({
         x: e.clientX - node.position.x,
@@ -102,7 +102,7 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
 
   const renderConnection = (from: WorkflowNode, toId: string) => {
     const to = nodes.find(n => n.id === toId);
-    if (!to) return null;
+    if (!to || !to.position || !from.position) return null;
 
     const fromX = from.position.x + 150;
     const fromY = from.position.y + 40;
@@ -148,7 +148,7 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
             />
           </marker>
         </defs>
-        {nodes.map(node =>
+        {nodes.filter(node => node.position && node.connections).map(node =>
           (node.connections || []).map(toId => renderConnection(node, toId))
         )}
       </svg>
@@ -166,7 +166,7 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
       />
 
       {/* Nodes */}
-      {nodes.map(node => (
+      {nodes.filter(node => node.position).map(node => (
         <div
           key={node.id}
           className={`absolute w-[300px] p-4 border-2 rounded-lg shadow-lg cursor-move transition-all ${
