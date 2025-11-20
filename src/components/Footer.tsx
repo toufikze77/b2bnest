@@ -1,8 +1,13 @@
 import { useNavigate } from "react-router-dom";
 import ShareButton from "./ShareButton";
+import { useAuth } from "@/hooks/useAuth";
 
 const Footer = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const allowedMarketingEmails = ["toufikze@gmail.com", "toufik.zemri@outlook.com"];
+  const canSeeMarketing = user?.email && allowedMarketingEmails.includes(user.email);
 
   return (
     <footer className="bg-gray-900 text-white py-12 px-4 sm:px-6 lg:px-8">
@@ -90,6 +95,16 @@ const Footer = () => {
                   Blog
                 </button>
               </li>
+              {canSeeMarketing && (
+                <li>
+                  <button 
+                    onClick={() => navigate('/marketing-materials')}
+                    className="hover:text-white transition-colors"
+                  >
+                    Marketing Materials
+                  </button>
+                </li>
+              )}
             </ul>
           </div>
         </div>
