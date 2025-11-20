@@ -6,10 +6,87 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Input validation utilities
+const sanitizeString = (str: string): string => {
+  return str.replace(/[<>]/g, '').trim();
+};
+
+const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email) && email.length <= 254;
+};
+
+const validatePhone = (phone: string): boolean => {
+  const phoneRegex = /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,15}$/;
+  return phoneRegex.test(phone);
+};
+
+const containsSqlInjection = (str: string): boolean => {
+  const sqlPatterns = /(\bUNION\b|\bSELECT\b|\bDROP\b|\bINSERT\b|\bUPDATE\b|\bDELETE\b|\bEXEC\b|\bEXECUTE\b|--|\/\*|\*\/|;)/i;
+  return sqlPatterns.test(str);
+};
+
+const validateInput = (data: any): { valid: boolean; error?: string } => {
+  // Required fields
+  if (!data.company_name || data.company_name.trim().length === 0) {
+    return { valid: false, error: 'Company name is required' };
+  }
+  if (!data.contact_name || data.contact_name.trim().length === 0) {
+    return { valid: false, error: 'Contact name is required' };
+  }
+  if (!data.email || data.email.trim().length === 0) {
+    return { valid: false, error: 'Email is required' };
+  }
+  if (!data.message || data.message.trim().length === 0) {
+    return { valid: false, error: 'Message is required' };
+  }
+
+  // Length validation
+  if (data.company_name.length > 200) {
+    return { valid: false, error: 'Company name must be 200 characters or less' };
+  }
+  if (data.contact_name.length > 100) {
+    return { valid: false, error: 'Contact name must be 100 characters or less' };
+  }
+  if (data.message.length > 5000) {
+    return { valid: false, error: 'Message must be 5000 characters or less' };
+  }
+
+  // Email validation
+  if (!validateEmail(data.email)) {
+    return { valid: false, error: 'Invalid email format' };
+  }
+
+  // Phone validation (if provided)
+  if (data.phone && !validatePhone(data.phone)) {
+    return { valid: false, error: 'Invalid phone number format' };
+  }
+
+  // SQL injection check
+  if (containsSqlInjection(data.company_name) || 
+      containsSqlInjection(data.contact_name) || 
+      containsSqlInjection(data.message)) {
+    return { valid: false, error: 'Invalid characters detected' };
+  }
+
+  // Optional field length validation
+  if (data.industry && data.industry.length > 100) {
+    return { valid: false, error: 'Industry must be 100 characters or less' };
+  }
+  if (data.company_size && data.company_size.length > 50) {
+    return { valid: false, error: 'Company size must be 50 characters or less' };
+  }
+
+  return { valid: true };
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const ip = req.headers.get('x-forwarded-for') || 'unknown';
+  const userAgent = req.headers.get('user-agent') || 'unknown';
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -18,6 +95,7 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
     
+    const formData = await req.json();
     const {
       company_name,
       contact_name,
@@ -27,15 +105,51 @@ serve(async (req) => {
       company_size,
       message,
       priority = 'medium'
-    } = await req.json();
+    } = formData;
 
-    // Validate required fields
-    if (!company_name || !contact_name || !email || !message) {
+    // Validate input
+    const validation = validateInput(formData);
+    if (!validation.valid) {
+      console.warn(`B2B form validation failed for IP ${ip}: ${validation.error}`);
       return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
+        JSON.stringify({ error: validation.error }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Enhanced rate limiting: max 10 submissions per IP per day
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const { count, error: countErr } = await supabase
+        .from('b2b_form_submissions')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', today.toISOString())
+        .eq('user_id', null);
+
+      if (!countErr && count !== null && count >= 10) {
+        console.warn(`B2B form rate limit exceeded for IP ${ip}: ${count} submissions today`);
+        return new Response(
+          JSON.stringify({ error: 'Rate limit exceeded. Maximum 10 submissions per day.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } catch (e) {
+      console.error('Rate limiting check failed:', e);
+    }
+
+    // Sanitize inputs
+    const sanitizedData = {
+      company_name: sanitizeString(company_name),
+      contact_name: sanitizeString(contact_name),
+      email: email.trim().toLowerCase(),
+      phone: phone ? sanitizeString(phone) : null,
+      industry: industry ? sanitizeString(industry) : null,
+      company_size: company_size ? sanitizeString(company_size) : null,
+      message: sanitizeString(message),
+      priority: ['low', 'medium', 'high', 'urgent'].includes(priority) ? priority : 'medium'
+    };
 
     let aiAnalysis = null;
     let aiScore = null;
@@ -58,10 +172,9 @@ serve(async (req) => {
               },
               {
                 role: 'user',
-                content: `Company: ${company_name}\nContact: ${contact_name}\nEmail: ${email}\nPhone: ${phone || 'N/A'}\nIndustry: ${industry || 'N/A'}\nCompany Size: ${company_size || 'N/A'}\nMessage: ${message}\nPriority: ${priority}`
+                content: `Company: ${sanitizedData.company_name}\nContact: ${sanitizedData.contact_name}\nEmail: ${sanitizedData.email}\nPhone: ${sanitizedData.phone || 'N/A'}\nIndustry: ${sanitizedData.industry || 'N/A'}\nCompany Size: ${sanitizedData.company_size || 'N/A'}\nMessage: ${sanitizedData.message}\nPriority: ${sanitizedData.priority}`
               }
             ],
-            temperature: 0.3,
           }),
         });
 
@@ -89,14 +202,7 @@ serve(async (req) => {
     const { data, error } = await supabase
       .from('b2b_form_submissions')
       .insert({
-        company_name,
-        contact_name,
-        email,
-        phone,
-        industry,
-        company_size,
-        message,
-        priority,
+        ...sanitizedData,
         ai_analysis: aiAnalysis,
         ai_score: aiScore,
       })
@@ -104,12 +210,14 @@ serve(async (req) => {
       .single();
 
     if (error) {
-      console.error('Database error:', error);
+      console.error('B2B form database error:', error);
       return new Response(
         JSON.stringify({ error: 'Failed to submit form' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log(`B2B form submitted successfully: ID ${data.id}, Company: ${sanitizedData.company_name}, IP: ${ip}`);
 
     return new Response(
       JSON.stringify({ 
@@ -122,9 +230,9 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error:', error);
+    console.error('B2B form error:', { error: error.message, ip, userAgent });
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
+      JSON.stringify({ error: 'Failed to process request' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
