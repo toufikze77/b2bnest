@@ -185,28 +185,38 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
     }
   };
 
-  // Get color classes based on status/priority
+  // Get color classes based on task priority and overdue state
   const getItemColorClasses = (item: any) => {
+    const now = new Date();
+    const itemDate = new Date(item.date);
+
     if (item.type === 'task') {
-      switch (item.status) {
-        case 'backlog':
-          return 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-l-4 border-l-slate-400';
-        case 'todo':
-          return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-l-4 border-l-blue-500';
-        case 'in-progress':
-          return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-l-4 border-l-amber-500';
-        case 'review':
-          return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-l-4 border-l-purple-500';
-        case 'done':
-          return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-l-4 border-l-green-500';
-        default:
-          return 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-l-4 border-l-gray-400';
-      }
+      const isOverdue = itemDate < now && item.status !== 'done';
+
+      const priorityBaseClasses: Record<string, string> = {
+        low: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
+        medium: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300',
+        high: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
+        urgent: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
+      };
+
+      const base =
+        priorityBaseClasses[item.priority] ||
+        'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300';
+
+      const borderClass = isOverdue
+        ? 'border-l-4 border-l-red-500'
+        : 'border-l-4 border-l-gray-400';
+
+      return `${base} ${borderClass}`;
     } else {
+      const isOverdue = itemDate < now;
+      if (isOverdue) {
+        return 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-l-4 border-l-red-500';
+      }
       return 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-l-4 border-l-indigo-500';
     }
   };
-
   const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   return (
