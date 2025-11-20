@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Link2, Flag, Calendar, User, Clock, Tag, MoreHorizontal, Share2, Star, Trash2, Archive, Copy, AlertCircle, CheckCircle2, Circle, Timer, MessageSquare, Paperclip, History, Send } from 'lucide-react';
+import { X, Link2, Flag, Calendar, User, Clock, Tag, MoreHorizontal, Star, Trash2, Archive, Copy, AlertCircle, CheckCircle2, Circle, Timer, MessageSquare, Paperclip, History, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
+import ShareButton from '@/components/ShareButton';
+import { batchGetUserDisplayInfo } from '@/utils/profileUtils';
 
 interface JiraTaskViewProps {
   task: any;
@@ -65,19 +67,10 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
     try {
       console.log('Loading team members...');
       
+      // First get organization members
       const { data: membersData, error } = await supabase
         .from('organization_members')
-        .select(`
-          user_id,
-          role,
-          organization_id,
-          profiles!organization_members_user_id_fkey (
-            id,
-            display_name,
-            email,
-            full_name
-          )
-        `)
+        .select('user_id, role, organization_id')
         .eq('is_active', true);
 
       console.log('Raw members data:', membersData);
@@ -92,13 +85,23 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
         return;
       }
 
+      // Get unique user IDs
+      const userIds = [...new Set(membersData.map(m => m.user_id))];
+      
+      // Fetch user display info using the safe utility function
+      const userProfiles = await batchGetUserDisplayInfo(userIds);
+      
+      // Create a map for easy lookup
+      const profileMap = new Map(userProfiles.map(p => [p.id, p]));
+      
+      // Format members with profile data
       const formattedMembers = membersData.map((member: any) => {
-        const profile = member.profiles;
+        const profile = profileMap.get(member.user_id);
         
         return {
           id: member.user_id,
-          display_name: profile?.display_name || profile?.full_name || profile?.email || 'Unknown User',
-          email: profile?.email,
+          display_name: profile?.display_name || 'Unknown User',
+          email: profile?.headline || '',
           role: member.role,
           organization_id: member.organization_id
         };
@@ -157,9 +160,12 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
             <span className="text-sm text-gray-600">TASK-{localTask.id.slice(0, 8)}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm">
-              <Share2 className="w-4 h-4" />
-            </Button>
+            <ShareButton 
+              title={`Task: ${localTask.title}`}
+              description={localTask.description || 'View this task'}
+              variant="ghost"
+              size="sm"
+            />
             <Button variant="ghost" size="sm">
               <Star className="w-4 h-4" />
             </Button>
