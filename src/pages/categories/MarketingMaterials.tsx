@@ -87,13 +87,23 @@ const tweetImages = [
 ];
 
 const MarketingMaterials = () => {
-  const handleDownload = (imageSrc: string, fileName: string) => {
-    const link = document.createElement('a');
-    link.href = imageSrc;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownload = async (imageSrc: string, fileName: string) => {
+    try {
+      const response = await fetch(imageSrc);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback: open in new tab
+      window.open(imageSrc, '_blank');
+    }
   };
 
   return (
@@ -105,8 +115,11 @@ const MarketingMaterials = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-4xl font-bold mb-4">Marketing Materials</h1>
-          <p className="text-muted-foreground mb-8">
+          <p className="text-muted-foreground mb-2">
             Download and use these images for social media posts, tweets, and marketing campaigns.
+          </p>
+          <p className="text-sm text-muted-foreground mb-8">
+            💡 Tip: Right-click any image and select "Save image as..." to download, or use the download button below each image.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
