@@ -25,6 +25,7 @@ import AIShowcase from "@/pages/AIShowcase";
 import AIStudio from "@/pages/AIStudio";
 import AIWorkspace from "@/pages/AIWorkspace";
 import Whitepaper from "@/pages/Whitepaper";
+import WorkflowStudio from "@/pages/WorkflowStudio";
 import Tokenomics from "@/pages/Tokenomics";
 import Pricing from "@/pages/Pricing";
 import HumanResources from "@/pages/categories/HumanResources";
@@ -70,6 +71,7 @@ function App() {
               <Route path="/ai-showcase" element={<AIShowcase />} />
               <Route path="/ai-studio" element={<AIStudio />} />
               <Route path="/ai-workspace" element={<ProtectedRoute><AIWorkspace /></ProtectedRoute>} />
+              <Route path="/workflow-studio" element={<ProtectedRoute><WorkflowStudio /></ProtectedRoute>} />
               <Route path="/fundraising" element={<Fundraising />} />
               <Route path="/whitepaper" element={<Whitepaper />} />
             <Route path="/tokenomics" element={<Tokenomics />} />
