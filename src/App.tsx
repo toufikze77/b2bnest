@@ -81,7 +81,7 @@ function App() {
               <Route path="/categories/human-resources" element={<HumanResources />} />
               <Route path="/categories/legal-documents" element={<LegalDocuments />} />
               <Route path="/categories/financial-forms" element={<FinancialForms />} />
-              <Route path="/categories/marketing-materials" element={<MarketingMaterials />} />
+              <Route path="/marketing-materials" element={<MarketingMaterials />} />
               <Route path="/categories/operations" element={<Operations />} />
               <Route path="/crm" element={<ProtectedRoute><CRMPage /></ProtectedRoute>} />
               <Route path="/project-management" element={<ProtectedRoute><ProjectManagementPage /></ProtectedRoute>} />

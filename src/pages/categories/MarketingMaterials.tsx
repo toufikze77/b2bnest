@@ -1,284 +1,97 @@
-import React, { useState } from 'react';
-import { Megaphone, Upload, Plus, Lock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { toast } from '@/components/ui/use-toast';
-import Footer from '@/components/Footer';
-import { useAuth } from '@/hooks/useAuth';
-import { useUserRole } from '@/hooks/useUserRole';
-import { documentService } from '@/services/documentService';
+import { Card } from "@/components/ui/card";
+import SEOHead from "@/components/SEOHead";
+
+// Import all tweet images
+import businessTools2 from "@/assets/tweets/business-tools-2.png";
+import businessTools3 from "@/assets/tweets/business-tools-3.png";
+import businessTools4 from "@/assets/tweets/business-tools-4.png";
+import businessTools5 from "@/assets/tweets/business-tools-5.png";
+import businessTools6 from "@/assets/tweets/business-tools-6.png";
+import businessTools7 from "@/assets/tweets/business-tools-7.png";
+import businessTools8 from "@/assets/tweets/business-tools-8.png";
+import businessTools9 from "@/assets/tweets/business-tools-9.png";
+import businessTools10 from "@/assets/tweets/business-tools-10.png";
+import b2bnToken from "@/assets/tweets/b2bn-token-1.png";
+import b2bnInvestment from "@/assets/tweets/b2bn-investment-1.png";
+import b2bnEcosystem from "@/assets/tweets/b2bn-ecosystem.png";
+import b2bnPresale from "@/assets/tweets/b2bn-presale.png";
+import b2bnSecurity from "@/assets/tweets/b2bn-security.png";
+import b2bnBenefits from "@/assets/tweets/b2bn-benefits.png";
+import b2bnTokenomics from "@/assets/tweets/b2bn-tokenomics.png";
+import b2bnExchange from "@/assets/tweets/b2bn-exchange.png";
+import b2bnRoadmap from "@/assets/tweets/b2bn-roadmap.png";
+import b2bnCommunity from "@/assets/tweets/b2bn-community.png";
+
+const tweetImages = [
+  { src: businessTools2, alt: "Business Tools - Automation Features" },
+  { src: businessTools3, alt: "Business Tools - CRM Integration" },
+  { src: businessTools4, alt: "Business Tools - Invoice Management" },
+  { src: businessTools5, alt: "Business Tools - Project Tracking" },
+  { src: businessTools6, alt: "Business Tools - Analytics Dashboard" },
+  { src: businessTools7, alt: "Business Tools - Team Collaboration" },
+  { src: businessTools8, alt: "Business Tools - Document Management" },
+  { src: businessTools9, alt: "Business Tools - Financial Tools" },
+  { src: businessTools10, alt: "Business Tools - AI Assistant" },
+  { src: b2bnToken, alt: "B2BN Token Introduction" },
+  { src: b2bnInvestment, alt: "B2BN Investment Opportunity" },
+  { src: b2bnEcosystem, alt: "B2BN Ecosystem Overview" },
+  { src: b2bnPresale, alt: "B2BN Token Presale" },
+  { src: b2bnSecurity, alt: "B2BN Security Features" },
+  { src: b2bnBenefits, alt: "B2BN Token Benefits" },
+  { src: b2bnTokenomics, alt: "B2BN Tokenomics" },
+  { src: b2bnExchange, alt: "B2BN Exchange Listing" },
+  { src: b2bnRoadmap, alt: "B2BN Roadmap" },
+  { src: b2bnCommunity, alt: "B2BN Community" },
+];
 
 const MarketingMaterials = () => {
-  const { user } = useAuth();
-  const { canUpload, loading: roleLoading } = useUserRole();
-  const [uploadMode, setUploadMode] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    subcategory: '',
-    tags: '',
-    price: '',
-    file: null as File | null
-  });
-
-  const subcategories = ['Brochures', 'Social Media', 'Email Templates', 'Presentations', 'Banners'];
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFormData({ ...formData, file: e.target.files[0] });
-    }
+  const handleDownload = (imageSrc: string, fileName: string) => {
+    const link = document.createElement('a');
+    link.href = imageSrc;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!canUpload) {
-      toast({
-        title: "Access Denied",
-        description: "You don't have permission to upload documents.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setUploading(true);
-    
-    try {
-      const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(Boolean);
-      
-      await documentService.uploadDocument({
-        title: formData.title,
-        description: formData.description,
-        category: 'marketing',
-        subcategory: formData.subcategory,
-        tags: tagsArray,
-        price: formData.price ? parseFloat(formData.price) : 0,
-        file_name: formData.file?.name,
-        file_size: formData.file?.size
-      });
-
-      toast({
-        title: "Document Uploaded",
-        description: "Your marketing material has been uploaded successfully."
-      });
-
-      // Reset form
-      setFormData({
-        title: '',
-        description: '',
-        subcategory: '',
-        tags: '',
-        price: '',
-        file: null
-      });
-      setUploadMode(false);
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast({
-        title: "Upload Failed",
-        description: "Failed to upload document. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  if (roleLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-pink-50">
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-center">
-            <div className="text-lg">Loading...</div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-pink-50">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="bg-pink-500 w-12 h-12 rounded-full flex items-center justify-center">
-              <Megaphone className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Marketing Materials</h1>
-              <p className="text-gray-600">Brochures, flyers, and marketing templates</p>
-            </div>
-          </div>
-          
-          {!user && (
-            <Alert className="mb-6">
-              <Lock className="h-4 w-4" />
-              <AlertDescription>
-                Please sign in to view and access marketing materials.
-              </AlertDescription>
-            </Alert>
-          )}
+    <>
+      <SEOHead 
+        title="Marketing Materials - B2BNEST"
+        description="Download marketing materials for B2BNEST business tools and B2BN token"
+      />
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-4xl font-bold mb-4">Marketing Materials</h1>
+          <p className="text-muted-foreground mb-8">
+            Download and use these images for social media posts, tweets, and marketing campaigns.
+          </p>
 
-          {user && !canUpload && (
-            <Alert className="mb-6">
-              <Lock className="h-4 w-4" />
-              <AlertDescription>
-                You don't have permission to upload documents. Contact the administrator for access.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {canUpload && (
-            <div className="flex gap-4">
-              <Button 
-                onClick={() => setUploadMode(!uploadMode)}
-                className="flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Upload New Document
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {uploadMode && canUpload && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>Upload Marketing Material</CardTitle>
-              <CardDescription>Add a new marketing template to the collection</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="title">Document Title</Label>
-                    <Input
-                      id="title"
-                      value={formData.title}
-                      onChange={(e) => setFormData({...formData, title: e.target.value})}
-                      placeholder="e.g., Social Media Campaign Template"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="subcategory">Subcategory</Label>
-                    <Select value={formData.subcategory} onValueChange={(value) => setFormData({...formData, subcategory: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select subcategory" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {subcategories.map(sub => (
-                          <SelectItem key={sub} value={sub.toLowerCase().replace(/\s+/g, '-')}>{sub}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    placeholder="Describe the marketing material and its use cases"
-                    rows={3}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {tweetImages.map((image, index) => (
+              <Card key={index} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="aspect-square relative bg-muted">
+                  <img
+                    src={image.src}
+                    alt={image.alt}
+                    className="w-full h-full object-cover"
                   />
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="tags">Tags (comma-separated)</Label>
-                    <Input
-                      id="tags"
-                      value={formData.tags}
-                      onChange={(e) => setFormData({...formData, tags: e.target.value})}
-                      placeholder="marketing, social media, branding, campaign"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="price">Price ($)</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      value={formData.price}
-                      onChange={(e) => setFormData({...formData, price: e.target.value})}
-                      placeholder="0 for free"
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
+                <div className="p-4">
+                  <p className="text-sm font-medium mb-3">{image.alt}</p>
+                  <button
+                    onClick={() => handleDownload(image.src, `${image.alt.toLowerCase().replace(/\s+/g, '-')}.png`)}
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 py-2 px-4 rounded transition-colors"
+                  >
+                    Download
+                  </button>
                 </div>
-
-                <div>
-                  <Label htmlFor="file">Document File</Label>
-                  <div className="mt-2 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-pink-400 transition-colors">
-                    <div className="space-y-1 text-center">
-                      <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                      <div className="flex text-sm text-gray-600">
-                        <label htmlFor="file" className="relative cursor-pointer bg-white rounded-md font-medium text-pink-600 hover:text-pink-500">
-                          <span>Upload a file</span>
-                          <input
-                            id="file"
-                            name="file"
-                            type="file"
-                            className="sr-only"
-                            accept=".pdf,.doc,.docx,.xlsx,.pptx,.ai,.psd,.png,.jpg,.jpeg"
-                            onChange={handleFileChange}
-                            required
-                          />
-                        </label>
-                        <p className="pl-1">or drag and drop</p>
-                      </div>
-                      <p className="text-xs text-gray-500">PDF, DOC, DOCX, XLSX, PPTX, AI, PSD, PNG, JPG up to 10MB</p>
-                      {formData.file && (
-                        <p className="text-sm text-pink-600 font-medium">{formData.file.name}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-4">
-                  <Button type="submit" className="flex-1" disabled={uploading}>
-                    {uploading ? 'Uploading...' : 'Upload Material'}
-                  </Button>
-                  <Button type="button" variant="outline" onClick={() => setUploadMode(false)}>
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {subcategories.map((subcategory) => (
-            <Card key={subcategory} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="text-lg">{subcategory}</CardTitle>
-                <CardDescription>Browse {subcategory.toLowerCase()} templates</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline" className="w-full">
-                  View Templates
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+              </Card>
+            ))}
+          </div>
         </div>
-      </main>
-
-      <Footer />
-    </div>
+      </div>
+    </>
   );
 };
 
