@@ -14,7 +14,7 @@ const Footer = () => {
               <p className="text-sm text-gray-400 mt-1">A brand of Edeals Master Ltd</p>
             </div>
             <p className="text-gray-400">
-              Professional business forms and documents for modern companies.
+              AI-powered business tools and automation for modern companies.
             </p>
           </div>
           <div>
