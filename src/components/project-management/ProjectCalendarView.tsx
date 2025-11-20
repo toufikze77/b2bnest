@@ -185,17 +185,41 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
     }
   };
 
+  // Get color classes based on status/priority
+  const getItemColorClasses = (item: any) => {
+    if (item.type === 'task') {
+      switch (item.status) {
+        case 'backlog':
+          return 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-l-4 border-l-slate-400';
+        case 'todo':
+          return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-l-4 border-l-blue-500';
+        case 'in-progress':
+          return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-l-4 border-l-amber-500';
+        case 'review':
+          return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-l-4 border-l-purple-500';
+        case 'done':
+          return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-l-4 border-l-green-500';
+        default:
+          return 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-l-4 border-l-gray-400';
+      }
+    } else {
+      return 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-l-4 border-l-indigo-500';
+    }
+  };
+
   const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   return (
     <div className="space-y-4">
       {/* Header with filters */}
-      <Card>
-        <CardHeader className="pb-4">
+      <Card className="border-2">
+        <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 via-primary/3 to-transparent">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <CardTitle className="flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5" />
-              Calendar View
+              <CalendarIcon className="h-5 w-5 text-primary" />
+              <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                Calendar View
+              </span>
             </CardTitle>
             
             <div className="flex flex-wrap items-center gap-2">
@@ -239,6 +263,34 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
         </CardHeader>
 
         <CardContent>
+          {/* Status Legend */}
+          <div className="mb-4 p-3 bg-muted/30 rounded-lg border">
+            <div className="flex items-center gap-1 mb-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-muted-foreground">Status Colors:</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-l-4 border-l-slate-400">
+                Backlog
+              </Badge>
+              <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-l-4 border-l-blue-500">
+                To Do
+              </Badge>
+              <Badge variant="outline" className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-l-4 border-l-amber-500">
+                In Progress
+              </Badge>
+              <Badge variant="outline" className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-l-4 border-l-purple-500">
+                Review
+              </Badge>
+              <Badge variant="outline" className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-l-4 border-l-green-500">
+                Done
+              </Badge>
+              <Badge variant="outline" className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-l-4 border-l-indigo-500">
+                Event
+              </Badge>
+            </div>
+          </div>
+
           {/* Month Navigation */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
@@ -263,11 +315,11 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
           </div>
 
           {/* Calendar Grid */}
-          <div className="border rounded-lg overflow-hidden">
+          <div className="border-2 rounded-lg overflow-hidden shadow-sm">
             {/* Week day headers */}
-            <div className="grid grid-cols-7 bg-muted/50">
+            <div className="grid grid-cols-7 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10">
               {weekDays.map(day => (
-                <div key={day} className="p-2 text-center text-sm font-medium text-muted-foreground border-r last:border-r-0">
+                <div key={day} className="p-3 text-center text-sm font-semibold text-primary border-r last:border-r-0">
                   {day}
                 </div>
               ))}
@@ -284,33 +336,34 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
                   <div
                     key={idx}
                     className={cn(
-                      "min-h-[100px] p-2 border-r border-b last:border-r-0",
-                      !isCurrentMonth && "bg-muted/20",
-                      "hover:bg-accent/50 transition-colors cursor-pointer group"
+                      "min-h-[120px] p-2 border-r border-b last:border-r-0 transition-all duration-200",
+                      !isCurrentMonth && "bg-muted/20 opacity-60",
+                      isCurrentMonth && "bg-background hover:bg-accent/30",
+                      isDayToday && "ring-2 ring-primary ring-inset bg-primary/5",
+                      "cursor-pointer group"
                     )}
                     onClick={() => handleDateClick(day)}
                   >
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center justify-between mb-2">
                       <span className={cn(
-                        "text-sm font-medium",
+                        "text-sm font-semibold transition-all",
                         !isCurrentMonth && "text-muted-foreground",
-                        isDayToday && "bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                        isDayToday && "bg-gradient-to-br from-primary to-primary/70 text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center shadow-md ring-2 ring-primary/20"
                       )}>
                         {format(day, 'd')}
                       </span>
-                      <Plus className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+                      <Plus className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-primary" />
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       {dayItems.slice(0, 3).map(item => (
                         <div
                           key={item.id}
                           onClick={(e) => handleItemClick(item, e)}
                           className={cn(
-                            "text-xs p-1 rounded truncate cursor-pointer hover:opacity-80 transition-opacity",
-                            item.type === 'task' 
-                              ? "bg-primary/10 text-primary border border-primary/20" 
-                              : "bg-accent text-accent-foreground border border-border"
+                            "text-xs p-1.5 rounded-md truncate cursor-pointer transition-all duration-200",
+                            "hover:scale-105 hover:shadow-sm font-medium",
+                            getItemColorClasses(item)
                           )}
                           title={item.title}
                         >
