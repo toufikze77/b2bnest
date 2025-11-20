@@ -46,7 +46,7 @@ import HMRCIntegration from '@/components/HMRCIntegration';
 import { AdvertisementSection } from '@/components/AdvertisementSection';
 import BusinessToolsSEO from '@/components/BusinessToolsSEO';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'domain-availability' | 'qr-code-generator' | 'coupon-generator' | 'loyalty-rewards' | 'referral-program' | 'gift-card-manager' | 'utm-builder' | 'marketing-calendar' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'premium-marketplace' | 'currency-converter' | 'crypto-converter' | 'hmrc-integration';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'domain-availability' | 'qr-code-generator' | 'coupon-generator' | 'loyalty-rewards' | 'referral-program' | 'gift-card-manager' | 'utm-builder' | 'marketing-calendar' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'premium-marketplace' | 'currency-converter' | 'crypto-converter' | 'hmrc-integration' | 'workflow-studio';
 
 type FilterType = 'all' | 'premium' | 'favorites' | 'free';
 
@@ -82,6 +82,15 @@ const BusinessTools = () => {
       icon: Building2,
       color: 'bg-gradient-to-r from-green-600 to-blue-600',
       benefits: ['VAT Returns (MTD)', 'Payroll RTI Submissions', 'Corporation Tax', 'Income Tax', 'HMRC Obligations', 'Government Gateway'],
+      isPremium: true
+    },
+    {
+      id: 'workflow-studio' as ToolType,
+      title: 'Workflow Automation Studio',
+      description: 'Visual workflow builder with drag-and-drop nodes, triggers, actions, and integrations (n8n/Zapier inspired)',
+      icon: Zap,
+      color: 'bg-gradient-to-r from-purple-600 to-indigo-600',
+      benefits: ['Visual Builder', 'Drag & Drop Nodes', 'Triggers & Actions', 'API Integrations', 'Execution History', 'Workflow Templates'],
       isPremium: true
     },
     {
@@ -533,6 +542,9 @@ const BusinessTools = () => {
         return <BusinessResources />;
       case 'project-management':
         navigate('/project-management');
+        return null;
+      case 'workflow-studio':
+        navigate('/workflow-studio');
         return null;
       case 'crm':
         return <CRM />;
