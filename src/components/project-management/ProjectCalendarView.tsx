@@ -263,34 +263,6 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
         </CardHeader>
 
         <CardContent>
-          {/* Status Legend */}
-          <div className="mb-4 p-3 bg-muted/30 rounded-lg border">
-            <div className="flex items-center gap-1 mb-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-muted-foreground">Status Colors:</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="outline" className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-l-4 border-l-slate-400">
-                Backlog
-              </Badge>
-              <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-l-4 border-l-blue-500">
-                To Do
-              </Badge>
-              <Badge variant="outline" className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-l-4 border-l-amber-500">
-                In Progress
-              </Badge>
-              <Badge variant="outline" className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-l-4 border-l-purple-500">
-                Review
-              </Badge>
-              <Badge variant="outline" className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-l-4 border-l-green-500">
-                Done
-              </Badge>
-              <Badge variant="outline" className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-l-4 border-l-indigo-500">
-                Event
-              </Badge>
-            </div>
-          </div>
-
           {/* Month Navigation */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
