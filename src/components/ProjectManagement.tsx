@@ -2840,6 +2840,10 @@ const ProjectManagement = () => {
               setCalendarEvents(prev => prev.filter(e => e.id !== event.id));
               toast({ title: 'Event deleted successfully' });
             }}
+            onTaskClick={(task) => {
+              setSelectedTaskForJira(task);
+              setShowJiraTask(true);
+            }}
           />
         </TabsContent>
 
