@@ -24,6 +24,7 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
   const [draggingNode, setDraggingNode] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [connectingFrom, setConnectingFrom] = useState<string | null>(null);
+  const [localPositions, setLocalPositions] = useState<Record<string, { x: number; y: number }>>({});
 
   const getNodeColor = (type: string) => {
     switch (type) {
@@ -69,6 +70,10 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
         x: e.clientX - node.position.x,
         y: e.clientY - node.position.y
       });
+      setLocalPositions((prev) => ({
+        ...prev,
+        [nodeId]: node.position as { x: number; y: number }
+      }));
     }
   };
 
@@ -76,14 +81,32 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
     if (draggingNode) {
       const newX = e.clientX - dragOffset.x;
       const newY = e.clientY - dragOffset.y;
-      
-      onNodeUpdate(draggingNode, {
-        position: { x: newX, y: newY }
-      });
+
+      setLocalPositions((prev) => ({
+        ...prev,
+        [draggingNode]: { x: newX, y: newY },
+      }));
     }
   };
-
+  
   const handleMouseUp = () => {
+    if (draggingNode) {
+      const node = nodes.find((n) => n.id === draggingNode);
+      const finalPosition = localPositions[draggingNode] || node?.position;
+
+      if (finalPosition) {
+        onNodeUpdate(draggingNode, {
+          position: finalPosition,
+        });
+      }
+
+      setLocalPositions((prev) => {
+        const updated = { ...prev };
+        delete updated[draggingNode];
+        return updated;
+      });
+    }
+
     setDraggingNode(null);
   };
 
@@ -101,13 +124,16 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
   };
 
   const renderConnection = (from: WorkflowNode, toId: string) => {
-    const to = nodes.find(n => n.id === toId);
-    if (!to || !to.position || !from.position) return null;
+    const to = nodes.find((n) => n.id === toId);
+    const fromPos = localPositions[from.id] || from.position;
+    const toPos = to ? localPositions[to.id] || to.position : undefined;
 
-    const fromX = from.position.x + 150;
-    const fromY = from.position.y + 40;
-    const toX = to.position.x;
-    const toY = to.position.y + 40;
+    if (!to || !fromPos || !toPos) return null;
+
+    const fromX = fromPos.x + 150;
+    const fromY = fromPos.y + 40;
+    const toX = toPos.x;
+    const toY = toPos.y + 40;
 
     const midX = (fromX + toX) / 2;
 
@@ -166,75 +192,79 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
       />
 
       {/* Nodes */}
-      {nodes.filter(node => node.position).map(node => (
-        <div
-          key={node.id}
-          className={`absolute w-[300px] p-4 border-2 rounded-lg shadow-lg cursor-move transition-all ${
-            getNodeColor(node.type)
-          } ${selectedNode?.id === node.id ? 'ring-2 ring-primary ring-offset-2' : ''}`}
-          style={{
-            left: node.position.x,
-            top: node.position.y,
-            zIndex: draggingNode === node.id ? 1000 : 1
-          }}
-          onMouseDown={(e) => handleMouseDown(node.id, e)}
-          onClick={() => onNodeSelect(node)}
-        >
-          {/* Node Header */}
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">{getNodeIcon(node.type)}</span>
-              <div>
-                <p className="font-semibold text-sm">{node.name}</p>
-                <p className="text-xs opacity-70">{node.category}</p>
+      {nodes.filter((node) => node.position).map((node) => {
+        const position = localPositions[node.id] || node.position!;
+
+        return (
+          <div
+            key={node.id}
+            className={`absolute w-[300px] p-4 border-2 rounded-lg shadow-lg cursor-move transition-all ${
+              getNodeColor(node.type)
+            } ${selectedNode?.id === node.id ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+            style={{
+              left: position.x,
+              top: position.y,
+              zIndex: draggingNode === node.id ? 1000 : 1,
+            }}
+            onMouseDown={(e) => handleMouseDown(node.id, e)}
+            onClick={() => onNodeSelect(node)}
+          >
+            {/* Node Header */}
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">{getNodeIcon(node.type)}</span>
+                <div>
+                  <p className="font-semibold text-sm">{node.name}</p>
+                  <p className="text-xs opacity-70">{node.category}</p>
+                </div>
+              </div>
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onNodeSelect(node);
+                  }}
+                >
+                  <Settings className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 hover:bg-destructive/20"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onNodeDelete(node.id);
+                  }}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
               </div>
             </div>
-            <div className="flex gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onNodeSelect(node);
-                }}
-              >
-                <Settings className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 hover:bg-destructive/20"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onNodeDelete(node.id);
-                }}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+
+            {/* Node Content */}
+            <div className="text-xs opacity-80 mb-3 line-clamp-2">
+              {node.config.description || 'Click to configure...'}
+            </div>
+
+            {/* Connection Points */}
+            <div className="flex justify-between items-center">
+              <div
+                className="w-4 h-4 rounded-full bg-primary cursor-pointer hover:scale-125 transition-transform"
+                title="Connect from here"
+                onMouseDown={(e) => handleConnectStart(node.id, e)}
+              />
+              <div
+                className="w-4 h-4 rounded-full border-2 border-primary cursor-pointer hover:scale-125 transition-transform"
+                title="Connect to here"
+                onMouseUp={(e) => handleConnectEnd(node.id, e)}
+              />
             </div>
           </div>
-
-          {/* Node Content */}
-          <div className="text-xs opacity-80 mb-3 line-clamp-2">
-            {node.config.description || 'Click to configure...'}
-          </div>
-
-          {/* Connection Points */}
-          <div className="flex justify-between items-center">
-            <div
-              className="w-4 h-4 rounded-full bg-primary cursor-pointer hover:scale-125 transition-transform"
-              title="Connect from here"
-              onMouseDown={(e) => handleConnectStart(node.id, e)}
-            />
-            <div
-              className="w-4 h-4 rounded-full border-2 border-primary cursor-pointer hover:scale-125 transition-transform"
-              title="Connect to here"
-              onMouseUp={(e) => handleConnectEnd(node.id, e)}
-            />
-          </div>
-        </div>
-      ))}
+        );
+      })}
 
       {/* Empty State */}
       {nodes.length === 0 && (
