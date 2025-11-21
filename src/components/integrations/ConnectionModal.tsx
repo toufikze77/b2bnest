@@ -9,7 +9,7 @@ import { useState } from "react";
 interface ConnectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  provider: 'twitter' | 'google_calendar' | 'linkedin' | 'facebook' | 'notion' | 'trello' | 'slack' | 'onedrive';
+  provider: 'twitter' | 'google_calendar' | 'icloud_calendar' | 'outlook_calendar' | 'linkedin' | 'facebook' | 'notion' | 'trello' | 'slack' | 'onedrive';
   onConnect: (credentials?: Record<string, string>) => Promise<void>;
 }
 
@@ -126,6 +126,36 @@ const providerInfo: Record<string, {
       'Copy your Application (client) ID and Client Secret above',
     ],
   },
+  icloud_calendar: {
+    title: "Connect iCloud Calendar",
+    description: "Enter your Apple API credentials to connect",
+    fields: [
+      { key: 'client_id', label: 'Services ID', type: 'text' },
+      { key: 'client_secret', label: 'Client Secret', type: 'password' },
+    ],
+    instructions: [
+      'Go to https://developer.apple.com/',
+      'Create an App ID and Services ID with Sign in with Apple',
+      'Configure redirect URI: https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-icloud-calendar',
+      'Generate a private key and create JWT client secret',
+      'Copy your Services ID and generated secret above',
+    ],
+  },
+  outlook_calendar: {
+    title: "Connect Outlook Calendar",
+    description: "Enter your Microsoft API credentials to connect",
+    fields: [
+      { key: 'client_id', label: 'Application (client) ID', type: 'text' },
+      { key: 'client_secret', label: 'Client Secret', type: 'password' },
+    ],
+    instructions: [
+      'Go to https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade',
+      'Register a new application or select existing',
+      'Add redirect URI: https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-outlook-calendar',
+      'Add API permission: Calendars.ReadWrite (Delegated)',
+      'Copy your Application (client) ID and Client Secret above',
+    ],
+  },
 };
 
 export const ConnectionModal = ({ isOpen, onClose, provider, onConnect }: ConnectionModalProps) => {
@@ -135,7 +165,7 @@ export const ConnectionModal = ({ isOpen, onClose, provider, onConnect }: Connec
   const [success, setSuccess] = useState(false);
 
   const info = providerInfo[provider];
-  const needsCredentials = ['twitter', 'google_calendar', 'linkedin', 'facebook', 'onedrive'].includes(provider);
+  const needsCredentials = ['twitter', 'google_calendar', 'icloud_calendar', 'outlook_calendar', 'linkedin', 'facebook', 'onedrive'].includes(provider);
 
   const handleConnect = async () => {
     setLoading(true);

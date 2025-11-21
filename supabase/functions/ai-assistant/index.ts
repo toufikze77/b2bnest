@@ -71,17 +71,29 @@ B2BNest Platform Features & Capabilities:
 ## INTEGRATION HUB
 The Integration Hub allows users to connect external services:
 
-### OneDrive Integration
-- Connect Microsoft OneDrive account via OAuth2
-- Access and manage OneDrive files directly from B2BNest
-- Automatic file synchronization
-- Secure token management and refresh
-
 ### Google Calendar Integration
 - Sync events and meetings with Google Calendar
 - Create calendar events from within B2BNest
 - View calendar availability
 - Automatic event reminders
+
+### iCloud Calendar Integration
+- Connect and sync Apple iCloud Calendar
+- Manage calendar events and schedules
+- Two-way synchronization with iCloud
+- Support for multiple Apple calendars
+
+### Outlook Calendar Integration (Microsoft 365)
+- Connect Microsoft Outlook 365 Calendar
+- Sync events and meetings with Outlook
+- Create and manage Outlook calendar events
+- Integration with Microsoft 365 ecosystem
+
+### OneDrive Integration
+- Connect Microsoft OneDrive account via OAuth2
+- Access and manage OneDrive files directly from B2BNest
+- Automatic file synchronization
+- Secure token management and refresh
 
 ### Twitter Integration
 - Connect Twitter account for social media management
