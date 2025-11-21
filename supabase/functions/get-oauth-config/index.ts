@@ -13,6 +13,9 @@ Deno.serve(async (req) => {
       slack: Deno.env.get('SLACK_CLIENT_ID'), 
       notion: Deno.env.get('NOTION_CLIENT_ID'),
       trello: Deno.env.get('TRELLO_CLIENT_ID'),
+      twitter: Deno.env.get('TWITTER_CONSUMER_KEY'),
+      linkedin: Deno.env.get('LINKEDIN_CLIENT_ID'),
+      facebook: Deno.env.get('FACEBOOK_APP_ID'),
     };
 
     return new Response(

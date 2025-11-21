@@ -45,14 +45,18 @@ export const useOAuthConnect = () => {
       if (error) throw error;
       if (!config) throw new Error('OAuth config not found');
       
+      // Get the client ID for the provider
+      const clientId = config[provider === 'google_calendar' ? 'google' : provider];
+      if (!clientId) throw new Error(`Client ID not configured for ${provider}`);
+      
       switch (provider) {
         case 'google_calendar': {
           const redirectUri = `${baseUrl}/oauth-google-calendar`;
           authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
-            client_id: config.clientId,
+            client_id: clientId,
             redirect_uri: redirectUri,
             response_type: 'code',
-            scope: scope || config.scope,
+            scope: scope || 'https://www.googleapis.com/auth/calendar',
             access_type: accessType || 'offline',
             prompt: prompt || 'consent',
             state,
@@ -63,7 +67,7 @@ export const useOAuthConnect = () => {
         case 'notion': {
           const redirectUri = `${baseUrl}/oauth-notion`;
           authUrl = `https://api.notion.com/v1/oauth/authorize?${new URLSearchParams({
-            client_id: config.clientId,
+            client_id: clientId,
             redirect_uri: redirectUri,
             response_type: 'code',
             owner: 'user',
@@ -80,7 +84,7 @@ export const useOAuthConnect = () => {
             scope: scope || 'read,write',
             expiration: 'never',
             name: 'B2B Nest',
-            key: config.clientId,
+            key: clientId,
             state,
             ...params,
           })}`;
@@ -89,7 +93,7 @@ export const useOAuthConnect = () => {
         case 'slack': {
           const redirectUri = `${baseUrl}/oauth-slack`;
           authUrl = `https://slack.com/oauth/v2/authorize?${new URLSearchParams({
-            client_id: config.clientId,
+            client_id: clientId,
             redirect_uri: redirectUri,
             scope: scope || 'channels:read,chat:write,users:read',
             state,
@@ -101,7 +105,7 @@ export const useOAuthConnect = () => {
           const redirectUri = `${baseUrl}/oauth-linkedin`;
           authUrl = `https://www.linkedin.com/oauth/v2/authorization?${new URLSearchParams({
             response_type: 'code',
-            client_id: config.clientId,
+            client_id: clientId,
             redirect_uri: redirectUri,
             scope: scope || 'openid profile email w_member_social',
             state,
@@ -112,7 +116,7 @@ export const useOAuthConnect = () => {
         case 'facebook': {
           const redirectUri = `${baseUrl}/oauth-facebook`;
           authUrl = `https://www.facebook.com/v18.0/dialog/oauth?${new URLSearchParams({
-            client_id: config.clientId,
+            client_id: clientId,
             redirect_uri: redirectUri,
             scope: scope || 'pages_manage_posts,pages_read_engagement',
             state,
