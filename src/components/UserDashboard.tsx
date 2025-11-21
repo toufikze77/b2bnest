@@ -13,7 +13,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/utils/currencyUtils';
 import AccountSettings from '@/components/AccountSettings';
-import ServiceImageUpload from '@/components/ServiceImageUpload';
 import FeedbackManagement from '@/components/admin/FeedbackManagement';
 
 const UserDashboard = () => {
@@ -431,12 +430,11 @@ const UserDashboard = () => {
 
         {/* Tabs for different sections */}
         <Tabs defaultValue="purchases" className="w-full">
-          <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-7' : 'grid-cols-6'}`}>
+          <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-6' : 'grid-cols-5'}`}>
             <TabsTrigger value="purchases">My Purchases</TabsTrigger>
             <TabsTrigger value="favorites">My Favorites</TabsTrigger>
             <TabsTrigger value="invoices">My Invoices</TabsTrigger>
             <TabsTrigger value="bills">My Bills</TabsTrigger>
-            <TabsTrigger value="services">Create Service</TabsTrigger>
             <TabsTrigger value="settings">Account Settings</TabsTrigger>
             {isAdmin && <TabsTrigger value="admin">Admin</TabsTrigger>}
           </TabsList>
@@ -772,15 +770,6 @@ const UserDashboard = () => {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="services" className="space-y-4">
-            <ServiceImageUpload onServiceCreated={() => {
-              toast({
-                title: "Service Created",
-                description: "Your featured service has been created successfully!"
-              });
-            }} />
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-4">
