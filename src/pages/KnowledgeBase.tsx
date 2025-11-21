@@ -95,11 +95,11 @@ const KnowledgeBase = () => {
   ];
 
   const popularArticles = [
-    { title: 'How to Connect Google Calendar', category: 'Integrations', views: '15.2k' },
-    { title: 'Creating Professional Invoices', category: 'Business Tools', views: '12.8k' },
-    { title: 'HMRC Integration Setup Guide', category: 'Financial', views: '10.5k' },
-    { title: 'Workflow Automation Basics', category: 'Workflows', views: '9.3k' },
-    { title: 'CRM System Complete Guide', category: 'Business Tools', views: '8.7k' }
+    { title: 'How to Connect Google Calendar', category: 'Integrations', views: '15.2k', link: '/knowledge-base/integrations' },
+    { title: 'Creating Professional Invoices', category: 'Business Tools', views: '12.8k', link: '/knowledge-base/business-tools' },
+    { title: 'HMRC Integration Setup Guide', category: 'Financial', views: '10.5k', link: '/knowledge-base/financial-tools' },
+    { title: 'Workflow Automation Basics', category: 'Workflows', views: '9.3k', link: '/knowledge-base/workflows' },
+    { title: 'CRM System Complete Guide', category: 'Business Tools', views: '8.7k', link: '/knowledge-base/business-tools' }
   ];
 
   const filteredCategories = categories.map(category => ({
@@ -154,8 +154,9 @@ const KnowledgeBase = () => {
               <CardContent>
                 <div className="space-y-3">
                   {popularArticles.map((article, index) => (
-                    <div 
+                    <Link 
                       key={index}
+                      to={article.link}
                       className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
                     >
                       <div className="flex items-center gap-3">
@@ -166,7 +167,7 @@ const KnowledgeBase = () => {
                         </div>
                       </div>
                       <Badge variant="secondary">{article.views} views</Badge>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </CardContent>
