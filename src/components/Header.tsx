@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, User, LogOut, Settings, BarChart3, Users, KanbanSquare, Building2, ShoppingCart, Briefcase, Network, Brain, Bitcoin, Globe, Newspaper } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, BarChart3, Brain, Newspaper } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import logo from '@/assets/b2bnest-logo.png';
@@ -66,39 +66,6 @@ const Header = () => {
                   <Link to="/ai-workspace">
                     <Brain className="h-4 w-4 mr-2" />
                     AI Workspace
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <span className="text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">
-                  Directory
-                </span>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link to="/directory" className="w-full flex items-center">
-                    <Network className="h-4 w-4 mr-2" />
-                    Business Hub
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/directory/companies" className="w-full flex items-center">
-                    <Building2 className="h-4 w-4 mr-2" />
-                    Companies
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/directory/suppliers" className="w-full flex items-center">
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    Suppliers
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/directory/services" className="w-full flex items-center">
-                    <Briefcase className="h-4 w-4 mr-2" />
-                    Services
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -248,44 +215,6 @@ const Header = () => {
                     <Brain className="h-4 w-4 mr-2" />
                     AI Workspace
                   </Link>
-                </div>
-              </div>
-              <div className="px-2">
-                <div className="font-medium text-gray-900 mb-2">Directory</div>
-                <div className="pl-4 space-y-2">
-                  <Link
-                    to="/directory"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Network className="h-4 w-4 mr-2" />
-                    Business Hub
-                  </Link>
-                  <Link
-                    to="/directory/companies"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Building2 className="h-4 w-4 mr-2" />
-                    Companies
-                  </Link>
-                  <Link
-                    to="/directory/suppliers"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    Suppliers
-                  </Link>
-                  <Link
-                    to="/directory/services"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Briefcase className="h-4 w-4 mr-2" />
-                    Services
-            </Link>
-            
                 </div>
               </div>
               <div className="px-2">
