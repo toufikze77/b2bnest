@@ -27,7 +27,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email to admin
     const adminEmailResponse = await resend.emails.send({
-      from: "B2BNest Contact Form <noreply@b2bnest.online>",
+      from: "B2BNest Contact Form <onboarding@resend.dev>",
       to: ["admin@b2bnest.online"],
       subject: `Contact Form: ${subject}`,
       html: `
@@ -46,7 +46,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send confirmation email to user
     const userEmailResponse = await resend.emails.send({
-      from: "B2BNest <noreply@b2bnest.online>",
+      from: "B2BNest <onboarding@resend.dev>",
       to: [email],
       subject: "We received your message!",
       html: `
