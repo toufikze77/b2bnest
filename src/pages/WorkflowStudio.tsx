@@ -131,8 +131,12 @@ const WorkflowStudio = () => {
 
     setIsExecuting(true);
     try {
-      // Simulate workflow execution
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log('Executing workflow with nodes:', workflow.nodes);
+      
+      // Execute nodes in sequence
+      for (const node of workflow.nodes) {
+        await executeNode(node);
+      }
       
       setWorkflow(prev => ({
         ...prev,
@@ -140,12 +144,60 @@ const WorkflowStudio = () => {
       }));
 
       toast.success('Workflow executed successfully!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error executing workflow:', error);
-      toast.error('Failed to execute workflow');
+      toast.error(error.message || 'Failed to execute workflow');
     } finally {
       setIsExecuting(false);
     }
+  };
+
+  const executeNode = async (node: WorkflowNode) => {
+    console.log(`Executing node: ${node.name} (${node.type})`);
+    
+    // Execute based on node type and name
+    if (node.name === 'Send Email (Resend)') {
+      const { data, error } = await supabase.functions.invoke('workflow-send-email', {
+        body: {
+          to: node.config.to,
+          subject: node.config.subject,
+          body: node.config.body,
+          from: node.config.from,
+          workflowId: workflow.id
+        }
+      });
+      
+      if (error) throw new Error(`Email sending failed: ${error.message}`);
+      console.log('Email sent:', data);
+    }
+    
+    if (node.name === 'Twitter Post') {
+      const { data, error } = await supabase.functions.invoke('workflow-twitter-post', {
+        body: {
+          text: node.config.text,
+          workflowId: workflow.id
+        }
+      });
+      
+      if (error) throw new Error(`Twitter post failed: ${error.message}`);
+      console.log('Tweet posted:', data);
+    }
+    
+    if (node.name === 'LinkedIn Post') {
+      const { data, error } = await supabase.functions.invoke('workflow-linkedin-post', {
+        body: {
+          text: node.config.text,
+          visibility: node.config.visibility,
+          workflowId: workflow.id
+        }
+      });
+      
+      if (error) throw new Error(`LinkedIn post failed: ${error.message}`);
+      console.log('LinkedIn post created:', data);
+    }
+    
+    // Add delay between nodes to avoid rate limiting
+    await new Promise(resolve => setTimeout(resolve, 1000));
   };
 
   const addNode = (nodeType: WorkflowNode) => {
