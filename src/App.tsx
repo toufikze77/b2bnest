@@ -42,6 +42,9 @@ import Market from '@/pages/Market';
 import BusinessNews from '@/pages/BusinessNews';
 import PublicWorkRequest from '@/pages/PublicWorkRequest';
 import B2BForm from '@/pages/B2BForm';
+import Help from '@/pages/Help';
+import KnowledgeBase from '@/pages/KnowledgeBase';
+import Blog from '@/pages/Blog';
 
 const queryClient = new QueryClient();
 
@@ -85,9 +88,12 @@ function App() {
               <Route path="/project-management" element={<ProtectedRoute><ProjectManagementPage /></ProtectedRoute>} />
               <Route path="/live-charts" element={<Market />} />
               <Route path="/business-news" element={<BusinessNews />} />
-               <Route path="/payment-success" element={<PaymentSuccess />} />
-               
-               {/* Public work request form */}
+                <Route path="/payment-success" element={<PaymentSuccess />} />
+                <Route path="/help" element={<Help />} />
+                <Route path="/knowledge-base" element={<KnowledgeBase />} />
+                <Route path="/blog" element={<Blog />} />
+                
+                {/* Public work request form */}
                <Route path="/forms/work-request" element={<PublicWorkRequest />} />
                
                {/* B2B Partnership Form */}

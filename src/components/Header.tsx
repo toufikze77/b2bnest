@@ -109,6 +109,9 @@ const Header = () => {
             <Link to="/pricing" className="text-gray-700 hover:text-blue-600 transition-colors">
               Pricing
             </Link>
+            <Link to="/help" className="text-gray-700 hover:text-blue-600 transition-colors">
+              Help
+            </Link>
           </nav>
 
           {/* Share, Live Prices and User Menu */}
@@ -268,6 +271,13 @@ const Header = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Pricing
+              </Link>
+              <Link
+                to="/help"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Help
               </Link>
               {user && (
                 <>
