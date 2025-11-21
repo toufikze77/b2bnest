@@ -45,7 +45,7 @@ const WorkflowStudio = () => {
   const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
-  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(true);
 
   useEffect(() => {
     loadWorkflow();
