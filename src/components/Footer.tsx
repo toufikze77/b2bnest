@@ -54,10 +54,38 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Support</h4>
             <ul className="space-y-2 text-gray-400">
-              <li>Help Center</li>
-              <li>Contact Us</li>
-              <li>FAQs</li>
-              <li>Live Chat</li>
+              <li>
+                <button 
+                  onClick={() => navigate('/help')}
+                  className="hover:text-white transition-colors"
+                >
+                  Help Center
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => navigate('/contact')}
+                  className="hover:text-white transition-colors"
+                >
+                  Contact Us
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => navigate('/knowledge-base')}
+                  className="hover:text-white transition-colors"
+                >
+                  Knowledge Base
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => window.open('https://tawk.to/chat/b2bnest', '_blank')}
+                  className="hover:text-white transition-colors"
+                >
+                  Live Chat
+                </button>
+              </li>
             </ul>
           </div>
           <div>

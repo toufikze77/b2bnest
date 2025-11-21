@@ -15,8 +15,8 @@ const Contact = () => {
       icon: Mail,
       title: 'Email',
       description: 'Send us an email',
-      value: 'admin@aiplatform.online',
-      action: () => window.open('mailto:admin@aiplatform.online'),
+      value: 'support@b2bnest.online',
+      action: () => window.open('mailto:support@b2bnest.online'),
     },
     {
       icon: MapPin,
@@ -80,6 +80,28 @@ const Contact = () => {
 
             <Card className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50">
               <CardHeader>
+                <CardTitle className="text-lg">Quick Links</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => navigate('/help')}
+                >
+                  Help Center
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => navigate('/knowledge-base')}
+                >
+                  Knowledge Base
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <CardHeader>
                 <CardTitle className="text-lg">Business Hours</CardTitle>
               </CardHeader>
               <CardContent>
@@ -96,7 +118,7 @@ const Contact = () => {
                     <span>Sunday</span>
                     <span>Closed</span>
                   </div>
-                  <p className="text-xs text-gray-600 mt-2">All times are EST</p>
+                  <p className="text-xs text-gray-600 mt-2">All times are GMT</p>
                 </div>
               </CardContent>
             </Card>
