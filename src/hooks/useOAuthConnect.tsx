@@ -9,11 +9,12 @@ interface OAuthOptions {
   prompt?: string;
   accessType?: string;
   params?: Record<string, string>;
+  clientId?: string;
 }
 
 export const useOAuthConnect = () => {
   const initiateOAuth = useCallback(async (options: OAuthOptions) => {
-    const { provider, redirectPath = '/settings', scope, authType = 'code', prompt, accessType, params = {} } = options;
+    const { provider, redirectPath = '/settings', scope, authType = 'code', prompt, accessType, params = {}, clientId: providedClientId } = options;
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -37,17 +38,20 @@ export const useOAuthConnect = () => {
         return;
       }
 
-      // Fetch OAuth config from backend for OAuth 2.0 providers
-      const { data: config, error } = await supabase.functions.invoke('get-oauth-config', {
-        body: { provider }
-      });
-
-      if (error) throw error;
-      if (!config) throw new Error('OAuth config not found');
+      // Use provided clientId or fetch from config
+      let clientId = providedClientId;
       
-      // Get the client ID for the provider
-      const clientId = config[provider === 'google_calendar' ? 'google' : provider];
-      if (!clientId) throw new Error(`Client ID not configured for ${provider}`);
+      if (!clientId) {
+        const { data: config, error } = await supabase.functions.invoke('get-oauth-config', {
+          body: { provider }
+        });
+
+        if (error) throw error;
+        if (!config) throw new Error('OAuth config not found');
+        
+        clientId = config[provider === 'google_calendar' ? 'google' : provider];
+        if (!clientId) throw new Error(`Client ID not configured for ${provider}`);
+      }
       
       switch (provider) {
         case 'google_calendar': {

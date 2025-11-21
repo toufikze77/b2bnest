@@ -38,32 +38,47 @@ const providerInfo: Record<string, {
   },
   google_calendar: {
     title: "Connect Google Calendar",
-    description: "Authorize access to your Google Calendar",
+    description: "Enter your Google API credentials to connect",
+    fields: [
+      { key: 'client_id', label: 'Google Client ID', type: 'text' },
+      { key: 'client_secret', label: 'Google Client Secret', type: 'password' },
+    ],
     instructions: [
-      'Click "Connect" to open Google authorization',
-      'Sign in with your Google account',
-      'Grant calendar access permissions',
-      'You\'ll be redirected back automatically',
+      'Go to https://console.cloud.google.com/apis/credentials',
+      'Create OAuth 2.0 Client ID (Web application)',
+      'Add redirect URI: https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-google-calendar',
+      'Enable Google Calendar API',
+      'Copy your Client ID and Client Secret above',
     ],
   },
   linkedin: {
     title: "Connect LinkedIn",
-    description: "Authorize access to your LinkedIn account",
+    description: "Enter your LinkedIn API credentials to connect",
+    fields: [
+      { key: 'client_id', label: 'LinkedIn Client ID', type: 'text' },
+      { key: 'client_secret', label: 'LinkedIn Client Secret', type: 'password' },
+    ],
     instructions: [
-      'Click "Connect" to open LinkedIn authorization',
-      'Sign in with your LinkedIn account',
-      'Grant the requested permissions',
-      'You\'ll be redirected back automatically',
+      'Go to https://www.linkedin.com/developers/apps',
+      'Create a new app or select existing',
+      'Add redirect URL: https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-linkedin',
+      'Enable "Sign In with LinkedIn" product',
+      'Copy your Client ID and Client Secret above',
     ],
   },
   facebook: {
     title: "Connect Facebook",
-    description: "Authorize access to your Facebook pages",
+    description: "Enter your Facebook API credentials to connect",
+    fields: [
+      { key: 'app_id', label: 'Facebook App ID', type: 'text' },
+      { key: 'app_secret', label: 'Facebook App Secret', type: 'password' },
+    ],
     instructions: [
-      'Click "Connect" to open Facebook authorization',
-      'Sign in with your Facebook account',
-      'Select the pages you want to manage',
-      'Grant the requested permissions',
+      'Go to https://developers.facebook.com/apps',
+      'Create a new app or select existing',
+      'Add Facebook Login product',
+      'Add OAuth redirect URI: https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/oauth-facebook',
+      'Copy your App ID and App Secret above',
     ],
   },
   notion: {
@@ -105,7 +120,7 @@ export const ConnectionModal = ({ isOpen, onClose, provider, onConnect }: Connec
   const [success, setSuccess] = useState(false);
 
   const info = providerInfo[provider];
-  const needsCredentials = provider === 'twitter';
+  const needsCredentials = ['twitter', 'google_calendar', 'linkedin', 'facebook'].includes(provider);
 
   const handleConnect = async () => {
     setLoading(true);
@@ -159,7 +174,7 @@ export const ConnectionModal = ({ isOpen, onClose, provider, onConnect }: Connec
             </ol>
           </div>
 
-          {/* Credential Fields (for Twitter) */}
+          {/* Credential Fields */}
           {needsCredentials && info.fields && (
             <div className="space-y-3 pt-2 border-t">
               {info.fields.map((field) => (

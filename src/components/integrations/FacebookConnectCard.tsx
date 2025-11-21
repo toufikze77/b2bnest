@@ -46,14 +46,37 @@ const FacebookConnectCard = ({ userId }: Props) => {
     fetchStatus();
   }, [userId]);
 
-  const handleConnect = async () => {
+  const handleConnect = async (credentials?: Record<string, string>) => {
+    if (!credentials?.app_id || !credentials?.app_secret) {
+      toast.error('Please provide both App ID and App Secret');
+      return;
+    }
+
     setLoading(true);
     try {
+      // Store credentials first
+      const { error: storeError } = await supabase
+        .from('user_integrations')
+        .upsert({
+          user_id: userId,
+          integration_name: 'facebook',
+          metadata: {
+            app_id: credentials.app_id,
+            app_secret: credentials.app_secret,
+          },
+          is_connected: false,
+        });
+
+      if (storeError) throw storeError;
+
+      // Initiate OAuth with user's app ID
       await initiateOAuth({
         provider: 'facebook',
         redirectPath: '/business-tools?integration=facebook',
         scope: 'pages_manage_posts,pages_read_engagement',
+        clientId: credentials.app_id,
       });
+      
       setShowModal(false);
     } catch (error: any) {
       toast.error(error.message || 'Failed to connect Facebook');

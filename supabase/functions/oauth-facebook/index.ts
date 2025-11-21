@@ -1,5 +1,4 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
-import { encrypt } from '../shared/crypto.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,15 +25,38 @@ Deno.serve(async (req) => {
       throw new Error('Missing authorization code or state')
     }
 
-    const clientId = Deno.env.get('FACEBOOK_APP_ID')
-    const clientSecret = Deno.env.get('FACEBOOK_APP_SECRET')
+    // Initialize Supabase client to get user's stored credentials
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // Get user's stored Facebook credentials
+    const { data: integration, error: integrationError } = await supabase
+      .from('user_integrations')
+      .select('metadata')
+      .eq('user_id', state)
+      .eq('integration_name', 'facebook')
+      .single()
+
+    if (integrationError || !integration?.metadata) {
+      console.error('Failed to get user credentials:', integrationError)
+      throw new Error('User credentials not found. Please reconnect.')
+    }
+
+    const metadata = typeof integration.metadata === 'string' 
+      ? JSON.parse(integration.metadata) 
+      : integration.metadata
+
+    const clientId = metadata.app_id || Deno.env.get('FACEBOOK_APP_ID')
+    const clientSecret = metadata.app_secret || Deno.env.get('FACEBOOK_APP_SECRET')
     const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/oauth-facebook`
 
     if (!clientId || !clientSecret) {
       throw new Error('Facebook API credentials not configured')
     }
 
-    // Exchange code for access token
+    // Exchange code for access token using user's credentials
     const tokenResponse = await fetch(`https://graph.facebook.com/v18.0/oauth/access_token?` + new URLSearchParams({
       client_id: clientId,
       client_secret: clientSecret,
@@ -54,11 +76,6 @@ Deno.serve(async (req) => {
     const profileResponse = await fetch(`https://graph.facebook.com/me?fields=id,name,email,picture&access_token=${tokenData.access_token}`)
     const profileData = await profileResponse.json()
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
     const expiresAt = tokenData.expires_in 
       ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
       : null
@@ -74,6 +91,7 @@ Deno.serve(async (req) => {
         name: profileData.name,
         email: profileData.email,
         picture: profileData.picture?.data?.url,
+        app_id: clientId, // Keep app_id for future use
       },
       p_user_id: state,
     })
@@ -87,7 +105,7 @@ Deno.serve(async (req) => {
       status: 302,
       headers: {
         ...corsHeaders,
-        Location: `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/settings?integration=facebook`,
+        Location: `${Deno.env.get('SITE_URL') || 'http://localhost:5173'}/business-tools?integration=facebook`,
       },
     })
   } catch (error: any) {
