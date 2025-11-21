@@ -172,13 +172,13 @@ export const ConnectionModal = ({ isOpen, onClose, provider, onConnect }: Connec
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{info.title}</DialogTitle>
           <DialogDescription>{info.description}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 overflow-y-auto flex-1">
           {/* Instructions */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold">How to connect:</Label>
@@ -226,7 +226,7 @@ export const ConnectionModal = ({ isOpen, onClose, provider, onConnect }: Connec
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-3">
+        <div className="flex gap-3 pt-4 border-t mt-auto">
           <Button
             variant="outline"
             onClick={onClose}
