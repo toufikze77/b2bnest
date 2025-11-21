@@ -13,13 +13,17 @@ import {
   AlertTriangle, 
   Clock,
   Settings,
-  Link,
+  Link as LinkIcon,
   RefreshCw,
   Download,
   Upload,
   Eye,
-  TrendingUp
+  TrendingUp,
+  HelpCircle,
+  Book,
+  Mail
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useHMRCCallback } from '@/hooks/useHMRCCallback';
@@ -156,7 +160,7 @@ const HMRCIntegration = () => {
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Link className="h-5 w-5" />
+                <LinkIcon className="h-5 w-5" />
                 Connect to HMRC
               </CardTitle>
             </CardHeader>
@@ -202,11 +206,11 @@ const HMRCIntegration = () => {
                   {connectionStatus === 'connecting' ? (
                     <>
                       <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Connecting to HMRC...
+                   Connecting to HMRC...
                     </>
                   ) : (
                     <>
-                      <Link className="h-4 w-4 mr-2" />
+                      <LinkIcon className="h-4 w-4 mr-2" />
                       Connect to HMRC Government Gateway
                     </>
                   )}
@@ -388,6 +392,59 @@ const HMRCIntegration = () => {
           <HMRCSubmissionLogs />
         </div>
       )}
+
+      {/* Help & Resources Section */}
+      <Card className="mt-6 bg-muted/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <HelpCircle className="h-5 w-5" />
+            Help & Resources
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-3 gap-4">
+            <Link to="/help">
+              <Button variant="outline" className="w-full h-auto flex-col gap-2 p-4">
+                <HelpCircle className="h-6 w-6 text-primary" />
+                <div>
+                  <p className="font-semibold">Help Center</p>
+                  <p className="text-xs text-muted-foreground">FAQs and guides</p>
+                </div>
+              </Button>
+            </Link>
+            
+            <Link to="/knowledge-base">
+              <Button variant="outline" className="w-full h-auto flex-col gap-2 p-4">
+                <Book className="h-6 w-6 text-primary" />
+                <div>
+                  <p className="font-semibold">Knowledge Base</p>
+                  <p className="text-xs text-muted-foreground">Detailed documentation</p>
+                </div>
+              </Button>
+            </Link>
+            
+            <Link to="/contact">
+              <Button variant="outline" className="w-full h-auto flex-col gap-2 p-4">
+                <Mail className="h-6 w-6 text-primary" />
+                <div>
+                  <p className="font-semibold">Contact Support</p>
+                  <p className="text-xs text-muted-foreground">Get in touch with us</p>
+                </div>
+              </Button>
+            </Link>
+          </div>
+          
+          <Alert className="mt-4">
+            <HelpCircle className="h-4 w-4" />
+            <AlertTitle>Need Help with HMRC Integration?</AlertTitle>
+            <AlertDescription>
+              Visit our Knowledge Base for step-by-step guides on setting up HMRC integration,
+              submitting returns, and managing tax obligations. Our support team is available
+              Mon-Fri, 9am-6pm GMT.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
     </div>
   );
 };
