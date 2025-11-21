@@ -55,7 +55,7 @@ const KnowledgeBase = () => {
       ]
     },
     {
-      id: 'financial',
+      id: 'financial-tools',
       title: 'Financial Tools',
       icon: DollarSign,
       color: 'bg-yellow-500',
