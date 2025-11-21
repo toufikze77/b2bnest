@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { Mail, MessageCircle, Phone, Book, HelpCircle, ExternalLink } from 'lucide-react';
+import { Mail, MessageCircle, Book, HelpCircle, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SEOHead from '@/components/SEOHead';
 
@@ -90,7 +90,7 @@ const Help = () => {
           </div>
 
           {/* Contact Options */}
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
+          <div className="grid md:grid-cols-2 gap-6 mb-12 max-w-3xl mx-auto">
             <Card className="text-center hover:shadow-lg transition-shadow cursor-pointer">
               <CardHeader>
                 <MessageCircle className="h-12 w-12 mx-auto mb-2 text-primary" />
@@ -124,22 +124,6 @@ const Help = () => {
                 </Button>
                 <p className="text-sm text-muted-foreground mt-2">
                   support@b2bnest.online
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="text-center hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <Phone className="h-12 w-12 mx-auto mb-2 text-primary" />
-                <CardTitle>Phone Support</CardTitle>
-                <CardDescription>Premium & Enterprise plans</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full" variant="outline">
-                  +44 20 1234 5678
-                </Button>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Available for Pro+ subscribers
                 </p>
               </CardContent>
             </Card>
