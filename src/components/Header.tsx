@@ -52,7 +52,7 @@ const Header = () => {
                   Business
                 </span>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
+              <DropdownMenuContent className="max-h-[500px] overflow-y-auto">
                 <DropdownMenuItem asChild>
                   <Link to="/crm">CRM</Link>
                 </DropdownMenuItem>
@@ -63,13 +63,61 @@ const Header = () => {
                   <Link to="/business-tools?tool=hmrc-integration">HMRC Integration</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link to="/workflow-studio">Workflow Studio</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link to="/business-tools?tool=business-finance-assistant">Finance Assistant</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=todo-list">To-Do List</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=cash-flow-tracker">Cash Flow Tracker</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=goal-tracker">Goal Tracker</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=roi-calculator">ROI Calculator</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/business-tools?tool=contract-generator">Contract Generator</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=privacy-policy-generator">Privacy Policy</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link to="/business-tools?tool=document-templates">Document Library</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=business-card-designer">Business Cards</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=landing-page-builder">Landing Pages</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=email-signature-generator">Email Signatures</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=social-media-scheduler">Social Scheduler</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=customer-survey-builder">Survey Builder</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=cost-calculator">Cost Calculator</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=setup-checklist">Setup Checklist</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=compliance">Compliance Checker</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=best-practices">Best Practices</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=integrations">Integration Hub</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -90,13 +138,37 @@ const Header = () => {
                   <Link to="/business-tools?tool=coupon-generator">Coupon Generator</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=loyalty-rewards">Loyalty & Rewards</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=referral-program">Referral Program</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=gift-card-manager">Gift Cards</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=utm-builder">UTM Builder</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=marketing-calendar">Marketing Calendar</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=startup-idea-generator">Idea Generator</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=business-name-generator">Name Generator</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=domain-availability">Domain Check</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link to="/business-tools?tool=currency-converter">Currency Converter</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/business-tools?tool=crypto-converter">Crypto Converter</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/business-tools?tool=business-name-generator">Name Generator</Link>
+                  <Link to="/business-tools?tool=business-resources">Business Resources</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -238,97 +310,49 @@ const Header = () => {
                 Home
               </Link>
               <div className="px-2">
-                <div className="font-medium text-gray-900 mb-2">Business</div>
-                <div className="pl-4 space-y-2">
-                  <Link
-                    to="/crm"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    CRM
-                  </Link>
-                  <Link
-                    to="/project-management"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Project Management
-                  </Link>
-                  <Link
-                    to="/business-tools?tool=hmrc-integration"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    HMRC Integration
-                  </Link>
-                  <Link
-                    to="/business-tools?tool=business-finance-assistant"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Finance Assistant
-                  </Link>
-                  <Link
-                    to="/business-tools?tool=contract-generator"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Contract Generator
-                  </Link>
-                  <Link
-                    to="/business-tools?tool=document-templates"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Document Library
-                  </Link>
+                <div className="font-medium text-gray-900 mb-2">Business (Premium)</div>
+                <div className="pl-4 space-y-2 max-h-[300px] overflow-y-auto">
+                  <Link to="/crm" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>CRM</Link>
+                  <Link to="/project-management" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Project Management</Link>
+                  <Link to="/business-tools?tool=hmrc-integration" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>HMRC Integration</Link>
+                  <Link to="/workflow-studio" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Workflow Studio</Link>
+                  <Link to="/business-tools?tool=business-finance-assistant" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Finance Assistant</Link>
+                  <Link to="/business-tools?tool=todo-list" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>To-Do List</Link>
+                  <Link to="/business-tools?tool=cash-flow-tracker" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Cash Flow Tracker</Link>
+                  <Link to="/business-tools?tool=goal-tracker" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Goal Tracker</Link>
+                  <Link to="/business-tools?tool=roi-calculator" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>ROI Calculator</Link>
+                  <Link to="/business-tools?tool=contract-generator" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Contract Generator</Link>
+                  <Link to="/business-tools?tool=privacy-policy-generator" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Privacy Policy</Link>
+                  <Link to="/business-tools?tool=document-templates" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Document Library</Link>
+                  <Link to="/business-tools?tool=business-card-designer" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Business Cards</Link>
+                  <Link to="/business-tools?tool=landing-page-builder" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Landing Pages</Link>
+                  <Link to="/business-tools?tool=email-signature-generator" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Email Signatures</Link>
+                  <Link to="/business-tools?tool=social-media-scheduler" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Social Scheduler</Link>
+                  <Link to="/business-tools?tool=customer-survey-builder" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Survey Builder</Link>
+                  <Link to="/business-tools?tool=cost-calculator" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Cost Calculator</Link>
+                  <Link to="/business-tools?tool=setup-checklist" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Setup Checklist</Link>
+                  <Link to="/business-tools?tool=compliance" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Compliance Checker</Link>
+                  <Link to="/business-tools?tool=best-practices" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Best Practices</Link>
+                  <Link to="/business-tools?tool=integrations" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Integration Hub</Link>
                 </div>
               </div>
               <div className="px-2">
-                <div className="font-medium text-gray-900 mb-2">Tools</div>
+                <div className="font-medium text-gray-900 mb-2">Tools (Free)</div>
                 <div className="pl-4 space-y-2">
-                  <Link
-                    to="/business-tools?tool=qr-code-generator"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    QR Code Generator
-                  </Link>
-                  <Link
-                    to="/business-tools?tool=time-tracker"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Time Tracker
-                  </Link>
-                  <Link
-                    to="/business-tools?tool=coupon-generator"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Coupon Generator
-                  </Link>
-                  <Link
-                    to="/business-tools?tool=currency-converter"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Currency Converter
-                  </Link>
-                  <Link
-                    to="/business-tools?tool=crypto-converter"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Crypto Converter
-                  </Link>
-                  <Link
-                    to="/business-tools?tool=business-name-generator"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Name Generator
-                  </Link>
+                  <Link to="/business-tools?tool=qr-code-generator" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>QR Code Generator</Link>
+                  <Link to="/business-tools?tool=time-tracker" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Time Tracker</Link>
+                  <Link to="/business-tools?tool=coupon-generator" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Coupon Generator</Link>
+                  <Link to="/business-tools?tool=loyalty-rewards" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Loyalty & Rewards</Link>
+                  <Link to="/business-tools?tool=referral-program" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Referral Program</Link>
+                  <Link to="/business-tools?tool=gift-card-manager" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Gift Cards</Link>
+                  <Link to="/business-tools?tool=utm-builder" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>UTM Builder</Link>
+                  <Link to="/business-tools?tool=marketing-calendar" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Marketing Calendar</Link>
+                  <Link to="/business-tools?tool=startup-idea-generator" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Idea Generator</Link>
+                  <Link to="/business-tools?tool=business-name-generator" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Name Generator</Link>
+                  <Link to="/business-tools?tool=domain-availability" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Domain Check</Link>
+                  <Link to="/business-tools?tool=currency-converter" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Currency Converter</Link>
+                  <Link to="/business-tools?tool=crypto-converter" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Crypto Converter</Link>
+                  <Link to="/business-tools?tool=business-resources" className="block text-gray-600 hover:text-blue-600 transition-colors text-sm" onClick={() => setIsMenuOpen(false)}>Business Resources</Link>
                 </div>
               </div>
               <div className="px-2">
