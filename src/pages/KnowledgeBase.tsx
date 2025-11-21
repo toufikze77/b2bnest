@@ -214,9 +214,11 @@ const KnowledgeBase = () => {
                             <CardDescription>{article.description}</CardDescription>
                           </CardHeader>
                           <CardContent>
-                            <Button variant="ghost" className="w-full justify-start">
-                              Read Article
-                              <ExternalLink className="ml-2 h-4 w-4" />
+                            <Button asChild variant="ghost" className="w-full justify-start">
+                              <Link to={`/knowledge-base/${category.id}`}>
+                                Read Article
+                                <ExternalLink className="ml-2 h-4 w-4" />
+                              </Link>
                             </Button>
                           </CardContent>
                         </Card>

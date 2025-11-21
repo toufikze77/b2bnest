@@ -45,6 +45,12 @@ import B2BForm from '@/pages/B2BForm';
 import Help from '@/pages/Help';
 import KnowledgeBase from '@/pages/KnowledgeBase';
 import Blog from '@/pages/Blog';
+import GettingStarted from '@/pages/articles/GettingStarted';
+import BusinessToolsGuide from '@/pages/articles/BusinessToolsGuide';
+import IntegrationsGuide from '@/pages/articles/IntegrationsGuide';
+import FinancialToolsGuide from '@/pages/articles/FinancialToolsGuide';
+import WorkflowGuide from '@/pages/articles/WorkflowGuide';
+import SecurityGuide from '@/pages/articles/SecurityGuide';
 
 const queryClient = new QueryClient();
 
@@ -86,6 +92,12 @@ function App() {
               <Route path="/categories/operations" element={<Operations />} />
               <Route path="/crm" element={<ProtectedRoute><CRMPage /></ProtectedRoute>} />
               <Route path="/project-management" element={<ProtectedRoute><ProjectManagementPage /></ProtectedRoute>} />
+              <Route path="/knowledge-base/getting-started" element={<GettingStarted />} />
+              <Route path="/knowledge-base/business-tools" element={<BusinessToolsGuide />} />
+              <Route path="/knowledge-base/integrations" element={<IntegrationsGuide />} />
+              <Route path="/knowledge-base/financial-tools" element={<FinancialToolsGuide />} />
+              <Route path="/knowledge-base/workflows" element={<WorkflowGuide />} />
+              <Route path="/knowledge-base/security" element={<SecurityGuide />} />
               <Route path="/live-charts" element={<Market />} />
               <Route path="/business-news" element={<BusinessNews />} />
                 <Route path="/payment-success" element={<PaymentSuccess />} />
