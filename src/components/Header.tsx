@@ -46,13 +46,28 @@ const Header = () => {
             <Link to="/" className="text-gray-700 hover:text-blue-600 transition-colors">
               Home
             </Link>
-            <Link to="/business-tools" className="text-gray-700 hover:text-blue-600 transition-colors">
-              Business Tools
-            </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <span className="text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">
-                  AI Tools
+                  Business
+                </span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools">Business Tools</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/crm">CRM</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/project-management">Project Management</Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <span className="text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">
+                  Tools
                 </span>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
@@ -186,15 +201,34 @@ const Header = () => {
               >
                 Home
               </Link>
-              <Link
-                to="/business-tools"
-                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Business Tools
-              </Link>
               <div className="px-2">
-                <div className="font-medium text-gray-900 mb-2">AI Tools</div>
+                <div className="font-medium text-gray-900 mb-2">Business</div>
+                <div className="pl-4 space-y-2">
+                  <Link
+                    to="/business-tools"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Business Tools
+                  </Link>
+                  <Link
+                    to="/crm"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    CRM
+                  </Link>
+                  <Link
+                    to="/project-management"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Project Management
+                  </Link>
+                </div>
+              </div>
+              <div className="px-2">
+                <div className="font-medium text-gray-900 mb-2">Tools</div>
                 <div className="pl-4 space-y-2">
                   <Link
                     to="/ai-studio"
