@@ -74,12 +74,15 @@ const WorkflowSidebar: React.FC<WorkflowSidebarProps> = ({ onAddNode }) => {
       title: 'Integrations',
       description: 'Connect with services',
       nodes: [
+        { name: 'Send Email (Resend)', category: 'Email', description: 'Send email via Resend', config: { to: '', subject: '', body: '', from: 'noreply@yourdomain.com' } },
+        { name: 'Twitter Post', category: 'Social Media', description: 'Post to Twitter/X', config: { text: '', includeLink: false } },
+        { name: 'LinkedIn Post', category: 'Social Media', description: 'Share on LinkedIn', config: { text: '', visibility: 'PUBLIC' } },
+        { name: 'Facebook Post', category: 'Social Media', description: 'Post to Facebook', config: { message: '', link: '' } },
         { name: 'Stripe Payment', category: 'Payments', description: 'Process payment', config: { amount: 0, currency: 'usd' } },
         { name: 'Slack Message', category: 'Communication', description: 'Send Slack message', config: { channel: '', text: '' } },
         { name: 'Google Sheets', category: 'Spreadsheets', description: 'Update spreadsheet', config: { sheetId: '', range: '' } },
         { name: 'Notion Page', category: 'Productivity', description: 'Create/update page', config: { databaseId: '' } },
-        { name: 'Twilio SMS', category: 'Communication', description: 'Send SMS', config: { to: '', body: '' } },
-        { name: 'SendGrid Email', category: 'Email', description: 'Send via SendGrid', config: { to: '', template: '' } }
+        { name: 'Twilio SMS', category: 'Communication', description: 'Send SMS', config: { to: '', body: '' } }
       ]
     }
   ];
