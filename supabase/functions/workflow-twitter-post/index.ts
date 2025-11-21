@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createHmac } from "node:crypto";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,19 +10,6 @@ const corsHeaders = {
 interface TwitterPostRequest {
   text: string;
   workflowId?: string;
-}
-
-function validateEnvironmentVariables() {
-  const API_KEY = Deno.env.get("TWITTER_CONSUMER_KEY")?.trim();
-  const API_SECRET = Deno.env.get("TWITTER_CONSUMER_SECRET")?.trim();
-  const ACCESS_TOKEN = Deno.env.get("TWITTER_ACCESS_TOKEN")?.trim();
-  const ACCESS_TOKEN_SECRET = Deno.env.get("TWITTER_ACCESS_TOKEN_SECRET")?.trim();
-
-  if (!API_KEY || !API_SECRET || !ACCESS_TOKEN || !ACCESS_TOKEN_SECRET) {
-    throw new Error("Missing Twitter API credentials. Please set TWITTER_CONSUMER_KEY, TWITTER_CONSUMER_SECRET, TWITTER_ACCESS_TOKEN, and TWITTER_ACCESS_TOKEN_SECRET");
-  }
-
-  return { API_KEY, API_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET };
 }
 
 function generateOAuthSignature(
@@ -75,17 +63,23 @@ function generateOAuthHeader(
   return "OAuth " + entries.map(([k, v]) => `${encodeURIComponent(k)}="${encodeURIComponent(v)}"`).join(", ");
 }
 
-async function sendTweet(tweetText: string, credentials: any): Promise<any> {
+async function sendTweet(
+  tweetText: string, 
+  apiKey: string,
+  apiSecret: string,
+  accessToken: string,
+  accessTokenSecret: string
+): Promise<any> {
   const url = "https://api.x.com/2/tweets";
   const method = "POST";
 
   const oauthHeader = generateOAuthHeader(
     method,
     url,
-    credentials.API_KEY,
-    credentials.API_SECRET,
-    credentials.ACCESS_TOKEN,
-    credentials.ACCESS_TOKEN_SECRET
+    apiKey,
+    apiSecret,
+    accessToken,
+    accessTokenSecret
   );
 
   console.log("Sending tweet to Twitter API");
@@ -116,6 +110,23 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+    
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      throw new Error('Missing authorization header')
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
+    
+    if (userError || !user) {
+      throw new Error('Unauthorized')
+    }
+
     const { text }: TwitterPostRequest = await req.json();
 
     if (!text || text.length === 0) {
@@ -126,8 +137,28 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Tweet text exceeds 280 characters");
     }
 
-    const credentials = validateEnvironmentVariables();
-    const result = await sendTweet(text, credentials);
+    // Get platform credentials
+    const apiKey = Deno.env.get("TWITTER_CONSUMER_KEY")?.trim();
+    const apiSecret = Deno.env.get("TWITTER_CONSUMER_SECRET")?.trim();
+
+    if (!apiKey || !apiSecret) {
+      throw new Error("Twitter API credentials not configured");
+    }
+
+    // Get user's Twitter tokens
+    const { data: integrationData } = await supabase.rpc('get_integration_tokens', {
+      p_integration_name: 'twitter',
+      p_user_id: user.id
+    })
+    
+    if (!integrationData || integrationData.length === 0) {
+      throw new Error('Twitter not connected. Please connect your Twitter account in Settings > Integrations.')
+    }
+    
+    const accessToken = integrationData[0].access_token
+    const accessTokenSecret = integrationData[0].refresh_token // Token secret stored as refresh token
+
+    const result = await sendTweet(text, apiKey, apiSecret, accessToken, accessTokenSecret);
 
     console.log("Tweet posted successfully:", result);
 
@@ -151,7 +182,7 @@ const handler = async (req: Request): Promise<Response> => {
         message: "Failed to post tweet"
       }),
       {
-        status: 500,
+        status: error.message.includes('not connected') ? 403 : 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
