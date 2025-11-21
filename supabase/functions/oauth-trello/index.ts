@@ -32,7 +32,39 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Exchange code for access token
+    // Initialize Supabase client first to get user credentials
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // Get user's stored credentials
+    const { data: integration, error: fetchError } = await supabase
+      .from('user_integrations')
+      .select('metadata')
+      .eq('user_id', state)
+      .eq('integration_name', 'trello')
+      .single()
+
+    if (fetchError || !integration?.metadata) {
+      return new Response(
+        JSON.stringify({ error: 'User credentials not found. Please reconnect and provide your API credentials.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const metadata = integration.metadata as { api_key?: string; api_token?: string }
+    const apiKey = metadata.api_key
+    const apiToken = metadata.api_token
+
+    if (!apiKey || !apiToken) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid credentials stored. Please reconnect.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Exchange code for access token using user's credentials
     const trelloTokenResponse = await fetch('https://trello.com/1/oauth2/token', {
       method: 'POST',
       headers: {
@@ -40,8 +72,8 @@ Deno.serve(async (req) => {
       },
       body: new URLSearchParams({
         code,
-        client_id: Deno.env.get('TRELLO_CLIENT_ID') || '',
-        client_secret: Deno.env.get('TRELLO_CLIENT_SECRET') || '',
+        client_id: apiKey,
+        client_secret: apiToken,
         redirect_uri: `${Deno.env.get('SUPABASE_URL')}/functions/v1/oauth-trello`,
         grant_type: 'authorization_code',
       }),
@@ -58,14 +90,8 @@ Deno.serve(async (req) => {
     }
 
     // Get user info from Trello
-    const userInfoResponse = await fetch(`https://api.trello.com/1/members/me?key=${Deno.env.get('TRELLO_CLIENT_ID')}&token=${trelloData.access_token}`)
+    const userInfoResponse = await fetch(`https://api.trello.com/1/members/me?key=${apiKey}&token=${trelloData.access_token}`)
     const userInfo = await userInfoResponse.json()
-
-    // Initialize Supabase client
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
 
     // Encrypt tokens
     const encryptedAccessToken = await encrypt(trelloData.access_token, Deno.env.get('ENCRYPTION_SECRET') || 'default-secret-key-32-chars-long')

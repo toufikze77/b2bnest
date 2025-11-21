@@ -37,15 +37,47 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Exchange code for access token
+    // Initialize Supabase client first to get user credentials
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // Get user's stored credentials
+    const { data: integration, error: fetchError } = await supabase
+      .from('user_integrations')
+      .select('metadata')
+      .eq('user_id', state)
+      .eq('integration_name', 'slack')
+      .single()
+
+    if (fetchError || !integration?.metadata) {
+      return new Response(
+        JSON.stringify({ error: 'User credentials not found. Please reconnect and provide your API credentials.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const metadata = integration.metadata as { client_id?: string; client_secret?: string }
+    const clientId = metadata.client_id
+    const clientSecret = metadata.client_secret
+
+    if (!clientId || !clientSecret) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid credentials stored. Please reconnect.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Exchange code for access token using user's credentials
     const slackTokenResponse = await fetch('https://slack.com/api/oauth.v2.access', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        client_id: Deno.env.get('SLACK_CLIENT_ID') || '',
-        client_secret: Deno.env.get('SLACK_CLIENT_SECRET') || '',
+        client_id: clientId,
+        client_secret: clientSecret,
         code,
         redirect_uri: `${Deno.env.get('SUPABASE_URL')}/functions/v1/oauth-slack`,
       }),
@@ -60,12 +92,6 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-
-    // Initialize Supabase client
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
 
     // Encrypt tokens
     const encryptedAccessToken = await encrypt(slackData.access_token, Deno.env.get('ENCRYPTION_SECRET') || 'default-secret-key-32-chars-long')
