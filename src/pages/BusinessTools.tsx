@@ -43,10 +43,9 @@ import BusinessFinanceAssistant from '@/components/BusinessFinanceAssistant';
 import StartupIdeaGenerator from '@/components/StartupIdeaGenerator';
 import DomainAvailability from '@/components/DomainAvailability';
 import HMRCIntegration from '@/components/HMRCIntegration';
-import { AdvertisementSection } from '@/components/AdvertisementSection';
 import BusinessToolsSEO from '@/components/BusinessToolsSEO';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'domain-availability' | 'qr-code-generator' | 'coupon-generator' | 'loyalty-rewards' | 'referral-program' | 'gift-card-manager' | 'utm-builder' | 'marketing-calendar' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'premium-marketplace' | 'currency-converter' | 'crypto-converter' | 'hmrc-integration' | 'workflow-studio';
+type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'domain-availability' | 'qr-code-generator' | 'coupon-generator' | 'loyalty-rewards' | 'referral-program' | 'gift-card-manager' | 'utm-builder' | 'marketing-calendar' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'currency-converter' | 'crypto-converter' | 'hmrc-integration' | 'workflow-studio';
 
 type FilterType = 'all' | 'premium' | 'favorites' | 'free';
 
@@ -91,15 +90,6 @@ const BusinessTools = () => {
       icon: Zap,
       color: 'bg-gradient-to-r from-purple-600 to-indigo-600',
       benefits: ['Visual Builder', 'Drag & Drop Nodes', 'Triggers & Actions', 'API Integrations', 'Execution History', 'Workflow Templates'],
-      isPremium: true
-    },
-    {
-      id: 'premium-marketplace' as ToolType,
-      title: 'Premium Marketplace',
-      description: 'Exclusive advertising space for yearly subscribers to showcase services and products',
-      icon: Megaphone,
-      color: 'bg-gradient-to-r from-amber-500 to-amber-600',
-      benefits: ['Yearly Subscriber Exclusive', 'Rich Content with Images', 'Contact Integration', 'Category Organization'],
       isPremium: true
     },
     {
@@ -476,8 +466,6 @@ const BusinessTools = () => {
     }
 
     switch (currentTool) {
-      case 'premium-marketplace':
-        return <AdvertisementSection />;
       case 'business-finance-assistant':
         return <BusinessFinanceAssistant />;
       case 'todo-list':
