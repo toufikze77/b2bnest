@@ -54,13 +54,22 @@ const Header = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem asChild>
-                  <Link to="/business-tools">Business Tools</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
                   <Link to="/crm">CRM</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/project-management">Project Management</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=hmrc-integration">HMRC Integration</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=business-finance-assistant">Finance Assistant</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=contract-generator">Contract Generator</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=document-templates">Document Library</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -72,16 +81,22 @@ const Header = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem asChild>
-                  <Link to="/business-tools?tool=invoice">Invoice Generator</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/business-tools?tool=contract">Contract Generator</Link>
+                  <Link to="/business-tools?tool=qr-code-generator">QR Code Generator</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/business-tools?tool=time-tracker">Time Tracker</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/business-tools?tool=document-library">Document Library</Link>
+                  <Link to="/business-tools?tool=coupon-generator">Coupon Generator</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=currency-converter">Currency Converter</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=crypto-converter">Crypto Converter</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=business-name-generator">Name Generator</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -226,13 +241,6 @@ const Header = () => {
                 <div className="font-medium text-gray-900 mb-2">Business</div>
                 <div className="pl-4 space-y-2">
                   <Link
-                    to="/business-tools"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Business Tools
-                  </Link>
-                  <Link
                     to="/crm"
                     className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
                     onClick={() => setIsMenuOpen(false)}
@@ -246,24 +254,45 @@ const Header = () => {
                   >
                     Project Management
                   </Link>
+                  <Link
+                    to="/business-tools?tool=hmrc-integration"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    HMRC Integration
+                  </Link>
+                  <Link
+                    to="/business-tools?tool=business-finance-assistant"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Finance Assistant
+                  </Link>
+                  <Link
+                    to="/business-tools?tool=contract-generator"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Contract Generator
+                  </Link>
+                  <Link
+                    to="/business-tools?tool=document-templates"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Document Library
+                  </Link>
                 </div>
               </div>
               <div className="px-2">
                 <div className="font-medium text-gray-900 mb-2">Tools</div>
                 <div className="pl-4 space-y-2">
                   <Link
-                    to="/business-tools?tool=invoice"
+                    to="/business-tools?tool=qr-code-generator"
                     className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Invoice Generator
-                  </Link>
-                  <Link
-                    to="/business-tools?tool=contract"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Contract Generator
+                    QR Code Generator
                   </Link>
                   <Link
                     to="/business-tools?tool=time-tracker"
@@ -273,11 +302,32 @@ const Header = () => {
                     Time Tracker
                   </Link>
                   <Link
-                    to="/business-tools?tool=document-library"
+                    to="/business-tools?tool=coupon-generator"
                     className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Document Library
+                    Coupon Generator
+                  </Link>
+                  <Link
+                    to="/business-tools?tool=currency-converter"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Currency Converter
+                  </Link>
+                  <Link
+                    to="/business-tools?tool=crypto-converter"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Crypto Converter
+                  </Link>
+                  <Link
+                    to="/business-tools?tool=business-name-generator"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Name Generator
                   </Link>
                 </div>
               </div>
