@@ -7,6 +7,9 @@ import GoogleCalendarConnectCard from '@/components/integrations/GoogleCalendarC
 import TrelloConnectCard from '@/components/integrations/TrelloConnectCard';
 import NotionConnectCard from '@/components/integrations/NotionConnectCard';
 import SlackConnectCard from '@/components/integrations/SlackConnectCard';
+import TwitterConnectCard from '@/components/integrations/TwitterConnectCard';
+import LinkedInConnectCard from '@/components/integrations/LinkedInConnectCard';
+import FacebookConnectCard from '@/components/integrations/FacebookConnectCard';
 import { FirecrawlComponent } from '@/components/integrations/FirecrawlComponent';
 
 const IntegrationHub = () => {
@@ -106,6 +109,9 @@ const IntegrationHub = () => {
               <div ref={slackRef} className="transition-all duration-300">
                 <SlackConnectCard userId={user.id} />
               </div>
+              <TwitterConnectCard userId={user.id} />
+              <LinkedInConnectCard userId={user.id} />
+              <FacebookConnectCard userId={user.id} />
             </CardContent>
           </Card>
         </TabsContent>

@@ -2,80 +2,132 @@ import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface OAuthOptions {
-  provider: 'slack' | 'notion' | 'trello' | 'google_calendar';
-  redirectPath: string;
-  scope: string;
+  provider: 'slack' | 'notion' | 'trello' | 'google_calendar' | 'twitter' | 'linkedin' | 'facebook';
+  redirectPath?: string;
+  scope?: string;
   authType?: 'code' | 'token';
   prompt?: string;
   accessType?: string;
-  customParams?: Record<string, string>;
+  params?: Record<string, string>;
 }
 
 export const useOAuthConnect = () => {
-  const initiateOAuth = useCallback(async ({
-    provider,
-    redirectPath,
-    scope,
-    authType = 'code',
-    prompt,
-    accessType,
-    customParams = {},
-  }: OAuthOptions) => {
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  const initiateOAuth = useCallback(async (options: OAuthOptions) => {
+    const { provider, redirectPath = '/settings', scope, authType = 'code', prompt, accessType, params = {} } = options;
 
-    if (sessionError || !sessionData.session) {
-      console.error('OAuth Error: No session found');
-      return;
-    }
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
 
-    const token = sessionData.session.access_token;
-    const uid = sessionData.session.user.id;
-
-    const { data: config, error: configError } = await supabase.functions.invoke('get-oauth-config', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (configError || !config?.[provider]) {
-      console.error(`Failed to get ${provider} client ID`, configError);
-      return;
-    }
-
-    const redirectUri = encodeURIComponent(`https://gvftvswyrevummbvyhxa.supabase.co/functions/v1/${redirectPath}`);
-    const encodedScope = encodeURIComponent(scope);
-
-    const params = new URLSearchParams({
-      client_id: config[provider],
-      redirect_uri: redirectUri,
-      scope: encodedScope,
-      response_type: authType,
-      state: uid,
-      ...customParams,
-    });
-
-    if (prompt) params.append('prompt', prompt);
-    if (accessType) params.append('access_type', accessType);
-
-    let oauthUrl = '';
-
-    switch (provider) {
-      case 'slack':
-        oauthUrl = `https://slack.com/oauth/v2/authorize?${params.toString()}`;
-        break;
-      case 'notion':
-        oauthUrl = `https://api.notion.com/v1/oauth/authorize?owner=user&${params.toString()}`;
-        break;
-      case 'trello':
-        oauthUrl = `https://trello.com/1/oauth2/authorize?${params.toString()}`;
-        break;
-      case 'google_calendar':
-        oauthUrl = `https://accounts.google.com/o/oauth2/auth?${params.toString()}`;
-        break;
-      default:
-        console.error(`OAuth provider ${provider} not supported`);
+      const state = user.id;
+      const baseUrl = 'https://gvftvswyrevummbvyhxa.supabase.co/functions/v1';
+      
+      let authUrl = '';
+      
+      // Special handling for Twitter OAuth 1.0a
+      if (provider === 'twitter') {
+        const { data, error } = await supabase.functions.invoke('oauth-twitter-request', {
+          body: { userId: user.id }
+        });
+        
+        if (error) throw error;
+        if (!data?.authUrl) throw new Error('Failed to get Twitter auth URL');
+        
+        window.location.href = data.authUrl;
         return;
-    }
+      }
 
-    window.location.href = oauthUrl;
+      // Fetch OAuth config from backend for OAuth 2.0 providers
+      const { data: config, error } = await supabase.functions.invoke('get-oauth-config', {
+        body: { provider }
+      });
+
+      if (error) throw error;
+      if (!config) throw new Error('OAuth config not found');
+      
+      switch (provider) {
+        case 'google_calendar': {
+          const redirectUri = `${baseUrl}/oauth-google-calendar`;
+          authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
+            client_id: config.clientId,
+            redirect_uri: redirectUri,
+            response_type: 'code',
+            scope: scope || config.scope,
+            access_type: accessType || 'offline',
+            prompt: prompt || 'consent',
+            state,
+            ...params,
+          })}`;
+          break;
+        }
+        case 'notion': {
+          const redirectUri = `${baseUrl}/oauth-notion`;
+          authUrl = `https://api.notion.com/v1/oauth/authorize?${new URLSearchParams({
+            client_id: config.clientId,
+            redirect_uri: redirectUri,
+            response_type: 'code',
+            owner: 'user',
+            state,
+            ...params,
+          })}`;
+          break;
+        }
+        case 'trello': {
+          const redirectUri = `${baseUrl}/oauth-trello`;
+          authUrl = `https://trello.com/1/authorize?${new URLSearchParams({
+            return_url: redirectUri,
+            callback_method: 'fragment',
+            scope: scope || 'read,write',
+            expiration: 'never',
+            name: 'B2B Nest',
+            key: config.clientId,
+            state,
+            ...params,
+          })}`;
+          break;
+        }
+        case 'slack': {
+          const redirectUri = `${baseUrl}/oauth-slack`;
+          authUrl = `https://slack.com/oauth/v2/authorize?${new URLSearchParams({
+            client_id: config.clientId,
+            redirect_uri: redirectUri,
+            scope: scope || 'channels:read,chat:write,users:read',
+            state,
+            ...params,
+          })}`;
+          break;
+        }
+        case 'linkedin': {
+          const redirectUri = `${baseUrl}/oauth-linkedin`;
+          authUrl = `https://www.linkedin.com/oauth/v2/authorization?${new URLSearchParams({
+            response_type: 'code',
+            client_id: config.clientId,
+            redirect_uri: redirectUri,
+            scope: scope || 'openid profile email w_member_social',
+            state,
+            ...params,
+          })}`;
+          break;
+        }
+        case 'facebook': {
+          const redirectUri = `${baseUrl}/oauth-facebook`;
+          authUrl = `https://www.facebook.com/v18.0/dialog/oauth?${new URLSearchParams({
+            client_id: config.clientId,
+            redirect_uri: redirectUri,
+            scope: scope || 'pages_manage_posts,pages_read_engagement',
+            state,
+            ...params,
+          })}`;
+          break;
+        }
+        default:
+          throw new Error(`Provider ${provider} not supported`);
+      }
+
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error('OAuth error:', error);
+    }
   }, []);
 
   return { initiateOAuth };

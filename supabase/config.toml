@@ -14,3 +14,21 @@ verify_jwt = true
 
 [functions.b2b-form-submit]
 verify_jwt = false
+
+[functions.oauth-twitter]
+verify_jwt = false
+
+[functions.oauth-twitter-request]
+verify_jwt = false
+
+[functions.oauth-linkedin]
+verify_jwt = false
+
+[functions.oauth-facebook]
+verify_jwt = false
+
+[functions.workflow-twitter-post]
+verify_jwt = true
+
+[functions.workflow-linkedin-post]
+verify_jwt = true
