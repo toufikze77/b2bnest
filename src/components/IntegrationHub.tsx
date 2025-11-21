@@ -11,6 +11,8 @@ import TwitterConnectCard from '@/components/integrations/TwitterConnectCard';
 import LinkedInConnectCard from '@/components/integrations/LinkedInConnectCard';
 import FacebookConnectCard from '@/components/integrations/FacebookConnectCard';
 import { FirecrawlComponent } from '@/components/integrations/FirecrawlComponent';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
 
 const IntegrationHub = () => {
   const { user } = useAuth();
@@ -20,6 +22,9 @@ const IntegrationHub = () => {
   const trelloRef = useRef<HTMLDivElement>(null);
   const notionRef = useRef<HTMLDivElement>(null);
   const slackRef = useRef<HTMLDivElement>(null);
+  const twitterRef = useRef<HTMLDivElement>(null);
+  const linkedinRef = useRef<HTMLDivElement>(null);
+  const facebookRef = useRef<HTMLDivElement>(null);
   const firecrawlRef = useRef<HTMLDivElement>(null);
   
   // Handle URL params to auto-scroll to specific integration
@@ -29,13 +34,15 @@ const IntegrationHub = () => {
     
     const refMap: Record<string, React.RefObject<HTMLDivElement>> = {
       'google-calendar': googleRef,
+      'google_calendar': googleRef,
       'google': googleRef,
       'trello': trelloRef,
       'notion': notionRef,
       'slack': slackRef,
+      'twitter': twitterRef,
+      'linkedin': linkedinRef,
+      'facebook': facebookRef,
       'firecrawl': firecrawlRef,
-      'gmail': googleRef,
-      'twilio': slackRef // Map twilio to slack section for now
     };
     
     if (integration && refMap[integration]?.current) {
@@ -45,9 +52,9 @@ const IntegrationHub = () => {
           block: 'center'
         });
         // Add highlight effect
-        refMap[integration].current?.classList.add('ring-2', 'ring-blue-500', 'ring-opacity-50');
+        refMap[integration].current?.classList.add('ring-2', 'ring-primary', 'ring-opacity-50');
         setTimeout(() => {
-          refMap[integration].current?.classList.remove('ring-2', 'ring-blue-500', 'ring-opacity-50');
+          refMap[integration].current?.classList.remove('ring-2', 'ring-primary', 'ring-opacity-50');
         }, 3000);
       }, 500);
     }
@@ -56,12 +63,12 @@ const IntegrationHub = () => {
   if (!user) {
     return (
       <div className="max-w-4xl mx-auto p-6">
-        <Card className="border-2 border-dashed border-blue-300">
+        <Card className="border-2 border-dashed">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-gray-900">
+            <CardTitle className="text-2xl">
               Sign In Required
             </CardTitle>
-            <p className="text-gray-600 mt-2">
+            <p className="text-muted-foreground mt-2">
               Please sign in to access integrations and connect your accounts.
             </p>
           </CardHeader>
@@ -71,32 +78,40 @@ const IntegrationHub = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto p-6">
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-4">
-          <Settings className="h-6 w-6 text-blue-600" />
-          <h2 className="text-2xl font-bold">Integration Hub</h2>
+          <Settings className="h-8 w-8 text-primary" />
+          <h1 className="text-3xl font-bold">Integration Hub</h1>
         </div>
-        <p className="text-gray-600">
+        <p className="text-muted-foreground text-lg">
           Connect your accounts and tools to streamline your workflow and boost productivity.
         </p>
       </div>
 
+      <Alert className="mb-6">
+        <Info className="h-4 w-4" />
+        <AlertDescription>
+          All connections are secure and encrypted. Your credentials are stored safely and only accessible by you.
+          Click on any integration to see step-by-step instructions.
+        </AlertDescription>
+      </Alert>
+
       <Tabs defaultValue="oauth" className="space-y-6">
-        <TabsList className="flex space-x-4 border-b pb-2">
-          <TabsTrigger value="oauth" className="px-4 py-2">OAuth Integrations</TabsTrigger>
-          <TabsTrigger value="tools" className="px-4 py-2">Web Scraping Tools</TabsTrigger>
+        <TabsList>
+          <TabsTrigger value="oauth">OAuth Integrations</TabsTrigger>
+          <TabsTrigger value="tools">Web Scraping Tools</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="oauth" className="space-y-6 pt-4">
+        <TabsContent value="oauth" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>OAuth Integrations</CardTitle>
+              <CardTitle>Connect Your Accounts</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Connect your accounts to sync data and automate workflows
+                Authorize access to your favorite tools and platforms
               </p>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="grid md:grid-cols-2 gap-4">
               <div ref={googleRef} className="transition-all duration-300">
                 <GoogleCalendarConnectCard userId={user.id} />
               </div>
@@ -109,14 +124,20 @@ const IntegrationHub = () => {
               <div ref={slackRef} className="transition-all duration-300">
                 <SlackConnectCard userId={user.id} />
               </div>
-              <TwitterConnectCard userId={user.id} />
-              <LinkedInConnectCard userId={user.id} />
-              <FacebookConnectCard userId={user.id} />
+              <div ref={twitterRef} className="transition-all duration-300">
+                <TwitterConnectCard userId={user.id} />
+              </div>
+              <div ref={linkedinRef} className="transition-all duration-300">
+                <LinkedInConnectCard userId={user.id} />
+              </div>
+              <div ref={facebookRef} className="transition-all duration-300">
+                <FacebookConnectCard userId={user.id} />
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="tools" className="space-y-6 pt-4">
+        <TabsContent value="tools" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Web Scraping & Data Extraction</CardTitle>

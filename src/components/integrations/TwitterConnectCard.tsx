@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Twitter, XCircle } from 'lucide-react';
+import { Twitter } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useOAuthConnect } from '@/hooks/useOAuthConnect';
+import { toast } from 'sonner';
+import { IntegrationCard } from './IntegrationCard';
+import { ConnectionModal } from './ConnectionModal';
 
 interface Props {
   userId: string;
@@ -10,9 +11,9 @@ interface Props {
 
 const TwitterConnectCard = ({ userId }: Props) => {
   const [connected, setConnected] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [userInfo, setUserInfo] = useState<any>(null);
-  const { initiateOAuth } = useOAuthConnect();
+  const [showModal, setShowModal] = useState(false);
 
   const fetchStatus = async () => {
     try {
@@ -36,8 +37,6 @@ const TwitterConnectCard = ({ userId }: Props) => {
     } catch (error) {
       console.error('Error checking connection status:', error);
       setConnected(false);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -45,11 +44,38 @@ const TwitterConnectCard = ({ userId }: Props) => {
     fetchStatus();
   }, [userId]);
 
-  const handleConnect = async () => {
-    await initiateOAuth({
-      provider: 'twitter',
-      redirectPath: '/settings?integration=twitter',
-    });
+  const handleConnect = async (credentials?: Record<string, string>) => {
+    if (!credentials) {
+      setShowModal(true);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Store Twitter API credentials securely
+      const { error } = await supabase.functions.invoke('store-twitter-credentials', {
+        body: { 
+          userId,
+          credentials: {
+            consumer_key: credentials.consumer_key,
+            consumer_secret: credentials.consumer_secret,
+            access_token: credentials.access_token,
+            access_token_secret: credentials.access_token_secret,
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success('Twitter connected successfully!');
+      await fetchStatus();
+      setShowModal(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to connect Twitter');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDisconnect = async () => {
@@ -64,37 +90,37 @@ const TwitterConnectCard = ({ userId }: Props) => {
       if (!error) {
         setConnected(false);
         setUserInfo(null);
+        toast.success('Twitter disconnected successfully');
       }
     } catch (error) {
       console.error('Error disconnecting:', error);
+      toast.error('Failed to disconnect Twitter');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="p-4 border rounded-xl flex items-center justify-between shadow-md">
-      <div className="flex items-center gap-3">
-        <Twitter className="w-8 h-8 text-blue-400" />
-        <div>
-          <h3 className="text-lg font-semibold">Twitter</h3>
-          <p className="text-sm text-muted-foreground">
-            {connected && userInfo?.screen_name
-              ? `Connected as @${userInfo.screen_name}`
-              : 'Not Connected'}
-          </p>
-        </div>
-      </div>
-      {connected ? (
-        <Button variant="destructive" onClick={handleDisconnect} disabled={loading}>
-          <XCircle className="mr-2 w-4 h-4" /> Disconnect
-        </Button>
-      ) : (
-        <Button onClick={handleConnect} disabled={loading}>
-          <Twitter className="mr-2 w-4 h-4" /> Connect
-        </Button>
-      )}
-    </div>
+    <>
+      <IntegrationCard
+        icon={Twitter}
+        title="Twitter"
+        description="Connect your Twitter account to post tweets and manage your presence"
+        connected={connected}
+        loading={loading}
+        userInfo={userInfo}
+        onConnect={() => setShowModal(true)}
+        onDisconnect={handleDisconnect}
+        docsUrl="https://developer.twitter.com/en/docs"
+      />
+      
+      <ConnectionModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        provider="twitter"
+        onConnect={handleConnect}
+      />
+    </>
   );
 };
 

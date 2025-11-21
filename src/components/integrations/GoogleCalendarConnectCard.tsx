@@ -1,9 +1,10 @@
-'use client';
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Calendar, PlugZap, XCircle } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useOAuthConnect } from '@/hooks/useOAuthConnect';
+import { toast } from 'sonner';
+import { IntegrationCard } from './IntegrationCard';
+import { ConnectionModal } from './ConnectionModal';
 
 interface Props {
   userId: string;
@@ -11,8 +12,9 @@ interface Props {
 
 const GoogleCalendarConnectCard = ({ userId }: Props) => {
   const [connected, setConnected] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [userInfo, setUserInfo] = useState<any>(null);
+  const [showModal, setShowModal] = useState(false);
   const { initiateOAuth } = useOAuthConnect();
 
   const fetchStatus = async () => {
@@ -31,21 +33,19 @@ const GoogleCalendarConnectCard = ({ userId }: Props) => {
             const metadata = typeof googleCalendarIntegration.metadata === 'string' 
               ? JSON.parse(googleCalendarIntegration.metadata) 
               : googleCalendarIntegration.metadata;
-            setUserEmail(metadata?.email || null);
+            setUserInfo({ email: metadata?.email, name: metadata?.name });
           }
         } else {
           setConnected(false);
-          setUserEmail(null);
+          setUserInfo(null);
         }
       } else {
         setConnected(false);
-        setUserEmail(null);
+        setUserInfo(null);
       }
     } catch (error) {
       console.error('Error checking Google Calendar connection status:', error);
       setConnected(false);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -53,14 +53,22 @@ const GoogleCalendarConnectCard = ({ userId }: Props) => {
     fetchStatus();
   }, [userId]);
 
-  const handleConnect = () => {
-    initiateOAuth({
-      provider: 'google_calendar',
-      redirectPath: 'oauth-google-calendar',
-      scope: 'https://www.googleapis.com/auth/calendar',
-      prompt: 'consent',
-      accessType: 'offline',
-    });
+  const handleConnect = async () => {
+    setLoading(true);
+    try {
+      await initiateOAuth({
+        provider: 'google_calendar',
+        redirectPath: '/business-tools?integration=google_calendar',
+        scope: 'https://www.googleapis.com/auth/calendar',
+        prompt: 'consent',
+        accessType: 'offline',
+      });
+      setShowModal(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to connect Google Calendar');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDisconnect = async () => {
@@ -74,36 +82,38 @@ const GoogleCalendarConnectCard = ({ userId }: Props) => {
 
       if (!error) {
         setConnected(false);
-        setUserEmail(null);
+        setUserInfo(null);
+        toast.success('Google Calendar disconnected successfully');
       }
     } catch (error) {
       console.error('Error disconnecting Google Calendar:', error);
+      toast.error('Failed to disconnect Google Calendar');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="p-4 border rounded-xl flex items-center justify-between shadow-md">
-      <div className="flex items-center space-x-3">
-        <Calendar className="w-8 h-8 text-blue-600" />
-        <div>
-          <h3 className="text-lg font-semibold">Google Calendar</h3>
-          <p className="text-sm text-muted-foreground">
-            {connected ? (userEmail ? `Connected as ${userEmail}` : 'Connected') : 'Not Connected'}
-          </p>
-        </div>
-      </div>
-      {connected ? (
-        <Button variant="destructive" onClick={handleDisconnect} disabled={loading}>
-          <XCircle className="mr-2 w-4 h-4" /> Disconnect
-        </Button>
-      ) : (
-        <Button onClick={handleConnect} disabled={loading}>
-          <PlugZap className="mr-2 w-4 h-4 animate-pulse" /> Connect
-        </Button>
-      )}
-    </div>
+    <>
+      <IntegrationCard
+        icon={Calendar}
+        title="Google Calendar"
+        description="Connect your Google Calendar to sync events and manage schedules"
+        connected={connected}
+        loading={loading}
+        userInfo={userInfo}
+        onConnect={() => setShowModal(true)}
+        onDisconnect={handleDisconnect}
+        docsUrl="https://developers.google.com/calendar"
+      />
+      
+      <ConnectionModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        provider="google_calendar"
+        onConnect={handleConnect}
+      />
+    </>
   );
 };
 

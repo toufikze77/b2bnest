@@ -7,8 +7,10 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const { provider } = await req.json().catch(() => ({}));
+    
     // OAuth client IDs are safe to expose publicly
-    const config = {
+    const allConfig: Record<string, string | undefined> = {
       google: Deno.env.get('GOOGLE_CLIENT_ID'),
       slack: Deno.env.get('SLACK_CLIENT_ID'), 
       notion: Deno.env.get('NOTION_CLIENT_ID'),
@@ -17,6 +19,11 @@ Deno.serve(async (req) => {
       linkedin: Deno.env.get('LINKEDIN_CLIENT_ID'),
       facebook: Deno.env.get('FACEBOOK_APP_ID'),
     };
+
+    // If a specific provider is requested, return just that config
+    const config = provider && allConfig[provider] 
+      ? { clientId: allConfig[provider], scope: '' }
+      : allConfig;
 
     return new Response(
       JSON.stringify(config),

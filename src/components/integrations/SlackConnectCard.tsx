@@ -1,9 +1,10 @@
-'use client';
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { CheckCircle2, PlugZap, XCircle } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useOAuthConnect } from '@/hooks/useOAuthConnect';
+import { toast } from 'sonner';
+import { IntegrationCard } from './IntegrationCard';
+import { ConnectionModal } from './ConnectionModal';
 
 interface Props {
   userId: string;
@@ -11,8 +12,9 @@ interface Props {
 
 const SlackConnectCard = ({ userId }: Props) => {
   const [connected, setConnected] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [teamName, setTeamName] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [userInfo, setUserInfo] = useState<any>(null);
+  const [showModal, setShowModal] = useState(false);
   const { initiateOAuth } = useOAuthConnect();
 
   const fetchStatus = async () => {
@@ -31,21 +33,19 @@ const SlackConnectCard = ({ userId }: Props) => {
             const metadata = typeof slackIntegration.metadata === 'string' 
               ? JSON.parse(slackIntegration.metadata) 
               : slackIntegration.metadata;
-            setTeamName(metadata?.team_name || null);
+            setUserInfo({ name: metadata?.team_name, email: metadata?.team_id });
           }
         } else {
           setConnected(false);
-          setTeamName(null);
+          setUserInfo(null);
         }
       } else {
         setConnected(false);
-        setTeamName(null);
+        setUserInfo(null);
       }
     } catch (error) {
       console.error('Error checking Slack connection status:', error);
       setConnected(false);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -53,12 +53,20 @@ const SlackConnectCard = ({ userId }: Props) => {
     fetchStatus();
   }, [userId]);
 
-  const handleConnect = () => {
-    initiateOAuth({
-      provider: 'slack',
-      redirectPath: 'oauth-slack',
-      scope: 'channels:read,chat:write,users:read',
-    });
+  const handleConnect = async () => {
+    setLoading(true);
+    try {
+      await initiateOAuth({
+        provider: 'slack',
+        redirectPath: '/business-tools?integration=slack',
+        scope: 'channels:read,chat:write,users:read',
+      });
+      setShowModal(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to connect Slack');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDisconnect = async () => {
@@ -72,33 +80,38 @@ const SlackConnectCard = ({ userId }: Props) => {
 
       if (!error) {
         setConnected(false);
-        setTeamName(null);
+        setUserInfo(null);
+        toast.success('Slack disconnected successfully');
       }
     } catch (error) {
       console.error('Error disconnecting Slack:', error);
+      toast.error('Failed to disconnect Slack');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="p-4 border rounded-xl flex items-center justify-between shadow-md">
-      <div>
-        <h3 className="text-lg font-semibold">Slack</h3>
-        <p className="text-sm text-muted-foreground">
-          {connected ? (teamName ? `Connected to ${teamName}` : 'Connected') : 'Not Connected'}
-        </p>
-      </div>
-      {connected ? (
-        <Button variant="destructive" onClick={handleDisconnect} disabled={loading}>
-          <XCircle className="mr-2 w-4 h-4" /> Disconnect
-        </Button>
-      ) : (
-        <Button onClick={handleConnect} disabled={loading}>
-          <PlugZap className="mr-2 w-4 h-4 animate-pulse" /> Connect
-        </Button>
-      )}
-    </div>
+    <>
+      <IntegrationCard
+        icon={MessageSquare}
+        title="Slack"
+        description="Connect your Slack workspace to send messages and manage channels"
+        connected={connected}
+        loading={loading}
+        userInfo={userInfo}
+        onConnect={() => setShowModal(true)}
+        onDisconnect={handleDisconnect}
+        docsUrl="https://api.slack.com/docs"
+      />
+      
+      <ConnectionModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        provider="slack"
+        onConnect={handleConnect}
+      />
+    </>
   );
 };
 

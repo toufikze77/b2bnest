@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Linkedin, XCircle } from 'lucide-react';
+import { Linkedin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useOAuthConnect } from '@/hooks/useOAuthConnect';
+import { toast } from 'sonner';
+import { IntegrationCard } from './IntegrationCard';
+import { ConnectionModal } from './ConnectionModal';
 
 interface Props {
   userId: string;
@@ -10,8 +12,9 @@ interface Props {
 
 const LinkedInConnectCard = ({ userId }: Props) => {
   const [connected, setConnected] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [userInfo, setUserInfo] = useState<any>(null);
+  const [showModal, setShowModal] = useState(false);
   const { initiateOAuth } = useOAuthConnect();
 
   const fetchStatus = async () => {
@@ -36,8 +39,6 @@ const LinkedInConnectCard = ({ userId }: Props) => {
     } catch (error) {
       console.error('Error checking connection status:', error);
       setConnected(false);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -46,11 +47,19 @@ const LinkedInConnectCard = ({ userId }: Props) => {
   }, [userId]);
 
   const handleConnect = async () => {
-    await initiateOAuth({
-      provider: 'linkedin',
-      redirectPath: '/settings?integration=linkedin',
-      scope: 'openid profile email w_member_social',
-    });
+    setLoading(true);
+    try {
+      await initiateOAuth({
+        provider: 'linkedin',
+        redirectPath: '/business-tools?integration=linkedin',
+        scope: 'openid profile email w_member_social',
+      });
+      setShowModal(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to connect LinkedIn');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDisconnect = async () => {
@@ -65,37 +74,37 @@ const LinkedInConnectCard = ({ userId }: Props) => {
       if (!error) {
         setConnected(false);
         setUserInfo(null);
+        toast.success('LinkedIn disconnected successfully');
       }
     } catch (error) {
       console.error('Error disconnecting:', error);
+      toast.error('Failed to disconnect LinkedIn');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="p-4 border rounded-xl flex items-center justify-between shadow-md">
-      <div className="flex items-center gap-3">
-        <Linkedin className="w-8 h-8 text-blue-600" />
-        <div>
-          <h3 className="text-lg font-semibold">LinkedIn</h3>
-          <p className="text-sm text-muted-foreground">
-            {connected && userInfo?.name
-              ? `Connected as ${userInfo.name}`
-              : 'Not Connected'}
-          </p>
-        </div>
-      </div>
-      {connected ? (
-        <Button variant="destructive" onClick={handleDisconnect} disabled={loading}>
-          <XCircle className="mr-2 w-4 h-4" /> Disconnect
-        </Button>
-      ) : (
-        <Button onClick={handleConnect} disabled={loading}>
-          <Linkedin className="mr-2 w-4 h-4" /> Connect
-        </Button>
-      )}
-    </div>
+    <>
+      <IntegrationCard
+        icon={Linkedin}
+        title="LinkedIn"
+        description="Connect your LinkedIn account to share professional updates and posts"
+        connected={connected}
+        loading={loading}
+        userInfo={userInfo}
+        onConnect={() => setShowModal(true)}
+        onDisconnect={handleDisconnect}
+        docsUrl="https://docs.microsoft.com/en-us/linkedin/"
+      />
+      
+      <ConnectionModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        provider="linkedin"
+        onConnect={handleConnect}
+      />
+    </>
   );
 };
 
