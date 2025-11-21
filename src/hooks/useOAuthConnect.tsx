@@ -10,6 +10,7 @@ interface OAuthOptions {
   accessType?: string;
   params?: Record<string, string>;
   clientId?: string;
+  clientSecret?: string;
 }
 
 export const useOAuthConnect = () => {
@@ -69,6 +70,7 @@ export const useOAuthConnect = () => {
           break;
         }
         case 'notion': {
+          if (!clientId) throw new Error('Notion Client ID is required');
           const redirectUri = `${baseUrl}/oauth-notion`;
           authUrl = `https://api.notion.com/v1/oauth/authorize?${new URLSearchParams({
             client_id: clientId,
@@ -81,6 +83,7 @@ export const useOAuthConnect = () => {
           break;
         }
         case 'trello': {
+          if (!clientId) throw new Error('Trello API Key is required');
           const redirectUri = `${baseUrl}/oauth-trello`;
           authUrl = `https://trello.com/1/authorize?${new URLSearchParams({
             return_url: redirectUri,
@@ -95,6 +98,7 @@ export const useOAuthConnect = () => {
           break;
         }
         case 'slack': {
+          if (!clientId) throw new Error('Slack Client ID is required');
           const redirectUri = `${baseUrl}/oauth-slack`;
           authUrl = `https://slack.com/oauth/v2/authorize?${new URLSearchParams({
             client_id: clientId,

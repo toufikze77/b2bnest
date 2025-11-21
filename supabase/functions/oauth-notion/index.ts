@@ -40,12 +40,44 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Exchange code for access token
+    // Initialize Supabase client first to get user credentials
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // Get user's stored credentials
+    const { data: integration, error: fetchError } = await supabase
+      .from('user_integrations')
+      .select('metadata')
+      .eq('user_id', state)
+      .eq('integration_name', 'notion')
+      .single()
+
+    if (fetchError || !integration?.metadata) {
+      return new Response(
+        JSON.stringify({ error: 'User credentials not found. Please reconnect and provide your API credentials.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const metadata = integration.metadata as { client_id?: string; client_secret?: string }
+    const clientId = metadata.client_id
+    const clientSecret = metadata.client_secret
+
+    if (!clientId || !clientSecret) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid credentials stored. Please reconnect.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Exchange code for access token using user's credentials
     const notionTokenResponse = await fetch('https://api.notion.com/v1/oauth/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Basic ${btoa(`${Deno.env.get('NOTION_CLIENT_ID')}:${Deno.env.get('NOTION_CLIENT_SECRET')}`)}`,
+        'Authorization': `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
         'Notion-Version': '2022-06-28',
       },
       body: JSON.stringify({
@@ -64,12 +96,6 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-
-    // Initialize Supabase client
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
 
     // Encrypt tokens
     const encryptedAccessToken = await encrypt(notionData.access_token, Deno.env.get('ENCRYPTION_SECRET') || 'default-secret-key-32-chars-long')

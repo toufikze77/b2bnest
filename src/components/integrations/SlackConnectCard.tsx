@@ -53,13 +53,35 @@ const SlackConnectCard = ({ userId }: Props) => {
     fetchStatus();
   }, [userId]);
 
-  const handleConnect = async () => {
+  const handleConnect = async (credentials?: Record<string, string>) => {
     setLoading(true);
     try {
+      if (!credentials?.clientId || !credentials?.clientSecret) {
+        toast.error('Please provide both Client ID and Client Secret');
+        return;
+      }
+
+      // Store credentials in user_integrations metadata
+      const { error: storeError } = await supabase
+        .from('user_integrations')
+        .upsert({
+          user_id: userId,
+          integration_name: 'slack',
+          metadata: {
+            client_id: credentials.clientId,
+            client_secret: credentials.clientSecret,
+          },
+          is_connected: false,
+        });
+
+      if (storeError) throw storeError;
+
       await initiateOAuth({
         provider: 'slack',
         redirectPath: '/business-tools?integration=slack',
         scope: 'channels:read,chat:write,users:read',
+        clientId: credentials.clientId,
+        clientSecret: credentials.clientSecret,
       });
       setShowModal(false);
     } catch (error: any) {

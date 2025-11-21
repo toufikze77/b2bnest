@@ -56,13 +56,35 @@ const TrelloConnectCard = ({ userId }: Props) => {
     fetchStatus();
   }, [userId]);
 
-  const handleConnect = async () => {
+  const handleConnect = async (credentials?: Record<string, string>) => {
     setLoading(true);
     try {
+      if (!credentials?.apiKey || !credentials?.apiToken) {
+        toast.error('Please provide both API Key and API Token');
+        return;
+      }
+
+      // Store credentials in user_integrations metadata
+      const { error: storeError } = await supabase
+        .from('user_integrations')
+        .upsert({
+          user_id: userId,
+          integration_name: 'trello',
+          metadata: {
+            api_key: credentials.apiKey,
+            api_token: credentials.apiToken,
+          },
+          is_connected: false,
+        });
+
+      if (storeError) throw storeError;
+
       await initiateOAuth({
         provider: 'trello',
         redirectPath: '/business-tools?integration=trello',
         scope: 'read,write',
+        clientId: credentials.apiKey,
+        clientSecret: credentials.apiToken,
       });
       setShowModal(false);
     } catch (error: any) {
