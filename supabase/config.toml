@@ -32,3 +32,6 @@ verify_jwt = true
 
 [functions.workflow-linkedin-post]
 verify_jwt = true
+
+[functions.oauth-onedrive]
+verify_jwt = false

@@ -4,9 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import GoogleCalendarConnectCard from '@/components/integrations/GoogleCalendarConnectCard';
-import TrelloConnectCard from '@/components/integrations/TrelloConnectCard';
-import NotionConnectCard from '@/components/integrations/NotionConnectCard';
-import SlackConnectCard from '@/components/integrations/SlackConnectCard';
+import OneDriveConnectCard from '@/components/integrations/OneDriveConnectCard';
 import TwitterConnectCard from '@/components/integrations/TwitterConnectCard';
 import LinkedInConnectCard from '@/components/integrations/LinkedInConnectCard';
 import FacebookConnectCard from '@/components/integrations/FacebookConnectCard';
@@ -19,9 +17,7 @@ const IntegrationHub = () => {
   
   // Refs for scrolling to specific integration cards
   const googleRef = useRef<HTMLDivElement>(null);
-  const trelloRef = useRef<HTMLDivElement>(null);
-  const notionRef = useRef<HTMLDivElement>(null);
-  const slackRef = useRef<HTMLDivElement>(null);
+  const onedriveRef = useRef<HTMLDivElement>(null);
   const twitterRef = useRef<HTMLDivElement>(null);
   const linkedinRef = useRef<HTMLDivElement>(null);
   const facebookRef = useRef<HTMLDivElement>(null);
@@ -36,9 +32,7 @@ const IntegrationHub = () => {
       'google-calendar': googleRef,
       'google_calendar': googleRef,
       'google': googleRef,
-      'trello': trelloRef,
-      'notion': notionRef,
-      'slack': slackRef,
+      'onedrive': onedriveRef,
       'twitter': twitterRef,
       'linkedin': linkedinRef,
       'facebook': facebookRef,
@@ -115,14 +109,8 @@ const IntegrationHub = () => {
               <div ref={googleRef} className="transition-all duration-300">
                 <GoogleCalendarConnectCard userId={user.id} />
               </div>
-              <div ref={trelloRef} className="transition-all duration-300">
-                <TrelloConnectCard userId={user.id} />
-              </div>
-              <div ref={notionRef} className="transition-all duration-300">
-                <NotionConnectCard userId={user.id} />
-              </div>
-              <div ref={slackRef} className="transition-all duration-300">
-                <SlackConnectCard userId={user.id} />
+              <div ref={onedriveRef} className="transition-all duration-300">
+                <OneDriveConnectCard userId={user.id} />
               </div>
               <div ref={twitterRef} className="transition-all duration-300">
                 <TwitterConnectCard userId={user.id} />

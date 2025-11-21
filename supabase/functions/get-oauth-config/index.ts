@@ -12,9 +12,7 @@ Deno.serve(async (req) => {
     // OAuth client IDs are safe to expose publicly
     const allConfig: Record<string, string | undefined> = {
       google: Deno.env.get('GOOGLE_CLIENT_ID'),
-      slack: Deno.env.get('SLACK_CLIENT_ID'), 
-      notion: Deno.env.get('NOTION_CLIENT_ID'),
-      trello: Deno.env.get('TRELLO_CLIENT_ID'),
+      onedrive: Deno.env.get('MICROSOFT_CLIENT_ID'),
       twitter: Deno.env.get('TWITTER_CONSUMER_KEY'),
       linkedin: Deno.env.get('LINKEDIN_CLIENT_ID'),
       facebook: Deno.env.get('FACEBOOK_APP_ID'),
