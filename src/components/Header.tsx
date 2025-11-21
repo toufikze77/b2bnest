@@ -67,6 +67,27 @@ const Header = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <span className="text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">
+                  Tools
+                </span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=invoice">Invoice Generator</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=contract">Contract Generator</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=time-tracker">Time Tracker</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/business-tools?tool=document-library">Document Library</Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <span className="text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">
                   AI Tools
                 </span>
               </DropdownMenuTrigger>
@@ -224,6 +245,39 @@ const Header = () => {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Project Management
+                  </Link>
+                </div>
+              </div>
+              <div className="px-2">
+                <div className="font-medium text-gray-900 mb-2">Tools</div>
+                <div className="pl-4 space-y-2">
+                  <Link
+                    to="/business-tools?tool=invoice"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Invoice Generator
+                  </Link>
+                  <Link
+                    to="/business-tools?tool=contract"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Contract Generator
+                  </Link>
+                  <Link
+                    to="/business-tools?tool=time-tracker"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Time Tracker
+                  </Link>
+                  <Link
+                    to="/business-tools?tool=document-library"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Document Library
                   </Link>
                 </div>
               </div>
