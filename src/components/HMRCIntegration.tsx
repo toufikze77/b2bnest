@@ -401,46 +401,164 @@ const HMRCIntegration = () => {
             Help & Resources
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-3 gap-4">
-            <Link to="/help">
-              <Button variant="outline" className="w-full h-auto flex-col gap-2 p-4">
-                <HelpCircle className="h-6 w-6 text-primary" />
-                <div>
-                  <p className="font-semibold">Help Center</p>
-                  <p className="text-xs text-muted-foreground">FAQs and guides</p>
-                </div>
+        <CardContent className="space-y-6">
+          {/* Internal Resources */}
+          <div>
+            <h3 className="font-semibold mb-3 text-sm text-muted-foreground">B2BNEST Support</h3>
+            <div className="grid md:grid-cols-3 gap-4">
+              <Button 
+                variant="outline" 
+                className="w-full h-auto flex-col gap-2 p-4 hover:bg-primary/5"
+                asChild
+              >
+                <Link to="/help">
+                  <HelpCircle className="h-6 w-6 text-primary" />
+                  <div className="text-center">
+                    <p className="font-semibold">Help Center</p>
+                    <p className="text-xs text-muted-foreground">FAQs and guides</p>
+                  </div>
+                </Link>
               </Button>
-            </Link>
-            
-            <Link to="/knowledge-base">
-              <Button variant="outline" className="w-full h-auto flex-col gap-2 p-4">
-                <Book className="h-6 w-6 text-primary" />
-                <div>
-                  <p className="font-semibold">Knowledge Base</p>
-                  <p className="text-xs text-muted-foreground">Detailed documentation</p>
-                </div>
+              
+              <Button 
+                variant="outline" 
+                className="w-full h-auto flex-col gap-2 p-4 hover:bg-primary/5"
+                asChild
+              >
+                <Link to="/knowledge-base">
+                  <Book className="h-6 w-6 text-primary" />
+                  <div className="text-center">
+                    <p className="font-semibold">Knowledge Base</p>
+                    <p className="text-xs text-muted-foreground">Detailed documentation</p>
+                  </div>
+                </Link>
               </Button>
-            </Link>
-            
-            <Link to="/contact">
-              <Button variant="outline" className="w-full h-auto flex-col gap-2 p-4">
-                <Mail className="h-6 w-6 text-primary" />
-                <div>
-                  <p className="font-semibold">Contact Support</p>
-                  <p className="text-xs text-muted-foreground">Get in touch with us</p>
-                </div>
+              
+              <Button 
+                variant="outline" 
+                className="w-full h-auto flex-col gap-2 p-4 hover:bg-primary/5"
+                asChild
+              >
+                <Link to="/contact">
+                  <Mail className="h-6 w-6 text-primary" />
+                  <div className="text-center">
+                    <p className="font-semibold">Contact Support</p>
+                    <p className="text-xs text-muted-foreground">Get in touch with us</p>
+                  </div>
+                </Link>
               </Button>
-            </Link>
+            </div>
+          </div>
+
+          {/* Official HMRC Resources */}
+          <div>
+            <h3 className="font-semibold mb-3 text-sm text-muted-foreground">Official HMRC Resources</h3>
+            <div className="grid md:grid-cols-2 gap-3">
+              <Button 
+                variant="outline" 
+                className="justify-start h-auto p-3 hover:bg-primary/5"
+                asChild
+              >
+                <a href="https://www.gov.uk/government/organisations/hm-revenue-customs" target="_blank" rel="noopener noreferrer">
+                  <div className="flex items-center gap-3 text-left">
+                    <Building2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-sm">HMRC Official Website</p>
+                      <p className="text-xs text-muted-foreground">Government portal</p>
+                    </div>
+                  </div>
+                </a>
+              </Button>
+
+              <Button 
+                variant="outline" 
+                className="justify-start h-auto p-3 hover:bg-primary/5"
+                asChild
+              >
+                <a href="https://www.gov.uk/topic/business-tax/vat" target="_blank" rel="noopener noreferrer">
+                  <div className="flex items-center gap-3 text-left">
+                    <FileText className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-sm">VAT Guidance</p>
+                      <p className="text-xs text-muted-foreground">Official VAT information</p>
+                    </div>
+                  </div>
+                </a>
+              </Button>
+
+              <Button 
+                variant="outline" 
+                className="justify-start h-auto p-3 hover:bg-primary/5"
+                asChild
+              >
+                <a href="https://www.gov.uk/topic/business-tax/paye" target="_blank" rel="noopener noreferrer">
+                  <div className="flex items-center gap-3 text-left">
+                    <Calculator className="h-5 w-5 text-purple-600 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-sm">PAYE & Payroll</p>
+                      <p className="text-xs text-muted-foreground">Employer obligations</p>
+                    </div>
+                  </div>
+                </a>
+              </Button>
+
+              <Button 
+                variant="outline" 
+                className="justify-start h-auto p-3 hover:bg-primary/5"
+                asChild
+              >
+                <a href="https://www.gov.uk/log-in-register-hmrc-online-services" target="_blank" rel="noopener noreferrer">
+                  <div className="flex items-center gap-3 text-left">
+                    <LinkIcon className="h-5 w-5 text-orange-600 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-sm">Government Gateway</p>
+                      <p className="text-xs text-muted-foreground">Sign in to HMRC services</p>
+                    </div>
+                  </div>
+                </a>
+              </Button>
+
+              <Button 
+                variant="outline" 
+                className="justify-start h-auto p-3 hover:bg-primary/5"
+                asChild
+              >
+                <a href="https://www.gov.uk/guidance/making-tax-digital-for-vat" target="_blank" rel="noopener noreferrer">
+                  <div className="flex items-center gap-3 text-left">
+                    <TrendingUp className="h-5 w-5 text-teal-600 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-sm">Making Tax Digital</p>
+                      <p className="text-xs text-muted-foreground">MTD requirements</p>
+                    </div>
+                  </div>
+                </a>
+              </Button>
+
+              <Button 
+                variant="outline" 
+                className="justify-start h-auto p-3 hover:bg-primary/5"
+                asChild
+              >
+                <a href="https://developer.service.hmrc.gov.uk/api-documentation" target="_blank" rel="noopener noreferrer">
+                  <div className="flex items-center gap-3 text-left">
+                    <Book className="h-5 w-5 text-indigo-600 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-sm">HMRC API Documentation</p>
+                      <p className="text-xs text-muted-foreground">Developer resources</p>
+                    </div>
+                  </div>
+                </a>
+              </Button>
+            </div>
           </div>
           
-          <Alert className="mt-4">
+          <Alert>
             <HelpCircle className="h-4 w-4" />
             <AlertTitle>Need Help with HMRC Integration?</AlertTitle>
             <AlertDescription>
-              Visit our Knowledge Base for step-by-step guides on setting up HMRC integration,
-              submitting returns, and managing tax obligations. Our support team is available
-              Mon-Fri, 9am-6pm GMT.
+              Visit our <Link to="/knowledge-base" className="underline font-medium">Knowledge Base</Link> for step-by-step guides on setting up HMRC integration,
+              submitting returns, and managing tax obligations. For official HMRC guidance, refer to the links above.
+              Our support team is available <Link to="/contact" className="underline font-medium">here</Link> Mon-Fri, 9am-6pm GMT.
             </AlertDescription>
           </Alert>
         </CardContent>
