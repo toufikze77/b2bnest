@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import GoogleCalendarConnectCard from '@/components/integrations/GoogleCalendarConnectCard';
+import ICloudCalendarConnectCard from '@/components/integrations/iCloudCalendarConnectCard';
+import OutlookCalendarConnectCard from '@/components/integrations/OutlookCalendarConnectCard';
 import OneDriveConnectCard from '@/components/integrations/OneDriveConnectCard';
 import TwitterConnectCard from '@/components/integrations/TwitterConnectCard';
 import LinkedInConnectCard from '@/components/integrations/LinkedInConnectCard';
@@ -17,6 +19,8 @@ const IntegrationHub = () => {
   
   // Refs for scrolling to specific integration cards
   const googleRef = useRef<HTMLDivElement>(null);
+  const icloudRef = useRef<HTMLDivElement>(null);
+  const outlookRef = useRef<HTMLDivElement>(null);
   const onedriveRef = useRef<HTMLDivElement>(null);
   const twitterRef = useRef<HTMLDivElement>(null);
   const linkedinRef = useRef<HTMLDivElement>(null);
@@ -32,6 +36,12 @@ const IntegrationHub = () => {
       'google-calendar': googleRef,
       'google_calendar': googleRef,
       'google': googleRef,
+      'icloud-calendar': icloudRef,
+      'icloud_calendar': icloudRef,
+      'icloud': icloudRef,
+      'outlook-calendar': outlookRef,
+      'outlook_calendar': outlookRef,
+      'outlook': outlookRef,
       'onedrive': onedriveRef,
       'twitter': twitterRef,
       'linkedin': linkedinRef,
@@ -108,6 +118,12 @@ const IntegrationHub = () => {
             <CardContent className="grid md:grid-cols-2 gap-4">
               <div ref={googleRef} className="transition-all duration-300">
                 <GoogleCalendarConnectCard userId={user.id} />
+              </div>
+              <div ref={icloudRef} className="transition-all duration-300">
+                <ICloudCalendarConnectCard userId={user.id} />
+              </div>
+              <div ref={outlookRef} className="transition-all duration-300">
+                <OutlookCalendarConnectCard userId={user.id} />
               </div>
               <div ref={onedriveRef} className="transition-all duration-300">
                 <OneDriveConnectCard userId={user.id} />

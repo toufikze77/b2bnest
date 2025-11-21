@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface OAuthOptions {
-  provider: 'slack' | 'notion' | 'trello' | 'google_calendar' | 'twitter' | 'linkedin' | 'facebook' | 'onedrive';
+  provider: 'slack' | 'notion' | 'trello' | 'google_calendar' | 'twitter' | 'linkedin' | 'facebook' | 'onedrive' | 'icloud_calendar' | 'outlook_calendar';
   redirectPath?: string;
   scope?: string;
   authType?: 'code' | 'token';
@@ -139,6 +139,31 @@ export const useOAuthConnect = () => {
             redirect_uri: redirectUri,
             response_type: 'code',
             scope: scope || 'Files.ReadWrite.All offline_access',
+            state,
+            ...params,
+          })}`;
+          break;
+        }
+        case 'icloud_calendar': {
+          const redirectUri = `${baseUrl}/oauth-icloud-calendar`;
+          authUrl = `https://appleid.apple.com/auth/authorize?${new URLSearchParams({
+            client_id: clientId,
+            redirect_uri: redirectUri,
+            response_type: 'code',
+            scope: scope || 'name email',
+            response_mode: 'form_post',
+            state,
+            ...params,
+          })}`;
+          break;
+        }
+        case 'outlook_calendar': {
+          const redirectUri = `${baseUrl}/oauth-outlook-calendar`;
+          authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${new URLSearchParams({
+            client_id: clientId,
+            redirect_uri: redirectUri,
+            response_type: 'code',
+            scope: scope || 'Calendars.ReadWrite offline_access',
             state,
             ...params,
           })}`;

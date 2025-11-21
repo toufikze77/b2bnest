@@ -27,6 +27,12 @@ verify_jwt = false
 [functions.oauth-facebook]
 verify_jwt = false
 
+[functions.oauth-icloud-calendar]
+verify_jwt = false
+
+[functions.oauth-outlook-calendar]
+verify_jwt = false
+
 [functions.workflow-twitter-post]
 verify_jwt = true
 
