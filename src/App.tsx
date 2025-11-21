@@ -35,10 +35,6 @@ import MarketingMaterials from "@/pages/categories/MarketingMaterials";
 import Operations from "@/pages/categories/Operations";
 import CRMPage from "@/pages/CRMPage";
 import ProjectManagementPage from "@/pages/ProjectManagementPage";
-import BusinessDirectory from "@/pages/BusinessDirectory";
-import SupplierDirectory from "@/pages/SupplierDirectory";
-import CompanyDirectory from "@/pages/CompanyDirectory";
-import ServiceDirectory from "@/pages/ServiceDirectory";
 import Settings from "@/pages/Settings";
 import PaymentSuccess from "@/pages/PaymentSuccess";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -89,12 +85,6 @@ function App() {
               <Route path="/project-management" element={<ProtectedRoute><ProjectManagementPage /></ProtectedRoute>} />
               <Route path="/live-charts" element={<Market />} />
               <Route path="/business-news" element={<BusinessNews />} />
-              
-              {/* Directory Routes - Public Access */}
-              <Route path="/directory" element={<BusinessDirectory />} />
-              <Route path="/directory/suppliers" element={<SupplierDirectory />} />
-              <Route path="/directory/companies" element={<CompanyDirectory />} />
-                            <Route path="/directory/services" element={<ServiceDirectory />} />
                <Route path="/payment-success" element={<PaymentSuccess />} />
                
                {/* Public work request form */}
