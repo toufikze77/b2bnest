@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Facebook, XCircle } from 'lucide-react';
+import { Facebook } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useOAuthConnect } from '@/hooks/useOAuthConnect';
+import { toast } from 'sonner';
+import { IntegrationCard } from './IntegrationCard';
+import { ConnectionModal } from './ConnectionModal';
 
 interface Props {
   userId: string;
@@ -10,8 +12,9 @@ interface Props {
 
 const FacebookConnectCard = ({ userId }: Props) => {
   const [connected, setConnected] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [userInfo, setUserInfo] = useState<any>(null);
+  const [showModal, setShowModal] = useState(false);
   const { initiateOAuth } = useOAuthConnect();
 
   const fetchStatus = async () => {
@@ -36,8 +39,6 @@ const FacebookConnectCard = ({ userId }: Props) => {
     } catch (error) {
       console.error('Error checking connection status:', error);
       setConnected(false);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -46,11 +47,19 @@ const FacebookConnectCard = ({ userId }: Props) => {
   }, [userId]);
 
   const handleConnect = async () => {
-    await initiateOAuth({
-      provider: 'facebook',
-      redirectPath: '/settings?integration=facebook',
-      scope: 'pages_manage_posts,pages_read_engagement',
-    });
+    setLoading(true);
+    try {
+      await initiateOAuth({
+        provider: 'facebook',
+        redirectPath: '/business-tools?integration=facebook',
+        scope: 'pages_manage_posts,pages_read_engagement',
+      });
+      setShowModal(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to connect Facebook');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDisconnect = async () => {
@@ -65,37 +74,37 @@ const FacebookConnectCard = ({ userId }: Props) => {
       if (!error) {
         setConnected(false);
         setUserInfo(null);
+        toast.success('Facebook disconnected successfully');
       }
     } catch (error) {
       console.error('Error disconnecting:', error);
+      toast.error('Failed to disconnect Facebook');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="p-4 border rounded-xl flex items-center justify-between shadow-md">
-      <div className="flex items-center gap-3">
-        <Facebook className="w-8 h-8 text-blue-600" />
-        <div>
-          <h3 className="text-lg font-semibold">Facebook</h3>
-          <p className="text-sm text-muted-foreground">
-            {connected && userInfo?.name
-              ? `Connected as ${userInfo.name}`
-              : 'Not Connected'}
-          </p>
-        </div>
-      </div>
-      {connected ? (
-        <Button variant="destructive" onClick={handleDisconnect} disabled={loading}>
-          <XCircle className="mr-2 w-4 h-4" /> Disconnect
-        </Button>
-      ) : (
-        <Button onClick={handleConnect} disabled={loading}>
-          <Facebook className="mr-2 w-4 h-4" /> Connect
-        </Button>
-      )}
-    </div>
+    <>
+      <IntegrationCard
+        icon={Facebook}
+        title="Facebook"
+        description="Connect your Facebook account to manage pages and post updates"
+        connected={connected}
+        loading={loading}
+        userInfo={userInfo}
+        onConnect={() => setShowModal(true)}
+        onDisconnect={handleDisconnect}
+        docsUrl="https://developers.facebook.com/docs/"
+      />
+      
+      <ConnectionModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        provider="facebook"
+        onConnect={handleConnect}
+      />
+    </>
   );
 };
 

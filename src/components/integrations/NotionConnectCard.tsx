@@ -1,10 +1,10 @@
-'use client';
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
 import { useOAuthConnect } from '@/hooks/useOAuthConnect';
+import { toast } from 'sonner';
+import { IntegrationCard } from './IntegrationCard';
+import { ConnectionModal } from './ConnectionModal';
 
 interface Props {
   userId: string;
@@ -12,9 +12,9 @@ interface Props {
 
 const NotionConnectCard = ({ userId }: Props) => {
   const [connected, setConnected] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [userInfo, setUserInfo] = useState<any>(null);
+  const [showModal, setShowModal] = useState(false);
   const { initiateOAuth } = useOAuthConnect();
 
   const fetchStatus = async () => {
@@ -33,21 +33,19 @@ const NotionConnectCard = ({ userId }: Props) => {
             const metadata = typeof notionIntegration.metadata === 'string' 
               ? JSON.parse(notionIntegration.metadata) 
               : notionIntegration.metadata;
-            setUserEmail(metadata?.user_email || null);
+            setUserInfo({ email: metadata?.user_email, name: metadata?.workspace_name });
           }
         } else {
           setConnected(false);
-          setUserEmail(null);
+          setUserInfo(null);
         }
       } else {
         setConnected(false);
-        setUserEmail(null);
+        setUserInfo(null);
       }
     } catch (error) {
       console.error('Error checking Notion connection status:', error);
       setConnected(false);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -55,12 +53,19 @@ const NotionConnectCard = ({ userId }: Props) => {
     fetchStatus();
   }, [userId]);
 
-  const handleConnect = () => {
-    initiateOAuth({
-      provider: 'notion',
-      redirectPath: 'oauth-notion',
-      scope: '',
-    });
+  const handleConnect = async () => {
+    setLoading(true);
+    try {
+      await initiateOAuth({
+        provider: 'notion',
+        redirectPath: '/business-tools?integration=notion',
+      });
+      setShowModal(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to connect Notion');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDisconnect = async () => {
@@ -74,48 +79,38 @@ const NotionConnectCard = ({ userId }: Props) => {
 
       if (!error) {
         setConnected(false);
-        setUserEmail(null);
-        toast({
-          title: "Success",
-          description: "Notion integration disconnected successfully",
-        });
+        setUserInfo(null);
+        toast.success('Notion disconnected successfully');
       }
     } catch (error) {
       console.error('Error disconnecting Notion:', error);
+      toast.error('Failed to disconnect Notion');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-black rounded flex items-center justify-center">
-            <span className="text-white font-bold text-xs">N</span>
-          </div>
-          <CardTitle className="text-lg">Notion</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            {connected 
-              ? (userEmail ? `Connected as ${userEmail}` : 'Connected') 
-              : 'Connect your Notion account to sync data and automate workflows'
-            }
-          </p>
-          <Button
-            onClick={connected ? handleDisconnect : handleConnect}
-            disabled={loading}
-            variant={connected ? "destructive" : "default"}
-            size="sm"
-          >
-            {loading ? 'Processing...' : (connected ? 'Disconnect' : 'Connect')}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+    <>
+      <IntegrationCard
+        icon={FileText}
+        title="Notion"
+        description="Connect your Notion workspace to sync data and automate workflows"
+        connected={connected}
+        loading={loading}
+        userInfo={userInfo}
+        onConnect={() => setShowModal(true)}
+        onDisconnect={handleDisconnect}
+        docsUrl="https://developers.notion.com/"
+      />
+      
+      <ConnectionModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        provider="notion"
+        onConnect={handleConnect}
+      />
+    </>
   );
 };
 
