@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Mail, Send } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -32,16 +33,12 @@ const ContactForm = () => {
 
   const onSubmit = async (data: ContactFormData) => {
     try {
-      const response = await fetch('/api/send-contact-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
+      const { error } = await supabase.functions.invoke('send-contact-email', {
+        body: data,
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to send message');
+      if (error) {
+        throw error;
       }
 
       toast({
@@ -51,6 +48,7 @@ const ContactForm = () => {
       
       reset();
     } catch (error) {
+      console.error('Error sending contact form:', error);
       toast({
         title: 'Error sending message',
         description: 'Please try again later or contact us directly.',
