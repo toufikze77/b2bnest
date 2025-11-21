@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface OAuthOptions {
-  provider: 'slack' | 'notion' | 'trello' | 'google_calendar' | 'twitter' | 'linkedin' | 'facebook';
+  provider: 'slack' | 'notion' | 'trello' | 'google_calendar' | 'twitter' | 'linkedin' | 'facebook' | 'onedrive';
   redirectPath?: string;
   scope?: string;
   authType?: 'code' | 'token';
@@ -127,6 +127,18 @@ export const useOAuthConnect = () => {
             client_id: clientId,
             redirect_uri: redirectUri,
             scope: scope || 'pages_manage_posts,pages_read_engagement',
+            state,
+            ...params,
+          })}`;
+          break;
+        }
+        case 'onedrive': {
+          const redirectUri = `${baseUrl}/oauth-onedrive`;
+          authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${new URLSearchParams({
+            client_id: clientId,
+            redirect_uri: redirectUri,
+            response_type: 'code',
+            scope: scope || 'Files.ReadWrite.All offline_access',
             state,
             ...params,
           })}`;
