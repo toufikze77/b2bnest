@@ -31,7 +31,43 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Exchange code for access token
+    // Initialize Supabase client to get user's stored credentials
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // Get user's stored Google credentials
+    const { data: integration, error: integrationError } = await supabase
+      .from('user_integrations')
+      .select('metadata')
+      .eq('user_id', state)
+      .eq('integration_name', 'google_calendar')
+      .single()
+
+    if (integrationError || !integration?.metadata) {
+      console.error('Failed to get user credentials:', integrationError)
+      return new Response(
+        JSON.stringify({ error: 'User credentials not found. Please reconnect.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const metadata = typeof integration.metadata === 'string' 
+      ? JSON.parse(integration.metadata) 
+      : integration.metadata
+
+    const clientId = metadata.client_id || Deno.env.get('GOOGLE_CLIENT_ID')
+    const clientSecret = metadata.client_secret || Deno.env.get('GOOGLE_CLIENT_SECRET')
+
+    if (!clientId || !clientSecret) {
+      return new Response(
+        JSON.stringify({ error: 'Missing credentials' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Exchange code for access token using user's credentials
     const googleTokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: {
@@ -39,8 +75,8 @@ Deno.serve(async (req) => {
       },
       body: new URLSearchParams({
         code,
-        client_id: Deno.env.get('GOOGLE_CLIENT_ID') || '',
-        client_secret: Deno.env.get('GOOGLE_CLIENT_SECRET') || '',
+        client_id: clientId,
+        client_secret: clientSecret,
         redirect_uri: `${Deno.env.get('SUPABASE_URL')}/functions/v1/oauth-google-calendar`,
         grant_type: 'authorization_code',
       }),
@@ -64,18 +100,12 @@ Deno.serve(async (req) => {
     })
     const userInfo = await userInfoResponse.json()
 
-    // Initialize Supabase client
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
     // Calculate expiration
     const expiresAt = googleData.expires_in 
       ? new Date(Date.now() + googleData.expires_in * 1000).toISOString()
       : null
 
-    // Store integration in database using secure function
+    // Store integration tokens in database using secure function
     const { error: dbError } = await supabase.rpc('store_integration_tokens', {
       p_integration_name: 'google_calendar',
       p_access_token: googleData.access_token,
@@ -86,6 +116,7 @@ Deno.serve(async (req) => {
         name: userInfo.name,
         picture: userInfo.picture,
         scope: googleData.scope,
+        client_id: clientId, // Keep client_id for token refresh
       },
       p_user_id: state
     })

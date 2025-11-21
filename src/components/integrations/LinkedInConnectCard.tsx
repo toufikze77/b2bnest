@@ -46,14 +46,37 @@ const LinkedInConnectCard = ({ userId }: Props) => {
     fetchStatus();
   }, [userId]);
 
-  const handleConnect = async () => {
+  const handleConnect = async (credentials?: Record<string, string>) => {
+    if (!credentials?.client_id || !credentials?.client_secret) {
+      toast.error('Please provide both Client ID and Client Secret');
+      return;
+    }
+
     setLoading(true);
     try {
+      // Store credentials first
+      const { error: storeError } = await supabase
+        .from('user_integrations')
+        .upsert({
+          user_id: userId,
+          integration_name: 'linkedin',
+          metadata: {
+            client_id: credentials.client_id,
+            client_secret: credentials.client_secret,
+          },
+          is_connected: false,
+        });
+
+      if (storeError) throw storeError;
+
+      // Initiate OAuth with user's client ID
       await initiateOAuth({
         provider: 'linkedin',
         redirectPath: '/business-tools?integration=linkedin',
         scope: 'openid profile email w_member_social',
+        clientId: credentials.client_id,
       });
+      
       setShowModal(false);
     } catch (error: any) {
       toast.error(error.message || 'Failed to connect LinkedIn');

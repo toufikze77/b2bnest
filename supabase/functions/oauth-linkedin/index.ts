@@ -1,5 +1,4 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
-import { encrypt } from '../shared/crypto.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,15 +26,38 @@ Deno.serve(async (req) => {
       throw new Error('Missing authorization code or state')
     }
 
-    const clientId = Deno.env.get('LINKEDIN_CLIENT_ID')
-    const clientSecret = Deno.env.get('LINKEDIN_CLIENT_SECRET')
+    // Initialize Supabase client to get user's stored credentials
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // Get user's stored LinkedIn credentials
+    const { data: integration, error: integrationError } = await supabase
+      .from('user_integrations')
+      .select('metadata')
+      .eq('user_id', state)
+      .eq('integration_name', 'linkedin')
+      .single()
+
+    if (integrationError || !integration?.metadata) {
+      console.error('Failed to get user credentials:', integrationError)
+      throw new Error('User credentials not found. Please reconnect.')
+    }
+
+    const metadata = typeof integration.metadata === 'string' 
+      ? JSON.parse(integration.metadata) 
+      : integration.metadata
+
+    const clientId = metadata.client_id || Deno.env.get('LINKEDIN_CLIENT_ID')
+    const clientSecret = metadata.client_secret || Deno.env.get('LINKEDIN_CLIENT_SECRET')
     const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/oauth-linkedin`
 
     if (!clientId || !clientSecret) {
       throw new Error('LinkedIn API credentials not configured')
     }
 
-    // Exchange code for access token
+    // Exchange code for access token using user's credentials
     const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
       method: 'POST',
       headers: {
@@ -67,11 +89,6 @@ Deno.serve(async (req) => {
 
     const profileData = await profileResponse.json()
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
     const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
 
     // Store tokens using RPC function
@@ -85,6 +102,7 @@ Deno.serve(async (req) => {
         email: profileData.email,
         picture: profileData.picture,
         sub: profileData.sub,
+        client_id: clientId, // Keep client_id for token refresh
       },
       p_user_id: state,
     })
@@ -98,7 +116,7 @@ Deno.serve(async (req) => {
       status: 302,
       headers: {
         ...corsHeaders,
-        Location: `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/settings?integration=linkedin`,
+        Location: `${Deno.env.get('SITE_URL') || 'http://localhost:5173'}/business-tools?integration=linkedin`,
       },
     })
   } catch (error: any) {
