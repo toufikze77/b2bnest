@@ -1383,6 +1383,121 @@ export type Database = {
         }
         Relationships: []
       }
+      note_categories: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          order: number | null
+          parent_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          order?: number | null
+          parent_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          order?: number | null
+          parent_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "note_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notes: {
+        Row: {
+          category_id: string | null
+          checklist: Json | null
+          color: string | null
+          content: string | null
+          created_at: string | null
+          format: string | null
+          id: string
+          is_archived: boolean | null
+          is_favorite: boolean | null
+          is_pinned: boolean | null
+          is_template: boolean | null
+          reminder_date: string | null
+          tags: string[] | null
+          template_name: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+          view_count: number | null
+        }
+        Insert: {
+          category_id?: string | null
+          checklist?: Json | null
+          color?: string | null
+          content?: string | null
+          created_at?: string | null
+          format?: string | null
+          id?: string
+          is_archived?: boolean | null
+          is_favorite?: boolean | null
+          is_pinned?: boolean | null
+          is_template?: boolean | null
+          reminder_date?: string | null
+          tags?: string[] | null
+          template_name?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+          view_count?: number | null
+        }
+        Update: {
+          category_id?: string | null
+          checklist?: Json | null
+          color?: string | null
+          content?: string | null
+          created_at?: string | null
+          format?: string | null
+          id?: string
+          is_archived?: boolean | null
+          is_favorite?: boolean | null
+          is_pinned?: boolean | null
+          is_template?: boolean | null
+          reminder_date?: string | null
+          tags?: string[] | null
+          template_name?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "note_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string | null
