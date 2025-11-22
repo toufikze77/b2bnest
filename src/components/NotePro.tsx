@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { RichTextEditor } from "@/components/note-pro/RichTextEditor";
+import { EmailIntegration } from "@/components/note-pro/EmailIntegration";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -642,17 +644,32 @@ export default function NotePro() {
 
             <div>
               <label className="block font-semibold mb-2">Content</label>
-              <Textarea
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                rows={10}
-                placeholder={
-                  formData.format === "markdown"
-                    ? "# Use Markdown syntax here"
-                    : "Write your note content..."
-                }
-              />
+              {formData.format === "richtext" ? (
+                <RichTextEditor
+                  value={formData.content}
+                  onChange={(value) => setFormData({ ...formData, content: value })}
+                  placeholder="Write your note content..."
+                />
+              ) : (
+                <Textarea
+                  value={formData.content}
+                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                  rows={10}
+                  placeholder={
+                    formData.format === "markdown"
+                      ? "# Use Markdown syntax here"
+                      : "Write your note content..."
+                  }
+                />
+              )}
             </div>
+
+            {/* Email Integration */}
+            <EmailIntegration
+              noteId={selectedNote?.id}
+              noteContent={formData.content}
+              onSyncComplete={() => toast.success("Note synced successfully")}
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <div>
