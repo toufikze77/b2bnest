@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RichTextEditor } from "@/components/note-pro/RichTextEditor";
-import { EmailIntegration } from "@/components/note-pro/EmailIntegration";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -455,18 +454,6 @@ export default function NotePro() {
               </div>
             </div>
           </Card>
-        </div>
-
-        {/* Email Integration Section */}
-        <div className="mb-6">
-          <EmailIntegration
-            noteId={selectedNote?.id}
-            noteContent={selectedNote?.content}
-            onSyncComplete={() => {
-              toast.success("Note synced successfully");
-              fetchNotes();
-            }}
-          />
         </div>
 
         {/* Tabs & Search */}
