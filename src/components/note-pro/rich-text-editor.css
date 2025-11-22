@@ -1,0 +1,70 @@
+.rich-text-editor-wrapper .ql-toolbar {
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem 0.5rem 0 0;
+  background: hsl(var(--background));
+}
+
+.rich-text-editor-wrapper .ql-container {
+  border: 1px solid hsl(var(--border));
+  border-top: none;
+  border-radius: 0 0 0.5rem 0.5rem;
+  background: hsl(var(--background));
+  font-family: inherit;
+  min-height: 300px;
+}
+
+.rich-text-editor-wrapper .ql-editor {
+  color: hsl(var(--foreground));
+  min-height: 300px;
+}
+
+.rich-text-editor-wrapper .ql-editor.ql-blank::before {
+  color: hsl(var(--muted-foreground));
+  font-style: normal;
+}
+
+.rich-text-editor-wrapper .ql-toolbar button {
+  color: hsl(var(--foreground));
+}
+
+.rich-text-editor-wrapper .ql-toolbar button:hover,
+.rich-text-editor-wrapper .ql-toolbar button:focus {
+  color: hsl(var(--primary));
+}
+
+.rich-text-editor-wrapper .ql-toolbar button.ql-active {
+  color: hsl(var(--primary));
+}
+
+.rich-text-editor-wrapper .ql-stroke {
+  stroke: hsl(var(--foreground));
+}
+
+.rich-text-editor-wrapper .ql-fill {
+  fill: hsl(var(--foreground));
+}
+
+.rich-text-editor-wrapper .ql-toolbar button:hover .ql-stroke,
+.rich-text-editor-wrapper .ql-toolbar button:focus .ql-stroke,
+.rich-text-editor-wrapper .ql-toolbar button.ql-active .ql-stroke {
+  stroke: hsl(var(--primary));
+}
+
+.rich-text-editor-wrapper .ql-toolbar button:hover .ql-fill,
+.rich-text-editor-wrapper .ql-toolbar button:focus .ql-fill,
+.rich-text-editor-wrapper .ql-toolbar button.ql-active .ql-fill {
+  fill: hsl(var(--primary));
+}
+
+.rich-text-editor-wrapper .ql-picker-label {
+  color: hsl(var(--foreground));
+}
+
+.rich-text-editor-wrapper .ql-picker-options {
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+}
+
+.rich-text-editor-wrapper .ql-picker-item:hover {
+  color: hsl(var(--primary));
+}
