@@ -612,7 +612,7 @@ const BusinessTools = () => {
                 return (
                   <Card 
                     key={tool.id} 
-                    className="cursor-pointer hover:shadow-lg transition-all duration-200 h-full"
+                    className="cursor-pointer hover:shadow-lg transition-all duration-200 h-full flex flex-col"
                     onClick={() => {
                       if (tool.isPremium) {
                         // Always set the tool to trigger the appropriate prompt
@@ -657,8 +657,8 @@ const BusinessTools = () => {
                       </div>
                       <p className="text-gray-600">{tool.description}</p>
                     </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
+                    <CardContent className="flex flex-col flex-1">
+                      <div className="space-y-2 flex-1">
                         <p className="text-sm font-medium text-gray-700">Key Benefits:</p>
                         <ul className="space-y-1">
                           {tool.benefits.map((benefit, index) => (
