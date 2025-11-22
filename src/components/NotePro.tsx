@@ -457,6 +457,18 @@ export default function NotePro() {
           </Card>
         </div>
 
+        {/* Email Integration Section */}
+        <div className="mb-6">
+          <EmailIntegration
+            noteId={selectedNote?.id}
+            noteContent={selectedNote?.content}
+            onSyncComplete={() => {
+              toast.success("Note synced successfully");
+              fetchNotes();
+            }}
+          />
+        </div>
+
         {/* Tabs & Search */}
         <div className="mb-6 space-y-4">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -663,13 +675,6 @@ export default function NotePro() {
                 />
               )}
             </div>
-
-            {/* Email Integration */}
-            <EmailIntegration
-              noteId={selectedNote?.id}
-              noteContent={formData.content}
-              onSyncComplete={() => toast.success("Note synced successfully")}
-            />
 
             <div className="grid grid-cols-2 gap-4">
               <div>
