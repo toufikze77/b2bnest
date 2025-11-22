@@ -18,29 +18,9 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Check if user has Outlook credentials configured
-    const { data: integration } = await supabaseClient
-      .from('user_integrations')
-      .select('metadata')
-      .eq('user_id', userId)
-      .eq('integration_name', 'outlook')
-      .single();
-
-    let clientId, clientSecret;
-
-    if (integration?.metadata) {
-      const metadata = typeof integration.metadata === 'string' 
-        ? JSON.parse(integration.metadata) 
-        : integration.metadata;
-      clientId = metadata.client_id;
-      clientSecret = metadata.client_secret;
-    }
-
-    // Fallback to environment variables
-    if (!clientId || !clientSecret) {
-      clientId = Deno.env.get('OUTLOOK_CLIENT_ID');
-      clientSecret = Deno.env.get('OUTLOOK_CLIENT_SECRET');
-    }
+    // Use platform-level OAuth credentials
+    const clientId = Deno.env.get('OUTLOOK_CLIENT_ID');
+    const clientSecret = Deno.env.get('OUTLOOK_CLIENT_SECRET');
 
     if (!clientId || !clientSecret) {
       throw new Error('Outlook OAuth credentials not configured');
