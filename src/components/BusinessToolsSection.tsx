@@ -20,6 +20,15 @@ import {
 const BusinessToolsSection = () => {
   const featuredTools = [
     {
+      icon: FileText,
+      title: "NotePro",
+      description: "Professional note-taking app to organize your thoughts and ideas",
+      features: ["Rich text editing", "Tags & categories", "Search & archive"],
+      color: "bg-purple-500",
+      popular: false,
+      link: "/business-tools/notepro"
+    },
+    {
       icon: KanbanSquare,
       title: "Project Management",
       description: "Organize tasks, track progress, and collaborate with your team",
@@ -113,39 +122,42 @@ const BusinessToolsSection = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
           {featuredTools.map((tool, index) => {
             const Icon = tool.icon;
+            const toolPath = tool.link || '/business-tools';
             return (
-              <Card key={index} className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm relative overflow-hidden">
-                {tool.popular && (
-                  <div className="absolute top-4 right-4">
-                    <Badge className="bg-orange-500 text-white">Most Popular</Badge>
-                  </div>
-                )}
-                <CardHeader className="pb-4">
-                  <div className="flex items-start gap-4">
-                    <div className={`${tool.color} p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform`}>
-                      <Icon className="h-6 w-6 text-white" />
+              <Link key={index} to={toolPath}>
+                <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm relative overflow-hidden h-full">
+                  {tool.popular && (
+                    <div className="absolute top-4 right-4">
+                      <Badge className="bg-orange-500 text-white">Most Popular</Badge>
                     </div>
-                    <div className="flex-1">
-                      <CardTitle className="text-xl mb-2 group-hover:text-primary transition-colors">
-                        {tool.title}
-                      </CardTitle>
-                      <CardDescription className="text-gray-600 text-base">
-                        {tool.description}
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 mb-4">
-                    {tool.features.map((feature, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-sm text-gray-600">
-                        <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
-                        {feature}
+                  )}
+                  <CardHeader className="pb-4">
+                    <div className="flex items-start gap-4">
+                      <div className={`${tool.color} p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform`}>
+                        <Icon className="h-6 w-6 text-white" />
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                      <div className="flex-1">
+                        <CardTitle className="text-xl mb-2 group-hover:text-primary transition-colors">
+                          {tool.title}
+                        </CardTitle>
+                        <CardDescription className="text-gray-600 text-base">
+                          {tool.description}
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 mb-4">
+                      {tool.features.map((feature, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-sm text-gray-600">
+                          <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
+                          {feature}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             );
           })}
         </div>

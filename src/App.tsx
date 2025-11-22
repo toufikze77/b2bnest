@@ -16,6 +16,7 @@ import Dashboard from "@/pages/Dashboard";
 import BusinessTools from "@/pages/BusinessTools";
 import Fundraising from "@/pages/Fundraising";
 import PLR from "@/pages/PLR";
+import NotePro from "@/components/NotePro";
 import NotFound from "@/pages/NotFound";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
@@ -73,6 +74,7 @@ function App() {
             
             <Route path="/profile-setup" element={<ProtectedRoute><ProfileSetup /></ProtectedRoute>} />
               <Route path="/business-tools" element={<BusinessTools />} />
+              <Route path="/business-tools/notepro" element={<ProtectedRoute><NotePro /></ProtectedRoute>} />
               <Route path="/ai-showcase" element={<AIShowcase />} />
               <Route path="/ai-studio" element={<AIStudio />} />
               <Route path="/ai-workspace" element={<ProtectedRoute><AIWorkspace /></ProtectedRoute>} />
