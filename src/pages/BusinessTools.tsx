@@ -45,7 +45,7 @@ import DomainAvailability from '@/components/DomainAvailability';
 import HMRCIntegration from '@/components/HMRCIntegration';
 import BusinessToolsSEO from '@/components/BusinessToolsSEO';
 
-type ToolType = 'overview' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'domain-availability' | 'qr-code-generator' | 'coupon-generator' | 'loyalty-rewards' | 'referral-program' | 'gift-card-manager' | 'utm-builder' | 'marketing-calendar' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'currency-converter' | 'crypto-converter' | 'hmrc-integration' | 'workflow-studio';
+type ToolType = 'overview' | 'notepro' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'domain-availability' | 'qr-code-generator' | 'coupon-generator' | 'loyalty-rewards' | 'referral-program' | 'gift-card-manager' | 'utm-builder' | 'marketing-calendar' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'currency-converter' | 'crypto-converter' | 'hmrc-integration' | 'workflow-studio';
 
 type FilterType = 'all' | 'premium' | 'favorites' | 'free';
 
@@ -74,6 +74,15 @@ const BusinessTools = () => {
   }, []);
 
   const tools = [
+    {
+      id: 'notepro' as ToolType,
+      title: 'NotePro - Professional Note Taking',
+      description: 'Organize your thoughts, ideas, and tasks in one professional note-taking app',
+      icon: FileText,
+      color: 'bg-gradient-to-r from-purple-600 to-pink-600',
+      benefits: ['Rich text editing', 'Tags & categories', 'Search & archive', 'Favorites & templates'],
+      isPremium: false
+    },
     {
       id: 'hmrc-integration' as ToolType,
       title: 'HMRC Integration Suite',
@@ -533,6 +542,9 @@ const BusinessTools = () => {
         return null;
       case 'workflow-studio':
         navigate('/workflow-studio');
+        return null;
+      case 'notepro':
+        navigate('/business-tools/notepro');
         return null;
       case 'crm':
         return <CRM />;
