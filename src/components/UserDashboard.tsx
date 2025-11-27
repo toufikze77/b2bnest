@@ -14,6 +14,7 @@ import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/utils/currencyUtils';
 import AccountSettings from '@/components/AccountSettings';
 import FeedbackManagement from '@/components/admin/FeedbackManagement';
+import AICreditsDisplay from '@/components/AICreditsDisplay';
 
 const UserDashboard = () => {
   const { user } = useAuth();
@@ -341,6 +342,11 @@ const UserDashboard = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">My Dashboard</h1>
           <p className="text-gray-600">Welcome back, {user.email}</p>
+        </div>
+
+        {/* AI Credits Display */}
+        <div className="mb-6">
+          <AICreditsDisplay />
         </div>
 
         {/* Stats Cards */}
