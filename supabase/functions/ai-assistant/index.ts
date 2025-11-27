@@ -41,6 +41,34 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
+    // Check and deduct AI credits
+    const { data: creditCheck, error: creditError } = await supabase.rpc('check_and_deduct_ai_credit', {
+      p_user_id: user.id,
+      p_credits_to_deduct: 1
+    });
+
+    if (creditError) {
+      console.error('Error checking AI credits:', creditError);
+      throw new Error('Failed to check AI credits');
+    }
+
+    if (!creditCheck.success) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'insufficient_credits',
+          message: `You've reached your AI credit limit (${creditCheck.credits_limit} credits/month). Upgrade your plan for more credits.`,
+          credits_remaining: creditCheck.credits_remaining,
+          credits_limit: creditCheck.credits_limit,
+          reset_date: creditCheck.reset_date,
+          subscription_tier: creditCheck.subscription_tier
+        }),
+        { 
+          status: 402, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     // Comprehensive B2BNest platform knowledge base
     const platformKnowledge = `
 B2BNest Platform Features & Capabilities:
@@ -385,7 +413,10 @@ Be friendly, professional, and concise. Always prioritize user success.`;
       JSON.stringify({ 
         response: aiResponse,
         conversationType,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        credits_remaining: creditCheck.credits_remaining,
+        credits_limit: creditCheck.credits_limit,
+        reset_date: creditCheck.reset_date
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
