@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { ShoppingCart, X } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Purchase {
   id: string;
@@ -8,31 +9,95 @@ interface Purchase {
   plan: string;
   price: number;
   timestamp: Date;
+  isTrial?: boolean;
 }
 
 const LivePurchaseNotification = () => {
   const [currentPurchase, setCurrentPurchase] = useState<Purchase | null>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [recentPurchases, setRecentPurchases] = useState<Purchase[]>([]);
 
-  // Mock purchase data - in real app, this would come from a real-time source
-  const mockPurchases: Purchase[] = [
-    { id: '1', name: 'Sarah M.', plan: 'Professional', price: 19, timestamp: new Date() },
-    { id: '2', name: 'John D.', plan: 'Starter', price: 11, timestamp: new Date() },
-    { id: '3', name: 'Emma L.', plan: 'Enterprise', price: 29, timestamp: new Date() },
-    { id: '4', name: 'Michael R.', plan: 'Professional', price: 19, timestamp: new Date() },
-    { id: '5', name: 'Lisa K.', plan: 'Starter', price: 11, timestamp: new Date() },
-    { id: '6', name: 'David C.', plan: 'Enterprise', price: 29, timestamp: new Date() },
-    { id: '7', name: 'Anna S.', plan: 'Professional', price: 19, timestamp: new Date() },
-    { id: '8', name: 'Tom B.', plan: 'Starter', price: 11, timestamp: new Date() },
-  ];
+  // Fetch real purchases from database
+  useEffect(() => {
+    const fetchRecentPurchases = async () => {
+      try {
+        // Get subscriptions from last 7 days
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const { data: subscribers, error } = await supabase
+          .from('subscribers')
+          .select('id, email, subscription_tier, created_at, user_id')
+          .gte('created_at', sevenDaysAgo.toISOString())
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (error) {
+          console.error('Error fetching purchases:', error);
+          return;
+        }
+
+        // Get profile data for display names
+        const userIds = subscribers?.map(s => s.user_id).filter(Boolean) || [];
+        const { data: profiles } = await supabase
+          .from('public_profiles')
+          .select('id, display_name')
+          .in('id', userIds);
+
+        const profileMap = new Map(
+          profiles?.map(p => [p.id, p.display_name || 'Anonymous']) || []
+        );
+
+        // Map to Purchase format
+        const purchases: Purchase[] = (subscribers || []).map(sub => {
+          const displayName = sub.user_id ? profileMap.get(sub.user_id) : null;
+          const emailName = sub.email?.split('@')[0] || 'User';
+          const name = displayName || emailName.charAt(0).toUpperCase() + emailName.slice(1);
+          
+          // Determine if it's a trial (free tier) or paid subscription
+          const isTrial = !sub.subscription_tier || sub.subscription_tier === 'free';
+          const planName = isTrial ? 'Free Trial' : sub.subscription_tier || 'Starter';
+          
+          // Map tier to price
+          const priceMap: Record<string, number> = {
+            'starter': 11,
+            'professional': 19,
+            'enterprise': 29,
+            'free': 0
+          };
+          
+          const price = priceMap[sub.subscription_tier?.toLowerCase() || 'free'] || 0;
+
+          return {
+            id: sub.id,
+            name: name.length > 15 ? name.substring(0, 15) + '.' : name,
+            plan: planName.charAt(0).toUpperCase() + planName.slice(1).toLowerCase(),
+            price,
+            timestamp: new Date(sub.created_at),
+            isTrial
+          };
+        });
+
+        setRecentPurchases(purchases);
+      } catch (error) {
+        console.error('Error fetching purchases:', error);
+      }
+    };
+
+    fetchRecentPurchases();
+    
+    // Refresh every 5 minutes to get new purchases
+    const refreshInterval = setInterval(fetchRecentPurchases, 5 * 60 * 1000);
+    
+    return () => clearInterval(refreshInterval);
+  }, []);
 
   useEffect(() => {
+    if (recentPurchases.length === 0) return;
+
     const showRandomPurchase = () => {
-      const randomPurchase = mockPurchases[Math.floor(Math.random() * mockPurchases.length)];
-      setCurrentPurchase({
-        ...randomPurchase,
-        timestamp: new Date()
-      });
+      const randomPurchase = recentPurchases[Math.floor(Math.random() * recentPurchases.length)];
+      setCurrentPurchase(randomPurchase);
       setIsVisible(true);
 
       // Hide after 5 seconds
@@ -54,7 +119,7 @@ const LivePurchaseNotification = () => {
       clearTimeout(initialTimeout);
       clearInterval(interval);
     };
-  }, []);
+  }, [recentPurchases]);
 
   const handleClose = () => {
     setIsVisible(false);
@@ -74,18 +139,20 @@ const LivePurchaseNotification = () => {
           
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900">
-              <span className="font-semibold">{currentPurchase.name}</span> just purchased
+              <span className="font-semibold">{currentPurchase.name}</span> just {currentPurchase.isTrial ? 'started' : 'purchased'}
             </p>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant="secondary" className="text-xs">
                 {currentPurchase.plan}
               </Badge>
-              <span className="text-sm font-semibold text-green-600">
-                £{currentPurchase.price}/month
-              </span>
+              {currentPurchase.price > 0 && (
+                <span className="text-sm font-semibold text-green-600">
+                  £{currentPurchase.price}/month
+                </span>
+              )}
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              {new Date().toLocaleTimeString()} • Limited time offer
+              {new Date().toLocaleTimeString()} • {currentPurchase.isTrial ? 'Join the community' : 'Limited time offer'}
             </p>
           </div>
 
