@@ -37,9 +37,9 @@ const PricingPlans = () => {
       originalPrice: 32, // Original price before 66% discount
       userLimit: '1 user',
       features: [
+        '250 AI credits/month (~250 conversations)',
         'AI Business Advisor',
         'Basic document templates',
-        '5 AI conversations/month',
         'AI Studio (Basic features)',
         'Invoice & Quote generator',
         'Priority support',
@@ -68,12 +68,12 @@ const PricingPlans = () => {
       originalPrice: 56, // Original price before 66% discount
       userLimit: '5 users',
       features: [
+        '1,000 AI credits/month (~1,000 conversations)',
         'Everything in Starter',
         'AI Studio (Full access)',
         'Advanced AI analytics & workflows',
         'Intelligent automation builder',
         'Smart personalization engine',
-        'Unlimited AI conversations',
         'Premium document templates',
         'CRM & Project Management',
         'Invoice & Quote generator',
@@ -98,6 +98,7 @@ const PricingPlans = () => {
       originalPrice: 85, // Original price before 66% discount
       userLimit: '25 users',
       features: [
+        '5,000 AI credits/month (~5,000 conversations)',
         'Everything in Professional',
         'AI Studio (Enterprise features)',
         'Custom AI model training',

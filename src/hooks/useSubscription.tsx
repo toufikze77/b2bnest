@@ -9,6 +9,9 @@ export interface SubscriptionData {
   subscription_end: string | null;
   trial_ends_at: string | null;
   loading: boolean;
+  ai_credits_remaining: number;
+  ai_credits_limit: number;
+  ai_credits_reset_date: string | null;
 }
 
 export const useSubscription = () => {
@@ -19,7 +22,10 @@ export const useSubscription = () => {
     subscription_tier: 'free',
     subscription_end: null,
     trial_ends_at: null,
-    loading: true
+    loading: true,
+    ai_credits_remaining: 0,
+    ai_credits_limit: 0,
+    ai_credits_reset_date: null
   });
 
   useEffect(() => {
@@ -29,7 +35,10 @@ export const useSubscription = () => {
         subscription_tier: 'free',
         subscription_end: null,
         trial_ends_at: null,
-        loading: false
+        loading: false,
+        ai_credits_remaining: 0,
+        ai_credits_limit: 0,
+        ai_credits_reset_date: null
       });
       return;
     }
@@ -90,7 +99,10 @@ export const useSubscription = () => {
             subscription_tier: data.subscription_tier || 'free',
             subscription_end: data.subscription_end,
             trial_ends_at: trialEndsAt,
-            loading: false
+            loading: false,
+            ai_credits_remaining: data.ai_credits_remaining || 0,
+            ai_credits_limit: data.ai_credits_limit || 0,
+            ai_credits_reset_date: data.ai_credits_reset_date || null
           });
         } else {
           // No subscription record exists, create one with free tier
@@ -112,7 +124,10 @@ export const useSubscription = () => {
             subscription_tier: 'free',
             subscription_end: null,
             trial_ends_at: profile?.trial_ends_at || null,
-            loading: false
+            loading: false,
+            ai_credits_remaining: 10,
+            ai_credits_limit: 10,
+            ai_credits_reset_date: null
           });
         }
       } catch (error) {

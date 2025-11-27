@@ -2594,6 +2594,9 @@ export type Database = {
       }
       subscribers: {
         Row: {
+          ai_credits_limit: number | null
+          ai_credits_remaining: number | null
+          ai_credits_reset_date: string | null
           created_at: string
           email: string
           id: string
@@ -2605,6 +2608,9 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          ai_credits_limit?: number | null
+          ai_credits_remaining?: number | null
+          ai_credits_reset_date?: string | null
           created_at?: string
           email: string
           id?: string
@@ -2616,6 +2622,9 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          ai_credits_limit?: number | null
+          ai_credits_remaining?: number | null
+          ai_credits_reset_date?: string | null
           created_at?: string
           email?: string
           id?: string
@@ -3255,6 +3264,10 @@ export type Database = {
         Returns: undefined
       }
       check_2fa_rate_limit: { Args: { p_email: string }; Returns: boolean }
+      check_and_deduct_ai_credit: {
+        Args: { p_credits_to_deduct?: number; p_user_id: string }
+        Returns: Json
+      }
       check_trial_status: {
         Args: { user_id_param: string }
         Returns: {
@@ -3306,6 +3319,7 @@ export type Database = {
           contact_phone: string
         }[]
       }
+      get_ai_credits_info: { Args: { p_user_id?: string }; Returns: Json }
       get_bank_account_details: {
         Args: { p_account_id: string; p_user_id?: string }
         Returns: {
