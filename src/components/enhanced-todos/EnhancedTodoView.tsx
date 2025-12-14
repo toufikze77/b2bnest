@@ -179,6 +179,31 @@ export const EnhancedTodoView: React.FC<EnhancedTodoViewProps> = ({ todo, onUpda
         });
 
       if (error) throw error;
+      
+      // Send notification to task owner/assignee
+      if (todo.assigned_to && todo.assigned_to !== user.id) {
+        try {
+          const { notifyTaskComment } = await import('@/services/taskNotificationService');
+          // Get project_id from supabase if available
+          const { data: taskData } = await supabase
+            .from('todos')
+            .select('project_id')
+            .eq('id', todo.id)
+            .maybeSingle();
+            
+          await notifyTaskComment(
+            todo.id,
+            todo.title,
+            user.id,
+            todo.assigned_to,
+            newComment.trim(),
+            taskData?.project_id
+          );
+        } catch (notifyError) {
+          console.error('Failed to send comment notification:', notifyError);
+        }
+      }
+      
       setNewComment('');
       fetchComments();
       toast({ title: "Comment added" });
@@ -187,10 +212,35 @@ export const EnhancedTodoView: React.FC<EnhancedTodoViewProps> = ({ todo, onUpda
     }
   };
 
-  const handleUpdateField = (field: string, value: any) => {
+  const handleUpdateField = async (field: string, value: any) => {
+    const oldValue = localTodo[field as keyof Todo];
     const updates = { [field]: value };
     setLocalTodo(prev => ({ ...prev, ...updates }));
     onUpdate(todo.id, updates);
+    
+    // Send notification for status changes
+    if (field === 'status' && user && todo.assigned_to && todo.assigned_to !== user.id) {
+      try {
+        const { notifyTaskStatusChanged } = await import('@/services/taskNotificationService');
+        const { data: taskData } = await supabase
+          .from('todos')
+          .select('project_id')
+          .eq('id', todo.id)
+          .maybeSingle();
+          
+        await notifyTaskStatusChanged(
+          todo.id,
+          todo.title,
+          user.id,
+          todo.assigned_to,
+          String(oldValue || 'unknown'),
+          String(value),
+          taskData?.project_id
+        );
+      } catch (notifyError) {
+        console.error('Failed to send status change notification:', notifyError);
+      }
+    }
   };
 
   const handleSaveTitle = () => {

@@ -12,7 +12,7 @@ import CreateTodoDialog from './enhanced-todos/CreateTodoDialog';
 import { PlanUpgradeDialog } from './enhanced-todos/PlanUpgradeDialog';
 import { toast } from '@/hooks/use-toast';
 import { getUserDisplayInfo } from '@/utils/profileUtils';
-import { sendTaskNotification } from '@/utils/taskNotifications';
+import { notifyTaskAssigned } from '@/services/taskNotificationService';
 
 interface Todo {
   id: string;
@@ -115,21 +115,19 @@ const TodoList = () => {
       // Send email notification if task is assigned to someone else
       if (todoData.assigned_to && todoData.assigned_to !== user.id && data) {
         try {
-          const display = await getUserDisplayInfo(user.id);
-          const assignedByName = display?.display_name || user.email?.split('@')[0] || 'Someone';
+          const res = await notifyTaskAssigned(
+            data.id,
+            data.title,
+            todoData.assigned_to,
+            user.id,
+            {
+              taskDescription: data.description,
+              priority: data.priority,
+              dueDate: data.due_date
+            }
+          );
 
-          const res = await sendTaskNotification({
-            taskId: data.id,
-            taskTitle: data.title,
-            taskDescription: data.description,
-            priority: data.priority,
-            dueDate: data.due_date,
-            assignedToId: todoData.assigned_to,
-            assignedByName,
-            projectName: null,
-          });
-
-          if (!res.ok) {
+          if (!res.ok && !res.skipped) {
             console.error('Notification failed after task create:', res.error);
           }
         } catch (notifyErr) {
@@ -175,19 +173,19 @@ const TodoList = () => {
             .single();
 
           if (updatedTask) {
-            const display = await getUserDisplayInfo(user.id);
-            const assignedByName = display?.display_name || user.email?.split('@')[0] || 'Someone';
-            const res = await sendTaskNotification({
-              taskId: updatedTask.id,
-              taskTitle: updatedTask.title,
-              taskDescription: updatedTask.description,
-              priority: updatedTask.priority,
-              dueDate: updatedTask.due_date,
-              assignedToId: updates.assigned_to,
-              assignedByName,
-              projectName: null,
-            });
-            if (!res.ok) {
+            const res = await notifyTaskAssigned(
+              updatedTask.id,
+              updatedTask.title,
+              updates.assigned_to,
+              user.id,
+              {
+                taskDescription: updatedTask.description,
+                priority: updatedTask.priority,
+                dueDate: updatedTask.due_date,
+                projectId: updatedTask.project_id
+              }
+            );
+            if (!res.ok && !res.skipped) {
               console.error('Notification failed after task update:', res.error);
             }
           }

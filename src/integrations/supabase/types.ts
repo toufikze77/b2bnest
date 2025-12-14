@@ -1498,6 +1498,45 @@ export type Database = {
           },
         ]
       }
+      notification_logs: {
+        Row: {
+          created_at: string
+          email_id: string | null
+          email_sent: boolean
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          notification_type: string
+          project_id: string | null
+          task_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_id?: string | null
+          email_sent?: boolean
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          notification_type: string
+          project_id?: string | null
+          task_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_id?: string | null
+          email_sent?: boolean
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          notification_type?: string
+          project_id?: string | null
+          task_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -3184,6 +3223,54 @@ export type Database = {
         }
         Relationships: []
       }
+      user_notification_preferences: {
+        Row: {
+          created_at: string
+          due_reminder_hours: number
+          email_project_update: boolean
+          email_task_assigned: boolean
+          email_task_comment: boolean
+          email_task_completed: boolean
+          email_task_due_reminder: boolean
+          email_task_overdue: boolean
+          email_task_status_changed: boolean
+          email_weekly_digest: boolean
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          due_reminder_hours?: number
+          email_project_update?: boolean
+          email_task_assigned?: boolean
+          email_task_comment?: boolean
+          email_task_completed?: boolean
+          email_task_due_reminder?: boolean
+          email_task_overdue?: boolean
+          email_task_status_changed?: boolean
+          email_weekly_digest?: boolean
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          due_reminder_hours?: number
+          email_project_update?: boolean
+          email_task_assigned?: boolean
+          email_task_comment?: boolean
+          email_task_completed?: boolean
+          email_task_due_reminder?: boolean
+          email_task_overdue?: boolean
+          email_task_status_changed?: boolean
+          email_weekly_digest?: boolean
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -3348,6 +3435,20 @@ export type Database = {
           access_token: string
           expires_at: string
           refresh_token: string
+        }[]
+      }
+      get_notification_preferences: {
+        Args: { p_user_id?: string }
+        Returns: {
+          due_reminder_hours: number
+          email_project_update: boolean
+          email_task_assigned: boolean
+          email_task_comment: boolean
+          email_task_completed: boolean
+          email_task_due_reminder: boolean
+          email_task_overdue: boolean
+          email_task_status_changed: boolean
+          email_weekly_digest: boolean
         }[]
       }
       get_payment_details_admin: {
