@@ -1,7 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,34 +23,46 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { to, subject, body, from = "workflow@resend.dev", html = false }: EmailRequest = await req.json();
+    const { to, subject, body, html = false }: EmailRequest = await req.json();
 
     if (!to || !subject || !body) {
       throw new Error("Missing required fields: to, subject, body");
     }
 
-    console.log("Sending email:", { to, subject, from });
+    const gmailUser = Deno.env.get("GMAIL_USER");
+    const gmailAppPassword = Deno.env.get("GMAIL_APP_PASSWORD");
 
-    const emailOptions: any = {
-      from,
-      to: Array.isArray(to) ? to : [to],
-      subject,
-    };
-
-    if (html) {
-      emailOptions.html = body;
-    } else {
-      emailOptions.text = body;
+    if (!gmailUser || !gmailAppPassword) {
+      throw new Error("Gmail credentials not configured");
     }
 
-    const emailResponse = await resend.emails.send(emailOptions);
+    const recipients = Array.isArray(to) ? to : [to];
+    console.log("Sending email via Gmail SMTP:", { to: recipients, subject });
 
-    console.log("Email sent successfully:", emailResponse);
+    const client = new SmtpClient();
+
+    await client.connectTLS({
+      hostname: "smtp.gmail.com",
+      port: 465,
+      username: gmailUser,
+      password: gmailAppPassword,
+    });
+
+    await client.send({
+      from: gmailUser,
+      to: recipients,
+      subject: subject,
+      content: html ? undefined : body,
+      html: html ? body : undefined,
+    });
+
+    await client.close();
+
+    console.log("Email sent successfully via Gmail SMTP");
 
     return new Response(
       JSON.stringify({
         success: true,
-        data: emailResponse,
         message: "Email sent successfully"
       }),
       {
