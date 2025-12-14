@@ -1060,69 +1060,32 @@ const ProjectManagement = () => {
 
       // Send email notification if task is assigned to someone
       if (taskData.assigned_to && taskData.assigned_to !== user?.id) {
-        console.log('📧 Attempting to send task notification:', {
-          taskId: data.id,
-          assignedTo: taskData.assigned_to,
-          assignedBy: user?.id
-        });
-        
         try {
-          // Get current user's display name
-          const { data: currentUserProfile, error: profileError } = await supabase
-            .from('profiles')
-            .select('display_name, full_name')
-            .eq('id', user?.id)
-            .maybeSingle();
+          const { notifyTaskAssigned } = await import('@/services/taskNotificationService');
           
-          if (profileError) {
-            console.warn('Could not fetch user profile for notification:', profileError);
-          }
-          
-          const assignedByName = currentUserProfile?.display_name || 
-                                 currentUserProfile?.full_name || 
-                                 user?.email?.split('@')[0] || 
-                                 'Someone';
-          
-          console.log('📧 Calling edge function with data:', {
-            taskId: data.id,
-            taskTitle: data.title,
-            assignedToId: taskData.assigned_to,
-            assignedByName
-          });
-          
-          const { data: notificationResponse, error: notificationError } = await supabase.functions.invoke('send-task-notification', {
-            body: {
-              taskId: data.id,
-              taskTitle: data.title,
+          const result = await notifyTaskAssigned(
+            data.id,
+            data.title,
+            taskData.assigned_to,
+            user?.id || '',
+            {
               taskDescription: data.description,
               priority: data.priority,
               dueDate: data.due_date,
-              assignedToId: taskData.assigned_to,
-              assignedByName,
-              projectName: data.project?.name
+              projectId: data.project?.id
             }
-          });
+          );
           
-          if (notificationError) {
-            console.error('❌ Notification error:', notificationError);
-            toast({
-              title: "Warning",
-              description: "Task created but notification failed to send.",
-              variant: "default"
-            });
+          if (result.ok && !result.skipped) {
+            console.log('✅ Task notification sent:', result.emailId);
+          } else if (result.skipped) {
+            console.log('ℹ️ Notification skipped:', result.reason);
           } else {
-            console.log('✅ Notification sent successfully:', notificationResponse);
+            console.error('❌ Notification failed:', result.error);
           }
         } catch (notificationError) {
           console.error('❌ Failed to send task notification:', notificationError);
-          // Don't block task creation if notification fails
         }
-      } else {
-        console.log('ℹ️ No notification needed:', {
-          assignedTo: taskData.assigned_to,
-          currentUser: user?.id,
-          reason: !taskData.assigned_to ? 'unassigned' : 'assigned to self'
-        });
       }
 
       toast({
