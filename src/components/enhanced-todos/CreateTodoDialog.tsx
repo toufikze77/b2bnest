@@ -311,15 +311,22 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
         const userIds = orgMembers?.map(member => member.user_id) || [];
         
         // Now fetch profile data for these users without direct table access
-        const { batchGetUserDisplayInfo } = await import('@/utils/profileUtils');
-        const profilesData = await batchGetUserDisplayInfo(userIds as string[]);
+        // Fetch profiles directly now that RLS allows organization members to see each other
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, display_name, full_name, email')
+          .in('id', userIds);
 
-        // Map profiles to user format (email may be hidden by RLS)
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+        }
+
+        // Map profiles to user format
         let users = (profilesData || []).map((profile: any) => ({
           id: profile.id,
-          display_name: profile.display_name || 'Unknown User',
-          email: null,
-          full_name: profile.display_name || 'Unknown User'
+          display_name: profile.display_name || profile.full_name || 'Unknown User',
+          email: profile.email || null,
+          full_name: profile.full_name || profile.display_name || 'Unknown User'
         }));
         
         if (users.length === 0) {
@@ -564,11 +571,12 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
                       </div>
                     </SelectItem>
                   ) : (
-                    availableUsers.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
+                    availableUsers.map((availableUser) => (
+                      <SelectItem key={availableUser.id} value={availableUser.id}>
                         <div className="flex items-center gap-2">
                           <Users className="h-4 w-4" />
-                          {user.display_name || user.full_name || user.email} ({user.email})
+                          {availableUser.display_name || availableUser.full_name || availableUser.email || 'Unknown User'}
+                          {availableUser.email && ` (${availableUser.email})`}
                         </div>
                       </SelectItem>
                     ))
