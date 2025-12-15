@@ -1,8 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { Resend } from "npm:resend@2.0.0";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,6 +51,14 @@ const handler = async (req: Request): Promise<Response> => {
       taskId: requestData.taskId,
       recipientUserId 
     });
+
+    // Check Gmail credentials
+    const gmailUser = Deno.env.get("GMAIL_USER");
+    const gmailAppPassword = Deno.env.get("GMAIL_APP_PASSWORD");
+
+    if (!gmailUser || !gmailAppPassword) {
+      throw new Error("Gmail credentials not configured. Please add GMAIL_USER and GMAIL_APP_PASSWORD secrets.");
+    }
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -155,15 +161,31 @@ const handler = async (req: Request): Promise<Response> => {
       commentAuthor: requestData.commentAuthor
     });
 
-    // Send email notification
-    const emailResponse = await resend.emails.send({
-      from: "B2BNest Tasks <noreply@b2bnest.online>",
+    console.log("Sending task notification email via Gmail SMTP to:", recipientEmail);
+
+    // Send email via Gmail SMTP
+    const client = new SMTPClient({
+      connection: {
+        hostname: "smtp.gmail.com",
+        port: 465,
+        tls: true,
+        auth: {
+          username: gmailUser,
+          password: gmailAppPassword,
+        },
+      },
+    });
+
+    await client.send({
+      from: gmailUser,
       to: [recipientEmail],
       subject: emailContent.subject,
       html: emailContent.html,
     });
 
-    console.log("Task notification email sent successfully:", emailResponse);
+    await client.close();
+
+    console.log("Task notification email sent successfully via Gmail SMTP");
 
     // Log the notification
     await supabase.from('notification_logs').insert({
@@ -171,7 +193,6 @@ const handler = async (req: Request): Promise<Response> => {
       notification_type: notificationType,
       task_id: requestData.taskId,
       email_sent: true,
-      email_id: emailResponse.data?.id,
       metadata: { subject: emailContent.subject }
     });
 
@@ -189,7 +210,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, emailId: emailResponse.data?.id }), 
+      JSON.stringify({ success: true, message: "Email sent successfully" }), 
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
