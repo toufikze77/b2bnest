@@ -1,7 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,7 +15,6 @@ interface ContactEmailRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -25,40 +22,60 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { name, email, subject, message }: ContactEmailRequest = await req.json();
 
-    // Send email to admin
-    const adminEmailResponse = await resend.emails.send({
-      from: "B2BNest Contact Form <onboarding@resend.dev>",
-      to: ["admin@b2bnest.online"],
-      subject: `Contact Form: ${subject}`,
+    console.log("Contact form submission from:", name, email);
+
+    const gmailUser = Deno.env.get("GMAIL_USER");
+    const gmailAppPassword = Deno.env.get("GMAIL_APP_PASSWORD");
+
+    if (!gmailUser || !gmailAppPassword) {
+      throw new Error("Gmail credentials not configured. Please add GMAIL_USER and GMAIL_APP_PASSWORD secrets.");
+    }
+
+    const client = new SMTPClient({
+      connection: {
+        hostname: "smtp.gmail.com",
+        port: 465,
+        tls: true,
+        auth: {
+          username: gmailUser,
+          password: gmailAppPassword,
+        },
+      },
+    });
+
+    // Send notification to admin
+    await client.send({
+      from: gmailUser,
+      to: [gmailUser],
+      subject: `[B2BNest Contact] ${subject}`,
       html: `
-        <h2>New Contact Form Submission</h2>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Subject:</strong> ${subject}</p>
-        <p><strong>Message:</strong></p>
-        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0;">
-          ${message.replace(/\n/g, '<br>')}
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
+          <h2 style="color: #2563eb;">New Contact Form Submission</h2>
+          <p><strong>From:</strong> ${name}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Subject:</strong> ${subject}</p>
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+          <p><strong>Message:</strong></p>
+          <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0;">
+            ${message.replace(/\n/g, '<br>')}
+          </div>
         </div>
-        <hr>
-        <p><small>This email was sent from the B2BNest contact form.</small></p>
       `,
     });
 
-    // Send confirmation email to user
-    const userEmailResponse = await resend.emails.send({
-      from: "B2BNest <onboarding@resend.dev>",
+    // Send confirmation to the user
+    await client.send({
+      from: gmailUser,
       to: [email],
-      subject: "We received your message!",
+      subject: "We received your message - B2BNest",
       html: `
-        <h1>Thank you for contacting us, ${name}!</h1>
+        <h1 style="color: #2563eb;">Thank you for contacting us, ${name}!</h1>
         <p>We have received your message about "<strong>${subject}</strong>" and will get back to you as soon as possible.</p>
         
         <h2>Your Message:</h2>
         <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0;">
           ${message.replace(/\n/g, '<br>')}
         </div>
-        
-        <p>If you have any urgent questions, you can also reach us directly at admin@b2bnest.online.</p>
         
         <p>Best regards,<br>The B2BNest Team</p>
         
@@ -67,20 +84,15 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Emails sent successfully:", { adminEmailResponse, userEmailResponse });
+    await client.close();
+
+    console.log("Contact emails sent successfully via Gmail SMTP");
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        adminEmailId: adminEmailResponse.data?.id,
-        userEmailId: userEmailResponse.data?.id 
-      }), 
+      JSON.stringify({ success: true, message: "Email sent successfully" }),
       {
         status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          ...corsHeaders,
-        },
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
   } catch (error: any) {
