@@ -93,12 +93,7 @@ const handler = async (req: Request): Promise<Response> => {
       from: gmailUser,
       to: [email],
       subject: "You're invited to join B2BNest!",
-      content: emailHtml,
-      mimeContent: [{
-        mimeType: "text/html",
-        content: emailHtml,
-        transferEncoding: "base64",
-      }],
+      html: emailHtml,
     });
 
     await client.close();
