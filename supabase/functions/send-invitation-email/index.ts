@@ -34,10 +34,18 @@ const handler = async (req: Request): Promise<Response> => {
 
     const gmailUser = Deno.env.get("GMAIL_USER");
     const gmailAppPassword = Deno.env.get("GMAIL_APP_PASSWORD");
+    const gmailFrom = Deno.env.get("GMAIL_FROM") || gmailUser;
 
     if (!gmailUser || !gmailAppPassword) {
       throw new Error("Gmail credentials not configured. Please add GMAIL_USER and GMAIL_APP_PASSWORD secrets.");
     }
+
+    // Safe diagnostics (never log the actual password)
+    console.log("SMTP config:", {
+      user: gmailUser,
+      from: gmailFrom,
+      appPasswordLength: gmailAppPassword.length,
+    });
 
     const inviteUrl = `${req.headers.get('origin') || 'https://b2bnest.online'}/auth?invited=true&org=${organization_id}`;
     console.log("Invite URL:", inviteUrl);
@@ -60,7 +68,7 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     await client.send({
-      from: gmailUser,
+      from: gmailFrom,
       to: [email],
       subject: "You're invited to join B2BNest!",
       html: emailHtml,
