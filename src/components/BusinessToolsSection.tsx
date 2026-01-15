@@ -85,7 +85,7 @@ const BusinessToolsSection = () => {
   ];
 
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-secondary/30">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-16">
@@ -95,14 +95,14 @@ const BusinessToolsSection = () => {
               All-in-One Business Suite
             </Badge>
           </div>
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="text-4xl font-bold text-foreground mb-4">
             Powerful Business Tools
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
             Everything you need to start, manage, and grow your business in one integrated platform. 
             From project management to CRM, we've got you covered.
           </p>
-          <div className="flex items-center justify-center gap-6 text-sm text-gray-500">
+          <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground flex-wrap">
             <div className="flex items-center gap-2">
               <Target className="h-4 w-4 text-green-500" />
               <span>Save 10+ hours/week</span>
@@ -125,7 +125,7 @@ const BusinessToolsSection = () => {
             const toolPath = tool.link || '/business-tools';
             return (
               <Link key={index} to={toolPath}>
-                <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm relative overflow-hidden h-full">
+                <Card className="group hover:shadow-xl transition-all duration-300 border-border bg-card/80 backdrop-blur-sm relative overflow-hidden h-full">
                   {tool.popular && (
                     <div className="absolute top-4 right-4">
                       <Badge className="bg-orange-500 text-white">Most Popular</Badge>
@@ -137,10 +137,10 @@ const BusinessToolsSection = () => {
                         <Icon className="h-6 w-6 text-white" />
                       </div>
                       <div className="flex-1">
-                        <CardTitle className="text-xl mb-2 group-hover:text-primary transition-colors">
+                        <CardTitle className="text-xl mb-2 group-hover:text-primary transition-colors text-foreground">
                           {tool.title}
                         </CardTitle>
-                        <CardDescription className="text-gray-600 text-base">
+                        <CardDescription className="text-muted-foreground text-base">
                           {tool.description}
                         </CardDescription>
                       </div>
@@ -149,7 +149,7 @@ const BusinessToolsSection = () => {
                   <CardContent>
                     <div className="space-y-2 mb-4">
                       {tool.features.map((feature, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-sm text-gray-600">
+                        <div key={idx} className="flex items-center gap-2 text-sm text-muted-foreground">
                           <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
                           {feature}
                         </div>
@@ -163,35 +163,21 @@ const BusinessToolsSection = () => {
         </div>
 
         {/* Additional Tools */}
-        <div className="bg-gradient-to-br from-white/80 to-purple-50/80 backdrop-blur-sm rounded-2xl p-8 mb-8 border border-purple-100/50 shadow-lg">
-          <h3 className="text-3xl font-bold text-center mb-2 text-gray-900">
+        <div className="bg-card/80 backdrop-blur-sm rounded-2xl p-8 mb-8 border border-border shadow-lg">
+          <h3 className="text-3xl font-bold text-center mb-2 text-foreground">
             ✨ Plus Many More Tools
           </h3>
-          <p className="text-center text-gray-600 mb-8">Discover additional features to supercharge your business</p>
+          <p className="text-center text-muted-foreground mb-8">Discover additional features to supercharge your business</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 justify-items-center max-w-3xl mx-auto">
             {additionalTools.map((tool, index) => {
               const Icon = tool.icon;
-              const colors = [
-                "from-slate-700 to-slate-800",
-                "from-gray-700 to-gray-800", 
-                "from-zinc-700 to-zinc-800",
-                "from-stone-700 to-stone-800",
-                "from-neutral-700 to-neutral-800"
-              ];
-              const shadowColors = [
-                "shadow-slate-300",
-                "shadow-gray-300",
-                "shadow-zinc-300", 
-                "shadow-stone-300",
-                "shadow-neutral-300"
-              ];
               return (
                 <div key={index} className="text-center w-full max-w-[200px]">
-                  <div className={`bg-gradient-to-br ${colors[index % colors.length]} p-4 rounded-2xl mb-3 ${shadowColors[index % shadowColors.length]} shadow-lg h-16 w-16 mx-auto flex items-center justify-center`}>
-                    <Icon className="h-7 w-7 text-white drop-shadow-sm" />
+                  <div className="bg-gradient-to-br from-primary to-primary/70 p-4 rounded-2xl shadow-lg h-16 w-16 mx-auto flex items-center justify-center">
+                    <Icon className="h-7 w-7 text-primary-foreground drop-shadow-sm" />
                   </div>
-                  <h4 className="font-semibold text-sm text-gray-900 mb-1">{tool.title}</h4>
-                  <p className="text-xs text-gray-500">{tool.count}</p>
+                  <h4 className="font-semibold text-sm text-foreground mb-1 mt-3">{tool.title}</h4>
+                  <p className="text-xs text-muted-foreground">{tool.count}</p>
                 </div>
               );
             })}
@@ -206,7 +192,7 @@ const BusinessToolsSection = () => {
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
-          <p className="text-sm text-gray-500 mt-4">
+          <p className="text-sm text-muted-foreground mt-4">
             Free to use • No credit card required • Start in minutes
           </p>
         </div>

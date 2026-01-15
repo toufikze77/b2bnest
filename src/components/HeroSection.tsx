@@ -10,20 +10,20 @@ const HeroSection = ({ onSearch }: HeroSectionProps) => {
   return (
     <section className="py-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto text-center">
-        <h1 className="text-5xl font-bold text-gray-900 mb-6">
-          Your Complete AI-Powered Business <span className="text-blue-600">Tools Hub</span>
+        <h1 className="text-5xl font-bold text-foreground mb-6">
+          Your Complete AI-Powered Business <span className="text-primary">Tools Hub</span>
         </h1>
-        <p className="text-xl text-gray-600 mb-6 max-w-3xl mx-auto">
+        <p className="text-xl text-muted-foreground mb-6 max-w-3xl mx-auto">
           Everything your business needs in one intelligent platform. From AI-powered document generation to smart financial tracking - streamline your entire workflow with cutting-edge tools designed for modern entrepreneurs.
         </p>
-        <div className="flex justify-center gap-4 mb-8">
-          <div className="bg-purple-100 text-purple-800 px-4 py-2 rounded-full font-semibold">
+        <div className="flex justify-center gap-4 mb-8 flex-wrap">
+          <div className="bg-primary/10 text-primary px-4 py-2 rounded-full font-semibold">
             🤖 AI-Powered
           </div>
-          <div className="bg-blue-100 text-blue-800 px-4 py-2 rounded-full font-semibold">
+          <div className="bg-primary/10 text-primary px-4 py-2 rounded-full font-semibold">
             ⚡ All-in-One Solution
           </div>
-          <div className="bg-purple-100 text-purple-800 px-4 py-2 rounded-full font-semibold">
+          <div className="bg-primary/10 text-primary px-4 py-2 rounded-full font-semibold">
             🎨 Professional Design
           </div>
         </div>
@@ -34,7 +34,7 @@ const HeroSection = ({ onSearch }: HeroSectionProps) => {
         </div>
         
         {/* Quick Links */}
-        <div className="flex justify-center gap-6 mb-8">
+        <div className="flex justify-center gap-6 mb-8 flex-wrap">
           <a
             href="https://www.linkedin.com/company/aiplatform/about/?viewAsMember=true"
             target="_blank"
@@ -50,7 +50,7 @@ const HeroSection = ({ onSearch }: HeroSectionProps) => {
             href="https://twitter.com/B2BNEST"
             target="_blank"
             rel="noopener noreferrer"
-            className="group relative bg-gradient-to-r from-gray-800 to-black text-white px-4 py-2 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:from-black hover:to-gray-900"
+            className="group relative bg-gradient-to-r from-gray-800 to-black dark:from-gray-700 dark:to-gray-900 text-white px-4 py-2 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 hover:from-black hover:to-gray-900"
           >
             <span className="flex items-center gap-2">
               X @B2BNEST
@@ -71,18 +71,18 @@ const HeroSection = ({ onSearch }: HeroSectionProps) => {
         </div>
         
         {/* Legal Links for Google Verification */}
-        <div className="mt-8 pt-4 border-t border-gray-200">
-          <p className="text-sm text-gray-500 mb-2">Legal & Compliance</p>
+        <div className="mt-8 pt-4 border-t border-border">
+          <p className="text-sm text-muted-foreground mb-2">Legal & Compliance</p>
           <div className="flex justify-center gap-6 text-sm">
             <Link 
               to="/privacy" 
-              className="text-blue-600 hover:text-blue-800 font-medium hover:underline"
+              className="text-primary hover:text-primary/80 font-medium hover:underline"
             >
               Privacy Policy
             </Link>
             <Link 
               to="/terms" 
-              className="text-blue-600 hover:text-blue-800 font-medium hover:underline"
+              className="text-primary hover:text-primary/80 font-medium hover:underline"
             >
               Terms of Service
             </Link>
