@@ -13,7 +13,6 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import LivePriceSidebars from '@/components/sidebars/LivePriceSidebars';
 import ShareButton from '@/components/ShareButton';
-import { ThemeToggle } from '@/components/ThemeToggle';
 
 
 const Header = () => {
@@ -30,7 +29,7 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-background border-b border-border shadow-sm">
+    <header className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -39,21 +38,20 @@ const Header = () => {
               src={logo} 
               alt="AI-Powered Business Automation Platform Logo" 
               style={{width: "200px", height: "auto"}}
-              className="dark:brightness-110"
             />
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="text-foreground/80 hover:text-primary transition-colors">
+            <Link to="/" className="text-gray-700 hover:text-blue-600 transition-colors">
               Home
             </Link>
-            <Link to="/business-tools" className="text-foreground/80 hover:text-primary transition-colors">
+            <Link to="/business-tools" className="text-gray-700 hover:text-blue-600 transition-colors">
               Business Tools
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <span className="text-foreground/80 hover:text-primary transition-colors cursor-pointer">
+                <span className="text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">
                   AI Tools
                 </span>
               </DropdownMenuTrigger>
@@ -74,7 +72,7 @@ const Header = () => {
             </DropdownMenu>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <span className="text-foreground/80 hover:text-primary transition-colors cursor-pointer">
+                <span className="text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">
                   Invest
                 </span>
               </DropdownMenuTrigger>
@@ -108,22 +106,19 @@ const Header = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Link to="/pricing" className="text-foreground/80 hover:text-primary transition-colors">
+            <Link to="/pricing" className="text-gray-700 hover:text-blue-600 transition-colors">
               Pricing
             </Link>
-            <Link to="/help" className="text-foreground/80 hover:text-primary transition-colors">
+            <Link to="/help" className="text-gray-700 hover:text-blue-600 transition-colors">
               Help
             </Link>
           </nav>
 
-          {/* Share, Theme Toggle, Live Prices and User Menu */}
+          {/* Share, Live Prices and User Menu */}
           <div className="flex items-center space-x-2">
             <div className="hidden md:block">
               <ShareButton variant="ghost" size="sm" />
             </div>
-            
-            {/* Theme Toggle */}
-            <ThemeToggle />
 
             {user ? (
               <DropdownMenu>
@@ -172,7 +167,7 @@ const Header = () => {
 
             {/* Mobile menu button */}
             <button
-              className="md:hidden p-2 rounded-md text-foreground hover:text-primary hover:bg-accent"
+              className="md:hidden p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -182,42 +177,42 @@ const Header = () => {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border">
+          <div className="md:hidden py-4 border-t">
             <div className="flex flex-col space-y-4">
               <Link
                 to="/"
-                className="text-foreground/80 hover:text-primary transition-colors px-2"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Home
               </Link>
               <Link
                 to="/business-tools"
-                className="text-foreground/80 hover:text-primary transition-colors px-2"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Business Tools
               </Link>
               <div className="px-2">
-                <div className="font-medium text-foreground mb-2">AI Tools</div>
+                <div className="font-medium text-gray-900 mb-2">AI Tools</div>
                 <div className="pl-4 space-y-2">
                   <Link
                     to="/ai-studio"
-                    className="block text-muted-foreground hover:text-primary transition-colors text-sm"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     AI Studio
                   </Link>
                   <Link
                     to="/ai-showcase"
-                    className="block text-muted-foreground hover:text-primary transition-colors text-sm"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     AI Showcase
                   </Link>
                   <Link
                     to="/ai-workspace"
-                    className="block text-muted-foreground hover:text-primary transition-colors text-sm flex items-center"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <Brain className="h-4 w-4 mr-2" />
@@ -226,11 +221,11 @@ const Header = () => {
                 </div>
               </div>
               <div className="px-2">
-                <div className="font-medium text-foreground mb-2">Invest</div>
+                <div className="font-medium text-gray-900 mb-2">Invest</div>
                 <div className="pl-4 space-y-2">
                   <Link
                     to="/business-news"
-                    className="block text-muted-foreground hover:text-primary transition-colors text-sm flex items-center"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <Newspaper className="h-4 w-4 mr-2" />
@@ -238,28 +233,28 @@ const Header = () => {
                   </Link>
                   <Link
                     to="/fundraising"
-                    className="block text-muted-foreground hover:text-primary transition-colors text-sm"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Funding Round
                   </Link>
                   <Link
                     to="/whitepaper"
-                    className="block text-muted-foreground hover:text-primary transition-colors text-sm"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Whitepaper
                   </Link>
                   <Link
                     to="/tokenomics"
-                    className="block text-muted-foreground hover:text-primary transition-colors text-sm"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Tokenomics
                   </Link>
                   <Link
                     to="/live-charts"
-                    className="block text-muted-foreground hover:text-primary transition-colors text-sm flex items-center"
+                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <BarChart3 className="h-4 w-4 mr-2" />
@@ -272,24 +267,24 @@ const Header = () => {
                </div>
                <Link
                  to="/pricing"
-                className="text-foreground/80 hover:text-primary transition-colors px-2"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Pricing
               </Link>
               <Link
                 to="/help"
-                className="text-foreground/80 hover:text-primary transition-colors px-2"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Help
               </Link>
               {user && (
                 <>
-                  <hr className="my-2 border-border" />
+                  <hr className="my-2" />
                    <Link
                      to="/dashboard"
-                     className="text-foreground/80 hover:text-primary transition-colors px-2 flex items-center"
+                     className="text-gray-700 hover:text-blue-600 transition-colors px-2 flex items-center"
                      onClick={() => setIsMenuOpen(false)}
                    >
                      <BarChart3 className="h-4 w-4 mr-2" />
@@ -297,7 +292,7 @@ const Header = () => {
                    </Link>
                    <Link
                      to="/settings"
-                     className="text-foreground/80 hover:text-primary transition-colors px-2 flex items-center"
+                     className="text-gray-700 hover:text-blue-600 transition-colors px-2 flex items-center"
                      onClick={() => setIsMenuOpen(false)}
                    >
                      <Settings className="h-4 w-4 mr-2" />
@@ -308,7 +303,7 @@ const Header = () => {
                       handleSignOut();
                       setIsMenuOpen(false);
                     }}
-                    className="text-foreground/80 hover:text-primary transition-colors px-2 text-left flex items-center"
+                    className="text-gray-700 hover:text-blue-600 transition-colors px-2 text-left flex items-center"
                   >
                     <LogOut className="h-4 w-4 mr-2" />
                     Sign Out

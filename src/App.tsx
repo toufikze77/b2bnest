@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/hooks/useAuth";
 import { UserSettingsProvider } from "@/hooks/useUserSettings";
-import { ThemeProvider } from "@/contexts/ThemeContext";
 import { Toaster } from "@/components/ui/toaster";
 import Layout from "@/components/Layout";
 
@@ -59,70 +58,68 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AuthProvider>
-          <UserSettingsProvider>
-            <Router>
-            <Layout>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-              
-              <Route path="/profile-setup" element={<ProtectedRoute><ProfileSetup /></ProtectedRoute>} />
-                <Route path="/business-tools" element={<BusinessTools />} />
-                <Route path="/business-tools/notepro" element={<ProtectedRoute><NotePro /></ProtectedRoute>} />
-                <Route path="/ai-showcase" element={<AIShowcase />} />
-                <Route path="/ai-studio" element={<AIStudio />} />
-                <Route path="/ai-workspace" element={<ProtectedRoute><AIWorkspace /></ProtectedRoute>} />
-                <Route path="/workflow-studio" element={<ProtectedRoute><WorkflowStudio /></ProtectedRoute>} />
-                <Route path="/fundraising" element={<Fundraising />} />
-                <Route path="/whitepaper" element={<Whitepaper />} />
-              <Route path="/tokenomics" element={<Tokenomics />} />
-              <Route path="/forum" element={<Forum />} />
-                <Route path="/pricing" element={<Pricing />} />
-                <Route path="/plr" element={<PLR />} />
-                <Route path="/privacy" element={<PrivacyPolicy />} />
-                <Route path="/terms" element={<TermsOfService />} />
-                <Route path="/categories/human-resources" element={<HumanResources />} />
-                <Route path="/categories/legal-documents" element={<LegalDocuments />} />
-                <Route path="/categories/financial-forms" element={<FinancialForms />} />
-                <Route path="/marketing-materials" element={<MarketingMaterials />} />
-                <Route path="/categories/operations" element={<Operations />} />
-                <Route path="/crm" element={<ProtectedRoute><CRMPage /></ProtectedRoute>} />
-                <Route path="/project-management" element={<ProtectedRoute><ProjectManagementPage /></ProtectedRoute>} />
-                <Route path="/knowledge-base/getting-started" element={<GettingStarted />} />
-                <Route path="/knowledge-base/business-tools" element={<BusinessToolsGuide />} />
-                <Route path="/knowledge-base/integrations" element={<IntegrationsGuide />} />
-                <Route path="/knowledge-base/financial-tools" element={<FinancialToolsGuide />} />
-                <Route path="/knowledge-base/workflows" element={<WorkflowGuide />} />
-                <Route path="/knowledge-base/security" element={<SecurityGuide />} />
-                <Route path="/live-charts" element={<Market />} />
-                <Route path="/business-news" element={<BusinessNews />} />
-                  <Route path="/payment-success" element={<PaymentSuccess />} />
-                  <Route path="/help" element={<Help />} />
-                  <Route path="/knowledge-base" element={<KnowledgeBase />} />
-                  <Route path="/blog" element={<Blog />} />
-                  
-                  {/* Public work request form */}
-                 <Route path="/forms/work-request" element={<PublicWorkRequest />} />
-                 
-                 {/* B2B Partnership Form */}
-                 <Route path="/forms/b2b" element={<B2BForm />} />
-                 
-                 <Route path="*" element={<NotFound />} />
-              </Routes>
-              <Toaster />
-            </Layout>
-            </Router>
-          </UserSettingsProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      <AuthProvider>
+        <UserSettingsProvider>
+          <Router>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            
+            <Route path="/profile-setup" element={<ProtectedRoute><ProfileSetup /></ProtectedRoute>} />
+              <Route path="/business-tools" element={<BusinessTools />} />
+              <Route path="/business-tools/notepro" element={<ProtectedRoute><NotePro /></ProtectedRoute>} />
+              <Route path="/ai-showcase" element={<AIShowcase />} />
+              <Route path="/ai-studio" element={<AIStudio />} />
+              <Route path="/ai-workspace" element={<ProtectedRoute><AIWorkspace /></ProtectedRoute>} />
+              <Route path="/workflow-studio" element={<ProtectedRoute><WorkflowStudio /></ProtectedRoute>} />
+              <Route path="/fundraising" element={<Fundraising />} />
+              <Route path="/whitepaper" element={<Whitepaper />} />
+            <Route path="/tokenomics" element={<Tokenomics />} />
+            <Route path="/forum" element={<Forum />} />
+              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/plr" element={<PLR />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/categories/human-resources" element={<HumanResources />} />
+              <Route path="/categories/legal-documents" element={<LegalDocuments />} />
+              <Route path="/categories/financial-forms" element={<FinancialForms />} />
+              <Route path="/marketing-materials" element={<MarketingMaterials />} />
+              <Route path="/categories/operations" element={<Operations />} />
+              <Route path="/crm" element={<ProtectedRoute><CRMPage /></ProtectedRoute>} />
+              <Route path="/project-management" element={<ProtectedRoute><ProjectManagementPage /></ProtectedRoute>} />
+              <Route path="/knowledge-base/getting-started" element={<GettingStarted />} />
+              <Route path="/knowledge-base/business-tools" element={<BusinessToolsGuide />} />
+              <Route path="/knowledge-base/integrations" element={<IntegrationsGuide />} />
+              <Route path="/knowledge-base/financial-tools" element={<FinancialToolsGuide />} />
+              <Route path="/knowledge-base/workflows" element={<WorkflowGuide />} />
+              <Route path="/knowledge-base/security" element={<SecurityGuide />} />
+              <Route path="/live-charts" element={<Market />} />
+              <Route path="/business-news" element={<BusinessNews />} />
+                <Route path="/payment-success" element={<PaymentSuccess />} />
+                <Route path="/help" element={<Help />} />
+                <Route path="/knowledge-base" element={<KnowledgeBase />} />
+                <Route path="/blog" element={<Blog />} />
+                
+                {/* Public work request form */}
+               <Route path="/forms/work-request" element={<PublicWorkRequest />} />
+               
+               {/* B2B Partnership Form */}
+               <Route path="/forms/b2b" element={<B2BForm />} />
+               
+               <Route path="*" element={<NotFound />} />
+            </Routes>
+            <Toaster />
+          </Layout>
+          </Router>
+        </UserSettingsProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
