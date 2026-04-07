@@ -100,9 +100,10 @@ const KnowledgeBase = () => {
   const popularArticles = [
     { title: 'How to Connect Google Calendar', category: 'Integrations', views: '15.2k', link: '/knowledge-base/integrations' },
     { title: 'Creating Professional Invoices', category: 'Business Tools', views: '12.8k', link: '/knowledge-base/business-tools' },
-    { title: 'HMRC Integration Setup Guide', category: 'Financial', views: '10.5k', link: '/knowledge-base/financial-tools' },
+    { title: 'HMRC Integration Setup Guide', category: 'Integrations', views: '10.5k', link: '/knowledge-base/integrations' },
+    { title: 'How to Get HMRC Client ID & Secret', category: 'Financial', views: '9.8k', link: '/knowledge-base/financial-tools' },
     { title: 'Workflow Automation Basics', category: 'Workflows', views: '9.3k', link: '/knowledge-base/workflows' },
-    { title: 'CRM System Complete Guide', category: 'Business Tools', views: '8.7k', link: '/knowledge-base/business-tools' }
+    { title: 'Notification Preferences Setup', category: 'Getting Started', views: '8.7k', link: '/knowledge-base/getting-started' }
   ];
 
   const filteredCategories = categories.map(category => ({
