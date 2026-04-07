@@ -51,7 +51,9 @@ const KnowledgeBase = () => {
         { title: 'Outlook 365 Integration', description: 'Microsoft calendar and email integration', readTime: '6 min' },
         { title: 'OneDrive Connection', description: 'Access and manage your OneDrive files', readTime: '5 min' },
         { title: 'Social Media Automation', description: 'Connect Twitter, LinkedIn, and Facebook', readTime: '8 min' },
-        { title: 'HMRC Integration', description: 'UK tax submissions and compliance', readTime: '12 min' }
+        { title: 'HMRC Integration Setup', description: 'Step-by-step guide to connect HMRC: obtain Client ID/Secret from HMRC Developer Hub, configure in Settings → HMRC tab, and start OAuth flow', readTime: '12 min' },
+        { title: 'HMRC Client ID & Secret', description: 'How to register on HMRC Developer Hub, create an application, and obtain your API credentials for Making Tax Digital', readTime: '8 min' },
+        { title: 'Email Notifications Setup', description: 'Configure notification preferences for tasks, projects, and team updates in Settings → Notifications', readTime: '4 min' }
       ]
     },
     {
