@@ -374,11 +374,9 @@ const HMRCIntegration = () => {
             <HMRCObligations />
           </TabsContent>
 
-          {user?.email === 'toufikze@gmail.com' && (
-            <TabsContent value="settings">
-              <HMRCSettings onDisconnect={handleDisconnectHMRC} />
-            </TabsContent>
-          )}
+          <TabsContent value="settings">
+            <HMRCSettings onDisconnect={handleDisconnectHMRC} />
+          </TabsContent>
         </Tabs>
       )}
 
