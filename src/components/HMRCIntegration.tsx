@@ -219,9 +219,7 @@ const HMRCIntegration = () => {
             </CardContent>
           </Card>
 
-          {user?.email === 'toufikze@gmail.com' && (
-            <HMRCSettings onDisconnect={handleDisconnectHMRC} />
-          )}
+          <HMRCSettings onDisconnect={handleDisconnectHMRC} />
         </>
       ) : (
         <Tabs defaultValue="dashboard" className="space-y-6">
