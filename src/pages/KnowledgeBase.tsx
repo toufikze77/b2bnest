@@ -51,7 +51,9 @@ const KnowledgeBase = () => {
         { title: 'Outlook 365 Integration', description: 'Microsoft calendar and email integration', readTime: '6 min' },
         { title: 'OneDrive Connection', description: 'Access and manage your OneDrive files', readTime: '5 min' },
         { title: 'Social Media Automation', description: 'Connect Twitter, LinkedIn, and Facebook', readTime: '8 min' },
-        { title: 'HMRC Integration', description: 'UK tax submissions and compliance', readTime: '12 min' }
+        { title: 'HMRC Integration Setup', description: 'Step-by-step guide to connect HMRC: obtain Client ID/Secret from HMRC Developer Hub, configure in Settings → HMRC tab, and start OAuth flow', readTime: '12 min' },
+        { title: 'HMRC Client ID & Secret', description: 'How to register on HMRC Developer Hub, create an application, and obtain your API credentials for Making Tax Digital', readTime: '8 min' },
+        { title: 'Email Notifications Setup', description: 'Configure notification preferences for tasks, projects, and team updates in Settings → Notifications', readTime: '4 min' }
       ]
     },
     {
@@ -63,8 +65,9 @@ const KnowledgeBase = () => {
         { title: 'Cash Flow Tracking', description: 'Monitor income and expenses in real-time', readTime: '7 min' },
         { title: 'ROI Calculator', description: 'Calculate return on investment for projects', readTime: '5 min' },
         { title: 'Expense Management', description: 'Track and categorize business expenses', readTime: '6 min' },
-        { title: 'HMRC VAT Returns', description: 'Submit VAT returns directly to HMRC', readTime: '10 min' },
-        { title: 'Payroll Management', description: 'UK payroll processing and RTI submissions', readTime: '15 min' }
+        { title: 'HMRC VAT Returns', description: 'Submit VAT returns directly to HMRC via Making Tax Digital', readTime: '10 min' },
+        { title: 'Payroll Management', description: 'UK payroll processing with PAYE/NIC calculations and RTI submissions', readTime: '15 min' },
+        { title: 'HMRC Troubleshooting', description: 'Fix common HMRC errors: "missing Client ID", OAuth failures, and connection issues. Ensure credentials are saved in Settings → HMRC before connecting.', readTime: '8 min' }
       ]
     },
     {
@@ -97,9 +100,10 @@ const KnowledgeBase = () => {
   const popularArticles = [
     { title: 'How to Connect Google Calendar', category: 'Integrations', views: '15.2k', link: '/knowledge-base/integrations' },
     { title: 'Creating Professional Invoices', category: 'Business Tools', views: '12.8k', link: '/knowledge-base/business-tools' },
-    { title: 'HMRC Integration Setup Guide', category: 'Financial', views: '10.5k', link: '/knowledge-base/financial-tools' },
+    { title: 'HMRC Integration Setup Guide', category: 'Integrations', views: '10.5k', link: '/knowledge-base/integrations' },
+    { title: 'How to Get HMRC Client ID & Secret', category: 'Financial', views: '9.8k', link: '/knowledge-base/financial-tools' },
     { title: 'Workflow Automation Basics', category: 'Workflows', views: '9.3k', link: '/knowledge-base/workflows' },
-    { title: 'CRM System Complete Guide', category: 'Business Tools', views: '8.7k', link: '/knowledge-base/business-tools' }
+    { title: 'Notification Preferences Setup', category: 'Getting Started', views: '8.7k', link: '/knowledge-base/getting-started' }
   ];
 
   const filteredCategories = categories.map(category => ({

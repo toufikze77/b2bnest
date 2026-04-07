@@ -17,7 +17,15 @@ const Help = () => {
     },
     {
       question: "How do I connect my HMRC account?",
-      answer: "Navigate to Business Tools > HMRC Integration, click 'Connect to HMRC', enter your credentials, and authorize the connection. You can then submit VAT returns, payroll, and tax information directly."
+      answer: "First, go to Settings → HMRC tab and enter your HMRC Client ID and Client Secret (obtained from the HMRC Developer Hub at developer.service.hmrc.gov.uk). Save the settings, then navigate to Business Tools → HMRC Integration and click 'Connect to HMRC Government Gateway'. If you see 'missing Client ID in setting', it means you need to configure your credentials in Settings → HMRC first."
+    },
+    {
+      question: "Where do I get my HMRC Client ID and Secret?",
+      answer: "Register at the HMRC Developer Hub (developer.service.hmrc.gov.uk), create a new application, select the APIs you need (VAT, PAYE, etc.), and you'll receive a Client ID and Client Secret. Enter these in B2BNEST under Settings → HMRC tab."
+    },
+    {
+      question: "How do I configure email notifications?",
+      answer: "Go to Settings → Notifications tab. You can toggle individual notification types (task assigned, completed, overdue, comments, etc.) and set reminder timing for due dates."
     },
     {
       question: "What payment methods do you accept?",

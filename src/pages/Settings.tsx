@@ -1,9 +1,10 @@
 import React from 'react';
 import AccountSettings from '@/components/AccountSettings';
 import NotificationPreferences from '@/components/NotificationPreferences';
+import HMRCSettings from '@/components/hmrc/HMRCSettings';
 import Footer from '@/components/Footer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Bell } from 'lucide-react';
+import { User, Bell, Building2 } from 'lucide-react';
 
 const Settings = () => {
   return (
@@ -12,11 +13,11 @@ const Settings = () => {
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">Account Settings</h1>
-            <p className="text-muted-foreground">Manage your account preferences and notification settings</p>
+            <p className="text-muted-foreground">Manage your account preferences, notifications, and integrations</p>
           </div>
           
           <Tabs defaultValue="account" className="space-y-6">
-            <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsList className="grid w-full max-w-lg grid-cols-3">
               <TabsTrigger value="account" className="flex items-center gap-2">
                 <User className="h-4 w-4" />
                 Account
@@ -24,6 +25,10 @@ const Settings = () => {
               <TabsTrigger value="notifications" className="flex items-center gap-2">
                 <Bell className="h-4 w-4" />
                 Notifications
+              </TabsTrigger>
+              <TabsTrigger value="hmrc" className="flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                HMRC
               </TabsTrigger>
             </TabsList>
             
@@ -33,6 +38,10 @@ const Settings = () => {
             
             <TabsContent value="notifications">
               <NotificationPreferences />
+            </TabsContent>
+            
+            <TabsContent value="hmrc">
+              <HMRCSettings onDisconnect={() => {}} />
             </TabsContent>
           </Tabs>
         </div>
