@@ -65,8 +65,9 @@ const KnowledgeBase = () => {
         { title: 'Cash Flow Tracking', description: 'Monitor income and expenses in real-time', readTime: '7 min' },
         { title: 'ROI Calculator', description: 'Calculate return on investment for projects', readTime: '5 min' },
         { title: 'Expense Management', description: 'Track and categorize business expenses', readTime: '6 min' },
-        { title: 'HMRC VAT Returns', description: 'Submit VAT returns directly to HMRC', readTime: '10 min' },
-        { title: 'Payroll Management', description: 'UK payroll processing and RTI submissions', readTime: '15 min' }
+        { title: 'HMRC VAT Returns', description: 'Submit VAT returns directly to HMRC via Making Tax Digital', readTime: '10 min' },
+        { title: 'Payroll Management', description: 'UK payroll processing with PAYE/NIC calculations and RTI submissions', readTime: '15 min' },
+        { title: 'HMRC Troubleshooting', description: 'Fix common HMRC errors: "missing Client ID", OAuth failures, and connection issues. Ensure credentials are saved in Settings → HMRC before connecting.', readTime: '8 min' }
       ]
     },
     {
