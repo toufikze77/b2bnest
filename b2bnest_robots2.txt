@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# Disallow admin/private areas
+Disallow: /admin/
+Disallow: /settings/
+Disallow: /dashboard/
+Disallow: /api/
+
+# Sitemap on canonical domain
+Sitemap: https://b2bnest.online/sitemap.xml
+
+# Optional for non-Google bots
+Crawl-delay: 1
