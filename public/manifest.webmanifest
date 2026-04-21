@@ -1,0 +1,26 @@
+{
+  "name": "B2BNest — Business Tools & AI",
+  "short_name": "B2BNest",
+  "description": "Affordable business tools and free AI-powered solutions for modern entrepreneurs.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
