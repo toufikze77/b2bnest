@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, User, LogOut, Settings, BarChart3, Brain, Newspaper } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, BarChart3, Brain, Newspaper, Coins } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import logo from '@/assets/b2bnest-logo.png';
@@ -93,6 +93,12 @@ const Header = () => {
                 <DropdownMenuItem asChild>
                   <Link to="/fundraising" className="w-full">
                     Funding Round
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/staking" className="w-full flex items-center">
+                    <Coins className="h-4 w-4 mr-2" />
+                    Staking & Rewards
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

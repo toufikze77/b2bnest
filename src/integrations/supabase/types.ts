@@ -2631,6 +2631,95 @@ export type Database = {
           },
         ]
       }
+      staking_rewards: {
+        Row: {
+          amount: number
+          claimed: boolean
+          claimed_at: string | null
+          created_at: string
+          description: string | null
+          earned_at: string
+          id: string
+          reward_type: string
+          stake_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          claimed?: boolean
+          claimed_at?: string | null
+          created_at?: string
+          description?: string | null
+          earned_at?: string
+          id?: string
+          reward_type: string
+          stake_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          claimed?: boolean
+          claimed_at?: string | null
+          created_at?: string
+          description?: string | null
+          earned_at?: string
+          id?: string
+          reward_type?: string
+          stake_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staking_rewards_stake_id_fkey"
+            columns: ["stake_id"]
+            isOneToOne: false
+            referencedRelation: "user_stakes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staking_tiers: {
+        Row: {
+          apy_percentage: number
+          badge_color: string
+          created_at: string
+          id: string
+          is_active: boolean
+          min_stake_amount: number
+          monthly_credits: number
+          name: string
+          perks: Json
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          apy_percentage?: number
+          badge_color?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          min_stake_amount: number
+          monthly_credits?: number
+          name: string
+          perks?: Json
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          apy_percentage?: number
+          badge_color?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          min_stake_amount?: number
+          monthly_credits?: number
+          name?: string
+          perks?: Json
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subscribers: {
         Row: {
           ai_credits_limit: number | null
@@ -3295,6 +3384,54 @@ export type Database = {
         }
         Relationships: []
       }
+      user_stakes: {
+        Row: {
+          amount: number
+          apy_percentage: number
+          created_at: string
+          id: string
+          lock_period_days: number
+          staked_at: string
+          status: string
+          transaction_hash: string | null
+          unlocks_at: string
+          unstaked_at: string | null
+          updated_at: string
+          user_id: string
+          wallet_address: string | null
+        }
+        Insert: {
+          amount: number
+          apy_percentage?: number
+          created_at?: string
+          id?: string
+          lock_period_days?: number
+          staked_at?: string
+          status?: string
+          transaction_hash?: string | null
+          unlocks_at: string
+          unstaked_at?: string | null
+          updated_at?: string
+          user_id: string
+          wallet_address?: string | null
+        }
+        Update: {
+          amount?: number
+          apy_percentage?: number
+          created_at?: string
+          id?: string
+          lock_period_days?: number
+          staked_at?: string
+          status?: string
+          transaction_hash?: string | null
+          unlocks_at?: string
+          unstaked_at?: string | null
+          updated_at?: string
+          user_id?: string
+          wallet_address?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       public_profiles: {
@@ -3512,6 +3649,18 @@ export type Database = {
         }[]
       }
       get_user_projects: { Args: { p_user_id: string }; Returns: Json }
+      get_user_staking_tier: {
+        Args: { _user_id: string }
+        Returns: {
+          apy_percentage: number
+          badge_color: string
+          monthly_credits: number
+          perks: Json
+          tier_id: string
+          tier_name: string
+          total_staked: number
+        }[]
+      }
       get_user_teams: { Args: { p_user_id: string }; Returns: Json }
       has_role: {
         Args: {

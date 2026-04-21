@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Book, Search, FileText, Wrench, DollarSign, Users, 
-  Zap, Building2, Globe, Lock, TrendingUp, ExternalLink
+  Zap, Building2, Globe, Lock, TrendingUp, ExternalLink, Coins
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SEOHead from '@/components/SEOHead';
@@ -81,6 +81,20 @@ const KnowledgeBase = () => {
         { title: 'Email Automation', description: 'Automate email sending with workflows', readTime: '7 min' },
         { title: 'Social Media Scheduling', description: 'Auto-post to Twitter, LinkedIn, Facebook', readTime: '9 min' },
         { title: 'Advanced Workflows', description: 'Complex automation with conditions and loops', readTime: '12 min' }
+      ]
+    },
+    {
+      id: 'staking',
+      title: 'Staking & Rewards',
+      icon: Coins,
+      color: 'bg-emerald-500',
+      articles: [
+        { title: 'Staking Portal Overview', description: 'How the B2BN Staking & Rewards Portal works: stake tokens, earn APY, unlock tier perks (Bronze, Silver, Gold, Diamond).', readTime: '6 min' },
+        { title: 'Choosing Your Stake Amount & Lock Period', description: 'Minimum 1,000 B2BN. Lock 30/90/180/365 days for 1x–2x APY multipliers. Higher amounts unlock better tiers.', readTime: '5 min' },
+        { title: 'Tier Benefits Explained', description: 'Bronze 5% APY +50 credits, Silver 8% +200, Gold 12% +500 + Pro features, Diamond 18% +2000 + revenue share + governance.', readTime: '7 min' },
+        { title: 'Claiming Monthly Rewards', description: 'Rewards drop monthly to the Rewards tab. Click Claim to credit AI credits or B2BN tokens to your account.', readTime: '3 min' },
+        { title: 'Unstaking & Lock Periods', description: 'Tokens automatically unlock when the lock period ends. Use My Stakes tab to release. Early unstaking is not supported.', readTime: '4 min' },
+        { title: 'Staking Security & RLS', description: 'Stakes are protected by row-level security — only you can view and modify your positions. On-chain settlement handled by smart contract.', readTime: '4 min' }
       ]
     },
     {
