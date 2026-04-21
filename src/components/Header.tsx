@@ -13,6 +13,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import LivePriceSidebars from '@/components/sidebars/LivePriceSidebars';
 import ShareButton from '@/components/ShareButton';
+import InstallAppButton from '@/components/InstallAppButton';
 
 
 const Header = () => {
@@ -116,6 +117,9 @@ const Header = () => {
 
           {/* Share, Live Prices and User Menu */}
           <div className="flex items-center space-x-2">
+            <div className="hidden md:block">
+              <InstallAppButton variant="ghost" size="sm" label="Install" />
+            </div>
             <div className="hidden md:block">
               <ShareButton variant="ghost" size="sm" />
             </div>
@@ -262,7 +266,8 @@ const Header = () => {
                    </Link>
                  </div>
                </div>
-               <div className="px-2 py-2">
+               <div className="px-2 py-2 space-y-2">
+                 <InstallAppButton variant="default" size="default" className="w-full" />
                  <ShareButton variant="outline" size="default" />
                </div>
                <Link
