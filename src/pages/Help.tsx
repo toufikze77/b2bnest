@@ -54,6 +54,22 @@ const Help = () => {
     {
       question: "How do workflows work?",
       answer: "Workflows allow you to automate tasks using visual drag-and-drop builders. Connect triggers (like 'new invoice') to actions (like 'send email' or 'post to Twitter') to create powerful automations."
+    },
+    {
+      question: "What is the B2BN Staking & Rewards Portal?",
+      answer: "The Staking Portal lets B2BN holders lock tokens to earn up to 18% APY plus monthly AI credits, premium feature access, and (at Diamond tier) revenue share. Visit /staking from the Invest menu, choose an amount and lock period, and start earning. Tiers: Bronze (1k+), Silver (10k+), Gold (50k+), Diamond (250k+)."
+    },
+    {
+      question: "How do staking lock periods and APY multipliers work?",
+      answer: "Each tier has a base APY (5%-18%). Longer lock periods boost it: 30 days = 1x, 90 days = 1.25x, 180 days = 1.5x, 1 year = 2x. Tokens automatically unlock at the end of the lock period and can then be unstaked at any time from the My Stakes tab."
+    },
+    {
+      question: "How are staking rewards distributed?",
+      answer: "Rewards drop monthly to your account based on your active stake amount and tier. You'll see them in the Rewards tab and can claim them with one click. Rewards include AI credits, bonus B2BN tokens, and revenue share allocations for Diamond holders."
+    },
+    {
+      question: "Is staking safe? Can I lose my tokens?",
+      answer: "Your stake records are protected by enterprise-grade RLS — only you can view, create, and modify your own stakes. Tokens are committed for the lock period you choose; you cannot unstake early. Smart contract settlement is handled separately on-chain. Always do your own research."
     }
   ];
 
