@@ -34,7 +34,9 @@ interface Stake {
   status: string;
   staked_at: string;
   unlocks_at: string;
+  unstaked_at?: string | null;
   wallet_address: string | null;
+  transaction_hash?: string | null;
 }
 
 interface Reward {
