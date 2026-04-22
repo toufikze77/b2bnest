@@ -453,7 +453,7 @@ const Staking = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>My Stakes</CardTitle>
-                  <CardDescription>Active and historical positions</CardDescription>
+                  <CardDescription>Active and historical positions with transaction timeline</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {stakes.length === 0 ? (
@@ -462,31 +462,122 @@ const Staking = () => {
                       <p>No stakes yet. Start earning rewards by staking B2BN.</p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {stakes.map((stake) => {
-                        const isUnlocked = new Date(stake.unlocks_at).getTime() <= Date.now();
+                        const now = Date.now();
+                        const stakedAt = new Date(stake.staked_at).getTime();
+                        const unlocksAt = new Date(stake.unlocks_at).getTime();
+                        const isUnlocked = unlocksAt <= now;
                         const isActive = stake.status === 'active';
+                        const isUnstaked = stake.status === 'unstaked';
+                        // Confirmation: ~1 minute after submission, considered confirmed
+                        const isConfirmed = now - stakedAt > 60 * 1000;
+
+                        const steps = [
+                          {
+                            key: 'submitted',
+                            label: 'Submitted',
+                            description: `Staking transaction recorded${stake.transaction_hash ? ` · ${stake.transaction_hash.slice(0, 10)}…` : ''}`,
+                            timestamp: stake.staked_at,
+                            done: true,
+                            icon: CircleDot,
+                          },
+                          {
+                            key: 'confirmed',
+                            label: 'Confirmed',
+                            description: isConfirmed ? 'Stake is active and accruing APY' : 'Awaiting on-chain confirmation',
+                            timestamp: isConfirmed ? new Date(stakedAt + 60 * 1000).toISOString() : null,
+                            done: isConfirmed,
+                            icon: CheckCircle2,
+                          },
+                          {
+                            key: 'unlocked',
+                            label: isUnstaked ? 'Unstaked' : 'Unlocked',
+                            description: isUnstaked
+                              ? `Tokens released back to wallet`
+                              : isUnlocked
+                                ? 'Lock period complete · ready to unstake'
+                                : `Lock ends ${new Date(stake.unlocks_at).toLocaleDateString()}`,
+                            timestamp: isUnstaked
+                              ? stake.unstaked_at ?? null
+                              : isUnlocked
+                                ? stake.unlocks_at
+                                : null,
+                            done: isUnlocked || isUnstaked,
+                            icon: isUnstaked ? Unlock : isUnlocked ? Unlock : Clock,
+                          },
+                        ];
+
                         return (
-                          <div key={stake.id} className="flex items-center justify-between p-4 border rounded-lg">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold text-lg">{Number(stake.amount).toLocaleString()} B2BN</span>
-                                <Badge variant={isActive ? 'default' : 'secondary'}>{stake.status}</Badge>
-                                <Badge variant="outline">{stake.apy_percentage}% APY</Badge>
+                          <div key={stake.id} className="border rounded-lg p-4 space-y-4">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-bold text-lg">{Number(stake.amount).toLocaleString()} B2BN</span>
+                                  <Badge variant={isActive ? 'default' : 'secondary'}>{stake.status}</Badge>
+                                  <Badge variant="outline">{stake.apy_percentage}% APY</Badge>
+                                  <Badge variant="outline">{stake.lock_period_days}d lock</Badge>
+                                </div>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  Staked {new Date(stake.staked_at).toLocaleDateString()}
+                                  {stake.wallet_address ? ` · ${stake.wallet_address.slice(0, 6)}…${stake.wallet_address.slice(-4)}` : ''}
+                                </p>
                               </div>
-                              <p className="text-sm text-muted-foreground mt-1">
-                                Locked {stake.lock_period_days} days · {isActive ? (isUnlocked ? 'Ready to unstake' : `Unlocks ${new Date(stake.unlocks_at).toLocaleDateString()}`) : 'Closed'}
-                              </p>
+                              {isActive && (
+                                <Button
+                                  variant={isUnlocked ? 'default' : 'outline'}
+                                  onClick={() => handleUnstake(stake)}
+                                  disabled={!isUnlocked}
+                                >
+                                  {isUnlocked ? 'Unstake' : 'Locked'}
+                                </Button>
+                              )}
                             </div>
-                            {isActive && (
-                              <Button
-                                variant={isUnlocked ? 'default' : 'outline'}
-                                onClick={() => handleUnstake(stake)}
-                                disabled={!isUnlocked}
-                              >
-                                {isUnlocked ? 'Unstake' : 'Locked'}
-                              </Button>
-                            )}
+
+                            {/* Transaction Timeline */}
+                            <div className="pt-2 border-t">
+                              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                                Transaction Timeline
+                              </p>
+                              <ol className="relative space-y-4">
+                                {steps.map((step, idx) => {
+                                  const StepIcon = step.icon;
+                                  const isLast = idx === steps.length - 1;
+                                  return (
+                                    <li key={step.key} className="flex gap-3 relative">
+                                      {!isLast && (
+                                        <span
+                                          className={`absolute left-[15px] top-8 bottom-[-18px] w-px ${step.done ? 'bg-primary/40' : 'bg-border'}`}
+                                          aria-hidden="true"
+                                        />
+                                      )}
+                                      <div
+                                        className={`relative z-10 flex items-center justify-center w-8 h-8 rounded-full border-2 flex-shrink-0 ${
+                                          step.done
+                                            ? 'bg-primary/10 border-primary text-primary'
+                                            : 'bg-muted border-border text-muted-foreground'
+                                        }`}
+                                      >
+                                        <StepIcon className="h-4 w-4" />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                                          <p className={`text-sm font-medium ${step.done ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                            {step.label}
+                                          </p>
+                                          {step.timestamp && (
+                                            <p className="text-xs text-muted-foreground">
+                                              {new Date(step.timestamp).toLocaleString()}
+                                            </p>
+                                          )}
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
+                                      </div>
+                                    </li>
+                                  );
+                                })}
+                              </ol>
+                            </div>
                           </div>
                         );
                       })}
