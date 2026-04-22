@@ -588,10 +588,100 @@ const Staking = () => {
             </TabsContent>
 
             {/* Rewards Tab */}
-            <TabsContent value="rewards">
+            <TabsContent value="rewards" className="space-y-6">
+              {/* Accrual Preview */}
+              {user && (() => {
+                const activeStakes = stakes.filter((s) => s.status === 'active');
+                const dailyApyCredits = activeStakes.reduce(
+                  (sum, s) => sum + (Number(s.amount) * (Number(s.apy_percentage) / 100)) / 365,
+                  0,
+                );
+                const lastReward = rewards[0];
+                const anchorDate = lastReward
+                  ? new Date(lastReward.earned_at)
+                  : activeStakes.length > 0
+                    ? new Date(Math.min(...activeStakes.map((s) => new Date(s.staked_at).getTime())))
+                    : null;
+                const daysSinceAnchor = anchorDate
+                  ? Math.max(0, Math.floor((Date.now() - anchorDate.getTime()) / 86400000))
+                  : 0;
+                const estimatedApyAccrued = dailyApyCredits * daysSinceAnchor;
+                const monthlyCredits = currentTier?.monthly_credits ?? 0;
+                const dailyTierCredits = monthlyCredits / 30;
+                const estimatedTierCredits = dailyTierCredits * daysSinceAnchor;
+                const nextClaimDate = anchorDate
+                  ? new Date(anchorDate.getTime() + 30 * 86400000)
+                  : null;
+                const daysToNextClaim = nextClaimDate
+                  ? Math.max(0, Math.ceil((nextClaimDate.getTime() - Date.now()) / 86400000))
+                  : null;
+                const claimReady = nextClaimDate ? nextClaimDate.getTime() <= Date.now() : false;
+
+                return (
+                  <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-emerald-500/5">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Calculator className="h-5 w-5 text-primary" />
+                        Accrual Preview
+                      </CardTitle>
+                      <CardDescription>
+                        Estimated rewards earned since your last claim or first stake. Drops are finalized monthly.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {activeStakes.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          No active stakes. Stake B2BN to begin earning APY and tier credits.
+                        </p>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground uppercase tracking-wider">Est. APY Accrued</p>
+                              <p className="text-2xl font-bold">{estimatedApyAccrued.toFixed(2)}</p>
+                              <p className="text-xs text-muted-foreground">B2BN since {anchorDate?.toLocaleDateString() ?? '—'}</p>
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground uppercase tracking-wider">Est. Tier Credits</p>
+                              <p className="text-2xl font-bold">{Math.floor(estimatedTierCredits).toLocaleString()}</p>
+                              <p className="text-xs text-muted-foreground">{currentTier?.tier_name ?? 'No tier'} · {monthlyCredits}/mo</p>
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground uppercase tracking-wider">Daily Earn Rate</p>
+                              <p className="text-2xl font-bold">{dailyApyCredits.toFixed(2)}</p>
+                              <p className="text-xs text-muted-foreground">B2BN/day from APY</p>
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground uppercase tracking-wider">Next Claim</p>
+                              <p className="text-2xl font-bold flex items-center gap-1">
+                                <Calendar className="h-5 w-5 opacity-60" />
+                                {claimReady ? 'Ready' : `${daysToNextClaim}d`}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {nextClaimDate?.toLocaleDateString() ?? '—'}
+                              </p>
+                            </div>
+                          </div>
+
+                          {nextClaimDate && !claimReady && (
+                            <div className="mt-4">
+                              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+                                <span>Cycle progress</span>
+                                <span>{daysSinceAnchor}/30 days</span>
+                              </div>
+                              <Progress value={(daysSinceAnchor / 30) * 100} className="h-2" />
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
               <Card>
                 <CardHeader>
-                  <CardTitle>Rewards</CardTitle>
+                  <CardTitle>Rewards History</CardTitle>
                   <CardDescription>Earned credits, tokens, and bonuses</CardDescription>
                 </CardHeader>
                 <CardContent>
