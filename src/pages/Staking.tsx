@@ -69,16 +69,32 @@ const tierColorClass = (color: string) => {
   return map[color] || 'from-muted to-muted/50 border-border text-foreground';
 };
 
+interface EmissionPreview {
+  pool_id: string;
+  pool_name: string;
+  user_weighted_stake: number;
+  total_weighted_stake: number;
+  user_share_percent: number;
+  pool_remaining: number;
+  emission_per_second: number;
+  user_emission_per_day: number;
+  user_pending_since_last_claim: number;
+  next_claim_available_at: string;
+}
+
 const Staking = () => {
   const { user } = useAuth();
+  const wallet = useWeb3Wallet();
   const [tiers, setTiers] = useState<Tier[]>([]);
   const [stakes, setStakes] = useState<Stake[]>([]);
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [currentTier, setCurrentTier] = useState<{ tier_name: string; total_staked: number; monthly_credits: number; apy_percentage: number; badge_color: string; perks: string[] } | null>(null);
+  const [emission, setEmission] = useState<EmissionPreview | null>(null);
   const [stakeAmount, setStakeAmount] = useState('');
   const [lockPeriod, setLockPeriod] = useState('30');
-  const [walletAddress, setWalletAddress] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const activeWallet = wallet.verifiedWallets.find((v) => v.id === wallet.activeVerifiedId);
 
   const loadData = async () => {
     const { data: tiersData } = await supabase
@@ -107,6 +123,10 @@ const Staking = () => {
     const { data: tierData } = await supabase.rpc('get_user_staking_tier', { _user_id: user.id });
     if (tierData && tierData.length > 0) setCurrentTier(tierData[0] as any);
     else setCurrentTier(null);
+
+    const { data: emissionData } = await supabase.rpc('preview_user_emissions', { _user_id: user.id });
+    if (emissionData && emissionData.length > 0) setEmission(emissionData[0] as any);
+    else setEmission(null);
   };
 
   useEffect(() => {
@@ -117,6 +137,14 @@ const Staking = () => {
   const handleStake = async () => {
     if (!user) {
       toast({ title: 'Sign in required', description: 'Please sign in to stake B2BN tokens.', variant: 'destructive' });
+      return;
+    }
+    if (!activeWallet) {
+      toast({
+        title: 'Verify a wallet first',
+        description: 'Connect and verify a Web3 wallet before staking. This proves the address is yours.',
+        variant: 'destructive',
+      });
       return;
     }
     const amount = parseFloat(stakeAmount);
@@ -130,72 +158,118 @@ const Staking = () => {
     }
 
     const lockDays = parseInt(lockPeriod);
-    const lockOption = LOCK_OPTIONS.find(o => o.days === lockDays)!;
-    const matchingTier = [...tiers].reverse().find(t => amount >= t.min_stake_amount);
+    const lockOption = LOCK_OPTIONS.find((o) => o.days === lockDays)!;
+    const matchingTier = [...tiers].reverse().find((t) => amount >= t.min_stake_amount);
     const baseWeight = matchingTier?.apy_percentage ?? 1;
     const finalWeight = baseWeight * lockOption.multiplier;
 
     setLoading(true);
     const unlocksAt = new Date(Date.now() + lockDays * 86400 * 1000).toISOString();
 
-    const { error } = await supabase.from('user_stakes').insert({
-      user_id: user.id,
-      amount,
-      lock_period_days: lockDays,
-      apy_percentage: finalWeight,
-      status: 'active',
-      unlocks_at: unlocksAt,
-      wallet_address: walletAddress || null,
-    });
+    try {
+      // 1. Insert stake row (status=active, becomes "live" once tx confirms)
+      const { data: stakeRow, error: stakeErr } = await supabase
+        .from('user_stakes')
+        .insert({
+          user_id: user.id,
+          amount,
+          lock_period_days: lockDays,
+          apy_percentage: finalWeight,
+          status: 'active',
+          unlocks_at: unlocksAt,
+          wallet_address: activeWallet.wallet_address,
+          wallet_link_id: activeWallet.id,
+        })
+        .select()
+        .single();
+      if (stakeErr) throw stakeErr;
 
-    setLoading(false);
+      // 2. Create the transaction record (pending → submitted → confirmed)
+      const tx = await createStakingTx({
+        user_id: user.id,
+        stake_id: stakeRow.id,
+        tx_type: 'stake',
+        amount,
+        wallet_address: activeWallet.wallet_address,
+        chain_id: activeWallet.chain_id,
+      });
 
-    if (error) {
-      toast({ title: 'Stake failed', description: error.message, variant: 'destructive' });
-      return;
+      // 3. Simulate chain submission (replace with real ethers contract call later)
+      await simulateChainSubmission(tx.id);
+
+      toast({
+        title: 'Stake submitted',
+        description: `${amount.toLocaleString()} B2BN · ${finalWeight}x weight · awaiting confirmation`,
+      });
+      setStakeAmount('');
+      loadData();
+    } catch (e: any) {
+      toast({ title: 'Stake failed', description: e?.message ?? 'Unknown error', variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
-
-    toast({ title: 'Stake recorded', description: `You staked ${amount.toLocaleString()} B2BN with ${finalWeight}x revenue share weight.` });
-    setStakeAmount('');
-    loadData();
   };
 
   const handleUnstake = async (stake: Stake) => {
+    if (!user) return;
     const isUnlocked = new Date(stake.unlocks_at).getTime() <= Date.now();
     if (!isUnlocked) {
       toast({ title: 'Still locked', description: `Unlocks on ${new Date(stake.unlocks_at).toLocaleDateString()}`, variant: 'destructive' });
       return;
     }
-    const { error } = await supabase
-      .from('user_stakes')
-      .update({ status: 'unstaked', unstaked_at: new Date().toISOString() })
-      .eq('id', stake.id);
-    if (error) {
-      toast({ title: 'Unstake failed', description: error.message, variant: 'destructive' });
-      return;
+    try {
+      const { error } = await supabase
+        .from('user_stakes')
+        .update({ status: 'unstaked', unstaked_at: new Date().toISOString() })
+        .eq('id', stake.id);
+      if (error) throw error;
+
+      const tx = await createStakingTx({
+        user_id: user.id,
+        stake_id: stake.id,
+        tx_type: 'unstake',
+        amount: Number(stake.amount),
+        wallet_address: stake.wallet_address,
+      });
+      await simulateChainSubmission(tx.id);
+
+      toast({ title: 'Unstake submitted', description: `${stake.amount.toLocaleString()} B2BN releasing back to your wallet.` });
+      loadData();
+    } catch (e: any) {
+      toast({ title: 'Unstake failed', description: e?.message ?? 'Unknown error', variant: 'destructive' });
     }
-    toast({ title: 'Unstaked', description: `${stake.amount.toLocaleString()} B2BN released.` });
-    loadData();
   };
 
   const handleClaim = async (reward: Reward) => {
-    const { error } = await supabase
-      .from('staking_rewards')
-      .update({ claimed: true, claimed_at: new Date().toISOString() })
-      .eq('id', reward.id);
-    if (error) {
-      toast({ title: 'Claim failed', description: error.message, variant: 'destructive' });
-      return;
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('staking_rewards')
+        .update({ claimed: true, claimed_at: new Date().toISOString() })
+        .eq('id', reward.id);
+      if (error) throw error;
+
+      const tx = await createStakingTx({
+        user_id: user.id,
+        tx_type: 'claim',
+        amount: Number(reward.amount),
+        wallet_address: activeWallet?.wallet_address ?? null,
+        chain_id: activeWallet?.chain_id ?? null,
+      });
+      await simulateChainSubmission(tx.id);
+
+      toast({ title: 'Reward claimed', description: `+${reward.amount} ${reward.reward_type} sent to your wallet.` });
+      loadData();
+    } catch (e: any) {
+      toast({ title: 'Claim failed', description: e?.message ?? 'Unknown error', variant: 'destructive' });
     }
-    toast({ title: 'Reward claimed', description: `+${reward.amount} ${reward.reward_type} added.` });
-    loadData();
   };
 
-  const totalStaked = stakes.filter(s => s.status === 'active').reduce((sum, s) => sum + Number(s.amount), 0);
-  const totalRewards = rewards.filter(r => !r.claimed).reduce((sum, r) => sum + Number(r.amount), 0);
-  const activeStakeCount = stakes.filter(s => s.status === 'active').length;
+  const totalStaked = stakes.filter((s) => s.status === 'active').reduce((sum, s) => sum + Number(s.amount), 0);
+  const totalRewards = rewards.filter((r) => !r.claimed).reduce((sum, r) => sum + Number(r.amount), 0);
+  const activeStakeCount = stakes.filter((s) => s.status === 'active').length;
 
-  const nextTier = tiers.find(t => t.min_stake_amount > totalStaked);
+  const nextTier = tiers.find((t) => t.min_stake_amount > totalStaked);
   const progressToNext = nextTier ? Math.min(100, (totalStaked / nextTier.min_stake_amount) * 100) : 100;
 
   return (
