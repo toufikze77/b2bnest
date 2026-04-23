@@ -2631,6 +2631,51 @@ export type Database = {
           },
         ]
       }
+      staking_reward_pools: {
+        Row: {
+          created_at: string
+          description: string | null
+          emission_per_second: number
+          emitted_amount: number
+          end_date: string
+          id: string
+          is_active: boolean
+          name: string
+          reward_token: string
+          start_date: string
+          total_budget: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          emission_per_second: number
+          emitted_amount?: number
+          end_date: string
+          id?: string
+          is_active?: boolean
+          name: string
+          reward_token?: string
+          start_date?: string
+          total_budget: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          emission_per_second?: number
+          emitted_amount?: number
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          reward_token?: string
+          start_date?: string
+          total_budget?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       staking_rewards: {
         Row: {
           amount: number
@@ -2717,6 +2762,107 @@ export type Database = {
           perks?: Json
           sort_order?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      staking_transactions: {
+        Row: {
+          amount: number
+          block_number: number | null
+          chain_id: number | null
+          confirmed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          stake_id: string | null
+          status: string
+          submitted_at: string | null
+          tx_hash: string | null
+          tx_type: string
+          updated_at: string
+          user_id: string
+          wallet_address: string | null
+        }
+        Insert: {
+          amount?: number
+          block_number?: number | null
+          chain_id?: number | null
+          confirmed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          stake_id?: string | null
+          status?: string
+          submitted_at?: string | null
+          tx_hash?: string | null
+          tx_type: string
+          updated_at?: string
+          user_id: string
+          wallet_address?: string | null
+        }
+        Update: {
+          amount?: number
+          block_number?: number | null
+          chain_id?: number | null
+          confirmed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          stake_id?: string | null
+          status?: string
+          submitted_at?: string | null
+          tx_hash?: string | null
+          tx_type?: string
+          updated_at?: string
+          user_id?: string
+          wallet_address?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staking_transactions_stake_id_fkey"
+            columns: ["stake_id"]
+            isOneToOne: false
+            referencedRelation: "user_stakes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staking_wallet_links: {
+        Row: {
+          chain_id: number
+          created_at: string
+          id: string
+          is_active: boolean
+          signature: string
+          signed_message: string
+          updated_at: string
+          user_id: string
+          verified_at: string
+          wallet_address: string
+        }
+        Insert: {
+          chain_id?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          signature: string
+          signed_message: string
+          updated_at?: string
+          user_id: string
+          verified_at?: string
+          wallet_address: string
+        }
+        Update: {
+          chain_id?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          signature?: string
+          signed_message?: string
+          updated_at?: string
+          user_id?: string
+          verified_at?: string
+          wallet_address?: string
         }
         Relationships: []
       }
@@ -3386,10 +3532,12 @@ export type Database = {
       }
       user_stakes: {
         Row: {
+          accrued_rewards: number
           amount: number
           apy_percentage: number
           created_at: string
           id: string
+          last_claim_at: string | null
           lock_period_days: number
           staked_at: string
           status: string
@@ -3399,12 +3547,15 @@ export type Database = {
           updated_at: string
           user_id: string
           wallet_address: string | null
+          wallet_link_id: string | null
         }
         Insert: {
+          accrued_rewards?: number
           amount: number
           apy_percentage?: number
           created_at?: string
           id?: string
+          last_claim_at?: string | null
           lock_period_days?: number
           staked_at?: string
           status?: string
@@ -3414,12 +3565,15 @@ export type Database = {
           updated_at?: string
           user_id: string
           wallet_address?: string | null
+          wallet_link_id?: string | null
         }
         Update: {
+          accrued_rewards?: number
           amount?: number
           apy_percentage?: number
           created_at?: string
           id?: string
+          last_claim_at?: string | null
           lock_period_days?: number
           staked_at?: string
           status?: string
@@ -3429,8 +3583,17 @@ export type Database = {
           updated_at?: string
           user_id?: string
           wallet_address?: string | null
+          wallet_link_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_stakes_wallet_link_id_fkey"
+            columns: ["wallet_link_id"]
+            isOneToOne: false
+            referencedRelation: "staking_wallet_links"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -3694,6 +3857,21 @@ export type Database = {
       owns_team: {
         Args: { _team_id: string; _user_id: string }
         Returns: boolean
+      }
+      preview_user_emissions: {
+        Args: { _user_id: string }
+        Returns: {
+          emission_per_second: number
+          next_claim_available_at: string
+          pool_id: string
+          pool_name: string
+          pool_remaining: number
+          total_weighted_stake: number
+          user_emission_per_day: number
+          user_pending_since_last_claim: number
+          user_share_percent: number
+          user_weighted_stake: number
+        }[]
       }
       store_bank_account: {
         Args: {

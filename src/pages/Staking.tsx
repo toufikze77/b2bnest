@@ -8,12 +8,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Coins, TrendingUp, Lock, Award, Sparkles, Gift, ShieldCheck, Wallet, Info, CheckCircle2, Clock, Unlock, CircleDot, Calendar, Calculator, Building2 } from 'lucide-react';
+import { Coins, TrendingUp, Lock, Award, Sparkles, Gift, ShieldCheck, Wallet, Info, Calendar, Calculator, Building2, Flame } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import SEOHead from '@/components/SEOHead';
+import { WalletConnector } from '@/components/staking/WalletConnector';
+import { StakingTxTimeline } from '@/components/staking/StakingTxTimeline';
+import { useWeb3Wallet } from '@/hooks/useWeb3Wallet';
+import { createStakingTx, simulateChainSubmission, updateStakingTx } from '@/services/stakingTxService';
 
 interface Tier {
   id: string;
@@ -65,16 +69,32 @@ const tierColorClass = (color: string) => {
   return map[color] || 'from-muted to-muted/50 border-border text-foreground';
 };
 
+interface EmissionPreview {
+  pool_id: string;
+  pool_name: string;
+  user_weighted_stake: number;
+  total_weighted_stake: number;
+  user_share_percent: number;
+  pool_remaining: number;
+  emission_per_second: number;
+  user_emission_per_day: number;
+  user_pending_since_last_claim: number;
+  next_claim_available_at: string;
+}
+
 const Staking = () => {
   const { user } = useAuth();
+  const wallet = useWeb3Wallet();
   const [tiers, setTiers] = useState<Tier[]>([]);
   const [stakes, setStakes] = useState<Stake[]>([]);
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [currentTier, setCurrentTier] = useState<{ tier_name: string; total_staked: number; monthly_credits: number; apy_percentage: number; badge_color: string; perks: string[] } | null>(null);
+  const [emission, setEmission] = useState<EmissionPreview | null>(null);
   const [stakeAmount, setStakeAmount] = useState('');
   const [lockPeriod, setLockPeriod] = useState('30');
-  const [walletAddress, setWalletAddress] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const activeWallet = wallet.verifiedWallets.find((v) => v.id === wallet.activeVerifiedId);
 
   const loadData = async () => {
     const { data: tiersData } = await supabase
@@ -103,6 +123,10 @@ const Staking = () => {
     const { data: tierData } = await supabase.rpc('get_user_staking_tier', { _user_id: user.id });
     if (tierData && tierData.length > 0) setCurrentTier(tierData[0] as any);
     else setCurrentTier(null);
+
+    const { data: emissionData } = await supabase.rpc('preview_user_emissions', { _user_id: user.id });
+    if (emissionData && emissionData.length > 0) setEmission(emissionData[0] as any);
+    else setEmission(null);
   };
 
   useEffect(() => {
@@ -113,6 +137,14 @@ const Staking = () => {
   const handleStake = async () => {
     if (!user) {
       toast({ title: 'Sign in required', description: 'Please sign in to stake B2BN tokens.', variant: 'destructive' });
+      return;
+    }
+    if (!activeWallet) {
+      toast({
+        title: 'Verify a wallet first',
+        description: 'Connect and verify a Web3 wallet before staking. This proves the address is yours.',
+        variant: 'destructive',
+      });
       return;
     }
     const amount = parseFloat(stakeAmount);
@@ -126,72 +158,118 @@ const Staking = () => {
     }
 
     const lockDays = parseInt(lockPeriod);
-    const lockOption = LOCK_OPTIONS.find(o => o.days === lockDays)!;
-    const matchingTier = [...tiers].reverse().find(t => amount >= t.min_stake_amount);
+    const lockOption = LOCK_OPTIONS.find((o) => o.days === lockDays)!;
+    const matchingTier = [...tiers].reverse().find((t) => amount >= t.min_stake_amount);
     const baseWeight = matchingTier?.apy_percentage ?? 1;
     const finalWeight = baseWeight * lockOption.multiplier;
 
     setLoading(true);
     const unlocksAt = new Date(Date.now() + lockDays * 86400 * 1000).toISOString();
 
-    const { error } = await supabase.from('user_stakes').insert({
-      user_id: user.id,
-      amount,
-      lock_period_days: lockDays,
-      apy_percentage: finalWeight,
-      status: 'active',
-      unlocks_at: unlocksAt,
-      wallet_address: walletAddress || null,
-    });
+    try {
+      // 1. Insert stake row (status=active, becomes "live" once tx confirms)
+      const { data: stakeRow, error: stakeErr } = await supabase
+        .from('user_stakes')
+        .insert({
+          user_id: user.id,
+          amount,
+          lock_period_days: lockDays,
+          apy_percentage: finalWeight,
+          status: 'active',
+          unlocks_at: unlocksAt,
+          wallet_address: activeWallet.wallet_address,
+          wallet_link_id: activeWallet.id,
+        })
+        .select()
+        .single();
+      if (stakeErr) throw stakeErr;
 
-    setLoading(false);
+      // 2. Create the transaction record (pending → submitted → confirmed)
+      const tx = await createStakingTx({
+        user_id: user.id,
+        stake_id: stakeRow.id,
+        tx_type: 'stake',
+        amount,
+        wallet_address: activeWallet.wallet_address,
+        chain_id: activeWallet.chain_id,
+      });
 
-    if (error) {
-      toast({ title: 'Stake failed', description: error.message, variant: 'destructive' });
-      return;
+      // 3. Simulate chain submission (replace with real ethers contract call later)
+      await simulateChainSubmission(tx.id);
+
+      toast({
+        title: 'Stake submitted',
+        description: `${amount.toLocaleString()} B2BN · ${finalWeight}x weight · awaiting confirmation`,
+      });
+      setStakeAmount('');
+      loadData();
+    } catch (e: any) {
+      toast({ title: 'Stake failed', description: e?.message ?? 'Unknown error', variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
-
-    toast({ title: 'Stake recorded', description: `You staked ${amount.toLocaleString()} B2BN with ${finalWeight}x revenue share weight.` });
-    setStakeAmount('');
-    loadData();
   };
 
   const handleUnstake = async (stake: Stake) => {
+    if (!user) return;
     const isUnlocked = new Date(stake.unlocks_at).getTime() <= Date.now();
     if (!isUnlocked) {
       toast({ title: 'Still locked', description: `Unlocks on ${new Date(stake.unlocks_at).toLocaleDateString()}`, variant: 'destructive' });
       return;
     }
-    const { error } = await supabase
-      .from('user_stakes')
-      .update({ status: 'unstaked', unstaked_at: new Date().toISOString() })
-      .eq('id', stake.id);
-    if (error) {
-      toast({ title: 'Unstake failed', description: error.message, variant: 'destructive' });
-      return;
+    try {
+      const { error } = await supabase
+        .from('user_stakes')
+        .update({ status: 'unstaked', unstaked_at: new Date().toISOString() })
+        .eq('id', stake.id);
+      if (error) throw error;
+
+      const tx = await createStakingTx({
+        user_id: user.id,
+        stake_id: stake.id,
+        tx_type: 'unstake',
+        amount: Number(stake.amount),
+        wallet_address: stake.wallet_address,
+      });
+      await simulateChainSubmission(tx.id);
+
+      toast({ title: 'Unstake submitted', description: `${stake.amount.toLocaleString()} B2BN releasing back to your wallet.` });
+      loadData();
+    } catch (e: any) {
+      toast({ title: 'Unstake failed', description: e?.message ?? 'Unknown error', variant: 'destructive' });
     }
-    toast({ title: 'Unstaked', description: `${stake.amount.toLocaleString()} B2BN released.` });
-    loadData();
   };
 
   const handleClaim = async (reward: Reward) => {
-    const { error } = await supabase
-      .from('staking_rewards')
-      .update({ claimed: true, claimed_at: new Date().toISOString() })
-      .eq('id', reward.id);
-    if (error) {
-      toast({ title: 'Claim failed', description: error.message, variant: 'destructive' });
-      return;
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('staking_rewards')
+        .update({ claimed: true, claimed_at: new Date().toISOString() })
+        .eq('id', reward.id);
+      if (error) throw error;
+
+      const tx = await createStakingTx({
+        user_id: user.id,
+        tx_type: 'claim',
+        amount: Number(reward.amount),
+        wallet_address: activeWallet?.wallet_address ?? null,
+        chain_id: activeWallet?.chain_id ?? null,
+      });
+      await simulateChainSubmission(tx.id);
+
+      toast({ title: 'Reward claimed', description: `+${reward.amount} ${reward.reward_type} sent to your wallet.` });
+      loadData();
+    } catch (e: any) {
+      toast({ title: 'Claim failed', description: e?.message ?? 'Unknown error', variant: 'destructive' });
     }
-    toast({ title: 'Reward claimed', description: `+${reward.amount} ${reward.reward_type} added.` });
-    loadData();
   };
 
-  const totalStaked = stakes.filter(s => s.status === 'active').reduce((sum, s) => sum + Number(s.amount), 0);
-  const totalRewards = rewards.filter(r => !r.claimed).reduce((sum, r) => sum + Number(r.amount), 0);
-  const activeStakeCount = stakes.filter(s => s.status === 'active').length;
+  const totalStaked = stakes.filter((s) => s.status === 'active').reduce((sum, s) => sum + Number(s.amount), 0);
+  const totalRewards = rewards.filter((r) => !r.claimed).reduce((sum, r) => sum + Number(r.amount), 0);
+  const activeStakeCount = stakes.filter((s) => s.status === 'active').length;
 
-  const nextTier = tiers.find(t => t.min_stake_amount > totalStaked);
+  const nextTier = tiers.find((t) => t.min_stake_amount > totalStaked);
   const progressToNext = nextTier ? Math.min(100, (totalStaked / nextTier.min_stake_amount) * 100) : 100;
 
   return (
@@ -376,20 +454,66 @@ const Staking = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div>
-                      <Label htmlFor="wallet">Wallet Address (optional)</Label>
-                      <Input
-                        id="wallet"
-                        placeholder="0x... or Solana address"
-                        value={walletAddress}
-                        onChange={(e) => setWalletAddress(e.target.value)}
-                      />
-                    </div>
-                    <Button onClick={handleStake} disabled={loading || !user} className="w-full" size="lg">
-                      {loading ? 'Staking...' : user ? 'Stake B2BN' : 'Sign in to Stake'}
+                    {activeWallet ? (
+                      <div className="rounded-md border bg-muted/30 p-2.5 text-xs">
+                        <span className="text-muted-foreground">Staking with: </span>
+                        <span className="font-mono font-medium">
+                          {activeWallet.wallet_address.slice(0, 6)}…{activeWallet.wallet_address.slice(-4)}
+                        </span>
+                        <Badge variant="outline" className="ml-2">verified</Badge>
+                      </div>
+                    ) : (
+                      <Alert variant="destructive" className="py-2">
+                        <Info className="h-4 w-4" />
+                        <AlertDescription className="text-xs">
+                          Verify a wallet in the panel on the right before staking.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    <Button onClick={handleStake} disabled={loading || !user || !activeWallet} className="w-full" size="lg">
+                      {loading ? 'Submitting…' : !user ? 'Sign in to Stake' : !activeWallet ? 'Verify Wallet First' : 'Stake B2BN'}
                     </Button>
                   </CardContent>
                 </Card>
+
+                <WalletConnector />
+              </div>
+
+              {/* Reward Pool + How it works */}
+              <div className="grid md:grid-cols-2 gap-6 mt-6">
+                {emission && (
+                  <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-purple-500/5">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Flame className="h-5 w-5 text-orange-500" />
+                        Active Reward Pool
+                      </CardTitle>
+                      <CardDescription>{emission.pool_name}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Pool remaining</span>
+                        <span className="font-bold">{Number(emission.pool_remaining).toLocaleString(undefined, { maximumFractionDigits: 0 })} B2BN</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Emission rate</span>
+                        <span className="font-medium">{Number(emission.emission_per_second * 86400).toFixed(2)} B2BN / day</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Total weighted stake</span>
+                        <span className="font-medium">{Number(emission.total_weighted_stake).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Your share</span>
+                        <span className="font-bold text-primary">{Number(emission.user_share_percent).toFixed(4)}%</span>
+                      </div>
+                      <div className="pt-2 border-t flex justify-between">
+                        <span className="text-muted-foreground">Est. your daily emission</span>
+                        <span className="font-bold">{Number(emission.user_emission_per_day).toFixed(4)} B2BN</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 <Card className="bg-gradient-to-br from-emerald-500/5 to-primary/5 border-emerald-500/20">
                   <CardHeader>
@@ -403,29 +527,29 @@ const Staking = () => {
                     <div className="flex gap-3">
                       <div className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold flex-shrink-0">1</div>
                       <div>
-                        <p className="font-medium">Lock B2BN tokens</p>
-                        <p className="text-muted-foreground">Choose amount and lock period. Longer locks earn higher share weight multipliers.</p>
+                        <p className="font-medium">Connect & verify wallet</p>
+                        <p className="text-muted-foreground">Sign a free message to prove ownership — no transaction, no gas.</p>
                       </div>
                     </div>
                     <div className="flex gap-3">
                       <div className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold flex-shrink-0">2</div>
                       <div>
-                        <p className="font-medium">Platform generates real revenue</p>
-                        <p className="text-muted-foreground">SaaS subscriptions, AI tool usage, and service fees create the reward pool.</p>
+                        <p className="font-medium">Lock B2BN tokens</p>
+                        <p className="text-muted-foreground">Choose amount and lock period. Longer locks earn higher share weight.</p>
                       </div>
                     </div>
                     <div className="flex gap-3">
                       <div className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold flex-shrink-0">3</div>
                       <div>
-                        <p className="font-medium">Variable monthly profit drops</p>
-                        <p className="text-muted-foreground">Your share = (your stake × tier weight) / (total weighted stakes) × monthly revenue pool. No fixed returns.</p>
+                        <p className="font-medium">Earn proportional emissions</p>
+                        <p className="text-muted-foreground">Your share = (stake × tier weight) ÷ (total weighted stakes). Variable, never fixed.</p>
                       </div>
                     </div>
                     <div className="flex gap-3">
                       <div className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold flex-shrink-0">4</div>
                       <div>
-                        <p className="font-medium">Unstake anytime after lock</p>
-                        <p className="text-muted-foreground">Tokens release automatically when the lock period ends.</p>
+                        <p className="font-medium">Unstake after lock ends</p>
+                        <p className="text-muted-foreground">Tokens release with full transaction timeline visible end-to-end.</p>
                       </div>
                     </div>
                   </CardContent>
@@ -502,48 +626,8 @@ const Staking = () => {
                   ) : (
                     <div className="space-y-4">
                       {stakes.map((stake) => {
-                        const now = Date.now();
-                        const stakedAt = new Date(stake.staked_at).getTime();
-                        const unlocksAt = new Date(stake.unlocks_at).getTime();
-                        const isUnlocked = unlocksAt <= now;
+                        const isUnlocked = new Date(stake.unlocks_at).getTime() <= Date.now();
                         const isActive = stake.status === 'active';
-                        const isUnstaked = stake.status === 'unstaked';
-                        const isConfirmed = now - stakedAt > 60 * 1000;
-
-                        const steps = [
-                          {
-                            key: 'submitted',
-                            label: 'Submitted',
-                            description: `Staking transaction recorded${stake.transaction_hash ? ` · ${stake.transaction_hash.slice(0, 10)}…` : ''}`,
-                            timestamp: stake.staked_at,
-                            done: true,
-                            icon: CircleDot,
-                          },
-                          {
-                            key: 'confirmed',
-                            label: 'Confirmed',
-                            description: isConfirmed ? 'Stake is active and earning revenue share' : 'Awaiting on-chain confirmation',
-                            timestamp: isConfirmed ? new Date(stakedAt + 60 * 1000).toISOString() : null,
-                            done: isConfirmed,
-                            icon: CheckCircle2,
-                          },
-                          {
-                            key: 'unlocked',
-                            label: isUnstaked ? 'Unstaked' : 'Unlocked',
-                            description: isUnstaked
-                              ? `Tokens released back to wallet`
-                              : isUnlocked
-                                ? 'Lock period complete · ready to unstake'
-                                : `Lock ends ${new Date(stake.unlocks_at).toLocaleDateString()}`,
-                            timestamp: isUnstaked
-                              ? stake.unstaked_at ?? null
-                              : isUnlocked
-                                ? stake.unlocks_at
-                                : null,
-                            done: isUnlocked || isUnstaked,
-                            icon: isUnstaked ? Unlock : isUnlocked ? Unlock : Clock,
-                          },
-                        ];
 
                         return (
                           <div key={stake.id} className="border rounded-lg p-4 space-y-4">
@@ -571,50 +655,12 @@ const Staking = () => {
                               )}
                             </div>
 
-                            {/* Transaction Timeline */}
-                            <div className="pt-2 border-t">
-                              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                                Transaction Timeline
-                              </p>
-                              <ol className="relative space-y-4">
-                                {steps.map((step, idx) => {
-                                  const StepIcon = step.icon;
-                                  const isLast = idx === steps.length - 1;
-                                  return (
-                                    <li key={step.key} className="flex gap-3 relative">
-                                      {!isLast && (
-                                        <span
-                                          className={`absolute left-[15px] top-8 bottom-[-18px] w-px ${step.done ? 'bg-primary/40' : 'bg-border'}`}
-                                          aria-hidden="true"
-                                        />
-                                      )}
-                                      <div
-                                        className={`relative z-10 flex items-center justify-center w-8 h-8 rounded-full border-2 flex-shrink-0 ${
-                                          step.done
-                                            ? 'bg-primary/10 border-primary text-primary'
-                                            : 'bg-muted border-border text-muted-foreground'
-                                        }`}
-                                      >
-                                        <StepIcon className="h-4 w-4" />
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                                          <p className={`text-sm font-medium ${step.done ? 'text-foreground' : 'text-muted-foreground'}`}>
-                                            {step.label}
-                                          </p>
-                                          {step.timestamp && (
-                                            <p className="text-xs text-muted-foreground">
-                                              {new Date(step.timestamp).toLocaleString()}
-                                            </p>
-                                          )}
-                                        </div>
-                                        <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
-                                      </div>
-                                    </li>
-                                  );
-                                })}
-                              </ol>
-                            </div>
+                            <StakingTxTimeline
+                              stakeId={stake.id}
+                              unlocksAt={stake.unlocks_at}
+                              unstakedAt={stake.unstaked_at}
+                              status={stake.status}
+                            />
                           </div>
                         );
                       })}
