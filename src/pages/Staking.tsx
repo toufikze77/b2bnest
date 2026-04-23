@@ -8,12 +8,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Coins, TrendingUp, Lock, Award, Sparkles, Gift, ShieldCheck, Wallet, Info, CheckCircle2, Clock, Unlock, CircleDot, Calendar, Calculator, Building2 } from 'lucide-react';
+import { Coins, TrendingUp, Lock, Award, Sparkles, Gift, ShieldCheck, Wallet, Info, Calendar, Calculator, Building2, Flame } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import SEOHead from '@/components/SEOHead';
+import { WalletConnector } from '@/components/staking/WalletConnector';
+import { StakingTxTimeline } from '@/components/staking/StakingTxTimeline';
+import { useWeb3Wallet } from '@/hooks/useWeb3Wallet';
+import { createStakingTx, simulateChainSubmission, updateStakingTx } from '@/services/stakingTxService';
 
 interface Tier {
   id: string;
