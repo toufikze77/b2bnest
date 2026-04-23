@@ -57,19 +57,27 @@ const Help = () => {
     },
     {
       question: "What is the B2BN Staking & Rewards Portal?",
-      answer: "The Staking Portal lets B2BN holders lock tokens to earn up to 18% APY plus monthly AI credits, premium feature access, and (at Diamond tier) revenue share. Visit /staking from the Invest menu, choose an amount and lock period, and start earning. Tiers: Bronze (1k+), Silver (10k+), Gold (50k+), Diamond (250k+)."
+      answer: "The Staking Portal lets B2BN holders lock tokens to earn from real platform revenue — not interest. It's a halal-compatible profit-sharing model: users stake tokens to access tools and support the platform, the platform generates revenue (SaaS, AI tools, services), and a portion is shared with participants. Tiers: Bronze (1k+ B2BN, 1x weight), Silver (10k+, 1.5x), Gold (50k+, 2.5x), Diamond (250k+, 4x)."
     },
     {
-      question: "How do staking lock periods and APY multipliers work?",
-      answer: "Each tier has a base APY (5%-18%). Longer lock periods boost it: 30 days = 1x, 90 days = 1.25x, 180 days = 1.5x, 1 year = 2x. Tokens automatically unlock at the end of the lock period and can then be unstaked at any time from the My Stakes tab."
+      question: "Is B2BN staking halal? How is it different from interest?",
+      answer: "Yes — our staking model is structured as profit-sharing (mudarabah-style), not interest (riba). There is NO fixed APY and NO guaranteed return. Rewards come from real platform revenue (SaaS subscriptions, AI tool usage, service fees) and are variable — they depend on actual business activity that month. Earn from real business activity, not interest."
     },
     {
-      question: "How are staking rewards distributed?",
-      answer: "Rewards drop monthly to your account based on your active stake amount and tier. You'll see them in the Rewards tab and can claim them with one click. Rewards include AI credits, bonus B2BN tokens, and revenue share allocations for Diamond holders."
+      question: "How do staking lock periods and share weight multipliers work?",
+      answer: "Each tier has a base revenue share weight (1x to 4x). Longer lock periods boost it: 30 days = 1x, 90 days = 1.25x, 180 days = 1.5x, 1 year = 2x. Your final weight = tier weight × lock multiplier. Higher weight = larger slice of the monthly profit-share pool. Tokens automatically unlock at the end of the lock period and can be unstaked from the My Stakes tab."
+    },
+    {
+      question: "How are staking rewards calculated and distributed?",
+      answer: "Each month, a portion of platform revenue is allocated to the staker pool. Your share = (your stake × your weight) / (total weighted stakes across all participants) × monthly revenue pool. Rewards drop in the Rewards tab and include variable B2BN profit share, fixed monthly AI credits (per your tier), and tier perks. Click Claim to credit them to your account."
+    },
+    {
+      question: "Are returns guaranteed? What if revenue is low one month?",
+      answer: "No — returns are NOT guaranteed. This is the key feature of the halal-compatible model. If platform revenue is low in a given month, profit-share distributions will be lower (or zero). If revenue is high, distributions will be larger. Your tier credits (AI credits) are fixed per month, but the B2BN profit share is variable. This is the difference between profit-sharing and interest."
     },
     {
       question: "Is staking safe? Can I lose my tokens?",
-      answer: "Your stake records are protected by enterprise-grade RLS — only you can view, create, and modify your own stakes. Tokens are committed for the lock period you choose; you cannot unstake early. Smart contract settlement is handled separately on-chain. Always do your own research."
+      answer: "Your stake records are protected by enterprise-grade RLS — only you can view, create, and modify your own stakes. Tokens are committed for the lock period you choose; you cannot unstake early. Smart contract settlement is handled separately on-chain. Profit-share amounts are variable and not guaranteed. Always do your own research."
     }
   ];
 

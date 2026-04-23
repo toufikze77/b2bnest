@@ -89,10 +89,12 @@ const KnowledgeBase = () => {
       icon: Coins,
       color: 'bg-emerald-500',
       articles: [
-        { title: 'Staking Portal Overview', description: 'How the B2BN Staking & Rewards Portal works: stake tokens, earn APY, unlock tier perks (Bronze, Silver, Gold, Diamond).', readTime: '6 min' },
-        { title: 'Choosing Your Stake Amount & Lock Period', description: 'Minimum 1,000 B2BN. Lock 30/90/180/365 days for 1x–2x APY multipliers. Higher amounts unlock better tiers.', readTime: '5 min' },
-        { title: 'Tier Benefits Explained', description: 'Bronze 5% APY +50 credits, Silver 8% +200, Gold 12% +500 + Pro features, Diamond 18% +2000 + revenue share + governance.', readTime: '7 min' },
-        { title: 'Claiming Monthly Rewards', description: 'Rewards drop monthly to the Rewards tab. Click Claim to credit AI credits or B2BN tokens to your account.', readTime: '3 min' },
+        { title: 'Staking Portal Overview', description: 'How the halal-compatible B2BN profit-share portal works: stake tokens, earn from real platform revenue (not interest), unlock tier perks.', readTime: '6 min' },
+        { title: 'Halal-Compatible Profit Sharing', description: 'Earn from real business activity, not interest. Variable monthly distributions based on actual platform revenue — mudarabah-style model.', readTime: '5 min' },
+        { title: 'Choosing Your Stake Amount & Lock Period', description: 'Minimum 1,000 B2BN. Lock 30/90/180/365 days for 1x–2x share weight multipliers. Higher amounts unlock better tiers.', readTime: '5 min' },
+        { title: 'Tier Weights Explained', description: 'Bronze 1x weight +100 credits, Silver 1.5x +500, Gold 2.5x +2,000 + Pro features, Diamond 4x +10,000 + direct revenue share + governance.', readTime: '7 min' },
+        { title: 'How Profit Share Is Calculated', description: 'Your share = (your stake × your tier weight) / (total weighted stakes) × monthly revenue pool. Variable — not a fixed APY.', readTime: '5 min' },
+        { title: 'Claiming Monthly Rewards', description: 'Profit-share drops monthly to the Rewards tab. Click Claim to credit AI credits and variable B2BN profit share to your account.', readTime: '3 min' },
         { title: 'Unstaking & Lock Periods', description: 'Tokens automatically unlock when the lock period ends. Use My Stakes tab to release. Early unstaking is not supported.', readTime: '4 min' },
         { title: 'Staking Security & RLS', description: 'Stakes are protected by row-level security — only you can view and modify your positions. On-chain settlement handled by smart contract.', readTime: '4 min' }
       ]
