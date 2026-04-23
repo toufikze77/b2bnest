@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Coins, TrendingUp, Lock, Award, Sparkles, Gift, ShieldCheck, Wallet, Info, CheckCircle2, Clock, Unlock, CircleDot, Calendar, Calculator } from 'lucide-react';
+import { Coins, TrendingUp, Lock, Award, Sparkles, Gift, ShieldCheck, Wallet, Info, CheckCircle2, Clock, Unlock, CircleDot, Calendar, Calculator, Building2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -19,7 +19,7 @@ interface Tier {
   id: string;
   name: string;
   min_stake_amount: number;
-  apy_percentage: number;
+  apy_percentage: number; // Now represents revenue share weight (multiplier)
   monthly_credits: number;
   perks: string[];
   badge_color: string;
@@ -30,7 +30,7 @@ interface Stake {
   id: string;
   amount: number;
   lock_period_days: number;
-  apy_percentage: number;
+  apy_percentage: number; // Final share weight at time of stake
   status: string;
   staked_at: string;
   unlocks_at: string;
@@ -128,8 +128,8 @@ const Staking = () => {
     const lockDays = parseInt(lockPeriod);
     const lockOption = LOCK_OPTIONS.find(o => o.days === lockDays)!;
     const matchingTier = [...tiers].reverse().find(t => amount >= t.min_stake_amount);
-    const baseApy = matchingTier?.apy_percentage ?? 5;
-    const finalApy = baseApy * lockOption.multiplier;
+    const baseWeight = matchingTier?.apy_percentage ?? 1;
+    const finalWeight = baseWeight * lockOption.multiplier;
 
     setLoading(true);
     const unlocksAt = new Date(Date.now() + lockDays * 86400 * 1000).toISOString();
@@ -138,7 +138,7 @@ const Staking = () => {
       user_id: user.id,
       amount,
       lock_period_days: lockDays,
-      apy_percentage: finalApy,
+      apy_percentage: finalWeight,
       status: 'active',
       unlocks_at: unlocksAt,
       wallet_address: walletAddress || null,
@@ -151,7 +151,7 @@ const Staking = () => {
       return;
     }
 
-    toast({ title: 'Stake recorded', description: `You staked ${amount.toLocaleString()} B2BN at ${finalApy}% APY.` });
+    toast({ title: 'Stake recorded', description: `You staked ${amount.toLocaleString()} B2BN with ${finalWeight}x revenue share weight.` });
     setStakeAmount('');
     loadData();
   };
@@ -197,34 +197,63 @@ const Staking = () => {
   return (
     <>
       <SEOHead
-        title="B2BN Staking & Rewards Portal | Earn APY, Credits & Tier Perks"
-        description="Stake B2BN tokens to earn up to 18% APY, monthly AI credits, premium feature access, revenue share, and exclusive tier perks. Bronze, Silver, Gold, and Diamond tiers available."
-        keywords="B2BN staking, crypto staking, token rewards, APY, B2BNEST tier, holder benefits, revenue share"
+        title="B2BN Staking & Profit Share | Earn From Real Platform Revenue"
+        description="Stake B2BN to earn from real platform revenue — not interest. Halal-compatible profit-sharing model with variable monthly rewards, AI credits, and tier perks. Bronze, Silver, Gold, Diamond tiers."
+        keywords="B2BN staking, halal crypto staking, profit sharing, revenue share, no interest, ethical crypto, B2BNEST tier, holder benefits"
       />
 
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5">
         <div className="container mx-auto px-4 py-12 max-w-7xl">
           {/* Hero */}
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-4">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Live on B2BNEST</span>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-4">
+              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+              <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Halal-Compatible · Profit-Share Model</span>
             </div>
             <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-primary via-purple-500 to-cyan-500 bg-clip-text text-transparent">
-              Stake B2BN. Earn Everything.
+              Earn from real business activity, not interest.
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Lock B2BN tokens to earn up to <span className="font-bold text-foreground">18% APY</span>,
-              monthly AI credits, premium features, and revenue share.
+              Lock B2BN tokens to receive a share of <span className="font-bold text-foreground">real platform revenue</span> — variable monthly profit drops, AI credits, and tier perks.
+              No fixed APY. No artificial yield. Only value generated through usage.
             </p>
           </div>
+
+          {/* Halal Model Explainer */}
+          <Card className="mb-10 border-emerald-500/30 bg-gradient-to-br from-emerald-500/5 to-primary/5">
+            <CardContent className="pt-6">
+              <div className="grid md:grid-cols-3 gap-6">
+                <div className="flex gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/15 text-emerald-600 flex items-center justify-center font-bold flex-shrink-0">1</div>
+                  <div>
+                    <p className="font-semibold mb-1">Users stake tokens</p>
+                    <p className="text-sm text-muted-foreground">Lock B2BN to access tools and support the platform.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/15 text-emerald-600 flex items-center justify-center font-bold flex-shrink-0">2</div>
+                  <div>
+                    <p className="font-semibold mb-1">Platform generates revenue</p>
+                    <p className="text-sm text-muted-foreground">Real income from SaaS subscriptions, AI tools, and services.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/15 text-emerald-600 flex items-center justify-center font-bold flex-shrink-0">3</div>
+                  <div>
+                    <p className="font-semibold mb-1">Revenue is shared with participants</p>
+                    <p className="text-sm text-muted-foreground">Variable monthly profit drops — proportional to your stake and tier weight.</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {!user && (
             <Alert className="mb-8 border-primary/30 bg-primary/5">
               <Info className="h-4 w-4" />
               <AlertTitle>Sign in to start staking</AlertTitle>
               <AlertDescription>
-                <Link to="/auth" className="text-primary underline font-medium">Create a free account</Link> to stake tokens and earn rewards.
+                <Link to="/auth" className="text-primary underline font-medium">Create a free account</Link> to stake tokens and earn revenue share.
               </AlertDescription>
             </Alert>
           )}
@@ -295,7 +324,7 @@ const Staking = () => {
                 </div>
                 <Progress value={progressToNext} className="h-3" />
                 <p className="text-xs text-muted-foreground mt-2">
-                  Stake {(nextTier.min_stake_amount - totalStaked).toLocaleString()} more B2BN to unlock {nextTier.apy_percentage}% APY and {nextTier.monthly_credits} monthly credits.
+                  Stake {(nextTier.min_stake_amount - totalStaked).toLocaleString()} more B2BN to unlock {nextTier.apy_percentage}x revenue share weight and {nextTier.monthly_credits} monthly credits.
                 </p>
               </CardContent>
             </Card>
@@ -318,7 +347,7 @@ const Staking = () => {
                       <Wallet className="h-5 w-5" />
                       New Stake
                     </CardTitle>
-                    <CardDescription>Lock B2BN to earn APY + tier perks. Minimum 1,000 B2BN.</CardDescription>
+                    <CardDescription>Lock B2BN to earn from real platform revenue. Minimum 1,000 B2BN.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
@@ -341,7 +370,7 @@ const Staking = () => {
                         <SelectContent>
                           {LOCK_OPTIONS.map((o) => (
                             <SelectItem key={o.days} value={String(o.days)}>
-                              {o.label} — {o.multiplier}x APY multiplier
+                              {o.label} — {o.multiplier}x share weight
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -362,37 +391,38 @@ const Staking = () => {
                   </CardContent>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-primary/5 to-purple-500/5 border-primary/20">
+                <Card className="bg-gradient-to-br from-emerald-500/5 to-primary/5 border-emerald-500/20">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <ShieldCheck className="h-5 w-5 text-primary" />
-                      How Staking Works
+                      <ShieldCheck className="h-5 w-5 text-emerald-600" />
+                      How Profit-Sharing Works
                     </CardTitle>
+                    <CardDescription>That's profit-sharing, not interest.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3 text-sm">
                     <div className="flex gap-3">
-                      <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold flex-shrink-0">1</div>
+                      <div className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold flex-shrink-0">1</div>
                       <div>
                         <p className="font-medium">Lock B2BN tokens</p>
-                        <p className="text-muted-foreground">Choose amount and lock period. Longer locks earn higher APY multipliers.</p>
+                        <p className="text-muted-foreground">Choose amount and lock period. Longer locks earn higher share weight multipliers.</p>
                       </div>
                     </div>
                     <div className="flex gap-3">
-                      <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold flex-shrink-0">2</div>
+                      <div className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold flex-shrink-0">2</div>
                       <div>
-                        <p className="font-medium">Earn rewards monthly</p>
-                        <p className="text-muted-foreground">APY accrues + monthly AI credits drop based on your tier.</p>
+                        <p className="font-medium">Platform generates real revenue</p>
+                        <p className="text-muted-foreground">SaaS subscriptions, AI tool usage, and service fees create the reward pool.</p>
                       </div>
                     </div>
                     <div className="flex gap-3">
-                      <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold flex-shrink-0">3</div>
+                      <div className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold flex-shrink-0">3</div>
                       <div>
-                        <p className="font-medium">Unlock tier perks</p>
-                        <p className="text-muted-foreground">Premium features, Discord access, governance, revenue share at Diamond.</p>
+                        <p className="font-medium">Variable monthly profit drops</p>
+                        <p className="text-muted-foreground">Your share = (your stake × tier weight) / (total weighted stakes) × monthly revenue pool. No fixed returns.</p>
                       </div>
                     </div>
                     <div className="flex gap-3">
-                      <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold flex-shrink-0">4</div>
+                      <div className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold flex-shrink-0">4</div>
                       <div>
                         <p className="font-medium">Unstake anytime after lock</p>
                         <p className="text-muted-foreground">Tokens release automatically when the lock period ends.</p>
@@ -425,12 +455,12 @@ const Staking = () => {
                       <CardContent className="space-y-3">
                         <div className="flex items-center gap-2">
                           <TrendingUp className="h-4 w-4" />
-                          <span className="font-bold text-xl">{tier.apy_percentage}%</span>
-                          <span className="text-sm opacity-75">APY</span>
+                          <span className="font-bold text-xl">{tier.apy_percentage}x</span>
+                          <span className="text-sm opacity-75">revenue share weight</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Sparkles className="h-4 w-4" />
-                          <span className="font-bold">+{tier.monthly_credits}</span>
+                          <span className="font-bold">+{tier.monthly_credits.toLocaleString()}</span>
                           <span className="text-sm opacity-75">credits/month</span>
                         </div>
                         <div className="pt-3 border-t border-current/10 space-y-1.5">
@@ -446,6 +476,14 @@ const Staking = () => {
                   );
                 })}
               </div>
+
+              <Alert className="mt-6 border-emerald-500/30 bg-emerald-500/5">
+                <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                <AlertTitle>Why this is halal-compatible</AlertTitle>
+                <AlertDescription>
+                  No fixed APY. No guaranteed returns. Rewards come from <strong>real platform revenue</strong> shared proportionally with stakers — that's profit-sharing (mudarabah-style), not interest (riba).
+                </AlertDescription>
+              </Alert>
             </TabsContent>
 
             {/* Positions Tab */}
@@ -459,7 +497,7 @@ const Staking = () => {
                   {stakes.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
                       <Coins className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                      <p>No stakes yet. Start earning rewards by staking B2BN.</p>
+                      <p>No stakes yet. Start earning from real platform revenue by staking B2BN.</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -470,7 +508,6 @@ const Staking = () => {
                         const isUnlocked = unlocksAt <= now;
                         const isActive = stake.status === 'active';
                         const isUnstaked = stake.status === 'unstaked';
-                        // Confirmation: ~1 minute after submission, considered confirmed
                         const isConfirmed = now - stakedAt > 60 * 1000;
 
                         const steps = [
@@ -485,7 +522,7 @@ const Staking = () => {
                           {
                             key: 'confirmed',
                             label: 'Confirmed',
-                            description: isConfirmed ? 'Stake is active and accruing APY' : 'Awaiting on-chain confirmation',
+                            description: isConfirmed ? 'Stake is active and earning revenue share' : 'Awaiting on-chain confirmation',
                             timestamp: isConfirmed ? new Date(stakedAt + 60 * 1000).toISOString() : null,
                             done: isConfirmed,
                             icon: CheckCircle2,
@@ -515,7 +552,7 @@ const Staking = () => {
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="font-bold text-lg">{Number(stake.amount).toLocaleString()} B2BN</span>
                                   <Badge variant={isActive ? 'default' : 'secondary'}>{stake.status}</Badge>
-                                  <Badge variant="outline">{stake.apy_percentage}% APY</Badge>
+                                  <Badge variant="outline">{stake.apy_percentage}x weight</Badge>
                                   <Badge variant="outline">{stake.lock_period_days}d lock</Badge>
                                 </div>
                                 <p className="text-sm text-muted-foreground mt-1">
@@ -589,11 +626,12 @@ const Staking = () => {
 
             {/* Rewards Tab */}
             <TabsContent value="rewards" className="space-y-6">
-              {/* Accrual Preview */}
+              {/* Accrual Preview — now shows estimated profit-share, not fixed APY */}
               {user && (() => {
                 const activeStakes = stakes.filter((s) => s.status === 'active');
-                const dailyApyCredits = activeStakes.reduce(
-                  (sum, s) => sum + (Number(s.amount) * (Number(s.apy_percentage) / 100)) / 365,
+                // Estimate: tier credits accrue evenly; profit share is variable so we show stake weight only
+                const totalWeightedStake = activeStakes.reduce(
+                  (sum, s) => sum + Number(s.amount) * Number(s.apy_percentage),
                   0,
                 );
                 const lastReward = rewards[0];
@@ -605,7 +643,6 @@ const Staking = () => {
                 const daysSinceAnchor = anchorDate
                   ? Math.max(0, Math.floor((Date.now() - anchorDate.getTime()) / 86400000))
                   : 0;
-                const estimatedApyAccrued = dailyApyCredits * daysSinceAnchor;
                 const monthlyCredits = currentTier?.monthly_credits ?? 0;
                 const dailyTierCredits = monthlyCredits / 30;
                 const estimatedTierCredits = dailyTierCredits * daysSinceAnchor;
@@ -618,28 +655,32 @@ const Staking = () => {
                 const claimReady = nextClaimDate ? nextClaimDate.getTime() <= Date.now() : false;
 
                 return (
-                  <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-emerald-500/5">
+                  <Card className="border-emerald-500/30 bg-gradient-to-br from-emerald-500/5 to-primary/5">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
-                        <Calculator className="h-5 w-5 text-primary" />
-                        Accrual Preview
+                        <Calculator className="h-5 w-5 text-emerald-600" />
+                        Profit-Share Preview
                       </CardTitle>
                       <CardDescription>
-                        Estimated rewards earned since your last claim or first stake. Drops are finalized monthly.
+                        Estimated tier credits and your share weight in the next monthly revenue distribution.
+                        Actual B2BN profit share is <strong>variable</strong> — depends on platform revenue that month.
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
                       {activeStakes.length === 0 ? (
                         <p className="text-sm text-muted-foreground">
-                          No active stakes. Stake B2BN to begin earning APY and tier credits.
+                          No active stakes. Stake B2BN to begin earning revenue share and tier credits.
                         </p>
                       ) : (
                         <>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="space-y-1">
-                              <p className="text-xs text-muted-foreground uppercase tracking-wider">Est. APY Accrued</p>
-                              <p className="text-2xl font-bold">{estimatedApyAccrued.toFixed(2)}</p>
-                              <p className="text-xs text-muted-foreground">B2BN since {anchorDate?.toLocaleDateString() ?? '—'}</p>
+                              <p className="text-xs text-muted-foreground uppercase tracking-wider">Your Share Weight</p>
+                              <p className="text-2xl font-bold flex items-center gap-1">
+                                <Building2 className="h-5 w-5 opacity-60" />
+                                {totalWeightedStake.toLocaleString()}
+                              </p>
+                              <p className="text-xs text-muted-foreground">stake × tier multiplier</p>
                             </div>
                             <div className="space-y-1">
                               <p className="text-xs text-muted-foreground uppercase tracking-wider">Est. Tier Credits</p>
@@ -647,12 +688,12 @@ const Staking = () => {
                               <p className="text-xs text-muted-foreground">{currentTier?.tier_name ?? 'No tier'} · {monthlyCredits}/mo</p>
                             </div>
                             <div className="space-y-1">
-                              <p className="text-xs text-muted-foreground uppercase tracking-wider">Daily Earn Rate</p>
-                              <p className="text-2xl font-bold">{dailyApyCredits.toFixed(2)}</p>
-                              <p className="text-xs text-muted-foreground">B2BN/day from APY</p>
+                              <p className="text-xs text-muted-foreground uppercase tracking-wider">Profit Share</p>
+                              <p className="text-2xl font-bold">Variable</p>
+                              <p className="text-xs text-muted-foreground">based on monthly revenue</p>
                             </div>
                             <div className="space-y-1">
-                              <p className="text-xs text-muted-foreground uppercase tracking-wider">Next Claim</p>
+                              <p className="text-xs text-muted-foreground uppercase tracking-wider">Next Drop</p>
                               <p className="text-2xl font-bold flex items-center gap-1">
                                 <Calendar className="h-5 w-5 opacity-60" />
                                 {claimReady ? 'Ready' : `${daysToNextClaim}d`}
@@ -682,13 +723,13 @@ const Staking = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Rewards History</CardTitle>
-                  <CardDescription>Earned credits, tokens, and bonuses</CardDescription>
+                  <CardDescription>Profit share, tier credits, and bonuses from real platform revenue</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {rewards.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
                       <Gift className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                      <p>No rewards yet. Rewards drop monthly based on your active stakes and tier.</p>
+                      <p>No rewards yet. Profit-share drops happen monthly based on platform revenue, your stake amount, and tier weight.</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -701,7 +742,7 @@ const Staking = () => {
                               {reward.claimed && <Badge variant="secondary">Claimed</Badge>}
                             </div>
                             <p className="text-sm text-muted-foreground mt-1">
-                              {reward.description || 'Staking reward'} · {new Date(reward.earned_at).toLocaleDateString()}
+                              {reward.description || 'Profit share from platform revenue'} · {new Date(reward.earned_at).toLocaleDateString()}
                             </p>
                           </div>
                           {!reward.claimed && (
@@ -719,11 +760,11 @@ const Staking = () => {
           {/* Disclaimer */}
           <Alert className="mt-12">
             <Info className="h-4 w-4" />
-            <AlertTitle>Important</AlertTitle>
+            <AlertTitle>Important · Halal-Compatible Disclosure</AlertTitle>
             <AlertDescription>
-              Staking records on B2BNEST track your commitment for tier benefits and reward distribution.
-              On-chain settlement is processed by the B2BN smart contract. APY and rewards are projections;
-              actual yield depends on protocol performance. Not financial advice.
+              This staking model is <strong>profit-sharing</strong>, not interest-bearing. There is no fixed APY and no guaranteed return.
+              Monthly distributions depend on actual platform revenue and may be zero in any given period.
+              Stake records track tier benefits and revenue allocation; on-chain settlement is processed by the B2BN smart contract. Not financial advice.
             </AlertDescription>
           </Alert>
         </div>
