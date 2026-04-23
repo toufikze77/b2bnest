@@ -626,48 +626,8 @@ const Staking = () => {
                   ) : (
                     <div className="space-y-4">
                       {stakes.map((stake) => {
-                        const now = Date.now();
-                        const stakedAt = new Date(stake.staked_at).getTime();
-                        const unlocksAt = new Date(stake.unlocks_at).getTime();
-                        const isUnlocked = unlocksAt <= now;
+                        const isUnlocked = new Date(stake.unlocks_at).getTime() <= Date.now();
                         const isActive = stake.status === 'active';
-                        const isUnstaked = stake.status === 'unstaked';
-                        const isConfirmed = now - stakedAt > 60 * 1000;
-
-                        const steps = [
-                          {
-                            key: 'submitted',
-                            label: 'Submitted',
-                            description: `Staking transaction recorded${stake.transaction_hash ? ` · ${stake.transaction_hash.slice(0, 10)}…` : ''}`,
-                            timestamp: stake.staked_at,
-                            done: true,
-                            icon: CircleDot,
-                          },
-                          {
-                            key: 'confirmed',
-                            label: 'Confirmed',
-                            description: isConfirmed ? 'Stake is active and earning revenue share' : 'Awaiting on-chain confirmation',
-                            timestamp: isConfirmed ? new Date(stakedAt + 60 * 1000).toISOString() : null,
-                            done: isConfirmed,
-                            icon: CheckCircle2,
-                          },
-                          {
-                            key: 'unlocked',
-                            label: isUnstaked ? 'Unstaked' : 'Unlocked',
-                            description: isUnstaked
-                              ? `Tokens released back to wallet`
-                              : isUnlocked
-                                ? 'Lock period complete · ready to unstake'
-                                : `Lock ends ${new Date(stake.unlocks_at).toLocaleDateString()}`,
-                            timestamp: isUnstaked
-                              ? stake.unstaked_at ?? null
-                              : isUnlocked
-                                ? stake.unlocks_at
-                                : null,
-                            done: isUnlocked || isUnstaked,
-                            icon: isUnstaked ? Unlock : isUnlocked ? Unlock : Clock,
-                          },
-                        ];
 
                         return (
                           <div key={stake.id} className="border rounded-lg p-4 space-y-4">
@@ -695,50 +655,12 @@ const Staking = () => {
                               )}
                             </div>
 
-                            {/* Transaction Timeline */}
-                            <div className="pt-2 border-t">
-                              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                                Transaction Timeline
-                              </p>
-                              <ol className="relative space-y-4">
-                                {steps.map((step, idx) => {
-                                  const StepIcon = step.icon;
-                                  const isLast = idx === steps.length - 1;
-                                  return (
-                                    <li key={step.key} className="flex gap-3 relative">
-                                      {!isLast && (
-                                        <span
-                                          className={`absolute left-[15px] top-8 bottom-[-18px] w-px ${step.done ? 'bg-primary/40' : 'bg-border'}`}
-                                          aria-hidden="true"
-                                        />
-                                      )}
-                                      <div
-                                        className={`relative z-10 flex items-center justify-center w-8 h-8 rounded-full border-2 flex-shrink-0 ${
-                                          step.done
-                                            ? 'bg-primary/10 border-primary text-primary'
-                                            : 'bg-muted border-border text-muted-foreground'
-                                        }`}
-                                      >
-                                        <StepIcon className="h-4 w-4" />
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                                          <p className={`text-sm font-medium ${step.done ? 'text-foreground' : 'text-muted-foreground'}`}>
-                                            {step.label}
-                                          </p>
-                                          {step.timestamp && (
-                                            <p className="text-xs text-muted-foreground">
-                                              {new Date(step.timestamp).toLocaleString()}
-                                            </p>
-                                          )}
-                                        </div>
-                                        <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
-                                      </div>
-                                    </li>
-                                  );
-                                })}
-                              </ol>
-                            </div>
+                            <StakingTxTimeline
+                              stakeId={stake.id}
+                              unlocksAt={stake.unlocks_at}
+                              unstakedAt={stake.unstaked_at}
+                              status={stake.status}
+                            />
                           </div>
                         );
                       })}
