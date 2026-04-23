@@ -454,17 +454,24 @@ const Staking = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div>
-                      <Label htmlFor="wallet">Wallet Address (optional)</Label>
-                      <Input
-                        id="wallet"
-                        placeholder="0x... or Solana address"
-                        value={walletAddress}
-                        onChange={(e) => setWalletAddress(e.target.value)}
-                      />
-                    </div>
-                    <Button onClick={handleStake} disabled={loading || !user} className="w-full" size="lg">
-                      {loading ? 'Staking...' : user ? 'Stake B2BN' : 'Sign in to Stake'}
+                    {activeWallet ? (
+                      <div className="rounded-md border bg-muted/30 p-2.5 text-xs">
+                        <span className="text-muted-foreground">Staking with: </span>
+                        <span className="font-mono font-medium">
+                          {activeWallet.wallet_address.slice(0, 6)}…{activeWallet.wallet_address.slice(-4)}
+                        </span>
+                        <Badge variant="outline" className="ml-2">verified</Badge>
+                      </div>
+                    ) : (
+                      <Alert variant="destructive" className="py-2">
+                        <Info className="h-4 w-4" />
+                        <AlertDescription className="text-xs">
+                          Verify a wallet in the panel on the right before staking.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    <Button onClick={handleStake} disabled={loading || !user || !activeWallet} className="w-full" size="lg">
+                      {loading ? 'Submitting…' : !user ? 'Sign in to Stake' : !activeWallet ? 'Verify Wallet First' : 'Stake B2BN'}
                     </Button>
                   </CardContent>
                 </Card>
