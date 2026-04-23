@@ -476,6 +476,45 @@ const Staking = () => {
                   </CardContent>
                 </Card>
 
+                <WalletConnector />
+              </div>
+
+              {/* Reward Pool + How it works */}
+              <div className="grid md:grid-cols-2 gap-6 mt-6">
+                {emission && (
+                  <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-purple-500/5">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Flame className="h-5 w-5 text-orange-500" />
+                        Active Reward Pool
+                      </CardTitle>
+                      <CardDescription>{emission.pool_name}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Pool remaining</span>
+                        <span className="font-bold">{Number(emission.pool_remaining).toLocaleString(undefined, { maximumFractionDigits: 0 })} B2BN</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Emission rate</span>
+                        <span className="font-medium">{Number(emission.emission_per_second * 86400).toFixed(2)} B2BN / day</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Total weighted stake</span>
+                        <span className="font-medium">{Number(emission.total_weighted_stake).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Your share</span>
+                        <span className="font-bold text-primary">{Number(emission.user_share_percent).toFixed(4)}%</span>
+                      </div>
+                      <div className="pt-2 border-t flex justify-between">
+                        <span className="text-muted-foreground">Est. your daily emission</span>
+                        <span className="font-bold">{Number(emission.user_emission_per_day).toFixed(4)} B2BN</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 <Card className="bg-gradient-to-br from-emerald-500/5 to-primary/5 border-emerald-500/20">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -488,29 +527,29 @@ const Staking = () => {
                     <div className="flex gap-3">
                       <div className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold flex-shrink-0">1</div>
                       <div>
-                        <p className="font-medium">Lock B2BN tokens</p>
-                        <p className="text-muted-foreground">Choose amount and lock period. Longer locks earn higher share weight multipliers.</p>
+                        <p className="font-medium">Connect & verify wallet</p>
+                        <p className="text-muted-foreground">Sign a free message to prove ownership — no transaction, no gas.</p>
                       </div>
                     </div>
                     <div className="flex gap-3">
                       <div className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold flex-shrink-0">2</div>
                       <div>
-                        <p className="font-medium">Platform generates real revenue</p>
-                        <p className="text-muted-foreground">SaaS subscriptions, AI tool usage, and service fees create the reward pool.</p>
+                        <p className="font-medium">Lock B2BN tokens</p>
+                        <p className="text-muted-foreground">Choose amount and lock period. Longer locks earn higher share weight.</p>
                       </div>
                     </div>
                     <div className="flex gap-3">
                       <div className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold flex-shrink-0">3</div>
                       <div>
-                        <p className="font-medium">Variable monthly profit drops</p>
-                        <p className="text-muted-foreground">Your share = (your stake × tier weight) / (total weighted stakes) × monthly revenue pool. No fixed returns.</p>
+                        <p className="font-medium">Earn proportional emissions</p>
+                        <p className="text-muted-foreground">Your share = (stake × tier weight) ÷ (total weighted stakes). Variable, never fixed.</p>
                       </div>
                     </div>
                     <div className="flex gap-3">
                       <div className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold flex-shrink-0">4</div>
                       <div>
-                        <p className="font-medium">Unstake anytime after lock</p>
-                        <p className="text-muted-foreground">Tokens release automatically when the lock period ends.</p>
+                        <p className="font-medium">Unstake after lock ends</p>
+                        <p className="text-muted-foreground">Tokens release with full transaction timeline visible end-to-end.</p>
                       </div>
                     </div>
                   </CardContent>
