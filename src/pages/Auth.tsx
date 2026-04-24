@@ -39,21 +39,13 @@ const Auth = () => {
     }
   }, [isInvited, invitationOrgId]);
 
-  // Debug effect to track state changes
-  useEffect(() => {
-    console.log('🔒 State changed:', { showTwoFactor, twoFactorEmail, isVerification });
-  }, [showTwoFactor, twoFactorEmail, isVerification]);
-
   // Redirect if already authenticated
   if (user && !loading) {
     return <Navigate to="/" replace />;
   }
 
   // Show 2FA screen if needed
-  console.log('🔒 Auth state check:', { showTwoFactor, twoFactorEmail, isVerification });
-  console.log('🔒 showTwoFactor type:', typeof showTwoFactor, 'value:', showTwoFactor);
   if (showTwoFactor) {
-    console.log('🔒 Rendering TwoFactorAuth component');
     return (
       <TwoFactorAuth 
         email={twoFactorEmail}
