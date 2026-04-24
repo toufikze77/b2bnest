@@ -272,18 +272,29 @@ interface EmailContent {
 function generateEmailContent(params: EmailContentParams): EmailContent {
   const {
     notificationType,
-    recipientName,
-    taskTitle,
-    taskDescription,
     priority,
     dueDate,
-    triggeredByName,
-    projectName,
-    oldStatus,
-    newStatus,
-    commentContent,
-    commentAuthor
   } = params;
+
+  // HTML-escape every user-controlled string before it lands in the template.
+  // Plain (unescaped) versions are kept ONLY for in-app/subject text fields
+  // (subject + inAppMessage) which are rendered as plain text by the client.
+  const recipientName = escapeHtml(params.recipientName);
+  const taskTitle = escapeHtml(params.taskTitle);
+  const taskDescription = params.taskDescription ? escapeHtmlMultiline(params.taskDescription) : '';
+  const triggeredByName = escapeHtml(params.triggeredByName);
+  const projectName = params.projectName ? escapeHtml(params.projectName) : '';
+  const oldStatus = escapeHtml(params.oldStatus ?? '');
+  const newStatus = escapeHtml(params.newStatus ?? '');
+  const commentContent = params.commentContent ? escapeHtmlMultiline(params.commentContent) : '';
+  const commentAuthor = params.commentAuthor ? escapeHtml(params.commentAuthor) : '';
+  const safePriority = priority ? escapeHtml(priority.toUpperCase()) : '';
+
+  // Plain text versions for subject lines and in-app messages
+  const plainTaskTitle = String(params.taskTitle ?? '');
+  const plainTriggeredByName = String(params.triggeredByName ?? '');
+  const plainProjectName = String(params.projectName ?? '');
+  const plainCommentAuthor = String(params.commentAuthor ?? '');
 
   const priorityColors: Record<string, string> = {
     low: '#10b981',
@@ -325,10 +336,10 @@ function generateEmailContent(params: EmailContentParams): EmailContent {
 
   switch (notificationType) {
     case 'task_assigned':
-      subject = `New Task Assigned: ${taskTitle}`;
+      subject = `New Task Assigned: ${plainTaskTitle}`;
       heading = 'New Task Assignment';
       inAppTitle = 'New Task Assigned';
-      inAppMessage = `${triggeredByName} assigned you: ${taskTitle}`;
+      inAppMessage = `${plainTriggeredByName} assigned you: ${plainTaskTitle}`;
       mainContent = `
         <p>Hi ${recipientName},</p>
         <p><strong>${triggeredByName}</strong> has assigned you a new task:</p>
@@ -336,7 +347,7 @@ function generateEmailContent(params: EmailContentParams): EmailContent {
           <h2 class="task-title">${taskTitle}</h2>
           ${taskDescription ? `<p style="color: #4b5563;">${taskDescription}</p>` : ''}
           <div style="margin-top: 15px;">
-            ${priority ? `<span class="priority-badge">${priority.toUpperCase()}</span>` : ''}
+            ${safePriority ? `<span class="priority-badge">${safePriority}</span>` : ''}
             ${dueDate ? `<span style="margin-left: 15px; color: #6b7280;">Due: ${formatDate(dueDate)}</span>` : ''}
           </div>
           ${projectName ? `<p style="margin-top: 15px; color: #6b7280;"><strong>Project:</strong> ${projectName}</p>` : ''}
@@ -345,10 +356,10 @@ function generateEmailContent(params: EmailContentParams): EmailContent {
       break;
 
     case 'task_completed':
-      subject = `Task Completed: ${taskTitle}`;
+      subject = `Task Completed: ${plainTaskTitle}`;
       heading = 'Task Completed';
       inAppTitle = 'Task Completed';
-      inAppMessage = `${triggeredByName} completed: ${taskTitle}`;
+      inAppMessage = `${plainTriggeredByName} completed: ${plainTaskTitle}`;
       mainContent = `
         <p>Hi ${recipientName},</p>
         <p><strong>${triggeredByName}</strong> has completed a task:</p>
@@ -361,10 +372,10 @@ function generateEmailContent(params: EmailContentParams): EmailContent {
       break;
 
     case 'task_status_changed':
-      subject = `Task Status Updated: ${taskTitle}`;
+      subject = `Task Status Updated: ${plainTaskTitle}`;
       heading = 'Task Status Changed';
       inAppTitle = 'Task Status Changed';
-      inAppMessage = `${triggeredByName} changed "${taskTitle}" from ${oldStatus} to ${newStatus}`;
+      inAppMessage = `${plainTriggeredByName} changed "${plainTaskTitle}" from ${params.oldStatus ?? ''} to ${params.newStatus ?? ''}`;
       mainContent = `
         <p>Hi ${recipientName},</p>
         <p><strong>${triggeredByName}</strong> has updated a task status:</p>
@@ -380,34 +391,34 @@ function generateEmailContent(params: EmailContentParams): EmailContent {
       break;
 
     case 'task_due_reminder':
-      subject = `⏰ Reminder: "${taskTitle}" is due soon`;
+      subject = `⏰ Reminder: "${plainTaskTitle}" is due soon`;
       heading = 'Task Due Reminder';
       inAppTitle = 'Task Due Soon';
-      inAppMessage = `"${taskTitle}" is due on ${formatDate(dueDate)}`;
+      inAppMessage = `"${plainTaskTitle}" is due on ${formatDate(dueDate)}`;
       mainContent = `
         <p>Hi ${recipientName},</p>
         <p>This is a friendly reminder that a task is due soon:</p>
         <div class="task-card" style="border-left: 4px solid #f59e0b;">
           <h2 class="task-title">⏰ ${taskTitle}</h2>
           <p style="color: #f59e0b; font-weight: bold;">Due: ${formatDate(dueDate)}</p>
-          ${priority ? `<span class="priority-badge">${priority.toUpperCase()}</span>` : ''}
+          ${safePriority ? `<span class="priority-badge">${safePriority}</span>` : ''}
           ${projectName ? `<p style="margin-top: 15px; color: #6b7280;"><strong>Project:</strong> ${projectName}</p>` : ''}
         </div>
       `;
       break;
 
     case 'task_overdue':
-      subject = `🚨 Overdue: "${taskTitle}"`;
+      subject = `🚨 Overdue: "${plainTaskTitle}"`;
       heading = 'Task Overdue';
       inAppTitle = 'Task Overdue';
-      inAppMessage = `"${taskTitle}" was due on ${formatDate(dueDate)}`;
+      inAppMessage = `"${plainTaskTitle}" was due on ${formatDate(dueDate)}`;
       mainContent = `
         <p>Hi ${recipientName},</p>
         <p>A task assigned to you is now <strong style="color: #ef4444;">overdue</strong>:</p>
         <div class="task-card" style="border-left: 4px solid #ef4444;">
           <h2 class="task-title">🚨 ${taskTitle}</h2>
           <p style="color: #ef4444; font-weight: bold;">Was due: ${formatDate(dueDate)}</p>
-          ${priority ? `<span class="priority-badge">${priority.toUpperCase()}</span>` : ''}
+          ${safePriority ? `<span class="priority-badge">${safePriority}</span>` : ''}
           ${projectName ? `<p style="margin-top: 15px; color: #6b7280;"><strong>Project:</strong> ${projectName}</p>` : ''}
         </div>
         <p>Please update the task status or complete it as soon as possible.</p>
@@ -415,10 +426,10 @@ function generateEmailContent(params: EmailContentParams): EmailContent {
       break;
 
     case 'task_comment':
-      subject = `New Comment on: ${taskTitle}`;
+      subject = `New Comment on: ${plainTaskTitle}`;
       heading = 'New Comment';
       inAppTitle = 'New Comment';
-      inAppMessage = `${commentAuthor || triggeredByName} commented on: ${taskTitle}`;
+      inAppMessage = `${plainCommentAuthor || plainTriggeredByName} commented on: ${plainTaskTitle}`;
       mainContent = `
         <p>Hi ${recipientName},</p>
         <p><strong>${commentAuthor || triggeredByName}</strong> commented on a task:</p>
@@ -433,10 +444,10 @@ function generateEmailContent(params: EmailContentParams): EmailContent {
       break;
 
     case 'project_update':
-      subject = `Project Update: ${projectName || taskTitle}`;
+      subject = `Project Update: ${plainProjectName || plainTaskTitle}`;
       heading = 'Project Update';
       inAppTitle = 'Project Update';
-      inAppMessage = `${triggeredByName} updated project: ${projectName || taskTitle}`;
+      inAppMessage = `${plainTriggeredByName} updated project: ${plainProjectName || plainTaskTitle}`;
       mainContent = `
         <p>Hi ${recipientName},</p>
         <p><strong>${triggeredByName}</strong> has made updates to the project:</p>
@@ -448,10 +459,10 @@ function generateEmailContent(params: EmailContentParams): EmailContent {
       break;
 
     default:
-      subject = `Task Update: ${taskTitle}`;
+      subject = `Task Update: ${plainTaskTitle}`;
       heading = 'Task Update';
       inAppTitle = 'Task Update';
-      inAppMessage = `Update on: ${taskTitle}`;
+      inAppMessage = `Update on: ${plainTaskTitle}`;
       mainContent = `
         <p>Hi ${recipientName},</p>
         <p>There's an update on your task:</p>
