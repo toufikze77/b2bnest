@@ -131,7 +131,7 @@ const Auth = () => {
             variant: "destructive"
           });
         } else if (needsVerification) {
-          console.log('Setting verification state:', { email });
+          // Move to verification step
           setTwoFactorEmail(email);
           setIsVerification(true);
           setShowTwoFactor(true);
