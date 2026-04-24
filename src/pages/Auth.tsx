@@ -83,8 +83,6 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('🔥 Form submitted!', { isLogin, email, password, fullName });
-    console.log('🔥 Current auth state:', { showTwoFactor, twoFactorEmail, isVerification });
     setIsSubmitting(true);
 
     try {
@@ -97,14 +95,10 @@ const Auth = () => {
             variant: "destructive"
           });
         } else if (needs2FA) {
-          console.log('🔥 Setting 2FA state:', { userEmail, email });
           const emailToUse = userEmail || email;
-          console.log('🔥 Email to use for 2FA:', emailToUse);
           setTwoFactorEmail(emailToUse);
           setIsVerification(false);
-          console.log('🔥 About to set showTwoFactor to true');
           setShowTwoFactor(true);
-          console.log('🔥 showTwoFactor set to true');
           toast({
             title: "2FA Required",
             description: "Please check your email for the verification code."
