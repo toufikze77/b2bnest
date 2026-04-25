@@ -117,7 +117,7 @@ const Tokenomics = () => {
                 <span className="px-3 py-1 bg-white rounded-full border">Only value generated through usage</span>
               </div>
               <div className="flex justify-center gap-4 flex-wrap">
-                <Button size="lg" className="bg-gradient-to-r from-purple-600 to-blue-600" onClick={() => navigate('/staking')}>
+                <Button size="lg" className="bg-gradient-to-r from-purple-600 to-blue-600" onClick={() => navigate('/business-tools')}>
                   Start Participating <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
                 <ShareButton variant="outline" size="default" />
@@ -364,7 +364,7 @@ const Tokenomics = () => {
                     Access tools. Contribute to growth. Earn from real activity.
                   </p>
                   <div className="flex justify-center gap-4 flex-wrap">
-                    <Button size="lg" variant="secondary" onClick={() => navigate('/staking')}>
+                    <Button size="lg" variant="secondary" onClick={() => navigate('/business-tools')}>
                       Join the Ecosystem <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                     <PinkSaleCTA />
@@ -592,8 +592,8 @@ const Tokenomics = () => {
                     <Button size="lg" variant="secondary" onClick={() => navigate('/b2b-form')}>
                       Request Access <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
-                    <Button size="lg" variant="outline" className="bg-white/10 text-white border-white hover:bg-white hover:text-orange-600" onClick={() => navigate('/staking')}>
-                      Join Early Participants
+                    <Button size="lg" variant="outline" className="bg-white/10 text-white border-white hover:bg-white hover:text-orange-600" onClick={() => navigate('/business-tools')}>
+                      Explore Tools
                     </Button>
                   </div>
                 </CardContent>
