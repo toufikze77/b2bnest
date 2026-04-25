@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         timestamp: new Date().toISOString()
       }),
       {
@@ -165,7 +165,7 @@ function parseRSSFeed(rssText: string, category: string, feedUrl: string): NewsA
             published_at: pubDate ? new Date(pubDate).toISOString() : undefined,
             source,
             category,
-            image_url: imageUrl
+            image_url: imageUrl ?? undefined
           });
         }
       } catch (itemError) {
@@ -221,7 +221,7 @@ function parseCoinDeskFeed(rssText: string, category: string): NewsArticle[] {
             published_at: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
             source: 'CoinDesk',
             category,
-            image_url: imageUrl
+            image_url: imageUrl ?? undefined
           });
         }
       } catch (itemError) {
