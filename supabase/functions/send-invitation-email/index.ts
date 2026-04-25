@@ -39,9 +39,8 @@ const handler = async (req: Request): Promise<Response> => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claims, error: authError } = await supabaseAuth.auth.getClaims(token);
-    if (authError || !claims?.claims) {
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } },
@@ -69,7 +68,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Verify the authenticated caller is actually a member of the org they
     // are inviting people to.
-    const callerId = claims.claims.sub;
+    const callerId = user.id;
     const { data: membership, error: memberError } = await supabaseAuth
       .from("organization_members")
       .select("id, role, is_active")
@@ -125,7 +124,7 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     await client.send({
-      from: gmailFrom,
+      from: gmailFrom!,
       to: [email],
       subject: "You're invited to join B2BNest!",
       html: emailHtml,

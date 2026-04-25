@@ -230,7 +230,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('B2B form error:', { error: error.message, ip, userAgent });
+    console.error('B2B form error:', { error: error instanceof Error ? error.message : String(error), ip, userAgent });
     return new Response(
       JSON.stringify({ error: 'Failed to process request' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

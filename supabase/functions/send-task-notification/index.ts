@@ -55,9 +55,8 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseAuth = createClient(supabaseUrlForAuth, supabaseAnonForAuth, {
       global: { headers: { Authorization: authHeader } },
     });
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claims, error: claimsError } = await supabaseAuth.auth.getClaims(token);
-    if (claimsError || !claims?.claims) {
+    const { data: { user }, error: claimsError } = await supabaseAuth.auth.getUser();
+    if (claimsError || !user) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } },
