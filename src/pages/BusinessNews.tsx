@@ -573,10 +573,6 @@ const BusinessNewsPage = () => {
           </div>
         </div>
 
-        {/* PinkSale CTA */}
-        <div className="max-w-7xl mx-auto px-4 pb-16">
-          <PinkSaleCTA variant="large" />
-        </div>
       </div>
     </div>
   );
