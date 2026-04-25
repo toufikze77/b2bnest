@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import Footer from '@/components/Footer';
 import TokenSEO from '@/components/TokenSEO';
-import PinkSaleCTA from '@/components/PinkSaleCTA';
+
 import ShareButton from '@/components/ShareButton';
 import tokenomicsInfographic from '@/assets/b2bn-tokenomics-infographic.png';
 
@@ -367,7 +367,7 @@ const Tokenomics = () => {
                     <Button size="lg" variant="secondary" onClick={() => navigate('/business-tools')}>
                       Join the Ecosystem <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
-                    <PinkSaleCTA />
+                    
                   </div>
                 </CardContent>
               </Card>

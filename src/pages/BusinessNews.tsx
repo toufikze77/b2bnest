@@ -18,7 +18,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
-import PinkSaleCTA from '@/components/PinkSaleCTA';
+
 import ShareButton from '@/components/ShareButton';
 
 interface NewsArticle {
@@ -232,11 +232,6 @@ const BusinessNewsPage = () => {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* PinkSale CTA - Top */}
-        <div className="mb-8">
-          <PinkSaleCTA variant="large" />
         </div>
 
         {/* Stats Cards */}
@@ -578,10 +573,6 @@ const BusinessNewsPage = () => {
           </div>
         </div>
 
-        {/* PinkSale CTA */}
-        <div className="max-w-7xl mx-auto px-4 pb-16">
-          <PinkSaleCTA variant="large" />
-        </div>
       </div>
     </div>
   );
