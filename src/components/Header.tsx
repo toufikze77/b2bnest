@@ -96,12 +96,6 @@ const Header = () => {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/staking" className="w-full flex items-center">
-                    <Coins className="h-4 w-4 mr-2" />
-                    Staking & Rewards
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
                   <Link to="/whitepaper" className="w-full">
                     Whitepaper
                   </Link>

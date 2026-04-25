@@ -15,7 +15,6 @@ import Dashboard from "@/pages/Dashboard";
 
 import BusinessTools from "@/pages/BusinessTools";
 import Fundraising from "@/pages/Fundraising";
-import Staking from "@/pages/Staking";
 import PLR from "@/pages/PLR";
 import NotePro from "@/components/NotePro";
 import NotFound from "@/pages/NotFound";
@@ -81,7 +80,6 @@ function App() {
               <Route path="/ai-workspace" element={<ProtectedRoute><AIWorkspace /></ProtectedRoute>} />
               <Route path="/workflow-studio" element={<ProtectedRoute><WorkflowStudio /></ProtectedRoute>} />
               <Route path="/fundraising" element={<Fundraising />} />
-              <Route path="/staking" element={<Staking />} />
               <Route path="/whitepaper" element={<Whitepaper />} />
             <Route path="/tokenomics" element={<Tokenomics />} />
             <Route path="/forum" element={<Forum />} />
