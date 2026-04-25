@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Footer from '@/components/Footer';
 import TokenSEO from '@/components/TokenSEO';
-import PinkSaleCTA from '@/components/PinkSaleCTA';
+
 import ShareButton from '@/components/ShareButton';
 
 const Whitepaper = () => {
@@ -515,7 +515,7 @@ const Whitepaper = () => {
             </CardHeader>
             <CardContent>
               <p className="text-gray-700 mb-6">
-                B2BNEST is expanding its ecosystem through strategic collaborations with leading platforms in the crypto and blockchain space. Our future partnerships aim to enhance visibility, accessibility, and real-world utility for our community. B2BNEST plans to integrate with and be listed on major partners such as <strong>DEXView</strong>, <strong>Pinksale</strong>, <strong>Birdseye</strong>, <strong>OKX</strong>, <strong>CoinGecko</strong>, <strong>CoinMarketCap</strong>, <strong>Phantom</strong>, <strong>Alchemy Pay</strong>, <strong>Binance</strong>, and <strong>Bitget</strong>.
+                B2BNEST is expanding its ecosystem through strategic collaborations with leading platforms in the crypto and blockchain space. Our future partnerships aim to enhance visibility, accessibility, and real-world utility for our community. B2BNEST plans to integrate with and be listed on major partners such as <strong>DEXView</strong>, <strong>Birdseye</strong>, <strong>OKX</strong>, <strong>CoinGecko</strong>, <strong>CoinMarketCap</strong>, <strong>Phantom</strong>, <strong>Alchemy Pay</strong>, <strong>Binance</strong>, and <strong>Bitget</strong>.
               </p>
               <p className="text-gray-700">
                 These partnerships will strengthen our liquidity, transparency, and multi-chain presence — empowering users with seamless trading, analytics, and global payment options as we continue to grow in the decentralized finance ecosystem.
@@ -536,30 +536,14 @@ const Whitepaper = () => {
                   <Globe className="h-5 w-5" />
                   Visit www.b2bnest.online
                 </Button>
-                <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-blue-600" asChild>
-                  <a 
-                    href="https://www.pinksale.finance/launchpad/ethereum/0xa3e47ea8bA047a848FF33Fa2292729327255b7B8"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <ArrowRight className="h-5 w-5 mr-2" />
-                    Join Token Presale
-                  </a>
-                </Button>
               </div>
               <div className="flex justify-center gap-6 text-sm">
                 <span>🌐 Website: www.b2bnest.online</span>
                 <span>🐦 Twitter: @B2BNEST</span>
-                <span>💎 Token Presale: Coming soon on PinkSale</span>
               </div>
             </CardContent>
           </Card>
         </div>
-      </div>
-
-      {/* PinkSale CTA */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        <PinkSaleCTA variant="large" />
       </div>
 
       <Footer />

@@ -26,7 +26,7 @@ import {
 import TradingViewWidget from '@/components/TradingViewWidget';
 import Footer from '@/components/Footer';
 import SEOHead from '@/components/SEOHead';
-import PinkSaleCTA from '@/components/PinkSaleCTA';
+
 
 const Market = () => {
 
@@ -557,11 +557,6 @@ const Market = () => {
             </div>
           </div>
 
-        </div>
-
-        {/* PinkSale CTA */}
-        <div className="container mx-auto px-4 pb-16">
-          <PinkSaleCTA variant="large" />
         </div>
 
         <Footer />
