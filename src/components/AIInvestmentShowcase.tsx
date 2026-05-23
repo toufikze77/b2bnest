@@ -1,176 +1,124 @@
 import React from 'react';
-import { TrendingUp, Zap, Users, DollarSign, Brain, Rocket, Target, BarChart3 } from 'lucide-react';
+import { Brain, Zap, Rocket, Briefcase, Users, Megaphone, Headphones, Calendar, BarChart3, Package, Workflow, LayoutDashboard, CreditCard, Search, Sparkles, DollarSign, Globe } from 'lucide-react';
 
 const AIInvestmentShowcase = () => {
+  const coreSolutions = [
+    { icon: Briefcase, title: 'Professional Web Development', desc: 'High-performance, modern, scalable websites and business platforms built for growth and conversion.' },
+    { icon: Users, title: 'HR Management System', desc: 'Manage employees, attendance, payroll, and onboarding from one dashboard.' },
+    { icon: Megaphone, title: 'Marketing Campaign Manager', desc: 'Create, monitor, and optimize campaigns with AI-powered insights and automation.' },
+    { icon: Headphones, title: 'Customer Support Portal', desc: 'Professional service with ticket management, live support, and communication tools.' },
+    { icon: Calendar, title: 'Event Management Platform', desc: 'Plan and run business events, webinars, launches, and conferences with ease.' },
+    { icon: BarChart3, title: 'Financial Dashboard', desc: 'Track revenue, expenses, performance, and financial analytics in real time.' },
+    { icon: Package, title: 'Inventory Control System', desc: 'Manage stock levels, suppliers, and inventory movement efficiently.' },
+    { icon: Workflow, title: 'Workflow Automation Suite', desc: 'Automate repetitive tasks, approvals, and notifications with AI-powered flows.' },
+    { icon: LayoutDashboard, title: 'Resource Planning Dashboard', desc: 'Allocate resources, manage projects, teams, and deadlines from one platform.' },
+    { icon: CreditCard, title: 'Merchant Integration Service', desc: 'Connect payment gateways, merchant services, and eCommerce systems seamlessly.' },
+    { icon: Search, title: 'SEO & Analytics Optimization', desc: 'Improve visibility, monitor traffic, and optimize performance using AI-driven insights.' },
+  ];
+
+  const aiBenefits = [
+    'Automate repetitive processes',
+    'Generate professional business documents',
+    'Improve operational efficiency',
+    'Optimize workflows and project management',
+    'Enhance decision-making with smart analytics',
+    'Reduce manual workload and save time',
+  ];
+
+  const replacedTools = [
+    'Project management software',
+    'HR systems',
+    'Automation platforms',
+    'Marketing tools',
+    'Analytics software',
+    'Collaboration tools',
+    'Customer support systems',
+    'Business templates & document services',
+  ];
+
   return (
     <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-indigo-900 via-purple-900 to-pink-900">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-white mb-6">
-            Amazing Business Tools for <span className="text-cyan-400">Everyone</span>
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20 mb-6">
+            <Sparkles className="h-4 w-4 text-cyan-400" />
+            <span className="text-white text-sm font-medium">The AI-Powered All-in-One Business Platform</span>
+          </div>
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+            🚀 B2BNEST — Run Your Entire Business <span className="text-cyan-400">From One Platform</span>
           </h2>
           <p className="text-xl text-gray-200 max-w-3xl mx-auto">
-            From startups to big businesses, our AI-powered platform delivers comprehensive business automation tools. 
-            Built on cutting-edge AI technology and powered by our own Ethereum-based token B2BN for seamless transactions.
+            B2BNEST brings powerful AI tools, business management systems, automation, and professional services into one centralized platform.
+            Why pay for multiple expensive SaaS subscriptions when you can manage everything from a single intelligent ecosystem?
+          </p>
+          <p className="text-lg text-gray-300 max-w-3xl mx-auto mt-4">
+            Whether you're a startup, entrepreneur, SME, freelancer, or enterprise — streamline operations, boost productivity, automate workflows, and scale faster.
           </p>
         </div>
 
-        {/* Key Investment Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-            <div className="flex items-center mb-4">
-              <TrendingUp className="h-8 w-8 text-green-400 mr-3" />
-              <div>
-                <div className="text-2xl font-bold text-white">180%</div>
-                <div className="text-gray-300 text-sm">YoY Growth</div>
-              </div>
-            </div>
-            <div className="text-green-400 text-sm font-medium">Accelerating</div>
+        {/* Core Business Solutions */}
+        <div className="mb-20">
+          <div className="text-center mb-12">
+            <h3 className="text-3xl font-bold text-white mb-3">💼 Core Business Solutions</h3>
+            <p className="text-gray-300">Everything you need to operate, automate, and grow.</p>
           </div>
-
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-            <div className="flex items-center mb-4">
-              <DollarSign className="h-8 w-8 text-yellow-400 mr-3" />
-              <div>
-                <div className="text-2xl font-bold text-white">$420K</div>
-                <div className="text-gray-300 text-sm">ARR Run Rate</div>
-              </div>
-            </div>
-            <div className="text-yellow-400 text-sm font-medium">Growing Fast</div>
-          </div>
-
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-            <div className="flex items-center mb-4">
-              <Users className="h-8 w-8 text-blue-400 mr-3" />
-              <div>
-                <div className="text-2xl font-bold text-white">8.2K</div>
-                <div className="text-gray-300 text-sm">Active Users</div>
-              </div>
-            </div>
-            <div className="text-blue-400 text-sm font-medium">Strong Traction</div>
-          </div>
-
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-            <div className="flex items-center mb-4">
-              <Target className="h-8 w-8 text-purple-400 mr-3" />
-              <div>
-                <div className="text-2xl font-bold text-white">$50B</div>
-                <div className="text-gray-300 text-sm">Market Size</div>
-              </div>
-            </div>
-            <div className="text-purple-400 text-sm font-medium">TAM Opportunity</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {coreSolutions.map((s, i) => {
+              const Icon = s.icon;
+              return (
+                <div key={i} className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-colors">
+                  <Icon className="h-8 w-8 text-cyan-400 mb-3" />
+                  <div className="text-white font-semibold mb-2">{s.title}</div>
+                  <div className="text-gray-300 text-sm">{s.desc}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* AI Competitive Advantages */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <h3 className="text-3xl font-bold text-white mb-6">
-              Why Our <span className="text-cyan-400">AI Platform Stands Out</span>
-            </h3>
-            <div className="space-y-6">
-              <div className="flex items-start">
-                <Brain className="h-6 w-6 text-cyan-400 mr-4 mt-1 flex-shrink-0" />
-                <div>
-                  <div className="text-white font-semibold mb-2">AI-Powered Business Suite</div>
-                  <div className="text-gray-300 text-sm">
-                    Complete business automation from CRM and project management to document generation and invoicing. 
-                    AI intelligence optimizes workflows for startups and enterprises alike.
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-start">
-                <Zap className="h-6 w-6 text-yellow-400 mr-4 mt-1 flex-shrink-0" />
-                <div>
-                  <div className="text-white font-semibold mb-2">B2BN Token Integration</div>
-                  <div className="text-gray-300 text-sm">
-                    Our Ethereum-based B2BN token powers seamless business transactions, smart contracts, 
-                    and premium feature access across the entire platform ecosystem.
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-start">
-                <Rocket className="h-6 w-6 text-purple-400 mr-4 mt-1 flex-shrink-0" />
-                <div>
-                  <div className="text-white font-semibold mb-2">Scalable for All Business Sizes</div>
-                  <div className="text-gray-300 text-sm">
-                    From solo entrepreneurs to Fortune 500 companies, our platform scales dynamically. 
-                    Proven success across 8.2K+ businesses in 15+ industries worldwide.
-                  </div>
-                </div>
-              </div>
+        {/* Powered by AI + Lower SaaS Costs */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+            <div className="flex items-center mb-6">
+              <Brain className="h-8 w-8 text-cyan-400 mr-3" />
+              <h3 className="text-2xl font-bold text-white">🧠 Powered by AI</h3>
             </div>
+            <p className="text-gray-300 mb-6">B2BNEST integrates artificial intelligence to help businesses:</p>
+            <ul className="space-y-3">
+              {aiBenefits.map((b, i) => (
+                <li key={i} className="flex items-start text-gray-200">
+                  <Zap className="h-5 w-5 text-yellow-400 mr-3 mt-0.5 flex-shrink-0" />
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
           </div>
 
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-            <h4 className="text-2xl font-bold text-white mb-6 text-center">
-              Platform Highlights
-            </h4>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center py-3 border-b border-white/10">
-                <span className="text-gray-300">AI-Powered Tools</span>
-                <span className="text-white font-bold">25+</span>
-              </div>
-              <div className="flex justify-between items-center py-3 border-b border-white/10">
-                <span className="text-gray-300">Active Business Users</span>
-                <span className="text-green-400 font-bold">8.2K+</span>
-              </div>
-              <div className="flex justify-between items-center py-3 border-b border-white/10">
-                <span className="text-gray-300">B2BN Token Integration</span>
-                <span className="text-green-400 font-bold">Ethereum</span>
-              </div>
-              <div className="flex justify-between items-center py-3 border-b border-white/10">
-                <span className="text-gray-300">Industries Served</span>
-                <span className="text-yellow-400 font-bold">15+</span>
-              </div>
-              <div className="flex justify-between items-center py-3 border-b border-white/10">
-                <span className="text-gray-300">User Retention Rate</span>
-                <span className="text-blue-400 font-bold">78%</span>
-              </div>
-              <div className="flex justify-between items-center py-3">
-                <span className="text-gray-300">Platform Uptime</span>
-                <span className="text-purple-400 font-bold">99.9%</span>
-              </div>
+            <div className="flex items-center mb-6">
+              <DollarSign className="h-8 w-8 text-green-400 mr-3" />
+              <h3 className="text-2xl font-bold text-white">💰 Lower Your SaaS Costs</h3>
             </div>
-            
-            <div className="mt-8 text-center">
-              <div className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white px-8 py-4 rounded-lg font-bold text-lg">
-                Powered by B2BN Token
-              </div>
-              <div className="text-gray-300 text-sm mt-2">
-                Ethereum-based ecosystem for seamless business operations
-              </div>
-            </div>
+            <p className="text-gray-300 mb-6">Replace multiple subscriptions with one powerful platform. No need to separately pay for:</p>
+            <ul className="grid grid-cols-1 gap-2">
+              {replacedTools.map((t, i) => (
+                <li key={i} className="flex items-center text-gray-200">
+                  <span className="text-green-400 mr-2">✓</span>
+                  <span>{t}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-cyan-400 text-sm mt-6 font-medium">B2BNEST combines everything into one smart business ecosystem.</p>
           </div>
         </div>
 
-        {/* Market Opportunity */}
-        <div className="mt-16 text-center">
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-            <BarChart3 className="h-12 w-12 text-cyan-400 mx-auto mb-4" />
-            <h4 className="text-2xl font-bold text-white mb-4">
-              Massive Market Opportunity
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-              <div>
-                <div className="text-3xl font-bold text-cyan-400 mb-2">$50B</div>
-                <div className="text-gray-300">Total Addressable Market</div>
-                <div className="text-sm text-gray-400 mt-1">Business Process Automation</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold text-purple-400 mb-2">$8B</div>
-                <div className="text-gray-300">Serviceable Market</div>
-                <div className="text-sm text-gray-400 mt-1">SMB Document Automation</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold text-green-400 mb-2">$50M</div>
-                <div className="text-gray-300">3-Year Revenue Target</div>
-                <div className="text-sm text-gray-400 mt-1">Realistic Growth Trajectory</div>
-              </div>
-            </div>
+        {/* Closing CTA banner */}
+        <div className="text-center">
+          <div className="bg-gradient-to-r from-cyan-500 to-purple-600 rounded-2xl p-10 border border-white/20">
+            <Globe className="h-12 w-12 text-white mx-auto mb-4" />
+            <h4 className="text-3xl md:text-4xl font-bold text-white mb-3">🌍 Build. Automate. Scale.</h4>
+            <p className="text-white/90 text-lg">One intelligent ecosystem for modern businesses.</p>
           </div>
         </div>
       </div>
