@@ -3729,6 +3729,15 @@ export type Database = {
           provider_name: string
         }[]
       }
+      get_hmrc_client_secret: { Args: { p_user_id?: string }; Returns: string }
+      get_hmrc_tokens: {
+        Args: { p_user_id?: string }
+        Returns: {
+          access_token: string
+          expires_at: string
+          refresh_token: string
+        }[]
+      }
       get_integration_tokens: {
         Args: { p_integration_name: string; p_user_id?: string }
         Returns: {
