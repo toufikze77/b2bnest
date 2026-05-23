@@ -176,7 +176,7 @@ const ProvisionalServicesSlideshow = () => {
             Professional Web Development Services - Premium Package
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Explore our premium Lovable project showcases - fully functional web applications built with modern technologies
+            Explore our premium project showcases - fully functional web applications built with modern technologies
           </p>
         </div>
 
