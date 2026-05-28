@@ -421,7 +421,7 @@ This is a text representation. For actual printing, please use professional desi
                     </div>
                     {formData.logo && (
                       <div className="w-12 h-12 border rounded overflow-hidden flex-shrink-0">
-                        <img src={formData.logo} alt="Logo" className="w-full h-full object-contain" />
+                        <img src={formData.logo} alt="Company logo preview" className="w-full h-full object-contain" />
                       </div>
                     )}
                   </div>
@@ -469,7 +469,7 @@ This is a text representation. For actual printing, please use professional desi
                         </div>
                         {card.logo && (
                           <div className="w-8 h-8 border rounded overflow-hidden flex-shrink-0">
-                            <img src={card.logo} alt="Logo" className="w-full h-full object-contain" />
+                            <img src={card.logo} alt="Company logo preview" className="w-full h-full object-contain" />
                           </div>
                         )}
                       </div>

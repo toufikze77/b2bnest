@@ -221,7 +221,7 @@ const UserDashboard = () => {
         <body>
           <div class="header">
             <div class="company-info">
-              ${document.logo_url ? `<img src="${document.logo_url}" alt="Logo" class="logo">` : ''}
+              ${document.logo_url ? `<img src="${document.logo_url}" alt="Document company logo" class="logo">` : ''}
               <h1>${document.company_name || 'Company Name'}</h1>
               <p>${(document.company_address || '').replace(/\n/g, '<br>')}</p>
             </div>

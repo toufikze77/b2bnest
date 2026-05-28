@@ -276,7 +276,7 @@ const SocialMediaPostScheduler = () => {
                 
                 {formData.image && (
                   <div className="border rounded overflow-hidden">
-                    <img src={formData.image} alt="Post" className="w-full h-32 object-cover" />
+                    <img src={formData.image} alt={formData.caption || "Scheduled social media post image"} className="w-full h-32 object-cover" />
                   </div>
                 )}
               </div>
