@@ -37,8 +37,8 @@ const Header = () => {
           <Link to="/" className="flex items-center">
             <img 
               src={logo} 
-              alt="AI-Powered Business Automation Platform Logo" 
-              style={{width: "200px", height: "auto"}}
+              alt="B2BNEST — Connect, Collaborate, Grow. All-in-one business platform" 
+              className="h-10 md:h-12 w-auto object-contain"
             />
           </Link>
 
