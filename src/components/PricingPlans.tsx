@@ -428,6 +428,7 @@ const PricingPlans = () => {
               <h3 className="text-lg font-semibold">Choose Payment Method</h3>
               <button 
                 onClick={() => setShowPaymentSelector(false)}
+                aria-label="Close payment method dialog"
                 className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
               >
                 ×

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import VideoTutorialSection from "@/components/fundraising/VideoTutorialSection";
+import SEOHead from "@/components/SEOHead";
 
 
 const About = () => {
@@ -34,6 +35,13 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <SEOHead
+        title="About B2BNest — Our Mission and Story"
+        description="B2BNest, operated by Edeals Master Ltd, builds AI-powered automation tools that help businesses streamline operations and scale efficiently."
+        canonicalUrl="https://b2bnest.lovable.app/about"
+        ogTitle="About B2BNest"
+        ogDescription="Meet the team behind B2BNest — AI-powered business automation for entrepreneurs and small businesses."
+      />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Hero Section */}
         <div className="text-center mb-16">
