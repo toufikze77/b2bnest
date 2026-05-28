@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Footer from "@/components/Footer";
+import SEOHead from "@/components/SEOHead";
+
 
 
 const Blog = () => {
@@ -73,8 +75,33 @@ const Blog = () => {
 
   const categories = ["All", "Startup", "HR & Legal", "Technology", "Compliance", "Innovation", "Business Strategy"];
 
+  const blogSchema = {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    "name": "B2BNest AI Automation Blog",
+    "description": "Insights on business documentation, compliance, AI automation, and operational efficiency.",
+    "url": "https://b2bnest.lovable.app/blog",
+    "blogPost": blogPosts.map((post) => ({
+      "@type": "BlogPosting",
+      "headline": post.title,
+      "description": post.excerpt,
+      "author": { "@type": "Person", "name": post.author },
+      "datePublished": post.date,
+      "articleSection": post.category,
+    })),
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <SEOHead
+        title="Blog — AI Automation & Business Insights | B2BNest"
+        description="Insights, tips, and trends on business documentation, compliance, AI automation, and operational efficiency from the B2BNest team."
+        canonicalUrl="https://b2bnest.lovable.app/blog"
+        ogTitle="B2BNest Blog — AI Automation & Business Insights"
+        ogDescription="Latest articles on business documentation, compliance, and AI-powered operational efficiency."
+        ogType="article"
+        schemaMarkup={blogSchema}
+      />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Hero Section */}
         <div className="text-center mb-16">

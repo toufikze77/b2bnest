@@ -1,0 +1,48 @@
+# B2BNest
+
+> AI-powered all-in-one business platform offering 50+ free and affordable tools for entrepreneurs and small businesses — CRM, project management, invoicing, AI document generation, financial tracking, and more.
+
+B2BNest replaces multiple expensive SaaS subscriptions with a single, intelligent business ecosystem. The platform combines free utilities (QR generator, currency converter, business name generator) with affordable premium tools (CRM, project management, AI assistants) starting at $9.99/month.
+
+## Pages
+
+- [Home](/): Overview of the B2BNest platform and featured tools
+- [About](/about): Company mission, values, and story
+- [Pricing](/pricing): Plans, features, and subscription tiers
+- [Business Tools](/business-tools): Full catalog of 50+ free and premium business tools
+- [Contact](/contact): Get in touch with the B2BNest team
+- [Blog](/blog): Articles on business documentation, compliance, and operational efficiency
+- [Knowledge Base](/knowledge-base): Guides and how-to articles
+- [AI Showcase](/ai-showcase): Demonstrations of AI capabilities
+- [AI Studio](/ai-studio): AI-powered creation workspace
+- [Fundraising](/fundraising): B2BNEST token presale information
+- [Whitepaper](/whitepaper): Technical documentation and roadmap
+- [Tokenomics](/tokenomics): Token distribution and economics
+- [Live Charts](/live-charts): Market data and price tracking
+- [Business News](/business-news): Latest business and tech news
+- [Forum](/forum): Community discussion
+
+## Categories
+
+- [Human Resources](/categories/human-resources): HR document templates and tools
+- [Legal Documents](/categories/legal-documents): Contract and legal templates
+- [Financial Forms](/categories/financial-forms): Invoices, quotes, and financial templates
+- [Marketing Materials](/marketing-materials): Marketing and branding resources
+- [Operations](/categories/operations): Operational templates and checklists
+
+## Guides
+
+- [Getting Started](/knowledge-base/getting-started): New user onboarding guide
+- [Business Tools Guide](/knowledge-base/business-tools): How to use the business tools suite
+- [Integrations Guide](/knowledge-base/integrations): Connecting external services
+- [Financial Tools Guide](/knowledge-base/financial-tools): Using invoicing, quotes, and HMRC tools
+- [Workflows Guide](/knowledge-base/workflows): Building automation workflows
+- [Security Guide](/knowledge-base/security): Security and 2FA setup
+
+## Optional
+
+- [Privacy Policy](/privacy): Data and privacy practices
+- [Terms of Service](/terms): Platform terms and conditions
+- [Help](/help): Support resources
+- [Work Request Form](/forms/work-request): Submit a public work request
+- [B2B Partnership Form](/forms/b2b): Partnership inquiries

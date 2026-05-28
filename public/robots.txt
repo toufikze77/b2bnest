@@ -8,7 +8,7 @@ Disallow: /dashboard/
 Disallow: /api/
 
 # Sitemap on canonical domain
-Sitemap: https://b2bnest.online/sitemap.xml
+Sitemap: https://b2bnest.lovable.app/sitemap.xml
 
 # Optional for non-Google bots
 Crawl-delay: 1

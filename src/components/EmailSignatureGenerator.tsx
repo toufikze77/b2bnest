@@ -174,7 +174,7 @@ const EmailSignatureGenerator = () => {
   <table cellpadding="0" cellspacing="0" border="0">
     <tr>
       <td style="padding-right: 15px; vertical-align: top;">
-        ${signature.logo ? `<img src="${signature.logo}" alt="Logo" style="max-width: 80px; max-height: 60px;">` : ''}
+        ${signature.logo ? `<img src="${signature.logo}" alt="Company logo" style="max-width: 80px; max-height: 60px;">` : ''}
       </td>
       <td style="border-left: 2px solid #${signature.color === 'blue' ? '3b82f6' : signature.color === 'green' ? '10b981' : signature.color === 'purple' ? '8b5cf6' : '6b7280'}; padding-left: 15px;">
         <div style="font-size: 18px; font-weight: bold; color: #${signature.color === 'blue' ? '1e40af' : signature.color === 'green' ? '047857' : signature.color === 'purple' ? '6d28d9' : '374151'};">
@@ -375,7 +375,7 @@ const EmailSignatureGenerator = () => {
               <div className="flex items-start gap-3">
                 {formData.logo && (
                   <div className="w-16 h-12 border rounded overflow-hidden flex-shrink-0">
-                    <img src={formData.logo} alt="Logo" className="w-full h-full object-contain" />
+                    <img src={formData.logo} alt="Company logo preview" className="w-full h-full object-contain" />
                   </div>
                 )}
                 <div className={`border-l-2 pl-3 flex-1 ${formData.color === 'blue' ? 'border-blue-500' : formData.color === 'green' ? 'border-green-500' : formData.color === 'purple' ? 'border-purple-500' : 'border-gray-500'}`}>
@@ -415,7 +415,7 @@ const EmailSignatureGenerator = () => {
                     <div className="flex items-start gap-2">
                       {signature.logo && (
                         <div className="w-12 h-8 border rounded overflow-hidden flex-shrink-0">
-                          <img src={signature.logo} alt="Logo" className="w-full h-full object-contain" />
+                          <img src={signature.logo} alt="Company logo preview" className="w-full h-full object-contain" />
                         </div>
                       )}
                       <div className={`border-l-2 pl-2 flex-1 ${getColorClass(signature.color)}`}>
