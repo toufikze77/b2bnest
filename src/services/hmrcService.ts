@@ -259,13 +259,17 @@ export const hmrcService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
+    // Select everything except client_secret (revoked at column level)
     const { data, error } = await supabase
       .from('hmrc_settings')
-      .select('*')
+      .select('company_name, company_number, utr, vat_number, paye_reference, client_id, redirect_uri, auto_submit_vat, email_notifications, reminder_days, sandbox_mode')
       .eq('user_id', user.id)
       .single();
 
     if (error || !data) return null;
+
+    // Fetch client_secret via secure RPC
+    const { data: clientSecret } = await supabase.rpc('get_hmrc_client_secret', { p_user_id: user.id });
 
     return {
       companyName: data.company_name || '',
@@ -274,7 +278,7 @@ export const hmrcService = {
       vatNumber: data.vat_number || '',
       payeReference: data.paye_reference || '',
       clientId: data.client_id,
-      clientSecret: data.client_secret,
+      clientSecret: (clientSecret as string) || '',
       redirectUri: data.redirect_uri,
       autoSubmitVAT: data.auto_submit_vat,
       emailNotifications: data.email_notifications,
@@ -282,6 +286,7 @@ export const hmrcService = {
       sandboxMode: data.sandbox_mode,
     };
   },
+
 
   async clearSettings(): Promise<void> {
     const { data: { user } } = await supabase.auth.getUser();
