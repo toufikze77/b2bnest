@@ -38,7 +38,7 @@ const Header = () => {
             <img 
               src={logo} 
               alt="B2BNEST — Connect, Collaborate, Grow. All-in-one business platform" 
-              className="h-10 md:h-12 w-auto object-contain"
+              className="h-8 md:h-10 w-auto object-contain"
             />
           </Link>
 
