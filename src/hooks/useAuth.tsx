@@ -126,33 +126,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  // 2FA verification - verify code from database
+  // 2FA verification - delegated to secure edge function (table is no longer client-readable)
   const verify2FA = async (email: string, code: string, isLogin: boolean) => {
     try {
-      const { data, error } = await supabase
-        .from('user_2fa_codes')
-        .select('*')
-        .eq('code', code)
-        .eq('code_type', isLogin ? 'login' : 'verification')
-        .eq('used', false)
-        .gt('expires_at', new Date().toISOString())
-        .single();
+      const { data, error } = await supabase.functions.invoke('verify-2fa-code', {
+        body: {
+          email,
+          code,
+          code_type: isLogin ? 'login' : 'verification',
+        },
+      });
 
-      if (error || !data) {
-        return { error: { message: 'Invalid or expired verification code' } };
+      if (error || !data?.success) {
+        return { error: { message: data?.error || 'Invalid or expired verification code' } };
       }
-
-      // Mark code as used
-      await supabase
-        .from('user_2fa_codes')
-        .update({ used: true })
-        .eq('id', data.id);
 
       return { error: null };
     } catch (error: any) {
       return { error: { message: error.message || 'Verification failed' } };
     }
   };
+
 
   // Send verification code - generate and store in database, then send via email
   const sendVerificationCode = async (email: string, type: 'verification' | 'login') => {
