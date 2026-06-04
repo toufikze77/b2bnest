@@ -50,3 +50,6 @@ verify_jwt = true
 
 [functions.send-invitation-email]
 verify_jwt = true
+
+[functions.verify-2fa-code]
+verify_jwt = false
