@@ -273,36 +273,26 @@ const AccountSettings = () => {
     setIsLoading2FA(true);
     
     try {
-      // Verify the code
-      const { data: codeData, error: codeError } = await supabase
-        .from('user_2fa_codes')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('code', verificationCode)
-        .eq('code_type', 'setup_2fa')
-        .eq('used', false)
-        .gte('expires_at', new Date().toISOString())
-        .maybeSingle();
+      // Verify code via secure edge function (table is no longer client-readable)
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-2fa-code', {
+        body: {
+          user_id: user.id,
+          code: verificationCode,
+          code_type: 'setup_2fa',
+        },
+      });
 
-      console.log('Code verification result:', { codeData, codeError });
+      console.log('Code verification result:', { verifyData, verifyError });
 
-      if (codeError || !codeData) {
-        console.error('Code verification failed:', codeError);
+      if (verifyError || !verifyData?.success) {
         toast({
           title: "Error",
-          description: "Invalid or expired verification code.",
+          description: verifyData?.error || "Invalid or expired verification code.",
           variant: "destructive"
         });
         return;
       }
 
-      // Mark code as used
-      const { error: updateError } = await supabase
-        .from('user_2fa_codes')
-        .update({ used: true })
-        .eq('id', codeData.id);
-
-      console.log('Code update result:', updateError);
 
       // Enable 2FA
       const { data: settingsData, error: settingsError } = await supabase
