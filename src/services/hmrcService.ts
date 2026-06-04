@@ -112,28 +112,20 @@ export const hmrcService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    const { data, error } = await supabase
-      .from('hmrc_integrations')
-      .select('access_token, expires_at')
-      .eq('user_id', user.id)
-      .eq('is_connected', true)
-      .single();
+    // Use SECURITY DEFINER RPC to fetch decrypted tokens (table-level token columns are revoked)
+    const { data, error } = await supabase.rpc('get_hmrc_tokens', { p_user_id: user.id });
+    if (error || !data || data.length === 0) return null;
 
-    if (error || !data) return null;
-
-    const expiresAt = data.expires_at ? new Date(data.expires_at).getTime() : 0;
-    if (expiresAt <= Date.now()) return null;
-
-    // Decrypt token
-    const { data: decryptedToken } = await supabase.rpc('decrypt_hmrc_token', {
-      encrypted_token: data.access_token,
-    });
+    const row = data[0] as { access_token: string | null; refresh_token: string | null; expires_at: string | null };
+    const expiresAt = row.expires_at ? new Date(row.expires_at).getTime() : 0;
+    if (!row.access_token || expiresAt <= Date.now()) return null;
 
     return {
-      accessToken: decryptedToken || '',
+      accessToken: row.access_token,
       expiresAt,
     };
   },
+
 
   async isConnected(): Promise<boolean> {
     const token = await this.getToken();
