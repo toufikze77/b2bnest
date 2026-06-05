@@ -45,7 +45,7 @@ serve(async (req: Request) => {
     // Fetch profile
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("id, is_trial_active, trial_ends_at, trial_expired")
+      .select("id, is_trial_active, trial_ends_at, trial_expired, trial_started_at")
       .eq("id", user.id)
       .maybeSingle();
 
@@ -60,16 +60,19 @@ serve(async (req: Request) => {
     const now = new Date();
     const existingEnds = profile?.trial_ends_at ? new Date(profile.trial_ends_at as any) : null;
     const active = profile?.is_trial_active && existingEnds && existingEnds > now;
-    console.log("activate-trial: current trial status", {
-      is_trial_active: profile?.is_trial_active,
-      trial_ends_at: profile?.trial_ends_at,
-      active,
-    });
 
     if (active) {
       return new Response(
         JSON.stringify({ status: "already_active", trial_ends_at: existingEnds?.toISOString() }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Block re-activation: trial is a one-time grant per account
+    if (profile?.trial_started_at) {
+      return new Response(
+        JSON.stringify({ status: "already_used", error: "Trial already used" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -81,6 +84,7 @@ serve(async (req: Request) => {
         is_trial_active: true,
         trial_ends_at: endsAt.toISOString(),
         trial_expired: false,
+        trial_started_at: now.toISOString(),
       })
       .eq("id", user.id);
 
