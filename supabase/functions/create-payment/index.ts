@@ -68,7 +68,7 @@ serve(async (req) => {
       throw new Error("Stripe secret key not configured");
     }
 
-    console.log("Creating Stripe payment for amount:", amount, currency);
+    console.log("Creating Stripe payment for amount:", numericAmount, normalizedCurrency);
 
     // Initialize Stripe
     const stripe = new Stripe(stripeSecretKey, {
@@ -76,11 +76,11 @@ serve(async (req) => {
     });
 
     // Check if a Stripe customer record exists for this email
-    const customers = await stripe.customers.list({ 
-      email: customerEmail, 
-      limit: 1 
+    const customers = await stripe.customers.list({
+      email: customerEmail,
+      limit: 1
     });
-    
+
     let customerId;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
@@ -93,11 +93,11 @@ serve(async (req) => {
       line_items: [
         {
           price_data: {
-            currency: currency,
-            product_data: { 
-              name: itemName 
+            currency: normalizedCurrency,
+            product_data: {
+              name: safeItemName
             },
-            unit_amount: amount, // Amount should already be in cents
+            unit_amount: numericAmount,
           },
           quantity: 1,
         },
