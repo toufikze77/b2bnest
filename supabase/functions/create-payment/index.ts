@@ -14,41 +14,54 @@ serve(async (req) => {
   }
 
   try {
-    const { amount, currency = "gbp", itemName, isAuthenticated = false, buyerInfo } = await req.json();
+    // Require authenticated caller
+    const authHeader = req.headers.get('Authorization') || '';
+    const token = authHeader.replace('Bearer ', '');
+    if (!token) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    // Create Supabase client using the anon key for user authentication
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
+    const { data: userData, error: userErr } = await supabaseClient.auth.getUser(token);
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const user = userData.user;
+    const customerEmail = user.email ?? '';
 
-    // Create service client for database writes
+    const { amount, currency = "gbp", itemName, buyerInfo } = await req.json();
+
+    // Validate inputs
+    const allowedCurrencies = new Set(['gbp', 'usd', 'eur']);
+    const normalizedCurrency = typeof currency === 'string' ? currency.toLowerCase() : 'gbp';
+    if (!allowedCurrencies.has(normalizedCurrency)) {
+      return new Response(JSON.stringify({ error: 'Invalid currency' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const numericAmount = Number(amount);
+    if (!Number.isInteger(numericAmount) || numericAmount < 50 || numericAmount > 10_000_000) {
+      return new Response(JSON.stringify({ error: 'Invalid amount' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const safeItemName = typeof itemName === 'string' && itemName.trim().length > 0
+      ? itemName.slice(0, 200)
+      : 'Purchase';
+
+    // Service client for database writes
     const supabaseService = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false } }
     );
-
-    let user = null;
-    let customerEmail = "guest@example.com"; // Default for guest users
-
-    // Try to get authenticated user if they claim to be authenticated
-    if (isAuthenticated) {
-      const authHeader = req.headers.get("Authorization");
-      if (authHeader) {
-        const token = authHeader.replace("Bearer ", "");
-        const { data } = await supabaseClient.auth.getUser(token);
-        user = data.user;
-        if (user?.email) {
-          customerEmail = user.email;
-        }
-      }
-    }
-
-    // Use buyer info email if available and no authenticated user
-    if (!user && buyerInfo?.email) {
-      customerEmail = buyerInfo.email;
-    }
 
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeSecretKey) {

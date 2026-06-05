@@ -13,21 +13,44 @@ serve(async (req) => {
   }
 
   try {
-    // Create Supabase client
+    // Require authenticated caller
+    const authHeader = req.headers.get('Authorization') || '';
+    const token = authHeader.replace('Bearer ', '');
+    if (!token) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
-
-    // Get user from auth header
-    const authHeader = req.headers.get('Authorization')!;
-    const token = authHeader.replace('Bearer ', '');
-    const { data } = await supabaseClient.auth.getUser(token);
-    const user = data.user;
+    const { data: userData, error: userErr } = await supabaseClient.auth.getUser(token);
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const user = userData.user;
 
     const { amount, currency, name, description } = await req.json();
 
-    console.log('Creating Coinbase charge for:', { amount, currency, name, user: user?.email });
+    // Validate inputs
+    const allowedCurrencies = new Set(['USD', 'EUR', 'GBP']);
+    const normalizedCurrency = typeof currency === 'string' ? currency.toUpperCase() : '';
+    if (!allowedCurrencies.has(normalizedCurrency)) {
+      return new Response(JSON.stringify({ error: 'Invalid currency' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const numericAmount = typeof amount === 'number' ? amount : parseFloat(amount);
+    if (!Number.isFinite(numericAmount) || numericAmount < 1 || numericAmount > 100000) {
+      return new Response(JSON.stringify({ error: 'Invalid amount' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const safeName = typeof name === 'string' ? name.slice(0, 200) : 'Purchase';
+    const safeDescription = typeof description === 'string' ? description.slice(0, 500) : '';
 
     // Get Coinbase Commerce API key from secrets
     const coinbaseApiKey = Deno.env.get('COINBASE_COMMERCE_API_KEY');
@@ -35,19 +58,18 @@ serve(async (req) => {
       throw new Error('Coinbase Commerce API key not configured');
     }
 
-    // Create charge with Coinbase Commerce API
     const chargeData = {
-      name: name,
-      description: description,
+      name: safeName,
+      description: safeDescription,
       pricing_type: 'fixed_price',
       local_price: {
-        amount: amount.toString(),
-        currency: currency.toUpperCase()
+        amount: numericAmount.toFixed(2),
+        currency: normalizedCurrency,
       },
       metadata: {
-        user_id: user?.id || 'anonymous',
-        user_email: user?.email || 'guest@example.com'
-      }
+        user_id: user.id,
+        user_email: user.email,
+      },
     };
 
     console.log('Sending charge data to Coinbase:', chargeData);

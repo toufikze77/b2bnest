@@ -17,14 +17,29 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { user_id, action = 'list_boards', board_id } = await req.json()
-
-    if (!user_id) {
+    // Require authenticated caller; ignore any user_id in body
+    const authHeader = req.headers.get('Authorization') || ''
+    const token = authHeader.replace('Bearer ', '')
+    if (!token) {
       return new Response(
-        JSON.stringify({ error: 'user_id is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+    const authClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    )
+    const { data: userData, error: userErr } = await authClient.auth.getUser(token)
+    if (userErr || !userData?.user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    const user_id = userData.user.id
+
+    const { action = 'list_boards', board_id } = await req.json()
 
     if (action === 'list_boards') {
       return await listTrelloBoards(user_id)

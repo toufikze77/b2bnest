@@ -7,23 +7,40 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { userId, credentials } = await req.json()
-
-    if (!userId || !credentials) {
-      return new Response(
-        JSON.stringify({ error: 'Missing userId or credentials' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    // Require authenticated caller
+    const authHeader = req.headers.get('Authorization') || ''
+    const token = authHeader.replace('Bearer ', '')
+    if (!token) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
-    // Validate all required Twitter credentials
+    const authClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    )
+    const { data: userData, error: userErr } = await authClient.auth.getUser(token)
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    const userId = userData.user.id
+
+    const { credentials } = await req.json()
+    if (!credentials) {
+      return new Response(JSON.stringify({ error: 'Missing credentials' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     const requiredFields = ['consumer_key', 'consumer_secret', 'access_token', 'access_token_secret']
     for (const field of requiredFields) {
-      if (!credentials[field]) {
-        return new Response(
-          JSON.stringify({ error: `Missing ${field}` }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+      if (!credentials[field] || typeof credentials[field] !== 'string') {
+        return new Response(JSON.stringify({ error: `Missing ${field}` }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
       }
     }
 
@@ -32,7 +49,6 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Store credentials using the secure function
     const { error } = await supabase.rpc('store_integration_tokens', {
       p_integration_name: 'twitter',
       p_access_token: credentials.access_token,
@@ -41,29 +57,23 @@ Deno.serve(async (req) => {
         consumer_key: credentials.consumer_key,
         consumer_secret: credentials.consumer_secret,
       },
-      p_user_id: userId
+      p_user_id: userId,
     })
 
     if (error) {
       console.error('Error storing Twitter credentials:', error)
-      return new Response(
-        JSON.stringify({ error: 'Failed to store credentials' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return new Response(JSON.stringify({ error: 'Failed to store credentials' }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
-    console.log('Twitter credentials stored successfully for user:', userId)
-
-    return new Response(
-      JSON.stringify({ success: true }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   } catch (error) {
     console.error('Error in store-twitter-credentials:', error)
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 })
