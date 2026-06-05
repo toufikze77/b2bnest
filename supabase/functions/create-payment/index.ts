@@ -115,13 +115,13 @@ serve(async (req) => {
         .rpc('create_payment_record', {
           p_stripe_session_id: session.id,
           p_customer_email: customerEmail,
-          p_amount: amount,
-          p_item_name: itemName,
-          p_user_id: user?.id || null,
+          p_amount: numericAmount,
+          p_item_name: safeItemName,
+          p_user_id: user.id,
           p_customer_name: buyerInfo?.fullName || null,
           p_company_name: buyerInfo?.companyName || null,
           p_contact_number: buyerInfo?.contactNumber || null,
-          p_currency: currency,
+          p_currency: normalizedCurrency,
           p_metadata: {
             session_created_at: new Date().toISOString(),
             origin: req.headers.get("origin"),
