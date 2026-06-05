@@ -144,8 +144,8 @@ serve(async (req) => {
       id: session.id,
       url: session.url,
       status: session.status,
-      amount: amount,
-      currency: currency
+      amount: numericAmount,
+      currency: normalizedCurrency
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
