@@ -28,8 +28,24 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
+    // Require authenticated caller
+    const authHeader = req.headers.get('Authorization') || '';
+    const accessToken = authHeader.replace('Bearer ', '');
+    if (!accessToken) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: callerData, error: callerErr } = await supabaseService.auth.getUser(accessToken);
+    if (callerErr || !callerData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const callerEmail = (callerData.user.email || '').toLowerCase();
+
     const { sessionId } = await req.json();
-    if (!sessionId) {
+    if (!sessionId || typeof sessionId !== 'string') {
       throw new Error("Session ID is required");
     }
 
@@ -62,6 +78,13 @@ serve(async (req) => {
     const price = lineItem.price;
 
     logStep("Retrieved subscription", { subscriptionId: subscription.id, amount: price.unit_amount });
+
+    // Confirm requesting user matches the Stripe customer
+    if (!customer.email || (customer.email || '').toLowerCase() !== callerEmail) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Get user from email
     const { data: userData, error: userError } = await supabaseService.auth.admin.getUserByEmail(customer.email as string);

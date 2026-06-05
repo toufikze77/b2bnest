@@ -23,10 +23,35 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client
+    // Require either a cron shared-secret OR an admin/owner JWT
+    const cronSecret = Deno.env.get('FETCH_NEWS_CRON_SECRET');
+    const providedSecret = req.headers.get('x-cron-secret');
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    let authorized = false;
+    if (cronSecret && providedSecret && providedSecret === cronSecret) {
+      authorized = true;
+    } else {
+      const authHeader = req.headers.get('Authorization') || '';
+      const token = authHeader.replace('Bearer ', '');
+      if (token) {
+        const anonClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') ?? '');
+        const { data: userData } = await anonClient.auth.getUser(token);
+        if (userData?.user) {
+          const { data: isAdmin } = await supabase.rpc('is_admin_or_owner', { _user_id: userData.user.id });
+          if (isAdmin === true) authorized = true;
+        }
+      }
+    }
+
+    if (!authorized) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     console.log('Starting news fetch process...');
 
