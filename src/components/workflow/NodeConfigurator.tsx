@@ -215,13 +215,104 @@ const NodeConfigurator: React.FC<NodeConfiguratorProps> = ({ node, onUpdate, onC
               />
             </div>
 
-            <div className="space-y-4 pt-4 border-t">
-              <h4 className="font-medium text-sm">Configuration</h4>
-              {Object.entries(config).map(([key, value]) => {
-                if (key === 'description') return null;
-                return renderConfigField(key, value);
-              })}
-            </div>
+            {isWhatsApp ? (
+              <div className="space-y-4 pt-4 border-t">
+                <h4 className="font-medium text-sm">WhatsApp Message</h4>
+                <p className="text-xs text-muted-foreground">
+                  Uses your connected Twilio WhatsApp credentials. Configure them in{' '}
+                  <a href="/integrations/whatsapp" className="underline">Integrations → WhatsApp</a>.
+                </p>
+
+                <div className="space-y-2">
+                  <Label htmlFor="wa-to">Recipient (E.164)</Label>
+                  <Input
+                    id="wa-to"
+                    value={config.to || ''}
+                    onChange={(e) => updateConfig('to', e.target.value)}
+                    placeholder="+14155552671"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Message Template</Label>
+                  <Select value={config.template || 'custom'} onValueChange={handleTemplateChange}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="custom">Custom message</SelectItem>
+                      <SelectItem value="welcome">Welcome</SelectItem>
+                      <SelectItem value="order_confirmation">Order Confirmation</SelectItem>
+                      <SelectItem value="appointment_reminder">Appointment Reminder</SelectItem>
+                      <SelectItem value="shipping_update">Shipping Update</SelectItem>
+                      <SelectItem value="follow_up">Follow-up</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Variables like {'{{name}}'} can be replaced before sending.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="wa-body">Message Body</Label>
+                  <Textarea
+                    id="wa-body"
+                    value={config.body || ''}
+                    onChange={(e) => updateConfig('body', e.target.value)}
+                    rows={5}
+                    maxLength={1600}
+                    placeholder="Type your message..."
+                  />
+                  <p className="text-xs text-muted-foreground text-right">
+                    {(config.body || '').length}/1600
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="wa-media">Media URL (optional, https)</Label>
+                  <Input
+                    id="wa-media"
+                    value={config.mediaUrl || ''}
+                    onChange={(e) => updateConfig('mediaUrl', e.target.value)}
+                    placeholder="https://..."
+                  />
+                </div>
+
+                <div className="pt-2 border-t space-y-2">
+                  <Button
+                    onClick={handleTestWhatsApp}
+                    disabled={testing}
+                    variant="secondary"
+                    className="w-full"
+                  >
+                    {testing ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending…</>
+                    ) : (
+                      <><Send className="h-4 w-4 mr-2" /> Test WhatsApp</>
+                    )}
+                  </Button>
+                  {testResult && (
+                    <div
+                      className={`text-xs p-2 rounded-md border ${
+                        testResult.ok
+                          ? 'border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400'
+                          : 'border-destructive/50 bg-destructive/10 text-destructive'
+                      }`}
+                    >
+                      {testResult.message}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4 pt-4 border-t">
+                <h4 className="font-medium text-sm">Configuration</h4>
+                {Object.entries(config).map(([key, value]) => {
+                  if (key === 'description') return null;
+                  return renderConfigField(key, value);
+                })}
+              </div>
+            )}
 
             {config.description && (
               <div className="space-y-2 pt-4 border-t">
