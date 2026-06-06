@@ -661,30 +661,50 @@ const ProjectManagement = () => {
   const createTeam = async () => {
     const name = window.prompt('Team name');
     if (!name) return;
-    
-    const newTeam: TeamItem = {
-      id: Date.now().toString(),
-      name,
-      created_at: new Date().toISOString(),
-      owner_id: 'local-user'
-    };
-    
-    setTeams(prev => [newTeam, ...prev]);
-    
-    // Save to localStorage
+
+    if (!user?.id) {
+      toast({ title: 'Sign in required', description: 'Please sign in to create a team.', variant: 'destructive' });
+      return;
+    }
+
     try {
-      const savedTeams = localStorage.getItem('projectTeams');
-      const existingTeams = savedTeams ? JSON.parse(savedTeams) : [];
-      localStorage.setItem('projectTeams', JSON.stringify([newTeam, ...existingTeams]));
-      
+      const slug = `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}-${Date.now().toString(36)}`;
+
+      const { data: org, error: orgError } = await supabase
+        .from('organizations')
+        .insert({ name, slug, created_by: user.id, is_active: true })
+        .select()
+        .single();
+
+      if (orgError || !org) throw orgError || new Error('Failed to create organization');
+
+      const { error: memberError } = await supabase
+        .from('organization_members')
+        .insert({
+          organization_id: org.id,
+          user_id: user.id,
+          role: 'owner',
+          is_active: true,
+        });
+
+      if (memberError) throw memberError;
+
       toast({
-        title: "Team Created",
-        description: `"${name}" team has been created successfully.`
+        title: 'Team Created',
+        description: `"${name}" team has been created successfully.`,
       });
-    } catch (error) {
-      console.error('Error saving team:', error);
+
+      fetchTeams();
+    } catch (error: any) {
+      console.error('Error creating team:', error);
+      toast({
+        title: 'Error',
+        description: error?.message || 'Failed to create team',
+        variant: 'destructive',
+      });
     }
   };
+
 
   // Note: localStorage saving is handled in individual create/update functions to avoid infinite loops
 
