@@ -679,7 +679,7 @@ const BusinessTools = () => {
             </div>
 
             {/* Quick Access to Quotes & Invoices */}
-            <div className="mt-12 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-6">
+            <div className="mt-12 bg-gradient-to-r from-green-100/60 to-blue-100/60 rounded-lg p-6 border border-slate-200">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-bold mb-2">Quotes & Invoices</h2>
@@ -737,7 +737,7 @@ const BusinessTools = () => {
               </div>
             </div>
 
-            <div className="mt-12 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-8">
+            <div className="mt-12 bg-gradient-to-r from-blue-100/60 to-purple-100/60 rounded-lg p-8 border border-slate-200">
               <div className="text-center">
                 <h2 className="text-2xl font-bold mb-4">Why Use Our Business Tools?</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
@@ -771,10 +771,10 @@ const BusinessTools = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-slate-100">
       <BusinessToolsSEO />
       {currentTool !== 'overview' && (
-        <div className="sticky top-0 z-10 bg-white border-b">
+        <div className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur border-b border-slate-200">
           <div className="max-w-6xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               <Button
