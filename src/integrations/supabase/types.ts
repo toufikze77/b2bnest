@@ -3717,6 +3717,7 @@ export type Database = {
         }
         Returns: string
       }
+      create_team_with_owner: { Args: { p_name: string }; Returns: string }
       decrypt_banking_data: {
         Args: { encrypted_data: string }
         Returns: string
