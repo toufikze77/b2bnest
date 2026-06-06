@@ -737,7 +737,7 @@ const BusinessTools = () => {
               </div>
             </div>
 
-            <div className="mt-12 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-8">
+            <div className="mt-12 bg-gradient-to-r from-blue-100/60 to-purple-100/60 rounded-lg p-8 border border-slate-200">
               <div className="text-center">
                 <h2 className="text-2xl font-bold mb-4">Why Use Our Business Tools?</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
