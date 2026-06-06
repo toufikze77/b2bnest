@@ -771,10 +771,10 @@ const BusinessTools = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-slate-100">
       <BusinessToolsSEO />
       {currentTool !== 'overview' && (
-        <div className="sticky top-0 z-10 bg-white border-b">
+        <div className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur border-b border-slate-200">
           <div className="max-w-6xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               <Button
