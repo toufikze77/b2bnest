@@ -29,6 +29,10 @@ interface NodeConfiguratorProps {
 
 const NodeConfigurator: React.FC<NodeConfiguratorProps> = ({ node, onUpdate, onClose }) => {
   const [config, setConfig] = useState(node.config);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
+
+  const isWhatsApp = node.name === 'Send WhatsApp';
 
   const handleSave = () => {
     onUpdate({ config });
@@ -36,6 +40,55 @@ const NodeConfigurator: React.FC<NodeConfiguratorProps> = ({ node, onUpdate, onC
 
   const updateConfig = (key: string, value: any) => {
     setConfig(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleTemplateChange = (templateKey: string) => {
+    const body = WHATSAPP_TEMPLATES[templateKey] ?? '';
+    setConfig(prev => ({
+      ...prev,
+      template: templateKey,
+      body: templateKey === 'custom' ? prev.body : body,
+    }));
+  };
+
+  const handleTestWhatsApp = async () => {
+    setTestResult(null);
+    if (!/^\+[1-9]\d{6,14}$/.test(String(config.to || ''))) {
+      setTestResult({ ok: false, message: 'Recipient must be in E.164 format (e.g. +14155552671).' });
+      return;
+    }
+    if (!config.body || String(config.body).trim().length === 0) {
+      setTestResult({ ok: false, message: 'Message body is required.' });
+      return;
+    }
+    setTesting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('workflow-execute', {
+        body: {
+          steps: [{
+            type: 'whatsapp.send',
+            to: config.to,
+            body: config.body,
+            mediaUrl: config.mediaUrl || undefined,
+          }],
+        },
+      });
+      if (error) throw new Error(error.message);
+      const r = data?.results?.[0];
+      if (r?.ok) {
+        setTestResult({ ok: true, message: `Sent! Message SID: ${r.sid}` });
+        toast.success('WhatsApp test message sent');
+      } else {
+        const msg = r?.message || r?.error || data?.error || 'Send failed';
+        setTestResult({ ok: false, message: String(msg) });
+        toast.error(`Test failed: ${msg}`);
+      }
+    } catch (e: any) {
+      setTestResult({ ok: false, message: e.message || 'Network error' });
+      toast.error(e.message || 'Test failed');
+    } finally {
+      setTesting(false);
+    }
   };
 
   const renderConfigField = (key: string, value: any) => {
