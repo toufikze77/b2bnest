@@ -514,17 +514,47 @@ const ProjectManagement = () => {
 
   const fetchTeams = async () => {
     try {
-      // Get user's organizations first
-      const { data: userOrgs } = await supabase
+      if (!user?.id) return;
+
+      // Get user's organization memberships
+      const { data: userOrgs, error: orgsErr } = await supabase
         .from('organization_members')
         .select('organization_id')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .eq('is_active', true);
 
-      if (!userOrgs?.length) return;
+      if (orgsErr) {
+        console.error('Error fetching user orgs:', orgsErr);
+        return;
+      }
+      if (!userOrgs?.length) {
+        setTeams([]);
+        setTeamMembers({});
+        return;
+      }
 
-      // Get organization members from user's organizations
-      const orgIds = userOrgs.map(org => org.organization_id);
+      const orgIds = userOrgs.map((o) => o.organization_id);
+
+      // Fetch real organization details
+      const { data: orgsData, error: orgsDetailErr } = await supabase
+        .from('organizations')
+        .select('id, name, description, created_at, created_by')
+        .in('id', orgIds);
+
+      if (orgsDetailErr) {
+        console.error('Error fetching organizations:', orgsDetailErr);
+      }
+
+      const teamsData = (orgsData || []).map((o: any) => ({
+        id: o.id,
+        name: o.name,
+        description: o.description || '',
+        created_at: o.created_at,
+        owner_id: o.created_by,
+      }));
+      setTeams(teamsData as TeamItem[]);
+
+      // Fetch members across these orgs
       const { data: membersData, error } = await supabase
         .from('organization_members')
         .select(`
@@ -543,8 +573,7 @@ const ProjectManagement = () => {
         .in('organization_id', orgIds)
         .eq('is_active', true);
 
-      if (!error && membersData && Array.isArray(membersData)) {
-        // Group by organization for display as "teams"
+      if (!error && Array.isArray(membersData)) {
         const grouped: Record<string, TeamMemberItem[]> = {};
         membersData.forEach((member: any) => {
           const tm: TeamMemberItem = {
@@ -554,22 +583,12 @@ const ProjectManagement = () => {
             role: member.role,
             created_at: member.created_at,
             user_id: member.user_id,
-            display_name: member.profiles?.display_name || member.profiles?.full_name
+            display_name: member.profiles?.display_name || member.profiles?.full_name,
           };
           if (!grouped[member.organization_id]) grouped[member.organization_id] = [];
           grouped[member.organization_id].push(tm);
         });
         setTeamMembers(grouped);
-
-        // Create team entries based on organizations
-        const teamsData = orgIds.map(orgId => ({
-          id: orgId,
-          name: `Organization Team`,
-          description: `Team members from your organization`,
-          created_at: new Date().toISOString(),
-          owner_id: user?.id
-        }));
-        setTeams(teamsData as TeamItem[]);
       }
     } catch (error) {
       console.error('Error fetching teams:', error);
