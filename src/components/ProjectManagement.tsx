@@ -661,26 +661,10 @@ const ProjectManagement = () => {
     }
 
     try {
-      const slug = `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}-${Date.now().toString(36)}`;
+      const { data: orgId, error: rpcError } = await supabase
+        .rpc('create_team_with_owner', { p_name: name });
 
-      const { data: org, error: orgError } = await supabase
-        .from('organizations')
-        .insert({ name, slug, created_by: user.id, is_active: true })
-        .select()
-        .single();
-
-      if (orgError || !org) throw orgError || new Error('Failed to create organization');
-
-      const { error: memberError } = await supabase
-        .from('organization_members')
-        .insert({
-          organization_id: org.id,
-          user_id: user.id,
-          role: 'owner',
-          is_active: true,
-        });
-
-      if (memberError) throw memberError;
+      if (rpcError || !orgId) throw rpcError || new Error('Failed to create team');
 
       toast({
         title: 'Team Created',
