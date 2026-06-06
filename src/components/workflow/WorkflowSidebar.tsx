@@ -82,7 +82,8 @@ const WorkflowSidebar: React.FC<WorkflowSidebarProps> = ({ onAddNode }) => {
         { name: 'Slack Message', category: 'Communication', description: 'Send Slack message', config: { channel: '', text: '' } },
         { name: 'Google Sheets', category: 'Spreadsheets', description: 'Update spreadsheet', config: { sheetId: '', range: '' } },
         { name: 'Notion Page', category: 'Productivity', description: 'Create/update page', config: { databaseId: '' } },
-        { name: 'Twilio SMS', category: 'Communication', description: 'Send SMS', config: { to: '', body: '' } }
+        { name: 'Twilio SMS', category: 'Communication', description: 'Send SMS', config: { to: '', body: '' } },
+        { name: 'Send WhatsApp', category: 'Communication', description: 'Send WhatsApp message via your connected Twilio account', config: { to: '', template: 'custom', body: '', mediaUrl: '' } }
       ]
     }
   ];
