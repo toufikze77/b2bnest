@@ -3595,6 +3595,42 @@ export type Database = {
           },
         ]
       }
+      workflow_run_logs: {
+        Row: {
+          created_at: string
+          id: string
+          provider: string
+          request_summary: Json
+          response_summary: Json
+          status: string
+          step: string
+          user_id: string
+          workflow_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          provider: string
+          request_summary?: Json
+          response_summary?: Json
+          status: string
+          step: string
+          user_id: string
+          workflow_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          provider?: string
+          request_summary?: Json
+          response_summary?: Json
+          status?: string
+          step?: string
+          user_id?: string
+          workflow_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       public_profiles: {

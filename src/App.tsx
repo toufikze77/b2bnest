@@ -52,6 +52,7 @@ import IntegrationsGuide from '@/pages/articles/IntegrationsGuide';
 import FinancialToolsGuide from '@/pages/articles/FinancialToolsGuide';
 import WorkflowGuide from '@/pages/articles/WorkflowGuide';
 import SecurityGuide from '@/pages/articles/SecurityGuide';
+import WhatsAppSettings from '@/pages/integrations/WhatsAppSettings';
 
 const queryClient = new QueryClient();
 
@@ -79,6 +80,7 @@ function App() {
               <Route path="/ai-studio" element={<AIStudio />} />
               <Route path="/ai-workspace" element={<ProtectedRoute><AIWorkspace /></ProtectedRoute>} />
               <Route path="/workflow-studio" element={<ProtectedRoute><WorkflowStudio /></ProtectedRoute>} />
+              <Route path="/integrations/whatsapp" element={<ProtectedRoute><WhatsAppSettings /></ProtectedRoute>} />
               <Route path="/fundraising" element={<Fundraising />} />
               <Route path="/whitepaper" element={<Whitepaper />} />
             <Route path="/tokenomics" element={<Tokenomics />} />
