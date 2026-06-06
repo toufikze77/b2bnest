@@ -679,7 +679,7 @@ const BusinessTools = () => {
             </div>
 
             {/* Quick Access to Quotes & Invoices */}
-            <div className="mt-12 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-6">
+            <div className="mt-12 bg-gradient-to-r from-green-100/60 to-blue-100/60 rounded-lg p-6 border border-slate-200">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-bold mb-2">Quotes & Invoices</h2>
