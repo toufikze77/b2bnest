@@ -593,15 +593,8 @@ const ProjectManagement = () => {
       console.error('Error loading goals from localStorage:', error);
     }
 
-    // Load teams from localStorage  
-    try {
-      const savedTeams = localStorage.getItem('projectTeams');
-      if (savedTeams) {
-        setTeams(JSON.parse(savedTeams));
-      }
-    } catch (error) {
-      console.error('Error loading teams from localStorage:', error);
-    }
+    // Teams are now sourced from organizations in the database (see fetchTeams)
+
   }, []); // Only run once on mount
 
   useEffect(() => {
