@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { WorkflowNode } from '@/pages/WorkflowStudio';
-import { X, Save, Code, TestTube } from 'lucide-react';
+import { X, Save, Code, TestTube, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +9,17 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+const WHATSAPP_TEMPLATES: Record<string, string> = {
+  custom: '',
+  welcome: 'Hi {{name}}, welcome aboard! Reply HELP for assistance.',
+  order_confirmation: 'Hi {{name}}, your order #{{order_id}} has been confirmed. Total: {{amount}}.',
+  appointment_reminder: 'Reminder: your appointment is scheduled for {{date}} at {{time}}. Reply YES to confirm.',
+  shipping_update: 'Good news {{name}}! Your order #{{order_id}} has shipped. Track it here: {{tracking_url}}',
+  follow_up: 'Hi {{name}}, just checking in. Let us know if you have any questions!',
+};
 
 interface NodeConfiguratorProps {
   node: WorkflowNode;
