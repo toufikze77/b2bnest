@@ -1,5 +1,78 @@
 
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap");
+
+/* Midnight Indigo workspace skin (scoped) */
+.workspace-midnight {
+  --bg-base: #07071a;
+  --bg-elev: rgba(20, 20, 50, 0.55);
+  --bg-elev-strong: rgba(30, 30, 90, 0.7);
+  --border-soft: rgba(139, 132, 255, 0.14);
+  --border-strong: rgba(139, 132, 255, 0.28);
+  --text-hi: #f4f3ff;
+  --text-mid: #b6b3d6;
+  --text-low: #8783a8;
+  --accent: #6366f1;
+  --accent-glow: #818cf8;
+  --accent-edge: #4f46e5;
+  background:
+    radial-gradient(1200px 600px at 12% -10%, rgba(99,102,241,0.25), transparent 60%),
+    radial-gradient(900px 500px at 95% 0%, rgba(129,140,248,0.18), transparent 60%),
+    radial-gradient(700px 500px at 50% 110%, rgba(79,70,229,0.18), transparent 60%),
+    linear-gradient(180deg, #07071a 0%, #0a0a22 60%, #07071a 100%);
+  color: var(--text-hi);
+  font-family: "DM Sans", system-ui, sans-serif;
+  min-height: 100vh;
+  position: relative;
+}
+.workspace-midnight::before {
+  content: "";
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(139,132,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139,132,255,0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at top, black 30%, transparent 75%);
+  pointer-events: none;
+  z-index: 0;
+}
+.workspace-midnight > * { position: relative; z-index: 1; }
+.workspace-midnight .display-font {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+.workspace-midnight .glass-panel {
+  background: var(--bg-elev);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+}
+.workspace-midnight .glass-panel-strong {
+  background: var(--bg-elev-strong);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--border-strong);
+  border-radius: 18px;
+}
+.workspace-midnight .accent-chip {
+  background: linear-gradient(135deg, rgba(99,102,241,0.18), rgba(129,140,248,0.08));
+  border: 1px solid rgba(129,140,248,0.35);
+  color: #c7c5ff;
+}
+.workspace-midnight .glow-ring {
+  box-shadow:
+    0 0 0 1px rgba(129,140,248,0.25),
+    0 20px 60px -20px rgba(79,70,229,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.workspace-midnight .text-soft { color: var(--text-mid); }
+.workspace-midnight .text-dim  { color: var(--text-low); }
+@keyframes ws-pulse-dot {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%     { opacity: 0.55; transform: scale(0.85); }
+}
+.workspace-midnight .pulse-dot { animation: ws-pulse-dot 1.8s ease-in-out infinite; }
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
