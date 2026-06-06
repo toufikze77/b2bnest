@@ -196,6 +196,25 @@ const WorkflowStudio = () => {
       console.log('LinkedIn post created:', data);
     }
     
+
+    if (node.name === 'Send WhatsApp') {
+      const { data, error } = await supabase.functions.invoke('workflow-execute', {
+        body: {
+          workflow_id: workflow.id,
+          steps: [{
+            type: 'whatsapp.send',
+            to: node.config.to,
+            body: node.config.body,
+            mediaUrl: node.config.mediaUrl || undefined,
+          }],
+        },
+      });
+      if (error) throw new Error(`WhatsApp send failed: ${error.message}`);
+      const result = data?.results?.[0];
+      if (!result?.ok) throw new Error(`WhatsApp send failed: ${result?.error || 'unknown'}`);
+      console.log('WhatsApp sent:', result);
+    }
+
     // Add delay between nodes to avoid rate limiting
     await new Promise(resolve => setTimeout(resolve, 1000));
   };
