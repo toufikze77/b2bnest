@@ -71,42 +71,6 @@ const Header = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <span className="text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">
-                  Invest
-                </span>
-              </DropdownMenuTrigger>
-               <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link to="/live-charts" className="w-full flex items-center">
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Market
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/business-news" className="w-full flex items-center">
-                    <Newspaper className="h-4 w-4 mr-2" />
-                    Business News
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/fundraising" className="w-full">
-                    Funding Round
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/whitepaper" className="w-full">
-                    Whitepaper
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/tokenomics" className="w-full">
-                    Tokenomics
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
             <Link to="/pricing" className="text-gray-700 hover:text-blue-600 transition-colors">
               Pricing
             </Link>
@@ -224,48 +188,6 @@ const Header = () => {
                   </Link>
                 </div>
               </div>
-              <div className="px-2">
-                <div className="font-medium text-gray-900 mb-2">Invest</div>
-                <div className="pl-4 space-y-2">
-                  <Link
-                    to="/business-news"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Newspaper className="h-4 w-4 mr-2" />
-                    Business News
-                  </Link>
-                  <Link
-                    to="/fundraising"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Funding Round
-                  </Link>
-                  <Link
-                    to="/whitepaper"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Whitepaper
-                  </Link>
-                  <Link
-                    to="/tokenomics"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Tokenomics
-                  </Link>
-                  <Link
-                    to="/live-charts"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Market
-                   </Link>
-                 </div>
-               </div>
                <div className="px-2 py-2 space-y-2">
                  <InstallAppButton variant="default" size="default" className="w-full" />
                  <ShareButton variant="outline" size="default" />
