@@ -61,17 +61,17 @@ const HeroSection = ({ onSearch }: HeroSectionProps) => {
         
         {/* Legal Links for Google Verification */}
         <div className="mt-8 pt-4 border-t border-gray-200">
-          <p className="text-sm text-gray-500 mb-2">Legal & Compliance</p>
+          <p className="text-sm text-gray-700 mb-2">Legal & Compliance</p>
           <div className="flex justify-center gap-6 text-sm">
             <Link 
               to="/privacy" 
-              className="text-blue-600 hover:text-blue-800 font-medium hover:underline"
+              className="text-blue-700 hover:text-blue-900 font-medium hover:underline"
             >
               Privacy Policy
             </Link>
             <Link 
               to="/terms" 
-              className="text-blue-600 hover:text-blue-800 font-medium hover:underline"
+              className="text-blue-700 hover:text-blue-900 font-medium hover:underline"
             >
               Terms of Service
             </Link>
