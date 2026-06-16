@@ -5,13 +5,11 @@ import HeroSection from "@/components/HeroSection";
 import TokenSEO from "@/components/TokenSEO";
 import AdvancedSEOSchema from "@/components/AdvancedSEOSchema";
 
-import FeaturedTemplatesSection from "@/components/FeaturedTemplatesSection";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import SearchResults from "@/components/SearchResults";
 import UnifiedSearchResults from "@/components/UnifiedSearchResults";
-import ProvisionalServicesSlideshow from "@/components/ProvisionalServicesSlideshow";
 import AIDocumentAssistant from "@/components/AIDocumentAssistant";
 import AIInvestmentShowcase from "@/components/AIInvestmentShowcase";
 import BusinessToolsSection from "@/components/BusinessToolsSection";
