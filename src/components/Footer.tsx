@@ -49,6 +49,47 @@ const Footer = () => {
                   Pricing
                 </button>
               </li>
+              <li className="pt-2 font-semibold text-gray-300">Invest</li>
+              <li>
+                <button 
+                  onClick={() => navigate('/live-charts')}
+                  className="hover:text-white transition-colors"
+                >
+                  Market
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => navigate('/business-news')}
+                  className="hover:text-white transition-colors"
+                >
+                  Business News
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => navigate('/fundraising')}
+                  className="hover:text-white transition-colors"
+                >
+                  Funding Round
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => navigate('/whitepaper')}
+                  className="hover:text-white transition-colors"
+                >
+                  Whitepaper
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => navigate('/tokenomics')}
+                  className="hover:text-white transition-colors"
+                >
+                  Tokenomics
+                </button>
+              </li>
             </ul>
           </div>
           <div>
