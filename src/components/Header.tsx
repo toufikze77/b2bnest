@@ -71,42 +71,6 @@ const Header = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <span className="text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">
-                  Invest
-                </span>
-              </DropdownMenuTrigger>
-               <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link to="/live-charts" className="w-full flex items-center">
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Market
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/business-news" className="w-full flex items-center">
-                    <Newspaper className="h-4 w-4 mr-2" />
-                    Business News
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/fundraising" className="w-full">
-                    Funding Round
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/whitepaper" className="w-full">
-                    Whitepaper
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/tokenomics" className="w-full">
-                    Tokenomics
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
             <Link to="/pricing" className="text-gray-700 hover:text-blue-600 transition-colors">
               Pricing
             </Link>
