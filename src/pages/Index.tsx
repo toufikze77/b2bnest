@@ -72,14 +72,8 @@ const IndexContent = () => {
       {/* AI Investment Showcase - Only show when not searching */}
       {!showSearchResults && <AIInvestmentShowcase />}
 
-      {/* Provisional Services Slideshow - Only show when not searching */}
-      {!showSearchResults && <ProvisionalServicesSlideshow />}
-
       {/* Business Tools Section - Only show when not searching */}
       {!showSearchResults && <BusinessToolsSection />}
-
-      {/* Featured Templates - Only show when not searching */}
-      {!showSearchResults && <FeaturedTemplatesSection templates={resultsToShow} />}
 
       {/* Testimonials Section - only show when not searching */}
       {!showSearchResults && <TestimonialsSection />}
