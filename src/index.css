@@ -34,6 +34,27 @@
     --chart-5: 27 87% 67%;
   }
 
+  .dark {
+    --background: 222 47% 8%;
+    --foreground: 210 40% 96%;
+    --card: 222 45% 11%;
+    --card-foreground: 210 40% 96%;
+    --popover: 222 45% 11%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 8%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 70%;
+    --accent: 217 33% 20%;
+    --accent-foreground: 210 40% 96%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 96%;
+    --border: 217 33% 22%;
+    --input: 217 33% 22%;
+    --ring: 217 91% 60%;
+  }
 }
 
 @layer base {
@@ -45,6 +66,42 @@
     font-family: "Inter", sans-serif;
   }
 }
+
+/* ===== Dark-mode overrides for hardcoded utility colors =====
+   Many components use literal Tailwind colors (bg-white, text-gray-*).
+   These overrides keep backgrounds and text readable in dark mode
+   without rewriting every component. */
+.dark .bg-white { background-color: hsl(var(--card)) !important; }
+.dark .bg-gray-50 { background-color: hsl(222 45% 10%) !important; }
+.dark .bg-gray-100 { background-color: hsl(222 40% 13%) !important; }
+.dark .bg-gray-200 { background-color: hsl(222 35% 18%) !important; }
+
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-black { color: hsl(var(--foreground)) !important; }
+.dark .text-gray-700,
+.dark .text-gray-600 { color: hsl(215 20% 80%) !important; }
+.dark .text-gray-500,
+.dark .text-gray-400 { color: hsl(215 16% 65%) !important; }
+
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-gray-300 { border-color: hsl(var(--border)) !important; }
+
+.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: hsl(var(--border)) !important; }
+
+.dark .shadow-sm,
+.dark .shadow,
+.dark .shadow-md,
+.dark .shadow-lg { box-shadow: 0 4px 12px -2px rgba(0,0,0,0.6) !important; }
+
+.dark .hover\:bg-gray-50:hover { background-color: hsl(222 40% 15%) !important; }
+.dark .hover\:bg-gray-100:hover { background-color: hsl(222 40% 18%) !important; }
+
+.dark .from-blue-50,
+.dark .to-blue-50,
+.dark .via-blue-50 { --tw-gradient-from: hsl(222 45% 11%) !important; --tw-gradient-to: hsl(222 45% 11%) !important; }
 
 /* Prevent autofill from causing focus issues */
 input:-webkit-autofill,
