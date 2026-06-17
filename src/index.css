@@ -72,21 +72,37 @@
    These overrides keep backgrounds and text readable in dark mode
    without rewriting every component. */
 .dark .bg-white { background-color: hsl(var(--card)) !important; }
-.dark .bg-gray-50 { background-color: hsl(222 45% 10%) !important; }
-.dark .bg-gray-100 { background-color: hsl(222 40% 13%) !important; }
-.dark .bg-gray-200 { background-color: hsl(222 35% 18%) !important; }
+.dark .bg-gray-50,
+.dark .bg-slate-50 { background-color: hsl(222 45% 10%) !important; }
+.dark .bg-gray-100,
+.dark .bg-slate-100 { background-color: hsl(222 40% 13%) !important; }
+.dark .bg-gray-200,
+.dark .bg-slate-200 { background-color: hsl(222 35% 18%) !important; }
+
+/* Translucent slate backgrounds (bg-slate-50/95, etc.) */
+.dark [class*="bg-slate-50/"],
+.dark [class*="bg-slate-100/"] { background-color: hsl(222 45% 11% / 0.95) !important; }
 
 .dark .text-gray-900,
 .dark .text-gray-800,
+.dark .text-slate-900,
+.dark .text-slate-800,
 .dark .text-black { color: hsl(var(--foreground)) !important; }
 .dark .text-gray-700,
-.dark .text-gray-600 { color: hsl(215 20% 80%) !important; }
+.dark .text-gray-600,
+.dark .text-slate-700,
+.dark .text-slate-600 { color: hsl(215 20% 80%) !important; }
 .dark .text-gray-500,
-.dark .text-gray-400 { color: hsl(215 16% 65%) !important; }
+.dark .text-gray-400,
+.dark .text-slate-500,
+.dark .text-slate-400 { color: hsl(215 16% 65%) !important; }
 
 .dark .border-gray-100,
 .dark .border-gray-200,
-.dark .border-gray-300 { border-color: hsl(var(--border)) !important; }
+.dark .border-gray-300,
+.dark .border-slate-100,
+.dark .border-slate-200,
+.dark .border-slate-300 { border-color: hsl(var(--border)) !important; }
 
 .dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
 .dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: hsl(var(--border)) !important; }
@@ -96,8 +112,29 @@
 .dark .shadow-md,
 .dark .shadow-lg { box-shadow: 0 4px 12px -2px rgba(0,0,0,0.6) !important; }
 
-.dark .hover\:bg-gray-50:hover { background-color: hsl(222 40% 15%) !important; }
-.dark .hover\:bg-gray-100:hover { background-color: hsl(222 40% 18%) !important; }
+.dark .hover\:bg-gray-50:hover,
+.dark .hover\:bg-slate-50:hover { background-color: hsl(222 40% 15%) !important; }
+.dark .hover\:bg-gray-100:hover,
+.dark .hover\:bg-slate-100:hover { background-color: hsl(222 40% 18%) !important; }
+
+/* Soft pastel icon-tile backgrounds (bg-blue-100, bg-green-100, etc.) → muted dark */
+.dark .bg-blue-100,
+.dark .bg-green-100,
+.dark .bg-purple-100,
+.dark .bg-indigo-100,
+.dark .bg-pink-100,
+.dark .bg-yellow-100,
+.dark .bg-orange-100,
+.dark .bg-red-100,
+.dark .bg-cyan-100,
+.dark .bg-teal-100,
+.dark .bg-rose-100,
+.dark .bg-violet-100,
+.dark .bg-sky-100,
+.dark .bg-emerald-100 { background-color: hsl(222 40% 20%) !important; }
+
+.dark .bg-green-50 { background-color: hsl(222 40% 14%) !important; }
+
 
 /* Soft pastel gradient backgrounds → dark surface */
 .dark [class*="from-white"],
@@ -139,10 +176,43 @@
   background-color: hsl(0 0% 0% / 0.5) !important;
 }
 
+/* Soft pastel 100-level gradients (from-blue-100/60, to-purple-100/60, etc.) */
+.dark [class*="from-blue-100"],
+.dark [class*="from-green-100"],
+.dark [class*="from-purple-100"],
+.dark [class*="from-indigo-100"],
+.dark [class*="from-pink-100"],
+.dark [class*="from-slate-100"],
+.dark [class*="from-gray-100"],
+.dark [class*="from-sky-100"] {
+  --tw-gradient-from: hsl(222 45% 12%) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, hsl(222 45% 12% / 0)) !important;
+}
+.dark [class*="via-blue-100"],
+.dark [class*="via-green-100"],
+.dark [class*="via-purple-100"],
+.dark [class*="via-indigo-100"],
+.dark [class*="via-slate-100"],
+.dark [class*="via-gray-100"] {
+  --tw-gradient-stops: var(--tw-gradient-from), hsl(222 45% 14%), var(--tw-gradient-to, hsl(222 45% 14% / 0)) !important;
+}
+.dark [class*="to-blue-100"],
+.dark [class*="to-green-100"],
+.dark [class*="to-purple-100"],
+.dark [class*="to-indigo-100"],
+.dark [class*="to-pink-100"],
+.dark [class*="to-slate-100"],
+.dark [class*="to-gray-100"],
+.dark [class*="to-sky-100"] {
+  --tw-gradient-to: hsl(222 45% 16%) !important;
+}
+
 /* Soft pastel border colors → muted dark border */
 .dark [class*="border-purple-100"],
 .dark [class*="border-blue-100"],
+.dark [class*="border-green-100"],
 .dark [class*="border-slate-100"],
+.dark [class*="border-slate-200"],
 .dark [class*="border-gray-100"] {
   border-color: hsl(var(--border)) !important;
 }
@@ -157,17 +227,10 @@ input:-webkit-autofill:active {
 }
 
 @-webkit-keyframes autofill {
-  to {
-    color: inherit;
-    background: transparent;
-  }
+  to { color: inherit; background: transparent; }
 }
-
 @keyframes autofill {
-  to {
-    color: inherit;
-    background: transparent;
-  }
+  to { color: inherit; background: transparent; }
 }
 
 /* Prevent scroll during autofill */
