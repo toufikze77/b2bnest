@@ -176,36 +176,47 @@
   background-color: hsl(0 0% 0% / 0.5) !important;
 }
 
+/* Soft pastel 100-level gradients (from-blue-100/60, to-purple-100/60, etc.) */
+.dark [class*="from-blue-100"],
+.dark [class*="from-green-100"],
+.dark [class*="from-purple-100"],
+.dark [class*="from-indigo-100"],
+.dark [class*="from-pink-100"],
+.dark [class*="from-slate-100"],
+.dark [class*="from-gray-100"],
+.dark [class*="from-sky-100"] {
+  --tw-gradient-from: hsl(222 45% 12%) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, hsl(222 45% 12% / 0)) !important;
+}
+.dark [class*="via-blue-100"],
+.dark [class*="via-green-100"],
+.dark [class*="via-purple-100"],
+.dark [class*="via-indigo-100"],
+.dark [class*="via-slate-100"],
+.dark [class*="via-gray-100"] {
+  --tw-gradient-stops: var(--tw-gradient-from), hsl(222 45% 14%), var(--tw-gradient-to, hsl(222 45% 14% / 0)) !important;
+}
+.dark [class*="to-blue-100"],
+.dark [class*="to-green-100"],
+.dark [class*="to-purple-100"],
+.dark [class*="to-indigo-100"],
+.dark [class*="to-pink-100"],
+.dark [class*="to-slate-100"],
+.dark [class*="to-gray-100"],
+.dark [class*="to-sky-100"] {
+  --tw-gradient-to: hsl(222 45% 16%) !important;
+}
+
 /* Soft pastel border colors → muted dark border */
 .dark [class*="border-purple-100"],
 .dark [class*="border-blue-100"],
+.dark [class*="border-green-100"],
 .dark [class*="border-slate-100"],
+.dark [class*="border-slate-200"],
 .dark [class*="border-gray-100"] {
   border-color: hsl(var(--border)) !important;
 }
 
-/* Prevent autofill from causing focus issues */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
-  -webkit-animation: autofill 0s forwards;
-  animation: autofill 0s forwards;
-}
-
-@-webkit-keyframes autofill {
-  to {
-    color: inherit;
-    background: transparent;
-  }
-}
-
-@keyframes autofill {
-  to {
-    color: inherit;
-    background: transparent;
-  }
-}
 
 /* Prevent scroll during autofill */
 .autofill-active {
