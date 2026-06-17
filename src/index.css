@@ -130,12 +130,12 @@
 }
 
 /* Translucent white card backgrounds (bg-white/80, bg-white/60, etc.) */
-.dark [class*="bg-white\\/"] {
+.dark [class*="bg-white/"] {
   background-color: hsl(222 45% 13% / 0.85) !important;
 }
 
 /* Translucent black overlays stay dark */
-.dark [class*="bg-black\\/"] {
+.dark [class*="bg-black/"] {
   background-color: hsl(0 0% 0% / 0.5) !important;
 }
 
