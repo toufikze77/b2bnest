@@ -217,6 +217,21 @@
   border-color: hsl(var(--border)) !important;
 }
 
+/* Prevent autofill from causing focus issues */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-animation: autofill 0s forwards;
+  animation: autofill 0s forwards;
+}
+
+@-webkit-keyframes autofill {
+  to { color: inherit; background: transparent; }
+}
+@keyframes autofill {
+  to { color: inherit; background: transparent; }
+}
 
 /* Prevent scroll during autofill */
 .autofill-active {
