@@ -99,9 +99,54 @@
 .dark .hover\:bg-gray-50:hover { background-color: hsl(222 40% 15%) !important; }
 .dark .hover\:bg-gray-100:hover { background-color: hsl(222 40% 18%) !important; }
 
+/* Soft pastel gradient backgrounds → dark surface */
 .dark .from-blue-50,
+.dark .from-slate-50,
+.dark .from-gray-50,
+.dark .from-purple-50,
+.dark .from-indigo-50,
+.dark .from-sky-50,
+.dark .from-white {
+  --tw-gradient-from: hsl(222 47% 8%) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, hsl(222 47% 8% / 0)) !important;
+}
+.dark .via-blue-50,
+.dark .via-slate-50,
+.dark .via-gray-50,
+.dark .via-purple-50,
+.dark .via-indigo-50,
+.dark .via-sky-50,
+.dark .via-white {
+  --tw-gradient-stops: var(--tw-gradient-from), hsl(222 45% 11%), var(--tw-gradient-to, hsl(222 45% 11% / 0)) !important;
+}
 .dark .to-blue-50,
-.dark .via-blue-50 { --tw-gradient-from: hsl(222 45% 11%) !important; --tw-gradient-to: hsl(222 45% 11%) !important; }
+.dark .to-slate-50,
+.dark .to-gray-50,
+.dark .to-purple-50,
+.dark .to-indigo-50,
+.dark .to-sky-50,
+.dark .to-white {
+  --tw-gradient-to: hsl(222 45% 14%) !important;
+}
+
+/* Translucent white card backgrounds (bg-white/80, bg-white/60, etc.) */
+.dark [class*="bg-white\\/"],
+.dark .bg-white\/80,
+.dark .bg-white\/70,
+.dark .bg-white\/60,
+.dark .bg-white\/50,
+.dark .bg-white\/40,
+.dark .bg-white\/30,
+.dark .bg-white\/20,
+.dark .bg-white\/10,
+.dark .bg-white\/5 {
+  background-color: hsl(222 45% 13% / 0.85) !important;
+}
+
+/* Translucent black overlays stay dark */
+.dark [class*="bg-black\\/"] {
+  background-color: hsl(0 0% 0% / 0.5) !important;
+}
 
 /* Prevent autofill from causing focus issues */
 input:-webkit-autofill,
