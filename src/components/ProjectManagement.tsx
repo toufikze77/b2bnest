@@ -313,7 +313,9 @@ const ProjectManagement = () => {
   const [sharingProject, setSharingProject] = useState<Project | null>(null);
   const [showShareProject, setShowShareProject] = useState(false);
   const [trashedProjects, setTrashedProjects] = useState<Project[]>([]);
-  const [showTrash, setShowTrash] = useState(false);
+  const [archivedProjects, setArchivedProjects] = useState<Project[]>([]);
+  const [projectsView, setProjectsView] = useState<'active' | 'archived' | 'trash'>('active');
+  const showTrash = projectsView === 'trash';
   const [boardDensity, setBoardDensity] = useState<'comfortable' | 'compact' | 'condensed'>(() => {
     try {
       const saved = localStorage.getItem('pm_board_density');
