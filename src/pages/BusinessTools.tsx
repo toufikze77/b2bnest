@@ -472,7 +472,10 @@ const BusinessTools = () => {
                     Favorites ({favorites.length})
                   </Button>
                 )}
+              </div>
             </div>
+
+
 
             {/* Featured Tool: Lead Generation (ClickUp / Notion inspired) */}
             {(filter === 'all' || filter === 'free' || (filter === 'favorites' && isFavorited('lead-generation'))) && (
