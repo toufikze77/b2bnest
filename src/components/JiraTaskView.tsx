@@ -19,6 +19,7 @@ interface JiraTaskViewProps {
   onClose: () => void;
   onUpdate: (taskId: string, updates: any) => Promise<void>;
   onDelete?: (taskId: string) => void;
+  onArchive?: (taskId: string) => void;
   projects?: any[];
   teamMembers?: any[];
 }
@@ -41,6 +42,7 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
   onClose, 
   onUpdate,
   onDelete,
+  onArchive,
   projects = [],
   teamMembers = []
 }) => {
@@ -173,13 +175,29 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
               </PopoverTrigger>
               <PopoverContent align="end" className="w-48">
                 <div className="space-y-1">
-                  <Button variant="ghost" size="sm" className="w-full justify-start">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => {
+                      const url = `${window.location.origin}${window.location.pathname}?task=${localTask.id}`;
+                      navigator.clipboard.writeText(url);
+                    }}
+                  >
                     <Copy className="w-4 h-4 mr-2" />
                     Copy link
                   </Button>
-                  <Button variant="ghost" size="sm" className="w-full justify-start">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => {
+                      onArchive?.(localTask.id);
+                      onClose();
+                    }}
+                  >
                     <Archive className="w-4 h-4 mr-2" />
-                    Archive
+                    {localTask.archived_at ? 'Unarchive' : 'Archive'}
                   </Button>
                   <Button 
                     variant="ghost" 

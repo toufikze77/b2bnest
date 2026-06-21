@@ -3731,6 +3731,14 @@ const ProjectManagement = () => {
             }
           }}
           onDelete={handleTaskDelete}
+          onArchive={(taskId) => {
+            const t = tasks.find(x => x.id === taskId);
+            if (t && (t as any).archived_at) {
+              unarchiveTask(taskId);
+            } else {
+              archiveTask(taskId);
+            }
+          }}
           projects={projects}
           teamMembers={
             selectedProject === 'all'
