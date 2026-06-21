@@ -47,7 +47,7 @@ export default function LeadDetailSheet({ lead, onClose, onChange }: Props) {
     try {
       // Duplicate check
       const { data: existing } = await supabase
-        .from("contacts")
+        .from("crm_contacts")
         .select("id")
         .eq("user_id", user.id)
         .eq("email", lead.email)
@@ -62,7 +62,7 @@ export default function LeadDetailSheet({ lead, onClose, onChange }: Props) {
         return;
       }
 
-      const { data, error } = await supabase.from("contacts").insert({
+      const { data, error } = await supabase.from("crm_contacts").insert({
         user_id: user.id,
         name: `${lead.firstName} ${lead.lastName}`.trim(),
         email: lead.email,
