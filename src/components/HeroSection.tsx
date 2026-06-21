@@ -30,7 +30,7 @@ const HeroSection = ({ onSearch }: HeroSectionProps) => {
         
         {/* Smart Search Bar */}
         <div className="mb-8">
-          <SmartSearch onSearch={onSearch} placeholder="Search business documents, forms, and tools..." unified={true} />
+          <SmartSearch onSearch={onSearch} placeholder="Search business tools, CRM, invoicing, finance..." unified={true} />
         </div>
         
         {/* Quick Links */}
