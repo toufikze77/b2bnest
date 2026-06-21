@@ -63,7 +63,7 @@ export default function ProjectCard({ project, isTrashed, isArchived, onEdit, on
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" onClick={stop}>
-                {!isTrashed && (
+                {!isTrashed && !isArchived && (
                   <>
                     {onEdit && (
                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(project); }}>
@@ -73,6 +73,28 @@ export default function ProjectCard({ project, isTrashed, isArchived, onEdit, on
                     {onShare && (
                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onShare(project); }}>
                         <Share2 className="w-4 h-4 mr-2" /> Share
+                      </DropdownMenuItem>
+                    )}
+                    {onArchive && (
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onArchive(project); }}>
+                        <Archive className="w-4 h-4 mr-2" /> Archive
+                      </DropdownMenuItem>
+                    )}
+                    {onDelete && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-red-600" onClick={(e) => { e.stopPropagation(); onDelete(project); }}>
+                          <Trash2 className="w-4 h-4 mr-2" /> Move to Trash
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </>
+                )}
+                {isArchived && (
+                  <>
+                    {onUnarchive && (
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onUnarchive(project); }}>
+                        <ArchiveRestore className="w-4 h-4 mr-2" /> Unarchive
                       </DropdownMenuItem>
                     )}
                     {onDelete && (
