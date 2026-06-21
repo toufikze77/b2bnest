@@ -361,26 +361,10 @@ const BusinessTools = () => {
         return <BusinessFinanceAssistant />;
       case 'todo-list':
         return <TodoList />;
-      case 'startup-idea-generator':
-        return <StartupIdeaGenerator />;
-      case 'business-name-generator':
-        return <BusinessNameGenerator />;
-      case 'domain-availability':
-        return <DomainAvailability />;
       case 'qr-code-generator':
         return <QRCodeGenerator />;
       case 'coupon-generator':
         return <CouponGenerator />;
-      case 'loyalty-rewards':
-        return <LoyaltyRewardsManager />;
-      case 'referral-program':
-        return <ReferralProgramBuilder />;
-      case 'gift-card-manager':
-        return <GiftCardManager />;
-      case 'utm-builder':
-        return <UTMBuilder />;
-      case 'marketing-calendar':
-        return <MarketingCalendar />;
       case 'time-tracker':
         return <TimeTracker />;
       case 'cash-flow-tracker':
@@ -393,16 +377,6 @@ const BusinessTools = () => {
         return <ContractGenerator />;
       case 'privacy-policy-generator':
         return <PrivacyPolicyGenerator />;
-      case 'document-templates':
-        return <DocumentTemplateLibrary />;
-      case 'business-card-designer':
-        return <BusinessCardDesigner />;
-      case 'landing-page-builder':
-        return <LandingPageBuilder />;
-      case 'email-signature-generator':
-        return <EmailSignatureGenerator />;
-      case 'social-media-scheduler':
-        return <SocialMediaPostScheduler />;
       case 'customer-survey-builder':
         return <CustomerSurveyBuilder />;
       case 'hmrc-integration':
