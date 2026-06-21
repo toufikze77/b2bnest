@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Link2, Flag, Calendar, User, Clock, Tag, MoreHorizontal, Star, Trash2, Archive, Copy, AlertCircle, CheckCircle2, Circle, Timer, MessageSquare, Paperclip, History } from 'lucide-react';
+import { X, Link2, Flag, Calendar, User, Clock, Tag, MoreHorizontal, Star, Trash2, Archive, Copy, AlertCircle, CheckCircle2, Circle, Timer, MessageSquare, Paperclip, History, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -54,6 +54,7 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
   const [subtasks, setSubtasks] = useState<any[]>([]);
   const [localTeamMembers, setLocalTeamMembers] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     setLocalTask(task);
