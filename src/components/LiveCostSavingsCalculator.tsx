@@ -29,7 +29,7 @@ const TOOLS: ToolOption[] = [
   { id: 'integrations', name: 'Integration Hub', category: 'Automation', competitor: 'Make.com', competitorCost: 29, b2bnestIncluded: true, description: 'Gmail, Slack, Calendar+' },
 ];
 
-const B2BNEST_PRICE = 15; // Professional plan £/month (see /pricing)
+const B2BNEST_PRICE = 56; // Professional plan original £/month (discounts shown at checkout)
 const CURRENCY = '£';
 
 const parseInitial = (): string[] => {
