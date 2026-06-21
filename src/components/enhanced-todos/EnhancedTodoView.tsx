@@ -423,10 +423,6 @@ export const EnhancedTodoView: React.FC<EnhancedTodoViewProps> = ({ todo, onUpda
                 <TabsContent value="worklog">
                   <p className="text-sm text-muted-foreground">Work log will be displayed here</p>
                 </TabsContent>
-
-                <TabsContent value="all">
-                  <p className="text-sm text-muted-foreground">All activity will be displayed here</p>
-                </TabsContent>
               </Tabs>
             </div>
           </div>
