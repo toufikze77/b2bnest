@@ -66,7 +66,7 @@ const LiveCostSavingsCalculator: React.FC = () => {
     const url = buildShareUrl();
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'My B2BNest Savings', text: `I'd save ££{annualSavings.toLocaleString()}/year with B2BNest`, url });
+        await navigator.share({ title: 'My B2BNest Savings', text: `I'd save ${annualSavings.toLocaleString()}/year with B2BNest`, url });
       } else {
         await navigator.clipboard.writeText(url);
         toast({ title: 'Link copied!', description: 'Share your savings results with anyone.' });
