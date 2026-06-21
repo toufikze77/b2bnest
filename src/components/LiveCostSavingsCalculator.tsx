@@ -138,7 +138,7 @@ const LiveCostSavingsCalculator: React.FC = () => {
                       return (
                         <div
                           key={t.id}
-                          className={`flex items-center justify-between p-3 rounded-lg border transition-colors £{on ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200'}`}
+                          className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${on ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200'}`}
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             <Switch checked={on} onCheckedChange={() => toggle(t.id)} />
