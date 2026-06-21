@@ -982,8 +982,9 @@ const ProjectManagement = () => {
             estimatedHours: todo.estimated_hours,
             subtasks: [],
             progress: 0,
-            comments: []
-          };
+            comments: [],
+            archived_at: todo.archived_at || null,
+          } as Task;
         }));
         setTasks(formattedTasks);
       }
