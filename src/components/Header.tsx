@@ -130,11 +130,24 @@ const Header = () => {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
+                    <Link to="/crm" className="flex items-center w-full">
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      CRM
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/lead-generation" className="flex items-center w-full">
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      Lead Generation
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link to="/settings" className="flex items-center w-full">
                       <Settings className="h-4 w-4 mr-2" />
                       Settings
                     </Link>
                   </DropdownMenuItem>
+
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="h-4 w-4 mr-2" />

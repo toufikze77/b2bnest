@@ -55,6 +55,15 @@ import FinancialToolsGuide from '@/pages/articles/FinancialToolsGuide';
 import WorkflowGuide from '@/pages/articles/WorkflowGuide';
 import SecurityGuide from '@/pages/articles/SecurityGuide';
 import WhatsAppSettings from '@/pages/integrations/WhatsAppSettings';
+import LeadGenOverview from '@/pages/lead-generation/Overview';
+import LeadsPage from '@/pages/lead-generation/Leads';
+import FormsList from '@/pages/lead-generation/Forms';
+import FormBuilder from '@/pages/lead-generation/FormBuilder';
+import PagesList from '@/pages/lead-generation/Pages';
+import PageBuilder from '@/pages/lead-generation/PageBuilder';
+import ImportPage from '@/pages/lead-generation/Import';
+import PublicForm from '@/pages/lead-generation/PublicForm';
+import PublicPage from '@/pages/lead-generation/PublicPage';
 
 const queryClient = new QueryClient();
 
@@ -99,7 +108,19 @@ function App() {
               <Route path="/marketing-materials" element={<MarketingMaterials />} />
               <Route path="/categories/operations" element={<Operations />} />
               <Route path="/crm" element={<ProtectedRoute><CRMPage /></ProtectedRoute>} />
+              <Route path="/lead-generation" element={<ProtectedRoute><LeadGenOverview /></ProtectedRoute>} />
+              <Route path="/lead-generation/leads" element={<ProtectedRoute><LeadsPage /></ProtectedRoute>} />
+              <Route path="/lead-generation/forms" element={<ProtectedRoute><FormsList /></ProtectedRoute>} />
+              <Route path="/lead-generation/forms/new" element={<ProtectedRoute><FormBuilder /></ProtectedRoute>} />
+              <Route path="/lead-generation/forms/edit/:id" element={<ProtectedRoute><FormBuilder /></ProtectedRoute>} />
+              <Route path="/lead-generation/pages" element={<ProtectedRoute><PagesList /></ProtectedRoute>} />
+              <Route path="/lead-generation/pages/new" element={<ProtectedRoute><PageBuilder /></ProtectedRoute>} />
+              <Route path="/lead-generation/pages/edit/:id" element={<ProtectedRoute><PageBuilder /></ProtectedRoute>} />
+              <Route path="/lead-generation/import" element={<ProtectedRoute><ImportPage /></ProtectedRoute>} />
+              <Route path="/f/:formId" element={<PublicForm />} />
+              <Route path="/p/:slug" element={<PublicPage />} />
               <Route path="/project-management" element={<ProtectedRoute><ProjectManagementPage /></ProtectedRoute>} />
+
               <Route path="/knowledge-base/getting-started" element={<GettingStarted />} />
               <Route path="/knowledge-base/business-tools" element={<BusinessToolsGuide />} />
               <Route path="/knowledge-base/integrations" element={<IntegrationsGuide />} />
