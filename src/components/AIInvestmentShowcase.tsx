@@ -32,7 +32,7 @@ const AIInvestmentShowcase = () => {
     'Analytics software',
     'Collaboration tools',
     'Customer support systems',
-    'Business templates & document services',
+    'Financial & invoicing software',
   ];
 
   return (
