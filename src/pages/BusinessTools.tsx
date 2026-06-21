@@ -409,6 +409,9 @@ const BusinessTools = () => {
       case 'workflow-studio':
         navigate('/workflow-studio');
         return null;
+      case 'lead-generation':
+        navigate('/lead-generation');
+        return null;
       case 'notepro':
         navigate('/business-tools/notepro');
         return null;
