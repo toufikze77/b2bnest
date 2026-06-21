@@ -18,6 +18,7 @@ import {
 import { getUserDisplayInfo } from '@/utils/profileUtils';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { TodoComments } from './TodoComments';
 
 interface Todo {
   id: string;
@@ -408,69 +409,11 @@ export const EnhancedTodoView: React.FC<EnhancedTodoViewProps> = ({ todo, onUpda
                 </TabsList>
 
                 <TabsContent value="comments" className="mt-6">
-                  <div className="space-y-4">
-                    {comments.map((comment) => (
-                      <div key={comment.id} className="flex gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="text-xs">
-                            {comment.user_profile?.display_name?.[0] || 'U'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-medium">
-                              {comment.user_profile?.display_name || 'User'}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(comment.created_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <p className="text-sm">{comment.content}</p>
-                        </div>
-                      </div>
-                    ))}
+                  <TodoComments todoId={todo.id} />
+                </TabsContent>
 
-                    {/* Comment Input */}
-                    {user && (
-                      <div className="flex gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="text-xs">
-                            {user.email?.[0]?.toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <Textarea
-                            value={newComment}
-                            onChange={(e) => setNewComment(e.target.value)}
-                            placeholder="Add a comment..."
-                            className="min-h-[80px] resize-none mb-2"
-                          />
-                          <div className="flex items-center justify-between">
-                            <div className="flex gap-1">
-                              <Button variant="ghost" size="sm">
-                                <ThumbsUp className="h-4 w-4 mr-1" />
-                                Looks good!
-                              </Button>
-                              <Button variant="ghost" size="sm">
-                                <AlertCircle className="h-4 w-4 mr-1" />
-                                Need help?
-                              </Button>
-                              <Button variant="ghost" size="sm">
-                                <HelpCircle className="h-4 w-4 mr-1" />
-                                Can you clarify...?
-                              </Button>
-                            </div>
-                            <Button size="sm" onClick={handleAddComment}>
-                              <Send className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            Pro tip: press <kbd className="px-1 py-0.5 bg-muted rounded">M</kbd> to comment
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                <TabsContent value="all" className="mt-6">
+                  <TodoComments todoId={todo.id} />
                 </TabsContent>
 
                 <TabsContent value="history">
