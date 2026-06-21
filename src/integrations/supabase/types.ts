@@ -3173,6 +3173,7 @@ export type Database = {
       todos: {
         Row: {
           actual_hours: number | null
+          archived_at: string | null
           assigned_to: string | null
           completed_at: string | null
           created_at: string
@@ -3194,6 +3195,7 @@ export type Database = {
         }
         Insert: {
           actual_hours?: number | null
+          archived_at?: string | null
           assigned_to?: string | null
           completed_at?: string | null
           created_at?: string
@@ -3215,6 +3217,7 @@ export type Database = {
         }
         Update: {
           actual_hours?: number | null
+          archived_at?: string | null
           assigned_to?: string | null
           completed_at?: string | null
           created_at?: string

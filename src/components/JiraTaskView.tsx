@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Link2, Flag, Calendar, User, Clock, Tag, MoreHorizontal, Star, Trash2, Archive, Copy, AlertCircle, CheckCircle2, Circle, Timer, MessageSquare, Paperclip, History } from 'lucide-react';
+import { X, Link2, Flag, Calendar, User, Clock, Tag, MoreHorizontal, Star, Trash2, Archive, Copy, AlertCircle, CheckCircle2, Circle, Timer, MessageSquare, Paperclip, History, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
-import ShareButton from '@/components/ShareButton';
+import ShareTaskDialog from '@/components/ShareTaskDialog';
 import { batchGetUserDisplayInfo } from '@/utils/profileUtils';
 import { TodoComments } from './enhanced-todos/TodoComments';
 
@@ -54,6 +54,7 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
   const [subtasks, setSubtasks] = useState<any[]>([]);
   const [localTeamMembers, setLocalTeamMembers] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     setLocalTask(task);
@@ -158,12 +159,9 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
             <span className="text-sm text-gray-600">TASK-{localTask.id.slice(0, 8)}</span>
           </div>
           <div className="flex items-center gap-2">
-            <ShareButton 
-              title={`Task: ${localTask.title}`}
-              description={localTask.description || 'View this task'}
-              variant="ghost"
-              size="sm"
-            />
+            <Button variant="ghost" size="sm" onClick={() => setShareOpen(true)}>
+              <Share2 className="w-4 h-4" />
+            </Button>
             <Button variant="ghost" size="sm">
               <Star className="w-4 h-4" />
             </Button>
@@ -518,6 +516,11 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
           </div>
         </div>
       </div>
+      <ShareTaskDialog
+        isOpen={shareOpen}
+        onOpenChange={setShareOpen}
+        task={localTask ? { id: localTask.id, title: localTask.title, description: localTask.description } : null}
+      />
     </div>
   );
 };
