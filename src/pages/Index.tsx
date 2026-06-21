@@ -13,6 +13,7 @@ import UnifiedSearchResults from "@/components/UnifiedSearchResults";
 import AIDocumentAssistant from "@/components/AIDocumentAssistant";
 import AIInvestmentShowcase from "@/components/AIInvestmentShowcase";
 import BusinessToolsSection from "@/components/BusinessToolsSection";
+import LiveCostSavingsCalculator from "@/components/LiveCostSavingsCalculator";
 import { Template } from "@/types/template";
 
 const IndexContent = () => {
@@ -69,6 +70,9 @@ const IndexContent = () => {
 
       {/* AI Investment Showcase - Only show when not searching */}
       {!showSearchResults && <AIInvestmentShowcase />}
+
+      {/* Live Cost Savings Calculator */}
+      {!showSearchResults && <LiveCostSavingsCalculator />}
 
       {/* Business Tools Section - Only show when not searching */}
       {!showSearchResults && <BusinessToolsSection />}
