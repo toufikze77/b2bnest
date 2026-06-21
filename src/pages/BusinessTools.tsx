@@ -32,7 +32,7 @@ import BusinessFinanceAssistant from '@/components/BusinessFinanceAssistant';
 import HMRCIntegration from '@/components/HMRCIntegration';
 import BusinessToolsSEO from '@/components/BusinessToolsSEO';
 
-type ToolType = 'overview' | 'notepro' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'business-name-generator' | 'domain-availability' | 'qr-code-generator' | 'coupon-generator' | 'loyalty-rewards' | 'referral-program' | 'gift-card-manager' | 'utm-builder' | 'marketing-calendar' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'document-templates' | 'business-card-designer' | 'landing-page-builder' | 'email-signature-generator' | 'social-media-scheduler' | 'customer-survey-builder' | 'business-finance-assistant' | 'startup-idea-generator' | 'currency-converter' | 'crypto-converter' | 'hmrc-integration' | 'workflow-studio';
+type ToolType = 'overview' | 'notepro' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'qr-code-generator' | 'coupon-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'customer-survey-builder' | 'business-finance-assistant' | 'currency-converter' | 'crypto-converter' | 'hmrc-integration' | 'workflow-studio';
 
 type FilterType = 'all' | 'premium' | 'favorites' | 'free';
 
