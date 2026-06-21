@@ -23,9 +23,6 @@ const HeroSection = ({ onSearch }: HeroSectionProps) => {
           <div className="bg-blue-100 text-blue-800 px-4 py-2 rounded-full font-semibold">
             ⚡ All-in-One Solution
           </div>
-          <div className="bg-purple-100 text-purple-800 px-4 py-2 rounded-full font-semibold">
-            🎨 Professional Design
-          </div>
         </div>
         
         {/* Smart Search Bar */}
