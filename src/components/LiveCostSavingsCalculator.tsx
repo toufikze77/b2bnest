@@ -29,7 +29,8 @@ const TOOLS: ToolOption[] = [
   { id: 'integrations', name: 'Integration Hub', category: 'Automation', competitor: 'Make.com', competitorCost: 29, b2bnestIncluded: true, description: 'Gmail, Slack, Calendar+' },
 ];
 
-const B2BNEST_PRICE = 49; // monthly USD all-in
+const B2BNEST_PRICE = 15; // Professional plan £/month (see /pricing)
+const CURRENCY = '£';
 
 const parseInitial = (): string[] => {
   if (typeof window === 'undefined') return TOOLS.slice(0, 5).map(t => t.id);
@@ -65,7 +66,7 @@ const LiveCostSavingsCalculator: React.FC = () => {
     const url = buildShareUrl();
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'My B2BNest Savings', text: `I'd save $${annualSavings.toLocaleString()}/year with B2BNest`, url });
+        await navigator.share({ title: 'My B2BNest Savings', text: `I'd save £${annualSavings.toLocaleString()}/year with B2BNest`, url });
       } else {
         await navigator.clipboard.writeText(url);
         toast({ title: 'Link copied!', description: 'Share your savings results with anyone.' });
@@ -147,7 +148,7 @@ const LiveCostSavingsCalculator: React.FC = () => {
                             </div>
                           </div>
                           <div className="text-right shrink-0 ml-3">
-                            <div className="font-semibold text-slate-900">${t.competitorCost}<span className="text-xs text-slate-500">/mo</span></div>
+                            <div className="font-semibold text-slate-900">£{t.competitorCost}<span className="text-xs text-slate-500">/mo</span></div>
                             <div className="text-[10px] text-emerald-600 font-medium">Included in B2BNest</div>
                           </div>
                         </div>
@@ -168,8 +169,8 @@ const LiveCostSavingsCalculator: React.FC = () => {
                 <h1 className="sr-only">B2BNest Savings Report</h1>
                 <div className="summary">
                   <div className="text-sm text-slate-600">You could save</div>
-                  <div className="big text-4xl font-extrabold text-emerald-600">${annualSavings.toLocaleString()}<span className="text-base font-medium text-slate-600">/year</span></div>
-                  <div className="text-sm text-slate-600">${monthlySavings.toLocaleString()}/month · {percentSaved}% less</div>
+                  <div className="big text-4xl font-extrabold text-emerald-600">£{annualSavings.toLocaleString()}<span className="text-base font-medium text-slate-600">/year</span></div>
+                  <div className="text-sm text-slate-600">£{monthlySavings.toLocaleString()}/month · {percentSaved}% less</div>
                 </div>
 
                 <h2 className="text-sm font-semibold text-slate-700 mt-4 mb-2">Breakdown</h2>
@@ -183,15 +184,15 @@ const LiveCostSavingsCalculator: React.FC = () => {
                   <tbody>
                     <tr className="border-t">
                       <td className="py-1.5">Current tools ({selected.length})</td>
-                      <td className="py-1.5 text-right font-medium">${competitorTotal}</td>
+                      <td className="py-1.5 text-right font-medium">£{competitorTotal}</td>
                     </tr>
                     <tr className="border-t">
                       <td className="py-1.5">B2BNest all-in-one</td>
-                      <td className="py-1.5 text-right font-medium text-emerald-600">${B2BNEST_PRICE}</td>
+                      <td className="py-1.5 text-right font-medium text-emerald-600">£{B2BNEST_PRICE}</td>
                     </tr>
                     <tr className="border-t bg-emerald-50">
                       <td className="py-2 font-semibold">Monthly savings</td>
-                      <td className="py-2 text-right font-bold text-emerald-700">${monthlySavings}</td>
+                      <td className="py-2 text-right font-bold text-emerald-700">£{monthlySavings}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -213,7 +214,7 @@ const LiveCostSavingsCalculator: React.FC = () => {
               </Button>
             </div>
             <Button asChild className="w-full mt-2 bg-gradient-to-r from-emerald-600 to-blue-600 hover:opacity-95">
-              <a href="/auth">Start saving with B2BNest →</a>
+              <a href="/pricing">Start saving with B2BNest →</a>
             </Button>
             <button
               onClick={async () => { await navigator.clipboard.writeText(buildShareUrl()); toast({ title: 'Link copied' }); }}
