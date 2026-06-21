@@ -74,6 +74,12 @@ const Header = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            {user && (
+              <Link to="/dashboard" className="text-gray-700 hover:text-blue-600 transition-colors flex items-center">
+                <BarChart3 className="h-4 w-4 mr-1" />
+                Dashboard
+              </Link>
+            )}
             <Link to="/pricing" className="text-gray-700 hover:text-blue-600 transition-colors">
               Pricing
             </Link>
