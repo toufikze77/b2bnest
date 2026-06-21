@@ -60,23 +60,23 @@ const PLATFORM_TOOLS: ToolDefinition[] = [
     featured: true
   },
   {
-    id: 'business-card-designer',
-    title: 'Business Card Designer',
-    description: 'Design professional business cards online',
-    category: 'Marketing Materials',
-    url: '/dashboard',
-    icon: '💼',
-    tags: ['business card', 'design', 'branding', 'marketing'],
+    id: 'privacy-policy-generator',
+    title: 'Privacy Policy Generator',
+    description: 'Generate customizable privacy policies for your website or app',
+    category: 'Legal Documents',
+    url: '/business-tools',
+    icon: '🔒',
+    tags: ['privacy', 'policy', 'legal', 'compliance'],
     featured: true
   },
   {
-    id: 'email-signature-generator',
-    title: 'Email Signature Generator',
-    description: 'Create professional email signatures',
-    category: 'Marketing Materials',
-    url: '/dashboard',
-    icon: '✉️',
-    tags: ['email', 'signature', 'professional', 'branding'],
+    id: 'coupon-generator',
+    title: 'Coupon Generator',
+    description: 'Create promotional coupons and discount codes',
+    category: 'Marketing',
+    url: '/business-tools',
+    icon: '🎟️',
+    tags: ['coupon', 'discount', 'promotion', 'marketing'],
     featured: false
   },
   {
@@ -160,13 +160,13 @@ const PLATFORM_TOOLS: ToolDefinition[] = [
     featured: true
   },
   {
-    id: 'document-templates',
-    title: 'Document Templates',
-    description: 'Browse and download business document templates',
-    category: 'Templates',
-    url: '/',
-    icon: '📁',
-    tags: ['templates', 'documents', 'business', 'forms'],
+    id: 'contract-generator',
+    title: 'Contract Generator',
+    description: 'Create professional business contracts with AI assistance',
+    category: 'Legal Documents',
+    url: '/business-tools',
+    icon: '📋',
+    tags: ['contract', 'legal', 'agreement', 'ai'],
     featured: true
   }
 ];
@@ -371,10 +371,10 @@ class UnifiedSearchService {
 
     // Add common search terms
     const commonTerms = [
-      'invoice template', 'contract generator', 'business card',
-      'email signature', 'qr code', 'cost calculator', 'time tracker',
-      'crm system', 'ai workspace', 'document templates', 'legal forms',
-      'financial forms', 'hr documents', 'marketing materials'
+      'invoice generator', 'contract generator', 'privacy policy',
+      'qr code', 'cost calculator', 'time tracker', 'roi calculator',
+      'crm system', 'ai workspace', 'cash flow tracker', 'currency converter',
+      'crypto converter', 'customer survey', 'coupon generator'
     ];
 
     commonTerms.forEach(term => {
@@ -390,12 +390,12 @@ class UnifiedSearchService {
   getPopularSearches(): string[] {
     return [
       'Invoice Generator',
-      'Contract Templates',
-      'Business Cards',
+      'Contract Generator',
+      'Privacy Policy',
       'CRM System',
       'AI Workspace',
-      'Legal Documents',
-      'Financial Forms',
+      'ROI Calculator',
+      'Cash Flow Tracker',
       'Time Tracker'
     ];
   }

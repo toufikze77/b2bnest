@@ -159,9 +159,9 @@ const Whitepaper = () => {
                   <div className="bg-white rounded-lg p-4 shadow-sm">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <h5 className="font-semibold text-sm">AI Startup Idea Generator</h5>
+                      <h5 className="font-semibold text-sm">AI Business Advisor</h5>
                     </div>
-                    <p className="text-xs text-gray-600">50+ industries, budget-based recommendations, instant generation</p>
+                    <p className="text-xs text-gray-600">Smart insights, personalized recommendations, workflow automation</p>
                   </div>
                   <div className="bg-white rounded-lg p-4 shadow-sm">
                     <div className="flex items-center gap-2 mb-2">

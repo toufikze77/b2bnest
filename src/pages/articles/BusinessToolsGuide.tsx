@@ -203,46 +203,36 @@ const BusinessToolsGuide = () => {
             </CardContent>
           </Card>
 
-          {/* Document Templates */}
+          {/* Contract Generator */}
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-primary" />
-                Document Templates
+                Contract Generator
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                Access over 100 professionally designed business document templates.
+                Draft professional, ready-to-sign business contracts with AI assistance.
               </p>
 
               <div>
-                <h3 className="font-semibold mb-2">Available Templates</h3>
+                <h3 className="font-semibold mb-2">Common Contracts</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li>Contracts and agreements</li>
-                  <li>Proposals and quotes</li>
-                  <li>Marketing materials</li>
-                  <li>HR documents</li>
-                  <li>Financial reports</li>
-                  <li>Legal forms</li>
+                  <li>Service agreements</li>
+                  <li>NDAs and confidentiality</li>
+                  <li>Freelance and contractor agreements</li>
+                  <li>Partnership agreements</li>
+                  <li>Sales and supplier contracts</li>
                 </ul>
               </div>
 
-              <div>
-                <h3 className="font-semibold mb-2">Using Templates</h3>
-                <ol className="list-decimal list-inside text-muted-foreground space-y-2 ml-4">
-                  <li>Browse templates by category</li>
-                  <li>Preview before downloading</li>
-                  <li>Customize with your branding</li>
-                  <li>Download in multiple formats (PDF, Word, Excel)</li>
-                </ol>
-              </div>
-
               <Button asChild className="w-full">
-                <Link to="/market">Browse Templates</Link>
+                <Link to="/business-tools">Open Contract Generator</Link>
               </Button>
             </CardContent>
           </Card>
+
 
           {/* Tips & Best Practices */}
           <Card className="bg-primary/5 border-primary/20">

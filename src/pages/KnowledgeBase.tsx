@@ -36,7 +36,7 @@ const KnowledgeBase = () => {
         { title: 'Invoice Generator Guide', description: 'Create professional invoices in minutes', readTime: '6 min' },
         { title: 'CRM System Tutorial', description: 'Managing contacts, deals, and sales pipeline', readTime: '10 min' },
         { title: 'Project Management', description: 'Using tasks, timelines, and collaboration tools', readTime: '8 min' },
-        { title: 'Document Templates', description: 'Access and customize 100+ business templates', readTime: '5 min' },
+        { title: 'Contract Generator', description: 'Create professional contracts with AI assistance', readTime: '5 min' },
         { title: 'Time Tracking', description: 'Track billable hours and generate reports', readTime: '4 min' }
       ]
     },

@@ -62,12 +62,12 @@ class AIPlatformService {
       features: ['ROI Calculator', 'Cost Analysis', 'Financial Planning', 'Investment Tracking']
     },
     {
-      id: 'document-templates',
-      name: 'Document Templates Library',
-      description: 'Professional business document templates',
+      id: 'contract-generator',
+      name: 'Contract Generator',
+      description: 'Create professional business contracts with AI assistance',
       category: 'Documents',
-      path: '/',
-      features: ['Legal Documents', 'Business Plans', 'Contracts', 'Forms']
+      path: '/business-tools',
+      features: ['Service Agreements', 'NDAs', 'Partnership Contracts', 'AI Drafting']
     }
   ];
 

@@ -90,7 +90,7 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
     },
     'Documents': {
       features: [
-        'Document Templates Library',
+        'Contract Generation',
         'Contract Generation',
         'Legal Forms & Compliance',
         'Document Collaboration',
@@ -106,7 +106,7 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
   const subscriptionPlans = {
     'Starter': {
       price: '£11/month',
-      features: ['Basic CRM (5 users)', 'Project Management', 'Document Templates', 'Email Support'],
+      features: ['Basic CRM (5 users)', 'Project Management', 'Contract Generator', 'Email Support'],
       bestFor: 'Small teams getting started'
     },
     'Professional': {
