@@ -44,7 +44,7 @@ export default function ProjectCard({ project, isTrashed, isArchived, onEdit, on
   const stop = (e: React.MouseEvent) => e.stopPropagation();
 
   return (
-    <Card className={`hover:shadow-lg transition-all ${isTrashed ? 'opacity-70' : 'cursor-pointer'}`} onClick={() => !isTrashed && onClick?.(project)}>
+    <Card className={`hover:shadow-lg transition-all ${(isTrashed || isArchived) ? 'opacity-70' : 'cursor-pointer'}`} onClick={() => !isTrashed && !isArchived && onClick?.(project)}>
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
