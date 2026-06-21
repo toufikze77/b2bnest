@@ -313,7 +313,9 @@ const ProjectManagement = () => {
   const [sharingProject, setSharingProject] = useState<Project | null>(null);
   const [showShareProject, setShowShareProject] = useState(false);
   const [trashedProjects, setTrashedProjects] = useState<Project[]>([]);
-  const [showTrash, setShowTrash] = useState(false);
+  const [archivedProjects, setArchivedProjects] = useState<Project[]>([]);
+  const [projectsView, setProjectsView] = useState<'active' | 'archived' | 'trash'>('active');
+  const showTrash = projectsView === 'trash';
   const [boardDensity, setBoardDensity] = useState<'comfortable' | 'compact' | 'condensed'>(() => {
     try {
       const saved = localStorage.getItem('pm_board_density');
@@ -851,12 +853,22 @@ const ProjectManagement = () => {
         .from('projects')
         .select('*')
         .is('deleted_at', null)
+        .is('archived_at', null)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       if (data) setProjects(data.map(formatProjectRow));
 
-      // Also load trashed
+      // Archived (not deleted, but archived)
+      const { data: archived } = await supabase
+        .from('projects')
+        .select('*')
+        .is('deleted_at', null)
+        .not('archived_at', 'is', null)
+        .order('archived_at', { ascending: false });
+      if (archived) setArchivedProjects(archived.map(formatProjectRow));
+
+      // Trashed
       const { data: trashed } = await supabase
         .from('projects')
         .select('*')
@@ -908,6 +920,20 @@ const ProjectManagement = () => {
     const { error } = await supabase.from('projects').delete().eq('id', proj.id);
     if (error) { toast({ title: 'Delete failed', description: error.message, variant: 'destructive' }); return; }
     toast({ title: 'Project deleted permanently' });
+    await loadProjects();
+  };
+
+  const handleArchiveProject = async (proj: any) => {
+    const { error } = await supabase.from('projects').update({ archived_at: new Date().toISOString() } as any).eq('id', proj.id);
+    if (error) { toast({ title: 'Archive failed', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Project archived', description: proj.name });
+    await loadProjects();
+  };
+
+  const handleUnarchiveProject = async (proj: any) => {
+    const { error } = await supabase.from('projects').update({ archived_at: null } as any).eq('id', proj.id);
+    if (error) { toast({ title: 'Unarchive failed', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Project unarchived', description: proj.name });
     await loadProjects();
   };
 
@@ -3136,15 +3162,25 @@ const ProjectManagement = () => {
 
       {/* Projects Overview Section */}
       <div className="mt-6 space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-xl font-semibold">
-                {showTrash ? `Trash (${trashedProjects.length})` : 'Active Projects'}
+                {projectsView === 'trash'
+                  ? `Trash (${trashedProjects.length})`
+                  : projectsView === 'archived'
+                  ? `Archived (${archivedProjects.length})`
+                  : 'Active Projects'}
               </h3>
               <div className="flex items-center gap-2">
-                <Button variant={showTrash ? 'default' : 'outline'} size="sm" onClick={() => setShowTrash(s => !s)}>
-                  {showTrash ? 'View Active' : `Trash${trashedProjects.length ? ` (${trashedProjects.length})` : ''}`}
+                <Button variant={projectsView === 'active' ? 'default' : 'outline'} size="sm" onClick={() => setProjectsView('active')}>
+                  Active
                 </Button>
-                {!showTrash && (
+                <Button variant={projectsView === 'archived' ? 'default' : 'outline'} size="sm" onClick={() => setProjectsView('archived')}>
+                  Archived{archivedProjects.length ? ` (${archivedProjects.length})` : ''}
+                </Button>
+                <Button variant={projectsView === 'trash' ? 'default' : 'outline'} size="sm" onClick={() => setProjectsView('trash')}>
+                  Trash{trashedProjects.length ? ` (${trashedProjects.length})` : ''}
+                </Button>
+                {projectsView === 'active' && (
                   <Button variant="outline" onClick={() => setShowCreateProject(true)}>
                     <Plus className="w-4 h-4 mr-2" />
                     New Project
@@ -3154,7 +3190,7 @@ const ProjectManagement = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(showTrash ? trashedProjects : projects).map(project => {
+              {(projectsView === 'trash' ? trashedProjects : projectsView === 'archived' ? archivedProjects : projects).map(project => {
                 const projectCardData = {
                   ...project,
                   team_members: project.members,
@@ -3165,9 +3201,10 @@ const ProjectManagement = () => {
                   <ProjectCard
                     key={project.id}
                     project={projectCardData}
-                    isTrashed={showTrash}
+                    isTrashed={projectsView === 'trash'}
+                    isArchived={projectsView === 'archived'}
                     onClick={() => {
-                      if (showTrash) return;
+                      if (projectsView !== 'active') return;
                       setSelectedProject(project.id);
                       setActiveTab('summary');
                       toast({ title: "Project Selected", description: `Now viewing: ${project.name}` });
@@ -3175,13 +3212,15 @@ const ProjectManagement = () => {
                     onEdit={handleEditProject}
                     onShare={handleShareProject}
                     onDelete={handleSoftDeleteProject}
+                    onArchive={handleArchiveProject}
+                    onUnarchive={handleUnarchiveProject}
                     onRestore={handleRestoreProject}
                     onPermanentDelete={handlePermanentDeleteProject}
                   />
                 );
               })}
 
-              {!showTrash && projects.length === 0 && (
+              {projectsView === 'active' && projects.length === 0 && (
                 <Card className="border-dashed border-2 border-gray-300">
                   <CardContent className="p-6 text-center">
                     <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -3195,7 +3234,15 @@ const ProjectManagement = () => {
                 </Card>
               )}
 
-              {showTrash && trashedProjects.length === 0 && (
+              {projectsView === 'archived' && archivedProjects.length === 0 && (
+                <Card className="border-dashed border-2 border-gray-300 col-span-full">
+                  <CardContent className="p-6 text-center text-sm text-muted-foreground">
+                    No archived projects.
+                  </CardContent>
+                </Card>
+              )}
+
+              {projectsView === 'trash' && trashedProjects.length === 0 && (
                 <Card className="border-dashed border-2 border-gray-300 col-span-full">
                   <CardContent className="p-6 text-center text-sm text-muted-foreground">
                     Trash is empty.

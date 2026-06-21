@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { CalendarIcon, User, Users, Edit, MoreHorizontal, Trash2, Share2, RotateCcw, XCircle } from 'lucide-react';
+import { CalendarIcon, User, Users, Edit, MoreHorizontal, Trash2, Share2, RotateCcw, XCircle, Archive, ArchiveRestore } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface ProjectCardProps {
@@ -19,15 +19,18 @@ interface ProjectCardProps {
     color?: string;
   };
   isTrashed?: boolean;
+  isArchived?: boolean;
   onEdit?: (project: any) => void;
   onClick?: (project: any) => void;
   onDelete?: (project: any) => void;
   onShare?: (project: any) => void;
   onRestore?: (project: any) => void;
   onPermanentDelete?: (project: any) => void;
+  onArchive?: (project: any) => void;
+  onUnarchive?: (project: any) => void;
 }
 
-export default function ProjectCard({ project, isTrashed, onEdit, onClick, onDelete, onShare, onRestore, onPermanentDelete }: ProjectCardProps) {
+export default function ProjectCard({ project, isTrashed, isArchived, onEdit, onClick, onDelete, onShare, onRestore, onPermanentDelete, onArchive, onUnarchive }: ProjectCardProps) {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'active': return 'bg-green-100 text-green-800 border-green-200';
@@ -41,7 +44,7 @@ export default function ProjectCard({ project, isTrashed, onEdit, onClick, onDel
   const stop = (e: React.MouseEvent) => e.stopPropagation();
 
   return (
-    <Card className={`hover:shadow-lg transition-all ${isTrashed ? 'opacity-70' : 'cursor-pointer'}`} onClick={() => !isTrashed && onClick?.(project)}>
+    <Card className={`hover:shadow-lg transition-all ${(isTrashed || isArchived) ? 'opacity-70' : 'cursor-pointer'}`} onClick={() => !isTrashed && !isArchived && onClick?.(project)}>
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -60,7 +63,7 @@ export default function ProjectCard({ project, isTrashed, onEdit, onClick, onDel
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" onClick={stop}>
-                {!isTrashed && (
+                {!isTrashed && !isArchived && (
                   <>
                     {onEdit && (
                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(project); }}>
@@ -70,6 +73,28 @@ export default function ProjectCard({ project, isTrashed, onEdit, onClick, onDel
                     {onShare && (
                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onShare(project); }}>
                         <Share2 className="w-4 h-4 mr-2" /> Share
+                      </DropdownMenuItem>
+                    )}
+                    {onArchive && (
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onArchive(project); }}>
+                        <Archive className="w-4 h-4 mr-2" /> Archive
+                      </DropdownMenuItem>
+                    )}
+                    {onDelete && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-red-600" onClick={(e) => { e.stopPropagation(); onDelete(project); }}>
+                          <Trash2 className="w-4 h-4 mr-2" /> Move to Trash
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </>
+                )}
+                {isArchived && (
+                  <>
+                    {onUnarchive && (
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onUnarchive(project); }}>
+                        <ArchiveRestore className="w-4 h-4 mr-2" /> Unarchive
                       </DropdownMenuItem>
                     )}
                     {onDelete && (

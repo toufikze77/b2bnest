@@ -2432,6 +2432,7 @@ export type Database = {
       projects: {
         Row: {
           actual_hours: number | null
+          archived_at: string | null
           budget: number | null
           client: string | null
           color: string
@@ -2455,6 +2456,7 @@ export type Database = {
         }
         Insert: {
           actual_hours?: number | null
+          archived_at?: string | null
           budget?: number | null
           client?: string | null
           color?: string
@@ -2478,6 +2480,7 @@ export type Database = {
         }
         Update: {
           actual_hours?: number | null
+          archived_at?: string | null
           budget?: number | null
           client?: string | null
           color?: string
