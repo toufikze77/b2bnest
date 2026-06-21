@@ -46,9 +46,9 @@ const BusinessToolsSection = () => {
     },
     {
       icon: Lightbulb,
-      title: "Startup Idea Generator",
-      description: "Get AI-powered business ideas tailored to your interests and budget",
-      features: ["50+ industries", "Budget-based ideas", "Instant generation"],
+      title: "AI Business Advisor",
+      description: "Get AI-powered guidance, insights, and recommendations for your business",
+      features: ["Smart suggestions", "Workflow automation", "Personalized advice"],
       color: "bg-green-500",
       popular: false
     },
