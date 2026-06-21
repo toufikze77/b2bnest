@@ -37,6 +37,7 @@ import MarketingMaterials from "@/pages/categories/MarketingMaterials";
 import Operations from "@/pages/categories/Operations";
 import CRMPage from "@/pages/CRMPage";
 import ProjectManagementPage from "@/pages/ProjectManagementPage";
+import BusinessOverview from "@/pages/BusinessOverview";
 import Settings from "@/pages/Settings";
 import PaymentSuccess from "@/pages/PaymentSuccess";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -73,6 +74,7 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/business-overview" element={<ProtectedRoute><BusinessOverview /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             
             <Route path="/profile-setup" element={<ProtectedRoute><ProfileSetup /></ProtectedRoute>} />
