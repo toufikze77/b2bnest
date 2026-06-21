@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Book, Search, FileText, Wrench, DollarSign, Users, 
-  Zap, Building2, Globe, Lock, TrendingUp, ExternalLink, Coins
+  Zap, Building2, Globe, Lock, TrendingUp, ExternalLink, Coins, Filter
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SEOHead from '@/components/SEOHead';
@@ -25,6 +25,20 @@ const KnowledgeBase = () => {
         { title: 'Dashboard Overview', description: 'Understanding your B2BNEST dashboard and key features', readTime: '5 min' },
         { title: 'First Project Setup', description: 'How to create and manage your first project', readTime: '7 min' },
         { title: 'Inviting Team Members', description: 'Collaborate with your team on B2BNEST', readTime: '4 min' }
+      ]
+    },
+    {
+      id: 'lead-generation',
+      title: 'Lead Generation',
+      icon: Filter,
+      color: 'bg-orange-500',
+      articles: [
+        { title: 'Lead Generation: Step-by-Step Guide', description: 'Complete walkthrough — capture, score, convert leads, and sync to CRM', readTime: '10 min' },
+        { title: 'How Lead Scoring Works', description: 'Understand the 0–100 scoring system and Cold/Warm/Hot/Ready labels', readTime: '4 min' },
+        { title: 'Building Lead Capture Forms', description: 'Create, style, and embed forms that feed your pipeline automatically', readTime: '6 min' },
+        { title: 'Publishing Landing Pages', description: 'Block-based builder — hero, features, embedded form, publish to /p/<slug>', readTime: '7 min' },
+        { title: 'Importing Leads from CSV', description: 'Upload, map columns, handle duplicates, and tag imported leads', readTime: '5 min' },
+        { title: 'Sending Leads to CRM', description: 'One-click "Add to CRM" with duplicate detection and source tagging', readTime: '3 min' }
       ]
     },
     {
@@ -98,6 +112,7 @@ const KnowledgeBase = () => {
   ];
 
   const popularArticles = [
+    { title: 'Lead Generation: Step-by-Step Guide', category: 'Lead Generation', views: '18.4k', link: '/knowledge-base/lead-generation' },
     { title: 'How to Connect Google Calendar', category: 'Integrations', views: '15.2k', link: '/knowledge-base/integrations' },
     { title: 'Creating Professional Invoices', category: 'Business Tools', views: '12.8k', link: '/knowledge-base/business-tools' },
     { title: 'HMRC Integration Setup Guide', category: 'Integrations', views: '10.5k', link: '/knowledge-base/integrations' },
@@ -180,7 +195,7 @@ const KnowledgeBase = () => {
 
           {/* Categories */}
           <Tabs defaultValue={categories[0].id} className="w-full">
-            <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 h-auto">
+            <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 h-auto">
               {filteredCategories.map((category) => (
                 <TabsTrigger 
                   key={category.id} 

@@ -54,6 +54,7 @@ import IntegrationsGuide from '@/pages/articles/IntegrationsGuide';
 import FinancialToolsGuide from '@/pages/articles/FinancialToolsGuide';
 import WorkflowGuide from '@/pages/articles/WorkflowGuide';
 import SecurityGuide from '@/pages/articles/SecurityGuide';
+import LeadGenerationGuide from '@/pages/articles/LeadGenerationGuide';
 import WhatsAppSettings from '@/pages/integrations/WhatsAppSettings';
 import LeadGenOverview from '@/pages/lead-generation/Overview';
 import LeadsPage from '@/pages/lead-generation/Leads';
@@ -127,6 +128,7 @@ function App() {
               <Route path="/knowledge-base/financial-tools" element={<FinancialToolsGuide />} />
               <Route path="/knowledge-base/workflows" element={<WorkflowGuide />} />
               <Route path="/knowledge-base/security" element={<SecurityGuide />} />
+              <Route path="/knowledge-base/lead-generation" element={<LeadGenerationGuide />} />
               <Route path="/live-charts" element={<Market />} />
               <Route path="/business-news" element={<BusinessNews />} />
                 <Route path="/payment-success" element={<PaymentSuccess />} />
