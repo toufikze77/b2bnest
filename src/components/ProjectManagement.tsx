@@ -3162,15 +3162,25 @@ const ProjectManagement = () => {
 
       {/* Projects Overview Section */}
       <div className="mt-6 space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-xl font-semibold">
-                {showTrash ? `Trash (${trashedProjects.length})` : 'Active Projects'}
+                {projectsView === 'trash'
+                  ? `Trash (${trashedProjects.length})`
+                  : projectsView === 'archived'
+                  ? `Archived (${archivedProjects.length})`
+                  : 'Active Projects'}
               </h3>
               <div className="flex items-center gap-2">
-                <Button variant={showTrash ? 'default' : 'outline'} size="sm" onClick={() => setShowTrash(s => !s)}>
-                  {showTrash ? 'View Active' : `Trash${trashedProjects.length ? ` (${trashedProjects.length})` : ''}`}
+                <Button variant={projectsView === 'active' ? 'default' : 'outline'} size="sm" onClick={() => setProjectsView('active')}>
+                  Active
                 </Button>
-                {!showTrash && (
+                <Button variant={projectsView === 'archived' ? 'default' : 'outline'} size="sm" onClick={() => setProjectsView('archived')}>
+                  Archived{archivedProjects.length ? ` (${archivedProjects.length})` : ''}
+                </Button>
+                <Button variant={projectsView === 'trash' ? 'default' : 'outline'} size="sm" onClick={() => setProjectsView('trash')}>
+                  Trash{trashedProjects.length ? ` (${trashedProjects.length})` : ''}
+                </Button>
+                {projectsView === 'active' && (
                   <Button variant="outline" onClick={() => setShowCreateProject(true)}>
                     <Plus className="w-4 h-4 mr-2" />
                     New Project
@@ -3180,7 +3190,7 @@ const ProjectManagement = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(showTrash ? trashedProjects : projects).map(project => {
+              {(projectsView === 'trash' ? trashedProjects : projectsView === 'archived' ? archivedProjects : projects).map(project => {
                 const projectCardData = {
                   ...project,
                   team_members: project.members,
@@ -3191,9 +3201,10 @@ const ProjectManagement = () => {
                   <ProjectCard
                     key={project.id}
                     project={projectCardData}
-                    isTrashed={showTrash}
+                    isTrashed={projectsView === 'trash'}
+                    isArchived={projectsView === 'archived'}
                     onClick={() => {
-                      if (showTrash) return;
+                      if (projectsView !== 'active') return;
                       setSelectedProject(project.id);
                       setActiveTab('summary');
                       toast({ title: "Project Selected", description: `Now viewing: ${project.name}` });
@@ -3201,13 +3212,15 @@ const ProjectManagement = () => {
                     onEdit={handleEditProject}
                     onShare={handleShareProject}
                     onDelete={handleSoftDeleteProject}
+                    onArchive={handleArchiveProject}
+                    onUnarchive={handleUnarchiveProject}
                     onRestore={handleRestoreProject}
                     onPermanentDelete={handlePermanentDeleteProject}
                   />
                 );
               })}
 
-              {!showTrash && projects.length === 0 && (
+              {projectsView === 'active' && projects.length === 0 && (
                 <Card className="border-dashed border-2 border-gray-300">
                   <CardContent className="p-6 text-center">
                     <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -3221,7 +3234,15 @@ const ProjectManagement = () => {
                 </Card>
               )}
 
-              {showTrash && trashedProjects.length === 0 && (
+              {projectsView === 'archived' && archivedProjects.length === 0 && (
+                <Card className="border-dashed border-2 border-gray-300 col-span-full">
+                  <CardContent className="p-6 text-center text-sm text-muted-foreground">
+                    No archived projects.
+                  </CardContent>
+                </Card>
+              )}
+
+              {projectsView === 'trash' && trashedProjects.length === 0 && (
                 <Card className="border-dashed border-2 border-gray-300 col-span-full">
                   <CardContent className="p-6 text-center text-sm text-muted-foreground">
                     Trash is empty.
