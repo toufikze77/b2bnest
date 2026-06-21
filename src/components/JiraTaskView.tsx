@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Link2, Flag, Calendar, User, Clock, Tag, MoreHorizontal, Star, Trash2, Archive, Copy, AlertCircle, CheckCircle2, Circle, Timer, MessageSquare, Paperclip, History, Send } from 'lucide-react';
+import { X, Link2, Flag, Calendar, User, Clock, Tag, MoreHorizontal, Star, Trash2, Archive, Copy, AlertCircle, CheckCircle2, Circle, Timer, MessageSquare, Paperclip, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,6 +12,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import ShareButton from '@/components/ShareButton';
 import { batchGetUserDisplayInfo } from '@/utils/profileUtils';
+import { TodoComments } from './enhanced-todos/TodoComments';
 
 interface JiraTaskViewProps {
   task: any;
@@ -50,15 +51,12 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
   });
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [activeTab, setActiveTab] = useState('comments');
-  const [newComment, setNewComment] = useState('');
-  const [comments, setComments] = useState<any[]>([]);
   const [subtasks, setSubtasks] = useState<any[]>([]);
   const [localTeamMembers, setLocalTeamMembers] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
 
   useEffect(() => {
     setLocalTask(task);
-    setComments(task.comments || []);
     setSubtasks(task.subtasks || []);
     loadTeamMembers();
   }, [task]);
@@ -310,69 +308,7 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
                 </TabsList>
 
                 <TabsContent value="comments" className="mt-4">
-                  <div className="mb-4">
-                    <div className="flex gap-3">
-                      <Avatar className="w-8 h-8 shrink-0">
-                        <AvatarFallback className="bg-blue-600 text-white text-xs">
-                          U
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <Textarea
-                          placeholder="Add a comment..."
-                          value={newComment}
-                          onChange={(e) => setNewComment(e.target.value)}
-                          className="min-h-[80px] mb-2"
-                        />
-                        <div className="flex justify-end">
-                          <Button 
-                            size="sm"
-                            disabled={!newComment.trim()}
-                            onClick={() => {
-                              const comment = {
-                                id: Date.now().toString(),
-                                content: newComment,
-                                author: 'Current User',
-                                timestamp: new Date().toISOString()
-                              };
-                              setComments([...comments, comment]);
-                              setNewComment('');
-                            }}
-                          >
-                            <Send className="w-4 h-4 mr-2" />
-                            Comment
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    {comments.length === 0 ? (
-                      <p className="text-sm text-gray-500 text-center py-8">
-                        No comments yet. Be the first to comment!
-                      </p>
-                    ) : (
-                      comments.map((comment: any) => (
-                        <div key={comment.id} className="flex gap-3">
-                          <Avatar className="w-8 h-8 shrink-0">
-                            <AvatarFallback className="text-xs">
-                              {comment.author?.[0] || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm font-medium">{comment.author}</span>
-                              <span className="text-xs text-gray-500">
-                                {formatDateTime(comment.timestamp)}
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-700">{comment.content}</p>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                  <TodoComments todoId={localTask.id} />
                 </TabsContent>
 
                 <TabsContent value="history" className="mt-4">
