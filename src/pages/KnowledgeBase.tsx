@@ -112,6 +112,7 @@ const KnowledgeBase = () => {
   ];
 
   const popularArticles = [
+    { title: 'Lead Generation: Step-by-Step Guide', category: 'Lead Generation', views: '18.4k', link: '/knowledge-base/lead-generation' },
     { title: 'How to Connect Google Calendar', category: 'Integrations', views: '15.2k', link: '/knowledge-base/integrations' },
     { title: 'Creating Professional Invoices', category: 'Business Tools', views: '12.8k', link: '/knowledge-base/business-tools' },
     { title: 'HMRC Integration Setup Guide', category: 'Integrations', views: '10.5k', link: '/knowledge-base/integrations' },
