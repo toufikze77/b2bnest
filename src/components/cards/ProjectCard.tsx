@@ -2,8 +2,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { CalendarIcon, User, Users, Edit, MoreHorizontal } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { CalendarIcon, User, Users, Edit, MoreHorizontal, Trash2, Share2, RotateCcw, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface ProjectCardProps {
@@ -18,11 +18,16 @@ interface ProjectCardProps {
     team_members: string[];
     color?: string;
   };
+  isTrashed?: boolean;
   onEdit?: (project: any) => void;
   onClick?: (project: any) => void;
+  onDelete?: (project: any) => void;
+  onShare?: (project: any) => void;
+  onRestore?: (project: any) => void;
+  onPermanentDelete?: (project: any) => void;
 }
 
-export default function ProjectCard({ project, onEdit, onClick }: ProjectCardProps) {
+export default function ProjectCard({ project, isTrashed, onEdit, onClick, onDelete, onShare, onRestore, onPermanentDelete }: ProjectCardProps) {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'active': return 'bg-green-100 text-green-800 border-green-200';
@@ -33,8 +38,10 @@ export default function ProjectCard({ project, onEdit, onClick }: ProjectCardPro
     }
   };
 
+  const stop = (e: React.MouseEvent) => e.stopPropagation();
+
   return (
-    <Card className="hover:shadow-lg transition-all cursor-pointer" onClick={() => onClick?.(project)}>
+    <Card className={`hover:shadow-lg transition-all ${isTrashed ? 'opacity-70' : 'cursor-pointer'}`} onClick={() => !isTrashed && onClick?.(project)}>
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -47,19 +54,51 @@ export default function ProjectCard({ project, onEdit, onClick }: ProjectCardPro
           <div className="flex items-center gap-2">
             <Badge className={getStatusColor(project.status)}>{project.status}</Badge>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+              <DropdownMenuTrigger asChild onClick={stop}>
                 <Button variant="ghost" size="icon" className="h-8 w-8">
                   <MoreHorizontal className="w-4 h-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit?.(project);
-                }}>
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit Project
-                </DropdownMenuItem>
+              <DropdownMenuContent align="end" onClick={stop}>
+                {!isTrashed && (
+                  <>
+                    {onEdit && (
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(project); }}>
+                        <Edit className="w-4 h-4 mr-2" /> Edit Project
+                      </DropdownMenuItem>
+                    )}
+                    {onShare && (
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onShare(project); }}>
+                        <Share2 className="w-4 h-4 mr-2" /> Share
+                      </DropdownMenuItem>
+                    )}
+                    {onDelete && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-red-600" onClick={(e) => { e.stopPropagation(); onDelete(project); }}>
+                          <Trash2 className="w-4 h-4 mr-2" /> Move to Trash
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </>
+                )}
+                {isTrashed && (
+                  <>
+                    {onRestore && (
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRestore(project); }}>
+                        <RotateCcw className="w-4 h-4 mr-2" /> Restore
+                      </DropdownMenuItem>
+                    )}
+                    {onPermanentDelete && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-red-600" onClick={(e) => { e.stopPropagation(); onPermanentDelete(project); }}>
+                          <XCircle className="w-4 h-4 mr-2" /> Delete Permanently
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -72,10 +111,7 @@ export default function ProjectCard({ project, onEdit, onClick }: ProjectCardPro
               <span>{project.progress}%</span>
             </div>
             <div className="w-full bg-muted rounded-full h-2">
-              <div
-                className="bg-primary h-2 rounded-full transition-all"
-                style={{ width: `${project.progress}%` }}
-              />
+              <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${project.progress}%` }} />
             </div>
           </div>
 

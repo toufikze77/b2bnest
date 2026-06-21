@@ -2332,6 +2332,50 @@ export type Database = {
           },
         ]
       }
+      project_share_logs: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: unknown
+          message: string | null
+          project_id: string
+          recipient_email: string | null
+          recipient_user_id: string | null
+          share_method: string
+          shared_by: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          message?: string | null
+          project_id: string
+          recipient_email?: string | null
+          recipient_user_id?: string | null
+          share_method: string
+          shared_by: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          message?: string | null
+          project_id?: string
+          recipient_email?: string | null
+          recipient_user_id?: string | null
+          share_method?: string
+          shared_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_share_logs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_time_entries: {
         Row: {
           created_at: string
@@ -2395,6 +2439,7 @@ export type Database = {
           custom_columns: Json | null
           custom_fields: Json | null
           deadline: string | null
+          deleted_at: string | null
           description: string | null
           estimated_hours: number | null
           id: string
@@ -2417,6 +2462,7 @@ export type Database = {
           custom_columns?: Json | null
           custom_fields?: Json | null
           deadline?: string | null
+          deleted_at?: string | null
           description?: string | null
           estimated_hours?: number | null
           id?: string
@@ -2439,6 +2485,7 @@ export type Database = {
           custom_columns?: Json | null
           custom_fields?: Json | null
           deadline?: string | null
+          deleted_at?: string | null
           description?: string | null
           estimated_hours?: number | null
           id?: string

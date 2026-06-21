@@ -19,6 +19,7 @@ import SubscriptionUpgrade from './SubscriptionUpgrade';
 import CreateTodoDialog from './enhanced-todos/CreateTodoDialog';
 import CreateProjectDialog, { ProjectFormData } from './CreateProjectDialog';
 import EditProjectDialog from './EditProjectDialog';
+import ShareProjectDialog from './ShareProjectDialog';
 import ProjectTimeTracker from './ProjectTimeTracker';
 import ProjectActivityTimeline from './ProjectActivityTimeline';
 import StatsCard from './cards/StatsCard';
@@ -307,6 +308,12 @@ const ProjectManagement = () => {
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [showJiraTask, setShowJiraTask] = useState(false);
   const [selectedTaskForJira, setSelectedTaskForJira] = useState<Task | null>(null);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [showEditProject, setShowEditProject] = useState(false);
+  const [sharingProject, setSharingProject] = useState<Project | null>(null);
+  const [showShareProject, setShowShareProject] = useState(false);
+  const [trashedProjects, setTrashedProjects] = useState<Project[]>([]);
+  const [showTrash, setShowTrash] = useState(false);
   const [boardDensity, setBoardDensity] = useState<'comfortable' | 'compact' | 'condensed'>(() => {
     try {
       const saved = localStorage.getItem('pm_board_density');
@@ -817,38 +824,45 @@ const ProjectManagement = () => {
   }, [user, hasAccess]);
 
   // Load projects from database
+  const formatProjectRow = (project: any): Project => ({
+    id: project.id,
+    name: project.name,
+    description: project.description || '',
+    color: project.color,
+    progress: project.progress,
+    members: Array.isArray(project.members) ? project.members as string[] : [],
+    deadline: project.deadline ? new Date(project.deadline) : null,
+    budget: project.budget ? parseFloat(project.budget.toString()) : undefined,
+    client: project.client,
+    status: project.status as 'planning' | 'active' | 'on-hold' | 'completed',
+    customColumns: Array.isArray(project.custom_columns) ? project.custom_columns as unknown as KanbanColumn[] : [
+      { id: 'backlog', title: 'Backlog', color: 'bg-gray-100', order: 1 },
+      { id: 'todo', title: 'To Do', color: 'bg-blue-100', order: 2 },
+      { id: 'in-progress', title: 'In Progress', color: 'bg-yellow-100', order: 3 },
+      { id: 'review', title: 'Review', color: 'bg-purple-100', order: 4 },
+      { id: 'done', title: 'Done', color: 'bg-green-100', order: 5 }
+    ]
+  });
+
   const loadProjects = async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('projects')
         .select('*')
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      if (data) setProjects(data.map(formatProjectRow));
 
-      if (data) {
-        const formattedProjects: Project[] = data.map(project => ({
-          id: project.id,
-          name: project.name,
-          description: project.description || '',
-          color: project.color,
-          progress: project.progress,
-          members: Array.isArray(project.members) ? project.members as string[] : [],
-          deadline: project.deadline ? new Date(project.deadline) : null,
-          budget: project.budget ? parseFloat(project.budget.toString()) : undefined,
-          client: project.client,
-          status: project.status as 'planning' | 'active' | 'on-hold' | 'completed',
-          customColumns: Array.isArray(project.custom_columns) ? project.custom_columns as unknown as KanbanColumn[] : [
-            { id: 'backlog', title: 'Backlog', color: 'bg-gray-100', order: 1 },
-            { id: 'todo', title: 'To Do', color: 'bg-blue-100', order: 2 },
-            { id: 'in-progress', title: 'In Progress', color: 'bg-yellow-100', order: 3 },
-            { id: 'review', title: 'Review', color: 'bg-purple-100', order: 4 },
-            { id: 'done', title: 'Done', color: 'bg-green-100', order: 5 }
-          ]
-        }));
-        setProjects(formattedProjects);
-      }
+      // Also load trashed
+      const { data: trashed } = await supabase
+        .from('projects')
+        .select('*')
+        .not('deleted_at', 'is', null)
+        .order('deleted_at', { ascending: false });
+      if (trashed) setTrashedProjects(trashed.map(formatProjectRow));
     } catch (error) {
       console.error('Error loading projects:', error);
       toast({
@@ -859,6 +873,42 @@ const ProjectManagement = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Project action handlers
+  const handleEditProject = (proj: any) => {
+    const p = projects.find(x => x.id === proj.id) || proj;
+    setEditingProject(p);
+    setShowEditProject(true);
+  };
+
+  const handleShareProject = (proj: any) => {
+    const p = projects.find(x => x.id === proj.id) || proj;
+    setSharingProject(p);
+    setShowShareProject(true);
+  };
+
+  const handleSoftDeleteProject = async (proj: any) => {
+    if (!confirm(`Move "${proj.name}" to Trash? You can restore it later.`)) return;
+    const { error } = await supabase.from('projects').update({ deleted_at: new Date().toISOString() } as any).eq('id', proj.id);
+    if (error) { toast({ title: 'Delete failed', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Moved to Trash', description: proj.name });
+    await loadProjects();
+  };
+
+  const handleRestoreProject = async (proj: any) => {
+    const { error } = await supabase.from('projects').update({ deleted_at: null } as any).eq('id', proj.id);
+    if (error) { toast({ title: 'Restore failed', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Project restored', description: proj.name });
+    await loadProjects();
+  };
+
+  const handlePermanentDeleteProject = async (proj: any) => {
+    if (!confirm(`Permanently delete "${proj.name}"? This cannot be undone.`)) return;
+    const { error } = await supabase.from('projects').delete().eq('id', proj.id);
+    if (error) { toast({ title: 'Delete failed', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Project deleted permanently' });
+    await loadProjects();
   };
 
   const loadTasks = async () => {
@@ -3087,40 +3137,51 @@ const ProjectManagement = () => {
       {/* Projects Overview Section */}
       <div className="mt-6 space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold">Active Projects</h3>
-              <Button variant="outline" onClick={() => setShowCreateProject(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                New Project
-              </Button>
+              <h3 className="text-xl font-semibold">
+                {showTrash ? `Trash (${trashedProjects.length})` : 'Active Projects'}
+              </h3>
+              <div className="flex items-center gap-2">
+                <Button variant={showTrash ? 'default' : 'outline'} size="sm" onClick={() => setShowTrash(s => !s)}>
+                  {showTrash ? 'View Active' : `Trash${trashedProjects.length ? ` (${trashedProjects.length})` : ''}`}
+                </Button>
+                {!showTrash && (
+                  <Button variant="outline" onClick={() => setShowCreateProject(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Project
+                  </Button>
+                )}
+              </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(projects || []).map(project => {
-                // Convert project format to match ProjectCard expectations
+              {(showTrash ? trashedProjects : projects).map(project => {
                 const projectCardData = {
                   ...project,
                   team_members: project.members,
                   deadline: project.deadline?.toISOString().split('T')[0]
                 };
-                
+
                 return (
                   <ProjectCard
                     key={project.id}
                     project={projectCardData}
+                    isTrashed={showTrash}
                     onClick={() => {
-                      console.log('Selecting project:', project.id);
+                      if (showTrash) return;
                       setSelectedProject(project.id);
-                                             setActiveTab('summary');
-                      toast({
-                        title: "Project Selected",
-                        description: `Now viewing: ${project.name}`,
-                      });
+                      setActiveTab('summary');
+                      toast({ title: "Project Selected", description: `Now viewing: ${project.name}` });
                     }}
+                    onEdit={handleEditProject}
+                    onShare={handleShareProject}
+                    onDelete={handleSoftDeleteProject}
+                    onRestore={handleRestoreProject}
+                    onPermanentDelete={handlePermanentDeleteProject}
                   />
                 );
               })}
-              
-              {(projects || []).length === 0 && (
+
+              {!showTrash && projects.length === 0 && (
                 <Card className="border-dashed border-2 border-gray-300">
                   <CardContent className="p-6 text-center">
                     <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -3133,8 +3194,32 @@ const ProjectManagement = () => {
                   </CardContent>
                 </Card>
               )}
+
+              {showTrash && trashedProjects.length === 0 && (
+                <Card className="border-dashed border-2 border-gray-300 col-span-full">
+                  <CardContent className="p-6 text-center text-sm text-muted-foreground">
+                    Trash is empty.
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
+
+      {/* Edit Project Dialog */}
+      <EditProjectDialog
+        isOpen={showEditProject}
+        onOpenChange={setShowEditProject}
+        project={editingProject as any}
+        onUpdateProject={() => { setShowEditProject(false); setEditingProject(null); loadProjects(); }}
+      />
+
+      {/* Share Project Dialog */}
+      <ShareProjectDialog
+        isOpen={showShareProject}
+        onOpenChange={setShowShareProject}
+        project={sharingProject ? { id: sharingProject.id, name: sharingProject.name, description: sharingProject.description } : null}
+      />
+
         
       {/* Enhanced Create Task Dialog */}
       <CreateTodoDialog
