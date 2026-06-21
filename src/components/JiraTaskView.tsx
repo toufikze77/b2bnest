@@ -516,6 +516,11 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
           </div>
         </div>
       </div>
+      <ShareTaskDialog
+        isOpen={shareOpen}
+        onOpenChange={setShareOpen}
+        task={localTask ? { id: localTask.id, title: localTask.title, description: localTask.description } : null}
+      />
     </div>
   );
 };
