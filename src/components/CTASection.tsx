@@ -8,19 +8,19 @@ const CTASection = () => {
     <section className="py-20 px-4 sm:px-6 lg:px-8 bg-blue-600">
       <div className="max-w-4xl mx-auto text-center">
         <h3 className="text-4xl font-bold text-white mb-6">
-          Ready to Streamline Your Business Documentation?
+          Ready to Unify and Scale Your Business Operations?
         </h3>
         <p className="text-xl text-blue-100 mb-8">
-          Start with our free templates or unlock the full library with our premium plans.
+          Explore our free business tools or unlock the full suite — CRM, projects, invoicing, payroll, contracts and AI advisor — with our premium plans.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button 
             size="lg" 
             variant="secondary" 
             className="text-lg px-8 py-3"
-            onClick={() => window.location.href = '/'}
+            onClick={() => window.location.href = '/business-tools'}
           >
-            Browse Templates
+            Explore Business Tools
           </Button>
           <Button 
             size="lg" 
