@@ -2391,11 +2391,15 @@ const ProjectManagement = () => {
   // Archive handlers
   const archiveTask = async (taskId: string) => {
     const { error } = await supabase.from('todos' as any).update({ archived_at: new Date().toISOString() }).eq('id', taskId);
-    if (!error) setTasks(prev => prev.filter(t => t.id !== taskId));
+    if (error) { toast({ title: 'Archive failed', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Task archived' });
+    await loadTasks();
   };
   const unarchiveTask = async (taskId: string) => {
     const { error } = await supabase.from('todos' as any).update({ archived_at: null }).eq('id', taskId);
-    if (!error) loadTasks();
+    if (error) { toast({ title: 'Unarchive failed', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Task restored' });
+    await loadTasks();
   };
 
   // Convert work request to task
