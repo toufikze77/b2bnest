@@ -18,6 +18,7 @@ import {
 import { getUserDisplayInfo } from '@/utils/profileUtils';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { TodoComments } from './TodoComments';
 
 interface Todo {
   id: string;
