@@ -13,6 +13,7 @@ import UnifiedSearchResults from "@/components/UnifiedSearchResults";
 import AIDocumentAssistant from "@/components/AIDocumentAssistant";
 import AIInvestmentShowcase from "@/components/AIInvestmentShowcase";
 import BusinessToolsSection from "@/components/BusinessToolsSection";
+import LiveCostSavingsCalculator from "@/components/LiveCostSavingsCalculator";
 import { Template } from "@/types/template";
 
 const IndexContent = () => {
