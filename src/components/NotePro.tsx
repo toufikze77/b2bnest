@@ -240,15 +240,20 @@ export default function NotePro() {
   };
 
   const handleArchiveNote = async (note: Note) => {
+    const newVal = !note.is_archived;
     const { error } = await supabase
       .from("notes")
-      .update({ is_archived: !note.is_archived })
+      .update({ is_archived: newVal })
       .eq("id", note.id);
 
-    if (!error) {
-      fetchNotes();
-      toast.success(note.is_archived ? "Note unarchived" : "Note archived");
+    if (error) {
+      toast.error(`Failed to ${newVal ? "archive" : "unarchive"} note: ${error.message}`);
+      return;
     }
+    toast.success(newVal ? "Note archived" : "Note unarchived");
+    setShowEditor(false);
+    setSelectedNote(null);
+    await fetchNotes();
   };
 
   const handleSaveCategory = async (e: React.FormEvent) => {
