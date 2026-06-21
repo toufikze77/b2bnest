@@ -74,12 +74,6 @@ const Header = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            {user && (
-              <Link to="/dashboard" className="text-gray-700 hover:text-blue-600 transition-colors flex items-center">
-                <BarChart3 className="h-4 w-4 mr-1" />
-                Dashboard
-              </Link>
-            )}
             <Link to="/pricing" className="text-gray-700 hover:text-blue-600 transition-colors">
               Pricing
             </Link>
@@ -90,8 +84,18 @@ const Header = () => {
 
           {/* Share, Live Prices and User Menu */}
           <div className="flex items-center space-x-2">
+            {user && (
+              <Link
+                to="/dashboard"
+                className="hidden md:flex items-center text-gray-700 hover:text-blue-600 transition-colors px-2"
+                title="Dashboard"
+              >
+                <BarChart3 className="h-4 w-4 lg:mr-1" />
+                <span className="hidden lg:inline">Dashboard</span>
+              </Link>
+            )}
             <div className="hidden md:block">
-              <InstallAppButton variant="ghost" size="sm" label="Install" />
+              <InstallAppButton variant="ghost" size="sm" label="" />
             </div>
             <div className="hidden md:block">
               <ShareButton variant="ghost" size="sm" />
