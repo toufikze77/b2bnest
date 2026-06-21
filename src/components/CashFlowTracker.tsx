@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Minus, TrendingUp, TrendingDown, DollarSign, Calendar, Zap, Pencil, Trash2, Check, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,8 +27,22 @@ const expenseCategories = [
   'Equipment', 'Legal/Professional', 'Insurance', 'Other Expenses'
 ];
 
+const STORAGE_KEY = 'cashFlowTracker.entries.v1';
+
+const loadEntries = (): CashFlowEntry[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as Array<Omit<CashFlowEntry, 'date'> & { date: string }>;
+    return parsed.map(e => ({ ...e, date: new Date(e.date) }));
+  } catch {
+    return [];
+  }
+};
+
 const CashFlowTracker = () => {
-  const [entries, setEntries] = useState<CashFlowEntry[]>([]);
+  const [entries, setEntries] = useState<CashFlowEntry[]>(loadEntries);
   const [newEntry, setNewEntry] = useState({
     type: 'income' as 'income' | 'expense',
     category: '',
@@ -47,6 +61,17 @@ const CashFlowTracker = () => {
   const { toast } = useToast();
   const { settings } = useUserSettings();
   const currencyCode = settings?.currency_code || 'USD';
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(entries.map(e => ({ ...e, date: e.date.toISOString() })))
+      );
+    } catch {
+      // ignore quota errors
+    }
+  }, [entries]);
 
   const formatCurrency = (amount: number) => formatCurrencyWithLocale(amount, currencyCode);
 

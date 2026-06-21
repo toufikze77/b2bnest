@@ -50,27 +50,39 @@ type ToolType = 'overview' | 'notepro' | 'cost-calculator' | 'setup-checklist' |
 type FilterType = 'all' | 'premium' | 'favorites' | 'free';
 
 const BusinessTools = () => {
-  const [currentTool, setCurrentTool] = useState<ToolType>('overview');
+  const getInitialTool = (): ToolType => {
+    if (typeof window === 'undefined') return 'overview';
+    const urlParams = new URLSearchParams(window.location.search);
+    const toolParam = urlParams.get('tool') as ToolType | null;
+    const locationState = window.history.state?.usr;
+    const selectedTool = locationState?.selectedTool as ToolType | undefined;
+    return selectedTool || toolParam || 'overview';
+  };
+
+  const [currentTool, setCurrentToolState] = useState<ToolType>(getInitialTool);
   const [filter, setFilter] = useState<FilterType>('all');
   const navigate = useNavigate();
   const { isPremium } = useSubscription();
   const { user } = useAuth();
   const { favorites, toggleFavorite, isFavorited } = useFavoriteTools();
-  
-  // Handle URL parameters and location state to set the current tool
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const toolParam = urlParams.get('tool') as ToolType;
-    
-    // Check for state from navigation
-    const locationState = window.history.state?.usr;
-    const selectedTool = locationState?.selectedTool;
-    
-    if (selectedTool) {
-      setCurrentTool(selectedTool);
-    } else if (toolParam) {
-      setCurrentTool(toolParam);
+
+  const setCurrentTool = (tool: ToolType) => {
+    setCurrentToolState(tool);
+    const url = new URL(window.location.href);
+    if (tool === 'overview') {
+      url.searchParams.delete('tool');
+    } else {
+      url.searchParams.set('tool', tool);
     }
+    window.history.pushState(window.history.state, '', url.toString());
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  };
+
+  // Sync state with browser back/forward navigation
+  useEffect(() => {
+    const onPop = () => setCurrentToolState(getInitialTool());
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
   }, []);
 
   const tools = [
