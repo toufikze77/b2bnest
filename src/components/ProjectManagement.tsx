@@ -19,6 +19,7 @@ import SubscriptionUpgrade from './SubscriptionUpgrade';
 import CreateTodoDialog from './enhanced-todos/CreateTodoDialog';
 import CreateProjectDialog, { ProjectFormData } from './CreateProjectDialog';
 import EditProjectDialog from './EditProjectDialog';
+import ShareProjectDialog from './ShareProjectDialog';
 import ProjectTimeTracker from './ProjectTimeTracker';
 import ProjectActivityTimeline from './ProjectActivityTimeline';
 import StatsCard from './cards/StatsCard';
@@ -307,6 +308,12 @@ const ProjectManagement = () => {
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [showJiraTask, setShowJiraTask] = useState(false);
   const [selectedTaskForJira, setSelectedTaskForJira] = useState<Task | null>(null);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [showEditProject, setShowEditProject] = useState(false);
+  const [sharingProject, setSharingProject] = useState<Project | null>(null);
+  const [showShareProject, setShowShareProject] = useState(false);
+  const [trashedProjects, setTrashedProjects] = useState<Project[]>([]);
+  const [showTrash, setShowTrash] = useState(false);
   const [boardDensity, setBoardDensity] = useState<'comfortable' | 'compact' | 'condensed'>(() => {
     try {
       const saved = localStorage.getItem('pm_board_density');
