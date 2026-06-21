@@ -566,6 +566,18 @@ export default function NotePro() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
+                        title={note.is_archived ? "Unarchive" : "Archive"}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleArchiveNote(note);
+                        }}
+                      >
+                        <Archive className={`w-4 h-4 ${note.is_archived ? "text-primary" : ""}`} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteNote(note.id);
