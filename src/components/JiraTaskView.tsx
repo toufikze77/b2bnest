@@ -42,6 +42,7 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
   onClose, 
   onUpdate,
   onDelete,
+  onArchive,
   projects = [],
   teamMembers = []
 }) => {
