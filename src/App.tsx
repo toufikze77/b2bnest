@@ -128,6 +128,7 @@ function App() {
               <Route path="/knowledge-base/financial-tools" element={<FinancialToolsGuide />} />
               <Route path="/knowledge-base/workflows" element={<WorkflowGuide />} />
               <Route path="/knowledge-base/security" element={<SecurityGuide />} />
+              <Route path="/knowledge-base/lead-generation" element={<LeadGenerationGuide />} />
               <Route path="/live-charts" element={<Market />} />
               <Route path="/business-news" element={<BusinessNews />} />
                 <Route path="/payment-success" element={<PaymentSuccess />} />
