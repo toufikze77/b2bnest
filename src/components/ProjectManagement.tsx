@@ -853,12 +853,22 @@ const ProjectManagement = () => {
         .from('projects')
         .select('*')
         .is('deleted_at', null)
+        .is('archived_at', null)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       if (data) setProjects(data.map(formatProjectRow));
 
-      // Also load trashed
+      // Archived (not deleted, but archived)
+      const { data: archived } = await supabase
+        .from('projects')
+        .select('*')
+        .is('deleted_at', null)
+        .not('archived_at', 'is', null)
+        .order('archived_at', { ascending: false });
+      if (archived) setArchivedProjects(archived.map(formatProjectRow));
+
+      // Trashed
       const { data: trashed } = await supabase
         .from('projects')
         .select('*')
