@@ -923,6 +923,20 @@ const ProjectManagement = () => {
     await loadProjects();
   };
 
+  const handleArchiveProject = async (proj: any) => {
+    const { error } = await supabase.from('projects').update({ archived_at: new Date().toISOString() } as any).eq('id', proj.id);
+    if (error) { toast({ title: 'Archive failed', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Project archived', description: proj.name });
+    await loadProjects();
+  };
+
+  const handleUnarchiveProject = async (proj: any) => {
+    const { error } = await supabase.from('projects').update({ archived_at: null } as any).eq('id', proj.id);
+    if (error) { toast({ title: 'Unarchive failed', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Project unarchived', description: proj.name });
+    await loadProjects();
+  };
+
   const loadTasks = async () => {
     try {
       const { data, error } = await supabase
