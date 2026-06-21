@@ -12,11 +12,9 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
   Calendar, Clock, Flag, User, Plus, X, Check, 
   ChevronDown, Settings, History, Activity, Code,
-  Users, Zap, Send, Smile, ThumbsUp, AlertCircle,
-  HelpCircle, CheckCircle2, Link2
+  Users, Zap, CheckCircle2, Link2
 } from 'lucide-react';
 import { getUserDisplayInfo } from '@/utils/profileUtils';
-import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { TodoComments } from './TodoComments';
 
@@ -43,17 +41,6 @@ interface Subtask {
   completed: boolean;
 }
 
-interface Comment {
-  id: string;
-  content: string;
-  created_at: string;
-  user_id: string;
-  user_profile?: {
-    display_name?: string;
-    full_name?: string;
-  };
-}
-
 interface EnhancedTodoViewProps {
   todo: Todo;
   onUpdate: (id: string, updates: Partial<Todo>) => void;
@@ -65,8 +52,6 @@ export const EnhancedTodoView: React.FC<EnhancedTodoViewProps> = ({ todo, onUpda
   const [localTodo, setLocalTodo] = useState(todo);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [newSubtask, setNewSubtask] = useState('');
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [newComment, setNewComment] = useState('');
   const [activeTab, setActiveTab] = useState('comments');
   const [assigneeInfo, setAssigneeInfo] = useState<any>(null);
   const [reporterInfo, setReporterInfo] = useState<any>(null);
@@ -75,7 +60,6 @@ export const EnhancedTodoView: React.FC<EnhancedTodoViewProps> = ({ todo, onUpda
 
   useEffect(() => {
     fetchSubtasks();
-    fetchComments();
     if (todo.assigned_to) {
       fetchUserInfo(todo.assigned_to, setAssigneeInfo);
     }
@@ -101,34 +85,6 @@ export const EnhancedTodoView: React.FC<EnhancedTodoViewProps> = ({ todo, onUpda
       setSubtasks((data as any) || []);
     } catch (error) {
       console.error('Error fetching subtasks:', error);
-    }
-  };
-
-  const fetchComments = async () => {
-    try {
-      const { data: commentsData, error } = await supabase
-        .from('todo_comments')
-        .select('*')
-        .eq('todo_id', todo.id)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-
-      if (commentsData && commentsData.length > 0) {
-        const userIds = [...new Set(commentsData.map(c => c.user_id))];
-        const { batchGetUserDisplayInfo } = await import('@/utils/profileUtils');
-        const profilesData = await batchGetUserDisplayInfo(userIds);
-        const profilesMap = new Map(profilesData.map(p => [p.id, p]));
-        
-        const commentsWithProfiles = commentsData.map(comment => ({
-          ...comment,
-          user_profile: profilesMap.get(comment.user_id)
-        }));
-        
-        setComments(commentsWithProfiles);
-      }
-    } catch (error) {
-      console.error('Error fetching comments:', error);
     }
   };
 
@@ -164,52 +120,6 @@ export const EnhancedTodoView: React.FC<EnhancedTodoViewProps> = ({ todo, onUpda
       fetchSubtasks();
     } catch (error) {
       console.error('Error toggling subtask:', error);
-    }
-  };
-
-  const handleAddComment = async () => {
-    if (!newComment.trim() || !user) return;
-
-    try {
-      const { error } = await supabase
-        .from('todo_comments')
-        .insert({
-          todo_id: todo.id,
-          user_id: user.id,
-          content: newComment.trim()
-        });
-
-      if (error) throw error;
-      
-      // Send notification to task owner/assignee
-      if (todo.assigned_to && todo.assigned_to !== user.id) {
-        try {
-          const { notifyTaskComment } = await import('@/services/taskNotificationService');
-          // Get project_id from supabase if available
-          const { data: taskData } = await supabase
-            .from('todos')
-            .select('project_id')
-            .eq('id', todo.id)
-            .maybeSingle();
-            
-          await notifyTaskComment(
-            todo.id,
-            todo.title,
-            user.id,
-            todo.assigned_to,
-            newComment.trim(),
-            taskData?.project_id
-          );
-        } catch (notifyError) {
-          console.error('Failed to send comment notification:', notifyError);
-        }
-      }
-      
-      setNewComment('');
-      fetchComments();
-      toast({ title: "Comment added" });
-    } catch (error) {
-      console.error('Error adding comment:', error);
     }
   };
 
@@ -422,10 +332,6 @@ export const EnhancedTodoView: React.FC<EnhancedTodoViewProps> = ({ todo, onUpda
 
                 <TabsContent value="worklog">
                   <p className="text-sm text-muted-foreground">Work log will be displayed here</p>
-                </TabsContent>
-
-                <TabsContent value="all">
-                  <p className="text-sm text-muted-foreground">All activity will be displayed here</p>
                 </TabsContent>
               </Tabs>
             </div>
