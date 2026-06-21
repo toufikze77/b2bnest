@@ -71,6 +71,9 @@ const IndexContent = () => {
       {/* AI Investment Showcase - Only show when not searching */}
       {!showSearchResults && <AIInvestmentShowcase />}
 
+      {/* Live Cost Savings Calculator */}
+      {!showSearchResults && <LiveCostSavingsCalculator />}
+
       {/* Business Tools Section - Only show when not searching */}
       {!showSearchResults && <BusinessToolsSection />}
 
