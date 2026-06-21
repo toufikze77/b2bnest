@@ -28,6 +28,20 @@ const KnowledgeBase = () => {
       ]
     },
     {
+      id: 'lead-generation',
+      title: 'Lead Generation',
+      icon: Filter,
+      color: 'bg-orange-500',
+      articles: [
+        { title: 'Lead Generation: Step-by-Step Guide', description: 'Complete walkthrough — capture, score, convert leads, and sync to CRM', readTime: '10 min' },
+        { title: 'How Lead Scoring Works', description: 'Understand the 0–100 scoring system and Cold/Warm/Hot/Ready labels', readTime: '4 min' },
+        { title: 'Building Lead Capture Forms', description: 'Create, style, and embed forms that feed your pipeline automatically', readTime: '6 min' },
+        { title: 'Publishing Landing Pages', description: 'Block-based builder — hero, features, embedded form, publish to /p/<slug>', readTime: '7 min' },
+        { title: 'Importing Leads from CSV', description: 'Upload, map columns, handle duplicates, and tag imported leads', readTime: '5 min' },
+        { title: 'Sending Leads to CRM', description: 'One-click "Add to CRM" with duplicate detection and source tagging', readTime: '3 min' }
+      ]
+    },
+    {
       id: 'business-tools',
       title: 'Business Tools',
       icon: Wrench,
