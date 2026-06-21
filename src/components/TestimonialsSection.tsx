@@ -9,16 +9,16 @@ const TestimonialsSection = () => {
       name: "Sarah Johnson",
       role: "CEO, TechStart Solutions",
       company: "TechStart Solutions",
-      content: "BizDocHub has revolutionized how we handle our legal documents. The professional templates saved us thousands in legal fees and countless hours of work.",
+      content: "B2BNest unified our CRM, invoicing and project management in one place. We replaced three separate subscriptions and our team is far more productive.",
       rating: 5,
       avatar: "SJ"
     },
     {
       id: 2,
       name: "Michael Chen",
-      role: "HR Director",
+      role: "Operations Director",
       company: "Growth Dynamics",
-      content: "The HR forms and onboarding documents are exactly what we needed. Everything is compliant and professionally designed. Highly recommended!",
+      content: "The cash flow tracker and AI business advisor give us real insight into our numbers. It's like having a finance team built into the platform.",
       rating: 5,
       avatar: "MC"
     },
@@ -27,7 +27,7 @@ const TestimonialsSection = () => {
       name: "Emily Rodriguez",
       role: "Small Business Owner",
       company: "Creative Studios LLC",
-      content: "As a small business owner, having access to professional-grade documents at this price point is incredible. The invoice templates alone paid for themselves.",
+      content: "As a small business owner, having a CRM, invoicing and project management at this price point is incredible. B2BNest pays for itself every month.",
       rating: 5,
       avatar: "ER"
     },
@@ -36,16 +36,16 @@ const TestimonialsSection = () => {
       name: "David Park",
       role: "Operations Manager",
       company: "Streamline Corp",
-      content: "The variety and quality of business forms available is impressive. We've streamlined our entire documentation process using BizDocHub templates.",
+      content: "The range of business tools is impressive. We've streamlined our entire operations workflow with B2BNest's unified dashboard.",
       rating: 5,
       avatar: "DP"
     },
     {
       id: 5,
       name: "Lisa Thompson",
-      role: "Legal Consultant",
+      role: "Finance Consultant",
       company: "Thompson & Associates",
-      content: "I regularly recommend BizDocHub to my clients. The legal documents are well-structured and cover all the essential bases for small to medium businesses.",
+      content: "I regularly recommend B2BNest to my clients. The financial tracking, ROI calculator and HMRC integration cover what most small businesses need.",
       rating: 5,
       avatar: "LT"
     },
@@ -54,7 +54,7 @@ const TestimonialsSection = () => {
       name: "James Wilson",
       role: "Startup Founder",
       company: "Innovation Labs",
-      content: "Starting a business is complex enough. BizDocHub made the documentation side simple and professional. Great value for money!",
+      content: "Starting a business is complex enough. B2BNest made running operations simple — CRM, projects, invoicing and payroll all in one place.",
       rating: 5,
       avatar: "JW"
     }
@@ -79,8 +79,8 @@ const TestimonialsSection = () => {
             What Our Clients Say
           </h3>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Join thousands of satisfied businesses who trust BizDocHub for their 
-            professional document needs
+            Join thousands of businesses who trust B2BNest to run and scale their
+            operations
           </p>
         </div>
 

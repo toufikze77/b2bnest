@@ -56,7 +56,7 @@ const BusinessToolsSection = () => {
       icon: FileText,
       title: "Quote & Invoice",
       description: "Create professional quotes and invoices with auto-generated codes",
-      features: ["Professional templates", "Auto-generated codes", "Track payments"],
+      features: ["Professional layout", "Auto-generated codes", "Track payments"],
       color: "bg-indigo-500",
       popular: false
     },
