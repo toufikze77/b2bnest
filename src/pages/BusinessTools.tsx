@@ -74,6 +74,16 @@ const BusinessTools = () => {
 
   const tools = [
     {
+      id: 'lead-generation' as ToolType,
+      title: 'Lead Generation & Prospecting',
+      description: 'Capture, score, and convert leads with forms, landing pages, and native CRM sync (ClickUp/Notion inspired)',
+      icon: Filter,
+      color: 'bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600',
+      benefits: ['Smart lead scoring', 'Form & landing page builder', 'CSV import & export', 'Native CRM sync', 'Activity timeline', 'Shareable public forms'],
+      isPremium: false,
+      featured: true
+    },
+    {
       id: 'notepro' as ToolType,
       title: 'NotePro - Professional Note Taking',
       description: 'Organize your thoughts, ideas, and tasks in one professional note-taking app',
