@@ -191,51 +191,6 @@ const BusinessTools = () => {
       isPremium: true
     },
     {
-      id: 'document-templates' as ToolType,
-      title: 'Document Template Library',
-      description: 'Access professional business document templates',
-      icon: File,
-      color: 'bg-blue-700',
-      benefits: ['Professional templates', 'Multiple categories', 'Ready to use'],
-      isPremium: true
-    },
-    {
-      id: 'business-card-designer' as ToolType,
-      title: 'Business Card Designer',
-      description: 'Create professional business cards with custom designs',
-      icon: CreditCard,
-      color: 'bg-pink-600',
-      benefits: ['Professional designs', 'Custom templates', 'Print-ready format'],
-      isPremium: true
-    },
-    {
-      id: 'landing-page-builder' as ToolType,
-      title: 'Landing Page Builder',
-      description: 'Build responsive landing pages with drag-and-drop',
-      icon: Layout,
-      color: 'bg-indigo-600',
-      benefits: ['Responsive design', 'Multiple templates', 'SEO optimized'],
-      isPremium: true
-    },
-    {
-      id: 'email-signature-generator' as ToolType,
-      title: 'Email Signature Generator',
-      description: 'Create professional email signatures for business communications',
-      icon: Mail,
-      color: 'bg-orange-600',
-      benefits: ['Professional templates', 'HTML output', 'Brand consistency'],
-      isPremium: true
-    },
-    {
-      id: 'social-media-scheduler' as ToolType,
-      title: 'Social Media Post Scheduler',
-      description: 'Schedule and manage your social media posts across platforms',
-      icon: Users,
-      color: 'bg-cyan-600',
-      benefits: ['Multi-platform support', 'Content planning', 'Scheduling tools'],
-      isPremium: true
-    },
-    {
       id: 'customer-survey-builder' as ToolType,
       title: 'Customer Survey Builder',
       description: 'Create and manage customer feedback surveys',
