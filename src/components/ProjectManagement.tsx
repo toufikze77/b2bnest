@@ -116,6 +116,7 @@ interface Task {
   comments?: Comment[];
   dependencies?: string[];
   progress?: number;
+  archived_at?: string | null;
 }
 
 interface Subtask {
