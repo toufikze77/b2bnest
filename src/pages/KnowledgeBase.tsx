@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Book, Search, FileText, Wrench, DollarSign, Users, 
-  Zap, Building2, Globe, Lock, TrendingUp, ExternalLink, Coins
+  Zap, Building2, Globe, Lock, TrendingUp, ExternalLink, Coins, Filter
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SEOHead from '@/components/SEOHead';
