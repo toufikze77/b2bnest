@@ -3137,40 +3137,51 @@ const ProjectManagement = () => {
       {/* Projects Overview Section */}
       <div className="mt-6 space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold">Active Projects</h3>
-              <Button variant="outline" onClick={() => setShowCreateProject(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                New Project
-              </Button>
+              <h3 className="text-xl font-semibold">
+                {showTrash ? `Trash (${trashedProjects.length})` : 'Active Projects'}
+              </h3>
+              <div className="flex items-center gap-2">
+                <Button variant={showTrash ? 'default' : 'outline'} size="sm" onClick={() => setShowTrash(s => !s)}>
+                  {showTrash ? 'View Active' : `Trash${trashedProjects.length ? ` (${trashedProjects.length})` : ''}`}
+                </Button>
+                {!showTrash && (
+                  <Button variant="outline" onClick={() => setShowCreateProject(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Project
+                  </Button>
+                )}
+              </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(projects || []).map(project => {
-                // Convert project format to match ProjectCard expectations
+              {(showTrash ? trashedProjects : projects).map(project => {
                 const projectCardData = {
                   ...project,
                   team_members: project.members,
                   deadline: project.deadline?.toISOString().split('T')[0]
                 };
-                
+
                 return (
                   <ProjectCard
                     key={project.id}
                     project={projectCardData}
+                    isTrashed={showTrash}
                     onClick={() => {
-                      console.log('Selecting project:', project.id);
+                      if (showTrash) return;
                       setSelectedProject(project.id);
-                                             setActiveTab('summary');
-                      toast({
-                        title: "Project Selected",
-                        description: `Now viewing: ${project.name}`,
-                      });
+                      setActiveTab('summary');
+                      toast({ title: "Project Selected", description: `Now viewing: ${project.name}` });
                     }}
+                    onEdit={handleEditProject}
+                    onShare={handleShareProject}
+                    onDelete={handleSoftDeleteProject}
+                    onRestore={handleRestoreProject}
+                    onPermanentDelete={handlePermanentDeleteProject}
                   />
                 );
               })}
-              
-              {(projects || []).length === 0 && (
+
+              {!showTrash && projects.length === 0 && (
                 <Card className="border-dashed border-2 border-gray-300">
                   <CardContent className="p-6 text-center">
                     <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -3183,8 +3194,32 @@ const ProjectManagement = () => {
                   </CardContent>
                 </Card>
               )}
+
+              {showTrash && trashedProjects.length === 0 && (
+                <Card className="border-dashed border-2 border-gray-300 col-span-full">
+                  <CardContent className="p-6 text-center text-sm text-muted-foreground">
+                    Trash is empty.
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
+
+      {/* Edit Project Dialog */}
+      <EditProjectDialog
+        isOpen={showEditProject}
+        onOpenChange={setShowEditProject}
+        project={editingProject as any}
+        onUpdateProject={() => { setShowEditProject(false); setEditingProject(null); loadProjects(); }}
+      />
+
+      {/* Share Project Dialog */}
+      <ShareProjectDialog
+        isOpen={showShareProject}
+        onOpenChange={setShowShareProject}
+        project={sharingProject ? { id: sharingProject.id, name: sharingProject.name, description: sharingProject.description } : null}
+      />
+
         
       {/* Enhanced Create Task Dialog */}
       <CreateTodoDialog
