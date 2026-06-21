@@ -195,7 +195,7 @@ const KnowledgeBase = () => {
 
           {/* Categories */}
           <Tabs defaultValue={categories[0].id} className="w-full">
-            <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 h-auto">
+            <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 h-auto">
               {filteredCategories.map((category) => (
                 <TabsTrigger 
                   key={category.id} 
