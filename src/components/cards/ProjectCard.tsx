@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { CalendarIcon, User, Users, Edit, MoreHorizontal, Trash2, Share2, RotateCcw, XCircle } from 'lucide-react';
+import { CalendarIcon, User, Users, Edit, MoreHorizontal, Trash2, Share2, RotateCcw, XCircle, Archive, ArchiveRestore } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface ProjectCardProps {
@@ -19,15 +19,18 @@ interface ProjectCardProps {
     color?: string;
   };
   isTrashed?: boolean;
+  isArchived?: boolean;
   onEdit?: (project: any) => void;
   onClick?: (project: any) => void;
   onDelete?: (project: any) => void;
   onShare?: (project: any) => void;
   onRestore?: (project: any) => void;
   onPermanentDelete?: (project: any) => void;
+  onArchive?: (project: any) => void;
+  onUnarchive?: (project: any) => void;
 }
 
-export default function ProjectCard({ project, isTrashed, onEdit, onClick, onDelete, onShare, onRestore, onPermanentDelete }: ProjectCardProps) {
+export default function ProjectCard({ project, isTrashed, isArchived, onEdit, onClick, onDelete, onShare, onRestore, onPermanentDelete, onArchive, onUnarchive }: ProjectCardProps) {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'active': return 'bg-green-100 text-green-800 border-green-200';
