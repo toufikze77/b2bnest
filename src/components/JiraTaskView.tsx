@@ -19,6 +19,7 @@ interface JiraTaskViewProps {
   onClose: () => void;
   onUpdate: (taskId: string, updates: any) => Promise<void>;
   onDelete?: (taskId: string) => void;
+  onArchive?: (taskId: string) => void;
   projects?: any[];
   teamMembers?: any[];
 }
