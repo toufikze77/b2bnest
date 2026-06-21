@@ -18,7 +18,6 @@ const AIInvestmentShowcase = () => {
 
   const aiBenefits = [
     'Automate repetitive processes',
-    'Generate professional business documents',
     'Improve operational efficiency',
     'Optimize workflows and project management',
     'Enhance decision-making with smart analytics',
