@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, BarChart, File, Globe, CreditCard, Layout, Mail, Megaphone, Quote, Receipt, Eye, Download, Star, Tag, Trophy, Link2, Calendar as CalIcon } from 'lucide-react';
+import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, BarChart, File, Globe, CreditCard, Layout, Mail, Megaphone, Quote, Receipt, Eye, Download, Star, Tag, Trophy, Link2, Calendar as CalIcon, Filter, ArrowRight, Flame, Zap as ZapIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
