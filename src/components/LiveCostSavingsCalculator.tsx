@@ -92,8 +92,8 @@ const LiveCostSavingsCalculator: React.FC = () => {
         th{background:#f8fafc;}
         .muted{color:#64748b;font-size:13px;}
         .summary{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px;margin:16px 0;}
-      </style></head><body>£{html}
-      <p class="muted" style="margin-top:32px;">Report generated £{new Date().toLocaleDateString()} · b2bnest.online</p>
+      </style></head><body>${html}
+      <p class="muted" style="margin-top:32px;">Report generated ${new Date().toLocaleDateString()} · b2bnest.online</p>
       </body></html>`);
     w.document.close();
     w.focus();
