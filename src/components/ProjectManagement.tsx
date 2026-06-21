@@ -824,38 +824,45 @@ const ProjectManagement = () => {
   }, [user, hasAccess]);
 
   // Load projects from database
+  const formatProjectRow = (project: any): Project => ({
+    id: project.id,
+    name: project.name,
+    description: project.description || '',
+    color: project.color,
+    progress: project.progress,
+    members: Array.isArray(project.members) ? project.members as string[] : [],
+    deadline: project.deadline ? new Date(project.deadline) : null,
+    budget: project.budget ? parseFloat(project.budget.toString()) : undefined,
+    client: project.client,
+    status: project.status as 'planning' | 'active' | 'on-hold' | 'completed',
+    customColumns: Array.isArray(project.custom_columns) ? project.custom_columns as unknown as KanbanColumn[] : [
+      { id: 'backlog', title: 'Backlog', color: 'bg-gray-100', order: 1 },
+      { id: 'todo', title: 'To Do', color: 'bg-blue-100', order: 2 },
+      { id: 'in-progress', title: 'In Progress', color: 'bg-yellow-100', order: 3 },
+      { id: 'review', title: 'Review', color: 'bg-purple-100', order: 4 },
+      { id: 'done', title: 'Done', color: 'bg-green-100', order: 5 }
+    ]
+  });
+
   const loadProjects = async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('projects')
         .select('*')
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      if (data) setProjects(data.map(formatProjectRow));
 
-      if (data) {
-        const formattedProjects: Project[] = data.map(project => ({
-          id: project.id,
-          name: project.name,
-          description: project.description || '',
-          color: project.color,
-          progress: project.progress,
-          members: Array.isArray(project.members) ? project.members as string[] : [],
-          deadline: project.deadline ? new Date(project.deadline) : null,
-          budget: project.budget ? parseFloat(project.budget.toString()) : undefined,
-          client: project.client,
-          status: project.status as 'planning' | 'active' | 'on-hold' | 'completed',
-          customColumns: Array.isArray(project.custom_columns) ? project.custom_columns as unknown as KanbanColumn[] : [
-            { id: 'backlog', title: 'Backlog', color: 'bg-gray-100', order: 1 },
-            { id: 'todo', title: 'To Do', color: 'bg-blue-100', order: 2 },
-            { id: 'in-progress', title: 'In Progress', color: 'bg-yellow-100', order: 3 },
-            { id: 'review', title: 'Review', color: 'bg-purple-100', order: 4 },
-            { id: 'done', title: 'Done', color: 'bg-green-100', order: 5 }
-          ]
-        }));
-        setProjects(formattedProjects);
-      }
+      // Also load trashed
+      const { data: trashed } = await supabase
+        .from('projects')
+        .select('*')
+        .not('deleted_at', 'is', null)
+        .order('deleted_at', { ascending: false });
+      if (trashed) setTrashedProjects(trashed.map(formatProjectRow));
     } catch (error) {
       console.error('Error loading projects:', error);
       toast({
@@ -866,6 +873,42 @@ const ProjectManagement = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Project action handlers
+  const handleEditProject = (proj: any) => {
+    const p = projects.find(x => x.id === proj.id) || proj;
+    setEditingProject(p);
+    setShowEditProject(true);
+  };
+
+  const handleShareProject = (proj: any) => {
+    const p = projects.find(x => x.id === proj.id) || proj;
+    setSharingProject(p);
+    setShowShareProject(true);
+  };
+
+  const handleSoftDeleteProject = async (proj: any) => {
+    if (!confirm(`Move "${proj.name}" to Trash? You can restore it later.`)) return;
+    const { error } = await supabase.from('projects').update({ deleted_at: new Date().toISOString() } as any).eq('id', proj.id);
+    if (error) { toast({ title: 'Delete failed', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Moved to Trash', description: proj.name });
+    await loadProjects();
+  };
+
+  const handleRestoreProject = async (proj: any) => {
+    const { error } = await supabase.from('projects').update({ deleted_at: null } as any).eq('id', proj.id);
+    if (error) { toast({ title: 'Restore failed', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Project restored', description: proj.name });
+    await loadProjects();
+  };
+
+  const handlePermanentDeleteProject = async (proj: any) => {
+    if (!confirm(`Permanently delete "${proj.name}"? This cannot be undone.`)) return;
+    const { error } = await supabase.from('projects').delete().eq('id', proj.id);
+    if (error) { toast({ title: 'Delete failed', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Project deleted permanently' });
+    await loadProjects();
   };
 
   const loadTasks = async () => {
