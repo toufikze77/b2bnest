@@ -18,22 +18,22 @@ export default function LeadGenLayout({ children, title = "Lead Generation", sub
   useEffect(() => { seedIfEmpty(); }, []);
   const { pathname } = useLocation();
   return (
-    <div className="min-h-screen bg-[#f0f4f8]">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl flex items-center justify-center text-white" style={{ background: "#2563eb" }}>
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center text-white bg-primary">
               <Target className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-[#0A1628]">{title}</h1>
-              <p className="text-gray-600 text-sm">{subtitle}</p>
+              <h1 className="text-3xl font-bold text-foreground">{title}</h1>
+              <p className="text-muted-foreground text-sm">{subtitle}</p>
             </div>
           </div>
           <div>{right}</div>
         </div>
 
-        <div className="border-b border-gray-200 mb-6 overflow-x-auto">
+        <div className="border-b border-border mb-6 overflow-x-auto">
           <nav className="flex gap-1 min-w-max">
             {tabs.map(t => {
               const active = t.end ? pathname === t.to : pathname.startsWith(t.to);
@@ -41,7 +41,7 @@ export default function LeadGenLayout({ children, title = "Lead Generation", sub
                 <Link key={t.to} to={t.to}
                   className={cn(
                     "px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap",
-                    active ? "border-[#2563eb] text-[#2563eb]" : "border-transparent text-gray-600 hover:text-[#0A1628]"
+                    active ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
                   )}>
                   {t.label}
                 </Link>
