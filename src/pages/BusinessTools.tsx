@@ -478,13 +478,13 @@ const BusinessTools = () => {
 
 
             {/* Featured Tool: Lead Generation (ClickUp / Notion inspired) */}
-            {(filter === 'all' || filter === 'free' || (filter === 'favorites' && isFavorited('lead-generation'))) && (
+            {(filter === 'all' || filter === 'premium' || (filter === 'favorites' && isFavorited('lead-generation'))) && (
               <div
                 onClick={() => setCurrentTool('lead-generation')}
-                className="group relative overflow-hidden rounded-2xl mb-8 cursor-pointer border border-slate-200 bg-white shadow-sm hover:shadow-2xl transition-all duration-300"
+                className="group relative overflow-hidden rounded-2xl mb-8 cursor-pointer border border-border bg-card shadow-sm hover:shadow-2xl transition-all duration-300"
               >
                 {/* Subtle gradient backdrop */}
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-fuchsia-50" />
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-fuchsia-500/10" />
                 <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-gradient-to-br from-indigo-400/20 to-fuchsia-400/20 blur-3xl" />
                 <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-gradient-to-tr from-violet-400/20 to-pink-400/20 blur-3xl" />
 
@@ -495,7 +495,7 @@ const BusinessTools = () => {
                       <Badge className="bg-gradient-to-r from-indigo-600 to-fuchsia-600 text-white border-0 flex items-center gap-1">
                         <Flame className="h-3 w-3" /> New & Featured
                       </Badge>
-                      <Badge variant="outline" className="text-slate-600 border-slate-300">Free</Badge>
+                      <Badge variant="outline" className="border-amber-400/50 text-amber-600 dark:text-amber-400">Premium</Badge>
                     </div>
 
                     <h2 className="text-3xl lg:text-4xl font-bold tracking-tight text-slate-900 mb-3">
