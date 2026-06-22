@@ -113,20 +113,20 @@ export function calculateScore(lead: Partial<Lead>): { score: number; label: Sco
 
 export const scoreBadgeClass = (label: ScoreLabel) =>
   ({
-    Cold: "bg-gray-200 text-gray-700",
-    Warm: "bg-blue-100 text-blue-700",
-    Hot: "bg-amber-100 text-amber-800",
-    Ready: "bg-emerald-100 text-emerald-700",
+    Cold: "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200",
+    Warm: "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300",
+    Hot: "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300",
+    Ready: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300",
   }[label]);
 
 export const sourceBadgeClass = (source: string) => {
   const s = source.toLowerCase();
-  if (s.includes("form")) return "bg-blue-100 text-blue-700";
-  if (s.includes("landing")) return "bg-purple-100 text-purple-700";
-  if (s.includes("import")) return "bg-slate-100 text-slate-700";
-  if (s.includes("referral")) return "bg-emerald-100 text-emerald-700";
-  if (s.includes("manual")) return "bg-amber-100 text-amber-800";
-  return "bg-gray-100 text-gray-700";
+  if (s.includes("form")) return "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300";
+  if (s.includes("landing")) return "bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300";
+  if (s.includes("import")) return "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200";
+  if (s.includes("referral")) return "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300";
+  if (s.includes("manual")) return "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300";
+  return "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200";
 };
 
 // Storage helpers
