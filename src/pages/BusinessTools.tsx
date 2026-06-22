@@ -80,7 +80,7 @@ const BusinessTools = () => {
       icon: Filter,
       color: 'bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600',
       benefits: ['Smart lead scoring', 'Form & landing page builder', 'CSV import & export', 'Native CRM sync', 'Activity timeline', 'Shareable public forms'],
-      isPremium: false,
+      isPremium: true,
       featured: true
     },
     {
