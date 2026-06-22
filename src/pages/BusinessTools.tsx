@@ -535,13 +535,13 @@ const BusinessTools = () => {
                       <Button
                         size="lg"
                         variant="outline"
-                        className="border-slate-300"
+                        className="border-border"
                         onClick={(e) => { e.stopPropagation(); navigate('/lead-generation/import'); }}
                       >
                         <Download className="mr-2 h-4 w-4" />
                         Import CSV
                       </Button>
-                      <span className="text-xs text-slate-500 ml-1">No setup required · Works with your CRM</span>
+                      <span className="text-xs text-muted-foreground ml-1">No setup required · Works with your CRM</span>
                     </div>
                   </div>
 
