@@ -498,10 +498,10 @@ const BusinessTools = () => {
                       <Badge variant="outline" className="border-amber-400/50 text-amber-600 dark:text-amber-400">Premium</Badge>
                     </div>
 
-                    <h2 className="text-3xl lg:text-4xl font-bold tracking-tight text-slate-900 mb-3">
+                    <h2 className="text-3xl lg:text-4xl font-bold tracking-tight text-foreground mb-3">
                       Lead Generation & Prospecting
                     </h2>
-                    <p className="text-slate-600 text-base lg:text-lg mb-6 max-w-2xl">
+                    <p className="text-muted-foreground text-base lg:text-lg mb-6 max-w-2xl">
                       Capture leads, build forms and landing pages, score prospects automatically, and push the hottest contacts straight into your CRM — all in one workspace.
                     </p>
 
