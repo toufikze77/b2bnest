@@ -514,9 +514,9 @@ const BusinessTools = () => {
                         { icon: Download, label: 'CSV Import' },
                         { icon: BarChart, label: 'Pipeline View' },
                       ].map(({ icon: I, label }) => (
-                        <div key={label} className="flex items-center gap-2 text-sm text-slate-700">
-                          <div className="h-7 w-7 rounded-md bg-white border border-slate-200 flex items-center justify-center shadow-sm">
-                            <I className="h-3.5 w-3.5 text-indigo-600" />
+                        <div key={label} className="flex items-center gap-2 text-sm text-foreground/80">
+                          <div className="h-7 w-7 rounded-md bg-background border border-border flex items-center justify-center shadow-sm">
+                            <I className="h-3.5 w-3.5 text-indigo-500" />
                           </div>
                           {label}
                         </div>
