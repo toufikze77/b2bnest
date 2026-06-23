@@ -15,6 +15,8 @@ import LivePriceSidebars from '@/components/sidebars/LivePriceSidebars';
 import ShareButton from '@/components/ShareButton';
 import InstallAppButton from '@/components/InstallAppButton';
 import { useTheme } from '@/contexts/ThemeContext';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useUserAvatar } from '@/hooks/useUserAvatar';
 
 
 const Header = () => {
@@ -24,6 +26,8 @@ const Header = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { avatarUrl, displayName } = useUserAvatar();
+  const initials = (displayName || user?.email || '?').slice(0, 2).toUpperCase();
   
   
 
@@ -115,10 +119,13 @@ const Header = () => {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center space-x-2 px-3">
-                    <User className="h-4 w-4" />
+                  <Button variant="ghost" className="flex items-center space-x-2 px-2">
+                    <Avatar className="h-7 w-7">
+                      <AvatarImage src={avatarUrl} alt={displayName || user.email || 'User'} />
+                      <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                    </Avatar>
                     <span className="hidden sm:inline truncate max-w-32">
-                      {user.email}
+                      {displayName || user.email}
                     </span>
                   </Button>
                 </DropdownMenuTrigger>

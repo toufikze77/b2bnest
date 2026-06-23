@@ -427,6 +427,7 @@ const AccountSettings = () => {
                   }
 
                   setAvatarUrl(url);
+                  window.dispatchEvent(new CustomEvent('profile-avatar-updated', { detail: { userId: user.id, url } }));
                   toast({
                     title: "Success",
                     description: "Profile picture updated successfully!"
