@@ -87,7 +87,7 @@ export default function FormRenderer({ form, preview, onSubmitted, pageId }: Pro
       <div className="space-y-3">
         {form.fields.filter(f => f.type !== "hidden").map(f => (
           <div key={f.id}>
-            <label className="text-sm font-medium mb-1 block">{f.label}{f.required && <span className="text-red-500"> *</span>}</label>
+            <label className="text-sm font-medium mb-1 block text-[#0A1628]">{f.label}{f.required && <span className="text-red-500"> *</span>}</label>
             {f.type === "textarea" ? (
               <Textarea placeholder={f.placeholder} value={values[f.id] || ""} onChange={e => set(f.id, e.target.value)} />
             ) : f.type === "dropdown" ? (

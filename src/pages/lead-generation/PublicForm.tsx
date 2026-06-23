@@ -12,6 +12,10 @@ export default function PublicForm() {
     seedIfEmpty();
     const f = getForms().find(x => x.id === formId);
     if (!f) setMissing(true); else setForm(f);
+    const root = document.documentElement;
+    const hadDark = root.classList.contains("dark");
+    root.classList.remove("dark");
+    return () => { if (hadDark) root.classList.add("dark"); };
   }, [formId]);
 
   if (missing) {

@@ -25,6 +25,10 @@ export default function PublicPage() {
         document.head.appendChild(link);
       }
     }
+    const root = document.documentElement;
+    const hadDark = root.classList.contains("dark");
+    root.classList.remove("dark");
+    return () => { if (hadDark) root.classList.add("dark"); };
   }, [slug]);
 
   if (missing) return <div className="min-h-screen flex items-center justify-center"><h1 className="text-2xl">Page not found</h1></div>;
