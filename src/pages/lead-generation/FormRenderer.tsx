@@ -72,6 +72,15 @@ export default function FormRenderer({ form, preview, onSubmitted, pageId }: Pro
   return (
     <form onSubmit={onSubmit} className="p-6 shadow-sm border"
       style={{ background: form.design.bgColor, borderRadius: form.design.borderRadius }}>
+      {avatarUrl && (
+        <div className="flex items-center gap-2 mb-4">
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={avatarUrl} alt={displayName} />
+            <AvatarFallback>{initials}</AvatarFallback>
+          </Avatar>
+          {displayName && <span className="text-sm font-medium text-[#0A1628]">{displayName}</span>}
+        </div>
+      )}
       <h2 className="text-xl font-bold text-[#0A1628] mb-1">{form.design.title}</h2>
       {form.design.description && <p className="text-sm text-gray-600 mb-4">{form.design.description}</p>}
 

@@ -1,13 +1,26 @@
 import { LandingPage, getForms } from "@/lib/leadGen";
 import FormRenderer from "./FormRenderer";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useUserAvatar } from "@/hooks/useUserAvatar";
 
 export default function PageRenderer({ page, preview }: { page: LandingPage; preview?: boolean }) {
+  const { avatarUrl, displayName } = useUserAvatar();
+  const initials = (displayName || "U").slice(0, 2).toUpperCase();
   return (
     <div className="bg-white">
       {page.blocks.map(b => {
         if (b.type === "hero") {
           return (
             <section key={b.id} className="py-20 px-6 text-center text-white" style={{ background: b.content.bgColor }}>
+              {avatarUrl && (
+                <div className="flex flex-col items-center gap-2 mb-6">
+                  <Avatar className="h-20 w-20 ring-4 ring-white/20">
+                    <AvatarImage src={avatarUrl} alt={displayName} />
+                    <AvatarFallback className="text-lg text-[#0A1628]">{initials}</AvatarFallback>
+                  </Avatar>
+                  {displayName && <p className="text-sm opacity-90">{displayName}</p>}
+                </div>
+              )}
               <h1 className="text-4xl md:text-5xl font-bold mb-4">{b.content.headline}</h1>
               <p className="text-lg opacity-90 max-w-2xl mx-auto">{b.content.subheadline}</p>
             </section>
