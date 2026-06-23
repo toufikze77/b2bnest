@@ -40,11 +40,23 @@ const AccountSettings = () => {
     time_format: '12h'
   });
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string>('');
 
   useEffect(() => {
     fetchUser2FASettings();
     fetchUserSettings();
+    fetchAvatar();
   }, [user]);
+
+  const fetchAvatar = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('avatar_url')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (data?.avatar_url) setAvatarUrl(data.avatar_url);
+  };
 
   const fetchUser2FASettings = async () => {
     if (!user) {
@@ -402,8 +414,7 @@ const AccountSettings = () => {
                 try {
                   const { error } = await supabase
                     .from('profiles')
-                    .update({ avatar_url: url })
-                    .eq('id', user.id);
+                    .upsert({ id: user.id, email: user.email, avatar_url: url }, { onConflict: 'id' });
 
                   if (error) {
                     console.error('Error updating avatar:', error);
@@ -415,6 +426,7 @@ const AccountSettings = () => {
                     return;
                   }
 
+                  setAvatarUrl(url);
                   toast({
                     title: "Success",
                     description: "Profile picture updated successfully!"
@@ -430,9 +442,11 @@ const AccountSettings = () => {
               }}
               bucket="user-avatars"
               userId={user.id}
+              currentImageUrl={avatarUrl}
               label="Profile Picture"
               maxSize={2}
             />
+
           </CardContent>
         </Card>
       </TabsContent>

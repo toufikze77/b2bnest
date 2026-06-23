@@ -31,6 +31,10 @@ const ImageUpload = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  React.useEffect(() => {
+    setPreviewUrl(currentImageUrl || null);
+  }, [currentImageUrl]);
+
   const uploadImage = async (file: File) => {
     if (!userId) {
       toast({
