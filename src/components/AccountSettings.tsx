@@ -40,11 +40,23 @@ const AccountSettings = () => {
     time_format: '12h'
   });
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string>('');
 
   useEffect(() => {
     fetchUser2FASettings();
     fetchUserSettings();
+    fetchAvatar();
   }, [user]);
+
+  const fetchAvatar = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('avatar_url')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (data?.avatar_url) setAvatarUrl(data.avatar_url);
+  };
 
   const fetchUser2FASettings = async () => {
     if (!user) {
