@@ -3,12 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LeadForm, upsertLead, saveForm, getForms } from "@/lib/leadGen";
 import { toast } from "sonner";
+import { useUserAvatar } from "@/hooks/useUserAvatar";
 
 interface Props { form: LeadForm; preview?: boolean; onSubmitted?: () => void; pageId?: string | null; }
 
 export default function FormRenderer({ form, preview, onSubmitted, pageId }: Props) {
+  const { avatarUrl, displayName } = useUserAvatar();
+  const initials = (displayName || "U").slice(0, 2).toUpperCase();
   const [values, setValues] = useState<Record<string, any>>({});
   const [done, setDone] = useState(false);
 
