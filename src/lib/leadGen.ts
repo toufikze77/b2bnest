@@ -206,7 +206,7 @@ export function newDefaultPage(): LandingPage {
     blocks: [
       { id: uid(), type: "hero", content: { headline: "Your headline here", subheadline: "A compelling subheading.", bgColor: "#0A1628" } },
     ],
-    settings: { title: "Landing Page", seoDescription: "", faviconEmoji: "🚀" },
+    settings: { title: "Landing Page", seoDescription: "", faviconEmoji: "" },
     views: 0,
     leadsCount: 0,
     createdAt: new Date().toISOString(),

@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { ArrowLeft, ChevronUp, ChevronDown, Trash2, Plus } from "lucide-react";
 import PageRenderer from "./PageRenderer";
 
-const EMOJIS = ["🚀","💼","📈","✨","💡","🎯","🌟","🔥","💷","📊","🤝","⚡"];
+const EMOJIS = ["💼","📈","✨","💡","🎯","🌟","🔥","💷","📊","🤝","⚡"];
 
 export default function PageBuilder() {
   const { id } = useParams();

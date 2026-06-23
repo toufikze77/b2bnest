@@ -17,10 +17,11 @@ export default function PublicPage() {
       savePage(updated);
       setPage(updated);
       document.title = p.settings.title || p.name;
-      if (p.settings.faviconEmoji) {
+      const emoji = p.settings.faviconEmoji === "🚀" ? "" : p.settings.faviconEmoji;
+      if (emoji) {
         const link = document.querySelector("link[rel*='icon']") as HTMLLinkElement || document.createElement("link");
         link.rel = "icon";
-        link.href = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="80" font-size="80">${p.settings.faviconEmoji}</text></svg>`;
+        link.href = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="80" font-size="80">${emoji}</text></svg>`;
         document.head.appendChild(link);
       }
     }
