@@ -414,8 +414,7 @@ const AccountSettings = () => {
                 try {
                   const { error } = await supabase
                     .from('profiles')
-                    .update({ avatar_url: url })
-                    .eq('id', user.id);
+                    .upsert({ id: user.id, email: user.email, avatar_url: url }, { onConflict: 'id' });
 
                   if (error) {
                     console.error('Error updating avatar:', error);
@@ -427,6 +426,7 @@ const AccountSettings = () => {
                     return;
                   }
 
+                  setAvatarUrl(url);
                   toast({
                     title: "Success",
                     description: "Profile picture updated successfully!"
@@ -442,9 +442,11 @@ const AccountSettings = () => {
               }}
               bucket="user-avatars"
               userId={user.id}
+              currentImageUrl={avatarUrl}
               label="Profile Picture"
               maxSize={2}
             />
+
           </CardContent>
         </Card>
       </TabsContent>
