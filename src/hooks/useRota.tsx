@@ -60,8 +60,8 @@ export const useRota = () => {
     return () => { mounted = false; };
   }, [user]);
 
-  const tier = (subscription.subscription_tier || 'free').toLowerCase();
-  const isRotaPremium = isPremium || tier.includes('premium') || tier === 'enterprise';
+  const tier = (sub.subscription_tier || 'free').toLowerCase();
+  const isRotaPremium = sub.isPremium || tier.includes('premium') || tier === 'enterprise';
 
   const fetchEmployees = useCallback(async () => {
     if (!organizationId) return;
