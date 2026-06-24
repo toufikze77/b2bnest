@@ -185,18 +185,24 @@ export default function Schedule() {
                     })}
                     {(() => {
                       const total = totalHours(emp.id);
-                      const contracted = emp.contracted_hours || 0;
+                      const contracted = Number(emp.contracted_hours) || 0;
                       const over = contracted > 0 && total > contracted;
                       return (
                         <td
-                          className={`p-2 text-right font-medium align-top ${over ? 'text-orange-600 dark:text-orange-400' : ''}`}
+                          className="p-2 text-right align-top"
                           title={contracted > 0 ? `Contracted: ${contracted}h` : 'No contracted hours set'}
                         >
-                          <div>{total.toFixed(1)}h</div>
+                          <div className={`font-medium ${over ? 'text-orange-600 dark:text-orange-400' : ''}`}>
+                            {total.toFixed(1)}h
+                          </div>
                           {contracted > 0 && (
-                            <div className={`text-[10px] ${over ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>
-                              {over ? `+${(total - contracted).toFixed(1)}h over` : `of ${contracted}h`}
-                            </div>
+                            over ? (
+                              <span className="inline-flex items-center mt-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300 border border-orange-300 dark:border-orange-500/40">
+                                ⚠ +{(total - contracted).toFixed(1)}h over
+                              </span>
+                            ) : (
+                              <div className="text-[10px] text-muted-foreground">of {contracted}h</div>
+                            )
                           )}
                         </td>
                       );
