@@ -1,78 +1,93 @@
-# Per-tenant WhatsApp Integration (BYO credentials)
 
-Each subscriber connects their **own** WhatsApp/Twilio account. Credentials are encrypted at rest and never sent to the browser. Workflow steps execute server-side using only the calling user's credentials.
+## Employee Rota & Scheduling (Business Premium)
 
-## 1. Storage (reuse existing `user_integrations`)
+A multi-tenant rota system inspired by RotaCloud / Workday WFM. Scope for v1: **Employees & Roles** + **Weekly Shift Scheduling**. Strict org-scoped data, owners/admins only manage, preview mode for non-premium plans.
 
-We already have:
-- `public.user_integrations` (per-user, RLS-protected, tokens encrypted)
-- `store_integration_tokens(name, access_token, refresh_token, expires_at, metadata)`
-- `get_integration_tokens(name)` — SECURITY DEFINER, audit-logged
+### What gets built
 
-New `integration_name` value: `whatsapp_twilio`
-- `access_token` ← Twilio Auth Token (encrypted)
-- `metadata` ← `{ account_sid, from_number, channel: "whatsapp"|"sms", verified: bool }`
+**1. Navigation & gating**
+- New sidebar entry "Rota" under Business Tools.
+- Route `/rota` (protected). Page checks plan via `useSubscription`:
+  - **Business Premium / Enterprise** → full access.
+  - **Other plans** → preview mode: UI rendered, capped at 3 employees + 1 published week, with an inline upgrade banner pointing to `/pricing`.
+- Owners/Admins only: non-admin org members see a "Contact your administrator" empty state. Enforced both client-side (via `useUserRole`) and server-side via RLS.
 
-Add migration to:
-- Create RPC `test_whatsapp_connection(p_user_id)` returning bool (calls into edge function via UI — not via SQL).
-- Add `workflow_run_logs` table (per-user) for audit of executed steps.
+**2. Employees screen (`/rota/employees`)**
+- Table of employees in the current org with: name, email, role/job title, pay rate (hourly), contracted hours/week, color tag, status (active/archived), linked user (optional).
+- Add/Edit/Archive dialogs.
+- "Link to platform user" optional dropdown — choose any active org member; leave blank for standalone records (e.g. casual staff who don't need a login).
+- Bulk import CSV (deferred — flagged but not in v1).
+
+**3. Weekly scheduler (`/rota/schedule`)**
+- Week picker (prev/next/today), grid of employees × 7 days.
+- Click a cell → shift dialog: start, end, break (mins), role, location/note.
+- Drag-to-resize and drag-to-copy shifts (using `@dnd-kit/core`, already installed).
+- "Copy previous week" action.
+- Draft vs Published state per week. Publishing locks edits to admins and is the trigger that makes shifts visible to linked employees in future (read-only "My shifts" view — out of v1 scope but schema-ready).
+- Totals per employee per week (scheduled hours, cost = hours × pay_rate) and per day (headcount, hours).
+
+### Data model (new tables, all org-scoped)
+
+All tables include `organization_id uuid not null`, `created_at`, `updated_at`. RLS uses existing helpers `user_is_organization_member` (read) and `user_is_organization_admin` (write).
 
 ```text
-workflow_run_logs
-├─ user_id          uuid (RLS: own rows only)
-├─ workflow_id      uuid nullable
-├─ step             text   (e.g. "whatsapp.send")
-├─ status           text   ("ok" | "error")
-├─ provider         text   ("twilio")
-├─ request_summary  jsonb  (to, channel, body length — never full secrets)
-├─ response_summary jsonb  (message sid, error code)
-└─ created_at       timestamptz
+rota_employees
+  id, organization_id, user_id (nullable, FK profiles.id),
+  full_name, email, job_title, color,
+  pay_rate_pence int, contracted_hours numeric,
+  is_active bool default true
+
+rota_shifts
+  id, organization_id, employee_id (FK rota_employees),
+  shift_date date, start_time time, end_time time,
+  break_minutes int default 0, role text, location text, notes text,
+  status text check in ('draft','published') default 'draft',
+  created_by uuid
+
+rota_week_publications
+  id, organization_id, week_start date,
+  published_at, published_by
+  unique(organization_id, week_start)
 ```
 
-## 2. Edge functions
+**GRANTs**: `authenticated` (SELECT/INSERT/UPDATE/DELETE), `service_role` (ALL). No `anon`.
 
-**`whatsapp-connect`** (JWT-required)
-- Body: `{ account_sid, auth_token, from_number, channel }`
-- Validates with Twilio `GET /Accounts/{sid}.json` using basic auth
-- On success → calls `store_integration_tokens('whatsapp_twilio', auth_token, null, null, {account_sid, from_number, channel, verified:true})`
-- Returns `{ ok, verified_at }`
+**RLS policies** (per table):
+- SELECT: `user_is_organization_member(organization_id)`
+- INSERT/UPDATE/DELETE: `user_is_organization_admin(organization_id)`
 
-**`whatsapp-disconnect`** (JWT-required)
-- Marks the user's `user_integrations` row `is_connected=false` and nulls the tokens.
+Tenant isolation guaranteed by `organization_id` filter in every policy — no cross-org leakage possible even if the client requests it.
 
-**`workflow-execute`** (JWT-required)
-- Body: `{ workflow_id?, steps: [{ type: "whatsapp.send", to, body, mediaUrl? }] }`
-- Loads creds via `get_integration_tokens('whatsapp_twilio')` for the caller only
-- Validates inputs (Zod): E.164 `to`, body ≤ 1600 chars, max 10 steps/run, rate-limit 30 calls/min per user
-- Calls Twilio REST directly (`https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json`) with HTTP Basic
-- Writes to `workflow_run_logs`; returns per-step `{ ok, sid?, error? }`
+### Plan gate (server-side reinforcement)
 
-Security posture:
-- All three functions: CORS + `getClaims()` JWT check, no service-role exposed to client
-- Never echo `auth_token` back in responses
-- SSRF-safe: only fetches `api.twilio.com`
-- Input allowlists; reject any `to` not matching `^\+[1-9]\d{6,14}$`
+Beyond UI gating, add a Postgres function `rota_can_add_employee(org_id)` that returns true if the org has Business Premium/Enterprise OR has fewer than 3 active employees. Called via RPC before inserts; UI also calls it to show/hide the upgrade prompt. Prevents bypass via direct API.
 
-## 3. Frontend
+### Files
 
-**New page `src/pages/integrations/WhatsAppSettings.tsx`** (route `/integrations/whatsapp`)
-- Status card: Connected / Not connected (reads `get_user_integrations_safe`)
-- "Connect" form: Account SID, Auth Token (password field), From number, Channel (WhatsApp/SMS)
-- "Test message" button → calls `workflow-execute` with one step
-- "Disconnect" button
+**New**
+- `supabase/migrations/<ts>_rota_system.sql` — tables, grants, RLS, gate function.
+- `src/pages/rota/RotaLayout.tsx` — shared layout + plan/role guard.
+- `src/pages/rota/Employees.tsx`
+- `src/pages/rota/Schedule.tsx`
+- `src/components/rota/EmployeeDialog.tsx`
+- `src/components/rota/ShiftDialog.tsx`
+- `src/components/rota/WeekGrid.tsx`
+- `src/components/rota/UpgradeBanner.tsx`
+- `src/hooks/useRota.tsx` — fetches employees, shifts, current org id, plan status.
 
-**Workflow builder update** (`src/components/workflow/...`)
-- Add **Send WhatsApp** step block with icon, fields (to, body, optional media)
-- Run button calls `workflow-execute` edge function
-- Inline empty-state CTA when user hasn't connected yet → links to `/integrations/whatsapp`
+**Edited**
+- `src/App.tsx` — add `/rota`, `/rota/employees`, `/rota/schedule` routes (ProtectedRoute).
+- `src/components/Header.tsx` or sidebar — add "Rota" entry.
+- `src/pages/BusinessTools.tsx` — add card linking to `/rota`.
 
-**Template**: add "Lead → WhatsApp welcome" template to the gallery.
+### Out of scope for v1 (noted for follow-up)
+- Employee-facing "My shifts" view, time clock/timesheets, leave & availability, payroll export, mobile push notifications, swap requests. Schema choices above leave room for all of these.
 
-## 4. What's intentionally NOT in this change
+### Security checklist
+- All tables org-scoped with RLS via security-definer helpers (no recursive policies).
+- Admin-only mutations enforced in DB, not just UI.
+- Plan gate enforced in DB function as well as in client.
+- No PII exposed cross-tenant; email column on `rota_employees` only readable by same-org members.
+- No service-role key in client; all access via anon key + RLS.
 
-- No workspace-level Twilio connector (you confirmed multi-tenant — each user brings their own keys)
-- No other providers (Slack/HubSpot/etc) — ask separately when ready
-- No scheduled/cron triggers yet — manual run only; can add `pg_cron` later
-
-## Approval needed
-This requires a DB migration (new `workflow_run_logs` table + grants/RLS) and 3 new edge functions. Approve to proceed.
+Approve to proceed and I'll run the migration first, then build the UI.
