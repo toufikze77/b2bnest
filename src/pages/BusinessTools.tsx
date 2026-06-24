@@ -84,6 +84,16 @@ const BusinessTools = () => {
       featured: true
     },
     {
+      id: 'employee-rota' as ToolType,
+      title: 'Employee Rota & Scheduling',
+      description: 'Plan weekly shifts, manage staff, and track labour costs (RotaCloud / Workday inspired)',
+      icon: CalIcon,
+      color: 'bg-gradient-to-r from-amber-600 to-rose-600',
+      benefits: ['Weekly schedule grid', 'Employee management', 'Labour cost totals', 'Copy last week', 'Publish shifts', 'Org-scoped & secure'],
+      isPremium: true,
+      featured: true
+    },
+    {
       id: 'notepro' as ToolType,
       title: 'NotePro - Professional Note Taking',
       description: 'Organize your thoughts, ideas, and tasks in one professional note-taking app',
