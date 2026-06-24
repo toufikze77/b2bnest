@@ -183,7 +183,24 @@ export default function Schedule() {
                         </td>
                       );
                     })}
-                    <td className="p-2 text-right font-medium align-top">{totalHours(emp.id).toFixed(1)}h</td>
+                    {(() => {
+                      const total = totalHours(emp.id);
+                      const contracted = emp.contracted_hours || 0;
+                      const over = contracted > 0 && total > contracted;
+                      return (
+                        <td
+                          className={`p-2 text-right font-medium align-top ${over ? 'text-orange-600 dark:text-orange-400' : ''}`}
+                          title={contracted > 0 ? `Contracted: ${contracted}h` : 'No contracted hours set'}
+                        >
+                          <div>{total.toFixed(1)}h</div>
+                          {contracted > 0 && (
+                            <div className={`text-[10px] ${over ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>
+                              {over ? `+${(total - contracted).toFixed(1)}h over` : `of ${contracted}h`}
+                            </div>
+                          )}
+                        </td>
+                      );
+                    })()}
                   </tr>
                 ))}
               </tbody>
