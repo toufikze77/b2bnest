@@ -39,4 +39,9 @@
   <url><loc>https://b2bnest.lovable.app/blog</loc><lastmod>2026-05-28</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://b2bnest.lovable.app/forms/work-request</loc><lastmod>2026-05-28</lastmod><changefreq>monthly</changefreq><priority>0.4</priority></url>
   <url><loc>https://b2bnest.lovable.app/forms/b2b</loc><lastmod>2026-05-28</lastmod><changefreq>monthly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://b2bnest.lovable.app/business-overview</loc><lastmod>2026-06-24</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://b2bnest.lovable.app/profile-setup</loc><lastmod>2026-06-24</lastmod><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://b2bnest.lovable.app/business-tools/notepro</loc><lastmod>2026-06-24</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://b2bnest.lovable.app/ai-workspace</loc><lastmod>2026-06-24</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://b2bnest.lovable.app/workflow-studio</loc><lastmod>2026-06-24</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>
 </urlset>
