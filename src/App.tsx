@@ -65,6 +65,9 @@ import PageBuilder from '@/pages/lead-generation/PageBuilder';
 import ImportPage from '@/pages/lead-generation/Import';
 import PublicForm from '@/pages/lead-generation/PublicForm';
 import PublicPage from '@/pages/lead-generation/PublicPage';
+import RotaIndex from '@/pages/rota/Index';
+import RotaEmployees from '@/pages/rota/Employees';
+import RotaSchedule from '@/pages/rota/Schedule';
 
 const queryClient = new QueryClient();
 
