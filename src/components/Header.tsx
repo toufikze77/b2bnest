@@ -149,6 +149,12 @@ const Header = () => {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
+                    <Link to="/rota" className="flex items-center w-full">
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      Employee Rota
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link to="/settings" className="flex items-center w-full">
                       <Settings className="h-4 w-4 mr-2" />
                       Settings

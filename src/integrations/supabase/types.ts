@@ -2581,6 +2581,180 @@ export type Database = {
         }
         Relationships: []
       }
+      rota_employees: {
+        Row: {
+          color: string | null
+          contracted_hours: number | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          full_name: string
+          id: string
+          is_active: boolean
+          job_title: string | null
+          organization_id: string
+          pay_rate_pence: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          color?: string | null
+          contracted_hours?: number | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          full_name: string
+          id?: string
+          is_active?: boolean
+          job_title?: string | null
+          organization_id: string
+          pay_rate_pence?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          color?: string | null
+          contracted_hours?: number | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          job_title?: string | null
+          organization_id?: string
+          pay_rate_pence?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rota_employees_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_employees_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_employees_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rota_shifts: {
+        Row: {
+          break_minutes: number
+          created_at: string
+          created_by: string | null
+          employee_id: string
+          end_time: string
+          id: string
+          location: string | null
+          notes: string | null
+          organization_id: string
+          role: string | null
+          shift_date: string
+          start_time: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          break_minutes?: number
+          created_at?: string
+          created_by?: string | null
+          employee_id: string
+          end_time: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          organization_id: string
+          role?: string | null
+          shift_date: string
+          start_time: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          break_minutes?: number
+          created_at?: string
+          created_by?: string | null
+          employee_id?: string
+          end_time?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          organization_id?: string
+          role?: string | null
+          shift_date?: string
+          start_time?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rota_shifts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "rota_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_shifts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rota_week_publications: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          published_at: string
+          published_by: string | null
+          updated_at: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          published_at?: string
+          published_by?: string | null
+          updated_at?: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          published_at?: string
+          published_by?: string | null
+          updated_at?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rota_week_publications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security_audit_logs: {
         Row: {
           action: string
@@ -3972,6 +4146,7 @@ export type Database = {
           user_weighted_stake: number
         }[]
       }
+      rota_can_add_employee: { Args: { p_org_id: string }; Returns: boolean }
       store_bank_account: {
         Args: {
           p_account_id: string

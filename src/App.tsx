@@ -65,6 +65,9 @@ import PageBuilder from '@/pages/lead-generation/PageBuilder';
 import ImportPage from '@/pages/lead-generation/Import';
 import PublicForm from '@/pages/lead-generation/PublicForm';
 import PublicPage from '@/pages/lead-generation/PublicPage';
+import RotaIndex from '@/pages/rota/Index';
+import RotaEmployees from '@/pages/rota/Employees';
+import RotaSchedule from '@/pages/rota/Schedule';
 
 const queryClient = new QueryClient();
 
@@ -118,6 +121,9 @@ function App() {
               <Route path="/lead-generation/pages/new" element={<ProtectedRoute><PageBuilder /></ProtectedRoute>} />
               <Route path="/lead-generation/pages/edit/:id" element={<ProtectedRoute><PageBuilder /></ProtectedRoute>} />
               <Route path="/lead-generation/import" element={<ProtectedRoute><ImportPage /></ProtectedRoute>} />
+              <Route path="/rota" element={<ProtectedRoute><RotaIndex /></ProtectedRoute>} />
+              <Route path="/rota/employees" element={<ProtectedRoute><RotaEmployees /></ProtectedRoute>} />
+              <Route path="/rota/schedule" element={<ProtectedRoute><RotaSchedule /></ProtectedRoute>} />
               <Route path="/f/:formId" element={<PublicForm />} />
               <Route path="/p/:slug" element={<PublicPage />} />
               <Route path="/project-management" element={<ProtectedRoute><ProjectManagementPage /></ProtectedRoute>} />
