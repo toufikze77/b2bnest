@@ -36,7 +36,7 @@ export const PREVIEW_EMPLOYEE_LIMIT = 3;
 
 export const useRota = () => {
   const { user } = useAuth();
-  const { subscription, isPremium } = useSubscription();
+  const sub = useSubscription();
   const { isAdmin, loading: roleLoading } = useUserRole();
 
   const [organizationId, setOrganizationId] = useState<string | null>(null);
