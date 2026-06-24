@@ -4010,6 +4010,17 @@ export type Database = {
           refresh_token: string
         }[]
       }
+      get_invitation_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          accepted_at: string
+          email: string
+          expires_at: string
+          id: string
+          organization_id: string
+          role: string
+        }[]
+      }
       get_notification_preferences: {
         Args: { p_user_id?: string }
         Returns: {
