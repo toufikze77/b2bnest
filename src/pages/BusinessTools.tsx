@@ -32,7 +32,7 @@ import BusinessFinanceAssistant from '@/components/BusinessFinanceAssistant';
 import HMRCIntegration from '@/components/HMRCIntegration';
 import BusinessToolsSEO from '@/components/BusinessToolsSEO';
 
-type ToolType = 'overview' | 'notepro' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'qr-code-generator' | 'coupon-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'customer-survey-builder' | 'business-finance-assistant' | 'currency-converter' | 'crypto-converter' | 'hmrc-integration' | 'workflow-studio' | 'lead-generation';
+type ToolType = 'overview' | 'notepro' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'qr-code-generator' | 'coupon-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'customer-survey-builder' | 'business-finance-assistant' | 'currency-converter' | 'crypto-converter' | 'hmrc-integration' | 'workflow-studio' | 'lead-generation' | 'employee-rota';
 
 type FilterType = 'all' | 'premium' | 'favorites' | 'free';
 
@@ -80,6 +80,16 @@ const BusinessTools = () => {
       icon: Filter,
       color: 'bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600',
       benefits: ['Smart lead scoring', 'Form & landing page builder', 'CSV import & export', 'Native CRM sync', 'Activity timeline', 'Shareable public forms'],
+      isPremium: true,
+      featured: true
+    },
+    {
+      id: 'employee-rota' as ToolType,
+      title: 'Employee Rota & Scheduling',
+      description: 'Plan weekly shifts, manage staff, and track labour costs (RotaCloud / Workday inspired)',
+      icon: CalIcon,
+      color: 'bg-gradient-to-r from-amber-600 to-rose-600',
+      benefits: ['Weekly schedule grid', 'Employee management', 'Labour cost totals', 'Copy last week', 'Publish shifts', 'Org-scoped & secure'],
       isPremium: true,
       featured: true
     },
@@ -411,6 +421,9 @@ const BusinessTools = () => {
         return null;
       case 'lead-generation':
         navigate('/lead-generation');
+        return null;
+      case 'employee-rota':
+        navigate('/rota');
         return null;
       case 'notepro':
         navigate('/business-tools/notepro');
