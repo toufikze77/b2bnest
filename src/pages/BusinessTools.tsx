@@ -422,6 +422,9 @@ const BusinessTools = () => {
       case 'lead-generation':
         navigate('/lead-generation');
         return null;
+      case 'employee-rota':
+        navigate('/rota');
+        return null;
       case 'notepro':
         navigate('/business-tools/notepro');
         return null;
