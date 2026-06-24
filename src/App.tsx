@@ -121,6 +121,9 @@ function App() {
               <Route path="/lead-generation/pages/new" element={<ProtectedRoute><PageBuilder /></ProtectedRoute>} />
               <Route path="/lead-generation/pages/edit/:id" element={<ProtectedRoute><PageBuilder /></ProtectedRoute>} />
               <Route path="/lead-generation/import" element={<ProtectedRoute><ImportPage /></ProtectedRoute>} />
+              <Route path="/rota" element={<ProtectedRoute><RotaIndex /></ProtectedRoute>} />
+              <Route path="/rota/employees" element={<ProtectedRoute><RotaEmployees /></ProtectedRoute>} />
+              <Route path="/rota/schedule" element={<ProtectedRoute><RotaSchedule /></ProtectedRoute>} />
               <Route path="/f/:formId" element={<PublicForm />} />
               <Route path="/p/:slug" element={<PublicPage />} />
               <Route path="/project-management" element={<ProtectedRoute><ProjectManagementPage /></ProtectedRoute>} />
