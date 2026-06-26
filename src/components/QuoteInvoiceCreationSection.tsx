@@ -253,7 +253,7 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
         // Update existing document
         const { data, error } = await supabase
           .from(documentType === 'quote' ? 'quotes' : 'invoices')
-          .update(documentData)
+          .update(documentData as any)
           .eq('id', editingDocument.id)
           .select()
           .single();
@@ -262,7 +262,7 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
         // Create new document
         const { data, error } = await supabase
           .from(documentType === 'quote' ? 'quotes' : 'invoices')
-          .insert([documentData])
+          .insert([documentData] as any)
           .select()
           .single();
         result = { data, error };
