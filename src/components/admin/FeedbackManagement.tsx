@@ -93,9 +93,10 @@ const FeedbackManagement = () => {
 
   const handleUpdateRequest = async (requestId: string, updates: Partial<FeedbackRequest>) => {
     try {
+      const { user_email, user_name, ...dbUpdates } = updates as any;
       const { error } = await supabase
         .from('feedback_requests')
-        .update(updates)
+        .update(dbUpdates)
         .eq('id', requestId);
 
       if (error) throw error;
