@@ -185,7 +185,7 @@ const LandingPageBuilder = () => {
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div class="flex justify-between items-center">
                 <div class="flex items-center gap-3">
-                    ${page.logo ? `<img src="${page.logo}" alt="Logo" class="h-8 w-auto" />` : ''}
+                    ${page.logo ? `<img src="${page.logo}" alt="${page.title ? page.title + ' company logo' : 'Company logo'}" class="h-8 w-auto" />` : ''}
                     <div class="text-2xl font-bold ${theme?.primary || 'text-blue-600'}">${page.title}</div>
                 </div>
                 <nav class="hidden md:flex space-x-8">
@@ -463,7 +463,7 @@ const LandingPageBuilder = () => {
                   <div className="flex items-center gap-2">
                     {formData.logo && (
                       <div className="w-6 h-6 border rounded overflow-hidden">
-                        <img src={formData.logo} alt="Logo" className="w-full h-full object-contain" />
+                        <img src={formData.logo} alt="Uploaded company logo preview" className="w-full h-full object-contain" />
                       </div>
                     )}
                     <div className={`text-lg font-bold ${getThemeClasses(formData.color).primary}`}>

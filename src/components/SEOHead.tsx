@@ -15,12 +15,12 @@ interface SEOHeadProps {
 }
 
 const SEOHead = ({
-  title = "Affordable Business Tools & Free AI-Powered Solutions | B2BNest",
-  description = "Discover 50+ free and affordable business tools in one intelligent platform. From AI document generation to financial tracking - everything modern entrepreneurs need without breaking the bank. Try free tools now!",
-  keywords = "affordable business tools, free business tools, cheap business software, low cost business solutions, budget business tools, free CRM, free project management, free invoice generator, affordable SaaS, business tools under $10, small business tools, startup tools free, entrepreneur tools, free document templates, cheap business software, business automation tools, free marketing tools, budget CRM software, affordable project management, free business calculator, cheap business forms, low cost HR tools, free financial tracking, budget business solutions, affordable business apps, free productivity tools, cheap document generator, business tools for startups, free business resources, affordable business platform, cheap business suite, free all-in-one business tools, budget friendly business software",
+  title = "B2BNest — Affordable Business Tools & Free AI",
+  description = "50+ free and affordable business tools in one platform: AI documents, CRM, invoicing, and financial tracking for modern entrepreneurs.",
+  keywords = "affordable business tools, free business tools, free CRM, free project management, free invoice generator, affordable SaaS, business automation, small business tools",
   canonical,
   canonicalUrl,
-  ogImage = "https://b2bnest.com/lovable-uploads/86c25eed-4258-4e9e-9fd3-c368f065e452.png",
+  ogImage = "https://b2bnest.online/lovable-uploads/86c25eed-4258-4e9e-9fd3-c368f065e452.png",
   ogType = "website",
   ogTitle,
   ogDescription,
