@@ -638,6 +638,8 @@ const BusinessTools = () => {
                               toggleFavorite(tool.id);
                             }}
                             className="p-2 h-auto hover:bg-gray-100"
+                            aria-label={isFavorited(tool.id) ? `Remove ${tool.title} from favorites` : `Add ${tool.title} to favorites`}
+                            aria-pressed={isFavorited(tool.id)}
                           >
                             <Star 
                               className={`h-4 w-4 ${

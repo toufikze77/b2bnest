@@ -162,7 +162,7 @@ const BusinessOverview: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <SEOHead title="Business Overview" description="Unified overview of revenue, expenses, projects, tasks and CRM across your organization." />
+      <SEOHead title="Business Overview | B2BNest" description="Unified overview of revenue, expenses, projects, tasks and CRM across your organization." canonicalUrl="https://b2bnest.online/business-overview" />
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-6">
           <Button variant="outline" onClick={() => navigate(-1)} className="flex items-center gap-2">
