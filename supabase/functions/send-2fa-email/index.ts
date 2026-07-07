@@ -12,26 +12,72 @@ const corsHeaders = {
 
 interface Email2FARequest {
   email: string;
-  code: string;
   type: 'verification' | 'login';
   name?: string;
 }
 
+// Cryptographically secure 6-digit code
+function generateSecureCode(): string {
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  return String((buf[0] % 900000) + 100000);
+}
+
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { email, code, type, name }: Email2FARequest = await req.json();
+    // Require authenticated caller to prevent abuse/phishing spam
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
-    // Initialize Supabase client for rate limiting
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    // Check rate limiting
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const callerUserId = claimsData.claims.sub as string;
+    const callerEmail = (claimsData.claims.email as string | undefined)?.toLowerCase();
+
+    const { email, type, name }: Email2FARequest = await req.json();
+
+    if (!email || !type || (type !== 'verification' && type !== 'login')) {
+      return new Response(
+        JSON.stringify({ error: "Invalid input" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Callers can only request codes for their own email
+    if (!callerEmail || callerEmail !== email.toLowerCase()) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Rate limiting
     const { data: canSend, error: rateLimitError } = await supabase
       .rpc('check_2fa_rate_limit', { p_email: email });
 
@@ -45,18 +91,37 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!canSend) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Too many 2FA requests. Please wait before requesting another code.',
-          retryAfter: 15 * 60 // 15 minutes in seconds
+          retryAfter: 15 * 60,
         }),
         { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    const subject = type === 'verification' 
-      ? 'Verify your email address' 
+    // Generate code server-side with CSPRNG and persist via service role
+    const code = generateSecureCode();
+    const { error: insertError } = await supabase
+      .from('user_2fa_codes')
+      .insert({
+        user_id: callerUserId,
+        code,
+        code_type: type,
+        expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+      });
+
+    if (insertError) {
+      console.error('Error storing 2FA code:', insertError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to store verification code' }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const subject = type === 'verification'
+      ? 'Verify your email address'
       : 'Your login verification code';
-      
+
     const emailContent = type === 'verification'
       ? `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -85,37 +150,24 @@ const handler = async (req: Request): Promise<Response> => {
         </div>
       `;
 
-    // Log securely without exposing sensitive data
-    console.log(`Sending 2FA email to: ${email.substring(0, 3)}***@${email.split('@')[1]}`);
-    console.log(`Type: ${type}`);
+    console.log(`Sending 2FA email to: ${email.substring(0, 3)}***@${email.split('@')[1]} type=${type}`);
 
-    const emailResponse = await resend.emails.send({
+    await resend.emails.send({
       from: "BusinessForms Pro <onboarding@resend.dev>",
       to: [email],
-      subject: subject,
+      subject,
       html: emailContent,
     });
 
-    console.log("Email sent successfully");
-
-    return new Response(JSON.stringify({
-      success: true,
-      message: `2FA code sent successfully`
-    }), {
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
+      headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: any) {
     console.error("Error in send-2fa-email function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
 };
