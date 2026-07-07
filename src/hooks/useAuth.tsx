@@ -148,42 +148,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
 
-  // Send verification code - generate and store in database, then send via email
+  // Send verification code - server-side generates & stores the code securely
   const sendVerificationCode = async (email: string, type: 'verification' | 'login') => {
     try {
-      // Generate 6-digit code
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      
-      // Get user ID from email if they exist
-      const { data: userData } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', email)
-        .single();
-
-      // Store code in database
-      const { error: insertError } = await supabase
-        .from('user_2fa_codes')
-        .insert({
-          user_id: userData?.id || '00000000-0000-0000-0000-000000000000', // Temporary ID for new users
-          code: code,
-          code_type: type,
-          expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString() // 5 minutes (matches documentation)
-        });
-
-      if (insertError) {
-        console.error('Error storing 2FA code:', insertError);
-        return { error: insertError };
-      }
-
-      // Send code via email
-      const { data, error } = await supabase.functions.invoke('send-2fa-email', {
+      const { error } = await supabase.functions.invoke('send-2fa-email', {
         body: {
           email,
-          code,
           type,
-          name: email.split('@')[0]
-        }
+          name: email.split('@')[0],
+        },
       });
 
       if (error) {
