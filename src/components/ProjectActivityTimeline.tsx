@@ -26,6 +26,8 @@ import {
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ActivityItem {
   id: string;
@@ -71,88 +73,77 @@ const ProjectActivityTimeline = ({ projectId, projectName }: ProjectActivityTime
   const [newComment, setNewComment] = useState('');
   const [isAddingComment, setIsAddingComment] = useState(false);
   const { toast } = useToast();
-
-  // Mock user data - in real app, get from auth
-  const currentUser = {
-    id: 'user-1',
-    name: 'John Doe',
-    email: 'john@example.com'
-  };
+  const { user } = useAuth();
 
   useEffect(() => {
-    // Mock initial activities
-    const mockActivities: ActivityItem[] = [
-      {
-        id: '1',
-        type: 'milestone',
-        title: 'Project kickoff completed',
-        description: 'Initial project meeting held with all stakeholders',
-        user_id: 'user-2',
-        user_name: 'Sarah Johnson',
-        user_email: 'sarah@example.com',
-        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-        metadata: { milestone: 'kickoff' }
-      },
-      {
-        id: '2',
-        type: 'status_change',
-        title: 'Status changed to Active',
-        description: 'Project moved from Planning to Active phase',
-        user_id: 'user-1',
-        user_name: 'John Doe',
-        user_email: 'john@example.com',
-        created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
-        metadata: { from: 'planning', to: 'active' }
-      },
-      {
-        id: '3',
-        type: 'assignment',
-        title: 'Team members assigned',
-        description: 'Added 3 new team members to the project',
-        user_id: 'user-2',
-        user_name: 'Sarah Johnson',
-        user_email: 'sarah@example.com',
-        created_at: new Date(Date.now() - 12 * 60 * 60 * 1000), // 12 hours ago
-        metadata: { count: 3 }
-      },
-      {
-        id: '4',
-        type: 'comment',
-        title: 'Added project comment',
-        description: 'Great progress on the initial setup. Looking forward to the next milestone.',
-        user_id: 'user-3',
-        user_name: 'Mike Wilson',
-        user_email: 'mike@example.com',
-        created_at: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
-      },
-      {
-        id: '5',
-        type: 'meeting',
-        title: 'Sprint planning meeting',
-        description: 'Scheduled sprint planning session for next week',
-        user_id: 'user-1',
-        user_name: 'John Doe',
-        user_email: 'john@example.com',
-        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-        metadata: { meeting_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) }
+    const loadActivities = async () => {
+      if (!projectId || projectId === 'all') {
+        setActivities([]);
+        return;
       }
-    ];
 
-    setActivities(mockActivities);
-  }, [projectId]);
+      const { data, error } = await supabase
+        .from('project_activities')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
 
-  const addComment = () => {
-    if (!newComment.trim()) return;
+      if (error) {
+        console.error('Error loading project activities:', error);
+        setActivities([]);
+        return;
+      }
 
-    const newActivity: ActivityItem = {
-      id: Date.now().toString(),
+      setActivities((data || []).map((activity: any) => ({
+        id: activity.id,
+        type: activity.activity_type === 'task_created' || activity.activity_type === 'task_updated' ? 'status_change' : activity.activity_type || 'comment',
+        title: activity.title,
+        description: activity.description || undefined,
+        user_id: activity.user_id,
+        user_name: activity.user_id === user?.id ? (user.email || 'You') : 'Team member',
+        user_email: activity.user_id === user?.id ? (user.email || '') : '',
+        created_at: new Date(activity.created_at),
+        metadata: activity.metadata || undefined,
+      })));
+    };
+
+    loadActivities();
+  }, [projectId, user?.id, user?.email]);
+
+  const addComment = async () => {
+    if (!newComment.trim() || !user?.id || !projectId || projectId === 'all') return;
+
+    const payload = {
+      project_id: projectId,
+      user_id: user.id,
+      activity_type: 'comment',
       type: 'comment',
       title: 'Added project comment',
       description: newComment,
-      user_id: currentUser.id,
-      user_name: currentUser.name,
-      user_email: currentUser.email,
-      created_at: new Date()
+      metadata: { projectName }
+    };
+
+    const { data, error } = await supabase
+      .from('project_activities')
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      toast({ title: 'Comment failed', description: error.message, variant: 'destructive' });
+      return;
+    }
+
+    const newActivity: ActivityItem = {
+      id: data.id,
+      type: 'comment',
+      title: data.title,
+      description: data.description || undefined,
+      user_id: data.user_id,
+      user_name: user.email || 'You',
+      user_email: user.email || '',
+      created_at: new Date(data.created_at),
+      metadata: data.metadata as Record<string, any> | undefined,
     };
 
     setActivities(prev => [newActivity, ...prev]);
