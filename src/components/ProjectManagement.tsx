@@ -142,6 +142,7 @@ interface Milestone {
   description: string;
   dueDate: Date;
   project: string;
+  projectId?: string | null;
   completed: boolean;
   progress: number;
   tasks: string[];
@@ -225,6 +226,7 @@ interface WorkRequest {
   user_id: string;
   title: string;
   description?: string;
+  project_id?: string | null;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   status: 'new' | 'in_review' | 'approved' | 'rejected' | 'converted';
   created_at: string;
@@ -235,6 +237,7 @@ interface GoalItem {
   user_id: string;
   title: string;
   description?: string;
+  project_id?: string | null;
   target_date?: string;
   progress: number;
   created_at: string;
@@ -266,6 +269,14 @@ interface CalendarEventItem {
   project_id?: string | null;
   created_at: string;
 }
+
+const DEFAULT_STATUS_COLUMNS: KanbanColumn[] = [
+  { id: 'backlog', title: 'Backlog', color: 'bg-gray-100', order: 1 },
+  { id: 'todo', title: 'To Do', color: 'bg-blue-100', order: 2 },
+  { id: 'in-progress', title: 'In Progress', color: 'bg-yellow-100', order: 3 },
+  { id: 'review', title: 'Review', color: 'bg-purple-100', order: 4 },
+  { id: 'done', title: 'Done', color: 'bg-green-100', order: 5 }
+];
 // ---- Priority badge styles & labels ----
 const priorityColors: Record<Task['priority'], string> = {
   low: 'bg-green-500 text-white',
@@ -410,6 +421,7 @@ const ProjectManagement = () => {
       description: 'All UI/UX designs approved by client',
       dueDate: new Date(2024, 2, 25),
       project: 'Website Redesign',
+      projectId: '1',
       completed: false,
       progress: 80,
       tasks: ['1'],
@@ -639,11 +651,13 @@ const ProjectManagement = () => {
     const title = window.prompt('Work request title');
     if (!title) return;
     const description = window.prompt('Description (optional)') || '';
+    const targetProjectId = selectedProject !== 'all' ? selectedProject : projects[0]?.id || null;
     const { data, error } = await supabase.from('todos').insert({ 
       title, 
       description, 
       priority: 'medium', 
       status: 'todo',
+      project_id: targetProjectId,
       user_id: user?.id || ''
     }).select().single();
     if (!error && data) setWorkRequests(prev => [data as unknown as WorkRequest, ...prev]);
@@ -658,6 +672,7 @@ const ProjectManagement = () => {
       id: Date.now().toString(),
       title,
       description: '',
+      project_id: selectedProject !== 'all' ? selectedProject : null,
       target_date: target,
       progress: 0,
       created_at: new Date().toISOString(),
@@ -794,6 +809,7 @@ const ProjectManagement = () => {
       status: 'todo',
       priority: 'medium',
       due_date: start,
+      project_id: selectedProject !== 'all' ? selectedProject : null,
       user_id: user?.id || '',
       organization_id: orgData.organization_id
     }).select().single();
@@ -1150,7 +1166,7 @@ const ProjectManagement = () => {
         description: `Created new task: ${newTask.title}`,
         user: user?.email || 'Unknown User',
         timestamp: new Date(),
-        projectId: newTask.project,
+        projectId: newTask.projectId || targetProjectId || 'unassigned',
         taskId: newTask.id
       };
       setActivityLogs(prev => [newActivity, ...prev]);
@@ -1169,7 +1185,7 @@ const ProjectManagement = () => {
               taskDescription: data.description,
               priority: data.priority,
               dueDate: data.due_date,
-              projectId: data.project?.id
+              projectId: data.project?.id || data.project_id || targetProjectId
             }
           );
           
@@ -1207,17 +1223,13 @@ const ProjectManagement = () => {
   useEffect(() => {
     setTaskPositions(prev => {
       const next: Record<string, string[]> = { ...prev };
-      const columnIds = (projects.find(p => p.id === selectedProject && selectedProject !== 'all')?.customColumns || [
-        { id: 'backlog' },
-        { id: 'todo' },
-        { id: 'in-progress' },
-        { id: 'review' },
-        { id: 'done' }
-      ] as any).map((c: any) => c.id);
+      const columnIds = (projects.find(p => p.id === selectedProject && selectedProject !== 'all')?.customColumns || DEFAULT_STATUS_COLUMNS).map((c: any) => c.id);
 
       for (const columnId of columnIds) {
         const existing = next[columnId] || [];
-        const currentTaskIds = tasks.filter(t => t.status === columnId).map(t => t.id);
+        const currentTaskIds = tasks
+          .filter(t => t.status === columnId && (selectedProject === 'all' || t.projectId === selectedProject))
+          .map(t => t.id);
         const ordered = existing.filter(id => currentTaskIds.includes(id));
         for (const id of currentTaskIds) {
           if (!ordered.includes(id)) ordered.push(id);
@@ -1232,13 +1244,9 @@ const ProjectManagement = () => {
 
   // Avoid early return to maintain stable hook order across renders
 
-  const statusColumns = projects.find(p => p.id === selectedProject && selectedProject !== 'all')?.customColumns || [
-    { id: 'backlog', title: 'Backlog', color: 'bg-gray-100', order: 1 },
-    { id: 'todo', title: 'To Do', color: 'bg-blue-100', order: 2 },
-    { id: 'in-progress', title: 'In Progress', color: 'bg-yellow-100', order: 3 },
-    { id: 'review', title: 'Review', color: 'bg-purple-100', order: 4 },
-    { id: 'done', title: 'Done', color: 'bg-green-100', order: 5 }
-  ];
+  const selectedProjectDetails = selectedProject === 'all' ? null : projects.find(p => p.id === selectedProject) || null;
+  const selectedProjectName = selectedProjectDetails?.name || 'All Projects';
+  const statusColumns = selectedProjectDetails?.customColumns || DEFAULT_STATUS_COLUMNS;
 
   const priorityColors = {
     low: 'bg-green-500',
@@ -1247,22 +1255,40 @@ const ProjectManagement = () => {
     urgent: 'bg-red-500'
   };
 
-  const filteredTasks = (tasks || []).filter(task => {
+  const projectScopedTasks = (tasks || []).filter(task => {
+    return selectedProject === 'all' || task.projectId === selectedProject;
+  });
+
+  const filteredTasks = projectScopedTasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          task.description.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Handle project filtering - show all tasks when 'all' is selected
-    let matchesProject = false;
-    if (selectedProject === 'all') {
-      // Show all tasks including those without a project
-      matchesProject = true;
-    } else {
-      // Check if task.projectId matches the selected project UUID
-      matchesProject = task.projectId === selectedProject;
-    }
-    
-    return matchesSearch && matchesProject;
+
+    return matchesSearch;
   });
+
+  const projectScopedMilestones = milestones.filter(milestone =>
+    selectedProject === 'all' || milestone.projectId === selectedProject || milestone.project === selectedProjectDetails?.name
+  );
+  const projectScopedActivityLogs = activityLogs.filter(log =>
+    selectedProject === 'all' || log.projectId === selectedProject
+  );
+  const projectScopedClientCommunications = clientCommunications.filter(comm =>
+    selectedProject === 'all' || comm.projectId === selectedProject
+  );
+  const projectScopedCalendarEvents = calendarEvents.filter(event =>
+    selectedProject === 'all' || event.project_id === selectedProject
+  );
+  const projectScopedProjects = selectedProject === 'all' ? projects : projects.filter(project => project.id === selectedProject);
+
+  const handleProjectSelection = (projectId: string) => {
+    setSelectedProject(projectId);
+    setTaskPositions({});
+    setShowJiraTask(false);
+    setSelectedTaskForJira(null);
+    setWorkRequestPage(1);
+    setGoalsPage(1);
+    setEventsPage(1);
+  };
 
   // moved up: taskPositions hooks
 
@@ -1382,7 +1408,7 @@ const ProjectManagement = () => {
             description: `Task "${task.title}" moved to ${newStatus}`,
             user: user?.email || 'Unknown User',
             timestamp: new Date(),
-            projectId: task.project,
+            projectId: task.projectId || 'unassigned',
             taskId: task.id
           };
           setActivityLogs(prev => [activity, ...prev]);
@@ -1418,7 +1444,7 @@ const ProjectManagement = () => {
         description: `Task "${task.title}" was deleted`,
         user: user?.email || 'Unknown User',
         timestamp: new Date(),
-        projectId: task.project,
+        projectId: task.projectId || 'unassigned',
         taskId: task.id
       };
       setActivityLogs(prev => [activity, ...prev]);
@@ -1586,7 +1612,7 @@ const ProjectManagement = () => {
       </div>
       
       <div className="grid gap-4">
-        {milestones.map(milestone => (
+        {projectScopedMilestones.map(milestone => (
           <Card key={milestone.id} className="hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
@@ -1680,7 +1706,7 @@ const ProjectManagement = () => {
 
       {/* Communication Timeline */}
       <div className="space-y-4">
-        {clientCommunications.map(comm => (
+        {projectScopedClientCommunications.map(comm => (
           <Card key={comm.id} className="hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
@@ -1833,7 +1859,7 @@ const ProjectManagement = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {projects.map(project => (
+              {projectScopedProjects.map(project => (
                 <div key={project.id}>
                   <div className="flex justify-between text-sm mb-2">
                     <span>{project.name}</span>
@@ -1862,25 +1888,25 @@ const ProjectManagement = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
                 <p className="text-2xl font-bold text-blue-600">
-                  {tasks.filter(t => t.status === 'todo').length}
+                  {projectScopedTasks.filter(t => t.status === 'todo').length}
                 </p>
                 <p className="text-sm text-gray-600">To Do</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-yellow-600">
-                  {tasks.filter(t => t.status === 'in-progress').length}
+                  {projectScopedTasks.filter(t => t.status === 'in-progress').length}
                 </p>
                 <p className="text-sm text-gray-600">In Progress</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-purple-600">
-                  {tasks.filter(t => t.status === 'review').length}
+                  {projectScopedTasks.filter(t => t.status === 'review').length}
                 </p>
                 <p className="text-sm text-gray-600">Review</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-green-600">
-                  {tasks.filter(t => t.status === 'done').length}
+                  {projectScopedTasks.filter(t => t.status === 'done').length}
                 </p>
                 <p className="text-sm text-gray-600">Done</p>
               </div>
@@ -1940,7 +1966,7 @@ const ProjectManagement = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {activityLogs.slice(0, 10).map(log => (
+            {projectScopedActivityLogs.slice(0, 10).map(log => (
               <div key={log.id} className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg">
                 <Avatar className="w-8 h-8">
                   <AvatarFallback className="text-xs">
@@ -2368,27 +2394,28 @@ const ProjectManagement = () => {
   );
 
   const statusPieData = [
-    { name: 'Backlog', value: (tasks || []).filter(t => t.status === 'backlog').length },
-    { name: 'To Do', value: (tasks || []).filter(t => t.status === 'todo').length },
-    { name: 'In Progress', value: (tasks || []).filter(t => t.status === 'in-progress').length },
-    { name: 'Review', value: (tasks || []).filter(t => t.status === 'review').length },
-    { name: 'Done', value: (tasks || []).filter(t => t.status === 'done').length },
+    { name: 'Backlog', value: projectScopedTasks.filter(t => t.status === 'backlog').length },
+    { name: 'To Do', value: projectScopedTasks.filter(t => t.status === 'todo').length },
+    { name: 'In Progress', value: projectScopedTasks.filter(t => t.status === 'in-progress').length },
+    { name: 'Review', value: projectScopedTasks.filter(t => t.status === 'review').length },
+    { name: 'Done', value: projectScopedTasks.filter(t => t.status === 'done').length },
   ];
 
   const statusColors = ['#9CA3AF', '#3B82F6', '#F59E0B', '#8B5CF6', '#10B981'];
 
   const priorityBarData = [
-    { name: 'Low', count: (tasks || []).filter(t => t.priority === 'low').length },
-    { name: 'Medium', count: (tasks || []).filter(t => t.priority === 'medium').length },
-    { name: 'High', count: (tasks || []).filter(t => t.priority === 'high').length },
-    { name: 'Urgent', count: (tasks || []).filter(t => t.priority === 'urgent').length },
+    { name: 'Low', count: projectScopedTasks.filter(t => t.priority === 'low').length },
+    { name: 'Medium', count: projectScopedTasks.filter(t => t.priority === 'medium').length },
+    { name: 'High', count: projectScopedTasks.filter(t => t.priority === 'high').length },
+    { name: 'Urgent', count: projectScopedTasks.filter(t => t.priority === 'urgent').length },
   ];
 
-  const teamWorkload = [
-    { name: 'John Doe', load: (tasks || []).filter(t => t.assignee === 'John Doe').length, capacity: 10 },
-    { name: 'Jane Smith', load: (tasks || []).filter(t => t.assignee === 'Jane Smith').length, capacity: 8 },
-    { name: 'Mike Johnson', load: (tasks || []).filter(t => t.assignee === 'Mike Johnson').length, capacity: 12 },
-  ];
+  const teamWorkload = Object.values(projectScopedTasks.reduce((acc, task) => {
+    const assignee = task.assignee || 'Unassigned';
+    acc[assignee] = acc[assignee] || { name: assignee, load: 0, capacity: 10 };
+    acc[assignee].load += 1;
+    return acc;
+  }, {} as Record<string, { name: string; load: number; capacity: number }>));
 
   const typesOfWork = ['Development', 'Design', 'QA', 'Documentation', 'Client Communication'];
 
@@ -2450,14 +2477,14 @@ const ProjectManagement = () => {
     if (!workRequestForm.title.trim()) return;
     if (editingWorkRequest) {
       const { data, error } = await supabase.from('work_requests' as any)
-        .update({ title: workRequestForm.title, description: workRequestForm.description, priority: workRequestForm.priority, status: workRequestForm.status })
+        .update({ title: workRequestForm.title, description: workRequestForm.description, priority: workRequestForm.priority, status: workRequestForm.status, project_id: editingWorkRequest.project_id || (selectedProject !== 'all' ? selectedProject : null) })
         .eq('id', editingWorkRequest.id).select().single();
       if (!error && data) {
         setWorkRequests(prev => prev.map(w => w.id === editingWorkRequest.id ? data as any : w));
       }
     } else {
       const { data, error } = await supabase.from('work_requests' as any)
-        .insert({ title: workRequestForm.title, description: workRequestForm.description, priority: workRequestForm.priority, status: workRequestForm.status })
+        .insert({ title: workRequestForm.title, description: workRequestForm.description, priority: workRequestForm.priority, status: workRequestForm.status, project_id: selectedProject !== 'all' ? selectedProject : null })
         .select().single();
       if (!error && data) setWorkRequests(prev => [data as any, ...prev]);
     }
@@ -2468,7 +2495,7 @@ const ProjectManagement = () => {
     if (!error) setWorkRequests(prev => prev.filter(w => w.id !== req.id));
   };
   const filteredSortedWorkRequests = (() => {
-    let arr = [...workRequests];
+    let arr = [...workRequests].filter(w => selectedProject === 'all' || w.project_id === selectedProject);
     if (workRequestStatusFilter !== 'all') arr = arr.filter(w => w.status === workRequestStatusFilter);
     if (workRequestPriorityFilter !== 'all') arr = arr.filter(w => (w.priority || 'medium') === workRequestPriorityFilter);
     arr.sort((a,b) => {
@@ -2518,6 +2545,7 @@ const ProjectManagement = () => {
         id: Date.now().toString(),
         title: goalForm.title,
         description: goalForm.description,
+        project_id: selectedProject !== 'all' ? selectedProject : null,
         target_date: goalForm.target_date || null,
         progress: goalForm.progress,
         created_at: new Date().toISOString(),
@@ -2562,7 +2590,9 @@ const ProjectManagement = () => {
       console.error('Error deleting goal:', error);
     }
   };
-  const sortedGoals = [...goals].sort((a,b) => {
+  const sortedGoals = [...goals]
+    .filter(g => selectedProject === 'all' || g.project_id === selectedProject)
+    .sort((a,b) => {
     const aDate = a.created_at || '';
     const bDate = b.created_at || '';
     return goalsSort === 'newest' ? bDate.localeCompare(aDate) : aDate.localeCompare(bDate);
@@ -2582,7 +2612,7 @@ const ProjectManagement = () => {
   };
   const saveEvent = async () => {
     if (!eventForm.title.trim() || !eventForm.start_at) return;
-    const payload = { title: eventForm.title, start_at: eventForm.start_at, end_at: eventForm.end_at || null } as any;
+    const payload = { title: eventForm.title, start_at: eventForm.start_at, end_at: eventForm.end_at || null, project_id: selectedProject !== 'all' ? selectedProject : editingEvent?.project_id || null } as any;
     if (editingEvent) {
       const { data, error } = await supabase.from('calendar_events' as any)
         .update(payload).eq('id', editingEvent.id).select().single();
@@ -2598,7 +2628,7 @@ const ProjectManagement = () => {
     const { error } = await supabase.from('calendar_events' as any).delete().eq('id', ev.id);
     if (!error) setCalendarEvents(prev => prev.filter(e => e.id !== ev.id));
   };
-  const sortedEvents = [...calendarEvents].sort((a,b) => {
+  const sortedEvents = [...projectScopedCalendarEvents].sort((a,b) => {
     const aDate = a.start_at || '';
     const bDate = b.start_at || '';
     return eventsSort === 'newest' ? bDate.localeCompare(aDate) : aDate.localeCompare(bDate);
@@ -2653,7 +2683,7 @@ const ProjectManagement = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Completed Tasks</p>
-                <p className="text-2xl font-bold">{tasks.filter(t => t.status === 'done').length}</p>
+                <p className="text-2xl font-bold">{projectScopedTasks.filter(t => t.status === 'done').length}</p>
               </div>
             </div>
           </CardContent>
@@ -2667,7 +2697,7 @@ const ProjectManagement = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-600">In Progress</p>
-                <p className="text-2xl font-bold">{tasks.filter(t => t.status === 'in-progress').length}</p>
+                <p className="text-2xl font-bold">{projectScopedTasks.filter(t => t.status === 'in-progress').length}</p>
               </div>
             </div>
           </CardContent>
@@ -2681,7 +2711,7 @@ const ProjectManagement = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Milestones</p>
-                <p className="text-2xl font-bold">{milestones.length}</p>
+                <p className="text-2xl font-bold">{projectScopedMilestones.length}</p>
               </div>
             </div>
           </CardContent>
@@ -2695,7 +2725,7 @@ const ProjectManagement = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Overdue</p>
-                <p className="text-2xl font-bold">{tasks.filter(t => t.dueDate && t.status !== 'done' && t.dueDate < new Date()).length}</p>
+                <p className="text-2xl font-bold">{projectScopedTasks.filter(t => t.dueDate && t.status !== 'done' && t.dueDate < new Date()).length}</p>
               </div>
             </div>
           </CardContent>
@@ -2715,7 +2745,7 @@ const ProjectManagement = () => {
                 className="pl-10"
               />
             </div>
-            <Select value={selectedProject} onValueChange={setSelectedProject}>
+            <Select value={selectedProject} onValueChange={handleProjectSelection}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Filter by project" />
               </SelectTrigger>
@@ -2887,7 +2917,7 @@ const ProjectManagement = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {activityLogs.slice(0, 6).map(log => (
+                  {projectScopedActivityLogs.slice(0, 6).map(log => (
                     <div key={log.id} className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg">
                       <Avatar className="w-8 h-8"><AvatarFallback>{log.user[0]}</AvatarFallback></Avatar>
                       <div>
@@ -2921,7 +2951,7 @@ const ProjectManagement = () => {
               <Plus className="w-4 h-4 mr-2" /> Create Epic
             </Button>
           </div>
-          <ProjectActivityTimeline projectId={selectedProject || 'default'} projectName={selectedProject ? projects.find(p => p.id === selectedProject)?.name || 'Project' : 'All Projects'} />
+          <ProjectActivityTimeline key={selectedProject} projectId={selectedProject} projectName={selectedProjectName} />
         </TabsContent>
 
         <TabsContent value="kanban" className="mt-6">
@@ -2930,8 +2960,8 @@ const ProjectManagement = () => {
 
         <TabsContent value="calendar" className="mt-6">
           <ProjectCalendarView
-            tasks={tasks}
-            events={calendarEvents}
+            tasks={projectScopedTasks}
+            events={projectScopedCalendarEvents}
             onCreateEvent={(event) => {
               if (!user?.id) return;
               const newEvent: CalendarEventItem = {
@@ -2940,7 +2970,7 @@ const ProjectManagement = () => {
                 title: event.title || '',
                 start_at: event.start_at || new Date().toISOString(),
                 end_at: event.end_at,
-                project_id: event.project_id,
+                project_id: event.project_id || (selectedProject !== 'all' ? selectedProject : null),
                 created_at: new Date().toISOString(),
               };
               setCalendarEvents(prev => [...prev, newEvent]);
@@ -2966,7 +2996,7 @@ const ProjectManagement = () => {
             <CardHeader><CardTitle>All Tasks (List)</CardTitle></CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {tasks.filter(t => !(t as any).archived_at).map(t => (
+                {filteredTasks.filter(t => !(t as any).archived_at).map(t => (
                   <div key={t.id} className="p-3 border rounded-lg flex items-center justify-between">
                     <div>
                       <div className="font-medium">{t.title}</div>
@@ -3093,7 +3123,7 @@ const ProjectManagement = () => {
             <CardHeader><CardTitle>All Work Items</CardTitle></CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {[...tasks].filter(t => !(t as any).archived_at).map(t => (
+                {filteredTasks.filter(t => !(t as any).archived_at).map(t => (
                   <div key={t.id} className="p-3 border rounded-lg flex items-center justify-between">
                     <div>
                       <div className="font-medium">{t.title}</div>
@@ -3115,7 +3145,7 @@ const ProjectManagement = () => {
             <CardHeader><CardTitle>Archived Work Items</CardTitle></CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {tasks.filter(t => (t as any).archived_at).map(t => (
+                {projectScopedTasks.filter(t => (t as any).archived_at).map(t => (
                   <div key={t.id} className="p-3 border rounded-lg flex items-center justify-between">
                     <div>
                       <div className="font-medium">{t.title}</div>
@@ -3124,7 +3154,7 @@ const ProjectManagement = () => {
                     <Button size="sm" variant="ghost" onClick={() => unarchiveTask(t.id)}>Unarchive</Button>
                   </div>
                 ))}
-                {(tasks || []).filter(t => (t as any).archived_at).length === 0 && (
+                {projectScopedTasks.filter(t => (t as any).archived_at).length === 0 && (
                   <div className="text-sm text-gray-500">No archived items.</div>
                 )}
               </div>
@@ -3214,7 +3244,7 @@ const ProjectManagement = () => {
                     isArchived={projectsView === 'archived'}
                     onClick={() => {
                       if (projectsView !== 'active') return;
-                      setSelectedProject(project.id);
+                      handleProjectSelection(project.id);
                       setActiveTab('summary');
                       toast({ title: "Project Selected", description: `Now viewing: ${project.name}` });
                     }}
