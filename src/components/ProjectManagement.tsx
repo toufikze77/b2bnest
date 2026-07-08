@@ -1128,6 +1128,7 @@ const ProjectManagement = () => {
         assignee: assigneeName,
         dueDate: data.due_date ? new Date(data.due_date) : null,
         project: data.project?.name || 'No project',
+        projectId: data.project?.id || data.project_id || targetProjectId,
         tags: data.labels || [],
         estimatedHours: data.estimated_hours,
         subtasks: [],
