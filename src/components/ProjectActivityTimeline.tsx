@@ -117,7 +117,6 @@ const ProjectActivityTimeline = ({ projectId, projectName }: ProjectActivityTime
       project_id: projectId,
       user_id: user.id,
       activity_type: 'comment',
-      type: 'comment',
       title: 'Added project comment',
       description: newComment,
       metadata: { projectName }
