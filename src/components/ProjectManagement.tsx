@@ -651,11 +651,13 @@ const ProjectManagement = () => {
     const title = window.prompt('Work request title');
     if (!title) return;
     const description = window.prompt('Description (optional)') || '';
+    const targetProjectId = selectedProject !== 'all' ? selectedProject : projects[0]?.id || null;
     const { data, error } = await supabase.from('todos').insert({ 
       title, 
       description, 
       priority: 'medium', 
       status: 'todo',
+      project_id: targetProjectId,
       user_id: user?.id || ''
     }).select().single();
     if (!error && data) setWorkRequests(prev => [data as unknown as WorkRequest, ...prev]);
@@ -670,6 +672,7 @@ const ProjectManagement = () => {
       id: Date.now().toString(),
       title,
       description: '',
+      project_id: selectedProject !== 'all' ? selectedProject : null,
       target_date: target,
       progress: 0,
       created_at: new Date().toISOString(),
@@ -806,6 +809,7 @@ const ProjectManagement = () => {
       status: 'todo',
       priority: 'medium',
       due_date: start,
+      project_id: selectedProject !== 'all' ? selectedProject : null,
       user_id: user?.id || '',
       organization_id: orgData.organization_id
     }).select().single();
@@ -2473,14 +2477,14 @@ const ProjectManagement = () => {
     if (!workRequestForm.title.trim()) return;
     if (editingWorkRequest) {
       const { data, error } = await supabase.from('work_requests' as any)
-        .update({ title: workRequestForm.title, description: workRequestForm.description, priority: workRequestForm.priority, status: workRequestForm.status })
+        .update({ title: workRequestForm.title, description: workRequestForm.description, priority: workRequestForm.priority, status: workRequestForm.status, project_id: editingWorkRequest.project_id || (selectedProject !== 'all' ? selectedProject : null) })
         .eq('id', editingWorkRequest.id).select().single();
       if (!error && data) {
         setWorkRequests(prev => prev.map(w => w.id === editingWorkRequest.id ? data as any : w));
       }
     } else {
       const { data, error } = await supabase.from('work_requests' as any)
-        .insert({ title: workRequestForm.title, description: workRequestForm.description, priority: workRequestForm.priority, status: workRequestForm.status })
+        .insert({ title: workRequestForm.title, description: workRequestForm.description, priority: workRequestForm.priority, status: workRequestForm.status, project_id: selectedProject !== 'all' ? selectedProject : null })
         .select().single();
       if (!error && data) setWorkRequests(prev => [data as any, ...prev]);
     }
@@ -2541,6 +2545,7 @@ const ProjectManagement = () => {
         id: Date.now().toString(),
         title: goalForm.title,
         description: goalForm.description,
+        project_id: selectedProject !== 'all' ? selectedProject : null,
         target_date: goalForm.target_date || null,
         progress: goalForm.progress,
         created_at: new Date().toISOString(),
@@ -2607,7 +2612,7 @@ const ProjectManagement = () => {
   };
   const saveEvent = async () => {
     if (!eventForm.title.trim() || !eventForm.start_at) return;
-    const payload = { title: eventForm.title, start_at: eventForm.start_at, end_at: eventForm.end_at || null } as any;
+    const payload = { title: eventForm.title, start_at: eventForm.start_at, end_at: eventForm.end_at || null, project_id: selectedProject !== 'all' ? selectedProject : editingEvent?.project_id || null } as any;
     if (editingEvent) {
       const { data, error } = await supabase.from('calendar_events' as any)
         .update(payload).eq('id', editingEvent.id).select().single();
@@ -2965,7 +2970,7 @@ const ProjectManagement = () => {
                 title: event.title || '',
                 start_at: event.start_at || new Date().toISOString(),
                 end_at: event.end_at,
-                project_id: event.project_id,
+                project_id: event.project_id || (selectedProject !== 'all' ? selectedProject : null),
                 created_at: new Date().toISOString(),
               };
               setCalendarEvents(prev => [...prev, newEvent]);
