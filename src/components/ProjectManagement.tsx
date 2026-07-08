@@ -980,6 +980,7 @@ const ProjectManagement = () => {
             assignee: assigneeName,
             dueDate: todo.due_date ? new Date(todo.due_date) : null,
             project: todo.projects?.name || 'No project',
+            projectId: todo.projects?.id || todo.project_id || null,
             tags: todo.labels || [],
             estimatedHours: todo.estimated_hours,
             subtasks: [],
