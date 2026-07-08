@@ -106,6 +106,7 @@ interface Task {
   assignee: string;
   dueDate: Date | null;
   project: string;
+  projectId?: string | null;
   tags: string[];
   subtasks?: Subtask[];
   timeTracked?: number;
@@ -979,6 +980,7 @@ const ProjectManagement = () => {
             assignee: assigneeName,
             dueDate: todo.due_date ? new Date(todo.due_date) : null,
             project: todo.projects?.name || 'No project',
+            projectId: todo.projects?.id || todo.project_id || null,
             tags: todo.labels || [],
             estimatedHours: todo.estimated_hours,
             subtasks: [],
@@ -1126,6 +1128,7 @@ const ProjectManagement = () => {
         assignee: assigneeName,
         dueDate: data.due_date ? new Date(data.due_date) : null,
         project: data.project?.name || 'No project',
+        projectId: data.project?.id || data.project_id || targetProjectId,
         tags: data.labels || [],
         estimatedHours: data.estimated_hours,
         subtasks: [],
@@ -1254,8 +1257,8 @@ const ProjectManagement = () => {
       // Show all tasks including those without a project
       matchesProject = true;
     } else {
-      // Check if task.project matches the selected project UUID
-      matchesProject = task.project === selectedProject;
+      // Check if task.projectId matches the selected project UUID
+      matchesProject = task.projectId === selectedProject;
     }
     
     return matchesSearch && matchesProject;
