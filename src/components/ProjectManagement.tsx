@@ -1257,8 +1257,8 @@ const ProjectManagement = () => {
       // Show all tasks including those without a project
       matchesProject = true;
     } else {
-      // Check if task.project matches the selected project UUID
-      matchesProject = task.project === selectedProject;
+      // Check if task.projectId matches the selected project UUID
+      matchesProject = task.projectId === selectedProject;
     }
     
     return matchesSearch && matchesProject;
