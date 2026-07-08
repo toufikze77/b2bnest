@@ -106,6 +106,7 @@ interface Task {
   assignee: string;
   dueDate: Date | null;
   project: string;
+  projectId?: string | null;
   tags: string[];
   subtasks?: Subtask[];
   timeTracked?: number;
