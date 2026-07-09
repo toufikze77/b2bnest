@@ -2856,10 +2856,18 @@ const ProjectManagement = () => {
               <CardHeader>
                 <CardTitle>Status Overview</CardTitle>
               </CardHeader>
-              <CardContent className="h-64">
+              <CardContent className="h-72 overflow-visible">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={statusPieData} dataKey="value" nameKey="name" outerRadius={80} label>
+                  <PieChart margin={{ top: 28, right: 32, bottom: 12, left: 32 }}>
+                    <Pie
+                      data={statusPieData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="45%"
+                      outerRadius={68}
+                      label
+                    >
                       {statusPieData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={statusColors[index % statusColors.length]} />
                       ))}
