@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'create_event') {
-      const { task_id } = await req.json()
+      const task_id = body.task_id
       return await createCalendarEvent(user_id, task_id)
     }
 
