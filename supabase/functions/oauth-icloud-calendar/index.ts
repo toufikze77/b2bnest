@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders } from '../_shared/cors.ts';
+import { verifyOAuthState } from '../_shared/oauth-state.ts';
 
 interface AppleOAuthResponse {
   access_token: string;
@@ -23,6 +24,9 @@ Deno.serve(async (req) => {
       throw new Error('Missing required parameters');
     }
 
+    let userId: string;
+    try { userId = await verifyOAuthState(state); } catch { throw new Error('Invalid OAuth state'); }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -32,7 +36,7 @@ Deno.serve(async (req) => {
     const { data: integration, error: fetchError } = await supabaseClient
       .from('user_integrations')
       .select('metadata')
-      .eq('user_id', state)
+      .eq('user_id', userId)
       .eq('integration_name', 'icloud_calendar')
       .single();
 
@@ -93,7 +97,7 @@ Deno.serve(async (req) => {
 
     // Store tokens
     const { error: rpcError } = await supabaseClient.rpc('store_integration_tokens', {
-      p_user_id: state,
+      p_user_id: userId,
       p_integration_name: 'icloud_calendar',
       p_access_token: tokens.access_token,
       p_refresh_token: tokens.refresh_token || null,

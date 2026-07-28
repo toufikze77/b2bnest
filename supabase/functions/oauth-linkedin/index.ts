@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import { verifyOAuthState } from '../_shared/oauth-state.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,6 +27,9 @@ Deno.serve(async (req) => {
       throw new Error('Missing authorization code or state')
     }
 
+    let userId: string
+    try { userId = await verifyOAuthState(state) } catch { throw new Error('Invalid OAuth state') }
+
     // Initialize Supabase client to get user's stored credentials
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -36,7 +40,7 @@ Deno.serve(async (req) => {
     const { data: integration, error: integrationError } = await supabase
       .from('user_integrations')
       .select('metadata')
-      .eq('user_id', state)
+      .eq('user_id', userId)
       .eq('integration_name', 'linkedin')
       .single()
 
@@ -104,7 +108,7 @@ Deno.serve(async (req) => {
         sub: profileData.sub,
         client_id: clientId, // Keep client_id for token refresh
       },
-      p_user_id: state,
+      p_user_id: userId,
     })
 
     if (storeError) {

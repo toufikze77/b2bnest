@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
+import { verifyOAuthState } from '../_shared/oauth-state.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,11 +23,19 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url)
     const code = url.searchParams.get('code')
-    const state = url.searchParams.get('state') // user_id
-    
+    const state = url.searchParams.get('state')
+
     if (!code || !state) {
       return new Response(
         JSON.stringify({ error: 'Missing code or state parameter' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    let userId: string
+    try { userId = await verifyOAuthState(state) } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid OAuth state' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -41,7 +50,7 @@ Deno.serve(async (req) => {
     const { data: integration, error: integrationError } = await supabase
       .from('user_integrations')
       .select('metadata')
-      .eq('user_id', state)
+      .eq('user_id', userId)
       .eq('integration_name', 'google_calendar')
       .single()
 
@@ -118,7 +127,7 @@ Deno.serve(async (req) => {
         scope: googleData.scope,
         client_id: clientId, // Keep client_id for token refresh
       },
-      p_user_id: state
+      p_user_id: userId
     })
 
     if (dbError) {
@@ -129,7 +138,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    console.log('Google Calendar integration successful for user:', state)
+    console.log('Google Calendar integration successful for user:', userId)
 
     // Redirect back to the app
     return new Response(null, {

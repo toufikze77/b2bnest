@@ -1,6 +1,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { encrypt } from '../shared/crypto.ts';
 import { corsHeaders } from '../_shared/cors.ts';
+import { verifyOAuthState } from '../_shared/oauth-state.ts';
 
 interface OneDriveOAuthResponse {
   access_token: string;
@@ -18,13 +19,16 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     const code = url.searchParams.get('code');
-    const state = url.searchParams.get('state'); // user_id
-    
-    console.log('OneDrive OAuth callback received', { code: !!code, state });
+    const state = url.searchParams.get('state');
+
+    console.log('OneDrive OAuth callback received', { code: !!code, hasState: !!state });
 
     if (!code || !state) {
       throw new Error('Missing code or state parameter');
     }
+
+    let userId: string;
+    try { userId = await verifyOAuthState(state); } catch { throw new Error('Invalid OAuth state'); }
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -35,7 +39,7 @@ Deno.serve(async (req) => {
     const { data: integrationData, error: fetchError } = await supabase
       .from('user_integrations')
       .select('metadata')
-      .eq('user_id', state)
+      .eq('user_id', userId)
       .eq('integration_name', 'onedrive')
       .single();
 
@@ -112,7 +116,7 @@ Deno.serve(async (req) => {
           user_email: userData.mail || userData.userPrincipalName,
         },
       })
-      .eq('user_id', state)
+      .eq('user_id', userId)
       .eq('integration_name', 'onedrive');
 
     if (updateError) {

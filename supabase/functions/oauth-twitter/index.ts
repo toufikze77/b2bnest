@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 import { encrypt } from '../shared/crypto.ts'
+import { verifyOAuthState } from '../_shared/oauth-state.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,6 +21,10 @@ Deno.serve(async (req) => {
     if (!oauth_token || !oauth_verifier || !state) {
       throw new Error('Missing required OAuth parameters')
     }
+
+    let userId: string
+    try { userId = await verifyOAuthState(state) } catch { throw new Error('Invalid OAuth state') }
+
 
     const consumerKey = Deno.env.get('TWITTER_CONSUMER_KEY')
     const consumerSecret = Deno.env.get('TWITTER_CONSUMER_SECRET')
@@ -48,7 +53,7 @@ Deno.serve(async (req) => {
     const tokenParams = new URLSearchParams(tokenText)
     const accessToken = tokenParams.get('oauth_token')
     const accessTokenSecret = tokenParams.get('oauth_token_secret')
-    const userId = tokenParams.get('user_id')
+    const twitterUserId = tokenParams.get('user_id')
     const screenName = tokenParams.get('screen_name')
 
     if (!accessToken || !accessTokenSecret) {
@@ -67,10 +72,10 @@ Deno.serve(async (req) => {
       p_refresh_token: accessTokenSecret, // Store token secret as refresh token
       p_expires_at: null,
       p_metadata: {
-        user_id: userId,
+        user_id: twitterUserId,
         screen_name: screenName,
       },
-      p_user_id: state,
+      p_user_id: userId,
     })
 
     if (storeError) {
