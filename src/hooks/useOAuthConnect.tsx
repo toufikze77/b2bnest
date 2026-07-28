@@ -18,19 +18,23 @@ export const useOAuthConnect = () => {
     const { provider, redirectPath = '/settings', scope, authType = 'code', prompt, accessType, params = {}, clientId: providedClientId } = options;
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user || !session) throw new Error('User not authenticated');
 
-      const state = user.id;
+      // Fetch server-signed OAuth state to prevent state fixation
+      const { data: stateData, error: stateError } = await supabase.functions.invoke('sign-oauth-state');
+      if (stateError || !stateData?.state) {
+        throw new Error('Failed to create secure OAuth state');
+      }
+      const state = stateData.state as string;
       const baseUrl = 'https://gvftvswyrevummbvyhxa.supabase.co/functions/v1';
       
       let authUrl = '';
       
       // Special handling for Twitter OAuth 1.0a
       if (provider === 'twitter') {
-        const { data, error } = await supabase.functions.invoke('oauth-twitter-request', {
-          body: { userId: user.id }
-        });
+        const { data, error } = await supabase.functions.invoke('oauth-twitter-request');
         
         if (error) throw error;
         if (!data?.authUrl) throw new Error('Failed to get Twitter auth URL');
