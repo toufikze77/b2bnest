@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders } from '../_shared/cors.ts';
+import { verifyOAuthState } from '../_shared/oauth-state.ts';
 
 interface GoogleOAuthResponse {
   access_token: string;
@@ -14,6 +15,8 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const appBase = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app');
+
   try {
     const url = new URL(req.url);
     const code = url.searchParams.get('code');
@@ -21,6 +24,17 @@ Deno.serve(async (req) => {
 
     if (!code || !state) {
       throw new Error('Missing required parameters');
+    }
+
+    let userId: string;
+    try {
+      userId = await verifyOAuthState(state);
+    } catch (err) {
+      console.error('Invalid OAuth state:', err);
+      return new Response(null, {
+        status: 302,
+        headers: { ...corsHeaders, Location: `${appBase}/business-tools/notepro?integration=gmail&status=error` },
+      });
     }
 
     const supabaseClient = createClient(
@@ -32,23 +46,24 @@ Deno.serve(async (req) => {
     const { data: integration } = await supabaseClient
       .from('user_integrations')
       .select('metadata')
-      .eq('user_id', state)
+      .eq('user_id', userId)
       .eq('integration_name', 'gmail')
-      .single();
+      .maybeSingle();
 
-    let clientId, clientSecret;
+    let clientId: string | undefined;
+    let clientSecret: string | undefined;
 
     if (integration?.metadata) {
-      const metadata = typeof integration.metadata === 'string' 
-        ? JSON.parse(integration.metadata) 
+      const metadata = typeof integration.metadata === 'string'
+        ? JSON.parse(integration.metadata)
         : integration.metadata;
       clientId = metadata.client_id;
       clientSecret = metadata.client_secret;
     }
 
     if (!clientId || !clientSecret) {
-      clientId = Deno.env.get('GMAIL_CLIENT_ID');
-      clientSecret = Deno.env.get('GMAIL_CLIENT_SECRET');
+      clientId = Deno.env.get('GMAIL_CLIENT_ID') || Deno.env.get('GOOGLE_CLIENT_ID');
+      clientSecret = Deno.env.get('GMAIL_CLIENT_SECRET') || Deno.env.get('GOOGLE_CLIENT_SECRET');
     }
 
     if (!clientId || !clientSecret) {
@@ -57,12 +72,9 @@ Deno.serve(async (req) => {
 
     const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/oauth-gmail-callback`;
 
-    // Exchange code for tokens
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         client_id: clientId,
         client_secret: clientSecret,
@@ -80,63 +92,43 @@ Deno.serve(async (req) => {
 
     const tokens: GoogleOAuthResponse = await tokenResponse.json();
 
-    // Get user info
     const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-      headers: {
-        Authorization: `Bearer ${tokens.access_token}`,
-      },
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
     });
-
     const userInfo = await userInfoResponse.json();
 
-    // Calculate expiration
     const expiresAt = new Date();
     expiresAt.setSeconds(expiresAt.getSeconds() + tokens.expires_in);
 
-    // Store or update tokens
-    const { error: upsertError } = await supabaseClient
-      .from('user_integrations')
-      .upsert({
-        user_id: state,
-        integration_name: 'gmail',
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token || null,
-        expires_at: expiresAt.toISOString(),
-        is_connected: true,
-        metadata: {
-          email: userInfo.email,
-          name: userInfo.name,
-          picture: userInfo.picture,
-        },
-      }, {
-        onConflict: 'user_id,integration_name',
-      });
+    // Store encrypted tokens via secure RPC (never store plaintext)
+    const { error: rpcError } = await supabaseClient.rpc('store_integration_tokens', {
+      p_integration_name: 'gmail',
+      p_access_token: tokens.access_token,
+      p_refresh_token: tokens.refresh_token || null,
+      p_expires_at: expiresAt.toISOString(),
+      p_metadata: {
+        email: userInfo.email,
+        name: userInfo.name,
+        picture: userInfo.picture,
+      },
+      p_user_id: userId,
+    });
 
-    if (upsertError) {
-      console.error('Error storing tokens:', upsertError);
-      throw upsertError;
+    if (rpcError) {
+      console.error('Error storing tokens:', rpcError);
+      throw rpcError;
     }
 
-    // Redirect back to app
-    const redirectUrl = `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/business-tools/notepro?integration=gmail&status=success`;
-    
     return new Response(null, {
       status: 302,
-      headers: {
-        ...corsHeaders,
-        Location: redirectUrl,
-      },
+      headers: { ...corsHeaders, Location: `${appBase}/business-tools/notepro?integration=gmail&status=success` },
     });
   } catch (error) {
     console.error('OAuth callback error:', error);
-    const redirectUrl = `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/business-tools/notepro?integration=gmail&status=error`;
-    
     return new Response(null, {
       status: 302,
-      headers: {
-        ...corsHeaders,
-        Location: redirectUrl,
-      },
+      headers: { ...corsHeaders, Location: `${appBase}/business-tools/notepro?integration=gmail&status=error` },
     });
   }
 });
+

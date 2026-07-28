@@ -17,21 +17,35 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { user_id, action = 'sync_tasks' } = await req.json()
-
-    if (!user_id) {
-      return new Response(
-        JSON.stringify({ error: 'user_id is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
+    const authClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    )
+    const token = authHeader.replace('Bearer ', '')
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token)
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    const user_id = claimsData.claims.sub as string
+
+    const body = await req.json().catch(() => ({}))
+    const action = body.action ?? 'sync_tasks'
 
     if (action === 'sync_tasks') {
       return await syncTasksToCalendar(user_id)
     }
 
     if (action === 'create_event') {
-      const { task_id } = await req.json()
+      const task_id = body.task_id
       return await createCalendarEvent(user_id, task_id)
     }
 

@@ -1,4 +1,6 @@
 import { createHmac } from "node:crypto";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { signOAuthState } from '../_shared/oauth-state.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,11 +14,25 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { userId } = await req.json()
-    
-    if (!userId) {
-      throw new Error('User ID is required')
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    )
+    const token = authHeader.replace('Bearer ', '')
+    const { data, error } = await supabase.auth.getClaims(token)
+    if (error || !data?.claims?.sub) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    const userId = data.claims.sub as string
 
     const consumerKey = Deno.env.get('TWITTER_CONSUMER_KEY')
     const consumerSecret = Deno.env.get('TWITTER_CONSUMER_SECRET')
@@ -26,6 +42,8 @@ Deno.serve(async (req) => {
       throw new Error('Twitter API credentials not configured')
     }
 
+    const signedState = await signOAuthState(userId)
+
     // Step 1: Request token
     const oauthParams = {
       oauth_consumer_key: consumerKey,
@@ -33,7 +51,7 @@ Deno.serve(async (req) => {
       oauth_signature_method: 'HMAC-SHA1',
       oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
       oauth_version: '1.0',
-      oauth_callback: `${callbackUrl}?state=${userId}`,
+      oauth_callback: `${callbackUrl}?state=${encodeURIComponent(signedState)}`,
     }
 
     const signatureBaseString = `POST&${encodeURIComponent('https://api.twitter.com/oauth/request_token')}&${encodeURIComponent(
