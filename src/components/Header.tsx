@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Menu, X, User, LogOut, Settings, BarChart3, Brain, Newspaper, Sun, Moon } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, BarChart3, Brain, Newspaper, Sun, Moon, MessageCircleHeart } from 'lucide-react';
+
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import logo from '@/assets/b2bnest-logo.png';
