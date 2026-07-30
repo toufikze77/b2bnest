@@ -2,6 +2,14 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 import { decrypt, encrypt } from './crypto.ts'
 
+function getEncryptionSecret(): string {
+  const secret = Deno.env.get('ENCRYPTION_SECRET')
+  if (!secret || secret.length < 16) {
+    throw new Error('ENCRYPTION_SECRET is not configured; refusing to encrypt/decrypt integration tokens')
+  }
+  return secret
+}
+
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -24,7 +32,7 @@ export async function refreshIntegrationToken(
       return null
     }
 
-    const refreshToken = await decrypt(record.refresh_token, Deno.env.get('ENCRYPTION_SECRET') || 'default-secret-key-32-chars-long')
+    const refreshToken = await decrypt(record.refresh_token, getEncryptionSecret())
     let newTokenData: any = null
 
     // Handle different OAuth refresh flows
@@ -78,9 +86,9 @@ export async function refreshIntegrationToken(
     }
 
     // Encrypt and store new tokens
-    const encryptedAccessToken = await encrypt(newTokenData.access_token, Deno.env.get('ENCRYPTION_SECRET') || 'default-secret-key-32-chars-long')
+    const encryptedAccessToken = await encrypt(newTokenData.access_token, getEncryptionSecret())
     const encryptedRefreshToken = newTokenData.refresh_token 
-      ? await encrypt(newTokenData.refresh_token, Deno.env.get('ENCRYPTION_SECRET') || 'default-secret-key-32-chars-long')
+      ? await encrypt(newTokenData.refresh_token, getEncryptionSecret())
       : record.refresh_token
 
     const expiresAt = newTokenData.expires_in 
@@ -124,7 +132,7 @@ export async function getValidToken(userId: string, integration: string): Promis
     }
 
     // Return decrypted token
-    return await decrypt(record.access_token, Deno.env.get('ENCRYPTION_SECRET') || 'default-secret-key-32-chars-long')
+    return await decrypt(record.access_token, getEncryptionSecret())
   } catch (error) {
     console.error(`Error getting valid token for ${integration}:`, error)
     return null
