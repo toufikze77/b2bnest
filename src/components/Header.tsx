@@ -326,6 +326,9 @@ const Header = () => {
         onClose={() => setIsPriceSidebarOpen(false)}
         defaultTab={activePriceTab}
       />
+
+      <SupportFeedbackDialog open={isFeedbackOpen} onOpenChange={setIsFeedbackOpen} />
+
     </header>
   );
 };
