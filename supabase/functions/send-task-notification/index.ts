@@ -68,7 +68,13 @@ const handler = async (req: Request): Promise<Response> => {
     // Support legacy format (backward compatibility)
     const notificationType = requestData.notificationType || 'task_assigned';
     const recipientUserId = requestData.recipientUserId || (requestData as any).assignedToId;
-    const triggeredByName = requestData.triggeredByName || (requestData as any).assignedByName;
+
+    if (!recipientUserId || !requestData.taskId) {
+      return new Response(
+        JSON.stringify({ error: "taskId and recipientUserId are required" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
+    }
 
     console.log('📧 Processing notification:', { 
       type: notificationType, 
@@ -88,6 +94,65 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // ---- Authorization: caller and recipient must both be related to the task ----
+    const { data: task } = await supabase
+      .from('todos')
+      .select('id, user_id, assigned_to, project_id')
+      .eq('id', requestData.taskId)
+      .maybeSingle();
+
+    if (!task) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
+    }
+
+    let projectMemberIds: string[] = [];
+    if (task.project_id) {
+      const { data: members } = await supabase
+        .from('project_members')
+        .select('user_id')
+        .eq('project_id', task.project_id);
+      projectMemberIds = (members ?? []).map((m: any) => m.user_id);
+
+      const { data: project } = await supabase
+        .from('projects')
+        .select('user_id, organization_id')
+        .eq('id', task.project_id)
+        .maybeSingle();
+      if (project?.user_id) projectMemberIds.push(project.user_id);
+      if (project?.organization_id) {
+        const { data: orgMembers } = await supabase
+          .from('organization_members')
+          .select('user_id')
+          .eq('organization_id', project.organization_id)
+          .eq('is_active', true);
+        projectMemberIds.push(...(orgMembers ?? []).map((m: any) => m.user_id));
+      }
+    }
+
+    const relatedIds = new Set<string>(
+      [task.user_id, task.assigned_to, ...projectMemberIds].filter(Boolean) as string[],
+    );
+
+    if (!relatedIds.has(user.id) || !relatedIds.has(recipientUserId)) {
+      console.warn('Blocked notification attempt', { caller: user.id, recipientUserId, taskId: task.id });
+      return new Response(
+        JSON.stringify({ error: "Forbidden" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
+    }
+
+    // Derive the sender display name server-side; never trust the client value.
+    const { data: callerProfile } = await supabase
+      .from('profiles')
+      .select('display_name, full_name, email')
+      .eq('id', user.id)
+      .maybeSingle();
+    const triggeredByName =
+      callerProfile?.display_name || callerProfile?.full_name || callerProfile?.email || 'A teammate';
 
     // Check user's notification preferences
     const preferenceField = `email_${notificationType.replace(/-/g, '_')}`;
@@ -182,7 +247,7 @@ const handler = async (req: Request): Promise<Response> => {
       oldStatus: requestData.oldStatus,
       newStatus: requestData.newStatus,
       commentContent: requestData.commentContent,
-      commentAuthor: requestData.commentAuthor
+      commentAuthor: triggeredByName
     });
 
     console.log("Sending task notification email via Gmail SMTP to:", recipientEmail);
