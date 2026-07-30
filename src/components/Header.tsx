@@ -18,17 +18,20 @@ import InstallAppButton from '@/components/InstallAppButton';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUserAvatar } from '@/hooks/useUserAvatar';
+import SupportFeedbackDialog from '@/components/SupportFeedbackDialog';
 
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isPriceSidebarOpen, setIsPriceSidebarOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [activePriceTab, setActivePriceTab] = useState<'crypto' | 'forex'>('crypto');
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { avatarUrl, displayName } = useUserAvatar();
   const initials = (displayName || user?.email || '?').slice(0, 2).toUpperCase();
+
   
   
 
