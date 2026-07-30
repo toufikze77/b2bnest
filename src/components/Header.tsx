@@ -116,7 +116,7 @@ const Header = () => {
               title="Support & Feedback"
               className="h-9 w-9"
             >
-              <MessageCircleHeart className="h-4 w-4" />
+              <MessageSquare className="h-4 w-4" />
             </Button>
             <Button
 
@@ -280,7 +280,7 @@ const Header = () => {
                 }}
                 className="text-gray-700 hover:text-blue-600 transition-colors px-2 text-left flex items-center"
               >
-                <MessageCircleHeart className="h-4 w-4 mr-2" />
+                <MessageSquare className="h-4 w-4 mr-2" />
                 Support &amp; Feedback
               </button>
 
