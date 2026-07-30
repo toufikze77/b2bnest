@@ -247,7 +247,7 @@ const handler = async (req: Request): Promise<Response> => {
       oldStatus: requestData.oldStatus,
       newStatus: requestData.newStatus,
       commentContent: requestData.commentContent,
-      commentAuthor: requestData.commentAuthor
+      commentAuthor: triggeredByName
     });
 
     console.log("Sending task notification email via Gmail SMTP to:", recipientEmail);
