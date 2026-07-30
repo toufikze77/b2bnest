@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Menu, X, User, LogOut, Settings, BarChart3, Brain, Newspaper, Sun, Moon } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, BarChart3, Brain, Newspaper, Sun, Moon, MessageCircleHeart } from 'lucide-react';
+
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import logo from '@/assets/b2bnest-logo.png';
@@ -17,17 +18,20 @@ import InstallAppButton from '@/components/InstallAppButton';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUserAvatar } from '@/hooks/useUserAvatar';
+import SupportFeedbackDialog from '@/components/SupportFeedbackDialog';
 
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isPriceSidebarOpen, setIsPriceSidebarOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [activePriceTab, setActivePriceTab] = useState<'crypto' | 'forex'>('crypto');
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { avatarUrl, displayName } = useUserAvatar();
   const initials = (displayName || user?.email || '?').slice(0, 2).toUpperCase();
+
   
   
 
@@ -105,6 +109,17 @@ const Header = () => {
               <ShareButton variant="ghost" size="sm" />
             </div>
             <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsFeedbackOpen(true)}
+              aria-label="Support and feedback"
+              title="Support & Feedback"
+              className="h-9 w-9"
+            >
+              <MessageCircleHeart className="h-4 w-4" />
+            </Button>
+            <Button
+
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
@@ -258,6 +273,17 @@ const Header = () => {
               >
                 Help
               </Link>
+              <button
+                onClick={() => {
+                  setIsFeedbackOpen(true);
+                  setIsMenuOpen(false);
+                }}
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2 text-left flex items-center"
+              >
+                <MessageCircleHeart className="h-4 w-4 mr-2" />
+                Support &amp; Feedback
+              </button>
+
               {user && (
                 <>
                   <hr className="my-2" />
@@ -300,6 +326,9 @@ const Header = () => {
         onClose={() => setIsPriceSidebarOpen(false)}
         defaultTab={activePriceTab}
       />
+
+      <SupportFeedbackDialog open={isFeedbackOpen} onOpenChange={setIsFeedbackOpen} />
+
     </header>
   );
 };
