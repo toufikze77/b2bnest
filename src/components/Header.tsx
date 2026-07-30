@@ -111,6 +111,17 @@ const Header = () => {
             <Button
               variant="ghost"
               size="icon"
+              onClick={() => setIsFeedbackOpen(true)}
+              aria-label="Support and feedback"
+              title="Support & Feedback"
+              className="h-9 w-9"
+            >
+              <MessageCircleHeart className="h-4 w-4" />
+            </Button>
+            <Button
+
+              variant="ghost"
+              size="icon"
               onClick={toggleTheme}
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
               title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
