@@ -51,7 +51,7 @@ export function toCsv(rows: Record<string, any>[]): string {
     const s = v === null || v === undefined ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v);
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  return [headers.join(','), ...rows.map((r) => headers.map((h) => escape(r[h])).join('\n').split('\n').join(','))].join('\n');
+  return [headers.join(','), ...rows.map((r) => headers.map((h) => escape(r[h])).join(','))].join('\n');
 }
 
 export function downloadCsv(filename: string, rows: Record<string, any>[]) {
