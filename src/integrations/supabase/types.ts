@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_logs: {
+        Row: {
+          action: string
+          admin_email: string | null
+          admin_id: string
+          created_at: string
+          details: Json
+          id: string
+          status: string
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          action: string
+          admin_email?: string | null
+          admin_id: string
+          created_at?: string
+          details?: Json
+          id?: string
+          status?: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          action?: string
+          admin_email?: string | null
+          admin_id?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          status?: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: []
+      }
       advertisement_categories: {
         Row: {
           created_at: string
@@ -2048,6 +2084,123 @@ export type Database = {
           },
         ]
       }
+      platform_plans: {
+        Row: {
+          ai_credit_limit: number
+          annual_price: number
+          archived_at: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          document_limit: number
+          features: Json
+          id: string
+          is_active: boolean
+          is_featured: boolean
+          key: string
+          member_limit: number
+          monthly_price: number
+          name: string
+          project_limit: number
+          storage_limit_mb: number
+          updated_at: string
+        }
+        Insert: {
+          ai_credit_limit?: number
+          annual_price?: number
+          archived_at?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          document_limit?: number
+          features?: Json
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          key: string
+          member_limit?: number
+          monthly_price?: number
+          name: string
+          project_limit?: number
+          storage_limit_mb?: number
+          updated_at?: string
+        }
+        Update: {
+          ai_credit_limit?: number
+          annual_price?: number
+          archived_at?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          document_limit?: number
+          features?: Json
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          key?: string
+          member_limit?: number
+          monthly_price?: number
+          name?: string
+          project_limit?: number
+          storage_limit_mb?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
+      platform_tools: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          key: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       post_comments: {
         Row: {
           content: string
@@ -3909,6 +4062,76 @@ export type Database = {
         Args: { p_role?: string; p_team_id: string; p_user_id: string }
         Returns: Json
       }
+      admin_ai_stats: { Args: { _days?: number }; Returns: Json }
+      admin_analytics_series: { Args: { _days?: number }; Returns: Json }
+      admin_documents_summary: {
+        Args: { _limit?: number; _offset?: number }
+        Returns: Json
+      }
+      admin_list_companies: {
+        Args: { _limit?: number; _offset?: number; _search?: string }
+        Returns: Json
+      }
+      admin_list_projects: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _search?: string
+          _status?: string
+        }
+        Returns: Json
+      }
+      admin_list_subscriptions: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _search?: string
+          _status?: string
+        }
+        Returns: Json
+      }
+      admin_list_users: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _search?: string
+          _status?: string
+        }
+        Returns: Json
+      }
+      admin_log_action: {
+        Args: {
+          _action: string
+          _details?: Json
+          _status?: string
+          _target_id?: string
+          _target_type?: string
+        }
+        Returns: string
+      }
+      admin_moderate_post: {
+        Args: { _hide: boolean; _post_id: string }
+        Returns: boolean
+      }
+      admin_overview_stats: { Args: never; Returns: Json }
+      admin_set_user_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      admin_set_user_status: {
+        Args: { _active: boolean; _user_id: string }
+        Returns: boolean
+      }
+      admin_social_stats: { Args: { _limit?: number }; Returns: Json }
+      admin_support_overview: {
+        Args: { _limit?: number; _offset?: number; _status?: string }
+        Returns: Json
+      }
+      admin_system_health: { Args: never; Returns: Json }
+      admin_tools_overview: { Args: never; Returns: Json }
       audit_profile_access: {
         Args: { access_type?: string; accessed_user_id: string }
         Returns: undefined
@@ -4122,6 +4345,7 @@ export type Database = {
         Returns: boolean
       }
       is_safe_profile_field: { Args: { field_name: string }; Returns: boolean }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       is_team_member: {
         Args: { _team_id: string; _user_id: string }
         Returns: boolean
