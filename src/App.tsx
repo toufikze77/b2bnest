@@ -68,6 +68,23 @@ import PublicPage from '@/pages/lead-generation/PublicPage';
 import RotaIndex from '@/pages/rota/Index';
 import RotaEmployees from '@/pages/rota/Employees';
 import RotaSchedule from '@/pages/rota/Schedule';
+import AdminLayout from '@/pages/admin/AdminLayout';
+import AdminDashboard from '@/pages/admin/AdminDashboard';
+import AdminUsers from '@/pages/admin/AdminUsers';
+import AdminCompanies from '@/pages/admin/AdminCompanies';
+import AdminSubscriptions from '@/pages/admin/AdminSubscriptions';
+import AdminPlans from '@/pages/admin/AdminPlans';
+import AdminAI from '@/pages/admin/AdminAI';
+import AdminTools from '@/pages/admin/AdminTools';
+import AdminProjects from '@/pages/admin/AdminProjects';
+import AdminDocuments from '@/pages/admin/AdminDocuments';
+import AdminSocial from '@/pages/admin/AdminSocial';
+import AdminSupport from '@/pages/admin/AdminSupport';
+import AdminAnalytics from '@/pages/admin/AdminAnalytics';
+import AdminAuditLogs from '@/pages/admin/AdminAuditLogs';
+import AdminExport from '@/pages/admin/AdminExport';
+import AdminSystemHealth from '@/pages/admin/AdminSystemHealth';
+import AdminSettings from '@/pages/admin/AdminSettings';
 
 const queryClient = new QueryClient();
 
@@ -147,6 +164,26 @@ function App() {
                
                {/* B2B Partnership Form */}
                <Route path="/forms/b2b" element={<B2BForm />} />
+
+               {/* B2BNest Super Admin */}
+               <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+                 <Route index element={<AdminDashboard />} />
+                 <Route path="users" element={<AdminUsers />} />
+                 <Route path="companies" element={<AdminCompanies />} />
+                 <Route path="subscriptions" element={<AdminSubscriptions />} />
+                 <Route path="plans" element={<AdminPlans />} />
+                 <Route path="ai" element={<AdminAI />} />
+                 <Route path="tools" element={<AdminTools />} />
+                 <Route path="projects" element={<AdminProjects />} />
+                 <Route path="documents" element={<AdminDocuments />} />
+                 <Route path="social" element={<AdminSocial />} />
+                 <Route path="support" element={<AdminSupport />} />
+                 <Route path="analytics" element={<AdminAnalytics />} />
+                 <Route path="audit-logs" element={<AdminAuditLogs />} />
+                 <Route path="export" element={<AdminExport />} />
+                 <Route path="system-health" element={<AdminSystemHealth />} />
+                 <Route path="settings" element={<AdminSettings />} />
+               </Route>
                
                <Route path="*" element={<NotFound />} />
             </Routes>
