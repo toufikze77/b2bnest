@@ -68,6 +68,23 @@ import PublicPage from '@/pages/lead-generation/PublicPage';
 import RotaIndex from '@/pages/rota/Index';
 import RotaEmployees from '@/pages/rota/Employees';
 import RotaSchedule from '@/pages/rota/Schedule';
+import AdminLayout from '@/pages/admin/AdminLayout';
+import AdminDashboard from '@/pages/admin/AdminDashboard';
+import AdminUsers from '@/pages/admin/AdminUsers';
+import AdminCompanies from '@/pages/admin/AdminCompanies';
+import AdminSubscriptions from '@/pages/admin/AdminSubscriptions';
+import AdminPlans from '@/pages/admin/AdminPlans';
+import AdminAI from '@/pages/admin/AdminAI';
+import AdminTools from '@/pages/admin/AdminTools';
+import AdminProjects from '@/pages/admin/AdminProjects';
+import AdminDocuments from '@/pages/admin/AdminDocuments';
+import AdminSocial from '@/pages/admin/AdminSocial';
+import AdminSupport from '@/pages/admin/AdminSupport';
+import AdminAnalytics from '@/pages/admin/AdminAnalytics';
+import AdminAuditLogs from '@/pages/admin/AdminAuditLogs';
+import AdminExport from '@/pages/admin/AdminExport';
+import AdminSystemHealth from '@/pages/admin/AdminSystemHealth';
+import AdminSettings from '@/pages/admin/AdminSettings';
 
 const queryClient = new QueryClient();
 
