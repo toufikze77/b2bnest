@@ -164,6 +164,26 @@ function App() {
                
                {/* B2B Partnership Form */}
                <Route path="/forms/b2b" element={<B2BForm />} />
+
+               {/* B2BNest Super Admin */}
+               <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+                 <Route index element={<AdminDashboard />} />
+                 <Route path="users" element={<AdminUsers />} />
+                 <Route path="companies" element={<AdminCompanies />} />
+                 <Route path="subscriptions" element={<AdminSubscriptions />} />
+                 <Route path="plans" element={<AdminPlans />} />
+                 <Route path="ai" element={<AdminAI />} />
+                 <Route path="tools" element={<AdminTools />} />
+                 <Route path="projects" element={<AdminProjects />} />
+                 <Route path="documents" element={<AdminDocuments />} />
+                 <Route path="social" element={<AdminSocial />} />
+                 <Route path="support" element={<AdminSupport />} />
+                 <Route path="analytics" element={<AdminAnalytics />} />
+                 <Route path="audit-logs" element={<AdminAuditLogs />} />
+                 <Route path="export" element={<AdminExport />} />
+                 <Route path="system-health" element={<AdminSystemHealth />} />
+                 <Route path="settings" element={<AdminSettings />} />
+               </Route>
                
                <Route path="*" element={<NotFound />} />
             </Routes>
