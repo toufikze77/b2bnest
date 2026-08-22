@@ -3711,6 +3711,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_document_templates: {
+        Row: {
+          accent_color: string | null
+          created_at: string
+          invoice_template: string
+          quote_template: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accent_color?: string | null
+          created_at?: string
+          invoice_template?: string
+          quote_template?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accent_color?: string | null
+          created_at?: string
+          invoice_template?: string
+          quote_template?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_documents: {
         Row: {
           document_id: string
