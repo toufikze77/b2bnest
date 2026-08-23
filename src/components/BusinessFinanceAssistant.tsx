@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Download, Eye, Send, FileText, DollarSign, TrendingUp, Users, Package, Truck, Receipt, CreditCard, BarChart3, Home, Building, Calendar, ShoppingCart, Banknote, Edit, Trash2, Repeat, Shield } from 'lucide-react';
+import { Plus, Download, Eye, Send, FileText, DollarSign, TrendingUp, Users, Package, Truck, Receipt, CreditCard, BarChart3, Home, Building, Calendar, ShoppingCart, Banknote, Edit, Trash2, Repeat, Shield, Palette } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -21,6 +21,9 @@ import QuoteInvoiceCreationSection from '@/components/QuoteInvoiceCreationSectio
 import PayrollUK from '@/components/payroll/PayrollUK';
 import DocumentList from '@/components/DocumentList';
 import { formatCurrency } from '@/utils/currencyUtils';
+import DocumentTemplatePicker from '@/components/documents/DocumentTemplatePicker';
+import { useDocumentTemplates } from '@/hooks/useDocumentTemplates';
+import { renderDocumentPdf } from '@/lib/documentTemplates';
 import { Tables } from '@/integrations/supabase/types';
 import { 
   LineChart, 
@@ -393,6 +396,7 @@ const BusinessAnalytics: React.FC<BusinessAnalyticsProps> = ({ quotes, invoices,
 const BusinessFinanceAssistant = () => {
   const { user } = useAuth();
   const { settings } = useUserSettings();
+  const { templateFor } = useDocumentTemplates();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'quotes' | 'invoices' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'banking' | 'payroll' | 'reports' | 'analytics'>('dashboard');
   const [documentType, setDocumentType] = useState<'invoice' | 'quote'>('quote');
@@ -723,82 +727,34 @@ const BusinessFinanceAssistant = () => {
     toast.success("Outgoings schedule downloaded");
   };
 
-  // Generate PDF document from quote/invoice data
+  // Generate PDF document from quote/invoice data using the user's default template
   const generatePDF = async (doc: Quote | Invoice) => {
-    const docType = 'quote_number' in doc ? 'quote' : 'invoice';
-    const number = 'quote_number' in doc ? doc.quote_number : doc.invoice_number;
-    
-    // Create PDF
-    const pdf = new jsPDF();
-    
-    // Header
-    pdf.setFontSize(24);
-    pdf.text(docType.charAt(0).toUpperCase() + docType.slice(1), 20, 30);
-    
-    // Document info
-    pdf.setFontSize(12);
-    pdf.text(`${docType.charAt(0).toUpperCase() + docType.slice(1)} #: ${number}`, 20, 50);
-    pdf.text(`Date: ${new Date(doc.created_at).toLocaleDateString()}`, 20, 60);
-    pdf.text(`Status: ${doc.status}`, 20, 70);
-    
-    if ('valid_until' in doc && doc.valid_until) {
-      pdf.text(`Valid Until: ${new Date(doc.valid_until).toLocaleDateString()}`, 20, 80);
-    }
-    if ('due_date' in doc && doc.due_date) {
-      pdf.text(`Due Date: ${new Date(doc.due_date).toLocaleDateString()}`, 20, 80);
-    }
-    
-    // Company info
-    pdf.text('From:', 20, 100);
-    if (doc.company_name) pdf.text(doc.company_name, 20, 110);
-    if (doc.company_address) pdf.text(doc.company_address, 20, 120);
-    
-    // Client info
-    pdf.text('To:', 20, 140);
-    if (doc.client_name) pdf.text(doc.client_name, 20, 150);
-    if (doc.client_email) pdf.text(doc.client_email, 20, 160);
-    if (doc.client_address) pdf.text(doc.client_address, 20, 170);
-    
-    // Items table header
-    pdf.text('Items:', 20, 190);
-    pdf.text('Description', 20, 200);
-    pdf.text('Qty', 100, 200);
-    pdf.text('Rate', 130, 200);
-    pdf.text('Amount', 160, 200);
-    
-    // Items
-    let yPosition = 210;
-    if (doc.items && Array.isArray(doc.items)) {
-      doc.items.forEach((item: any) => {
-        pdf.text(item.description || '', 20, yPosition);
-        pdf.text(String(item.quantity || 0), 100, yPosition);
-        pdf.text(formatCurrency(item.rate || 0, settings?.currency_code || 'USD'), 130, yPosition);
-        pdf.text(formatCurrency(item.amount || 0, settings?.currency_code || 'USD'), 160, yPosition);
-        yPosition += 10;
-      });
-    }
-    
-    // Totals
-    yPosition += 10;
-    pdf.text(`Subtotal: ${formatCurrency(Number(doc.subtotal) || 0, settings?.currency_code || 'USD')}`, 130, yPosition);
-    if (doc.tax_rate && Number(doc.tax_rate) > 0) {
-      yPosition += 10;
-      pdf.text(`Tax (${doc.tax_rate}%): ${formatCurrency(Number(doc.tax_amount) || 0, settings?.currency_code || 'USD')}`, 130, yPosition);
-    }
-    yPosition += 10;
-    pdf.setFontSize(14);
-    pdf.text(`Total: ${formatCurrency(Number(doc.total_amount) || 0, settings?.currency_code || 'USD')}`, 130, yPosition);
-    
-    // Notes
-    if (doc.notes) {
-      yPosition += 20;
-      pdf.setFontSize(12);
-      pdf.text('Notes:', 20, yPosition);
-      const notes = pdf.splitTextToSize(doc.notes, 170);
-      pdf.text(notes, 20, yPosition + 10);
-    }
-    
-    return pdf;
+    const docType: 'quote' | 'invoice' = 'quote_number' in doc ? 'quote' : 'invoice';
+    const number = 'quote_number' in doc ? doc.quote_number : (doc as Invoice).invoice_number;
+
+    return renderDocumentPdf(
+      {
+        type: docType,
+        number,
+        created_at: doc.created_at,
+        status: doc.status,
+        valid_until: 'valid_until' in doc ? (doc as Quote).valid_until : null,
+        due_date: 'due_date' in doc ? (doc as Invoice).due_date : null,
+        company_name: doc.company_name,
+        company_address: doc.company_address,
+        client_name: doc.client_name,
+        client_email: doc.client_email,
+        client_address: doc.client_address,
+        items: doc.items,
+        subtotal: Number(doc.subtotal) || 0,
+        tax_rate: Number(doc.tax_rate) || 0,
+        tax_amount: Number(doc.tax_amount) || 0,
+        total_amount: Number(doc.total_amount) || 0,
+        notes: doc.notes,
+      },
+      templateFor(docType),
+      settings?.currency_code || 'GBP',
+    );
   };
 
   // Handle document view
@@ -1053,9 +1009,9 @@ const BusinessFinanceAssistant = () => {
 
       <Tabs value={activeTab} onValueChange={(value) => {
         console.log('Tab changed to:', value);
-        setActiveTab(value as "expenses" | "suppliers" | "invoices" | "outgoings" | "quotes" | "dashboard" | "create" | "products" | "banking" | "payroll" | "reports" | "analytics");
+        setActiveTab(value as "expenses" | "suppliers" | "invoices" | "outgoings" | "quotes" | "dashboard" | "create" | "products" | "banking" | "payroll" | "reports" | "analytics" | "templates");
       }} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-12">
+        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-13">
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <Home className="h-4 w-4" />
             Dashboard
@@ -1071,6 +1027,10 @@ const BusinessFinanceAssistant = () => {
           <TabsTrigger value="invoices" className="flex items-center gap-2">
             <DollarSign className="h-4 w-4" />
             Invoices
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            Templates
           </TabsTrigger>
           <TabsTrigger value="products" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
@@ -2046,6 +2006,10 @@ const BusinessFinanceAssistant = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="templates">
+          <DocumentTemplatePicker currency={settings?.currency_code || 'GBP'} />
         </TabsContent>
 
         <TabsContent value="payroll">
