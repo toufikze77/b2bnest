@@ -398,7 +398,7 @@ const BusinessFinanceAssistant = () => {
   const { settings } = useUserSettings();
   const { templateFor } = useDocumentTemplates();
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'quotes' | 'invoices' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'banking' | 'payroll' | 'reports' | 'analytics'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'quotes' | 'invoices' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'banking' | 'payroll' | 'reports' | 'analytics' | 'templates'>('dashboard');
   const [documentType, setDocumentType] = useState<'invoice' | 'quote'>('quote');
   const [editingDocument, setEditingDocument] = useState<Quote | Invoice | null>(null);
   const [showDocumentList, setShowDocumentList] = useState(false);
