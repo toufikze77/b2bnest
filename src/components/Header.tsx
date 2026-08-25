@@ -232,6 +232,14 @@ const Header = () => {
               >
                 Business Tools
               </Link>
+              <Link
+                to="/template-center"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Templates
+              </Link>
+
               <div className="px-2">
                 <div className="font-medium text-gray-900 mb-2">AI Tools</div>
                 <div className="pl-4 space-y-2">
