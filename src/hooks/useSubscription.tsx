@@ -155,6 +155,12 @@ export const useSubscription = () => {
       console.log(`✅ Feature "${featureId}" granted: Admin access`);
       return true;
     }
+
+    // Owner / special access accounts get everything for free
+    if (hasSpecialAccess) {
+      console.log(`✅ Feature "${featureId}" granted: Owner access`);
+      return true;
+    }
     
     // Active trial users get full access to ALL features (Enterprise level)
     if (hasActiveTrial) {
@@ -162,11 +168,7 @@ export const useSubscription = () => {
       return true;
     }
     
-    // Special access users have full AI Studio access
-    if (hasSpecialAccess && ['analytics', 'workflows', 'personalization'].includes(featureId)) {
-      console.log(`✅ Feature "${featureId}" granted: Special access`);
-      return true;
-    }
+
     
     // Free features available to all users
     if (['advisor', 'crm', 'contacts', 'deals', 'project-management'].includes(featureId)) {
