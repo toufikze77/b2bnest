@@ -18,14 +18,13 @@ const SearchResults = ({ results, searchQuery, isLoading = false }: SearchResult
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   const handlePreview = (template: Template) => {
-    // TODO: Implement preview functionality
-    console.log('Preview template:', template.title);
+    // Preview modal is handled inside TemplateCard
   };
 
   const handleDownload = (template: Template) => {
-    // TODO: Implement download/purchase functionality
-    console.log('Download template:', template.title);
+    downloadTemplate(template);
   };
+
 
   if (isLoading) {
     return (
