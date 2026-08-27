@@ -16,6 +16,7 @@ import Dashboard from "@/pages/Dashboard";
 
 import BusinessTools from "@/pages/BusinessTools";
 import TemplateCenter from "@/pages/TemplateCenter";
+import Onboarding from "@/pages/Onboarding";
 import Fundraising from "@/pages/Fundraising";
 import PLR from "@/pages/PLR";
 import NotePro from "@/components/NotePro";
@@ -111,6 +112,8 @@ function App() {
             <Route path="/profile-setup" element={<ProtectedRoute><ProfileSetup /></ProtectedRoute>} />
               <Route path="/business-tools" element={<BusinessTools />} />
               <Route path="/template-center" element={<TemplateCenter />} />
+              <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+
               <Route path="/business-tools/notepro" element={<ProtectedRoute><NotePro /></ProtectedRoute>} />
               <Route path="/ai-showcase" element={<AIShowcase />} />
               <Route path="/ai-studio" element={<AIStudio />} />

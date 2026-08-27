@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, User, LogOut, Settings, BarChart3, Brain, Newspaper, Sun, Moon, MessageSquare } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, BarChart3, Brain, Newspaper, Sun, Moon, MessageSquare, Rocket } from 'lucide-react';
 
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -174,6 +174,12 @@ const Header = () => {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
+                    <Link to="/onboarding" className="flex items-center w-full">
+                      <Rocket className="h-4 w-4 mr-2" />
+                      Onboarding &amp; Migration
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link to="/settings" className="flex items-center w-full">
                       <Settings className="h-4 w-4 mr-2" />
                       Settings
@@ -239,6 +245,17 @@ const Header = () => {
               >
                 Templates
               </Link>
+              {user && (
+                <Link
+                  to="/onboarding"
+                  className="text-gray-700 hover:text-blue-600 transition-colors px-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Onboarding &amp; Migration
+                </Link>
+              )}
+
+
 
               <div className="px-2">
                 <div className="font-medium text-gray-900 mb-2">AI Tools</div>
