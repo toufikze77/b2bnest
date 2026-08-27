@@ -126,6 +126,15 @@ const TemplateCenter = () => {
     }
   };
 
+  const handleUseTemplate = (t: Template) => {
+    if (t.price === 0) {
+      setUseTemplate(t);
+    } else {
+      setCheckoutTemplate(t);
+    }
+  };
+
+
 
   return (
     <div className="min-h-screen bg-background">
