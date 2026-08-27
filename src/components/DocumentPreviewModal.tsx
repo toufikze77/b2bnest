@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Template } from '@/types/template';
+import TemplateThumbnail from '@/components/template-center/TemplateThumbnail';
+
 
 interface DocumentPreviewModalProps {
   isOpen: boolean;
@@ -59,32 +61,32 @@ const DocumentPreviewModal = ({
         </DialogHeader>
 
         {/* Preview Area */}
-        <div className="flex-1 bg-gray-50 rounded-lg p-4 overflow-hidden">
-          {template.previewUrl ? (
-            <div className="h-full w-full bg-white rounded border">
-              <iframe
-                src={template.previewUrl}
-                className="w-full h-full rounded"
-                title={`Preview of ${template.title}`}
-              />
+        <div className="flex-1 overflow-auto rounded-lg bg-muted/40 p-6">
+          <div className="mx-auto h-full w-full max-w-2xl rounded-lg border border-border bg-card p-6 shadow-sm">
+            <h3 className="text-lg font-bold">{template.title}</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {template.category.name}
+              {template.subcategory ? ` · ${template.subcategory}` : ''} · v{template.version}
+            </p>
+            <p className="mt-4 text-sm text-muted-foreground">{template.description}</p>
+            <div className="mt-6 h-40">
+              <TemplateThumbnail seed={template.id} title={template.title} />
             </div>
-          ) : template.thumbnailUrl ? (
-            <div className="h-full flex items-center justify-center">
-              <img
-                src={template.thumbnailUrl}
-                alt={`Preview of ${template.title}`}
-                className="max-w-full max-h-full object-contain rounded shadow-lg"
-              />
-            </div>
-          ) : (
-            <div className="h-full flex items-center justify-center text-gray-500">
-              <div className="text-center">
-                <p className="text-lg mb-2">Preview not available</p>
-                <p className="text-sm">Download to view the full document</p>
-              </div>
-            </div>
-          )}
+            <p className="mt-6 text-sm font-semibold">What you get</p>
+            <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+              {template.tags.slice(0, 5).map((tag) => (
+                <li key={tag} className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  Ready-to-edit {tag.toLowerCase()} section
+                </li>
+              ))}
+            </ul>
+            {template.instructions && (
+              <p className="mt-4 text-xs text-muted-foreground">{template.instructions}</p>
+            )}
+          </div>
         </div>
+
 
         {/* Document Details */}
         <div className="flex-shrink-0 bg-gray-50 rounded-lg p-4 mt-4">

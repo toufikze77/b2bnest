@@ -19,8 +19,12 @@ import SEOHead from '@/components/SEOHead';
 import Footer from '@/components/Footer';
 import TemplateThumbnail from '@/components/template-center/TemplateThumbnail';
 import DocumentPreviewModal from '@/components/DocumentPreviewModal';
+import CheckoutModal from '@/components/checkout/CheckoutModal';
 import { templateService } from '@/services/templateService';
+import { downloadTemplate } from '@/lib/templateGenerator';
+import { toast } from '@/components/ui/use-toast';
 import { Template } from '@/types/template';
+
 
 type SortKey = 'recent' | 'popular' | 'rating' | 'price';
 
@@ -41,6 +45,8 @@ const TemplateCenter = () => {
   const [freeOnly, setFreeOnly] = useState(false);
   const [featuredOnly, setFeaturedOnly] = useState(false);
   const [preview, setPreview] = useState<Template | null>(null);
+  const [checkoutTemplate, setCheckoutTemplate] = useState<Template | null>(null);
+
 
   const filtered = useMemo(() => {
     let list = [...allTemplates];
@@ -93,6 +99,33 @@ const TemplateCenter = () => {
     { id: 'new', label: 'Recently added' },
     { id: 'free', label: 'Free templates' },
   ];
+
+  const runDownload = (t: Template) => {
+    try {
+      const format = downloadTemplate(t);
+      templateService.incrementDownloads(t.id);
+      toast({
+        title: 'Template downloaded',
+        description: `${t.title} was generated as a ready-to-edit ${format} file.`,
+      });
+    } catch (error) {
+      console.error('Template download failed:', error);
+      toast({
+        title: 'Download failed',
+        description: 'We could not generate this template. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDownload = (t: Template) => {
+    if (t.price === 0) {
+      runDownload(t);
+    } else {
+      setCheckoutTemplate(t);
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -278,8 +311,34 @@ const TemplateCenter = () => {
                     {t.price === 0 ? 'Free' : `£${t.price.toFixed(2)}`}
                   </span>
                 </div>
+
+                <div className="mt-3 flex gap-2 border-t border-border pt-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPreview(t);
+                    }}
+                  >
+                    Preview
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="flex-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDownload(t);
+                    }}
+                  >
+                    <Download className="mr-1 h-4 w-4" />
+                    {t.price === 0 ? 'Use template' : 'Buy'}
+                  </Button>
+                </div>
               </article>
             ))}
+
           </div>
 
           {filtered.length === 0 && (
@@ -298,9 +357,28 @@ const TemplateCenter = () => {
           isOpen={!!preview}
           onClose={() => setPreview(null)}
           template={preview}
-          onDownload={() => setPreview(null)}
+          onDownload={(t) => {
+            setPreview(null);
+            handleDownload(t);
+          }}
         />
       )}
+
+      {checkoutTemplate && (
+        <CheckoutModal
+          isOpen={!!checkoutTemplate}
+          onClose={() => setCheckoutTemplate(null)}
+          amount={checkoutTemplate.price}
+          currency={checkoutTemplate.currency}
+          itemName={checkoutTemplate.title}
+          onPaymentSuccess={() => {
+            const t = checkoutTemplate;
+            setCheckoutTemplate(null);
+            if (t) runDownload(t);
+          }}
+        />
+      )}
+
 
       <Footer />
     </div>
