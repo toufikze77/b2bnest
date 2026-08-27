@@ -357,9 +357,28 @@ const TemplateCenter = () => {
           isOpen={!!preview}
           onClose={() => setPreview(null)}
           template={preview}
-          onDownload={() => setPreview(null)}
+          onDownload={(t) => {
+            setPreview(null);
+            handleDownload(t);
+          }}
         />
       )}
+
+      {checkoutTemplate && (
+        <CheckoutModal
+          isOpen={!!checkoutTemplate}
+          onClose={() => setCheckoutTemplate(null)}
+          amount={checkoutTemplate.price}
+          currency={checkoutTemplate.currency}
+          itemName={checkoutTemplate.title}
+          onPaymentSuccess={() => {
+            const t = checkoutTemplate;
+            setCheckoutTemplate(null);
+            if (t) runDownload(t);
+          }}
+        />
+      )}
+
 
       <Footer />
     </div>
