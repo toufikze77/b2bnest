@@ -16,6 +16,7 @@ import Dashboard from "@/pages/Dashboard";
 
 import BusinessTools from "@/pages/BusinessTools";
 import TemplateCenter from "@/pages/TemplateCenter";
+import Onboarding from "@/pages/Onboarding";
 import Fundraising from "@/pages/Fundraising";
 import PLR from "@/pages/PLR";
 import NotePro from "@/components/NotePro";
