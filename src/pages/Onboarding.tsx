@@ -75,7 +75,7 @@ const Onboarding = () => {
     };
     try {
       const [profile, contacts, projects, documents, invoices] = await Promise.all([
-        supabase.from('profiles').select('full_name, company_name').eq('id', user.id).maybeSingle(),
+        supabase.from('profiles').select('full_name, company').eq('id', user.id).maybeSingle(),
         count('crm_contacts'),
         count('projects'),
         count('documents'),
@@ -87,7 +87,7 @@ const Onboarding = () => {
           label: 'Complete your business profile',
           description: 'Name, company and branding used across invoices, forms and pages.',
           to: '/settings',
-          done: Boolean(profile.data?.full_name && profile.data?.company_name),
+          done: Boolean(profile.data?.full_name && profile.data?.company),
         },
         {
           key: 'contacts',
