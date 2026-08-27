@@ -45,6 +45,8 @@ const TemplateCenter = () => {
   const [freeOnly, setFreeOnly] = useState(false);
   const [featuredOnly, setFeaturedOnly] = useState(false);
   const [preview, setPreview] = useState<Template | null>(null);
+  const [checkoutTemplate, setCheckoutTemplate] = useState<Template | null>(null);
+
 
   const filtered = useMemo(() => {
     let list = [...allTemplates];
