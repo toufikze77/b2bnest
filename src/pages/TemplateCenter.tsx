@@ -98,6 +98,33 @@ const TemplateCenter = () => {
     { id: 'free', label: 'Free templates' },
   ];
 
+  const runDownload = (t: Template) => {
+    try {
+      const format = downloadTemplate(t);
+      templateService.incrementDownloads(t.id);
+      toast({
+        title: 'Template downloaded',
+        description: `${t.title} was generated as a ready-to-edit ${format} file.`,
+      });
+    } catch (error) {
+      console.error('Template download failed:', error);
+      toast({
+        title: 'Download failed',
+        description: 'We could not generate this template. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDownload = (t: Template) => {
+    if (t.price === 0) {
+      runDownload(t);
+    } else {
+      setCheckoutTemplate(t);
+    }
+  };
+
+
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
