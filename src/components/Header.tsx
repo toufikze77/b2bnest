@@ -174,6 +174,12 @@ const Header = () => {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
+                    <Link to="/onboarding" className="flex items-center w-full">
+                      <Rocket className="h-4 w-4 mr-2" />
+                      Onboarding &amp; Migration
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link to="/settings" className="flex items-center w-full">
                       <Settings className="h-4 w-4 mr-2" />
                       Settings
