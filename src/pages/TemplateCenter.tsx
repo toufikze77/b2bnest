@@ -278,8 +278,34 @@ const TemplateCenter = () => {
                     {t.price === 0 ? 'Free' : `£${t.price.toFixed(2)}`}
                   </span>
                 </div>
+
+                <div className="mt-3 flex gap-2 border-t border-border pt-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPreview(t);
+                    }}
+                  >
+                    Preview
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="flex-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDownload(t);
+                    }}
+                  >
+                    <Download className="mr-1 h-4 w-4" />
+                    {t.price === 0 ? 'Use template' : 'Buy'}
+                  </Button>
+                </div>
               </article>
             ))}
+
           </div>
 
           {filtered.length === 0 && (
