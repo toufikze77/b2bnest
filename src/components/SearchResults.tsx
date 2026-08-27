@@ -6,6 +6,8 @@ import { Template, TemplateFilter } from '@/types/template';
 import TemplateCard from './TemplateCard';
 import AdvancedFilters from './AdvancedFilters';
 import { useSearch } from '@/contexts/SearchContext';
+import { downloadTemplate } from '@/lib/templateGenerator';
+
 
 interface SearchResultsProps {
   results: Template[];
