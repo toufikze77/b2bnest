@@ -19,8 +19,12 @@ import SEOHead from '@/components/SEOHead';
 import Footer from '@/components/Footer';
 import TemplateThumbnail from '@/components/template-center/TemplateThumbnail';
 import DocumentPreviewModal from '@/components/DocumentPreviewModal';
+import CheckoutModal from '@/components/checkout/CheckoutModal';
 import { templateService } from '@/services/templateService';
+import { downloadTemplate } from '@/lib/templateGenerator';
+import { toast } from '@/components/ui/use-toast';
 import { Template } from '@/types/template';
+
 
 type SortKey = 'recent' | 'popular' | 'rating' | 'price';
 
