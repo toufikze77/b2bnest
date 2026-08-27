@@ -305,12 +305,15 @@ const ProjectManagement = () => {
   const [activeView, setActiveView] = useState<'kanban' | 'list' | 'calendar' | 'timeline'>('kanban');
   const [activeTab, setActiveTab] = useState('kanban');
   const [selectedProject, setSelectedProject] = useState(() => {
-    // Always start with 'all' to show all tasks by default
+    // Honour a ?project=<id> deep link (used when applying a template), else show all tasks
     try {
       localStorage.removeItem('pm_selected_project'); // Clear any saved project filter
+      const fromUrl = new URLSearchParams(window.location.search).get('project');
+      if (fromUrl) return fromUrl;
     } catch {}
     return 'all';
   });
+
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
