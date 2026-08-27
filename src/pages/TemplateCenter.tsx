@@ -20,6 +20,7 @@ import Footer from '@/components/Footer';
 import TemplateThumbnail from '@/components/template-center/TemplateThumbnail';
 import DocumentPreviewModal from '@/components/DocumentPreviewModal';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
+import UseTemplateDialog from '@/components/template-center/UseTemplateDialog';
 import { templateService } from '@/services/templateService';
 import { downloadTemplate } from '@/lib/templateGenerator';
 import { toast } from '@/components/ui/use-toast';
@@ -46,6 +47,7 @@ const TemplateCenter = () => {
   const [featuredOnly, setFeaturedOnly] = useState(false);
   const [preview, setPreview] = useState<Template | null>(null);
   const [checkoutTemplate, setCheckoutTemplate] = useState<Template | null>(null);
+  const [useTemplate, setUseTemplate] = useState<Template | null>(null);
 
 
   const filtered = useMemo(() => {
@@ -125,6 +127,15 @@ const TemplateCenter = () => {
       setCheckoutTemplate(t);
     }
   };
+
+  const handleUseTemplate = (t: Template) => {
+    if (t.price === 0) {
+      setUseTemplate(t);
+    } else {
+      setCheckoutTemplate(t);
+    }
+  };
+
 
 
   return (
@@ -329,10 +340,10 @@ const TemplateCenter = () => {
                     className="flex-1"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDownload(t);
+                      handleUseTemplate(t);
                     }}
                   >
-                    <Download className="mr-1 h-4 w-4" />
+                    <LayoutGrid className="mr-1 h-4 w-4" />
                     {t.price === 0 ? 'Use template' : 'Buy'}
                   </Button>
                 </div>
@@ -359,7 +370,7 @@ const TemplateCenter = () => {
           template={preview}
           onDownload={(t) => {
             setPreview(null);
-            handleDownload(t);
+            handleUseTemplate(t);
           }}
         />
       )}
@@ -374,11 +385,21 @@ const TemplateCenter = () => {
           onPaymentSuccess={() => {
             const t = checkoutTemplate;
             setCheckoutTemplate(null);
-            if (t) runDownload(t);
+            if (t) setUseTemplate(t);
           }}
         />
       )}
 
+
+      <UseTemplateDialog
+        template={useTemplate}
+        isOpen={!!useTemplate}
+        onClose={() => setUseTemplate(null)}
+        onDownload={(t) => {
+          setUseTemplate(null);
+          runDownload(t);
+        }}
+      />
 
       <Footer />
     </div>
