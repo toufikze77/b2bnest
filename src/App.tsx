@@ -112,6 +112,8 @@ function App() {
             <Route path="/profile-setup" element={<ProtectedRoute><ProfileSetup /></ProtectedRoute>} />
               <Route path="/business-tools" element={<BusinessTools />} />
               <Route path="/template-center" element={<TemplateCenter />} />
+              <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+
               <Route path="/business-tools/notepro" element={<ProtectedRoute><NotePro /></ProtectedRoute>} />
               <Route path="/ai-showcase" element={<AIShowcase />} />
               <Route path="/ai-studio" element={<AIStudio />} />
