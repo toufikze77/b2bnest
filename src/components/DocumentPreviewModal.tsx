@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Template } from '@/types/template';
+import TemplateThumbnail from '@/components/template-center/TemplateThumbnail';
+
 
 interface DocumentPreviewModalProps {
   isOpen: boolean;
