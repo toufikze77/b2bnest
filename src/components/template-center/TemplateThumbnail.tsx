@@ -1,10 +1,10 @@
 import React from 'react';
 
 const PALETTES: string[][] = [
-  ['bg-blue-500', 'bg-emerald-500', 'bg-amber-400', 'bg-rose-500'],
-  ['bg-violet-500', 'bg-sky-500', 'bg-lime-500', 'bg-orange-400'],
-  ['bg-teal-500', 'bg-indigo-500', 'bg-pink-500', 'bg-yellow-400'],
-  ['bg-emerald-600', 'bg-cyan-500', 'bg-fuchsia-500', 'bg-red-400'],
+  ['bg-[#0073ea]', 'bg-[#00c875]', 'bg-[#fdab3d]', 'bg-[#e2445c]', 'bg-[#a25ddc]'],
+  ['bg-[#a25ddc]', 'bg-[#0086c0]', 'bg-[#9cd326]', 'bg-[#ff642e]', 'bg-[#00c875]'],
+  ['bg-[#00c875]', 'bg-[#579bfc]', 'bg-[#ff158a]', 'bg-[#ffcb00]', 'bg-[#0073ea]'],
+  ['bg-[#037f4c]', 'bg-[#66ccff]', 'bg-[#bb3354]', 'bg-[#fdab3d]', 'bg-[#579bfc]'],
 ];
 
 interface TemplateThumbnailProps {
@@ -17,16 +17,15 @@ interface TemplateThumbnailProps {
 const TemplateThumbnail = ({ seed, title, variant = 'board' }: TemplateThumbnailProps) => {
   const hash = Array.from(seed).reduce((acc, c) => acc + c.charCodeAt(0), 0);
   const palette = PALETTES[hash % PALETTES.length];
-  const rows = 6;
 
   if (variant === 'gradient') {
     return (
-      <div className="h-full w-full rounded-md bg-gradient-to-br from-indigo-500 to-violet-600 p-3">
-        <div className="h-full w-full rounded bg-white/95 p-2">
+      <div className="h-full w-full overflow-hidden rounded-md bg-gradient-to-br from-[#5034ff] to-[#a25ddc] p-3">
+        <div className="h-full w-full overflow-hidden rounded bg-white p-2 shadow-sm">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="mb-1.5 flex items-center gap-1.5">
-              <div className="h-1.5 flex-1 rounded-full bg-muted" />
-              <div className="h-2.5 w-2.5 rounded-full border border-border" />
+              <div className="h-1.5 flex-1 rounded-full bg-slate-200" />
+              <div className="h-2.5 w-2.5 rounded-full border border-slate-300" />
               <div className={`h-2.5 w-8 rounded-sm ${palette[i % palette.length]}`} />
             </div>
           ))}
@@ -35,17 +34,42 @@ const TemplateThumbnail = ({ seed, title, variant = 'board' }: TemplateThumbnail
     );
   }
 
+  // Two groups of rows, like a real monday board
+  const groups = [
+    { color: palette[0], rows: 3 },
+    { color: palette[1], rows: 3 },
+  ];
+
   return (
-    <div className="h-full w-full overflow-hidden rounded-md border border-border bg-background p-2">
-      <div className="mb-2 h-1.5 w-20 rounded-full bg-muted-foreground/30" aria-hidden />
-      <div className="space-y-1.5" aria-hidden>
-        {Array.from({ length: rows }).map((_, r) => (
-          <div key={r} className="flex items-center gap-1">
-            <div className={`h-2 w-1 rounded-sm ${palette[r % palette.length]}`} />
-            <div className="h-2 flex-1 rounded-sm bg-muted" />
-            <div className={`h-2 w-6 rounded-sm ${palette[(r + 1) % palette.length]} opacity-80`} />
-            <div className={`h-2 w-4 rounded-sm ${palette[(r + 2) % palette.length]} opacity-60`} />
-            <div className="h-2 w-5 rounded-sm bg-muted" />
+    <div className="h-full w-full overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+      {/* board title bar */}
+      <div className="flex items-center gap-1.5 border-b border-slate-100 px-2 py-1.5" aria-hidden>
+        <div className="h-1.5 w-16 rounded-full bg-slate-300" />
+        <div className="ml-auto h-1.5 w-5 rounded-full bg-slate-200" />
+        <div className="h-1.5 w-3 rounded-full bg-slate-200" />
+      </div>
+
+      <div className="space-y-1.5 p-2" aria-hidden>
+        {groups.map((g, gi) => (
+          <div key={gi} className="space-y-[3px]">
+            {/* group label */}
+            <div className="flex items-center gap-1 pl-1">
+              <div className={`h-1.5 w-1.5 rounded-full ${g.color}`} />
+              <div className={`h-1.5 w-10 rounded-full ${g.color} opacity-40`} />
+            </div>
+            {Array.from({ length: g.rows }).map((_, r) => {
+              const idx = gi * 3 + r;
+              return (
+                <div key={r} className="flex items-center gap-1">
+                  <div className={`h-3 w-[3px] rounded-sm ${g.color}`} />
+                  <div className="h-2.5 w-2.5 shrink-0 rounded-[2px] border border-slate-300" />
+                  <div className="h-1.5 flex-1 rounded-full bg-slate-200" />
+                  <div className={`h-2.5 w-9 rounded-[3px] ${palette[(idx + 1) % palette.length]}`} />
+                  <div className={`h-2.5 w-6 rounded-[3px] ${palette[(idx + 3) % palette.length]}`} />
+                  <div className="h-2.5 w-2.5 rounded-full bg-slate-200" />
+                </div>
+              );
+            })}
           </div>
         ))}
       </div>
