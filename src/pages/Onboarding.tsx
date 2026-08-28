@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { startWelcomeTour } from '@/components/onboarding/WelcomeTour';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -255,7 +256,7 @@ const Onboarding = () => {
       />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-background dark:to-background">
         <div className="container mx-auto max-w-6xl px-4 py-10">
-          <div className="mb-8 flex items-start gap-4">
+          <div className="mb-8 flex flex-wrap items-start gap-4">
             <div className="rounded-xl bg-primary/10 p-3">
               <Rocket className="h-7 w-7 text-primary" />
             </div>
@@ -265,6 +266,9 @@ const Onboarding = () => {
                 Bring your existing business data into B2BNest and get set up with help from our team.
               </p>
             </div>
+            <Button variant="outline" className="sm:ml-auto" onClick={startWelcomeTour}>
+              Replay product tour
+            </Button>
           </div>
 
           <Tabs
