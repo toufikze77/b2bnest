@@ -12,7 +12,6 @@ import {
   PartyPopper,
   ArrowLeft,
   ArrowRight,
-  X,
 } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -136,21 +135,13 @@ const WelcomeTour = () => {
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && finish()}>
-      <DialogContent className="max-w-lg overflow-hidden p-0" hideCloseButton>
+      <DialogContent className="max-w-lg overflow-hidden p-0">
         <div className={`bg-gradient-to-br ${current.accent} px-6 pb-5 pt-6`}>
           <div className="flex items-start justify-between">
             <div className="rounded-xl bg-background/80 p-3 shadow-sm">
               <Icon className="h-7 w-7 text-primary" />
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={finish}
-              aria-label="Skip the tour"
-              className="h-8 w-8"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="h-8 w-8" />
           </div>
           <h2 className="mt-4 text-2xl font-bold text-foreground">{current.title}</h2>
         </div>
