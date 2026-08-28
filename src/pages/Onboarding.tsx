@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -235,7 +235,8 @@ const Onboarding = () => {
 
   const completed = steps.filter((s) => s.done).length;
   const pct = steps.length ? Math.round((completed / steps.length) * 100) : 0;
-  const initialTab = new URLSearchParams(window.location.search).get('tab') || 'overview';
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'overview';
 
   const configCards = [
     { icon: Building2, title: 'Business profile & branding', text: 'Logo, company details and currency used on invoices, quotes, forms and landing pages.', to: '/settings' },
@@ -266,7 +267,11 @@ const Onboarding = () => {
             </div>
           </div>
 
-          <Tabs defaultValue={initialTab} className="space-y-6">
+          <Tabs
+            value={activeTab}
+            onValueChange={(v) => setSearchParams(v === 'overview' ? {} : { tab: v })}
+            className="space-y-6"
+          >
             <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="contacts" className="gap-1"><Users className="h-4 w-4" />Contacts</TabsTrigger>
