@@ -61,11 +61,10 @@ export const applyTemplateToWorkspace = async (
         source_template_title: template.title,
         applied_at: new Date().toISOString(),
       },
-      custom_columns: blueprint.groups.map((g, i) => ({
-        id: g.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-        title: g.name,
-        order: i + 1,
-      })),
+      // Board columns stay on the standard status pipeline so the generated
+      // tasks (whose status values are backlog/todo/in-progress/review/done)
+      // are visible immediately. Blueprint groups are kept as task labels.
+
     })
     .select('id, name')
     .single();
