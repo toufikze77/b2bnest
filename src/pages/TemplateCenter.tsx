@@ -40,6 +40,8 @@ const SORT_LABELS: Record<SortKey, string> = {
 const TemplateCenter = () => {
   const allTemplates = useMemo(() => templateService.searchTemplates(''), []);
   const categories = useMemo(() => templateService.getCategories(), []);
+  const { isPremium } = useSubscription();
+
 
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
