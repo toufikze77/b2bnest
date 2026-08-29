@@ -103,10 +103,17 @@ const WelcomeTour = () => {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
 
-  // Auto-open once per new account.
+  // Auto-open once, and only for genuinely new accounts (created in the last 24h).
   useEffect(() => {
     if (!user) return;
     if (localStorage.getItem(storageKey(user.id))) return;
+    const createdAt = user.created_at ? new Date(user.created_at).getTime() : 0;
+    const isNewAccount = createdAt > 0 && Date.now() - createdAt < 24 * 60 * 60 * 1000;
+    if (!isNewAccount) {
+      // Existing account: never auto-show; they can replay it from Onboarding.
+      localStorage.setItem(storageKey(user.id), new Date().toISOString());
+      return;
+    }
     const t = setTimeout(() => setOpen(true), 800);
     return () => clearTimeout(t);
   }, [user]);
