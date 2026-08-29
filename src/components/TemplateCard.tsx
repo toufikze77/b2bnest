@@ -6,6 +6,7 @@ import CheckoutModal from './checkout/CheckoutModal';
 import DocumentPreviewModal from './DocumentPreviewModal';
 import { userDocumentService } from '@/services/userDocumentService';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import TemplateCardBadges from './template-card/TemplateCardBadges';
@@ -22,6 +23,7 @@ interface TemplateCardProps {
 
 const TemplateCard = ({ template, searchQuery = '', onPreview, onDownload }: TemplateCardProps) => {
   const { user } = useAuth();
+  const { isPremium } = useSubscription();
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -42,7 +44,7 @@ const TemplateCard = ({ template, searchQuery = '', onPreview, onDownload }: Tem
   };
 
   const handlePurchase = () => {
-    if (template.price === 0) {
+    if (template.price === 0 || isPremium) {
       onDownload?.(template);
     } else {
       setIsCheckoutOpen(true);
@@ -158,7 +160,7 @@ const TemplateCard = ({ template, searchQuery = '', onPreview, onDownload }: Tem
           licenseType={template.license.type}
           isRoyaltyFree={template.isRoyaltyFree}
           canResell={template.canResell}
-          price={template.price}
+          price={isPremium ? 0 : template.price}
           currency={template.currency}
           tags={template.tags}
           rating={template.rating}
@@ -169,7 +171,7 @@ const TemplateCard = ({ template, searchQuery = '', onPreview, onDownload }: Tem
         />
 
         <TemplateCardActions
-          price={template.price}
+          price={isPremium ? 0 : template.price}
           onPreview={handlePreview}
           onPurchase={handlePurchase}
         />
