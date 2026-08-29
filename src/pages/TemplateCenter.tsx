@@ -25,6 +25,7 @@ import { templateService } from '@/services/templateService';
 import { downloadTemplate } from '@/lib/templateGenerator';
 import { toast } from '@/components/ui/use-toast';
 import { Template } from '@/types/template';
+import { useSubscription } from '@/hooks/useSubscription';
 
 
 type SortKey = 'recent' | 'popular' | 'rating' | 'price';
@@ -39,6 +40,8 @@ const SORT_LABELS: Record<SortKey, string> = {
 const TemplateCenter = () => {
   const allTemplates = useMemo(() => templateService.searchTemplates(''), []);
   const categories = useMemo(() => templateService.getCategories(), []);
+  const { isPremium } = useSubscription();
+
 
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
@@ -121,7 +124,7 @@ const TemplateCenter = () => {
   };
 
   const handleDownload = (t: Template) => {
-    if (t.price === 0) {
+    if (t.price === 0 || isPremium) {
       runDownload(t);
     } else {
       setCheckoutTemplate(t);
@@ -129,12 +132,13 @@ const TemplateCenter = () => {
   };
 
   const handleUseTemplate = (t: Template) => {
-    if (t.price === 0) {
+    if (t.price === 0 || isPremium) {
       setUseTemplate(t);
     } else {
       setCheckoutTemplate(t);
     }
   };
+
 
 
 
@@ -319,8 +323,9 @@ const TemplateCenter = () => {
                     </Badge>
                   )}
                   <span className="ml-auto text-sm font-semibold">
-                    {t.price === 0 ? 'Free' : `£${t.price.toFixed(2)}`}
+                    {t.price === 0 ? 'Free' : isPremium ? 'Included' : `£${t.price.toFixed(2)}`}
                   </span>
+
                 </div>
 
                 <div className="mt-3 flex gap-2 border-t border-border pt-3">
@@ -344,7 +349,7 @@ const TemplateCenter = () => {
                     }}
                   >
                     <LayoutGrid className="mr-1 h-4 w-4" />
-                    {t.price === 0 ? 'Use template' : 'Buy'}
+                    {t.price === 0 || isPremium ? 'Use template' : 'Buy'}
                   </Button>
                 </div>
               </article>
