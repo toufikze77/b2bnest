@@ -323,8 +323,9 @@ const TemplateCenter = () => {
                     </Badge>
                   )}
                   <span className="ml-auto text-sm font-semibold">
-                    {t.price === 0 ? 'Free' : `£${t.price.toFixed(2)}`}
+                    {t.price === 0 ? 'Free' : isPremium ? 'Included' : `£${t.price.toFixed(2)}`}
                   </span>
+
                 </div>
 
                 <div className="mt-3 flex gap-2 border-t border-border pt-3">
