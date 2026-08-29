@@ -349,7 +349,7 @@ const TemplateCenter = () => {
                     }}
                   >
                     <LayoutGrid className="mr-1 h-4 w-4" />
-                    {t.price === 0 ? 'Use template' : 'Buy'}
+                    {t.price === 0 || isPremium ? 'Use template' : 'Buy'}
                   </Button>
                 </div>
               </article>
