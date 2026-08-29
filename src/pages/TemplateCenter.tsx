@@ -124,7 +124,7 @@ const TemplateCenter = () => {
   };
 
   const handleDownload = (t: Template) => {
-    if (t.price === 0) {
+    if (t.price === 0 || isPremium) {
       runDownload(t);
     } else {
       setCheckoutTemplate(t);
@@ -132,12 +132,13 @@ const TemplateCenter = () => {
   };
 
   const handleUseTemplate = (t: Template) => {
-    if (t.price === 0) {
+    if (t.price === 0 || isPremium) {
       setUseTemplate(t);
     } else {
       setCheckoutTemplate(t);
     }
   };
+
 
 
 
