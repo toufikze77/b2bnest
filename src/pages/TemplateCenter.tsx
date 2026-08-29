@@ -25,6 +25,7 @@ import { templateService } from '@/services/templateService';
 import { downloadTemplate } from '@/lib/templateGenerator';
 import { toast } from '@/components/ui/use-toast';
 import { Template } from '@/types/template';
+import { useSubscription } from '@/hooks/useSubscription';
 
 
 type SortKey = 'recent' | 'popular' | 'rating' | 'price';
