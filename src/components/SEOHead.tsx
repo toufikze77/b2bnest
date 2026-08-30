@@ -66,17 +66,16 @@ const SEOHead = ({
     updateMetaTag('twitter:description', ogDescription || description, true);
     updateMetaTag('twitter:image', ogImage, true);
 
-    // Canonical URL
-    const canonicalHref = canonicalUrl || canonical;
-    if (canonicalHref) {
-      let link = document.querySelector('link[rel="canonical"]');
-      if (!link) {
-        link = document.createElement('link');
-        link.setAttribute('rel', 'canonical');
-        document.head.appendChild(link);
-      }
-      link.setAttribute('href', canonicalHref);
+    // Canonical / social URL — always self-referencing for the current route
+    const routeUrl = `${SITE_URL}${window.location.pathname.replace(/\/+$/, '') || '/'}`;
+    const canonicalHref = canonicalUrl || canonical || routeUrl;
+    let link = document.querySelector('link[rel="canonical"]');
+    if (!link) {
+      link = document.createElement('link');
+      link.setAttribute('rel', 'canonical');
+      document.head.appendChild(link);
     }
+    link.setAttribute('href', canonicalHref);
 
     // Schema markup
     if (schemaMarkup) {
@@ -89,10 +88,10 @@ const SEOHead = ({
       script.textContent = JSON.stringify(schemaMarkup);
     }
 
-    // Update URL in Open Graph
-    const currentUrl = window.location.href;
-    updateMetaTag('og:url', currentUrl, true);
-    updateMetaTag('twitter:url', currentUrl, true);
+    // Open Graph / Twitter URLs mirror the canonical so previews attribute
+    // each route to itself instead of the homepage
+    updateMetaTag('og:url', canonicalHref, true);
+    updateMetaTag('twitter:url', canonicalHref, true);
   }, [title, description, keywords, canonical, canonicalUrl, ogImage, ogType, ogTitle, ogDescription, noIndex, schemaMarkup]);
 
   return null;
