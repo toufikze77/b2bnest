@@ -129,12 +129,34 @@ const KnowledgeBase = () => {
     )
   })).filter(category => category.articles.length > 0 || searchQuery === '');
 
+  const knowledgeBaseSchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "B2BNEST Knowledge Base",
+    "itemListElement": categories.flatMap((category, ci) =>
+      category.articles.map((article, ai) => ({
+        "@type": "ListItem",
+        "position": ci * 100 + ai + 1,
+        "item": {
+          "@type": "TechArticle",
+          "headline": article.title,
+          "description": article.description,
+          "articleSection": category.title,
+          "author": { "@type": "Organization", "name": "B2BNest" },
+          "publisher": { "@type": "Organization", "name": "B2BNest" },
+        },
+      })),
+    ),
+  };
+
   return (
     <>
       <SEOHead 
         title="Knowledge Base | B2BNEST Documentation & Guides"
         description="Comprehensive guides, tutorials, and documentation for all B2BNEST features including business tools, integrations, workflows, and financial management."
         keywords="knowledge base, documentation, guides, tutorials, help articles, how-to, user manual"
+        canonicalUrl="https://www.b2bnest.online/knowledge-base"
+        schemaMarkup={knowledgeBaseSchema}
       />
       
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">

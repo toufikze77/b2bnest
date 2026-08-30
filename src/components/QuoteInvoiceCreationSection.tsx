@@ -487,7 +487,7 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
             />
             {logoUrl && (
               <div className="mt-2">
-                <img src={logoUrl} alt="Company Logo" className="h-16 w-auto" />
+                <img src={logoUrl} alt="Company logo used on your quotes and invoices" className="h-16 w-auto" />
               </div>
             )}
           </div>

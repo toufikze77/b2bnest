@@ -80,13 +80,13 @@ const Blog = () => {
     "@type": "Blog",
     "name": "B2BNest AI Automation Blog",
     "description": "Insights on business documentation, compliance, AI automation, and operational efficiency.",
-    "url": "https://b2bnest.lovable.app/blog",
+    "url": "https://www.b2bnest.online/blog",
     "blogPost": blogPosts.map((post) => ({
       "@type": "BlogPosting",
       "headline": post.title,
       "description": post.excerpt,
       "author": { "@type": "Person", "name": post.author },
-      "datePublished": post.date,
+      "datePublished": new Date(post.date).toISOString().split("T")[0],
       "articleSection": post.category,
     })),
   };
@@ -96,7 +96,7 @@ const Blog = () => {
       <SEOHead
         title="Blog — AI Automation & Business Insights | B2BNest"
         description="Insights, tips, and trends on business documentation, compliance, AI automation, and operational efficiency from the B2BNest team."
-        canonicalUrl="https://b2bnest.lovable.app/blog"
+        canonicalUrl="https://www.b2bnest.online/blog"
         ogTitle="B2BNest Blog — AI Automation & Business Insights"
         ogDescription="Latest articles on business documentation, compliance, and AI-powered operational efficiency."
         ogType="article"

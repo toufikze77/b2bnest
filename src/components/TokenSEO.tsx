@@ -82,7 +82,7 @@ const TokenSEO = ({ page = 'home' }: TokenSEOProps) => {
       title: "B2BNEST Token — Best New Crypto 2025 for B2B",
       description: "B2BNEST: a promising blockchain project for B2B transactions. Buy the token in presale. Staking, yield farming, and cross-border business utility. Audited.",
       keywords: "B2BNEST token, B2BNEST crypto, best new crypto 2025, promising blockchain projects, buy B2BNEST, invest in B2BNEST, real utility crypto token, crypto for B2B transactions, staking B2BNEST token, decentralized finance project, cross-border business token, B2BNEST listing exchanges",
-      canonical: "https://b2bnest.lovable.app/",
+      canonical: "https://www.b2bnest.online/",
       schema: {
         "@context": "https://schema.org",
         "@type": "Organization",

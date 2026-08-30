@@ -38,7 +38,7 @@ const About = () => {
       <SEOHead
         title="About B2BNest — Our Mission and Story"
         description="B2BNest, operated by Edeals Master Ltd, builds AI-powered automation tools that help businesses streamline operations and scale efficiently."
-        canonicalUrl="https://b2bnest.lovable.app/about"
+        canonicalUrl="https://www.b2bnest.online/about"
         ogTitle="About B2BNest"
         ogDescription="Meet the team behind B2BNest — AI-powered business automation for entrepreneurs and small businesses."
       />
@@ -55,7 +55,7 @@ const About = () => {
               Go Back Home
             </Button>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-6">About B2BNEST</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-6">About B2BNEST — AI-Powered Business Automation Solutions</h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             B2BNEST is a platform operated by Edeals Master Ltd, empowering businesses with AI-powered automation solutions that streamline operations and drive efficiency.
           </p>
@@ -65,7 +65,7 @@ const About = () => {
         <div className="mb-16">
           <Card className="bg-white shadow-lg">
             <CardHeader>
-              <CardTitle className="text-3xl text-center">Our Mission</CardTitle>
+              <h2 className="text-3xl font-semibold leading-none tracking-tight text-center">Our Mission</h2>
             </CardHeader>
             <CardContent>
               <p className="text-lg text-gray-700 text-center max-w-4xl mx-auto">
@@ -97,7 +97,7 @@ const About = () => {
                     <div className="mx-auto bg-blue-100 p-3 rounded-full w-16 h-16 flex items-center justify-center mb-4">
                       <IconComponent className="h-8 w-8 text-blue-600" />
                     </div>
-                    <CardTitle className="text-xl">{value.title}</CardTitle>
+                    <h3 className="text-xl font-semibold leading-none tracking-tight">{value.title}</h3>
                   </CardHeader>
                   <CardContent>
                     <CardDescription className="text-center">
@@ -114,7 +114,7 @@ const About = () => {
         <div className="mb-16">
           <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg">
             <CardHeader>
-              <CardTitle className="text-3xl text-center">Our Story</CardTitle>
+              <h2 className="text-3xl font-semibold leading-none tracking-tight text-center">Our Story</h2>
             </CardHeader>
             <CardContent>
               <div className="space-y-6 text-lg text-gray-700">
@@ -142,7 +142,7 @@ const About = () => {
         <div className="mb-16">
           <Card className="bg-white shadow-lg">
             <CardHeader>
-              <CardTitle className="text-3xl text-center">Learn More About Our Platform</CardTitle>
+              <h2 className="text-3xl font-semibold leading-none tracking-tight text-center">Learn More About Our Platform</h2>
             </CardHeader>
             <CardContent className="p-8">
               <VideoTutorialSection />
