@@ -10,7 +10,7 @@ const TokenSEO = ({ page = 'home' }: TokenSEOProps) => {
       title: "B2BNEST Presale | Buy B2BNEST Token - Best New Crypto 2025",
       description: "Invest in B2BNEST presale - a promising blockchain project for B2B transactions. Secure blockchain token with real utility. Join the B2BNEST crypto presale now!",
       keywords: "B2BNEST presale, buy B2BNEST, invest in B2BNEST, B2BNEST token, B2BNEST crypto, best new crypto 2025, promising blockchain projects, secure blockchain token, real utility crypto token",
-      canonical: "https://b2bnest.online/fundraising",
+      canonical: "https://www.b2bnest.online/fundraising",
       schema: {
         "@context": "https://schema.org",
         "@type": "FinancialProduct",
@@ -19,14 +19,14 @@ const TokenSEO = ({ page = 'home' }: TokenSEOProps) => {
         "provider": {
           "@type": "Organization",
           "name": "B2BNest",
-          "url": "https://b2bnest.online"
+          "url": "https://www.b2bnest.online"
         },
         "offers": {
           "@type": "Offer",
           "availability": "https://schema.org/InStock",
           "price": "0.0001",
           "priceCurrency": "ETH",
-          "url": "https://b2bnest.online/fundraising"
+          "url": "https://www.b2bnest.online/fundraising"
         }
       }
     },
@@ -34,7 +34,7 @@ const TokenSEO = ({ page = 'home' }: TokenSEOProps) => {
       title: "B2BNEST Tokenomics | Staking B2BNEST Token & Yield Farming",
       description: "Complete B2BNEST tokenomics breakdown. Learn about staking B2BNEST token, yield farming rewards, B2BNEST utility token benefits, and token distribution model.",
       keywords: "B2BNEST tokenomics, staking B2BNEST token, yield farming B2BNEST, B2BNEST utility token, B2BNEST token, crypto for B2B transactions, decentralized finance project, MemeCoin, DeFi, CryptoCommunity, Crypto, Genuine Token, Genuine Crypto Project, Blockchain, Web3, CryptoNews, CryptoLife, CryptoWorld, BlockchainTechnology, Altcoins, CryptoTrends, CryptoTrading, CryptoMarket",
-      canonical: "https://b2bnest.online/tokenomics",
+      canonical: "https://www.b2bnest.online/tokenomics",
       schema: {
         "@context": "https://schema.org",
         "@type": "TechArticle",
@@ -49,7 +49,7 @@ const TokenSEO = ({ page = 'home' }: TokenSEOProps) => {
           "name": "B2BNest",
           "logo": {
             "@type": "ImageObject",
-            "url": "https://b2bnest.online/lovable-uploads/86c25eed-4258-4e9e-9fd3-c368f065e452.png"
+            "url": "https://www.b2bnest.online/lovable-uploads/86c25eed-4258-4e9e-9fd3-c368f065e452.png"
           }
         }
       }
@@ -58,7 +58,7 @@ const TokenSEO = ({ page = 'home' }: TokenSEOProps) => {
       title: "B2BNEST Whitepaper | B2BNEST Roadmap & Crypto Project Audit",
       description: "Read the complete B2BNEST whitepaper. Explore B2BNEST roadmap, crypto project audit & security details, and technical architecture of this cross-border business token.",
       keywords: "B2BNEST whitepaper, B2BNEST roadmap, crypto project audit & security, B2BNEST token, cross-border business token, decentralized finance project, secure blockchain token, MemeCoin, DeFi, CryptoCommunity, Crypto, Genuine Token, Genuine Crypto Project, Blockchain, Web3, CryptoNews, CryptoLife, CryptoWorld, BlockchainTechnology, Altcoins, CryptoTrends, CryptoTrading, CryptoMarket",
-      canonical: "https://b2bnest.online/whitepaper",
+      canonical: "https://www.b2bnest.online/whitepaper",
       schema: {
         "@context": "https://schema.org",
         "@type": "TechArticle",
@@ -73,7 +73,7 @@ const TokenSEO = ({ page = 'home' }: TokenSEOProps) => {
           "name": "B2BNest",
           "logo": {
             "@type": "ImageObject",
-            "url": "https://b2bnest.online/lovable-uploads/86c25eed-4258-4e9e-9fd3-c368f065e452.png"
+            "url": "https://www.b2bnest.online/lovable-uploads/86c25eed-4258-4e9e-9fd3-c368f065e452.png"
           }
         }
       }
@@ -88,8 +88,8 @@ const TokenSEO = ({ page = 'home' }: TokenSEOProps) => {
         "@type": "Organization",
         "name": "B2BNest",
         "description": "B2BNEST - A decentralized finance project providing real utility crypto token for cross-border business transactions with AI-powered tools",
-        "url": "https://b2bnest.online",
-        "logo": "https://b2bnest.online/lovable-uploads/86c25eed-4258-4e9e-9fd3-c368f065e452.png",
+        "url": "https://www.b2bnest.online",
+        "logo": "https://www.b2bnest.online/lovable-uploads/86c25eed-4258-4e9e-9fd3-c368f065e452.png",
         "sameAs": [
           "https://www.linkedin.com/company/b2bnest",
           "https://twitter.com/B2BNEST"
@@ -97,7 +97,7 @@ const TokenSEO = ({ page = 'home' }: TokenSEOProps) => {
         "offers": {
           "@type": "Offer",
           "name": "B2BNEST Token Presale",
-          "url": "https://b2bnest.online/fundraising"
+          "url": "https://www.b2bnest.online/fundraising"
         }
       }
     }
