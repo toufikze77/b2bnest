@@ -160,8 +160,8 @@ const BusinessToolsSEO = () => {
 
   return (
     <SEOHead
-      title="Free Business Tools Online | QR Generator, Invoice Maker & More | B2BNest"
-      description="Access FREE business tools instantly - no signup required! QR code generator, currency converter, crypto converter, invoice maker, time tracker, ROI calculator, contract generator & more. Plus affordable CRM at $9.99/mo. All-in-one business toolkit for entrepreneurs and small businesses."
+      title="Free Business Tools Online | B2BNest"
+      description="Free QR generator, invoice maker, currency converter, time tracker and ROI calculator — no signup needed. Plus affordable CRM from $9.99/month."
       keywords="free business tools, free QR code generator, free invoice generator, free time tracker, free currency converter, free crypto converter, free ROI calculator, free contract generator, free cash flow tracker, free tools for small business, free online business tools, business tools no signup, free tools for entrepreneurs, free business calculator, affordable CRM, cheap project management, free business software, business tools under $10, free financial tools, entrepreneur tools free, small business free tools, free productivity tools, free business resources, no credit card required business tools, instant access business tools, free business utilities"
       schemaMarkup={schemaMarkup}
       canonicalUrl="https://b2bnest.online/business-tools"

@@ -86,7 +86,7 @@ const Blog = () => {
       "headline": post.title,
       "description": post.excerpt,
       "author": { "@type": "Person", "name": post.author },
-      "datePublished": post.date,
+      "datePublished": new Date(post.date).toISOString().split("T")[0],
       "articleSection": post.category,
     })),
   };
