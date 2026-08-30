@@ -87,6 +87,7 @@ import AdminAuditLogs from '@/pages/admin/AdminAuditLogs';
 import AdminExport from '@/pages/admin/AdminExport';
 import AdminSystemHealth from '@/pages/admin/AdminSystemHealth';
 import AdminSettings from '@/pages/admin/AdminSettings';
+import RouteMeta from '@/components/RouteMeta';
 
 const queryClient = new QueryClient();
 
@@ -98,6 +99,7 @@ function App() {
           <ThemeProvider>
           <Router>
           <Layout>
+            <RouteMeta />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/about" element={<About />} />

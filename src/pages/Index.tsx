@@ -2,7 +2,7 @@ import React from 'react';
 import { SearchProvider, useSearch } from "@/contexts/SearchContext";
 import { templateService } from "@/services/templateService";
 import HeroSection from "@/components/HeroSection";
-import TokenSEO from "@/components/TokenSEO";
+import SEOHead from "@/components/SEOHead";
 import AdvancedSEOSchema from "@/components/AdvancedSEOSchema";
 
 import CTASection from "@/components/CTASection";
@@ -39,7 +39,11 @@ const IndexContent = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <TokenSEO page="home" />
+      <SEOHead
+        title="B2BNest — Affordable Business Tools & Free AI"
+        description="50+ free and affordable business tools in one platform: AI documents, CRM, invoicing, and financial tracking for modern entrepreneurs."
+        canonicalUrl="https://www.b2bnest.online/"
+      />
       <AdvancedSEOSchema page="home" />
       <HeroSection onSearch={handleSearch} />
 
