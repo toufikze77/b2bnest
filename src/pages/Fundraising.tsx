@@ -12,11 +12,11 @@ import ShareButton from '@/components/ShareButton';
 const Fundraising = () => {
   const navigate = useNavigate();
 
-  // Mock presale data
+  // Official B2BNEST token presale details (Ethereum-based B2BN token)
   const presaleData = {
-    tokenName: 'B2BN',
+    tokenName: 'B2BNEST Token',
     tokenSymbol: 'B2BN',
-    totalSupply: '10,000,000',
+    totalSupply: '10,000,000 B2BN',
     presalePrice: '0.0001',
   };
 
