@@ -14,13 +14,15 @@ interface SEOHeadProps {
   schemaMarkup?: any;
 }
 
+const SITE_URL = "https://www.b2bnest.online";
+
 const SEOHead = ({
   title = "B2BNest — Affordable Business Tools & Free AI",
   description = "50+ free and affordable business tools in one platform: AI documents, CRM, invoicing, and financial tracking for modern entrepreneurs.",
   keywords = "affordable business tools, free business tools, free CRM, free project management, free invoice generator, affordable SaaS, business automation, small business tools",
   canonical,
   canonicalUrl,
-  ogImage = "https://b2bnest.online/lovable-uploads/86c25eed-4258-4e9e-9fd3-c368f065e452.png",
+  ogImage = `${SITE_URL}/og-image.jpg`,
   ogType = "website",
   ogTitle,
   ogDescription,
