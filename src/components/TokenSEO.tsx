@@ -91,7 +91,7 @@ const TokenSEO = ({ page = 'home' }: TokenSEOProps) => {
         "url": "https://b2bnest.online",
         "logo": "https://b2bnest.online/lovable-uploads/86c25eed-4258-4e9e-9fd3-c368f065e452.png",
         "sameAs": [
-          "https://www.linkedin.com/company/aiplatform/about/?viewAsMember=true",
+          "https://www.linkedin.com/company/b2bnest",
           "https://twitter.com/B2BNEST"
         ],
         "offers": {
