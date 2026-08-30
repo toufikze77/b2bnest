@@ -3386,6 +3386,66 @@ export type Database = {
         }
         Relationships: []
       }
+      template_catalog: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data: Json
+          id: string
+          is_custom: boolean
+          slug: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          id?: string
+          is_custom?: boolean
+          slug: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          id?: string
+          is_custom?: boolean
+          slug?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      template_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json
+          template_slug: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          template_slug: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          template_slug?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       todo_comments: {
         Row: {
           content: string
@@ -4434,6 +4494,16 @@ export type Database = {
           p_user_id?: string
         }
         Returns: string
+      }
+      template_usage_counts: {
+        Args: never
+        Returns: {
+          created_count: number
+          previews: number
+          slug: string
+          use_clicks: number
+          views: number
+        }[]
       }
       update_payment_status: {
         Args: {
