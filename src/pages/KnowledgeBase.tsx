@@ -142,7 +142,6 @@ const KnowledgeBase = () => {
           "headline": article.title,
           "description": article.description,
           "articleSection": category.title,
-          "datePublished": "2025-01-15",
           "author": { "@type": "Organization", "name": "B2BNest" },
           "publisher": { "@type": "Organization", "name": "B2BNest" },
         },
