@@ -182,29 +182,37 @@ Deno.serve(async (req) => {
 
         const accountsData = await accountsResponse.json();
         
-        // Store accounts in database
-        for (const account of accountsData.results) {
-          const { error: insertError } = await supabaseClient
-            .from('bank_accounts')
-            .upsert({
-              user_id: user.id,
-              account_id: account.account_id,
-              provider_id: account.provider.provider_id,
-              provider_name: account.provider.display_name,
-              account_type: account.account_type,
-              account_number: account.account_number?.number || null,
-              sort_code: account.account_number?.sort_code || null,
-              currency: account.currency,
-              balance: account.balance.current,
-              available_balance: account.balance.available,
-              last_synced_at: new Date().toISOString(),
-            }, {
-              onConflict: 'account_id,user_id'
-            });
+        // Store accounts in database via the encrypting RPC (never write raw
+        // account_number / sort_code to the table directly)
+        const userClient = createClient(
+          Deno.env.get('SUPABASE_URL') ?? '',
+          Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+          { global: { headers: { Authorization: authHeader } } }
+        );
 
-          if (insertError) {
-            console.error('Error storing account:', insertError);
+        for (const account of accountsData.results) {
+          const { data: bankAccountId, error: storeError } = await userClient.rpc('store_bank_account', {
+            p_account_id: account.account_id,
+            p_provider_id: account.provider.provider_id,
+            p_provider_name: account.provider.display_name,
+            p_account_type: account.account_type,
+            p_account_number: account.account_number?.number ?? null,
+            p_sort_code: account.account_number?.sort_code ?? null,
+            p_currency: account.currency,
+            p_balance: account.balance.current,
+            p_available_balance: account.balance.available,
+            p_user_id: user.id,
+          });
+
+          if (storeError) {
+            console.error('Error storing account:', storeError.message);
+            continue;
           }
+
+          await supabaseClient
+            .from('bank_accounts')
+            .update({ last_synced_at: new Date().toISOString() })
+            .eq('id', bankAccountId);
 
           // Fetch and store transactions
           const transactionsResponse = await fetch(`${TRUELAYER_BASE_URL}/data/v1/accounts/${account.account_id}/transactions`, {
@@ -221,12 +229,8 @@ Deno.serve(async (req) => {
                 .from('bank_transactions')
                 .upsert({
                   user_id: user.id,
-                  bank_account_id: (await supabaseClient
-                    .from('bank_accounts')
-                    .select('id')
-                    .eq('account_id', account.account_id)
-                    .eq('user_id', user.id)
-                    .single()).data?.id,
+                  bank_account_id: bankAccountId,
+
                   transaction_id: transaction.transaction_id,
                   amount: transaction.amount,
                   currency: transaction.currency,
