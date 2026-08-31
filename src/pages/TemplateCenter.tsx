@@ -1,6 +1,17 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, SlidersHorizontal, Download, Sparkles, ArrowUpDown, MessageSquare, LayoutGrid } from 'lucide-react';
+import {
+  Search,
+  SlidersHorizontal,
+  ArrowUpDown,
+  LayoutGrid,
+  Sparkles,
+  Clock,
+  Star,
+  Gift,
+  Flame,
+  Loader2,
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,147 +28,192 @@ import {
 } from '@/components/ui/dropdown-menu';
 import SEOHead from '@/components/SEOHead';
 import Footer from '@/components/Footer';
-import TemplateThumbnail from '@/components/template-center/TemplateThumbnail';
-import DocumentPreviewModal from '@/components/DocumentPreviewModal';
-import CheckoutModal from '@/components/checkout/CheckoutModal';
-import UseTemplateDialog from '@/components/template-center/UseTemplateDialog';
-import { templateService } from '@/services/templateService';
-import { downloadTemplate } from '@/lib/templateGenerator';
-import { toast } from '@/components/ui/use-toast';
-import { Template } from '@/types/template';
+import TemplateCard from '@/components/template-centre/TemplateCard';
+import TemplatePreviewDialog from '@/components/template-centre/TemplatePreviewDialog';
+import UseWorkspaceTemplateDialog from '@/components/template-centre/UseWorkspaceTemplateDialog';
+import { INDUSTRIES, TEMPLATE_CATEGORIES } from '@/data/workspaceTemplates';
+import {
+  loadTemplates,
+  loadUsage,
+  logTemplateEvent,
+} from '@/services/workspaceTemplateService';
+import {
+  TEMPLATE_TYPE_LABELS,
+  TemplateType,
+  TemplateUsage,
+  WorkspaceTemplate,
+} from '@/types/workspaceTemplate';
 import { useSubscription } from '@/hooks/useSubscription';
 
-
-type SortKey = 'recent' | 'popular' | 'rating' | 'price';
+type SortKey = 'featured' | 'popular' | 'recent' | 'name';
 
 const SORT_LABELS: Record<SortKey, string> = {
-  recent: 'Recently updated',
-  popular: 'Most downloaded',
-  rating: 'Top rated',
-  price: 'Price: low to high',
+  featured: 'Featured first',
+  popular: 'Most used',
+  recent: 'Recently added',
+  name: 'Name (A–Z)',
 };
 
-const TemplateCenter = () => {
-  const allTemplates = useMemo(() => templateService.searchTemplates(''), []);
-  const categories = useMemo(() => templateService.getCategories(), []);
-  const { isPremium } = useSubscription();
+const QUICK_LINKS = [
+  { id: 'all', label: 'All templates', icon: LayoutGrid },
+  { id: 'featured', label: 'Featured', icon: Star },
+  { id: 'popular', label: 'Popular', icon: Flame },
+  { id: 'recent', label: 'Recently added', icon: Clock },
+  { id: 'ai', label: 'AI-Powered', icon: Sparkles },
+  { id: 'free', label: 'Free', icon: Gift },
+];
 
+const TemplateCenter = () => {
+  const { isPremium } = useSubscription();
+  const [templates, setTemplates] = useState<WorkspaceTemplate[]>([]);
+  const [usage, setUsage] = useState<Record<string, TemplateUsage>>({});
+  const [loading, setLoading] = useState(true);
 
   const [query, setQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState<string>('all');
-  const [sort, setSort] = useState<SortKey>('recent');
+  const [activeView, setActiveView] = useState('all');
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [activeSubcategory, setActiveSubcategory] = useState<string | null>(null);
+  const [industry, setIndustry] = useState<string | null>(null);
+  const [types, setTypes] = useState<TemplateType[]>([]);
+  const [aiOnly, setAiOnly] = useState(false);
   const [freeOnly, setFreeOnly] = useState(false);
-  const [featuredOnly, setFeaturedOnly] = useState(false);
-  const [preview, setPreview] = useState<Template | null>(null);
-  const [checkoutTemplate, setCheckoutTemplate] = useState<Template | null>(null);
-  const [useTemplate, setUseTemplate] = useState<Template | null>(null);
+  const [premiumOnly, setPremiumOnly] = useState(false);
+  const [sort, setSort] = useState<SortKey>('featured');
 
+  const [preview, setPreview] = useState<WorkspaceTemplate | null>(null);
+  const [useTemplate, setUseTemplate] = useState<WorkspaceTemplate | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const [list, counts] = await Promise.all([loadTemplates(), loadUsage()]);
+      if (!active) return;
+      setTemplates(list);
+      setUsage(counts);
+      setLoading(false);
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const filtered = useMemo(() => {
-    let list = [...allTemplates];
+    let list = [...templates];
     const q = query.trim().toLowerCase();
+
     if (q) {
-      list = list.filter(
-        (t) =>
-          t.title.toLowerCase().includes(q) ||
-          t.description.toLowerCase().includes(q) ||
-          t.author.toLowerCase().includes(q) ||
-          t.tags.some((tag) => tag.toLowerCase().includes(q)),
+      list = list.filter((t) =>
+        [
+          t.name,
+          t.description,
+          t.longDescription,
+          t.subcategory,
+          TEMPLATE_CATEGORIES.find((c) => c.id === t.category)?.name ?? '',
+          TEMPLATE_TYPE_LABELS[t.templateType],
+          ...t.tags,
+          ...t.industries,
+          ...t.aiFeatures,
+          ...t.helpsYouManage,
+        ]
+          .join(' ')
+          .toLowerCase()
+          .includes(q),
       );
     }
-    if (activeCategory === 'free') list = list.filter((t) => t.price === 0);
-    else if (activeCategory === 'new') list = list.filter((t) => t.isNew);
-    else if (activeCategory === 'trending') list = list.filter((t) => t.trending);
-    else if (activeCategory !== 'all') list = list.filter((t) => t.category.id === activeCategory);
 
-    if (freeOnly) list = list.filter((t) => t.price === 0);
-    if (featuredOnly) list = list.filter((t) => t.featured);
+    if (activeView === 'featured') list = list.filter((t) => t.featured);
+    if (activeView === 'ai') list = list.filter((t) => t.isAiPowered);
+    if (activeView === 'free') list = list.filter((t) => t.plan === 'free');
+    if (activeView === 'popular') list = list.filter((t) => (usage[t.slug]?.created ?? 0) > 0);
+    if (activeView === 'recent') {
+      const cutoff = [...templates]
+        .map((t) => t.createdAt)
+        .sort()
+        .slice(-12)[0];
+      list = list.filter((t) => t.createdAt >= (cutoff ?? ''));
+    }
+
+    if (activeCategory) list = list.filter((t) => t.category === activeCategory);
+    if (activeSubcategory) list = list.filter((t) => t.subcategory === activeSubcategory);
+    if (industry) list = list.filter((t) => t.industries.includes(industry));
+    if (types.length) list = list.filter((t) => types.includes(t.templateType));
+    if (aiOnly) list = list.filter((t) => t.isAiPowered);
+    if (freeOnly) list = list.filter((t) => t.plan === 'free');
+    if (premiumOnly) list = list.filter((t) => t.plan === 'premium');
 
     switch (sort) {
       case 'popular':
-        return list.sort((a, b) => b.downloads - a.downloads);
-      case 'rating':
-        return list.sort((a, b) => b.rating - a.rating);
-      case 'price':
-        return list.sort((a, b) => a.price - b.price);
+        return list.sort((a, b) => (usage[b.slug]?.created ?? 0) - (usage[a.slug]?.created ?? 0));
+      case 'recent':
+        return list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      case 'name':
+        return list.sort((a, b) => a.name.localeCompare(b.name));
       default:
         return list.sort(
-          (a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime(),
+          (a, b) => Number(b.featured) - Number(a.featured) || a.name.localeCompare(b.name),
         );
     }
-  }, [allTemplates, query, activeCategory, sort, freeOnly, featuredOnly]);
+  }, [
+    templates,
+    query,
+    activeView,
+    activeCategory,
+    activeSubcategory,
+    industry,
+    types,
+    aiOnly,
+    freeOnly,
+    premiumOnly,
+    sort,
+    usage,
+  ]);
 
-  const activeLabel =
-    activeCategory === 'all'
-      ? 'All templates'
-      : activeCategory === 'free'
-        ? 'Free templates'
-        : activeCategory === 'new'
-          ? 'New'
-          : activeCategory === 'trending'
-            ? 'Trending'
-            : categories.find((c) => c.id === activeCategory)?.name ?? 'Templates';
+  const featured = useMemo(
+    () => templates.filter((t) => t.featured).slice(0, 6),
+    [templates],
+  );
 
-  const quickLinks = [
-    { id: 'all', label: 'All templates' },
-    { id: 'trending', label: 'Recommended for you' },
-    { id: 'new', label: 'Recently added' },
-    { id: 'free', label: 'Free templates' },
-  ];
+  const showFeaturedRow =
+    activeView === 'all' && !activeCategory && !activeSubcategory && !query && featured.length > 0;
 
-  const runDownload = (t: Template) => {
-    try {
-      const format = downloadTemplate(t);
-      templateService.incrementDownloads(t.id);
-      toast({
-        title: 'Template downloaded',
-        description: `${t.title} was generated as a ready-to-edit ${format} file.`,
-      });
-    } catch (error) {
-      console.error('Template download failed:', error);
-      toast({
-        title: 'Download failed',
-        description: 'We could not generate this template. Please try again.',
-        variant: 'destructive',
-      });
-    }
+  const handlePreview = (t: WorkspaceTemplate) => {
+    setPreview(t);
+    void logTemplateEvent(t.slug, 'preview');
   };
 
-  const handleDownload = (t: Template) => {
-    if (t.price === 0 || isPremium) {
-      runDownload(t);
-    } else {
-      setCheckoutTemplate(t);
-    }
+  const handleUse = (t: WorkspaceTemplate) => {
+    setPreview(null);
+    setUseTemplate(t);
+    void logTemplateEvent(t.slug, 'use_click');
   };
 
-  const handleUseTemplate = (t: Template) => {
-    if (t.price === 0 || isPremium) {
-      setUseTemplate(t);
-    } else {
-      setCheckoutTemplate(t);
-    }
+  const selectCategory = (categoryId: string | null, subcategory: string | null = null) => {
+    setActiveView('all');
+    setActiveCategory(categoryId);
+    setActiveSubcategory(subcategory);
   };
 
-
-
+  const heading = activeSubcategory
+    ? activeSubcategory
+    : activeCategory
+      ? TEMPLATE_CATEGORIES.find((c) => c.id === activeCategory)?.name ?? 'Templates'
+      : QUICK_LINKS.find((q) => q.id === activeView)?.label ?? 'All templates';
 
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="Template Center — B2BNest"
-        description="Browse ready-to-use business templates for CRM, invoicing, HR, legal and operations. Preview, customise and download in seconds."
-        canonical="https://b2bnest.online/template-center"
+        title="Template Centre — Ready-Made Business Workflows | B2BNest"
+        description="Browse ready-made business workflow templates for CRM, sales, marketing, finance, HR, operations and AI automation. Preview a template and create a working workspace in one click."
+        canonical="https://www.b2bnest.online/template-center"
       />
 
-      {/* Top bar */}
       <header className="sticky top-0 z-20 border-b border-border bg-background">
         <div className="flex flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:gap-4 md:px-6">
           <div className="flex items-center gap-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
               <LayoutGrid className="h-4 w-4" />
             </span>
-            <h1 className="text-lg font-semibold">Template center</h1>
+            <h1 className="text-lg font-semibold">Template Centre</h1>
           </div>
 
           <div className="relative flex-1 md:mx-6 md:max-w-xl">
@@ -165,7 +221,7 @@ const TemplateCenter = () => {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by template name, creator or description"
+              placeholder="Search templates by name, use case, industry or AI capability"
               aria-label="Search templates"
               className="rounded-full pl-9"
             />
@@ -178,78 +234,53 @@ const TemplateCenter = () => {
                   <SlidersHorizontal className="mr-2 h-4 w-4" /> Filter
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52 bg-popover">
-                <DropdownMenuLabel>Filters</DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="max-h-96 w-64 overflow-y-auto bg-popover">
+                <DropdownMenuLabel>Template type</DropdownMenuLabel>
+                {(Object.keys(TEMPLATE_TYPE_LABELS) as TemplateType[]).map((t) => (
+                  <DropdownMenuCheckboxItem
+                    key={t}
+                    checked={types.includes(t)}
+                    onCheckedChange={(v) =>
+                      setTypes((prev) => (v ? [...prev, t] : prev.filter((p) => p !== t)))
+                    }
+                  >
+                    {TEMPLATE_TYPE_LABELS[t]}
+                  </DropdownMenuCheckboxItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Industry</DropdownMenuLabel>
+                <DropdownMenuRadioGroup
+                  value={industry ?? 'all'}
+                  onValueChange={(v) => setIndustry(v === 'all' ? null : v)}
+                >
+                  <DropdownMenuRadioItem value="all">All industries</DropdownMenuRadioItem>
+                  {INDUSTRIES.map((i) => (
+                    <DropdownMenuRadioItem key={i} value={i}>
+                      {i}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Availability</DropdownMenuLabel>
+                <DropdownMenuCheckboxItem checked={aiOnly} onCheckedChange={(v) => setAiOnly(!!v)}>
+                  AI-Powered only
+                </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem checked={freeOnly} onCheckedChange={(v) => setFreeOnly(!!v)}>
                   Free only
                 </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem checked={featuredOnly} onCheckedChange={(v) => setFeaturedOnly(!!v)}>
-                  Featured only
+                <DropdownMenuCheckboxItem
+                  checked={premiumOnly}
+                  onCheckedChange={(v) => setPremiumOnly(!!v)}
+                >
+                  Premium only
                 </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/contact">
-                <MessageSquare className="mr-2 h-4 w-4" /> Feedback
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <div className="flex">
-        {/* Sidebar */}
-        <aside className="sticky top-[61px] hidden h-[calc(100vh-61px)] w-64 shrink-0 border-r border-border bg-background lg:block">
-          <ScrollArea className="h-full">
-            <div className="p-4">
-              <p className="mb-3 px-2 text-sm font-semibold">Work management</p>
-              <nav className="space-y-1 border-b border-border pb-4">
-                {quickLinks.map((l) => (
-                  <button
-                    key={l.id}
-                    onClick={() => setActiveCategory(l.id)}
-                    className={`w-full rounded-md px-2 py-1.5 text-left text-sm transition-colors ${
-                      activeCategory === l.id
-                        ? 'bg-primary/10 font-medium text-primary'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                    }`}
-                  >
-                    {l.label}
-                  </button>
-                ))}
-              </nav>
-
-              <p className="mb-2 mt-4 px-2 text-sm font-semibold">General templates</p>
-              <nav className="space-y-1">
-                {categories.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => setActiveCategory(c.id)}
-                    className={`w-full rounded-md px-2 py-1.5 text-left text-sm transition-colors ${
-                      activeCategory === c.id
-                        ? 'bg-primary/10 font-medium text-primary'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                    }`}
-                  >
-                    {c.name}
-                  </button>
-                ))}
-              </nav>
-            </div>
-          </ScrollArea>
-        </aside>
-
-        {/* Main */}
-        <main className="min-w-0 flex-1 px-4 py-6 md:px-8">
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">
-              General templates <span className="text-foreground">| {activeLabel}</span>
-            </p>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="text-muted-foreground">
-                  <ArrowUpDown className="mr-2 h-4 w-4" /> Sort by: {SORT_LABELS[sort]}
+                  <ArrowUpDown className="mr-2 h-4 w-4" /> {SORT_LABELS[sort]}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-popover">
@@ -260,150 +291,228 @@ const TemplateCenter = () => {
                     </DropdownMenuRadioItem>
                   ))}
                 </DropdownMenuRadioGroup>
-                <DropdownMenuSeparator />
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+        </div>
+      </header>
 
-          {/* Mobile category chips */}
+      <div className="flex">
+        {/* Sidebar */}
+        <aside className="sticky top-[61px] hidden h-[calc(100vh-61px)] w-64 shrink-0 border-r border-border bg-background lg:block">
+          <ScrollArea className="h-full">
+            <div className="p-4">
+              <nav className="space-y-1 border-b border-border pb-4">
+                {QUICK_LINKS.map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={id}
+                    onClick={() => {
+                      setActiveView(id);
+                      setActiveCategory(null);
+                      setActiveSubcategory(null);
+                    }}
+                    className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors ${
+                      activeView === id && !activeCategory
+                        ? 'bg-primary/10 font-medium text-primary'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" /> {label}
+                  </button>
+                ))}
+              </nav>
+
+              <div className="mt-4 space-y-4">
+                {TEMPLATE_CATEGORIES.map((cat) => (
+                  <div key={cat.id}>
+                    <button
+                      onClick={() => selectCategory(cat.id)}
+                      className={`mb-1 w-full px-2 text-left text-xs font-semibold uppercase tracking-wide transition-colors ${
+                        activeCategory === cat.id ? 'text-primary' : 'text-foreground'
+                      }`}
+                    >
+                      {cat.name}
+                    </button>
+                    <div className="space-y-0.5">
+                      {cat.subcategories.map((sub) => (
+                        <button
+                          key={`${cat.id}-${sub}`}
+                          onClick={() => selectCategory(cat.id, sub)}
+                          className={`w-full rounded-md px-2 py-1 text-left text-sm transition-colors ${
+                            activeCategory === cat.id && activeSubcategory === sub
+                              ? 'bg-primary/10 font-medium text-primary'
+                              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                          }`}
+                        >
+                          {sub}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                <div>
+                  <p className="mb-1 px-2 text-xs font-semibold uppercase tracking-wide">
+                    Industries
+                  </p>
+                  <div className="space-y-0.5">
+                    {INDUSTRIES.map((i) => (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          setIndustry(industry === i ? null : i);
+                          setActiveView('all');
+                        }}
+                        className={`w-full rounded-md px-2 py-1 text-left text-sm transition-colors ${
+                          industry === i
+                            ? 'bg-primary/10 font-medium text-primary'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        }`}
+                      >
+                        {i}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
+        </aside>
+
+        {/* Main */}
+        <main className="min-w-0 flex-1 px-4 py-6 md:px-8">
+          {/* Mobile chips */}
           <div className="mb-5 flex gap-2 overflow-x-auto lg:hidden">
-            {[...quickLinks, ...categories.map((c) => ({ id: c.id, label: c.name }))].map((c) => (
+            {QUICK_LINKS.map((l) => (
+              <button
+                key={l.id}
+                onClick={() => {
+                  setActiveView(l.id);
+                  setActiveCategory(null);
+                  setActiveSubcategory(null);
+                }}
+                className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs ${
+                  activeView === l.id && !activeCategory
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border text-muted-foreground'
+                }`}
+              >
+                {l.label}
+              </button>
+            ))}
+            {TEMPLATE_CATEGORIES.map((c) => (
               <button
                 key={c.id}
-                onClick={() => setActiveCategory(c.id)}
+                onClick={() => selectCategory(c.id)}
                 className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs ${
                   activeCategory === c.id
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border text-muted-foreground'
                 }`}
               >
-                {c.label}
+                {c.name}
               </button>
             ))}
           </div>
 
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-            {/* Promo card */}
-            <article className="overflow-hidden rounded-xl border border-border bg-gradient-to-br from-primary/10 via-background to-primary/5 p-5">
-              <h2 className="text-lg font-bold leading-snug">
-                AI-powered CRM that keeps deals moving
-              </h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Grow revenue faster with an intuitive CRM built on intelligent workflows.
+          {showFeaturedRow && (
+            <section className="mb-8">
+              <h2 className="mb-1 text-xl font-bold">Featured templates</h2>
+              <p className="mb-4 text-sm text-muted-foreground">
+                Choose a ready-made business workflow and start working in minutes.
               </p>
-              <Button asChild size="sm" className="mt-4">
-                <Link to="/crm">Try for free</Link>
-              </Button>
-              <div className="mt-5 h-32">
-                <TemplateThumbnail seed="promo-crm" title="CRM pipeline" variant="gradient" />
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                {featured.map((t) => (
+                  <TemplateCard
+                    key={t.slug}
+                    template={t}
+                    usage={usage[t.slug]}
+                    hasPremiumAccess={!!isPremium}
+                    onPreview={handlePreview}
+                    onUse={handleUse}
+                  />
+                ))}
               </div>
-            </article>
+            </section>
+          )}
 
-            {filtered.map((t) => (
-              <article
-                key={t.id}
-                className="group flex cursor-pointer flex-col rounded-xl border border-border bg-card p-4 transition-shadow hover:shadow-md"
-                onClick={() => setPreview(t)}
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-xl font-bold">{heading}</h2>
+              <p className="text-sm text-muted-foreground">
+                {filtered.length} {filtered.length === 1 ? 'template' : 'templates'}
+                {industry ? ` · ${industry}` : ''}
+              </p>
+            </div>
+            {(activeCategory || activeSubcategory || industry || types.length || aiOnly || freeOnly || premiumOnly) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setActiveCategory(null);
+                  setActiveSubcategory(null);
+                  setIndustry(null);
+                  setTypes([]);
+                  setAiOnly(false);
+                  setFreeOnly(false);
+                  setPremiumOnly(false);
+                }}
               >
-                <div className="mb-4 h-36 rounded-md bg-muted/40 p-2">
-                  <TemplateThumbnail seed={t.id} title={t.title} />
-                </div>
-                <h3 className="text-base font-semibold leading-snug text-foreground">{t.title}</h3>
-                <p className="mt-1 text-xs text-muted-foreground">by {t.author}</p>
-                <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{t.description}</p>
-
-                <div className="mt-4 flex flex-wrap items-center gap-2 pt-2">
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Download className="h-3.5 w-3.5" />
-                    {t.downloads >= 1000 ? `${(t.downloads / 1000).toFixed(1)}K` : t.downloads}
-                  </span>
-                  {t.featured && (
-                    <Badge variant="secondary" className="gap-1 text-xs">
-                      <Sparkles className="h-3 w-3" /> AI-powered
-                    </Badge>
-                  )}
-                  <span className="ml-auto text-sm font-semibold">
-                    {t.price === 0 ? 'Free' : isPremium ? 'Included' : `£${t.price.toFixed(2)}`}
-                  </span>
-
-                </div>
-
-                <div className="mt-3 flex gap-2 border-t border-border pt-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPreview(t);
-                    }}
-                  >
-                    Preview
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="flex-1"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleUseTemplate(t);
-                    }}
-                  >
-                    <LayoutGrid className="mr-1 h-4 w-4" />
-                    {t.price === 0 || isPremium ? 'Use template' : 'Buy'}
-                  </Button>
-                </div>
-              </article>
-            ))}
-
+                Clear filters
+              </Button>
+            )}
           </div>
 
-          {filtered.length === 0 && (
+          {loading ? (
+            <div className="flex items-center gap-2 py-20 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading templates…
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="py-20 text-center">
               <p className="font-medium">No templates match your search</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 Try a different keyword or clear the filters.
               </p>
             </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              {filtered.map((t) => (
+                <TemplateCard
+                  key={t.slug}
+                  template={t}
+                  usage={usage[t.slug]}
+                  hasPremiumAccess={!!isPremium}
+                  onPreview={handlePreview}
+                  onUse={handleUse}
+                />
+              ))}
+            </div>
           )}
+
+          <div className="mt-10 rounded-xl border border-border bg-muted/30 p-6">
+            <h2 className="text-lg font-semibold">Need something specific?</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Tell us the workflow you run and we will add it to the Template Centre.
+            </p>
+            <Button asChild size="sm" variant="outline" className="mt-3">
+              <Link to="/contact">Request a template</Link>
+            </Button>
+          </div>
         </main>
       </div>
 
-      {preview && (
-        <DocumentPreviewModal
-          isOpen={!!preview}
-          onClose={() => setPreview(null)}
-          template={preview}
-          onDownload={(t) => {
-            setPreview(null);
-            handleUseTemplate(t);
-          }}
-        />
-      )}
+      <TemplatePreviewDialog
+        template={preview}
+        isOpen={!!preview}
+        hasPremiumAccess={!!isPremium}
+        onClose={() => setPreview(null)}
+        onUse={handleUse}
+      />
 
-      {checkoutTemplate && (
-        <CheckoutModal
-          isOpen={!!checkoutTemplate}
-          onClose={() => setCheckoutTemplate(null)}
-          amount={checkoutTemplate.price}
-          currency={checkoutTemplate.currency}
-          itemName={checkoutTemplate.title}
-          onPaymentSuccess={() => {
-            const t = checkoutTemplate;
-            setCheckoutTemplate(null);
-            if (t) setUseTemplate(t);
-          }}
-        />
-      )}
-
-
-      <UseTemplateDialog
+      <UseWorkspaceTemplateDialog
         template={useTemplate}
         isOpen={!!useTemplate}
         onClose={() => setUseTemplate(null)}
-        onDownload={(t) => {
-          setUseTemplate(null);
-          runDownload(t);
-        }}
       />
 
       <Footer />
