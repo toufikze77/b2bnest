@@ -185,7 +185,8 @@ function App() {
                  <Route path="projects" element={<AdminProjects />} />
                  <Route path="documents" element={<AdminDocuments />} />
                  <Route path="social" element={<AdminSocial />} />
-                 <Route path="support" element={<AdminSupport />} />
+                  <Route path="templates" element={<AdminTemplates />} />
+                  <Route path="support" element={<AdminSupport />} />
                  <Route path="analytics" element={<AdminAnalytics />} />
                  <Route path="audit-logs" element={<AdminAuditLogs />} />
                  <Route path="export" element={<AdminExport />} />
