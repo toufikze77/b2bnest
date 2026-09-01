@@ -7,7 +7,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
   LayoutDashboard, Users, Building2, CreditCard, Layers, Brain, Wrench, FolderKanban,
   FileText, MessagesSquare, LifeBuoy, BarChart3, ScrollText, Download, Activity, Settings,
-  ArrowLeft, ShieldAlert, Menu,
+  ArrowLeft, ShieldAlert, Menu, LayoutTemplate,
 } from 'lucide-react';
 
 const NAV = [
@@ -20,6 +20,7 @@ const NAV = [
   { to: '/admin/tools', label: 'Business Tools', icon: Wrench },
   { to: '/admin/projects', label: 'Projects', icon: FolderKanban },
   { to: '/admin/documents', label: 'Documents & Templates', icon: FileText },
+  { to: '/admin/templates', label: 'Template Centre', icon: LayoutTemplate },
   { to: '/admin/social', label: 'Social / Community', icon: MessagesSquare },
   { to: '/admin/support', label: 'Support', icon: LifeBuoy },
   { to: '/admin/analytics', label: 'Analytics', icon: BarChart3 },

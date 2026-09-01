@@ -87,6 +87,7 @@ import AdminAuditLogs from '@/pages/admin/AdminAuditLogs';
 import AdminExport from '@/pages/admin/AdminExport';
 import AdminSystemHealth from '@/pages/admin/AdminSystemHealth';
 import AdminSettings from '@/pages/admin/AdminSettings';
+import AdminTemplates from '@/pages/admin/AdminTemplates';
 import RouteMeta from '@/components/RouteMeta';
 
 const queryClient = new QueryClient();
@@ -184,7 +185,8 @@ function App() {
                  <Route path="projects" element={<AdminProjects />} />
                  <Route path="documents" element={<AdminDocuments />} />
                  <Route path="social" element={<AdminSocial />} />
-                 <Route path="support" element={<AdminSupport />} />
+                  <Route path="templates" element={<AdminTemplates />} />
+                  <Route path="support" element={<AdminSupport />} />
                  <Route path="analytics" element={<AdminAnalytics />} />
                  <Route path="audit-logs" element={<AdminAuditLogs />} />
                  <Route path="export" element={<AdminExport />} />
