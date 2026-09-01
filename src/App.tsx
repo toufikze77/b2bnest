@@ -87,6 +87,7 @@ import AdminAuditLogs from '@/pages/admin/AdminAuditLogs';
 import AdminExport from '@/pages/admin/AdminExport';
 import AdminSystemHealth from '@/pages/admin/AdminSystemHealth';
 import AdminSettings from '@/pages/admin/AdminSettings';
+import AdminTemplates from '@/pages/admin/AdminTemplates';
 import RouteMeta from '@/components/RouteMeta';
 
 const queryClient = new QueryClient();
