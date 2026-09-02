@@ -1705,7 +1705,10 @@ export type Database = {
           name: string
           settings: Json | null
           slug: string
+          status: string
           subscription_tier: string | null
+          suspended_at: string | null
+          suspension_reason: string | null
           updated_at: string
         }
         Insert: {
@@ -1718,7 +1721,10 @@ export type Database = {
           name: string
           settings?: Json | null
           slug: string
+          status?: string
           subscription_tier?: string | null
+          suspended_at?: string | null
+          suspension_reason?: string | null
           updated_at?: string
         }
         Update: {
@@ -1731,7 +1737,10 @@ export type Database = {
           name?: string
           settings?: Json | null
           slug?: string
+          status?: string
           subscription_tier?: string | null
+          suspended_at?: string | null
+          suspension_reason?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -4151,14 +4160,26 @@ export type Database = {
       }
       admin_ai_stats: { Args: { _days?: number }; Returns: Json }
       admin_analytics_series: { Args: { _days?: number }; Returns: Json }
+      admin_company_detail: { Args: { _org_id: string }; Returns: Json }
       admin_documents_summary: {
         Args: { _limit?: number; _offset?: number }
         Returns: Json
       }
-      admin_list_companies: {
-        Args: { _limit?: number; _offset?: number; _search?: string }
-        Returns: Json
-      }
+      admin_list_companies:
+        | {
+            Args: { _limit?: number; _offset?: number; _search?: string }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _limit?: number
+              _offset?: number
+              _plan?: string
+              _search?: string
+              _status?: string
+            }
+            Returns: Json
+          }
       admin_list_projects: {
         Args: {
           _limit?: number
@@ -4177,15 +4198,26 @@ export type Database = {
         }
         Returns: Json
       }
-      admin_list_users: {
-        Args: {
-          _limit?: number
-          _offset?: number
-          _search?: string
-          _status?: string
-        }
-        Returns: Json
-      }
+      admin_list_users:
+        | {
+            Args: {
+              _limit?: number
+              _offset?: number
+              _search?: string
+              _status?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _limit?: number
+              _offset?: number
+              _plan?: string
+              _search?: string
+              _status?: string
+            }
+            Returns: Json
+          }
       admin_log_action: {
         Args: {
           _action: string
@@ -4201,6 +4233,10 @@ export type Database = {
         Returns: boolean
       }
       admin_overview_stats: { Args: never; Returns: Json }
+      admin_set_company_status: {
+        Args: { _org_id: string; _reason?: string; _status: string }
+        Returns: boolean
+      }
       admin_set_user_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -4219,6 +4255,10 @@ export type Database = {
       }
       admin_system_health: { Args: never; Returns: Json }
       admin_tools_overview: { Args: never; Returns: Json }
+      admin_update_company: {
+        Args: { _name?: string; _org_id: string; _plan?: string }
+        Returns: boolean
+      }
       audit_profile_access: {
         Args: { access_type?: string; accessed_user_id: string }
         Returns: undefined
