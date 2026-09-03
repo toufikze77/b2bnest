@@ -442,7 +442,7 @@ select sec.t('X6','4/CRUD','documents','A_MEMBER','SELECT paid B document','B','
   $$select 1 from public.documents where id='0b000000-0000-4000-8000-0000000000b6'$$);
 select sec.t('X7','4/CRUD','documents','A_MEMBER','SELECT free B document (marketplace by design)','B','INFO',
   $$select 1 from public.documents where id='0b000000-0000-4000-8000-0000000000a2'$$);
-select sec.t('X8','4/CRUD','hmrc_integrations','A_MEMBER','SELECT B HMRC row','B','ZERO_ROWS',
+select sec.t('X8','4/CRUD','hmrc_integrations','A_MEMBER','SELECT B HMRC row','B','DENY',
   $$select 1 from public.hmrc_integrations where organization_id='0b000000-0000-4000-8000-000000000001'$$);
 select sec.t('X9','4/CRUD','projects','A_MEMBER','INSERT own project with foreign org id (owner column self)','B','DENY_ERROR',
   $$insert into public.projects(user_id,name,organization_id) values (sec.actor_uid('A_MEMBER'),'X-cross','0b000000-0000-4000-8000-000000000001')$$);
