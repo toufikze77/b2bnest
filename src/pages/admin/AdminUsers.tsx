@@ -17,6 +17,7 @@ import { Download, Search } from 'lucide-react';
 
 const PAGE_SIZE = 25;
 const ROLES = ['user', 'manager', 'moderator', 'admin', 'owner', 'super_admin'];
+const PLANS = ['all', 'starter', 'professional', 'enterprise', 'free'];
 
 export default function AdminUsers() {
   const { toast } = useToast();
