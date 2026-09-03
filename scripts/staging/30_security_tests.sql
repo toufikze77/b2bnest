@@ -60,10 +60,10 @@ begin
     perform sec.t('2','4/CRUD',r.res,'A_MEMBER','INSERT own','A','ALLOW', r.ins_own);
     -- 3 member updates own-authored row (member owns nothing here; owner path)
     perform sec.t('3','4/CRUD',r.res,'A_OWNER','UPDATE own row','A','ALLOW',
-      format('update public.%I set updated_at = now() where id = %L', r.res, r.a_id));
+      format('update public.%I set %I = now() where id = %L', r.res, case when r.res='teams' then 'created_at' else 'updated_at' end, r.a_id));
     -- 4 member updates colleague row
     perform sec.t('4','4/CRUD',r.res,'A_MEMBER','UPDATE colleague row','A','INFO',
-      format('update public.%I set updated_at = now() where id = %L', r.res, r.a_id));
+      format('update public.%I set %I = now() where id = %L', r.res, case when r.res='teams' then 'created_at' else 'updated_at' end, r.a_id));
     -- 5 owner deletes company row
     perform sec.t('5','4/CRUD',r.res,'A_OWNER','DELETE own row','A','ALLOW',
       format('delete from public.%I where id = %L', r.res, r.a_id));
@@ -74,7 +74,7 @@ begin
       format('select 1 from public.%I where id = %L', r.res, r.b_id));
     -- 7 cross-tenant UPDATE
     perform sec.t('7','4/CRUD',r.res,'A_MEMBER','UPDATE tenant B row','B','DENY',
-      format('update public.%I set updated_at = now() where id = %L', r.res, r.b_id));
+      format('update public.%I set %I = now() where id = %L', r.res, case when r.res='teams' then 'created_at' else 'updated_at' end, r.b_id));
     -- 8 cross-tenant DELETE
     perform sec.t('8','4/CRUD',r.res,'A_MEMBER','DELETE tenant B row','B','DENY',
       format('delete from public.%I where id = %L', r.res, r.b_id));
@@ -84,7 +84,7 @@ begin
     perform sec.t('10','4/CRUD',r.res,'B_MEMBER','SELECT tenant A row','A','ZERO_ROWS',
       format('select 1 from public.%I where id = %L', r.res, r.a_id));
     perform sec.t('10','4/CRUD',r.res,'B_MEMBER','UPDATE tenant A row','A','DENY',
-      format('update public.%I set updated_at = now() where id = %L', r.res, r.a_id));
+      format('update public.%I set %I = now() where id = %L', r.res, case when r.res='teams' then 'created_at' else 'updated_at' end, r.a_id));
     perform sec.t('10','4/CRUD',r.res,'B_MEMBER','DELETE tenant A row','A','DENY',
       format('delete from public.%I where id = %L', r.res, r.a_id));
     -- 11 anonymous

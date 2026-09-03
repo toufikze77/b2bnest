@@ -96,3 +96,9 @@ begin
   insert into sec.results(test_no, phase, resource, actor, action, target, expected, actual, verdict, evidence)
   values (test_no, phase, resource, actor, action, target, expected, a, v, left(stmt, 300));
 end $$;
+
+-- The test statements themselves call sec.actor_uid(); the test schema must be
+-- reachable from the simulated sessions. This grants access to the TEST schema
+-- only and does not touch any application policy or grant.
+grant usage on schema sec to anon, authenticated, service_role;
+grant execute on function sec.actor_uid(text), sec.actor_email(text) to anon, authenticated, service_role;
