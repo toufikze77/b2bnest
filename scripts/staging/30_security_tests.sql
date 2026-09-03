@@ -287,7 +287,6 @@ begin
     ('get_hmrc_client_secret', $c$select public.get_hmrc_client_secret(sec.actor_uid('B_OWNER'))$c$),
     ('check_and_deduct_ai_credit',$c$select public.check_and_deduct_ai_credit(sec.actor_uid('B_OWNER'),5)$c$),
     ('get_team_members_with_profiles',$c$select public.get_team_members_with_profiles('0b000000-0000-4000-8000-0000000000e1')$c$),
-    ('get_user_display_info',  $c$select public.get_user_display_info(sec.actor_uid('B_OWNER'))$c$),
     ('decrypt_banking_data',   $c$select public.decrypt_banking_data('x')$c$),
     ('decrypt_integration_token',$c$select public.decrypt_integration_token('x')$c$),
     ('decrypt_hmrc_token',     $c$select public.decrypt_hmrc_token('x')$c$),
@@ -321,7 +320,7 @@ select sec.t('PII3','10/PII','profiles','ANON','SELECT any profile','A+B','DENY'
   $$select 1 from public.profiles$$);
 select sec.t('PII4','10/PII','public_profiles','ANON','SELECT view','A+B','INFO',
   $$select 1 from public.public_profiles$$);
-select sec.t('PII5','10/PII','get_user_display_info','A_MEMBER','B display info','B','DENY_ERROR',
+select sec.t('PII5','10/PII','get_user_display_info','A_MEMBER','B display info','B','ZERO_ROWS',
   $$select public.get_user_display_info(sec.actor_uid('B_OWNER'))$$);
 select sec.t('PII6','10/PII','get_team_members_with_profiles','A_MEMBER','A team (legit)','A','INFO',
   $$select public.get_team_members_with_profiles('0a000000-0000-4000-8000-0000000000e1')$$);
@@ -337,7 +336,7 @@ begin
     'products_services','documents','payroll_employees','ai_workspaces','ai_conversations',
     'notes','bank_accounts','user_integrations','subscribers','payments','audit_logs']) as tbl
   loop
-    perform sec.t('U-'||r.tbl,'11/USERSCOPED',r.tbl,'B_MEMBER','cross-tenant SELECT','A','ZERO_ROWS',
+    perform sec.t('U-'||r.tbl,'11/USERSCOPED',r.tbl,'B_MEMBER','cross-tenant SELECT','A',case when r.tbl='user_integrations' then 'DENY' else 'ZERO_ROWS' end,
       format($f$select 1 from public.%I where user_id = sec.actor_uid('A_OWNER')$f$, r.tbl));
     perform sec.t('U-'||r.tbl,'11/USERSCOPED',r.tbl,'A_MEMBER','same-tenant colleague SELECT','A','INFO',
       format($f$select 1 from public.%I where user_id = sec.actor_uid('A_OWNER')$f$, r.tbl));
@@ -448,3 +447,43 @@ select sec.t('X9','4/CRUD','projects','A_MEMBER','INSERT own project with foreig
   $$insert into public.projects(user_id,name,organization_id) values (sec.actor_uid('A_MEMBER'),'X-cross','0b000000-0000-4000-8000-000000000001')$$);
 select sec.t('X10','4/CRUD','todos','A_MEMBER','INSERT own todo with foreign org id','B','DENY_ERROR',
   $$insert into public.todos(user_id,title,organization_id) values (sec.actor_uid('A_MEMBER'),'X-cross','0b000000-0000-4000-8000-000000000001')$$);
+
+-- display-info authorization (returns no row instead of raising; both are denials)
+select sec.t('X11','9/RPC','get_user_display_info','ANON','read B display info','B','DENY_ERROR',
+  $$select public.get_user_display_info('bbbbbbbb-0000-4000-8000-000000000001')$$);
+select sec.t('X12','10/PII','get_user_display_info','A_MEMBER','read cross-tenant display info','B','ZERO_ROWS',
+  $$select 1 from public.get_user_display_info(sec.actor_uid('B_OWNER'))$$);
+select sec.t('X13','10/PII','get_user_display_info','A_MEMBER','read same-tenant colleague display info','A','ALLOW',
+  $$select 1 from public.get_user_display_info(sec.actor_uid('A_OWNER'))$$);
+
+-- ============================== PHASE 18: legitimate-path regression (post-remediation)
+select sec.t('R1','18/REGRESSION','get_hmrc_tokens','A_OWNER','read own tokens','A','ALLOW',
+  $$select 1 from public.get_hmrc_tokens(sec.actor_uid('A_OWNER'))$$);
+select sec.t('R2','18/REGRESSION','get_user_integrations_safe','A_OWNER','read own integrations','A','ALLOW',
+  $$select 1 from public.get_user_integrations_safe(sec.actor_uid('A_OWNER'))$$);
+select sec.t('R3','18/REGRESSION','get_bank_accounts_safe','A_OWNER','read own accounts','A','ALLOW',
+  $$select 1 from public.get_bank_accounts_safe(sec.actor_uid('A_OWNER'))$$);
+select sec.t('R4','18/REGRESSION','get_user_payments','A_OWNER','read own payments','A','ALLOW',
+  $$select 1 from public.get_user_payments(sec.actor_uid('A_OWNER'))$$);
+select sec.t('R5','18/REGRESSION','get_ai_credits_info','A_OWNER','read own credits','A','ALLOW',
+  $$select 1 from public.get_ai_credits_info(sec.actor_uid('A_OWNER'))$$);
+select sec.t('R6','18/REGRESSION','check_and_deduct_ai_credit','A_OWNER','deduct own credit','A','ALLOW',
+  $$select 1 from (select public.check_and_deduct_ai_credit(sec.actor_uid('A_OWNER'),1)) z$$);
+select sec.t('R7','18/REGRESSION','subscribers','A_OWNER','read own subscription','A','ALLOW',
+  $$select 1 from public.subscribers where user_id = sec.actor_uid('A_OWNER')$$);
+select sec.t('R8','18/REGRESSION','subscribers','A_OWNER','self-upgrade tier','A','DENY',
+  $$update public.subscribers set subscription_tier='enterprise' where user_id = sec.actor_uid('A_OWNER')$$);
+select sec.t('R9','18/REGRESSION','documents','A_OWNER','read own document','A','ALLOW',
+  $$select 1 from public.documents where user_id = sec.actor_uid('A_OWNER')$$);
+select sec.t('R10','18/REGRESSION','projects','A_MEMBER','create project in own org','A','ALLOW',
+  $$insert into public.projects(user_id,name,organization_id) values (sec.actor_uid('A_MEMBER'),'R10','0a000000-0000-4000-8000-000000000001')$$);
+select sec.t('R11','18/REGRESSION','teams','A_OWNER','delete own team','A','ALLOW',
+  $$delete from public.teams where id='0a000000-0000-4000-8000-0000000000e1'$$);
+select sec.t('R12','18/REGRESSION','ai_conversations','A_OWNER','delete own conversation','A','ALLOW',
+  $$delete from public.ai_conversations where user_id=sec.actor_uid('A_OWNER')$$);
+select sec.t('R13','18/REGRESSION','admin_list_companies','SUPER_ADMIN','platform listing','platform','ALLOW',
+  $$select 1 from public.admin_list_companies(null,10,0,null,null)$$);
+select sec.t('R14','18/REGRESSION','get_invitation_by_token','ANON','public invite lookup','platform','INFO',
+  $$select 1 from public.get_invitation_by_token('nonexistent')$$);
+select sec.t('R15','18/REGRESSION','template_usage_counts','ANON','public template counts','platform','INFO',
+  $$select 1 from public.template_usage_counts()$$);
