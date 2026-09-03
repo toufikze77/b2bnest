@@ -23,84 +23,429 @@ CREATE OR REPLACE FUNCTION public.get_hmrc_tokens(p_user_id uuid DEFAULT auth.ui
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$;
-
+AS $function$
+BEGIN
+  IF p_user_id IS NULL OR (p_user_id <> auth.uid() AND NOT public.is_admin_or_owner(auth.uid())) THEN
+    RAISE EXCEPTION 'Access denied';
+  END IF;
+  RETURN QUERY
+    SELECT h.access_token, h.refresh_token, h.expires_at
+    FROM public.hmrc_integrations h
+    WHERE h.user_id = p_user_id AND h.is_connected = true;
+END;
+$function$;
 CREATE OR REPLACE FUNCTION public.get_user_integrations_safe(p_user_id uuid DEFAULT auth.uid())
  RETURNS TABLE(id uuid, user_id uuid, integration_name text, is_connected boolean, connected_at timestamp with time zone, expires_at timestamp with time zone, metadata jsonb, created_at timestamp with time zone, updated_at timestamp with time zone, has_access_token boolean, has_refresh_token boolean)
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$;
-
+AS $function$
+DECLARE
+  is_admin boolean;
+BEGIN
+  -- Check if user is admin/owner
+  SELECT public.is_admin_or_owner(auth.uid()) INTO is_admin;
+  
+  -- Security check: users can only access their own integrations unless they're admin
+  IF p_user_id != auth.uid() AND NOT COALESCE(is_admin, false) THEN
+    RAISE EXCEPTION 'Access denied: Cannot access other users integration data';
+  END IF;
+  
+  -- Audit log the access
+  INSERT INTO public.integration_audit_logs (user_id, integration_name, action, ip_address)
+  VALUES (p_user_id, 'all_integrations', 'safe_access', inet_client_addr());
+  
+  -- Return safe integration data (no tokens)
+  RETURN QUERY
+  SELECT 
+    ui.id,
+    ui.user_id,
+    ui.integration_name,
+    ui.is_connected,
+    ui.connected_at,
+    ui.expires_at,
+    ui.metadata,
+    ui.created_at,
+    ui.updated_at,
+    (ui.access_token IS NOT NULL) as has_access_token,
+    (ui.refresh_token IS NOT NULL) as has_refresh_token
+  FROM public.user_integrations ui
+  WHERE ui.user_id = p_user_id
+  ORDER BY ui.created_at DESC;
+END;
+$function$;
 CREATE OR REPLACE FUNCTION public.get_integration_tokens(p_integration_name text, p_user_id uuid DEFAULT auth.uid())
  RETURNS TABLE(access_token text, refresh_token text, expires_at timestamp with time zone)
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$;
-
+AS $function$
+BEGIN
+    -- Security check: users can only access their own tokens
+    IF p_user_id != auth.uid() AND NOT is_admin_or_owner(auth.uid()) THEN
+        RAISE EXCEPTION 'Access denied: Cannot access other users integration tokens';
+    END IF;
+    
+    -- Audit log the token access
+    INSERT INTO public.integration_audit_logs (user_id, integration_name, action, ip_address)
+    VALUES (p_user_id, p_integration_name, 'token_accessed', inet_client_addr());
+    
+    -- Return decrypted tokens
+    RETURN QUERY
+    SELECT 
+        public.decrypt_integration_token(ui.access_token) as access_token,
+        public.decrypt_integration_token(ui.refresh_token) as refresh_token,
+        ui.expires_at
+    FROM public.user_integrations ui
+    WHERE ui.user_id = p_user_id 
+      AND ui.integration_name = p_integration_name
+      AND ui.is_connected = true;
+END;
+$function$;
 CREATE OR REPLACE FUNCTION public.get_bank_accounts_safe(p_user_id uuid DEFAULT auth.uid())
  RETURNS TABLE(id uuid, account_id text, provider_name text, account_type text, currency text, balance numeric, available_balance numeric, last_synced_at timestamp with time zone, is_active boolean, created_at timestamp with time zone)
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$;
-
+AS $function$
+BEGIN
+    -- Security check: users can only access their own accounts
+    IF p_user_id != auth.uid() AND NOT is_admin_or_owner(auth.uid()) THEN
+        RAISE EXCEPTION 'Access denied: Cannot access other users banking data';
+    END IF;
+    
+    -- Audit log the access
+    INSERT INTO public.banking_audit_logs (user_id, action, ip_address)
+    VALUES (p_user_id, 'accounts_accessed', inet_client_addr());
+    
+    -- Return safe account data (no account numbers or sort codes)
+    RETURN QUERY
+    SELECT 
+        ba.id,
+        ba.account_id,
+        ba.provider_name,
+        ba.account_type,
+        ba.currency,
+        ba.balance,
+        ba.available_balance,
+        ba.last_synced_at,
+        ba.is_active,
+        ba.created_at
+    FROM public.bank_accounts ba
+    WHERE ba.user_id = p_user_id
+      AND ba.is_active = true
+    ORDER BY ba.created_at DESC;
+END;
+$function$;
 CREATE OR REPLACE FUNCTION public.get_bank_account_details(p_account_id uuid, p_user_id uuid DEFAULT auth.uid())
  RETURNS TABLE(account_number text, sort_code text)
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$;
-
+AS $function$
+BEGIN
+    -- Security check: users can only access their own accounts
+    IF p_user_id != auth.uid() AND NOT is_admin_or_owner(auth.uid()) THEN
+        RAISE EXCEPTION 'Access denied: Cannot access other users banking details';
+    END IF;
+    
+    -- Verify the account belongs to the user
+    IF NOT EXISTS (
+        SELECT 1 FROM public.bank_accounts 
+        WHERE id = p_account_id AND user_id = p_user_id
+    ) THEN
+        RAISE EXCEPTION 'Access denied: Account not found or not owned by user';
+    END IF;
+    
+    -- Audit log the sensitive data access
+    INSERT INTO public.banking_audit_logs (user_id, bank_account_id, action, ip_address)
+    VALUES (p_user_id, p_account_id, 'sensitive_details_accessed', inet_client_addr());
+    
+    -- Return decrypted sensitive data
+    RETURN QUERY
+    SELECT 
+        public.decrypt_banking_data(ba.account_number) as account_number,
+        public.decrypt_banking_data(ba.sort_code) as sort_code
+    FROM public.bank_accounts ba
+    WHERE ba.id = p_account_id AND ba.user_id = p_user_id;
+END;
+$function$;
 CREATE OR REPLACE FUNCTION public.get_hmrc_client_secret(p_user_id uuid DEFAULT auth.uid())
  RETURNS text
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$;
-
+AS $function$
+DECLARE
+  v_secret text;
+BEGIN
+  IF auth.uid() IS NULL OR p_user_id IS NULL OR p_user_id <> auth.uid() THEN
+    RAISE EXCEPTION 'Access denied';
+  END IF;
+  SELECT client_secret INTO v_secret
+    FROM public.hmrc_settings
+    WHERE user_id = p_user_id
+    LIMIT 1;
+  RETURN public.decrypt_hmrc_token(v_secret);
+END;
+$function$;
 CREATE OR REPLACE FUNCTION public.store_integration_tokens(p_integration_name text, p_access_token text, p_refresh_token text DEFAULT NULL::text, p_expires_at timestamp with time zone DEFAULT NULL::timestamp with time zone, p_metadata jsonb DEFAULT '{}'::jsonb, p_user_id uuid DEFAULT auth.uid())
  RETURNS uuid
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$;
-
+AS $function$
+DECLARE
+    integration_id uuid;
+    encrypted_access_token text;
+    encrypted_refresh_token text;
+BEGIN
+    -- Verify user can only store their own tokens
+    IF p_user_id != auth.uid() AND NOT is_admin_or_owner(auth.uid()) THEN
+        RAISE EXCEPTION 'Access denied: Cannot store tokens for other users';
+    END IF;
+    
+    -- Encrypt the tokens
+    encrypted_access_token := public.encrypt_integration_token(p_access_token);
+    encrypted_refresh_token := CASE 
+        WHEN p_refresh_token IS NOT NULL THEN public.encrypt_integration_token(p_refresh_token)
+        ELSE NULL
+    END;
+    
+    -- Insert or update the integration
+    INSERT INTO public.user_integrations (
+        user_id,
+        integration_name,
+        access_token,
+        refresh_token,
+        expires_at,
+        metadata,
+        is_connected,
+        connected_at
+    )
+    VALUES (
+        p_user_id,
+        p_integration_name,
+        encrypted_access_token,
+        encrypted_refresh_token,
+        p_expires_at,
+        p_metadata,
+        true,
+        now()
+    )
+    ON CONFLICT (user_id, integration_name) 
+    DO UPDATE SET
+        access_token = EXCLUDED.access_token,
+        refresh_token = EXCLUDED.refresh_token,
+        expires_at = EXCLUDED.expires_at,
+        metadata = EXCLUDED.metadata,
+        is_connected = EXCLUDED.is_connected,
+        connected_at = EXCLUDED.connected_at,
+        updated_at = now()
+    RETURNING id INTO integration_id;
+    
+    -- Log the token storage
+    INSERT INTO public.integration_audit_logs (user_id, integration_name, action, ip_address)
+    VALUES (p_user_id, p_integration_name, 'token_created', inet_client_addr());
+    
+    RETURN integration_id;
+END;
+$function$;
 CREATE OR REPLACE FUNCTION public.store_bank_account(p_account_id text, p_provider_id text, p_provider_name text, p_account_type text, p_account_number text DEFAULT NULL::text, p_sort_code text DEFAULT NULL::text, p_currency text DEFAULT 'GBP'::text, p_balance numeric DEFAULT NULL::numeric, p_available_balance numeric DEFAULT NULL::numeric, p_user_id uuid DEFAULT auth.uid())
  RETURNS uuid
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$;
-
+AS $function$
+DECLARE
+    bank_account_id uuid;
+    encrypted_account_number text;
+    encrypted_sort_code text;
+BEGIN
+    -- Verify user can only store their own banking data
+    IF p_user_id != auth.uid() AND NOT is_admin_or_owner(auth.uid()) THEN
+        RAISE EXCEPTION 'Access denied: Cannot store banking data for other users';
+    END IF;
+    
+    -- Encrypt sensitive data
+    encrypted_account_number := CASE 
+        WHEN p_account_number IS NOT NULL THEN public.encrypt_banking_data(p_account_number)
+        ELSE NULL
+    END;
+    encrypted_sort_code := CASE 
+        WHEN p_sort_code IS NOT NULL THEN public.encrypt_banking_data(p_sort_code)
+        ELSE NULL
+    END;
+    
+    -- Insert or update the bank account
+    INSERT INTO public.bank_accounts (
+        user_id,
+        account_id,
+        provider_id,
+        provider_name,
+        account_type,
+        account_number,
+        sort_code,
+        currency,
+        balance,
+        available_balance,
+        is_active
+    )
+    VALUES (
+        p_user_id,
+        p_account_id,
+        p_provider_id,
+        p_provider_name,
+        p_account_type,
+        encrypted_account_number,
+        encrypted_sort_code,
+        p_currency,
+        p_balance,
+        p_available_balance,
+        true
+    )
+    ON CONFLICT (user_id, account_id) 
+    DO UPDATE SET
+        provider_name = EXCLUDED.provider_name,
+        account_type = EXCLUDED.account_type,
+        account_number = EXCLUDED.account_number,
+        sort_code = EXCLUDED.sort_code,
+        currency = EXCLUDED.currency,
+        balance = EXCLUDED.balance,
+        available_balance = EXCLUDED.available_balance,
+        updated_at = now()
+    RETURNING id INTO bank_account_id;
+    
+    -- Log the banking data storage
+    INSERT INTO public.banking_audit_logs (user_id, bank_account_id, action, ip_address)
+    VALUES (p_user_id, bank_account_id, 'account_stored', inet_client_addr());
+    
+    RETURN bank_account_id;
+END;
+$function$;
 CREATE OR REPLACE FUNCTION public.get_user_payments(p_user_id uuid DEFAULT auth.uid())
  RETURNS TABLE(id uuid, stripe_session_id text, amount integer, currency text, status text, item_name text, payment_method text, created_at timestamp with time zone, updated_at timestamp with time zone)
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$;
-
+AS $function$
+BEGIN
+    -- Security check: users can only access their own payments
+    IF p_user_id != auth.uid() AND NOT is_admin_or_owner(auth.uid()) THEN
+        RAISE EXCEPTION 'Access denied: Cannot access other users payment data';
+    END IF;
+    
+    -- Audit log the access
+    INSERT INTO public.payment_audit_logs (user_id, action, ip_address)
+    VALUES (p_user_id, 'payments_accessed', inet_client_addr());
+    
+    -- Return safe payment data (no sensitive customer info)
+    RETURN QUERY
+    SELECT 
+        p.id,
+        p.stripe_session_id,
+        p.amount,
+        p.currency,
+        p.status,
+        p.item_name,
+        p.payment_method,
+        p.created_at,
+        p.updated_at
+    FROM public.payments p
+    WHERE p.user_id = p_user_id
+    ORDER BY p.created_at DESC;
+END;
+$function$;
 CREATE OR REPLACE FUNCTION public.get_payment_details_admin(p_payment_id uuid)
  RETURNS TABLE(id uuid, stripe_session_id text, customer_email text, customer_name text, company_name text, contact_number text, amount integer, currency text, status text, item_name text, payment_method text, created_at timestamp with time zone)
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$;
-
+AS $function$
+BEGIN
+    -- Security check: only admins can access customer details
+    IF NOT is_admin_or_owner(auth.uid()) THEN
+        RAISE EXCEPTION 'Access denied: Only administrators can access customer payment details';
+    END IF;
+    
+    -- Audit log the admin access
+    INSERT INTO public.payment_audit_logs (payment_id, action, ip_address, admin_user_id)
+    VALUES (p_payment_id, 'admin_details_accessed', inet_client_addr(), auth.uid());
+    
+    -- Return decrypted customer data for admin use
+    RETURN QUERY
+    SELECT 
+        p.id,
+        p.stripe_session_id,
+        public.decrypt_payment_data(p.customer_email) as customer_email,
+        public.decrypt_payment_data(p.customer_name) as customer_name,
+        public.decrypt_payment_data(p.company_name) as company_name,
+        public.decrypt_payment_data(p.contact_number) as contact_number,
+        p.amount,
+        p.currency,
+        p.status,
+        p.item_name,
+        p.payment_method,
+        p.created_at
+    FROM public.payments p
+    WHERE p.id = p_payment_id;
+END;
+$function$;
 CREATE OR REPLACE FUNCTION public.get_ai_credits_info(p_user_id uuid DEFAULT auth.uid())
  RETURNS json
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$;
-
+AS $function$
+DECLARE
+  v_subscriber RECORD;
+BEGIN
+  SELECT * INTO v_subscriber
+  FROM public.subscribers
+  WHERE user_id = p_user_id;
+  
+  IF NOT FOUND THEN
+    RETURN json_build_object(
+      'credits_remaining', 10,
+      'credits_limit', 10,
+      'reset_date', NOW() + interval '1 month',
+      'subscription_tier', 'free'
+    );
+  END IF;
+  
+  -- Check if credits need to be reset
+  IF v_subscriber.ai_credits_reset_date <= NOW() THEN
+    UPDATE public.subscribers
+    SET 
+      ai_credits_remaining = ai_credits_limit,
+      ai_credits_reset_date = NOW() + interval '1 month'
+    WHERE user_id = p_user_id
+    RETURNING * INTO v_subscriber;
+  END IF;
+  
+  RETURN json_build_object(
+    'credits_remaining', v_subscriber.ai_credits_remaining,
+    'credits_limit', v_subscriber.ai_credits_limit,
+    'reset_date', v_subscriber.ai_credits_reset_date,
+    'subscription_tier', v_subscriber.subscription_tier
+  );
+END;
+$function$;
 CREATE OR REPLACE FUNCTION public.get_user_display_info(p_user_id uuid)
  RETURNS TABLE(id uuid, display_name text, avatar_url text, headline text)
  LANGUAGE sql
  STABLE SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$;
+AS $function$
+  SELECT 
+    id,
+    display_name,
+    avatar_url,
+    headline
+  FROM public.public_profiles
+  WHERE id = p_user_id
+  LIMIT 1;
+$function$;
 
 -- ---------------------------------------------------------------------------
 -- B. RLS POLICIES — restore pre-Round2 policy set on affected tables
