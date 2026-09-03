@@ -4165,21 +4165,16 @@ export type Database = {
         Args: { _limit?: number; _offset?: number }
         Returns: Json
       }
-      admin_list_companies:
-        | {
-            Args: { _limit?: number; _offset?: number; _search?: string }
-            Returns: Json
-          }
-        | {
-            Args: {
-              _limit?: number
-              _offset?: number
-              _plan?: string
-              _search?: string
-              _status?: string
-            }
-            Returns: Json
-          }
+      admin_list_companies: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _plan?: string
+          _search?: string
+          _status?: string
+        }
+        Returns: Json
+      }
       admin_list_projects: {
         Args: {
           _limit?: number
@@ -4198,26 +4193,16 @@ export type Database = {
         }
         Returns: Json
       }
-      admin_list_users:
-        | {
-            Args: {
-              _limit?: number
-              _offset?: number
-              _search?: string
-              _status?: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              _limit?: number
-              _offset?: number
-              _plan?: string
-              _search?: string
-              _status?: string
-            }
-            Returns: Json
-          }
+      admin_list_users: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _plan?: string
+          _search?: string
+          _status?: string
+        }
+        Returns: Json
+      }
       admin_log_action: {
         Args: {
           _action: string
