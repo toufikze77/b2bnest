@@ -44,6 +44,7 @@ export default function AdminDashboard() {
     { label: 'Free Users', value: n('free_users').toLocaleString(), icon: <Gift className="h-4 w-4" /> },
     { label: 'Paid Subscribers', value: n('active_subscriptions').toLocaleString(), icon: <BadgePoundSterling className="h-4 w-4" /> },
     { label: 'Monthly Recurring Revenue', value: formatMoney(n('mrr')), icon: <TrendingUp className="h-4 w-4" />, hint: 'From active plan pricing' },
+    { label: 'Annual Recurring Revenue', value: formatMoney(n('arr')), icon: <TrendingUp className="h-4 w-4" />, hint: 'MRR × 12' },
     { label: 'Total Revenue', value: formatMoney(n('total_revenue')), icon: <Wallet className="h-4 w-4" />, change: percentChange(n('revenue_30d'), n('revenue_prev_30d')) },
     { label: 'AI Usage', value: n('ai_requests').toLocaleString(), icon: <Brain className="h-4 w-4" />, hint: `${n('ai_requests_30d').toLocaleString()} in last 30 days` },
     { label: 'Active Projects', value: n('active_projects').toLocaleString(), icon: <FolderKanban className="h-4 w-4" />, hint: `${n('total_projects').toLocaleString()} total` },
