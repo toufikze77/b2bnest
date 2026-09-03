@@ -23,6 +23,7 @@ export default function AdminUsers() {
   const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
+  const [plan, setPlan] = useState('all');
   const [page, setPage] = useState(0);
   const [rows, setRows] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
@@ -36,6 +37,7 @@ export default function AdminUsers() {
       const data = await adminRpc<any>('admin_list_users', {
         _search: search || null,
         _status: status,
+        _plan: plan,
         _limit: PAGE_SIZE,
         _offset: page * PAGE_SIZE,
       });
@@ -46,7 +48,7 @@ export default function AdminUsers() {
     } finally {
       setLoading(false);
     }
-  }, [search, status, page, toast]);
+  }, [search, status, plan, page, toast]);
 
   useEffect(() => {
     const t = setTimeout(load, 250);
