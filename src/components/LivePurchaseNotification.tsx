@@ -33,7 +33,8 @@ const LivePurchaseNotification = () => {
           .limit(20);
 
         if (error) {
-          console.error('Error fetching purchases:', error);
+          // Subscriber rows are restricted to the owner (and the trusted server
+          // path); visitors simply see no social-proof notifications.
           return;
         }
 

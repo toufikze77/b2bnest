@@ -105,19 +105,12 @@ export const useSubscription = () => {
             ai_credits_reset_date: data.ai_credits_reset_date || null
           });
         } else {
-          // No subscription record exists, create one with free tier
-          const { error: insertError } = await supabase
-            .from('subscribers')
-            .insert({
-              user_id: user.id,
-              email: user.email,
-              subscribed: false,
-              subscription_tier: 'free'
-            });
-
-          if (insertError) {
-            console.error('Error creating subscription record:', insertError);
-          }
+          // No subscriber record: entitlement records are created ONLY by the trusted
+          // server-side billing flow (check-subscription / stripe-webhook, service role).
+          // The absence of a record simply means "free tier".
+          supabase.functions.invoke('check-subscription').catch(() => {
+            /* non-fatal: UI stays on the free tier until the server confirms otherwise */
+          });
 
           setSubscription({
             subscribed: false,
