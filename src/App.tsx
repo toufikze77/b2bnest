@@ -74,6 +74,7 @@ import AdminLayout from '@/pages/admin/AdminLayout';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import AdminUsers from '@/pages/admin/AdminUsers';
 import AdminCompanies from '@/pages/admin/AdminCompanies';
+import AdminCompanyDetail from '@/pages/admin/AdminCompanyDetail';
 import AdminSubscriptions from '@/pages/admin/AdminSubscriptions';
 import AdminPlans from '@/pages/admin/AdminPlans';
 import AdminAI from '@/pages/admin/AdminAI';
@@ -177,7 +178,8 @@ function App() {
                <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
                  <Route index element={<AdminDashboard />} />
                  <Route path="users" element={<AdminUsers />} />
-                 <Route path="companies" element={<AdminCompanies />} />
+                  <Route path="companies" element={<AdminCompanies />} />
+                  <Route path="companies/:id" element={<AdminCompanyDetail />} />
                  <Route path="subscriptions" element={<AdminSubscriptions />} />
                  <Route path="plans" element={<AdminPlans />} />
                  <Route path="ai" element={<AdminAI />} />

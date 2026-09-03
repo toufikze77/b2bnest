@@ -17,11 +17,13 @@ import { Download, Search } from 'lucide-react';
 
 const PAGE_SIZE = 25;
 const ROLES = ['user', 'manager', 'moderator', 'admin', 'owner', 'super_admin'];
+const PLANS = ['all', 'starter', 'professional', 'enterprise', 'free'];
 
 export default function AdminUsers() {
   const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
+  const [plan, setPlan] = useState('all');
   const [page, setPage] = useState(0);
   const [rows, setRows] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
@@ -35,6 +37,7 @@ export default function AdminUsers() {
       const data = await adminRpc<any>('admin_list_users', {
         _search: search || null,
         _status: status,
+        _plan: plan,
         _limit: PAGE_SIZE,
         _offset: page * PAGE_SIZE,
       });
@@ -45,7 +48,7 @@ export default function AdminUsers() {
     } finally {
       setLoading(false);
     }
-  }, [search, status, page, toast]);
+  }, [search, status, plan, page, toast]);
 
   useEffect(() => {
     const t = setTimeout(load, 250);
@@ -123,6 +126,12 @@ export default function AdminUsers() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={plan} onValueChange={(v) => { setPage(0); setPlan(v); }}>
+          <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {PLANS.map((p) => <SelectItem key={p} value={p}>{p[0].toUpperCase() + p.slice(1)}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       <Card className="overflow-x-auto">
@@ -134,15 +143,16 @@ export default function AdminUsers() {
               <TableHead>Plan</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Registered</TableHead>
+              <TableHead>Last login</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={7} className="py-10 text-center text-muted-foreground">Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="py-10 text-center text-muted-foreground">Loading…</TableCell></TableRow>
             ) : rows.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="py-10 text-center text-muted-foreground">No data</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="py-10 text-center text-muted-foreground">No data</TableCell></TableRow>
             ) : (
               rows.map((u) => (
                 <TableRow key={u.id} className="cursor-pointer" onClick={() => setSelected(u)}>
@@ -150,7 +160,10 @@ export default function AdminUsers() {
                     <div className="font-medium">{u.name || '—'}</div>
                     <div className="text-xs text-muted-foreground">{u.email}</div>
                   </TableCell>
-                  <TableCell>{u.company || '—'}</TableCell>
+                  <TableCell>
+                    <div>{u.organization_name || u.owned_company || u.company || '—'}</div>
+                    {u.company_role && <div className="text-xs text-muted-foreground">{u.company_role}</div>}
+                  </TableCell>
                   <TableCell>{u.subscribed ? <Badge>{u.plan || 'Paid'}</Badge> : <Badge variant="secondary">{u.is_trial_active ? 'Trial' : 'Free'}</Badge>}</TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <Select value={u.role || 'user'} onValueChange={(v) => changeRole(u, v)}>
@@ -161,6 +174,7 @@ export default function AdminUsers() {
                     </Select>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{u.last_login ? new Date(u.last_login).toLocaleString() : 'Never'}</TableCell>
                   <TableCell>
                     {u.is_active ? <Badge variant="outline" className="text-emerald-500">Active</Badge> : <Badge variant="destructive">Suspended</Badge>}
                   </TableCell>
@@ -195,9 +209,11 @@ export default function AdminUsers() {
             <dl className="mt-6 space-y-3 text-sm">
               {[
                 ['Email', selected.email],
-                ['Company', selected.company || '—'],
-                ['Role', selected.role || 'user'],
+                ['Company', selected.organization_name || selected.owned_company || selected.company || '—'],
+                ['Company role', selected.company_role || (selected.owned_company ? 'COMPANY_OWNER' : 'MEMBER')],
+                ['Platform role', selected.role || 'user'],
                 ['Registered', selected.created_at ? new Date(selected.created_at).toLocaleString() : '—'],
+                ['Last login', selected.last_login ? new Date(selected.last_login).toLocaleString() : 'Never'],
                 ['Status', selected.is_active ? 'Active' : 'Suspended'],
                 ['Subscription', selected.subscribed ? selected.plan || 'Paid' : selected.is_trial_active ? 'Trial' : 'Free'],
                 ['Trial ends', selected.trial_ends_at ? new Date(selected.trial_ends_at).toLocaleDateString() : '—'],
