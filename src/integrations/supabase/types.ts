@@ -4560,6 +4560,10 @@ export type Database = {
         Args: { check_user_id?: string; project_id: string }
         Returns: boolean
       }
+      users_share_organization: {
+        Args: { _a: string; _b: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role:
