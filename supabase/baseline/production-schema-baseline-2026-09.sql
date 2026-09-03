@@ -14,8 +14,10 @@
 -- =====================================================================
 
 -- ===== EXTENSIONS =====
+CREATE SCHEMA IF NOT EXISTS extensions;
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Production also has: pg_cron, pg_net, pg_stat_statements, supabase_vault
 -- (omitted / shimmed in staging; see 00_supabase_shim.sql)
 
@@ -1489,6 +1491,19 @@ CREATE INDEX IF NOT EXISTS rota_shifts_org_date_idx ON public.rota_shifts USING 
 CREATE INDEX IF NOT EXISTS template_events_created_at_idx ON public.template_events USING btree (created_at DESC);
 CREATE INDEX IF NOT EXISTS template_events_slug_idx ON public.template_events USING btree (template_slug, event_type);
 CREATE INDEX IF NOT EXISTS workflow_run_logs_user_created_idx ON public.workflow_run_logs USING btree (user_id, created_at DESC);
+
+
+-- ===== VIEWS =====
+CREATE OR REPLACE VIEW public.public_profiles AS
+ SELECT id, display_name, headline, bio, skills, industry, experience_years,
+        created_at, avatar_url, connection_count
+   FROM public.profiles
+  WHERE ((is_public = true) AND (is_active = true));
+-- (no materialized views in production)
+
+GRANT SELECT ON public.public_profiles TO authenticated;
+GRANT SELECT ON public.public_profiles TO service_role;
+GRANT INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON public.public_profiles TO anon, authenticated, service_role;
 
 
 -- ===== FUNCTIONS (incl. SECURITY DEFINER + search_path) =====
