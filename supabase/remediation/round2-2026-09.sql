@@ -350,7 +350,6 @@ grant execute on function
   public.ensure_user_has_org(uuid),
   public.check_trial_status(uuid),
   public.get_notification_preferences(uuid),
-  public.update_notification_preferences(uuid, jsonb),
   public.get_advertisement_contact_info(uuid),
   public.get_user_staking_tier(uuid),
   public.preview_user_emissions(uuid),
