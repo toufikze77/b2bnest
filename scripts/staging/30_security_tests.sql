@@ -455,3 +455,35 @@ select sec.t('X12','10/PII','get_user_display_info','A_MEMBER','read cross-tenan
   $$select 1 from public.get_user_display_info(sec.actor_uid('B_OWNER'))$$);
 select sec.t('X13','10/PII','get_user_display_info','A_MEMBER','read same-tenant colleague display info','A','ALLOW',
   $$select 1 from public.get_user_display_info(sec.actor_uid('A_OWNER'))$$);
+
+-- ============================== PHASE 18: legitimate-path regression (post-remediation)
+select sec.t('R1','18/REGRESSION','get_hmrc_tokens','A_OWNER','read own tokens','A','ALLOW',
+  $$select 1 from public.get_hmrc_tokens(sec.actor_uid('A_OWNER'))$$);
+select sec.t('R2','18/REGRESSION','get_user_integrations_safe','A_OWNER','read own integrations','A','ALLOW',
+  $$select 1 from public.get_user_integrations_safe(sec.actor_uid('A_OWNER'))$$);
+select sec.t('R3','18/REGRESSION','get_bank_accounts_safe','A_OWNER','read own accounts','A','ALLOW',
+  $$select 1 from public.get_bank_accounts_safe(sec.actor_uid('A_OWNER'))$$);
+select sec.t('R4','18/REGRESSION','get_user_payments','A_OWNER','read own payments','A','ALLOW',
+  $$select 1 from public.get_user_payments(sec.actor_uid('A_OWNER'))$$);
+select sec.t('R5','18/REGRESSION','get_ai_credits_info','A_OWNER','read own credits','A','ALLOW',
+  $$select 1 from public.get_ai_credits_info(sec.actor_uid('A_OWNER'))$$);
+select sec.t('R6','18/REGRESSION','check_and_deduct_ai_credit','A_OWNER','deduct own credit','A','ALLOW',
+  $$select 1 from (select public.check_and_deduct_ai_credit(sec.actor_uid('A_OWNER'),1)) z$$);
+select sec.t('R7','18/REGRESSION','subscribers','A_OWNER','read own subscription','A','ALLOW',
+  $$select 1 from public.subscribers where user_id = sec.actor_uid('A_OWNER')$$);
+select sec.t('R8','18/REGRESSION','subscribers','A_OWNER','self-upgrade tier','A','DENY',
+  $$update public.subscribers set subscription_tier='enterprise' where user_id = sec.actor_uid('A_OWNER')$$);
+select sec.t('R9','18/REGRESSION','documents','A_OWNER','read own document','A','ALLOW',
+  $$select 1 from public.documents where user_id = sec.actor_uid('A_OWNER')$$);
+select sec.t('R10','18/REGRESSION','projects','A_MEMBER','create project in own org','A','ALLOW',
+  $$insert into public.projects(user_id,name,organization_id) values (sec.actor_uid('A_MEMBER'),'R10','0a000000-0000-4000-8000-000000000001')$$);
+select sec.t('R11','18/REGRESSION','teams','A_OWNER','delete own team','A','ALLOW',
+  $$delete from public.teams where id='0a000000-0000-4000-8000-0000000000e1'$$);
+select sec.t('R12','18/REGRESSION','ai_conversations','A_OWNER','delete own conversation','A','ALLOW',
+  $$delete from public.ai_conversations where user_id=sec.actor_uid('A_OWNER')$$);
+select sec.t('R13','18/REGRESSION','admin_list_companies','SUPER_ADMIN','platform listing','platform','ALLOW',
+  $$select 1 from public.admin_list_companies(null,10,0,null,null)$$);
+select sec.t('R14','18/REGRESSION','get_invitation_by_token','ANON','public invite lookup','platform','INFO',
+  $$select 1 from public.get_invitation_by_token('nonexistent')$$);
+select sec.t('R15','18/REGRESSION','template_usage_counts','ANON','public template counts','platform','INFO',
+  $$select 1 from public.template_usage_counts()$$);
