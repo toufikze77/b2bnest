@@ -287,7 +287,6 @@ begin
     ('get_hmrc_client_secret', $c$select public.get_hmrc_client_secret(sec.actor_uid('B_OWNER'))$c$),
     ('check_and_deduct_ai_credit',$c$select public.check_and_deduct_ai_credit(sec.actor_uid('B_OWNER'),5)$c$),
     ('get_team_members_with_profiles',$c$select public.get_team_members_with_profiles('0b000000-0000-4000-8000-0000000000e1')$c$),
-    ('get_user_display_info',  $c$select public.get_user_display_info(sec.actor_uid('B_OWNER'))$c$),
     ('decrypt_banking_data',   $c$select public.decrypt_banking_data('x')$c$),
     ('decrypt_integration_token',$c$select public.decrypt_integration_token('x')$c$),
     ('decrypt_hmrc_token',     $c$select public.decrypt_hmrc_token('x')$c$),
@@ -321,7 +320,7 @@ select sec.t('PII3','10/PII','profiles','ANON','SELECT any profile','A+B','DENY'
   $$select 1 from public.profiles$$);
 select sec.t('PII4','10/PII','public_profiles','ANON','SELECT view','A+B','INFO',
   $$select 1 from public.public_profiles$$);
-select sec.t('PII5','10/PII','get_user_display_info','A_MEMBER','B display info','B','DENY_ERROR',
+select sec.t('PII5','10/PII','get_user_display_info','A_MEMBER','B display info','B','ZERO_ROWS',
   $$select public.get_user_display_info(sec.actor_uid('B_OWNER'))$$);
 select sec.t('PII6','10/PII','get_team_members_with_profiles','A_MEMBER','A team (legit)','A','INFO',
   $$select public.get_team_members_with_profiles('0a000000-0000-4000-8000-0000000000e1')$$);
@@ -337,7 +336,7 @@ begin
     'products_services','documents','payroll_employees','ai_workspaces','ai_conversations',
     'notes','bank_accounts','user_integrations','subscribers','payments','audit_logs']) as tbl
   loop
-    perform sec.t('U-'||r.tbl,'11/USERSCOPED',r.tbl,'B_MEMBER','cross-tenant SELECT','A','ZERO_ROWS',
+    perform sec.t('U-'||r.tbl,'11/USERSCOPED',r.tbl,'B_MEMBER','cross-tenant SELECT','A',case when r.tbl='user_integrations' then 'DENY' else 'ZERO_ROWS' end,
       format($f$select 1 from public.%I where user_id = sec.actor_uid('A_OWNER')$f$, r.tbl));
     perform sec.t('U-'||r.tbl,'11/USERSCOPED',r.tbl,'A_MEMBER','same-tenant colleague SELECT','A','INFO',
       format($f$select 1 from public.%I where user_id = sec.actor_uid('A_OWNER')$f$, r.tbl));
@@ -448,3 +447,11 @@ select sec.t('X9','4/CRUD','projects','A_MEMBER','INSERT own project with foreig
   $$insert into public.projects(user_id,name,organization_id) values (sec.actor_uid('A_MEMBER'),'X-cross','0b000000-0000-4000-8000-000000000001')$$);
 select sec.t('X10','4/CRUD','todos','A_MEMBER','INSERT own todo with foreign org id','B','DENY_ERROR',
   $$insert into public.todos(user_id,title,organization_id) values (sec.actor_uid('A_MEMBER'),'X-cross','0b000000-0000-4000-8000-000000000001')$$);
+
+-- display-info authorization (returns no row instead of raising; both are denials)
+select sec.t('X11','9/RPC','get_user_display_info','ANON','read B display info','B','DENY_ERROR',
+  $$select public.get_user_display_info('bbbbbbbb-0000-4000-8000-000000000001')$$);
+select sec.t('X12','10/PII','get_user_display_info','A_MEMBER','read cross-tenant display info','B','ZERO_ROWS',
+  $$select 1 from public.get_user_display_info(sec.actor_uid('B_OWNER'))$$);
+select sec.t('X13','10/PII','get_user_display_info','A_MEMBER','read same-tenant colleague display info','A','ALLOW',
+  $$select 1 from public.get_user_display_info(sec.actor_uid('A_OWNER'))$$);
