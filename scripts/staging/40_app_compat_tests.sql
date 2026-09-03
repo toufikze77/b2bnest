@@ -25,7 +25,8 @@ select sec.t('H4','APP/HMRC','decrypt_hmrc_token','ANON','EXECUTE anonymous','-'
 -- H1/H9: legitimate connection + storage path used by the Edge Function
 select sec.t('H1','APP/HMRC','hmrc_integrations','SERVICE','UPSERT token row (Edge Function)','A','ALLOW',
   $$insert into public.hmrc_integrations(user_id, organization_id, access_token, refresh_token, is_connected)
-    values ('aaaaaaaa-0000-4000-8000-000000000001','0a000000-0000-4000-8000-000000000001','ENC-A','ENC-A-R',true)$$);
+    values ('aaaaaaaa-0000-4000-8000-000000000001','0a000000-0000-4000-8000-000000000001','ENC-A','ENC-A-R',true)
+    on conflict (user_id, organization_id) do update set access_token = excluded.access_token$$);
 select sec.t('H9','APP/HMRC','hmrc_integrations','SERVICE','UPDATE refreshed token','A','ALLOW',
   $$update public.hmrc_integrations set access_token='ENC-A2', expires_at = now() + interval '4 hours'
     where user_id='aaaaaaaa-0000-4000-8000-000000000001'$$);
