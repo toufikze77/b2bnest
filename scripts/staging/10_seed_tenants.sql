@@ -168,3 +168,14 @@ insert into storage.objects (id, bucket_id, name, owner) values
   ('0a000000-0000-4000-8000-0000000000b4','user-avatars','aaaaaaaa-0000-4000-8000-000000000001/a.png','aaaaaaaa-0000-4000-8000-000000000001'),
   ('0b000000-0000-4000-8000-0000000000b4','user-avatars','bbbbbbbb-0000-4000-8000-000000000001/b.png','bbbbbbbb-0000-4000-8000-000000000001')
 on conflict (id) do nothing;
+
+-- extra fixtures for token-accessor and paid-document tests
+insert into public.hmrc_integrations (id, user_id, organization_id, access_token, refresh_token, is_connected) values
+  ('0a000000-0000-4000-8000-0000000000b5','aaaaaaaa-0000-4000-8000-000000000001','0a000000-0000-4000-8000-000000000001','SYNTHETIC-A-HMRC','SYNTHETIC-A-REFRESH',true),
+  ('0b000000-0000-4000-8000-0000000000b5','bbbbbbbb-0000-4000-8000-000000000001','0b000000-0000-4000-8000-000000000001','SYNTHETIC-B-HMRC','SYNTHETIC-B-REFRESH',true)
+on conflict (id) do nothing;
+
+insert into public.documents (id, user_id, title, category, price, file_url) values
+  ('0a000000-0000-4000-8000-0000000000b6','aaaaaaaa-0000-4000-8000-000000000001','A-Paid-Document','legal',49,'https://example.invalid/a-paid.pdf'),
+  ('0b000000-0000-4000-8000-0000000000b6','bbbbbbbb-0000-4000-8000-000000000001','B-Paid-Document','legal',49,'https://example.invalid/b-paid.pdf')
+on conflict (id) do nothing;

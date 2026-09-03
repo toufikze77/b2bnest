@@ -426,3 +426,25 @@ select sec.t('AU6','17/AUDIT','banking_audit_logs','A_ADMIN','read all banking a
   $$select 1 from public.banking_audit_logs$$);
 select sec.t('AU7','17/AUDIT','admin_audit_logs','A_ADMIN','read platform audit','platform','ZERO_ROWS',
   $$select 1 from public.admin_audit_logs$$);
+
+-- ==================================================== PHASE 9b targeted probes
+select sec.t('X1','9/RPC','get_hmrc_tokens','ANON','read B HMRC tokens by guessed uuid','B','DENY_ERROR',
+  $$select public.get_hmrc_tokens(sec.actor_uid('B_OWNER'))$$);
+select sec.t('X2','9/RPC','get_hmrc_tokens','A_MEMBER','read B HMRC tokens','B','DENY_ERROR',
+  $$select public.get_hmrc_tokens(sec.actor_uid('B_OWNER'))$$);
+select sec.t('X3','9/RPC','get_user_integrations_safe','ANON','read B integrations','B','DENY_ERROR',
+  $$select public.get_user_integrations_safe(sec.actor_uid('B_OWNER'))$$);
+select sec.t('X4','9/RPC','get_bank_accounts_safe','ANON','read B bank accounts','B','DENY_ERROR',
+  $$select public.get_bank_accounts_safe(sec.actor_uid('B_OWNER'))$$);
+select sec.t('X5','9/RPC','get_hmrc_client_secret','ANON','read B client secret','B','DENY_ERROR',
+  $$select public.get_hmrc_client_secret(sec.actor_uid('B_OWNER'))$$);
+select sec.t('X6','4/CRUD','documents','A_MEMBER','SELECT paid B document','B','ZERO_ROWS',
+  $$select 1 from public.documents where id='0b000000-0000-4000-8000-0000000000b6'$$);
+select sec.t('X7','4/CRUD','documents','A_MEMBER','SELECT free B document (marketplace by design)','B','INFO',
+  $$select 1 from public.documents where id='0b000000-0000-4000-8000-0000000000a2'$$);
+select sec.t('X8','4/CRUD','hmrc_integrations','A_MEMBER','SELECT B HMRC row','B','ZERO_ROWS',
+  $$select 1 from public.hmrc_integrations where organization_id='0b000000-0000-4000-8000-000000000001'$$);
+select sec.t('X9','4/CRUD','projects','A_MEMBER','INSERT own project with foreign org id (owner column self)','B','DENY_ERROR',
+  $$insert into public.projects(user_id,name,organization_id) values (sec.actor_uid('A_MEMBER'),'X-cross','0b000000-0000-4000-8000-000000000001')$$);
+select sec.t('X10','4/CRUD','todos','A_MEMBER','INSERT own todo with foreign org id','B','DENY_ERROR',
+  $$insert into public.todos(user_id,title,organization_id) values (sec.actor_uid('A_MEMBER'),'X-cross','0b000000-0000-4000-8000-000000000001')$$);
