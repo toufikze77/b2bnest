@@ -23,84 +23,84 @@ CREATE OR REPLACE FUNCTION public.get_hmrc_tokens(p_user_id uuid DEFAULT auth.ui
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $function$;
 
 CREATE OR REPLACE FUNCTION public.get_user_integrations_safe(p_user_id uuid DEFAULT auth.uid())
  RETURNS TABLE(id uuid, user_id uuid, integration_name text, is_connected boolean, connected_at timestamp with time zone, expires_at timestamp with time zone, metadata jsonb, created_at timestamp with time zone, updated_at timestamp with time zone, has_access_token boolean, has_refresh_token boolean)
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
+AS $function$;
 
 CREATE OR REPLACE FUNCTION public.get_integration_tokens(p_integration_name text, p_user_id uuid DEFAULT auth.uid())
  RETURNS TABLE(access_token text, refresh_token text, expires_at timestamp with time zone)
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $function$;
 
 CREATE OR REPLACE FUNCTION public.get_bank_accounts_safe(p_user_id uuid DEFAULT auth.uid())
  RETURNS TABLE(id uuid, account_id text, provider_name text, account_type text, currency text, balance numeric, available_balance numeric, last_synced_at timestamp with time zone, is_active boolean, created_at timestamp with time zone)
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $function$;
 
 CREATE OR REPLACE FUNCTION public.get_bank_account_details(p_account_id uuid, p_user_id uuid DEFAULT auth.uid())
  RETURNS TABLE(account_number text, sort_code text)
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $function$;
 
 CREATE OR REPLACE FUNCTION public.get_hmrc_client_secret(p_user_id uuid DEFAULT auth.uid())
  RETURNS text
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $function$;
 
 CREATE OR REPLACE FUNCTION public.store_integration_tokens(p_integration_name text, p_access_token text, p_refresh_token text DEFAULT NULL::text, p_expires_at timestamp with time zone DEFAULT NULL::timestamp with time zone, p_metadata jsonb DEFAULT '{}'::jsonb, p_user_id uuid DEFAULT auth.uid())
  RETURNS uuid
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $function$;
 
 CREATE OR REPLACE FUNCTION public.store_bank_account(p_account_id text, p_provider_id text, p_provider_name text, p_account_type text, p_account_number text DEFAULT NULL::text, p_sort_code text DEFAULT NULL::text, p_currency text DEFAULT 'GBP'::text, p_balance numeric DEFAULT NULL::numeric, p_available_balance numeric DEFAULT NULL::numeric, p_user_id uuid DEFAULT auth.uid())
  RETURNS uuid
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $function$;
 
 CREATE OR REPLACE FUNCTION public.get_user_payments(p_user_id uuid DEFAULT auth.uid())
  RETURNS TABLE(id uuid, stripe_session_id text, amount integer, currency text, status text, item_name text, payment_method text, created_at timestamp with time zone, updated_at timestamp with time zone)
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $function$;
 
 CREATE OR REPLACE FUNCTION public.get_payment_details_admin(p_payment_id uuid)
  RETURNS TABLE(id uuid, stripe_session_id text, customer_email text, customer_name text, company_name text, contact_number text, amount integer, currency text, status text, item_name text, payment_method text, created_at timestamp with time zone)
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $function$;
 
 CREATE OR REPLACE FUNCTION public.get_ai_credits_info(p_user_id uuid DEFAULT auth.uid())
  RETURNS json
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $function$;
 
 CREATE OR REPLACE FUNCTION public.get_user_display_info(p_user_id uuid)
  RETURNS TABLE(id uuid, display_name text, avatar_url text, headline text)
  LANGUAGE sql
  STABLE SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
+AS $function$;
 
 -- ---------------------------------------------------------------------------
 -- B. RLS POLICIES — restore pre-Round2 policy set on affected tables
