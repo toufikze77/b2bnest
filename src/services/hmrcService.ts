@@ -86,20 +86,10 @@ export const hmrcService = {
       throw new Error('Invalid OAuth state');
     }
 
-    const settings = await this.getSettings();
-    if (!settings) {
-      throw new Error('HMRC settings not found');
-    }
-
+    // Client credentials are resolved server-side inside the oauth-hmrc Edge Function.
+    // The browser never transmits the HMRC client secret.
     const { data, error } = await supabase.functions.invoke('oauth-hmrc', {
-      body: {
-        code,
-        state,
-        clientId: settings.clientId,
-        clientSecret: settings.clientSecret,
-        redirectUri: settings.redirectUri,
-        sandboxMode: settings.sandboxMode,
-      },
+      body: { code, state },
     });
 
     if (error) throw error;
