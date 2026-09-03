@@ -209,9 +209,11 @@ export default function AdminUsers() {
             <dl className="mt-6 space-y-3 text-sm">
               {[
                 ['Email', selected.email],
-                ['Company', selected.company || '—'],
-                ['Role', selected.role || 'user'],
+                ['Company', selected.organization_name || selected.owned_company || selected.company || '—'],
+                ['Company role', selected.company_role || (selected.owned_company ? 'COMPANY_OWNER' : 'MEMBER')],
+                ['Platform role', selected.role || 'user'],
                 ['Registered', selected.created_at ? new Date(selected.created_at).toLocaleString() : '—'],
+                ['Last login', selected.last_login ? new Date(selected.last_login).toLocaleString() : 'Never'],
                 ['Status', selected.is_active ? 'Active' : 'Suspended'],
                 ['Subscription', selected.subscribed ? selected.plan || 'Paid' : selected.is_trial_active ? 'Trial' : 'Free'],
                 ['Trial ends', selected.trial_ends_at ? new Date(selected.trial_ends_at).toLocaleDateString() : '—'],
