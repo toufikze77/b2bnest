@@ -1,7 +1,9 @@
 -- Supabase-compatible shim for isolated local staging (NOT production)
-create extension if not exists pgcrypto with schema public;
-create extension if not exists "uuid-ossp" with schema public;
 create schema if not exists extensions;
+create extension if not exists pgcrypto with schema public;
+-- production installs uuid-ossp into the "extensions" schema; defaults reference
+-- extensions.uuid_generate_v4(), so it must live there in staging too
+create extension if not exists "uuid-ossp" with schema extensions;
 create schema if not exists graphql_public;
 create schema if not exists auth;
 create schema if not exists storage;
