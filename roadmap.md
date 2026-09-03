@@ -1,12 +1,13 @@
-# Roadmap — Super Admin multi-tenant upgrade
+# Super Admin multi-tenant upgrade — status
 
-- [x] Inspect existing schema, roles, RLS, admin RPCs
-- [x] Migration: company status, company detail/list/update RPCs, users + stats upgrades
-- [x] Companies list (search, plan/status filters, view/suspend/reactivate)
-- [x] Company detail screen (overview, users, subscription, usage, activity, security)
-- [ ] Users page: company, last login, plan filter, view/edit/suspend
-- [ ] Dashboard metrics: trial/suspended/cancelled companies, ARR, new companies
-- [ ] Register /admin/companies/:id route
-- [ ] Tenant isolation test checklist doc
-- [ ] Typecheck + build verification, KEEP/CHANGE/MISSING/RISK report
-- [ ] Future feature (not built now): customer self-service data export
+- [x] Inspect existing schema, auth, roles, RLS (no new architecture introduced)
+- [x] Additive migration: `organizations.status/suspended_at/suspension_reason`
+- [x] Admin RPCs: `admin_list_companies`, `admin_company_detail`, `admin_set_company_status`,
+      `admin_update_company`, enriched `admin_list_users`, extended `admin_overview_stats`
+- [x] Drop superseded function overloads (PostgREST ambiguity fixed)
+- [x] `/admin/companies` list + `/admin/companies/:id` detail (overview, users, subscription, usage, activity, security)
+- [x] `/admin/users`: company, company role, plan filter, last login, suspend/reactivate, role change
+- [x] Dashboard cards: trial / suspended / cancelled / new companies, MRR + ARR
+- [x] Tenant isolation checklist: `docs/tenant-isolation-checklist.md`
+- [x] Verified: anonymous + non-admin calls to admin RPCs return `Not authorized`; super admin calls succeed
+- [ ] Customer self-service data export (deliberately not built)
