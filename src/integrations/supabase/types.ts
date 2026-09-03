@@ -768,6 +768,7 @@ export type Database = {
           file_size: number | null
           file_url: string | null
           id: string
+          is_public: boolean
           preview_url: string | null
           price: number | null
           subcategory: string | null
@@ -785,6 +786,7 @@ export type Database = {
           file_size?: number | null
           file_url?: string | null
           id?: string
+          is_public?: boolean
           preview_url?: string | null
           price?: number | null
           subcategory?: string | null
@@ -802,6 +804,7 @@ export type Database = {
           file_size?: number | null
           file_url?: string | null
           id?: string
+          is_public?: boolean
           preview_url?: string | null
           price?: number | null
           subcategory?: string | null
@@ -4244,6 +4247,7 @@ export type Database = {
         Args: { _name?: string; _org_id: string; _plan?: string }
         Returns: boolean
       }
+      assert_self: { Args: { p_user_id: string }; Returns: undefined }
       audit_profile_access: {
         Args: { access_type?: string; accessed_user_id: string }
         Returns: undefined
