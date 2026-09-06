@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveOrganization } from '@/contexts/OrganizationContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import SubscriptionUpgrade from './SubscriptionUpgrade';
 import CreateTodoDialog from './enhanced-todos/CreateTodoDialog';
@@ -295,6 +296,7 @@ const priorityLabels: Record<Task['priority'], string> = {
 const ProjectManagement = () => {
   console.log('🔧 ProjectManagement component loading...');
   const { user } = useAuth();
+  const { organizationId } = useActiveOrganization();
   const { canAccessFeature } = useSubscription();
   const { toast } = useToast();
   

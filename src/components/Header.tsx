@@ -19,6 +19,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUserAvatar } from '@/hooks/useUserAvatar';
 import SupportFeedbackDialog from '@/components/SupportFeedbackDialog';
+import OrganizationSwitcher from '@/components/OrganizationSwitcher';
 
 
 const Header = () => {
@@ -96,6 +97,11 @@ const Header = () => {
 
           {/* Share, Live Prices and User Menu */}
           <div className="flex items-center space-x-2">
+            {user && (
+              <div className="hidden lg:block">
+                <OrganizationSwitcher />
+              </div>
+            )}
             {user && (
               <Link
                 to="/dashboard"

@@ -91,7 +91,7 @@ CREATE INDEX IF NOT EXISTS todos_project_id_idx             ON public.todos(proj
 -- helper: the single active organisation of a user, or NULL when 0 or >1
 CREATE OR REPLACE FUNCTION public.wave1_sole_org(p_user uuid)
 RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT CASE WHEN count(*) = 1 THEN min(om.organization_id) END
+  SELECT CASE WHEN count(*) = 1 THEN (array_agg(om.organization_id))[1] END
   FROM public.organization_members om
   WHERE om.user_id = p_user AND om.is_active = true
 $$;
@@ -193,8 +193,10 @@ DECLARE
   uid uuid := auth.uid();
   sole uuid;
 BEGIN
-  IF TG_TABLE_NAME = 'teams' AND NEW.created_by IS NULL THEN
-    NEW.created_by := uid;
+  IF TG_TABLE_NAME = 'teams' THEN
+    IF NEW.created_by IS NULL THEN
+      NEW.created_by := uid;
+    END IF;
   END IF;
 
   -- trusted server paths
