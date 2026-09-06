@@ -205,6 +205,7 @@ function App() {
           </Router>
           </ThemeProvider>
         </UserSettingsProvider>
+        </OrganizationProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
