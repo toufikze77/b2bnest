@@ -193,8 +193,10 @@ DECLARE
   uid uuid := auth.uid();
   sole uuid;
 BEGIN
-  IF TG_TABLE_NAME = 'teams' AND NEW.created_by IS NULL THEN
-    NEW.created_by := uid;
+  IF TG_TABLE_NAME = 'teams' THEN
+    IF NEW.created_by IS NULL THEN
+      NEW.created_by := uid;
+    END IF;
   END IF;
 
   -- trusted server paths

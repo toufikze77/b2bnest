@@ -176,7 +176,9 @@ perform sec.t('W1-58','PERSONAL','notes','A_ADMIN','SELECT','A_OWNER note','ZERO
   'select 1 from public.notes where user_id = sec.actor_uid(''A_OWNER'')');
 perform sec.t('W1-59','PERSONAL','ai_conversations','A_ADMIN','SELECT','A_OWNER conversation','ZERO_ROWS',
   'select 1 from public.ai_conversations where user_id = sec.actor_uid(''A_OWNER'')');
-perform sec.t('W1-60','PERSONAL','user_integrations','A_ADMIN','SELECT','A_OWNER integration','ZERO_ROWS',
+-- user_integrations is table-grant revoked by Round 2 (access only via
+-- get_user_integrations_safe), so a hard denial is the correct secure outcome.
+perform sec.t('W1-60','PERSONAL','user_integrations','A_ADMIN','SELECT','A_OWNER integration','DENY',
   'select 1 from public.user_integrations where user_id = sec.actor_uid(''A_OWNER'')');
 perform sec.t('W1-61','PERSONAL','bank_accounts','A_ADMIN','SELECT','A_OWNER bank account','ZERO_ROWS',
   'select 1 from public.bank_accounts where user_id = sec.actor_uid(''A_OWNER'')');
