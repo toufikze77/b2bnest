@@ -98,6 +98,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <OrganizationProvider>
         <UserSettingsProvider>
           <ThemeProvider>
           <Router>
