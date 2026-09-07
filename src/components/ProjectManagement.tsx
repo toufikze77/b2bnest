@@ -629,7 +629,7 @@ const ProjectManagement = () => {
   };
 
   const fetchCalendarEvents = async () => {
-    const { data, error } = await supabase.from('todos').select('*').order('created_at', { ascending: true });
+    const { data, error } = await todosForActiveOrg().order('created_at', { ascending: true });
     if (!error && data) setCalendarEvents(data as unknown as CalendarEventItem[]);
   };
 
@@ -654,7 +654,8 @@ const ProjectManagement = () => {
     fetchGoals();
     fetchTeams();
     fetchCalendarEvents();
-  }, []);
+    // Re-read everything when the active company changes.
+  }, [organizationId]);
 
   // Create helpers
   const createWorkRequest = async () => {
