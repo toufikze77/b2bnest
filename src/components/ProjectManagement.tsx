@@ -845,7 +845,7 @@ const ProjectManagement = () => {
     } else {
       setLoading(false);
     }
-  }, [user, hasAccess]);
+  }, [user, hasAccess, organizationId]);
 
   // Load projects from database
   const formatProjectRow = (project: any): Project => ({
@@ -868,12 +868,15 @@ const ProjectManagement = () => {
     ]
   });
 
+  const projectsForActiveOrg = () => {
+    const q = supabase.from('projects').select('*');
+    return organizationId ? q.eq('organization_id', organizationId) : q;
+  };
+
   const loadProjects = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
+      const { data, error } = await projectsForActiveOrg()
         .is('deleted_at', null)
         .is('archived_at', null)
         .order('created_at', { ascending: false });
@@ -882,18 +885,14 @@ const ProjectManagement = () => {
       if (data) setProjects(data.map(formatProjectRow));
 
       // Archived (not deleted, but archived)
-      const { data: archived } = await supabase
-        .from('projects')
-        .select('*')
+      const { data: archived } = await projectsForActiveOrg()
         .is('deleted_at', null)
         .not('archived_at', 'is', null)
         .order('archived_at', { ascending: false });
       if (archived) setArchivedProjects(archived.map(formatProjectRow));
 
       // Trashed
-      const { data: trashed } = await supabase
-        .from('projects')
-        .select('*')
+      const { data: trashed } = await projectsForActiveOrg()
         .not('deleted_at', 'is', null)
         .order('deleted_at', { ascending: false });
       if (trashed) setTrashedProjects(trashed.map(formatProjectRow));
