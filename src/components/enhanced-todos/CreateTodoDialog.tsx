@@ -207,6 +207,7 @@ const projectManagementTemplate = {
 // Main Component - exported as default export
 const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null, teamId = 'all', teamMembers = [] }) => {
   const { user } = useAuth();
+  const { organizationId: activeOrganizationId } = useActiveOrganization();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -374,7 +375,7 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
     if (isOpen) {
       fetchUsers();
     }
-  }, [isOpen, teamId, Array.isArray(teamMembers) ? teamMembers.join('|') : '']);
+  }, [isOpen, teamId, activeOrganizationId, Array.isArray(teamMembers) ? teamMembers.join('|') : '']);
 
   const handleSubmit = (e) => {
     e.preventDefault();

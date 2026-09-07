@@ -11,6 +11,7 @@ import { CalendarIcon, Loader2, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { useActiveOrganization } from '@/contexts/OrganizationContext';
 
 interface CreateProjectDialogProps {
   isOpen: boolean;
