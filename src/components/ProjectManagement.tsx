@@ -663,7 +663,8 @@ const ProjectManagement = () => {
       priority: 'medium', 
       status: 'todo',
       project_id: targetProjectId,
-      user_id: user?.id || ''
+      user_id: user?.id || '',
+      organization_id: organizationId
     }).select().single();
     if (!error && data) setWorkRequests(prev => [data as unknown as WorkRequest, ...prev]);
   };
