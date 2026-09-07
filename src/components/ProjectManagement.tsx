@@ -960,13 +960,14 @@ const ProjectManagement = () => {
 
   const loadTasks = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('todos')
         .select(`
           *,
           projects!left(id, name)
-        `)
-        .order('created_at', { ascending: false });
+        `);
+      if (organizationId) query = query.eq('organization_id', organizationId);
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
 
