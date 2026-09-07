@@ -1101,7 +1101,7 @@ const ProjectManagement = () => {
           assigned_to: taskData.assigned_to || null,
           project_id: targetProjectId,
           user_id: user?.id,
-          organization_id: orgData.organization_id
+          organization_id: organizationId
         })
         .select(`
           *,
