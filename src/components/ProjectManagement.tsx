@@ -1029,7 +1029,8 @@ const ProjectManagement = () => {
           budget: projectData.budget,
           client: projectData.client,
           members: projectData.members,
-          user_id: user?.id
+          user_id: user?.id,
+          organization_id: organizationId
         })
         .select()
         .single();
