@@ -792,15 +792,7 @@ const ProjectManagement = () => {
     const end = window.prompt('End (YYYY-MM-DD HH:MM, optional)') || null;
     
     // Get user's organization
-    const { data: orgData, error: orgError } = await supabase
-      .from('organization_members')
-      .select('organization_id')
-      .eq('user_id', user?.id)
-      .eq('is_active', true)
-      .limit(1)
-      .single();
-
-    if (orgError || !orgData) {
+    if (!organizationId) {
       toast({
         title: "Error",
         description: "You must belong to an organization to create events.",
@@ -817,7 +809,7 @@ const ProjectManagement = () => {
       due_date: start,
       project_id: selectedProject !== 'all' ? selectedProject : null,
       user_id: user?.id || '',
-      organization_id: orgData.organization_id
+      organization_id: organizationId
     }).select().single();
     
     if (error) {
