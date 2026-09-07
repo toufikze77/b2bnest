@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveOrganization } from '@/contexts/OrganizationContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ interface Todo {
 
 const TodoList = () => {
   const { user } = useAuth();
+  const { organizationId } = useActiveOrganization();
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,18 +50,19 @@ const TodoList = () => {
       // For non-authenticated users, show empty state
       setLoading(false);
     }
-  }, [user]);
+  }, [user, organizationId]);
 
   const fetchTodos = async () => {
     if (!user) return;
     
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('todos')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      let query = supabase.from('todos').select('*');
+      // Show the whole company's tasks when a company context is active.
+      query = organizationId
+        ? query.eq('organization_id', organizationId)
+        : query.eq('user_id', user.id);
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       setTodos(data || []);
@@ -104,6 +107,7 @@ const TodoList = () => {
         .insert({
           ...todoData,
           user_id: user.id,
+          organization_id: organizationId,
           status: 'todo',
           reporter_id: user.id
         })

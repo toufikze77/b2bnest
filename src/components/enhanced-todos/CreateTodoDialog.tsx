@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveOrganization } from '@/contexts/OrganizationContext';
 
 // Fixed DatePicker Component
 const DatePicker = ({ value, onChange, placeholder, id }) => {
@@ -206,6 +207,7 @@ const projectManagementTemplate = {
 // Main Component - exported as default export
 const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null, teamId = 'all', teamMembers = [] }) => {
   const { user } = useAuth();
+  const { organizationId: activeOrganizationId } = useActiveOrganization();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -286,8 +288,11 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
           return;
         }
 
-        // Get organization IDs the current user belongs to
-        const organizationIds = currentUserOrgs.map(org => org.organization_id);
+        // Restrict to the active company when one is selected.
+        const allOrgIds = currentUserOrgs.map(org => org.organization_id);
+        const organizationIds = activeOrganizationId && allOrgIds.includes(activeOrganizationId)
+          ? [activeOrganizationId]
+          : allOrgIds;
 
         // Get all user IDs from the same organization(s) - strict security segregation
         const { data: orgMembers, error: membersError } = await supabase
@@ -370,7 +375,7 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
     if (isOpen) {
       fetchUsers();
     }
-  }, [isOpen, teamId, Array.isArray(teamMembers) ? teamMembers.join('|') : '']);
+  }, [isOpen, teamId, activeOrganizationId, Array.isArray(teamMembers) ? teamMembers.join('|') : '']);
 
   const handleSubmit = (e) => {
     e.preventDefault();

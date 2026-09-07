@@ -529,14 +529,19 @@ const ProjectManagement = () => {
   const [showComments, setShowComments] = useState(false);
   const [commentTaskId, setCommentTaskId] = useState<string | null>(null);
 
-  // Fetch helpers
+  // Fetch helpers — all task reads are scoped to the active organization.
+  const todosForActiveOrg = () => {
+    const q = supabase.from('todos').select('*');
+    return organizationId ? q.eq('organization_id', organizationId) : q;
+  };
+
   const fetchWorkRequests = async () => {
-    const { data, error } = await supabase.from('todos').select('*').order('created_at', { ascending: false });
+    const { data, error } = await todosForActiveOrg().order('created_at', { ascending: false });
     if (!error && data) setWorkRequests(data as unknown as WorkRequest[]);
   };
 
   const fetchGoals = async () => {
-    const { data, error } = await supabase.from('todos').select('*').order('created_at', { ascending: false });
+    const { data, error } = await todosForActiveOrg().order('created_at', { ascending: false });
     if (!error && data) setGoals(data as unknown as GoalItem[]);
   };
 
@@ -624,7 +629,7 @@ const ProjectManagement = () => {
   };
 
   const fetchCalendarEvents = async () => {
-    const { data, error } = await supabase.from('todos').select('*').order('created_at', { ascending: true });
+    const { data, error } = await todosForActiveOrg().order('created_at', { ascending: true });
     if (!error && data) setCalendarEvents(data as unknown as CalendarEventItem[]);
   };
 
@@ -649,7 +654,8 @@ const ProjectManagement = () => {
     fetchGoals();
     fetchTeams();
     fetchCalendarEvents();
-  }, []);
+    // Re-read everything when the active company changes.
+  }, [organizationId]);
 
   // Create helpers
   const createWorkRequest = async () => {
@@ -663,7 +669,8 @@ const ProjectManagement = () => {
       priority: 'medium', 
       status: 'todo',
       project_id: targetProjectId,
-      user_id: user?.id || ''
+      user_id: user?.id || '',
+      organization_id: organizationId
     }).select().single();
     if (!error && data) setWorkRequests(prev => [data as unknown as WorkRequest, ...prev]);
   };
@@ -791,15 +798,7 @@ const ProjectManagement = () => {
     const end = window.prompt('End (YYYY-MM-DD HH:MM, optional)') || null;
     
     // Get user's organization
-    const { data: orgData, error: orgError } = await supabase
-      .from('organization_members')
-      .select('organization_id')
-      .eq('user_id', user?.id)
-      .eq('is_active', true)
-      .limit(1)
-      .single();
-
-    if (orgError || !orgData) {
+    if (!organizationId) {
       toast({
         title: "Error",
         description: "You must belong to an organization to create events.",
@@ -816,7 +815,7 @@ const ProjectManagement = () => {
       due_date: start,
       project_id: selectedProject !== 'all' ? selectedProject : null,
       user_id: user?.id || '',
-      organization_id: orgData.organization_id
+      organization_id: organizationId
     }).select().single();
     
     if (error) {
@@ -846,7 +845,7 @@ const ProjectManagement = () => {
     } else {
       setLoading(false);
     }
-  }, [user, hasAccess]);
+  }, [user, hasAccess, organizationId]);
 
   // Load projects from database
   const formatProjectRow = (project: any): Project => ({
@@ -869,12 +868,15 @@ const ProjectManagement = () => {
     ]
   });
 
+  const projectsForActiveOrg = () => {
+    const q = supabase.from('projects').select('*');
+    return organizationId ? q.eq('organization_id', organizationId) : q;
+  };
+
   const loadProjects = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
+      const { data, error } = await projectsForActiveOrg()
         .is('deleted_at', null)
         .is('archived_at', null)
         .order('created_at', { ascending: false });
@@ -883,18 +885,14 @@ const ProjectManagement = () => {
       if (data) setProjects(data.map(formatProjectRow));
 
       // Archived (not deleted, but archived)
-      const { data: archived } = await supabase
-        .from('projects')
-        .select('*')
+      const { data: archived } = await projectsForActiveOrg()
         .is('deleted_at', null)
         .not('archived_at', 'is', null)
         .order('archived_at', { ascending: false });
       if (archived) setArchivedProjects(archived.map(formatProjectRow));
 
       // Trashed
-      const { data: trashed } = await supabase
-        .from('projects')
-        .select('*')
+      const { data: trashed } = await projectsForActiveOrg()
         .not('deleted_at', 'is', null)
         .order('deleted_at', { ascending: false });
       if (trashed) setTrashedProjects(trashed.map(formatProjectRow));
@@ -962,13 +960,14 @@ const ProjectManagement = () => {
 
   const loadTasks = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('todos')
         .select(`
           *,
           projects!left(id, name)
-        `)
-        .order('created_at', { ascending: false });
+        `);
+      if (organizationId) query = query.eq('organization_id', organizationId);
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
 
@@ -1036,7 +1035,8 @@ const ProjectManagement = () => {
           budget: projectData.budget,
           client: projectData.client,
           members: projectData.members,
-          user_id: user?.id
+          user_id: user?.id,
+          organization_id: organizationId
         })
         .select()
         .single();
@@ -1085,16 +1085,8 @@ const ProjectManagement = () => {
   // Handle creating new tasks
   const handleCreateTask = async (taskData: any) => {
     try {
-      // Get user's organization
-      const { data: orgData, error: orgError } = await supabase
-        .from('organization_members')
-        .select('organization_id')
-        .eq('user_id', user?.id)
-        .eq('is_active', true)
-        .limit(1)
-        .single();
-
-      if (orgError || !orgData) {
+      // Use the validated active organization
+      if (!organizationId) {
         throw new Error('You must belong to an organization to create tasks. Please contact your administrator.');
       }
 
@@ -1115,7 +1107,7 @@ const ProjectManagement = () => {
           assigned_to: taskData.assigned_to || null,
           project_id: targetProjectId,
           user_id: user?.id,
-          organization_id: orgData.organization_id
+          organization_id: organizationId
         })
         .select(`
           *,
