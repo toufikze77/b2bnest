@@ -62,17 +62,19 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
     setLocalTask(task);
     setSubtasks(task.subtasks || []);
     loadTeamMembers();
-  }, [task]);
+  }, [task, organizationId]);
 
   const loadTeamMembers = async () => {
     try {
       console.log('Loading team members...');
       
-      // First get organization members
-      const { data: membersData, error } = await supabase
+      // First get organization members (active company only)
+      let memberQuery = supabase
         .from('organization_members')
         .select('user_id, role, organization_id')
         .eq('is_active', true);
+      if (organizationId) memberQuery = memberQuery.eq('organization_id', organizationId);
+      const { data: membersData, error } = await memberQuery;
 
       console.log('Raw members data:', membersData);
 
