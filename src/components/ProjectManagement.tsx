@@ -1079,16 +1079,8 @@ const ProjectManagement = () => {
   // Handle creating new tasks
   const handleCreateTask = async (taskData: any) => {
     try {
-      // Get user's organization
-      const { data: orgData, error: orgError } = await supabase
-        .from('organization_members')
-        .select('organization_id')
-        .eq('user_id', user?.id)
-        .eq('is_active', true)
-        .limit(1)
-        .single();
-
-      if (orgError || !orgData) {
+      // Use the validated active organization
+      if (!organizationId) {
         throw new Error('You must belong to an organization to create tasks. Please contact your administrator.');
       }
 
