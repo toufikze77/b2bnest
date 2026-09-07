@@ -107,6 +107,7 @@ const TodoList = () => {
         .insert({
           ...todoData,
           user_id: user.id,
+          organization_id: organizationId,
           status: 'todo',
           reporter_id: user.id
         })
