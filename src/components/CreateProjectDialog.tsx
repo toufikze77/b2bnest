@@ -101,7 +101,7 @@ const CreateProjectDialog = ({ isOpen, onOpenChange, onCreateProject }: CreatePr
     };
 
     fetchUsers();
-  }, [isOpen]);
+  }, [isOpen, organizationId]);
 
   const resetForm = () => {
     setFormData({
