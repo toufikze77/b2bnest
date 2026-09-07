@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveOrganization } from '@/contexts/OrganizationContext';
 
 // Fixed DatePicker Component
 const DatePicker = ({ value, onChange, placeholder, id }) => {
