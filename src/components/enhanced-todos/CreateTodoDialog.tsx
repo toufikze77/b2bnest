@@ -286,8 +286,11 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
           return;
         }
 
-        // Get organization IDs the current user belongs to
-        const organizationIds = currentUserOrgs.map(org => org.organization_id);
+        // Restrict to the active company when one is selected.
+        const allOrgIds = currentUserOrgs.map(org => org.organization_id);
+        const organizationIds = activeOrganizationId && allOrgIds.includes(activeOrganizationId)
+          ? [activeOrganizationId]
+          : allOrgIds;
 
         // Get all user IDs from the same organization(s) - strict security segregation
         const { data: orgMembers, error: membersError } = await supabase
