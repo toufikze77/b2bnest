@@ -529,14 +529,19 @@ const ProjectManagement = () => {
   const [showComments, setShowComments] = useState(false);
   const [commentTaskId, setCommentTaskId] = useState<string | null>(null);
 
-  // Fetch helpers
+  // Fetch helpers — all task reads are scoped to the active organization.
+  const todosForActiveOrg = () => {
+    const q = supabase.from('todos').select('*');
+    return organizationId ? q.eq('organization_id', organizationId) : q;
+  };
+
   const fetchWorkRequests = async () => {
-    const { data, error } = await supabase.from('todos').select('*').order('created_at', { ascending: false });
+    const { data, error } = await todosForActiveOrg().order('created_at', { ascending: false });
     if (!error && data) setWorkRequests(data as unknown as WorkRequest[]);
   };
 
   const fetchGoals = async () => {
-    const { data, error } = await supabase.from('todos').select('*').order('created_at', { ascending: false });
+    const { data, error } = await todosForActiveOrg().order('created_at', { ascending: false });
     if (!error && data) setGoals(data as unknown as GoalItem[]);
   };
 
