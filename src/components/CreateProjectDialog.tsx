@@ -49,6 +49,7 @@ const colorOptions = [
 ];
 
 const CreateProjectDialog = ({ isOpen, onOpenChange, onCreateProject }: CreateProjectDialogProps) => {
+  const { organizationId } = useActiveOrganization();
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -67,11 +68,13 @@ const CreateProjectDialog = ({ isOpen, onOpenChange, onCreateProject }: CreatePr
       
       setLoadingUsers(true);
       try {
-        // Get organization members to find available users
-        const { data: orgMembers, error: orgError } = await supabase
+        // Get organization members to find available users (active company only)
+        let memberQuery = supabase
           .from('organization_members')
           .select('user_id')
           .eq('is_active', true);
+        if (organizationId) memberQuery = memberQuery.eq('organization_id', organizationId);
+        const { data: orgMembers, error: orgError } = await memberQuery;
         
         if (orgError) throw orgError;
         
