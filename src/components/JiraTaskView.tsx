@@ -12,6 +12,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import ShareTaskDialog from '@/components/ShareTaskDialog';
 import { batchGetUserDisplayInfo } from '@/utils/profileUtils';
+import { useActiveOrganization } from '@/contexts/OrganizationContext';
 import { TodoComments } from './enhanced-todos/TodoComments';
 
 interface JiraTaskViewProps {
@@ -46,6 +47,7 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
   projects = [],
   teamMembers = []
 }) => {
+  const { organizationId } = useActiveOrganization();
   const [localTask, setLocalTask] = useState(task);
   const [isEditing, setIsEditing] = useState({
     title: false,
