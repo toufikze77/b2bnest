@@ -122,20 +122,23 @@ WITH src AS (
 INSERT INTO public.wave1_backfill_journal(table_name, row_id, old_org_id, new_org_id, method)
 SELECT 'projects', id, NULL, organization_id, 'SINGLE-MEMBERSHIP-DERIVED' FROM upd;
 
--- 2c. todos -> parent project's organisation (strongest evidence; also repairs
---     todo/project mismatches, which are a data-integrity defect)
+-- 2c. todos -> parent project's organisation (strongest evidence).
+--     ONLY rows whose organisation is still NULL are written. A todo that
+--     already carries a DIFFERENT organisation than its parent project is a
+--     data-integrity defect and is reported for manual reconciliation instead
+--     of being silently rewritten (an unjournalled overwrite is not reversible).
 WITH upd AS (
   UPDATE public.todos t
   SET organization_id = p.organization_id
   FROM public.projects p
   WHERE t.project_id = p.id
     AND p.organization_id IS NOT NULL
-    AND (t.organization_id IS DISTINCT FROM p.organization_id)
-  RETURNING t.id, t.organization_id AS new_org,
-            (SELECT organization_id FROM public.todos o WHERE o.id = t.id) AS ignored
+    AND t.organization_id IS NULL
+  RETURNING t.id, t.organization_id AS new_org
 )
 INSERT INTO public.wave1_backfill_journal(table_name, row_id, old_org_id, new_org_id, method)
 SELECT 'todos', id, NULL, new_org, 'PARENT-DERIVED' FROM upd;
+
 
 -- 2d. project-less todos -> creator's sole organisation
 WITH src AS (
