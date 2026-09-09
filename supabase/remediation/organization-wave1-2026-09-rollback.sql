@@ -36,7 +36,16 @@ DO $$ BEGIN
       FROM public.wave1_backfill_journal j
      WHERE j.table_name = 'todos' AND j.row_id = t.id
        AND t.organization_id = j.new_org_id;
-    -- teams.organization_id disappears with the column drop below
+    -- teams: revert journalled values too (the column is only dropped when
+    -- Wave 1 was the package that added it)
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+               WHERE table_schema='public' AND table_name='teams'
+                 AND column_name='organization_id') THEN
+      EXECUTE $q$UPDATE public.teams t SET organization_id = j.old_org_id
+                   FROM public.wave1_backfill_journal j
+                  WHERE j.table_name = 'teams' AND j.row_id = t.id
+                    AND t.organization_id = j.new_org_id$q$;
+    END IF;
   END IF;
 END $$;
 
