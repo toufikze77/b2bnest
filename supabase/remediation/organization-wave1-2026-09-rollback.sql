@@ -138,29 +138,49 @@ CREATE POLICY "Users can delete their own comments" ON public.todo_comments FOR 
   USING (auth.uid() = user_id);
 
 -- ---------------------------------------------------------------------------
--- 4. Restore pre-Wave-1 grants
+-- 4. Grants
 -- ---------------------------------------------------------------------------
-GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON public.teams, public.team_members TO anon;
+-- The anon revocations performed by Wave 1 are deliberately NOT reverted:
+-- re-granting anonymous DML on tenant tables would reintroduce a security
+-- defect. This is the only intentional (security-positive) rollback drift.
 
 -- ---------------------------------------------------------------------------
--- 5. Drop Wave 1 schema additions
+-- 5. Drop Wave 1 schema additions — ONLY objects Wave 1 actually created
 -- ---------------------------------------------------------------------------
-ALTER TABLE public.teams DROP CONSTRAINT IF EXISTS teams_organization_id_fkey;
-DROP INDEX IF EXISTS public.teams_organization_id_idx;
-ALTER TABLE public.teams DROP COLUMN IF EXISTS organization_id;
-ALTER TABLE public.teams DROP COLUMN IF EXISTS created_by;
+DO $$
+DECLARE r record; created boolean;
+BEGIN
+  created := to_regclass('public.wave1_created_objects') IS NOT NULL;
 
-ALTER TABLE public.projects DROP CONSTRAINT IF EXISTS projects_organization_id_fkey;
-ALTER TABLE public.todos    DROP CONSTRAINT IF EXISTS todos_organization_id_fkey;
-DROP INDEX IF EXISTS public.projects_organization_id_idx;
-DROP INDEX IF EXISTS public.todos_organization_id_idx;
-DROP INDEX IF EXISTS public.todos_project_id_idx;
-DROP INDEX IF EXISTS public.team_members_team_user_idx;
+  FOR r IN SELECT * FROM (VALUES
+      ('CONSTRAINT','teams.teams_organization_id_fkey',
+       'ALTER TABLE public.teams DROP CONSTRAINT IF EXISTS teams_organization_id_fkey'),
+      ('CONSTRAINT','projects.projects_organization_id_fkey',
+       'ALTER TABLE public.projects DROP CONSTRAINT IF EXISTS projects_organization_id_fkey'),
+      ('CONSTRAINT','todos.todos_organization_id_fkey',
+       'ALTER TABLE public.todos DROP CONSTRAINT IF EXISTS todos_organization_id_fkey'),
+      ('INDEX','teams_organization_id_idx',    'DROP INDEX IF EXISTS public.teams_organization_id_idx'),
+      ('INDEX','team_members_team_user_idx',   'DROP INDEX IF EXISTS public.team_members_team_user_idx'),
+      ('INDEX','projects_organization_id_idx', 'DROP INDEX IF EXISTS public.projects_organization_id_idx'),
+      ('INDEX','todos_organization_id_idx',    'DROP INDEX IF EXISTS public.todos_organization_id_idx'),
+      ('INDEX','todos_project_id_idx',         'DROP INDEX IF EXISTS public.todos_project_id_idx'),
+      ('COLUMN','teams.organization_id',       'ALTER TABLE public.teams DROP COLUMN IF EXISTS organization_id'),
+      ('COLUMN','teams.created_by',            'ALTER TABLE public.teams DROP COLUMN IF EXISTS created_by')
+    ) AS v(kind, name, ddl)
+  LOOP
+    IF created AND EXISTS (SELECT 1 FROM public.wave1_created_objects o
+                           WHERE o.object_kind = r.kind AND o.object_name = r.name) THEN
+      EXECUTE r.ddl;
+    END IF;
+  END LOOP;
+END $$;
 
 DROP FUNCTION IF EXISTS public.resolve_active_organization(uuid);
 DROP FUNCTION IF EXISTS public.wave1_sole_org(uuid);
 DROP TABLE IF EXISTS public.wave1_backfill_journal;
 DROP TABLE IF EXISTS public.wave1_unresolved_rows;
+DROP TABLE IF EXISTS public.wave1_created_objects;
+
 
 -- ============================================================================
 -- END WAVE 1 ROLLBACK
