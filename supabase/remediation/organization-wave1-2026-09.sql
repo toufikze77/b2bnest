@@ -231,6 +231,18 @@ LEFT JOIN (SELECT user_id, count(*) n FROM public.organization_members WHERE is_
   ON om.user_id = t.user_id
 WHERE t.organization_id IS NULL;
 
+-- 2f. report (never rewrite) todos whose organisation contradicts their parent
+INSERT INTO public.wave1_unresolved_rows(table_name, row_id, owner_user, parent_id, class, reason)
+SELECT 'todos', t.id, t.user_id, t.project_id, 'MISMATCH',
+       'todo.organization_id differs from parent project.organization_id; manual reconciliation required'
+FROM public.todos t
+JOIN public.projects p ON p.id = t.project_id
+WHERE t.organization_id IS NOT NULL
+  AND p.organization_id IS NOT NULL
+  AND t.organization_id <> p.organization_id;
+
+
+
 -- ---------------------------------------------------------------------------
 -- 3. DATABASE-SIDE TENANT VALIDATION (never trust a client organization_id)
 -- ---------------------------------------------------------------------------
