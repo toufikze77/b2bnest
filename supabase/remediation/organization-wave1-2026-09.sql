@@ -54,36 +54,82 @@ CREATE POLICY wave1_unresolved_service_only ON public.wave1_unresolved_rows
 -- ---------------------------------------------------------------------------
 -- 1. SCHEMA EXPANSION (additive only)
 -- ---------------------------------------------------------------------------
-ALTER TABLE public.teams ADD COLUMN IF NOT EXISTS organization_id uuid;
-ALTER TABLE public.teams ADD COLUMN IF NOT EXISTS created_by uuid;
+-- Every object this package actually creates is recorded, so the rollback can
+-- remove ONLY Wave 1 additions and never a pre-existing constraint or index.
+CREATE TABLE IF NOT EXISTS public.wave1_created_objects (
+  object_kind text NOT NULL,          -- COLUMN | CONSTRAINT | INDEX
+  object_name text NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (object_kind, object_name)
+);
+GRANT ALL ON public.wave1_created_objects TO service_role;
+ALTER TABLE public.wave1_created_objects ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS wave1_created_objects_service_only ON public.wave1_created_objects;
+CREATE POLICY wave1_created_objects_service_only ON public.wave1_created_objects
+  FOR ALL TO service_role USING (true) WITH CHECK (true);
 
-DO $$ BEGIN
+DO $$
+DECLARE
+  had_org_col boolean := EXISTS (SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='teams' AND column_name='organization_id');
+  had_cb_col  boolean := EXISTS (SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='teams' AND column_name='created_by');
+  r record;
+BEGIN
+  ALTER TABLE public.teams ADD COLUMN IF NOT EXISTS organization_id uuid;
+  ALTER TABLE public.teams ADD COLUMN IF NOT EXISTS created_by uuid;
+  IF NOT had_org_col THEN
+    INSERT INTO public.wave1_created_objects(object_kind, object_name)
+    VALUES ('COLUMN','teams.organization_id') ON CONFLICT DO NOTHING;
+  END IF;
+  IF NOT had_cb_col THEN
+    INSERT INTO public.wave1_created_objects(object_kind, object_name)
+    VALUES ('COLUMN','teams.created_by') ON CONFLICT DO NOTHING;
+  END IF;
+
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'teams_organization_id_fkey') THEN
     ALTER TABLE public.teams
       ADD CONSTRAINT teams_organization_id_fkey FOREIGN KEY (organization_id)
       REFERENCES public.organizations(id) ON DELETE CASCADE;
+    INSERT INTO public.wave1_created_objects(object_kind, object_name)
+    VALUES ('CONSTRAINT','teams.teams_organization_id_fkey') ON CONFLICT DO NOTHING;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'projects_organization_id_fkey') THEN
     -- projects carry financial/statutory linkage: never cascade-delete
     ALTER TABLE public.projects
       ADD CONSTRAINT projects_organization_id_fkey FOREIGN KEY (organization_id)
       REFERENCES public.organizations(id) ON DELETE RESTRICT;
+    INSERT INTO public.wave1_created_objects(object_kind, object_name)
+    VALUES ('CONSTRAINT','projects.projects_organization_id_fkey') ON CONFLICT DO NOTHING;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'todos_organization_id_fkey') THEN
     ALTER TABLE public.todos
       ADD CONSTRAINT todos_organization_id_fkey FOREIGN KEY (organization_id)
       REFERENCES public.organizations(id) ON DELETE CASCADE;
+    INSERT INTO public.wave1_created_objects(object_kind, object_name)
+    VALUES ('CONSTRAINT','todos.todos_organization_id_fkey') ON CONFLICT DO NOTHING;
   END IF;
+
+  FOR r IN
+    SELECT * FROM (VALUES
+      ('teams_organization_id_idx',    'CREATE INDEX teams_organization_id_idx ON public.teams(organization_id)'),
+      ('team_members_team_user_idx',   'CREATE INDEX team_members_team_user_idx ON public.team_members(team_id, user_id)'),
+      ('projects_organization_id_idx', 'CREATE INDEX projects_organization_id_idx ON public.projects(organization_id)'),
+      ('todos_organization_id_idx',    'CREATE INDEX todos_organization_id_idx ON public.todos(organization_id)'),
+      ('todos_project_id_idx',         'CREATE INDEX todos_project_id_idx ON public.todos(project_id)')
+    ) AS v(idx, ddl)
+  LOOP
+    IF to_regclass('public.'||r.idx) IS NULL THEN
+      EXECUTE r.ddl;
+      INSERT INTO public.wave1_created_objects(object_kind, object_name)
+      VALUES ('INDEX', r.idx) ON CONFLICT DO NOTHING;
+    END IF;
+  END LOOP;
 END $$;
 
 -- attribution: keep legacy owner_id, add created_by for parity with projects/todos
 UPDATE public.teams SET created_by = owner_id WHERE created_by IS NULL;
 
-CREATE INDEX IF NOT EXISTS teams_organization_id_idx        ON public.teams(organization_id);
-CREATE INDEX IF NOT EXISTS team_members_team_user_idx       ON public.team_members(team_id, user_id);
-CREATE INDEX IF NOT EXISTS projects_organization_id_idx     ON public.projects(organization_id);
-CREATE INDEX IF NOT EXISTS todos_organization_id_idx        ON public.todos(organization_id);
-CREATE INDEX IF NOT EXISTS todos_project_id_idx             ON public.todos(project_id);
 
 -- ---------------------------------------------------------------------------
 -- 2. DETERMINISTIC BACKFILL  (provable ownership only)
