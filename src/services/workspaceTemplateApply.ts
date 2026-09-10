@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { WorkspaceTemplate } from '@/types/workspaceTemplate';
 import { logTemplateEvent } from '@/services/workspaceTemplateService';
+import { assertActiveOrganization } from '@/lib/activeOrganization';
 
 export interface AppliedWorkspace {
   projects: Array<{ id: string; name: string; taskCount: number }>;
