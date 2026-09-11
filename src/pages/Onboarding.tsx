@@ -61,6 +61,7 @@ type Step = { key: string; label: string; description: string; to: string; done:
 
 const Onboarding = () => {
   const { user } = useAuth();
+  const { organizationId } = useActiveOrganization();
   const [steps, setSteps] = useState<Step[]>([]);
   const [loadingSteps, setLoadingSteps] = useState(true);
   const [help, setHelp] = useState({ title: '', description: '' });
