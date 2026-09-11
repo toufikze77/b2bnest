@@ -20,6 +20,8 @@ import CsvImportWizard, { type ImportResult } from '@/components/onboarding/CsvI
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toNumber, toDate, type ImportField } from '@/lib/csvImport';
+import { useActiveOrganization } from '@/contexts/OrganizationContext';
+import { assertActiveOrganization } from '@/lib/activeOrganization';
 
 const CONTACT_FIELDS: ImportField[] = [
   { key: 'name', label: 'Name', required: true, match: ['name', 'full name', 'contact'] },
