@@ -57,7 +57,10 @@ const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
 
     setSaving(true);
     try {
-      const result = await applyWorkspaceTemplate(template, { workspaceName: name });
+      const result = await applyWorkspaceTemplate(template, {
+        organizationId,
+        workspaceName: name,
+      });
       toast({
         title: 'Template added to your workspace',
         description: `${result.projects.length} ${
