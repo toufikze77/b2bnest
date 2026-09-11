@@ -160,12 +160,21 @@ const Onboarding = () => {
   };
 
   const importProjects = async (rows: Record<string, string>[]): Promise<ImportResult> => {
-    const uid = requireUser();
     const errors: string[] = [];
+    // Projects are company-owned: the tenant must be the company selected in the
+    // top bar, re-validated against the caller's memberships. Never "first org".
+    let tenant;
+    try {
+      tenant = await assertActiveOrganization(organizationId);
+    } catch (e) {
+      return { inserted: 0, skipped: rows.length, errors: [(e as Error).message] };
+    }
+    const uid = tenant.userId;
     const payload = rows
       .filter((r) => r.name)
       .map((r) => ({
         user_id: uid,
+        organization_id: tenant.organizationId,
         name: r.name,
         description: r.description || null,
         client: r.client || null,
