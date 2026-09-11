@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Template } from '@/types/template';
 import { buildBlueprint, TemplateBlueprint } from '@/lib/templateBlueprints';
+import { assertActiveOrganization } from '@/lib/activeOrganization';
 
 export interface AppliedTemplate {
   projectId: string;
