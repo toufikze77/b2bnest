@@ -19,6 +19,7 @@ import { Template } from '@/types/template';
 import { buildBlueprint } from '@/lib/templateBlueprints';
 import { applyTemplateToWorkspace } from '@/services/templateApplyService';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveOrganization } from '@/contexts/OrganizationContext';
 
 interface Props {
   template: Template | null;
