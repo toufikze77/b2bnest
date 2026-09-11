@@ -52,7 +52,11 @@ const UseTemplateDialog: React.FC<Props> = ({ template, isOpen, onClose, onDownl
 
     setSaving(true);
     try {
-      const result = await applyTemplateToWorkspace(template, { boardName, blueprint });
+      const result = await applyTemplateToWorkspace(template, {
+        organizationId,
+        boardName,
+        blueprint,
+      });
       toast({
         title: 'Template added to your workspace',
         description: `${result.projectName} was created with ${result.taskCount} tasks.`,
