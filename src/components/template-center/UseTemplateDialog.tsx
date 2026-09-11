@@ -31,6 +31,7 @@ interface Props {
 const UseTemplateDialog: React.FC<Props> = ({ template, isOpen, onClose, onDownload }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { organizationId } = useActiveOrganization();
   const blueprint = useMemo(() => (template ? buildBlueprint(template) : null), [template]);
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
