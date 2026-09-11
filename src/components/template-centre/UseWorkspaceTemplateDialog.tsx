@@ -18,6 +18,7 @@ import { toast } from '@/components/ui/use-toast';
 import { WorkspaceTemplate } from '@/types/workspaceTemplate';
 import { applyWorkspaceTemplate } from '@/services/workspaceTemplateApply';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveOrganization } from '@/contexts/OrganizationContext';
 
 interface Props {
   template: WorkspaceTemplate | null;
