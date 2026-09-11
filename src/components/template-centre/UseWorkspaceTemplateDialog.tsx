@@ -29,6 +29,7 @@ interface Props {
 const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { organizationId } = useActiveOrganization();
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
 
