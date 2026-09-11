@@ -19,6 +19,7 @@ import { Template } from '@/types/template';
 import { buildBlueprint } from '@/lib/templateBlueprints';
 import { applyTemplateToWorkspace } from '@/services/templateApplyService';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveOrganization } from '@/contexts/OrganizationContext';
 
 interface Props {
   template: Template | null;
@@ -30,6 +31,7 @@ interface Props {
 const UseTemplateDialog: React.FC<Props> = ({ template, isOpen, onClose, onDownload }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { organizationId } = useActiveOrganization();
   const blueprint = useMemo(() => (template ? buildBlueprint(template) : null), [template]);
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -50,7 +52,11 @@ const UseTemplateDialog: React.FC<Props> = ({ template, isOpen, onClose, onDownl
 
     setSaving(true);
     try {
-      const result = await applyTemplateToWorkspace(template, { boardName, blueprint });
+      const result = await applyTemplateToWorkspace(template, {
+        organizationId,
+        boardName,
+        blueprint,
+      });
       toast({
         title: 'Template added to your workspace',
         description: `${result.projectName} was created with ${result.taskCount} tasks.`,

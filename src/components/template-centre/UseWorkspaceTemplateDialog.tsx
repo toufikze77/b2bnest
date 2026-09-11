@@ -18,6 +18,7 @@ import { toast } from '@/components/ui/use-toast';
 import { WorkspaceTemplate } from '@/types/workspaceTemplate';
 import { applyWorkspaceTemplate } from '@/services/workspaceTemplateApply';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveOrganization } from '@/contexts/OrganizationContext';
 
 interface Props {
   template: WorkspaceTemplate | null;
@@ -28,6 +29,7 @@ interface Props {
 const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { organizationId } = useActiveOrganization();
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -55,7 +57,10 @@ const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
 
     setSaving(true);
     try {
-      const result = await applyWorkspaceTemplate(template, { workspaceName: name });
+      const result = await applyWorkspaceTemplate(template, {
+        organizationId,
+        workspaceName: name,
+      });
       toast({
         title: 'Template added to your workspace',
         description: `${result.projects.length} ${

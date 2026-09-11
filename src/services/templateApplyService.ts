@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Template } from '@/types/template';
 import { buildBlueprint, TemplateBlueprint } from '@/lib/templateBlueprints';
+import { assertActiveOrganization } from '@/lib/activeOrganization';
 
 export interface AppliedTemplate {
   projectId: string;
@@ -14,37 +15,21 @@ const addDays = (days: number) => {
   return d.toISOString().split('T')[0];
 };
 
-/** Resolves the caller's active organization, creating one when needed. */
-const resolveOrganizationId = async (userId: string): Promise<string | null> => {
-  const { data: member } = await supabase
-    .from('organization_members')
-    .select('organization_id')
-    .eq('user_id', userId)
-    .eq('is_active', true)
-    .limit(1)
-    .maybeSingle();
-
-  if (member?.organization_id) return member.organization_id;
-
-  const { data: created } = await supabase.rpc('ensure_user_has_org', { p_user_id: userId });
-  return (created as string) ?? null;
-};
-
 /**
- * Copies a marketplace template into the signed-in user's own workspace as a
- * working board (project + tasks), the same way Monday's "Use template" works.
+ * Copies a marketplace template into the company currently selected in the
+ * top-bar switcher as a working board (project + tasks). The tenant comes from
+ * the caller's active organisation and is re-validated here — never from "the
+ * first membership found".
  */
 export const applyTemplateToWorkspace = async (
   template: Template,
-  options?: { boardName?: string; blueprint?: TemplateBlueprint },
+  options: { organizationId: string | null; boardName?: string; blueprint?: TemplateBlueprint },
 ): Promise<AppliedTemplate> => {
-  const { data: auth } = await supabase.auth.getUser();
-  const user = auth?.user;
-  if (!user) throw new Error('Please sign in to use this template.');
+  const { userId, organizationId } = await assertActiveOrganization(options.organizationId);
+  const user = { id: userId };
 
   const blueprint = options?.blueprint ?? buildBlueprint(template);
   const name = options?.boardName?.trim() || blueprint.boardName;
-  const organizationId = await resolveOrganizationId(user.id);
 
   const { data: project, error: projectError } = await supabase
     .from('projects')

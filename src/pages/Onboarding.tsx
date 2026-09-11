@@ -20,6 +20,8 @@ import CsvImportWizard, { type ImportResult } from '@/components/onboarding/CsvI
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toNumber, toDate, type ImportField } from '@/lib/csvImport';
+import { useActiveOrganization } from '@/contexts/OrganizationContext';
+import { assertActiveOrganization } from '@/lib/activeOrganization';
 
 const CONTACT_FIELDS: ImportField[] = [
   { key: 'name', label: 'Name', required: true, match: ['name', 'full name', 'contact'] },
@@ -59,6 +61,7 @@ type Step = { key: string; label: string; description: string; to: string; done:
 
 const Onboarding = () => {
   const { user } = useAuth();
+  const { organizationId } = useActiveOrganization();
   const [steps, setSteps] = useState<Step[]>([]);
   const [loadingSteps, setLoadingSteps] = useState(true);
   const [help, setHelp] = useState({ title: '', description: '' });
@@ -160,12 +163,21 @@ const Onboarding = () => {
   };
 
   const importProjects = async (rows: Record<string, string>[]): Promise<ImportResult> => {
-    const uid = requireUser();
     const errors: string[] = [];
+    // Projects are company-owned: the tenant must be the company selected in the
+    // top bar, re-validated against the caller's memberships. Never "first org".
+    let tenant;
+    try {
+      tenant = await assertActiveOrganization(organizationId);
+    } catch (e) {
+      return { inserted: 0, skipped: rows.length, errors: [(e as Error).message] };
+    }
+    const uid = tenant.userId;
     const payload = rows
       .filter((r) => r.name)
       .map((r) => ({
         user_id: uid,
+        organization_id: tenant.organizationId,
         name: r.name,
         description: r.description || null,
         client: r.client || null,

@@ -15,36 +15,23 @@ const addDays = (days: number) => {
   return d.toISOString().split('T')[0];
 };
 
-/** Resolves the caller's active organization, creating one when needed. */
-const resolveOrganizationId = async (userId: string): Promise<string | null> => {
-  const { data: member } = await supabase
-    .from('organization_members')
-    .select('organization_id')
-    .eq('user_id', userId)
-    .eq('is_active', true)
-    .limit(1)
-    .maybeSingle();
-
-  if (member?.organization_id) return member.organization_id;
-
-  const { data: created } = await supabase.rpc('ensure_user_has_org', { p_user_id: userId });
-  return (created as string) ?? null;
-};
-
 /**
- * Creates a real working copy of a template inside the signed-in user's own
- * workspace: one project (board) per template board, with groups as labels and
- * every template task created as a real task.
+ * Creates a real working copy of a template inside the company currently
+ * selected in the top-bar switcher. The tenant is never inferred from "the
+ * first membership": the caller must pass the active organisation, and it is
+ * re-validated against the caller's active memberships before anything is
+ * created.
  */
 export const applyWorkspaceTemplate = async (
   template: WorkspaceTemplate,
-  options?: { workspaceName?: string; boardNames?: Record<string, string> },
+  options: {
+    organizationId: string | null;
+    workspaceName?: string;
+    boardNames?: Record<string, string>;
+  },
 ): Promise<AppliedWorkspace> => {
-  const { data: auth } = await supabase.auth.getUser();
-  const user = auth?.user;
-  if (!user) throw new Error('Please sign in to use this template.');
-
-  const organizationId = await resolveOrganizationId(user.id);
+  const { userId, organizationId } = await assertActiveOrganization(options.organizationId);
+  const user = { id: userId };
   const prefix = options?.workspaceName?.trim();
   const projects: AppliedWorkspace['projects'] = [];
 
