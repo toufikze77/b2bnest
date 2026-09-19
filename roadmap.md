@@ -27,8 +27,8 @@
 
 - [x] Complete repository and major-screen UX audit
 - [x] Select refined product-shell direction
-- [ ] Implement semantic shell and shared primitive refinements
-- [ ] Preserve and verify company switching and cache isolation
-- [ ] Validate Dashboard, CRM, and Projects at requested viewports
-- [ ] Run regression/security checks and write staging validation report
+- [x] Implement semantic shell and shared primitive refinements
+- [x] Preserve company switching and cache isolation; verify via staging suite and source review
+- [x] Validate Dashboard, CRM, and Projects at requested viewports
+- [x] Run regression/security checks and write staging validation report
 - [ ] Production publish (blocked by explicit prohibition; separate authorization required)
