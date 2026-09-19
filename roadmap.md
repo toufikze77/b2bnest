@@ -45,3 +45,10 @@
 - [ ] UI Wave 4 — Money & insights (invoices/quotes consolidation, finance tables, analytics)
 - [ ] UI Wave 5 — Scale (AI Studio, integrations, team, settings, admin token alignment)
 - [ ] Constraint: Wave 1 tenant architecture and Round 2 controls frozen; each wave gated by 642 PASS / 0 FAIL and five-width visual checks
+
+# Retired promotion removal + Wave 1 cleanup verification
+
+- [ ] Remove first-1000, countdown, urgency counters, and related promotional UI without changing prices, discounts, Stripe, or entitlements
+- [ ] Verify import and template creation still require the validated selected company
+- [ ] Verify historical-project cleanup remains fail-closed and document unresolved owner decisions without guessing
+- [ ] Re-run focused checks and the complete Wave 1 safety suite
