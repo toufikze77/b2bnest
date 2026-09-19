@@ -9,6 +9,12 @@ export interface OrganizationMembership {
   role: string;
 }
 
+interface OrganizationMembershipRow {
+  organization_id: string;
+  role: string;
+  organizations: { id: string; name: string } | null;
+}
+
 interface OrganizationContextValue {
   memberships: OrganizationMembership[];
   organizationId: string | null;
@@ -46,7 +52,8 @@ export const OrganizationProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
 
-      const list: OrganizationMembership[] = (data || []).map((row: any) => ({
+      const rows = (data || []) as OrganizationMembershipRow[];
+      const list: OrganizationMembership[] = rows.map((row) => ({
         organizationId: row.organization_id,
         name: row.organizations?.name || 'My workspace',
         role: row.role,
@@ -56,7 +63,11 @@ export const OrganizationProvider = ({ children }: { children: ReactNode }) => {
       // Restore the stored selection only when it is still a valid membership.
       const stored = localStorage.getItem(storageKey(user.id));
       const valid = list.find((m) => m.organizationId === stored);
-      setOrganizationId(valid?.organizationId ?? list[0]?.organizationId ?? null);
+      // A single membership is unambiguous. Multi-company users must make an
+      // explicit selection instead of inheriting an arbitrary first row.
+      setOrganizationId(
+        valid?.organizationId ?? (list.length === 1 ? list[0]?.organizationId ?? null : null),
+      );
     } catch (err) {
       console.error('Failed to load organization memberships', err);
       setMemberships([]);

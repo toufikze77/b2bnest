@@ -31,4 +31,6 @@
 - [x] Preserve company switching and cache isolation; verify via staging suite and source review
 - [x] Validate Dashboard, CRM, and Projects at requested viewports
 - [x] Run regression/security checks and write staging validation report
+- [x] Publish the exact final blocker report and canonical 32-section UI audit
+- [x] Remove multi-company first-membership fallback and validate core mobile overflow
 - [ ] Production publish (blocked by explicit prohibition; separate authorization required)
