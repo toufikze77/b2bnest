@@ -3380,23 +3380,37 @@ export type Database = {
       teams: {
         Row: {
           created_at: string | null
+          created_by: string | null
           id: string
           name: string
+          organization_id: string | null
           owner_id: string
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
           id?: string
           name: string
+          organization_id?: string | null
           owner_id: string
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
           id?: string
           name?: string
+          organization_id?: string | null
           owner_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "teams_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       template_catalog: {
         Row: {
@@ -4074,6 +4088,87 @@ export type Database = {
           },
         ]
       }
+      wave1_backfill_journal: {
+        Row: {
+          applied_at: string
+          id: number
+          method: string
+          new_org_id: string
+          old_org_id: string | null
+          row_id: string
+          table_name: string
+        }
+        Insert: {
+          applied_at?: string
+          id?: number
+          method: string
+          new_org_id: string
+          old_org_id?: string | null
+          row_id: string
+          table_name: string
+        }
+        Update: {
+          applied_at?: string
+          id?: number
+          method?: string
+          new_org_id?: string
+          old_org_id?: string | null
+          row_id?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
+      wave1_created_objects: {
+        Row: {
+          created_at: string
+          object_kind: string
+          object_name: string
+        }
+        Insert: {
+          created_at?: string
+          object_kind: string
+          object_name: string
+        }
+        Update: {
+          created_at?: string
+          object_kind?: string
+          object_name?: string
+        }
+        Relationships: []
+      }
+      wave1_unresolved_rows: {
+        Row: {
+          class: string
+          detected_at: string
+          id: number
+          owner_user: string | null
+          parent_id: string | null
+          reason: string
+          row_id: string
+          table_name: string
+        }
+        Insert: {
+          class: string
+          detected_at?: string
+          id?: number
+          owner_user?: string | null
+          parent_id?: string | null
+          reason: string
+          row_id: string
+          table_name: string
+        }
+        Update: {
+          class?: string
+          detected_at?: string
+          id?: number
+          owner_user?: string | null
+          parent_id?: string | null
+          reason?: string
+          row_id?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       workflow_run_logs: {
         Row: {
           created_at: string
@@ -4497,6 +4592,10 @@ export type Database = {
           user_weighted_stake: number
         }[]
       }
+      resolve_active_organization: {
+        Args: { p_requested?: string }
+        Returns: string
+      }
       rota_can_add_employee: { Args: { p_org_id: string }; Returns: boolean }
       store_bank_account: {
         Args: {
@@ -4568,6 +4667,20 @@ export type Database = {
         Args: { _a: string; _b: string }
         Returns: boolean
       }
+      wave1_list_reconcilable_projects: {
+        Args: never
+        Returns: {
+          created_at: string
+          project_id: string
+          project_name: string
+          task_count: number
+        }[]
+      }
+      wave1_reconcile_project: {
+        Args: { p_organization_id: string; p_project_id: string }
+        Returns: Json
+      }
+      wave1_sole_org: { Args: { p_user: string }; Returns: string }
     }
     Enums: {
       app_role:
