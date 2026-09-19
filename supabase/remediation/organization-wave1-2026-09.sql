@@ -571,3 +571,94 @@ GRANT EXECUTE ON FUNCTION public.resolve_active_organization(uuid) TO authentica
 -- ============================================================================
 -- END WAVE 1
 -- ============================================================================
+
+-- ---------------------------------------------------------------------------
+-- 7. HISTORICAL PROJECT RECONCILIATION (explicit, owner-driven, no guessing)
+-- ---------------------------------------------------------------------------
+-- Wave 1 never infers the company of a historical project. These two functions
+-- are the ONLY supported way to resolve them: the authenticated owner sees only
+-- their own unresolved projects and explicitly names one of the companies they
+-- are an active member of. Child tasks inherit strictly from the parent, and an
+-- existing child company is never silently overwritten.
+
+CREATE OR REPLACE FUNCTION public.wave1_list_reconcilable_projects()
+RETURNS TABLE(project_id uuid, project_name text, task_count bigint, created_at timestamptz)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT p.id, p.name,
+         (SELECT count(*) FROM public.todos t WHERE t.project_id = p.id),
+         p.created_at
+  FROM public.projects p
+  WHERE auth.uid() IS NOT NULL
+    AND p.user_id = auth.uid()
+    AND p.organization_id IS NULL
+  ORDER BY p.created_at;
+$$;
+REVOKE ALL ON FUNCTION public.wave1_list_reconcilable_projects() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.wave1_list_reconcilable_projects() TO authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION public.wave1_reconcile_project(p_project_id uuid, p_organization_id uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  uid uuid := auth.uid();
+  v_owner uuid;
+  v_org uuid;
+  v_conflicts int;
+  v_tasks int;
+BEGIN
+  IF uid IS NULL THEN
+    RAISE EXCEPTION 'AUTHENTICATION_REQUIRED' USING ERRCODE = '42501';
+  END IF;
+  IF p_project_id IS NULL OR p_organization_id IS NULL THEN
+    RAISE EXCEPTION 'PROJECT_AND_ORGANIZATION_REQUIRED' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT user_id, organization_id INTO v_owner, v_org
+  FROM public.projects WHERE id = p_project_id FOR UPDATE;
+
+  IF v_owner IS NULL THEN
+    RAISE EXCEPTION 'PROJECT_NOT_FOUND' USING ERRCODE = '42501';
+  END IF;
+  IF v_owner <> uid THEN
+    RAISE EXCEPTION 'PROJECT_ACCESS_DENIED' USING ERRCODE = '42501';
+  END IF;
+  IF v_org IS NOT NULL THEN
+    RAISE EXCEPTION 'PROJECT_ALREADY_RECONCILED' USING ERRCODE = '42501';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.organizations o WHERE o.id = p_organization_id) THEN
+    RAISE EXCEPTION 'ORGANIZATION_NOT_FOUND' USING ERRCODE = '42501';
+  END IF;
+  IF NOT public.user_is_organization_member(p_organization_id, uid) THEN
+    RAISE EXCEPTION 'ORGANIZATION_MEMBERSHIP_REQUIRED' USING ERRCODE = '42501';
+  END IF;
+
+  -- Pre-flight correction 1: never silently overwrite an existing child company.
+  SELECT count(*) INTO v_conflicts FROM public.todos
+  WHERE project_id = p_project_id
+    AND organization_id IS NOT NULL
+    AND organization_id <> p_organization_id;
+  IF v_conflicts > 0 THEN
+    RAISE EXCEPTION 'CHILD_ORGANIZATION_CONFLICT: % task(s) already belong to another company', v_conflicts
+      USING ERRCODE = '42501';
+  END IF;
+
+  UPDATE public.projects SET organization_id = p_organization_id
+  WHERE id = p_project_id AND organization_id IS NULL;
+
+  UPDATE public.todos SET organization_id = p_organization_id
+  WHERE project_id = p_project_id AND organization_id IS NULL;
+  GET DIAGNOSTICS v_tasks = ROW_COUNT;
+
+  BEGIN
+    INSERT INTO public.audit_logs(user_id, action, resource_type, resource_id, details)
+    VALUES (uid, 'wave1_reconcile_project', 'projects', p_project_id::text,
+            jsonb_build_object('organization_id', p_organization_id, 'tasks_assigned', v_tasks));
+  EXCEPTION WHEN others THEN
+    NULL;  -- audit is best-effort; it must never block a legitimate reconciliation
+  END;
+
+  RETURN jsonb_build_object('project_id', p_project_id,
+                            'organization_id', p_organization_id,
+                            'tasks_assigned', v_tasks);
+END $$;
+REVOKE ALL ON FUNCTION public.wave1_reconcile_project(uuid, uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.wave1_reconcile_project(uuid, uuid) TO authenticated, service_role;

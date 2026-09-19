@@ -184,6 +184,8 @@ BEGIN
   END LOOP;
 END $$;
 
+DROP FUNCTION IF EXISTS public.wave1_reconcile_project(uuid, uuid);
+DROP FUNCTION IF EXISTS public.wave1_list_reconcilable_projects();
 DROP FUNCTION IF EXISTS public.resolve_active_organization(uuid);
 DROP FUNCTION IF EXISTS public.wave1_sole_org(uuid);
 DROP TABLE IF EXISTS public.wave1_backfill_journal;
