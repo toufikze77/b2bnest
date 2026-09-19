@@ -56,7 +56,11 @@ export const OrganizationProvider = ({ children }: { children: ReactNode }) => {
       // Restore the stored selection only when it is still a valid membership.
       const stored = localStorage.getItem(storageKey(user.id));
       const valid = list.find((m) => m.organizationId === stored);
-      setOrganizationId(valid?.organizationId ?? list[0]?.organizationId ?? null);
+      // A single membership is unambiguous. Multi-company users must make an
+      // explicit selection instead of inheriting an arbitrary first row.
+      setOrganizationId(
+        valid?.organizationId ?? (list.length === 1 ? list[0]?.organizationId ?? null : null),
+      );
     } catch (err) {
       console.error('Failed to load organization memberships', err);
       setMemberships([]);
