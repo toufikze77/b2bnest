@@ -53,3 +53,12 @@
 - [x] Verify import, template, and rota creation require the validated selected company
 - [x] Verify historical-project cleanup remains fail-closed and document unresolved owner decisions without guessing
 - [ ] Re-run the complete Wave 1 safety suite when the disposable local PostgreSQL harness is available
+
+# Final production pre-deployment audit (2026-09-19)
+
+- [x] Re-run the complete security and tenant-isolation suite (642 PASS / 0 FAIL / 54 INFO)
+- [x] Verify production RLS coverage, grants and Wave 1 package already applied
+- [x] Confirm the pending release is application-only with no migration
+- [x] Publish `docs/production-pre-deployment-audit-2026-09.md`
+- [ ] Owner: resolve 3 unassigned projects and review 4 task/company mismatches
+- [ ] Owner: publish the release and run the post-deployment smoke tests
