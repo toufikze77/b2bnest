@@ -24,7 +24,7 @@ RUN=""
 if [ "$(id -u)" = "0" ]; then
   mkdir -p /tmp/pghome
   chown lovable:lovable /tmp/pghome
-  RUN="runuser -u lovable -- env HOME=/tmp/pghome"
+  RUN="setpriv --reuid=lovable --regid=lovable --clear-groups env HOME=/tmp/pghome"
 fi
 
 echo "==> Fresh cluster at $PGDATA (socket $PGHOST:$PGPORT)"
