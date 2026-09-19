@@ -74,7 +74,6 @@ import {
   Upload,
   Bell,
   Calendar as CalendarIconOutline,
-  Slack,
   ChartColumn,
   ChartPie,
   MessageCircle as Comment,
@@ -218,7 +217,7 @@ interface AutomationRule {
 interface Integration {
   id: string;
   name: string;
-  type: 'trello' | 'notion' | 'google-calendar' | 'slack' | 'gmail' | 'twilio' | 'calendly' | 'zapier';
+  type: 'google-calendar' | 'gmail' | 'twilio' | 'calendly' | 'zapier';
   status: 'connected' | 'disconnected' | 'error';
   config: any;
   lastSync?: Date;
@@ -471,10 +470,7 @@ const ProjectManagement = () => {
   ]);
 
   const [integrations, setIntegrations] = useState<Integration[]>([
-    { id: '1', name: 'Trello', type: 'trello', status: 'connected', config: {}, lastSync: new Date() },
-    { id: '2', name: 'Google Calendar', type: 'google-calendar', status: 'connected', config: {} },
-    { id: '3', name: 'Slack', type: 'slack', status: 'connected', config: {} },
-    { id: '4', name: 'Notion', type: 'notion', status: 'disconnected', config: {} }
+    { id: '1', name: 'Google Calendar', type: 'google-calendar', status: 'connected', config: {} }
   ]);
 
   const [automationRules, setAutomationRules] = useState<AutomationRule[]>([
@@ -2031,7 +2027,7 @@ const ProjectManagement = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer">
               <div className="flex items-center gap-3 mb-2">
                 <HardDrive className="w-6 h-6 text-blue-600" />
@@ -2052,15 +2048,6 @@ const ProjectManagement = () => {
               <Button className="w-full mt-3" variant="outline" size="sm">
                 Connect Dropbox
               </Button>
-            </div>
-            
-            <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex items-center gap-3 mb-2">
-                <Slack className="w-6 h-6 text-purple-600" />
-                <span className="font-medium">Slack</span>
-              </div>
-              <p className="text-sm text-gray-600">Get project updates in Slack</p>
-              <Badge className="bg-green-100 text-green-800">Connected</Badge>
             </div>
           </div>
         </CardContent>
@@ -2248,10 +2235,7 @@ const ProjectManagement = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  {integration.type === 'trello' && <ExternalLink className="w-5 h-5 text-blue-600" />}
-                  {integration.type === 'notion' && <ExternalLink className="w-5 h-5 text-gray-800" />}
                   {integration.type === 'google-calendar' && <CalendarIconOutline className="w-5 h-5 text-blue-500" />}
-                  {integration.type === 'slack' && <Slack className="w-5 h-5 text-purple-600" />}
                   <span className="font-medium">{integration.name}</span>
                 </div>
                 <Badge 
