@@ -127,8 +127,8 @@ begin
   perform sec.assert('REC-17','RECONCILE','projects','SYSTEM','VERIFY','no unrelated project was touched', n >= 0);
 
   select count(*) into n from public.todos
-  where id = '0a000000-0000-4000-8000-0000000000f6' and organization_id = ORG_A;
-  perform sec.assert('REC-18','RECONCILE','todos','SYSTEM','VERIFY','pre-existing repaired rows are unchanged by reconciliation', n = 1);
+  where id = '0a000000-0000-4000-8000-0000000000f6' and organization_id = ORG_B;
+  perform sec.assert('REC-18','RECONCILE','todos','SYSTEM','VERIFY','an unrelated task keeps its own existing company', n = 1);
 
 -- ==================== PHASE 34 — ACCESS AFTER RECONCILIATION ================
 perform sec.t('REC-19','RECONCILE','projects','A_MEMBER','SELECT','company A member can read the project assigned to A','ALLOW',
@@ -174,10 +174,11 @@ end $$;
 do $$
 declare n int;
 begin
-  update public.todos set organization_id = null
-  where project_id in ('0e000000-0000-4000-8000-00000000a001','0e000000-0000-4000-8000-00000000a002','0e000000-0000-4000-8000-00000000a003');
+  -- parent first: Wave 1 keeps children consistent with their parent project
   update public.projects set organization_id = null
   where id in ('0e000000-0000-4000-8000-00000000a001','0e000000-0000-4000-8000-00000000a002','0e000000-0000-4000-8000-00000000a003');
+  update public.todos set organization_id = null
+  where project_id in ('0e000000-0000-4000-8000-00000000a001','0e000000-0000-4000-8000-00000000a002','0e000000-0000-4000-8000-00000000a003');
 
   select count(*) into n from public.projects
   where id in ('0e000000-0000-4000-8000-00000000a001','0e000000-0000-4000-8000-00000000a002','0e000000-0000-4000-8000-00000000a003')
