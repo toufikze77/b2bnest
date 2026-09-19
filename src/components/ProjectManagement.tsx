@@ -2676,7 +2676,7 @@ const ProjectManagement = () => {
   const pagedEvents = sortedEvents.slice((eventsPage-1)*PAGE_SIZE, eventsPage*PAGE_SIZE);
 
   return (
-    <div className="space-y-5 pt-5">
+    <div className="min-w-0 max-w-full space-y-5 overflow-x-hidden pt-5">
       {/* Enhanced Header */}
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>

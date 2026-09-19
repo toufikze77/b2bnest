@@ -66,7 +66,7 @@ The bar contains global context only: company selector, command/search trigger, 
 
 ## 11. Company switcher integration
 
-The existing membership-backed switcher is preserved. Stored selection is revalidated; invalid IDs are rejected; changing company clears React Query cache. Loading, no-company, single-company, and multi-company states remain explicit. UI state never replaces RLS authorization or `assertActiveOrganization()` on writes.
+The existing membership-backed switcher is preserved. Stored selection is revalidated; invalid IDs are rejected; changing company clears React Query cache. A sole membership may be selected unambiguously, while a multi-company user without a valid stored selection must choose explicitly. Loading, no-company, single-company, and multi-company states remain explicit. UI state never replaces RLS authorization or `assertActiveOrganization()` on writes.
 
 ## 12. Command palette architecture
 

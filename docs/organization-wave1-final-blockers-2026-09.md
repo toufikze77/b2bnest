@@ -38,7 +38,7 @@ The resolution of all historical records is documented before production. Ambigu
 
 ## Blocker 2 — project spreadsheet import
 
-All located project spreadsheet/CSV paths use the active company from `OrganizationContext`, then revalidate it through `assertActiveOrganization()` before insertion. Spreadsheet content cannot supply a company UUID. Imported projects receive the validated `organization_id`; generated children inherit the same ID. Missing selection, stale selection, non-membership, anonymous access, tampered IDs, parent/child mismatch, and partial batch behavior fail closed.
+All located project spreadsheet/CSV paths use the active company from `OrganizationContext`, then revalidate it through `assertActiveOrganization()` before insertion. Spreadsheet content cannot supply a company UUID. Imported projects receive the validated `organization_id`; generated children inherit the same ID. Missing selection, stale selection, non-membership, anonymous access, tampered IDs, parent/child mismatch, and partial batch behavior fail closed. Organization initialization now auto-selects only an unambiguous single membership; a multi-company user without a valid stored choice remains unselected instead of inheriting an arbitrary first row.
 
 The isolated test sequence covers Company A import, switch to Company B, Company B import, A/B visibility isolation, no NULL company, and atomic rejection. The open import preview is invalidated if the selected company changes.
 
