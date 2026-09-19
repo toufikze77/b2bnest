@@ -552,21 +552,18 @@ GRANT ALL ON public.teams, public.team_members, public.projects, public.todos,
 -- The client may remember a selection, but the database is the authority.
 CREATE OR REPLACE FUNCTION public.resolve_active_organization(p_requested uuid DEFAULT NULL)
 RETURNS uuid LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
-DECLARE uid uuid := auth.uid(); result uuid;
+DECLARE uid uuid := auth.uid();
 BEGIN
   IF uid IS NULL THEN
     RAISE EXCEPTION 'AUTHENTICATION_REQUIRED' USING ERRCODE = '42501';
   END IF;
-  IF p_requested IS NOT NULL
-     AND public.user_is_organization_member(p_requested, uid) THEN
-    RETURN p_requested;                       -- membership proven
+  IF p_requested IS NULL THEN
+    RAISE EXCEPTION 'ACTIVE_ORGANIZATION_REQUIRED' USING ERRCODE = '42501';
   END IF;
-  SELECT om.organization_id INTO result
-  FROM public.organization_members om
-  WHERE om.user_id = uid AND om.is_active = true
-  ORDER BY (om.role = 'owner') DESC, om.created_at ASC
-  LIMIT 1;                                     -- deterministic fallback
-  RETURN result;
+  IF NOT public.user_is_organization_member(p_requested, uid) THEN
+    RAISE EXCEPTION 'ORGANIZATION_MEMBERSHIP_REQUIRED' USING ERRCODE = '42501';
+  END IF;
+  RETURN p_requested;                         -- explicit membership proven
 END $$;
 REVOKE ALL ON FUNCTION public.resolve_active_organization(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.resolve_active_organization(uuid) TO authenticated, service_role;

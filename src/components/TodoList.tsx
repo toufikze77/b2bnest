@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
+import { assertActiveOrganization } from '@/lib/activeOrganization';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -102,12 +103,13 @@ const TodoList = () => {
     if (checkFreePlanLimit()) return;
 
     try {
+      const tenant = await assertActiveOrganization(organizationId);
       const { data, error } = await supabase
         .from('todos')
         .insert({
           ...todoData,
-          user_id: user.id,
-          organization_id: organizationId,
+          user_id: tenant.userId,
+          organization_id: tenant.organizationId,
           status: 'todo',
           reporter_id: user.id
         })

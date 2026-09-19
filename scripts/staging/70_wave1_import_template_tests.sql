@@ -32,6 +32,12 @@ perform sec.t('IMP-08','IMPORT','projects','MULTI_ORG','INSERT','batch atomicity
   format('insert into public.projects(user_id, organization_id, name) values (sec.actor_uid(''MULTI_ORG''),%L,''Batch-ok''),(sec.actor_uid(''MULTI_ORG''),%L,''Batch-bad'')', ORG_A, FAKE));
 perform sec.t('IMP-09','IMPORT','projects','MULTI_ORG','SELECT','imported A row invisible in B filter','ZERO_ROWS',
   format('select 1 from public.projects where organization_id=%L and name=''Imported-A''', ORG_B));
+perform sec.t('IMP-10','IMPORT','projects','MULTI_ORG','INSERT','missing active company','DENY_ERROR',
+  'insert into public.projects(user_id, name) values (sec.actor_uid(''MULTI_ORG''),''Imported-none'')');
+perform sec.t('IMP-11','IMPORT','todos','MULTI_ORG','INSERT','imported child inherits A parent when org omitted','ALLOW',
+  format('insert into public.todos(user_id, project_id, title) values (sec.actor_uid(''MULTI_ORG''),%L,''Imported-child-A'')', PRJ_A));
+perform sec.t('IMP-12','IMPORT','todos','MULTI_ORG','SELECT','imported child stored in A','ALLOW',
+  format('select 1 from public.todos where project_id=%L and title=''Imported-child-A'' and organization_id=%L', PRJ_A, ORG_A));
 
 -- ==================== PHASE 21 — TEMPLATE APPLICATION =======================
 perform sec.t('TPL-01','TEMPLATE','projects','MULTI_ORG','INSERT','template board into active org A','ALLOW',
@@ -46,6 +52,12 @@ perform sec.t('TPL-05','TEMPLATE','todos','MULTI_ORG','INSERT','template task co
   format('insert into public.todos(user_id, organization_id, project_id, title) values (sec.actor_uid(''MULTI_ORG''),%L,%L,''Tpl-task-bad'')', ORG_B, PRJ_A));
 perform sec.t('TPL-06','TEMPLATE','projects','A_OWNER','SELECT','B template board','ZERO_ROWS',
   format('select 1 from public.projects where organization_id=%L', ORG_B));
+perform sec.t('TPL-07','TEMPLATE','projects','MULTI_ORG','INSERT','template without active company','DENY_ERROR',
+  'insert into public.projects(user_id, name) values (sec.actor_uid(''MULTI_ORG''),''Tpl-none'')');
+perform sec.t('TPL-08','TEMPLATE','todos','MULTI_ORG','INSERT','template child matches B parent','ALLOW',
+  format('insert into public.todos(user_id, organization_id, project_id, title) values (sec.actor_uid(''MULTI_ORG''),%L,%L,''Tpl-task-B'')', ORG_B, PRJ_B));
+perform sec.t('TPL-09','TEMPLATE','todos','MULTI_ORG','SELECT','template B child absent from A filter','ZERO_ROWS',
+  format('select 1 from public.todos where organization_id=%L and project_id=%L and title=''Tpl-task-B''', ORG_A, PRJ_B));
 
 -- ==================== PHASE 22 — COMPANY SWITCHING / CACHE ==================
 perform sec.t('SW-01','SWITCH','projects','MULTI_ORG','SELECT','context A returns A rows','ALLOW',
@@ -61,6 +73,10 @@ perform sec.t('SW-04','SWITCH','todos','MULTI_ORG','SELECT','A task never appear
   format('select 1 from public.todos where organization_id=%L and project_id=%L and id <> ''0a000000-0000-4000-8000-0000000000f6''', ORG_B, PRJ_A));
 perform sec.t('SW-05','SWITCH','projects','A_OWNER','SELECT','non-member context yields nothing','ZERO_ROWS',
   format('select 1 from public.projects where organization_id=%L', ORG_B));
+perform sec.t('SW-06','SWITCH','resolve','A_OWNER','RPC','stale removed or foreign company rejected','DENY_ERROR',
+  format('select public.resolve_active_organization(%L::uuid)', ORG_B));
+perform sec.t('SW-07','SWITCH','resolve','MULTI_ORG','RPC','tampered unknown company rejected','DENY_ERROR',
+  format('select public.resolve_active_organization(%L::uuid)', FAKE));
 
 -- ==================== PHASE 23 — MEMBER PICKERS =============================
 perform sec.t('PICK-01','PICKER','organization_members','A_OWNER','SELECT','A members visible','ALLOW',

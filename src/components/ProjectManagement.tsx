@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
+import { assertActiveOrganization } from '@/lib/activeOrganization';
 import { useSubscription } from '@/hooks/useSubscription';
 import SubscriptionUpgrade from './SubscriptionUpgrade';
 import CreateTodoDialog from './enhanced-todos/CreateTodoDialog';
@@ -661,6 +662,7 @@ const ProjectManagement = () => {
   const createWorkRequest = async () => {
     const title = window.prompt('Work request title');
     if (!title) return;
+    const tenant = await assertActiveOrganization(organizationId);
     const description = window.prompt('Description (optional)') || '';
     const targetProjectId = selectedProject !== 'all' ? selectedProject : projects[0]?.id || null;
     const { data, error } = await supabase.from('todos').insert({ 
@@ -669,8 +671,8 @@ const ProjectManagement = () => {
       priority: 'medium', 
       status: 'todo',
       project_id: targetProjectId,
-      user_id: user?.id || '',
-      organization_id: organizationId
+      user_id: tenant.userId,
+      organization_id: tenant.organizationId
     }).select().single();
     if (!error && data) setWorkRequests(prev => [data as unknown as WorkRequest, ...prev]);
   };
@@ -797,11 +799,13 @@ const ProjectManagement = () => {
     if (!start) return;
     const end = window.prompt('End (YYYY-MM-DD HH:MM, optional)') || null;
     
-    // Get user's organization
-    if (!organizationId) {
+    let tenant;
+    try {
+      tenant = await assertActiveOrganization(organizationId);
+    } catch (error) {
       toast({
-        title: "Error",
-        description: "You must belong to an organization to create events.",
+        title: "Company required",
+        description: error instanceof Error ? error.message : "Choose a valid company before creating events.",
         variant: "destructive"
       });
       return;
@@ -814,8 +818,8 @@ const ProjectManagement = () => {
       priority: 'medium',
       due_date: start,
       project_id: selectedProject !== 'all' ? selectedProject : null,
-      user_id: user?.id || '',
-      organization_id: organizationId
+      user_id: tenant.userId,
+      organization_id: tenant.organizationId
     }).select().single();
     
     if (error) {
@@ -1024,6 +1028,7 @@ const ProjectManagement = () => {
   // Handle creating new projects
   const handleCreateProject = async (projectData: ProjectFormData) => {
     try {
+      const tenant = await assertActiveOrganization(organizationId);
       const { data, error } = await supabase
         .from('projects')
         .insert({
@@ -1035,8 +1040,8 @@ const ProjectManagement = () => {
           budget: projectData.budget,
           client: projectData.client,
           members: projectData.members,
-          user_id: user?.id,
-          organization_id: organizationId
+          user_id: tenant.userId,
+          organization_id: tenant.organizationId
         })
         .select()
         .single();
@@ -1085,10 +1090,7 @@ const ProjectManagement = () => {
   // Handle creating new tasks
   const handleCreateTask = async (taskData: any) => {
     try {
-      // Use the validated active organization
-      if (!organizationId) {
-        throw new Error('You must belong to an organization to create tasks. Please contact your administrator.');
-      }
+      const tenant = await assertActiveOrganization(organizationId);
 
       // Determine which project to assign the task to
       const targetProjectId = selectedProject !== 'all' ? selectedProject : projects[0]?.id || null;
@@ -1106,8 +1108,8 @@ const ProjectManagement = () => {
           estimated_hours: taskData.estimated_hours,
           assigned_to: taskData.assigned_to || null,
           project_id: targetProjectId,
-          user_id: user?.id,
-          organization_id: organizationId
+          user_id: tenant.userId,
+          organization_id: tenant.organizationId
         })
         .select(`
           *,
