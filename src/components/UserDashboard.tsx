@@ -337,12 +337,12 @@ const UserDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
+    <div>
+      <div className="space-y-6">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">My Dashboard</h1>
-            <p className="text-gray-600">Welcome back, {user.email}</p>
+            <h3 className="text-base font-semibold text-foreground">Account overview</h3>
+            <p className="text-sm text-muted-foreground">Signed in as {user.email}</p>
           </div>
           <Button onClick={() => navigate('/business-overview')} className="gap-2">
             <BarChart3 className="w-4 h-4" /> Business Overview
@@ -355,7 +355,7 @@ const UserDashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-8 gap-6 mb-8">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Purchases</CardTitle>

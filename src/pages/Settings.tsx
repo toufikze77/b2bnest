@@ -2,19 +2,16 @@ import React from 'react';
 import AccountSettings from '@/components/AccountSettings';
 import NotificationPreferences from '@/components/NotificationPreferences';
 import HMRCSettings from '@/components/hmrc/HMRCSettings';
-import Footer from '@/components/Footer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Bell, Building2 } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
 
 const Settings = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-background dark:to-background">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-muted/20">
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Account Settings</h1>
-            <p className="text-muted-foreground">Manage your account preferences, notifications, and integrations</p>
-          </div>
+          <PageHeader className="mb-6" eyebrow="Settings" title="Account settings" description="Manage your account preferences, notifications and secure connections." />
           
           <Tabs defaultValue="account" className="space-y-6">
             <TabsList className="grid w-full max-w-lg grid-cols-3">
@@ -46,7 +43,6 @@ const Settings = () => {
           </Tabs>
         </div>
       </div>
-      <Footer />
     </div>
   );
 };
