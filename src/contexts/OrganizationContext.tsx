@@ -9,6 +9,12 @@ export interface OrganizationMembership {
   role: string;
 }
 
+interface OrganizationMembershipRow {
+  organization_id: string;
+  role: string;
+  organizations: { id: string; name: string } | null;
+}
+
 interface OrganizationContextValue {
   memberships: OrganizationMembership[];
   organizationId: string | null;
@@ -46,7 +52,8 @@ export const OrganizationProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
 
-      const list: OrganizationMembership[] = (data || []).map((row: any) => ({
+      const rows = (data || []) as OrganizationMembershipRow[];
+      const list: OrganizationMembership[] = rows.map((row) => ({
         organizationId: row.organization_id,
         name: row.organizations?.name || 'My workspace',
         role: row.role,
