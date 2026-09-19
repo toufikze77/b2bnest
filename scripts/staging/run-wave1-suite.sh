@@ -39,6 +39,7 @@ run_sql scripts/staging/50_wave1_seed.sql
 run_sql supabase/remediation/organization-wave1-2026-09.sql
 run_sql scripts/staging/60_wave1_tests.sql
 run_sql scripts/staging/70_wave1_import_template_tests.sql
+run_sql scripts/staging/80_wave1_reconciliation_tests.sql
 
 read -r pass fail info other <<<"$("${PSQL[@]}" -At -F' ' -c "select count(*) filter (where verdict='PASS'), count(*) filter (where verdict='FAIL'), count(*) filter (where verdict='INFO'), count(*) filter (where verdict not in ('PASS','FAIL','INFO')) from sec.results;")"
 printf 'TOTAL SECURITY CHECKS: %s PASS / %s FAIL / %s INFO\n' "$pass" "$fail" "$info"

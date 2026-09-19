@@ -150,7 +150,6 @@ export default function CompanyReconciliation() {
               {saving ? 'Moving…' : 'Move to this company'}
             </AlertDialogAction>
           </AlertDialogFooter>
-        </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>

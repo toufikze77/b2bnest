@@ -42,6 +42,7 @@ import CRMPage from "@/pages/CRMPage";
 import ProjectManagementPage from "@/pages/ProjectManagementPage";
 import BusinessOverview from "@/pages/BusinessOverview";
 import Settings from "@/pages/Settings";
+import CompanyReconciliation from "@/pages/CompanyReconciliation";
 import PaymentSuccess from "@/pages/PaymentSuccess";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Market from '@/pages/Market';
@@ -114,6 +115,7 @@ function App() {
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/business-overview" element={<ProtectedRoute><BusinessOverview /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/settings/unassigned-projects" element={<ProtectedRoute><CompanyReconciliation /></ProtectedRoute>} />
             
             <Route path="/profile-setup" element={<ProtectedRoute><ProfileSetup /></ProtectedRoute>} />
               <Route path="/business-tools" element={<BusinessTools />} />
