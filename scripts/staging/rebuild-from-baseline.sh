@@ -18,24 +18,19 @@ if [ -n "${PGHOST##/*}" ] && [ "$PGPORT" = "5432" ]; then
 fi
 
 
-# PostgreSQL refuses to run as root. In this sandbox we drop to an unprivileged
-# uid (65534) for the server/initdb calls only.
+# PostgreSQL refuses to run as root. In this sandbox we drop to the existing
+# unprivileged `lovable` account for the server/initdb calls only.
 RUN=""
 if [ "$(id -u)" = "0" ]; then
-  mkdir -p /tmp/pghome; chown 65534:65534 /tmp/pghome
-  cat > /tmp/runas.py <<'PY'
-import os,sys
-os.setgid(65534); os.setuid(65534)
-os.environ["HOME"]="/tmp/pghome"
-os.execvp(sys.argv[1], sys.argv[1:])
-PY
-  RUN="python3 /tmp/runas.py"
+  mkdir -p /tmp/pghome
+  chown lovable:lovable /tmp/pghome
+  RUN="runuser -u lovable -- env HOME=/tmp/pghome"
 fi
 
 echo "==> Fresh cluster at $PGDATA (socket $PGHOST:$PGPORT)"
 $RUN pg_ctl -D "$PGDATA" stop -m fast >/dev/null 2>&1 || true
 rm -rf "$PGDATA" "$PGHOST"; mkdir -p "$PGDATA" "$PGHOST"
-if [ -n "$RUN" ]; then chown 65534:65534 "$PGDATA" "$PGHOST"; fi
+if [ -n "$RUN" ]; then chown lovable:lovable "$PGDATA" "$PGHOST"; fi
 $RUN initdb -D "$PGDATA" -U "$PGUSER" >/dev/null
 $RUN pg_ctl -D "$PGDATA" -o "-k $PGHOST -p $PGPORT -c listen_addresses=" -l "$PGHOST/pg.log" start >/dev/null
 for _ in $(seq 1 30); do psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -c 'select 1' >/dev/null 2>&1 && break; sleep 1; done
