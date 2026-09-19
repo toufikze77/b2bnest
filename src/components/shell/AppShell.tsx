@@ -3,7 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   BarChart3, Bell, Bot, BriefcaseBusiness, CalendarDays, CircleDollarSign,
   FileText, FolderKanban, HelpCircle, LayoutGrid, LogOut, Plus, Receipt,
-  Settings, Sparkles, Target, Users, WandSparkles,
+  Settings, ShieldCheck, Sparkles, Target, Users, WandSparkles,
 } from 'lucide-react';
 import logo from '@/assets/b2bnest-logo.png';
 import { useAuth } from '@/hooks/useAuth';
@@ -31,6 +31,7 @@ const groups = [
     { label: 'Tasks', to: '/project-management?view=list', icon: FileText },
     { label: 'Calendar', to: '/project-management?view=calendar', icon: CalendarDays },
     { label: 'Goals', to: '/project-management?tab=goals', icon: Target },
+    { label: 'Unassigned projects', to: '/settings/unassigned-projects', icon: ShieldCheck },
   ] },
   { label: 'Customers', items: [
     { label: 'CRM', to: '/crm', icon: Users },

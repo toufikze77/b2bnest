@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -19,11 +19,13 @@ interface Props {
   onImport: (rows: Record<string, string>[]) => Promise<ImportResult>;
   destinationLabel?: string;
   destinationRequired?: boolean;
+  /** Changing this discards an open preview so rows can never land in the wrong company. */
+  destinationKey?: string | null;
 }
 
 const BATCH = 50;
 
-export default function CsvImportWizard({ title, description, fields, templateName, onImport, destinationLabel, destinationRequired = false }: Props) {
+export default function CsvImportWizard({ title, description, fields, templateName, onImport, destinationLabel, destinationRequired = false, destinationKey = null }: Props) {
   const [headers, setHeaders] = useState<string[]>([]);
   const [rows, setRows] = useState<string[][]>([]);
   const [mapping, setMapping] = useState<Record<number, string>>({});
@@ -37,6 +39,16 @@ export default function CsvImportWizard({ title, description, fields, templateNa
     setMapping({});
     setProgress(0);
   };
+
+  const previousDestination = useRef(destinationKey);
+  useEffect(() => {
+    if (previousDestination.current === destinationKey) return;
+    previousDestination.current = destinationKey;
+    if (headers.length) {
+      reset();
+      toast.info('The selected company changed, so the preview was cleared. Upload the file again.');
+    }
+  }, [destinationKey, headers.length]);
 
   const onFile = async (file: File) => {
     const { headers: hd, rows: rw } = parseCsv(await file.text());
