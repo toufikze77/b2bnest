@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { RotaShift } from '@/hooks/useRota';
+import { assertActiveOrganization } from '@/lib/activeOrganization';
 
 interface Props {
   open: boolean;
@@ -49,6 +50,7 @@ export default function ShiftDialog({ open, onOpenChange, organizationId, employ
   const save = async () => {
     setSaving(true);
     try {
+      const tenant = await assertActiveOrganization(organizationId);
       if (shift) {
         const { error } = await supabase.from('rota_shifts').update({
           start_time: form.start_time,
@@ -61,7 +63,7 @@ export default function ShiftDialog({ open, onOpenChange, organizationId, employ
         if (error) throw error;
       } else {
         const { error } = await supabase.from('rota_shifts').insert({
-          organization_id: organizationId,
+          organization_id: tenant.organizationId,
           employee_id: employeeId,
           shift_date: shiftDate,
           start_time: form.start_time,

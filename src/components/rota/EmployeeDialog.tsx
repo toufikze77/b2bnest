@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { RotaEmployee } from '@/hooks/useRota';
+import { assertActiveOrganization } from '@/lib/activeOrganization';
 
 interface Props {
   open: boolean;
@@ -54,6 +55,7 @@ export default function EmployeeDialog({ open, onOpenChange, organizationId, emp
     }
     setSaving(true);
     try {
+      const tenant = await assertActiveOrganization(organizationId);
       if (employee) {
         const { error } = await supabase
           .from('rota_employees')
@@ -71,7 +73,7 @@ export default function EmployeeDialog({ open, onOpenChange, organizationId, emp
       } else {
         // Plan gate check server-side
         const { data: canAdd, error: gateErr } = await supabase
-          .rpc('rota_can_add_employee', { p_org_id: organizationId });
+          .rpc('rota_can_add_employee', { p_org_id: tenant.organizationId });
         if (gateErr) throw gateErr;
         if (!canAdd) {
           toast({ title: 'Limit reached', description: 'Upgrade to Business Premium to add more employees.', variant: 'destructive' });
@@ -79,7 +81,7 @@ export default function EmployeeDialog({ open, onOpenChange, organizationId, emp
           return;
         }
         const { error } = await supabase.from('rota_employees').insert({
-          organization_id: organizationId,
+          organization_id: tenant.organizationId,
           full_name: form.full_name.trim(),
           email: form.email.trim() || null,
           job_title: form.job_title.trim() || null,

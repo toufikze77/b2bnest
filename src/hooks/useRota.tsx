@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useActiveOrganization } from '@/contexts/OrganizationContext';
 
 export interface RotaEmployee {
   id: string;
@@ -36,29 +37,13 @@ export const PREVIEW_EMPLOYEE_LIMIT = 3;
 
 export const useRota = () => {
   const { user } = useAuth();
+  const { organizationId, loading: orgLoading } = useActiveOrganization();
   const sub = useSubscription();
   const { isAdmin, loading: roleLoading } = useUserRole();
 
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
-  const [orgLoading, setOrgLoading] = useState(true);
   const [employees, setEmployees] = useState<RotaEmployee[]>([]);
   const [shifts, setShifts] = useState<RotaShift[]>([]);
   const [loading, setLoading] = useState(false);
-
-  // Resolve org
-  useEffect(() => {
-    if (!user) return;
-    let mounted = true;
-    (async () => {
-      setOrgLoading(true);
-      const { data, error } = await supabase.rpc('ensure_user_has_org', { p_user_id: user.id });
-      if (mounted) {
-        if (!error && data) setOrganizationId(data as unknown as string);
-        setOrgLoading(false);
-      }
-    })();
-    return () => { mounted = false; };
-  }, [user]);
 
   const tier = (sub.subscription_tier || 'free').toLowerCase();
   const isRotaPremium = sub.isPremium || tier.includes('premium') || tier === 'enterprise';
