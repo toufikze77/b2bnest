@@ -188,8 +188,8 @@ perform sec.t('W1-62','PERSONAL','notes','MULTI_ORG','SELECT','other users notes
 -- ================== ACTIVE ORGANISATION RESOLUTION ==========================
 perform sec.t('W1-63','ACTIVE-ORG','resolve','A_MEMBER','RPC','requested org A','ALLOW',
   format('select 1 where public.resolve_active_organization(%L::uuid) = %L::uuid', ORG_A, ORG_A));
-perform sec.t('W1-64','ACTIVE-ORG','resolve','A_MEMBER','RPC','requested org B falls back to A','ALLOW',
-  format('select 1 where public.resolve_active_organization(%L::uuid) = %L::uuid', ORG_B, ORG_A));
+perform sec.t('W1-64','ACTIVE-ORG','resolve','A_MEMBER','RPC','requested org B is rejected without fallback','DENY_ERROR',
+  format('select public.resolve_active_organization(%L::uuid)', ORG_B));
 perform sec.t('W1-65','ACTIVE-ORG','resolve','MULTI_ORG','RPC','requested org B honoured','ALLOW',
   format('select 1 where public.resolve_active_organization(%L::uuid) = %L::uuid', ORG_B, ORG_B));
 perform sec.t('W1-66','ACTIVE-ORG','resolve','ANON','RPC','anonymous','DENY_ERROR',
@@ -200,6 +200,8 @@ perform sec.t('W1-68','ACTIVE-ORG','journal','A_OWNER','SELECT','backfill journa
   'select 1 from public.wave1_backfill_journal');
 perform sec.t('W1-69','ACTIVE-ORG','unresolved','A_OWNER','SELECT','unresolved rows','DENY',
   'select 1 from public.wave1_unresolved_rows');
+perform sec.t('W1-73','ACTIVE-ORG','resolve','MULTI_ORG','RPC','missing explicit selection is rejected','DENY_ERROR',
+  'select public.resolve_active_organization(null)');
 
 -- ============ SUPER ADMIN + UNASSIGNED LEGACY BEHAVIOUR =====================
 perform sec.t('W1-70','PLATFORM','projects','SUPER_ADMIN','SELECT','all tenants','ALLOW',
