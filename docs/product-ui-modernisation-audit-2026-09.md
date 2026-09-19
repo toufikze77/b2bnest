@@ -186,3 +186,32 @@ Replace the "marketing Header on every authenticated page" model with a true app
 | D – Polish/A11y/Perf | M (wide) | Low per item | Accessibility/legal risk reduction, trust in status accuracy (bills/overdue) |
 
 **Cross-cutting risk:** because there is no persistent shell today, Wave B is the highest-blast-radius change (every `ProtectedRoute` page moves under a new layout) and should be feature-flagged/rolled out route-by-route rather than in one release. Waves A and D are safe to parallelise with product work on other tracks.
+
+## 9. Activation improvements
+
+- Add a quiet, dismissible first-company checklist backed by real completion
+  data: company profile, first contact, first project, first invoice and first
+  teammate. This shortens time-to-value without replaying an intrusive tour.
+- Put one role-aware `Create` menu in the product top bar for Project, Task,
+  Contact, Deal, Invoice and Quote. This removes repeated navigation before a
+  common action.
+- Make every major empty state explain its purpose and offer one next action.
+- Keep the active company visible beside global actions. Clear and refetch all
+  company-sensitive data on a switch so context is unmistakable.
+- Build route/tool command navigation first; add record search only where safe,
+  efficient existing queries support it.
+
+## 10. Responsive validation targets
+
+The implementation must be verified at 1440, 1280, 1024, 768 and 390 pixels.
+Desktop remains the primary dense business workspace. At 390px, navigation,
+company switching, task updates, CRM lookup and quick-create remain available;
+wide tables change to prioritised rows/details rather than shrinking columns to
+illegibility. No viewport may introduce horizontal page overflow.
+
+## 11. Deployment boundary
+
+This audit authorises no visual implementation or production deployment. UI
+modernisation is an application-only release stream, separate from the Wave 1
+schema/RLS/reconciliation package and rollback. The detailed sequence and gates
+are in `docs/ui-modernisation-implementation-plan-2026-09.md`.
