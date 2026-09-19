@@ -2708,64 +2708,64 @@ const ProjectManagement = () => {
                 <Rocket className="h-4 w-4 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Active Projects</p>
+                <p className="text-sm text-muted-foreground">Active Projects</p>
                 <p className="text-xl font-semibold">{projects.filter(p => p.status === 'active').length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
+        <Card className="shadow-none">
+          <CardContent className="p-4">
             <div className="flex items-center gap-4">
-              <div className="bg-green-100 p-3 rounded-lg">
-                <CheckCircle2 className="w-6 h-6 text-green-600" />
+              <div className="rounded-md bg-muted p-2">
+                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Completed Tasks</p>
-                <p className="text-2xl font-bold">{projectScopedTasks.filter(t => t.status === 'done').length}</p>
+                <p className="text-sm text-muted-foreground">Completed Tasks</p>
+                <p className="text-xl font-semibold">{projectScopedTasks.filter(t => t.status === 'done').length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
+        <Card className="shadow-none">
+          <CardContent className="p-4">
             <div className="flex items-center gap-4">
-              <div className="bg-yellow-100 p-3 rounded-lg">
-                <Clock className="w-6 h-6 text-yellow-600" />
+              <div className="rounded-md bg-muted p-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">In Progress</p>
-                <p className="text-2xl font-bold">{projectScopedTasks.filter(t => t.status === 'in-progress').length}</p>
+                <p className="text-sm text-muted-foreground">In Progress</p>
+                <p className="text-xl font-semibold">{projectScopedTasks.filter(t => t.status === 'in-progress').length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
+        <Card className="shadow-none">
+          <CardContent className="p-4">
             <div className="flex items-center gap-4">
-              <div className="bg-purple-100 p-3 rounded-lg">
-                <Flag className="w-6 h-6 text-purple-600" />
+              <div className="rounded-md bg-muted p-2">
+                <Flag className="h-4 w-4 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Milestones</p>
-                <p className="text-2xl font-bold">{projectScopedMilestones.length}</p>
+                <p className="text-sm text-muted-foreground">Milestones</p>
+                <p className="text-xl font-semibold">{projectScopedMilestones.length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
+        <Card className="shadow-none">
+          <CardContent className="p-4">
             <div className="flex items-center gap-4">
-              <div className="bg-red-100 p-3 rounded-lg">
-                <AlertCircle className="w-6 h-6 text-red-600" />
+              <div className="rounded-md bg-muted p-2">
+                <AlertCircle className="h-4 w-4 text-destructive" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Overdue</p>
-                <p className="text-2xl font-bold">{projectScopedTasks.filter(t => t.dueDate && t.status !== 'done' && t.dueDate < new Date()).length}</p>
+                <p className="text-sm text-muted-foreground">Overdue</p>
+                <p className="text-xl font-semibold">{projectScopedTasks.filter(t => t.dueDate && t.status !== 'done' && t.dueDate < new Date()).length}</p>
               </div>
             </div>
           </CardContent>
@@ -2803,6 +2803,7 @@ const ProjectManagement = () => {
                 variant={activeView === 'kanban' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setActiveView('kanban')}
+                aria-label="Board view"
               >
                 <KanbanSquare className="w-4 h-4" />
               </Button>
@@ -2810,6 +2811,7 @@ const ProjectManagement = () => {
                 variant={activeView === 'list' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setActiveView('list')}
+                aria-label="List view"
               >
                 <List className="w-4 h-4" />
               </Button>
@@ -2817,6 +2819,7 @@ const ProjectManagement = () => {
                 variant={activeView === 'calendar' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setActiveView('calendar')}
+                aria-label="Calendar view"
               >
                 <CalendarIcon className="w-4 h-4" />
               </Button>
@@ -2826,8 +2829,9 @@ const ProjectManagement = () => {
       </Card>
 
       {/* Enhanced Main Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-10 bg-muted/30 p-1.5 rounded-lg">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="min-w-0">
+        <div className="max-w-full overflow-x-auto pb-1">
+        <TabsList className="h-auto w-max min-w-full justify-start bg-muted/30 p-1.5">
           <TabsTrigger 
             value="summary" 
             className="data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all"
@@ -2889,6 +2893,7 @@ const ProjectManagement = () => {
             Teams
           </TabsTrigger>
         </TabsList>
+        </div>
 
         <TabsContent value="summary" className="mt-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
