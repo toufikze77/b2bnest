@@ -17,11 +17,13 @@ interface Props {
   templateName: string;
   /** Receives a batch of mapped rows and persists them. */
   onImport: (rows: Record<string, string>[]) => Promise<ImportResult>;
+  destinationLabel?: string;
+  destinationRequired?: boolean;
 }
 
 const BATCH = 50;
 
-export default function CsvImportWizard({ title, description, fields, templateName, onImport }: Props) {
+export default function CsvImportWizard({ title, description, fields, templateName, onImport, destinationLabel, destinationRequired = false }: Props) {
   const [headers, setHeaders] = useState<string[]>([]);
   const [rows, setRows] = useState<string[][]>([]);
   const [mapping, setMapping] = useState<Record<number, string>>({});
@@ -52,6 +54,10 @@ export default function CsvImportWizard({ title, description, fields, templateNa
   const missingRequired = fields.filter((f) => f.required && !mappedKeys.has(f.key));
 
   const runImport = async () => {
+    if (destinationRequired && !destinationLabel) {
+      toast.error('Select a valid company before importing projects.');
+      return;
+    }
     if (missingRequired.length) {
       toast.error(`Map a column for: ${missingRequired.map((f) => f.label).join(', ')}`);
       return;
@@ -70,8 +76,8 @@ export default function CsvImportWizard({ title, description, fields, templateNa
       setResult(total);
       toast.success(`${total.inserted} rows imported. ${total.skipped} skipped.`);
       reset();
-    } catch (e: any) {
-      toast.error(e?.message || 'Import failed');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Import failed');
     } finally {
       setImporting(false);
     }
@@ -92,6 +98,12 @@ export default function CsvImportWizard({ title, description, fields, templateNa
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {destinationRequired && (
+          <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+            <span className="text-muted-foreground">Import into</span>
+            <span className="truncate font-medium text-foreground">{destinationLabel || 'No company selected'}</span>
+          </div>
+        )}
         {result && (
           <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm">
             <p className="flex items-center gap-2 font-medium text-foreground">
@@ -178,7 +190,7 @@ export default function CsvImportWizard({ title, description, fields, templateNa
 
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary">{rows.length} rows ready</Badge>
-              <Button onClick={runImport} disabled={importing}>
+              <Button onClick={runImport} disabled={importing || (destinationRequired && !destinationLabel)}>
                 {importing ? `Importing… ${progress}%` : `Import ${rows.length} rows`}
               </Button>
               <Button variant="outline" onClick={reset} disabled={importing}>

@@ -61,7 +61,7 @@ type Step = { key: string; label: string; description: string; to: string; done:
 
 const Onboarding = () => {
   const { user } = useAuth();
-  const { organizationId } = useActiveOrganization();
+  const { organizationId, organization } = useActiveOrganization();
   const [steps, setSteps] = useState<Step[]>([]);
   const [loadingSteps, setLoadingSteps] = useState(true);
   const [help, setHelp] = useState({ title: '', description: '' });
@@ -377,6 +377,8 @@ const Onboarding = () => {
                 description="Recreate your active project list with clients, budgets and deadlines."
                 fields={PROJECT_FIELDS}
                 templateName="b2bnest-projects-template.csv"
+                destinationLabel={organization?.name}
+                destinationRequired
                 onImport={async (rows) => {
                   const r = await importProjects(rows);
                   loadSteps();

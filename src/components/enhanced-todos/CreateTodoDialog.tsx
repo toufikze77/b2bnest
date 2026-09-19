@@ -224,6 +224,7 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
   const [showAISuggestions, setShowAISuggestions] = useState(false);
   const [availableUsers, setAvailableUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const teamMemberDependency = Array.isArray(teamMembers) ? teamMembers.join('|') : '';
 
   // Populate form when editing existing task
   useEffect(() => {
@@ -262,11 +263,17 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
     const fetchUsers = async () => {
       setLoadingUsers(true);
       try {
-        // Get current user's organization first
+        if (!user?.id || !activeOrganizationId) {
+          setAvailableUsers([]);
+          return;
+        }
+
+        // Query only the selected company's active membership.
         const { data: currentUserOrgs, error: orgError } = await supabase
           .from('organization_members')
           .select('organization_id')
           .eq('user_id', user?.id)
+          .eq('organization_id', activeOrganizationId)
           .eq('is_active', true);
 
         if (orgError) {
@@ -275,40 +282,22 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
           return;
         }
 
-        // If user has no organizations, only show themselves
+        // Fail closed if the selected company is stale or inaccessible.
         if (!currentUserOrgs || currentUserOrgs.length === 0) {
-          setAvailableUsers([
-            {
-              id: user?.id || 'current-user',
-              display_name: user?.email?.split('@')[0] || 'Current User',
-              email: user?.email || 'user@example.com',
-              full_name: user?.email?.split('@')[0] || 'Current User'
-            }
-          ]);
+          setAvailableUsers([]);
           return;
         }
 
-        // Restrict to the active company when one is selected.
-        const allOrgIds = currentUserOrgs.map(org => org.organization_id);
-        const organizationIds = activeOrganizationId && allOrgIds.includes(activeOrganizationId)
-          ? [activeOrganizationId]
-          : allOrgIds;
-
-        // Get all user IDs from the same organization(s) - strict security segregation
+        // Get user IDs from the selected organization only.
         const { data: orgMembers, error: membersError } = await supabase
           .from('organization_members')
           .select('user_id')
-          .in('organization_id', organizationIds)
+          .eq('organization_id', activeOrganizationId)
           .eq('is_active', true);
 
         if (membersError) {
           console.error('Error fetching organization members:', membersError);
-          setAvailableUsers([{
-            id: user?.id || 'current-user',
-            display_name: user?.email?.split('@')[0] || 'Current User',
-            email: user?.email || 'user@example.com',
-            full_name: user?.email?.split('@')[0] || 'Current User'
-          }]);
+          setAvailableUsers([]);
           setLoadingUsers(false);
           return;
         }
@@ -327,46 +316,17 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
         }
 
         // Map profiles to user format
-        let users = (profilesData || []).map((profile: any) => ({
+        const users = (profilesData || []).map((profile: { id: string; display_name: string | null; full_name: string | null; email: string | null }) => ({
           id: profile.id,
           display_name: profile.display_name || profile.full_name || 'Unknown User',
           email: profile.email || null,
           full_name: profile.full_name || profile.display_name || 'Unknown User'
         }));
         
-        if (users.length === 0) {
-          console.error('No users found');
-          users = [{
-            id: user?.id || 'current-user',
-            display_name: user?.email?.split('@')[0] || 'Current User',
-            email: user?.email || 'user@example.com',
-            full_name: user?.email?.split('@')[0] || 'Current User'
-          }];
-        }
-        
-        // Always ensure current user is in the list
-        const currentUserExists = users.some(u => u.id === user?.id);
-        if (!currentUserExists && user?.id) {
-          users.unshift({
-            id: user.id,
-            display_name: user?.email?.split('@')[0] || 'Current User',
-            email: user?.email || 'user@example.com',
-            full_name: user?.email?.split('@')[0] || 'Current User'
-          });
-        }
-
         setAvailableUsers(users);
       } catch (error) {
         console.error('Error fetching organization users:', error);
-        // Security fallback - only show current user
-        setAvailableUsers([
-          {
-            id: user?.id || 'current-user',
-            display_name: user?.email?.split('@')[0] || 'Current User',
-            email: user?.email || 'user@example.com',
-            full_name: user?.email?.split('@')[0] || 'Current User'
-          }
-        ]);
+        setAvailableUsers([]);
       } finally {
         setLoadingUsers(false);
       }
@@ -375,7 +335,7 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
     if (isOpen) {
       fetchUsers();
     }
-  }, [isOpen, teamId, activeOrganizationId, Array.isArray(teamMembers) ? teamMembers.join('|') : '']);
+  }, [isOpen, teamId, activeOrganizationId, user?.id, teamMemberDependency]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

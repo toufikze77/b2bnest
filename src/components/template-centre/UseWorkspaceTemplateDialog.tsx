@@ -29,7 +29,7 @@ interface Props {
 const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { organizationId } = useActiveOrganization();
+  const { organizationId, organization } = useActiveOrganization();
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -96,6 +96,10 @@ const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
         </DialogHeader>
 
         <div className="space-y-4">
+          <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+            <span className="text-muted-foreground">Create in</span>
+            <span className="truncate font-medium text-foreground">{organization?.name || 'No company selected'}</span>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="workspace-name">Workspace name</Label>
             <Input
@@ -155,13 +159,13 @@ const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
           <Button variant="outline" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
-          <Button onClick={handleApply} disabled={saving}>
+          <Button onClick={handleApply} disabled={saving || !organizationId || !organization}>
             {saving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating…
               </>
             ) : (
-              'Create my workspace'
+              `Create in ${organization?.name || 'selected company'}`
             )}
           </Button>
         </DialogFooter>

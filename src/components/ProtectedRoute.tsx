@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -12,8 +13,12 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (loading && !isPreview) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="mx-auto grid min-h-screen max-w-6xl content-start gap-4 px-6 py-24">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-4 w-96 max-w-full" />
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-28" />)}
+        </div>
       </div>
     );
   }
