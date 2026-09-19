@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Shield, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Footer from '@/components/Footer';
-import CountdownTimer from '@/components/fundraising/CountdownTimer';
 import TokenInformation from '@/components/fundraising/TokenInformation';
 import VideoExplanation from '@/components/fundraising/VideoExplanation';
 import TokenSEO from '@/components/TokenSEO';
@@ -61,7 +60,6 @@ const Fundraising = () => {
           </div>
 
           <div className="space-y-6">
-            <CountdownTimer />
             <TokenInformation
               tokenName={presaleData.tokenName}
               tokenSymbol={presaleData.tokenSymbol}

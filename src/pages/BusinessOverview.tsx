@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveOrganization } from '@/contexts/OrganizationContext';
 import Footer from '@/components/Footer';
 import SEOHead from '@/components/SEOHead';
 
@@ -37,35 +38,37 @@ const fmt = (n: number, c = 'GBP') =>
 
 const BusinessOverview: React.FC = () => {
   const { user } = useAuth();
+  const { organizationId, organization } = useActiveOrganization();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [org, setOrg] = useState<OrgInfo | null>(null);
   const [data, setData] = useState<Overview | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !organizationId) {
+      setOrg(null);
+      setData(null);
+      setLoading(false);
+      return;
+    }
+    setOrg(null);
+    setData(null);
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, organizationId]);
 
   const load = async () => {
     setLoading(true);
     try {
-      // Ensure the user has an org and get it
-      const { data: orgId } = await supabase.rpc('ensure_user_has_org', { p_user_id: user!.id });
-      const { data: orgRow } = await supabase
-        .from('organizations')
-        .select('id, name')
-        .eq('id', orgId as string)
-        .maybeSingle();
+      if (!organizationId) return;
       const { data: members } = await supabase
         .from('organization_members')
         .select('user_id')
-        .eq('organization_id', orgId as string)
+        .eq('organization_id', organizationId)
         .eq('is_active', true);
 
       const memberIds = (members || []).map((m: any) => m.user_id);
-      const orgInfo: OrgInfo = { id: orgId as string, name: orgRow?.name || 'Your Organization', memberIds };
+      const orgInfo: OrgInfo = { id: organizationId, name: organization?.name || 'Your Organization', memberIds };
       setOrg(orgInfo);
 
       // Per-user finance data (RLS scopes to current user only)
