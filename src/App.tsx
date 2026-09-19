@@ -5,6 +5,7 @@ import { UserSettingsProvider } from "@/hooks/useUserSettings";
 import { OrganizationProvider } from "@/contexts/OrganizationContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { Toaster } from "@/components/ui/toaster";
+import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import Layout from "@/components/Layout";
 
 import Index from "@/pages/Index";
@@ -203,6 +204,7 @@ function App() {
                <Route path="*" element={<NotFound />} />
             </Routes>
             <Toaster />
+            <SonnerToaster />
           </Layout>
           </Router>
           </ThemeProvider>
