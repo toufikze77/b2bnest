@@ -31,7 +31,7 @@ interface Props {
 const UseTemplateDialog: React.FC<Props> = ({ template, isOpen, onClose, onDownload }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { organizationId } = useActiveOrganization();
+  const { organizationId, organization } = useActiveOrganization();
   const blueprint = useMemo(() => (template ? buildBlueprint(template) : null), [template]);
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -89,6 +89,10 @@ const UseTemplateDialog: React.FC<Props> = ({ template, isOpen, onClose, onDownl
         </DialogHeader>
 
         <div className="space-y-4">
+          <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+            <span className="text-muted-foreground">Create in</span>
+            <span className="truncate font-medium text-foreground">{organization?.name || 'No company selected'}</span>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="board-name">Board name</Label>
             <Input
@@ -144,13 +148,13 @@ const UseTemplateDialog: React.FC<Props> = ({ template, isOpen, onClose, onDownl
               <Download className="mr-2 h-4 w-4" /> Download file instead
             </Button>
           )}
-          <Button onClick={handleApply} disabled={saving}>
+          <Button onClick={handleApply} disabled={saving || !organizationId || !organization}>
             {saving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding…
               </>
             ) : (
-              'Add to my workspace'
+              `Create in ${organization?.name || 'selected company'}`
             )}
           </Button>
         </DialogFooter>
