@@ -11,3 +11,14 @@
 - [x] Tenant isolation checklist: `docs/tenant-isolation-checklist.md`
 - [x] Verified: anonymous + non-admin calls to admin RPCs return `Not authorized`; super admin calls succeed
 - [ ] Customer self-service data export (deliberately not built)
+
+# Wave 1 final blockers and product UI modernisation audit
+
+- [ ] Prepare fail-closed deterministic reconciliation for B2BNEST and AI NEST (staging/package only)
+- [ ] Keep AINEST unresolved while preserving owner-only transitional access
+- [ ] Prepare, but do not execute, future NESTPRO TRADE and NG TELECOM LTD operations
+- [ ] Verify every project import and template path uses the validated active company
+- [ ] Expand multi-company import/template/tamper regression coverage and rerun the full staging suite
+- [ ] Complete authenticated product UI/UX, responsive, accessibility, and performance audit
+- [ ] Write the UI modernisation audit and separate Wave A–D implementation plan
+- [ ] Confirm no production database, organisation, project, task, or deployment changes
