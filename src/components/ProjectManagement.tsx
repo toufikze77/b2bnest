@@ -533,7 +533,9 @@ const ProjectManagement = () => {
   // Fetch helpers — all task reads are scoped to the active organization.
   const todosForActiveOrg = () => {
     const q = supabase.from('todos').select('*');
-    return organizationId ? q.eq('organization_id', organizationId) : q;
+    return organizationId && user
+      ? q.or(`organization_id.eq.${organizationId},and(organization_id.is.null,user_id.eq.${user.id})`)
+      : q;
   };
 
   const fetchWorkRequests = async () => {
@@ -874,7 +876,9 @@ const ProjectManagement = () => {
 
   const projectsForActiveOrg = () => {
     const q = supabase.from('projects').select('*');
-    return organizationId ? q.eq('organization_id', organizationId) : q;
+    return organizationId && user
+      ? q.or(`organization_id.eq.${organizationId},and(organization_id.is.null,user_id.eq.${user.id})`)
+      : q;
   };
 
   const loadProjects = async () => {
@@ -970,7 +974,9 @@ const ProjectManagement = () => {
           *,
           projects!left(id, name)
         `);
-      if (organizationId) query = query.eq('organization_id', organizationId);
+      if (organizationId && user) {
+        query = query.or(`organization_id.eq.${organizationId},and(organization_id.is.null,user_id.eq.${user.id})`);
+      }
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;

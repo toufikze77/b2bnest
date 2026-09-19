@@ -59,9 +59,10 @@ const TodoList = () => {
     setLoading(true);
     try {
       let query = supabase.from('todos').select('*');
-      // Show the whole company's tasks when a company context is active.
+      // Show the active company's tasks plus this owner's unresolved legacy
+      // records until the explicit historical reconciliation is approved.
       query = organizationId
-        ? query.eq('organization_id', organizationId)
+        ? query.or(`organization_id.eq.${organizationId},and(organization_id.is.null,user_id.eq.${user.id})`)
         : query.eq('user_id', user.id);
       const { data, error } = await query.order('created_at', { ascending: false });
 

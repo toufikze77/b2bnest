@@ -61,7 +61,7 @@ enforces the same rule server-side; this is the fail-fast client gate.
 
 ## 6. Validation
 
-New suite `scripts/staging/70_wave1_import_template_tests.sql` adds 30 checks:
+New suite `scripts/staging/70_wave1_import_template_tests.sql` covers:
 import tenancy (incl. manipulated payload, anonymous, non-member, batch
 atomicity), template application, company switching / cache isolation, member
 pickers, and parent/child tenant consistency.
@@ -71,19 +71,26 @@ Full clean pipeline on the isolated staging rebuild (schema parity: 92 tables,
 tables, 282 policies, 4 buckets):
 
 ```
-TOTAL CHECKS: 657
-PASS:         603
+TOTAL RESULTS: 666
+PASS:          612
 FAIL:           0
 INFO:          54
 ```
+
+The blocker phases contributed 44 passing assertions: Import 12, Template 9,
+Switching 7, Member Picker 5 and Parent/Child 11. An earlier appended run showed
+two stale failures after expectations were corrected; the database was rebuilt
+from baseline and every suite was then executed exactly once to produce the
+clean totals above.
 
 Backfill journal: teams 3, projects 1, todos 2 (parent-derived 1).
 Unresolved (reported, never guessed): projects AMBIGUOUS 1 / ORPHANED 1,
 teams AMBIGUOUS 1 / ORPHANED 1, todos AMBIGUOUS 1 / MISMATCH 1 / ORPHANED 1.
 
-Rollback: applied after the package and the schema fingerprint (policies,
-constraints, indexes, columns) was **identical** to the pre-Wave-1 capture;
-the package then re-applied cleanly. TypeScript check and build pass.
+Rollback: applied after the package and the scoped schema fingerprint (policies,
+functions, triggers and columns) was **identical** to the pre-Wave-1 capture;
+the package then re-applied cleanly and restored all eight journalled objects.
+TypeScript and preview builds pass.
 
 ## 7. Reconciliation package
 
@@ -93,19 +100,28 @@ project → organisation rows, asserts each target is still NULL, the owner is a
 active member, and no child task contradicts the choice; it assigns children
 strictly from the parent and ends in `rollback`. **Not approved, not executed.**
 
-## 8. Remaining blocker
+## 8. Historical reconciliation status
 
-The 5 historical NULL-organisation projects (11 related tasks in the ambiguous
-subset) still have no approved owner organisation. Until a named person maps
-each project, those records stay invisible under company-scoped views.
+Explicit future mappings are prepared for B2BNEST and AI NEST. AINEST remains
+unresolved by instruction. NESTPRO TRADE and NG TELECOM LTD require separately
+authorised organization creation; NG TELECOM also requires verification and
+re-stamping of its six child tasks. Owner-only NULL-organization reads remain as
+the transitional path, while every new write requires an explicit validated
+organization. No reconciliation operation was executed.
+
+## 9. Production read-only confirmation
+
+The final read-only check found zero NESTPRO TRADE/NG TELECOM organizations,
+five unresolved projects, and no Wave 1 staging tables in production. No
+production organization, project, task, schema or deployment was changed.
 
 ---
 
 IMPORT FIX: PASS
 TEMPLATE FIX: PASS
 CREATION PATH AUDIT: PASS
-VALIDATION: 657 CHECKS / 0 FAILURES
+VALIDATION: 612 PASS / 0 FAIL / 54 INFO
 ROLLBACK: PASS
-HISTORICAL RECONCILIATION: PENDING HUMAN ASSIGNMENT
+HISTORICAL RECONCILIATION: PARTIAL
 PRODUCTION CHANGES: NONE
 DEPLOYMENT RECOMMENDATION: DO NOT DEPLOY
