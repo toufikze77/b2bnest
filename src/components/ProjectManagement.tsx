@@ -97,6 +97,7 @@ import { format } from 'date-fns';
 import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { EnhancedTodoView } from './enhanced-todos/EnhancedTodoView';
 import { ProjectCalendarView } from './project-management/ProjectCalendarView';
+import { useLocation } from 'react-router-dom';
 
 // Enhanced interfaces
 interface Task {
@@ -300,6 +301,7 @@ const ProjectManagement = () => {
   const { organizationId } = useActiveOrganization();
   const { canAccessFeature } = useSubscription();
   const { toast } = useToast();
+  const location = useLocation();
   
   // Always call all hooks first to prevent hook violations
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
@@ -526,6 +528,24 @@ const ProjectManagement = () => {
   const [eventsSort, setEventsSort] = useState<'newest' | 'oldest'>('newest');
   const [eventsPage, setEventsPage] = useState(1);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const view = params.get('view');
+    const tab = params.get('tab');
+    const create = params.get('create');
+    if (view === 'list' || view === 'calendar' || view === 'kanban' || view === 'timeline') {
+      setActiveView(view);
+      setActiveTab(view === 'timeline' ? 'timeline' : view);
+    }
+    if (tab) setActiveTab(tab);
+    if (create === 'project') setShowCreateProject(true);
+    if (create === 'task') setShowCreateTask(true);
+    if (create === 'event') {
+      setActiveTab('calendar');
+      openNewEventDialog();
+    }
+  }, [location.search]);
+
   // Comment dialog state
   const [showComments, setShowComments] = useState(false);
   const [commentTaskId, setCommentTaskId] = useState<string | null>(null);
@@ -552,11 +572,18 @@ const ProjectManagement = () => {
     try {
       if (!user?.id) return;
 
-      // Get user's organization memberships
+      if (!organizationId) {
+        setTeams([]);
+        setTeamMembers({});
+        return;
+      }
+
+      // Read the selected company only; never aggregate memberships into a picker.
       const { data: userOrgs, error: orgsErr } = await supabase
         .from('organization_members')
         .select('organization_id')
         .eq('user_id', user.id)
+        .eq('organization_id', organizationId)
         .eq('is_active', true);
 
       if (orgsErr) {
@@ -2641,14 +2668,14 @@ const ProjectManagement = () => {
   const pagedEvents = sortedEvents.slice((eventsPage-1)*PAGE_SIZE, eventsPage*PAGE_SIZE);
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="space-y-5 pt-5">
       {/* Enhanced Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-3xl font-bold">Project Management Hub</h1>
-          <p className="text-gray-600">AI-powered project management</p>
+          <h2 className="text-lg font-semibold">{selectedProjectName}</h2>
+          <p className="text-sm text-muted-foreground">Plan, assign and deliver work</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setShowAIAssistant(true)}>
             <Brain className="w-4 h-4 mr-2" />
             AI Assistant
@@ -2665,16 +2692,16 @@ const ProjectManagement = () => {
       </div>
 
       {/* Enhanced Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <Card className="shadow-none">
+          <CardContent className="p-4">
             <div className="flex items-center gap-4">
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <Rocket className="w-6 h-6 text-blue-600" />
+              <div className="rounded-md bg-muted p-2">
+                <Rocket className="h-4 w-4 text-muted-foreground" />
               </div>
               <div>
                 <p className="text-sm text-gray-600">Active Projects</p>
-                <p className="text-2xl font-bold">{projects.filter(p => p.status === 'active').length}</p>
+                <p className="text-xl font-semibold">{projects.filter(p => p.status === 'active').length}</p>
               </div>
             </div>
           </CardContent>

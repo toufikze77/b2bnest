@@ -69,11 +69,15 @@ const CreateProjectDialog = ({ isOpen, onOpenChange, onCreateProject }: CreatePr
       setLoadingUsers(true);
       try {
         // Get organization members to find available users (active company only)
-        let memberQuery = supabase
+        if (!organizationId) {
+          setUsers([]);
+          return;
+        }
+        const memberQuery = supabase
           .from('organization_members')
           .select('user_id')
-          .eq('is_active', true);
-        if (organizationId) memberQuery = memberQuery.eq('organization_id', organizationId);
+          .eq('is_active', true)
+          .eq('organization_id', organizationId);
         const { data: orgMembers, error: orgError } = await memberQuery;
         
         if (orgError) throw orgError;
@@ -353,7 +357,7 @@ const CreateProjectDialog = ({ isOpen, onOpenChange, onCreateProject }: CreatePr
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading || !formData.name.trim()}>
+            <Button type="submit" disabled={loading || !formData.name.trim() || !organizationId}>
               {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Create Project
             </Button>
