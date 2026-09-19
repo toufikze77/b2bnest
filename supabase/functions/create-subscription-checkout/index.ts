@@ -54,7 +54,7 @@ serve(async (req) => {
         .select("id")
         .eq("organization_id", organizationId)
         .eq("user_id", user.id)
-        .eq("status", "active")
+        .eq("is_active", true)
         .maybeSingle();
       if (!membership) return json({ error: "Forbidden" }, 403);
     }

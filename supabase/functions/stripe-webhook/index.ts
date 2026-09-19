@@ -70,7 +70,6 @@ serve(async (req) => {
     const item = subscription.items.data[0];
     const price = item?.price;
     const resolved = planFromLookupKey(price?.lookup_key) ??
-      planFromLookupKey(price?.metadata?.b2bnest_plan ? undefined : undefined) ??
       planFromAmount(price?.unit_amount, price?.recurring?.interval);
 
     const customer = await stripe.customers.retrieve(subscription.customer as string);
