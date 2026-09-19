@@ -11,16 +11,16 @@ const OrganizationSwitcher = () => {
 
   if (!organizationId || !organization) {
     return (
-      <div className="flex h-9 items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 text-sm text-destructive">
-        <Building2 className="h-4 w-4" aria-hidden="true" />
-        <span>No company selected</span>
+      <div className="flex h-9 min-w-0 max-w-52 items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 text-sm text-destructive">
+        <Building2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+        <span className="truncate">No company selected</span>
       </div>
     );
   }
 
   if (memberships.length < 2) {
     return (
-      <div className="flex h-9 max-w-52 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm font-medium text-foreground">
+      <div className="flex h-9 min-w-0 max-w-52 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm font-medium text-foreground">
         <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         <span className="truncate">{organization.name}</span>
       </div>

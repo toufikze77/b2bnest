@@ -117,12 +117,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       <SidebarInset className="min-w-0 bg-muted/20">
         <header className="sticky top-0 z-40 flex h-16 items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/85 sm:px-5">
           <SidebarTrigger className="h-9 w-9" />
-          <div className="min-w-0 shrink"><OrganizationSwitcher /></div>
+          <div className="min-w-0 flex-1 sm:flex-none"><OrganizationSwitcher /></div>
           <div className="ml-auto flex items-center gap-1.5">
-            <GlobalCommand />
+            <div className="hidden sm:block"><GlobalCommand /></div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button className="h-9 gap-2"><Plus className="h-4 w-4" /><span className="hidden lg:inline">Create</span></Button>
+                <Button className="h-9 w-9 gap-2 px-0 sm:w-auto sm:px-4"><Plus className="h-4 w-4" /><span className="hidden lg:inline">Create</span><span className="sr-only lg:hidden">Create</span></Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuLabel>Quick create</DropdownMenuLabel>

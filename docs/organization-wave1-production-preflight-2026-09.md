@@ -51,7 +51,7 @@ W1-58…W1-62); no HYBRID data was found and nothing personal was forced into co
 No edge function is part of Wave 1. Package hashes (SHA-256):
 
 ```
-43959ba61ad1d9849a15828a4045abe2b7908bdcefbe1dee4695aefa819e0b5e  organization-wave1-2026-09.sql        (576 lines)
+d46bee8ed994be77b978cc4cdd54afcfb98e3242d9ca6a3298af5f90cbfad265  organization-wave1-2026-09.sql        (573 lines)
 98b6a7f7fb80e3f4f80c16eef003cef4725359bab0db6ec0959895d04c60565c  organization-wave1-2026-09-rollback.sql (196 lines)
 ```
 
@@ -88,20 +88,19 @@ multi-organisation user are never guessed.
 
 ## 5. Ambiguous rows — impact (deployment-critical)
 
-3 production projects (all owned by the multi-organisation user, holding 12 child tasks) stay
-`organization_id IS NULL`.
+Current read-only reconciliation identifies **5** NULL-organisation projects. B2BNEST and AI NEST are deterministically mapped to toufik zemri's Organization; AINEST remains explicitly unassigned; NESTPRO TRADE and NG TELECOM require dedicated organisations that do not yet exist. No production assignment has been executed.
 
 - Readable at database level? **Yes** — the legacy clause `organization_id IS NULL AND user_id = auth.uid()` keeps the owner's access.
 - Visible to another organisation? **No** — NULL never becomes globally readable.
-- Visible in the new UI? **NO.** `ProjectManagement.tsx` filters `.eq('organization_id', activeOrg)`, so once an active organisation exists these 3 projects disappear from the owner's Projects and calendar views. They are not deleted, but they look lost.
-- Their child tasks already carry an organisation, so tasks stay visible while their parent project does not — an inconsistent view.
+- Visible in the transitional UI? **Yes for the owner** through the explicit active-company OR owner-owned-NULL fallback. This prevents apparent loss while reconciliation remains blocked; it does not expose rows to colleagues or other organisations.
+- Child inheritance is deterministic only after an approved parent mapping. The reconciliation script validates every child and aborts on contradiction.
 
 This is the single most important finding of the preflight and is a **deployment blocker** (§28, B-1).
 
 ## 6. Historical-row visibility impact
 
 Database-level: SAFE (no data loss, no cross-tenant exposure). Application-level: **AT RISK** for
-3 projects until either they are reconciled to an organisation or the client keeps a legacy fallback
+5 projects until approved reconciliation completes. The client currently keeps the narrow legacy fallback
 (`organization_id = active OR (organization_id IS NULL AND user_id = me)`).
 
 ## 7. Legacy fallback analysis
@@ -121,10 +120,10 @@ Enforced in the database by `wave1_enforce_org_membership()` on `teams`/`project
 `wave1_todo_parent_tenant()` on `todos`, so UI, RPC, edge function, direct REST, duplication and bulk
 import all pass through the same check. Verified by W1-04/14/21/28-33/39-45.
 
-Gaps found in the client for multi-organisation users (writes will now *fail*, not silently go NULL):
+Previously identified client gaps are remediated:
 
-- `src/pages/Onboarding.tsx` — CSV project import inserts without `organization_id` → rejected for a multi-org user (**blocker B-2**).
-- `src/services/templateApplyService.ts` and `src/services/workspaceTemplateApply.ts` — resolve the organisation by taking the *first* membership row instead of the active organisation (**blocker B-3**, wrong-tenant stamping, not a leak).
+- Project CSV import requires and re-validates the top-bar active organisation, displays the destination, stamps every project, and aborts atomically on invalid or stale context (**B-2 closed**).
+- Both template application services require the caller-supplied active organisation; dialogs display the destination and no first-membership fallback remains (**B-3 closed**).
 
 ## 9. Active-company security
 
@@ -172,8 +171,7 @@ No PUBLIC EXECUTE, no anon access, no global admin bypass reintroduced (W1-66, W
 
 `tsgo --noEmit`: clean. `vite build`: success. Remaining single-user filters on Wave 1 tables were
 classified: `TodoList.tsx:64/166/225` (legacy fallback when no active organisation — legitimate) and
-`enhanced-todos/TodoComments.tsx:146` (author's own comment — legitimate). The three items in §8 are
-the only ones requiring change.
+`enhanced-todos/TodoComments.tsx:146` (author's own comment — legitimate). The import and template items in §8 are fixed. Historical reconciliation remains a business-decision gate, not an application defect.
 
 ## 15. Security regression
 
@@ -276,10 +274,10 @@ write-failure rate, or missing historical rows.
 
 ## 28. Deployment blockers
 
-- **B-1 (critical, data visibility).** 3 production projects owned by the multi-organisation user stay NULL and vanish from the organisation-filtered UI. Resolve before deployment by either (i) owner-confirmed reconciliation of those 3 rows, (ii) adding a *provable* child-consensus derivation (all 12 child tasks of 2 of these projects unanimously indicate one organisation; the third project has no children and no data), or (iii) shipping a temporary client fallback that also loads `organization_id IS NULL AND user_id = me`.
-- **B-2 (functional).** `Onboarding.tsx` project import does not stamp an organisation → import fails for multi-org users.
-- **B-3 (correctness).** `templateApplyService.ts` / `workspaceTemplateApply.ts` pick the first membership instead of the active organisation → templates may be created in the wrong company.
-- Not blockers: unresolved teams/todos (production has none), rollback anon-grant drift (intentional), calendar tenancy (no calendar table), member pickers, RLS coverage, cache leakage.
+- **B-1 (business decision required).** Historical ownership is only approved for B2BNEST and AI NEST. AINEST must remain unassigned; dedicated NESTPRO TRADE and NG TELECOM LTD organisations do not exist and may not be invented by migration. The prepared reconciliation is rollback-only and has not run.
+- **B-2: CLOSED.** Project spreadsheet import validates and stamps the active company and shows the destination.
+- **B-3: CLOSED.** Template application validates the switcher-selected company and shows the destination; first-membership selection is removed.
+- UI modernisation is a separate frontend release stream and does not authorize this database deployment.
 
 ## 29. Remaining risks
 
@@ -292,8 +290,8 @@ facts. Legacy NULL rows remain permitted for users without a membership. Wave 2+
 
 WAVE 1 PACKAGE REVIEW: PASS
 SECURITY REGRESSION: PASS
-HISTORICAL BACKFILL: PARTIAL
-HISTORICAL DATA VISIBILITY: AT RISK
+HISTORICAL BACKFILL: BLOCKED — BUSINESS DECISION REQUIRED
+HISTORICAL DATA VISIBILITY: TRANSITIONAL OWNER-ONLY FALLBACK ACTIVE
 ROLLBACK VALIDATION: PASS
 PRODUCTION DEPLOYMENT BLOCKERS: REMAIN
 DEPLOYMENT RECOMMENDATION: DO NOT DEPLOY

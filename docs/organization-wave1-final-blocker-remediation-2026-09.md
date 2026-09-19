@@ -125,3 +125,11 @@ ROLLBACK: PASS
 HISTORICAL RECONCILIATION: PARTIAL
 PRODUCTION CHANGES: NONE
 DEPLOYMENT RECOMMENDATION: DO NOT DEPLOY
+
+## 10. Authenticated UI modernisation update
+
+The shared authenticated app shell, semantic tokens, company-first top bar, command navigation, page headers, empty states, dashboard overview, and core project/task/calendar entry points are implemented as a separate frontend stream. Project import and both template confirmations visibly name the selected company and fail closed without valid context. Calendar-event creation uses tenant-stamped `todos` due dates and the same active-company validation as tasks; no unowned `calendar_events` write path remains.
+
+Responsive captures at desktop, tablet and mobile widths confirmed the shell reflows without horizontal page overflow after compacting the mobile top bar. Public marketing and Super Admin frames remain separate. Authenticated Company A/B browser switching cannot be executed against this external unmanaged Supabase project; database-level tenant behaviour remains covered by the isolated staging suite.
+
+The complete implementation/audit record is `docs/ui-ux-modernisation-2026-09.md`. No production data, schema, edge function, or deployment was changed.
