@@ -6,12 +6,12 @@ const OrganizationSwitcher = () => {
   const { memberships, organizationId, organization, setActiveOrganization, loading } = useActiveOrganization();
 
   if (loading) {
-    return <div className="h-9 w-40 animate-pulse rounded-md bg-muted" aria-label="Loading active company" />;
+    return <div className="h-10 w-44 animate-pulse rounded-md bg-muted" aria-label="Loading active company" />;
   }
 
   if (!organizationId || !organization) {
     return (
-      <div className="flex h-9 min-w-0 max-w-52 items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 text-sm text-destructive">
+      <div className="flex h-10 min-w-0 max-w-52 items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 text-sm text-destructive">
         <Building2 className="h-4 w-4 shrink-0" aria-hidden="true" />
         <span className="truncate">No company selected</span>
       </div>
@@ -20,7 +20,7 @@ const OrganizationSwitcher = () => {
 
   if (memberships.length < 2) {
     return (
-      <div className="flex h-9 min-w-0 max-w-52 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm font-medium text-foreground">
+      <div className="flex h-10 min-w-0 max-w-56 items-center gap-2 rounded-md border border-border bg-surface px-3 text-sm font-medium text-foreground shadow-xs">
         <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         <span className="truncate">{organization.name}</span>
       </div>
@@ -28,10 +28,10 @@ const OrganizationSwitcher = () => {
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <Building2 className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+    <div className="flex min-w-0 items-center gap-2">
+      <Building2 className="hidden h-4 w-4 shrink-0 text-muted-foreground sm:block" aria-hidden="true" />
       <Select value={organizationId} onValueChange={setActiveOrganization}>
-        <SelectTrigger className="w-[180px] max-w-[45vw]" aria-label="Active company">
+        <SelectTrigger className="h-10 w-[190px] max-w-[42vw] bg-surface shadow-xs" aria-label="Active company">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

@@ -22,3 +22,13 @@
 - [x] Complete authenticated product UI/UX, responsive, accessibility, and performance audit
 - [x] Write the UI modernisation audit and separate Wave A–D implementation plan
 - [x] Confirm no production database, organisation, project, task, or deployment changes
+
+# UI/UX modernisation — UI Wave 1 preview
+
+- [x] Complete repository and major-screen UX audit
+- [x] Select refined product-shell direction
+- [ ] Implement semantic shell and shared primitive refinements
+- [ ] Preserve and verify company switching and cache isolation
+- [ ] Validate Dashboard, CRM, and Projects at requested viewports
+- [ ] Run regression/security checks and write staging validation report
+- [ ] Production publish (blocked by explicit prohibition; separate authorization required)

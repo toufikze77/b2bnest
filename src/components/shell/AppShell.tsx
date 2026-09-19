@@ -25,7 +25,7 @@ import {
 import { GlobalCommand } from './GlobalCommand';
 
 const groups = [
-  { label: 'Home', items: [{ label: 'Dashboard', to: '/dashboard', icon: BarChart3 }] },
+  { label: 'Overview', items: [{ label: 'Dashboard', to: '/dashboard', icon: BarChart3 }] },
   { label: 'Work', items: [
     { label: 'Projects', to: '/project-management', icon: FolderKanban },
     { label: 'Tasks', to: '/project-management?view=list', icon: FileText },
@@ -79,13 +79,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       <a href="#app-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:bg-background focus:px-4 focus:py-2 focus:text-foreground focus:ring-2 focus:ring-ring">
         Skip to content
       </a>
-      <Sidebar collapsible="icon" className="border-sidebar-border">
+      <Sidebar collapsible="icon" className="border-sidebar-border bg-sidebar">
         <SidebarHeader className="h-16 justify-center border-b border-sidebar-border px-3">
-          <Link to="/dashboard" className="flex items-center gap-2 overflow-hidden px-1" aria-label="B2BNest dashboard">
-            <img src={logo} alt="" className="h-8 w-auto max-w-[172px] object-contain dark:brightness-0 dark:invert" />
+          <Link to="/dashboard" className="flex items-center gap-2 overflow-hidden rounded-md px-1 py-1" aria-label="B2BNest dashboard">
+            <img src={logo} alt="" className="h-7 w-auto max-w-[168px] object-contain dark:brightness-0 dark:invert" />
           </Link>
         </SidebarHeader>
-        <SidebarContent className="py-2">
+        <SidebarContent className="py-3">
           {groups.map((group) => (
             <SidebarGroup key={group.label}>
               <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
@@ -103,7 +103,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </SidebarGroup>
           ))}
         </SidebarContent>
-        <SidebarFooter className="border-t border-sidebar-border">
+        <SidebarFooter className="border-t border-sidebar-border p-3">
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip="Settings" isActive={location.pathname === '/settings'}>
@@ -115,15 +115,15 @@ export function AppShell({ children }: { children: ReactNode }) {
         <SidebarRail />
       </Sidebar>
 
-      <SidebarInset className="min-w-0 bg-muted/20">
-        <header className="sticky top-0 z-40 flex h-16 items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/85 sm:px-5">
-          <SidebarTrigger className="h-9 w-9" />
+      <SidebarInset className="min-w-0 bg-background">
+        <header className="sticky top-0 z-40 flex h-16 items-center gap-2 border-b border-border bg-surface/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-surface/90 sm:px-5 lg:px-6">
+          <SidebarTrigger className="h-10 w-10 text-muted-foreground" />
           <div className="min-w-0 flex-1 sm:flex-none"><OrganizationSwitcher /></div>
-          <div className="ml-auto flex items-center gap-1.5">
-            <div className="hidden sm:block"><GlobalCommand /></div>
+          <div className="ml-auto flex items-center gap-1 sm:gap-1.5">
+            <div className="hidden md:block"><GlobalCommand /></div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button className="h-9 w-9 gap-2 px-0 sm:w-auto sm:px-4"><Plus className="h-4 w-4" /><span className="hidden lg:inline">Create</span><span className="sr-only lg:hidden">Create</span></Button>
+                <Button className="h-10 w-10 gap-2 px-0 sm:w-auto sm:px-4"><Plus className="h-4 w-4" /><span className="hidden lg:inline">Create</span><span className="sr-only lg:hidden">Create</span></Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuLabel>Quick create</DropdownMenuLabel>
@@ -135,12 +135,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <DropdownMenuItem onSelect={() => navigate('/business-tools')}><Receipt className="mr-2 h-4 w-4" />Invoice or quote</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="ghost" size="icon" className="hidden h-9 w-9 sm:inline-flex" onClick={() => navigate('/ai-workspace')} aria-label="Open AI workspace" title="AI workspace"><Bot className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" className="hidden h-9 w-9 md:inline-flex" onClick={() => navigate('/settings')} aria-label="Notifications" title="Notifications"><Bell className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" className="hidden h-9 w-9 md:inline-flex" onClick={() => setFeedbackOpen(true)} aria-label="Help and feedback" title="Help and feedback"><HelpCircle className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="hidden h-10 w-10 sm:inline-flex" onClick={() => navigate('/ai-workspace')} aria-label="Open AI workspace" title="AI workspace"><Bot className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="hidden h-10 w-10 lg:inline-flex" onClick={() => navigate('/settings')} aria-label="Notifications" title="Notifications"><Bell className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="hidden h-10 w-10 lg:inline-flex" onClick={() => setFeedbackOpen(true)} aria-label="Help and feedback" title="Help and feedback"><HelpCircle className="h-4 w-4" /></Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" aria-label="Open profile menu">
+                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full" aria-label="Open profile menu">
                   <Avatar className="h-8 w-8"><AvatarImage src={avatarUrl} alt="" /><AvatarFallback>{initials}</AvatarFallback></Avatar>
                 </Button>
               </DropdownMenuTrigger>
