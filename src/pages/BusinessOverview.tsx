@@ -45,7 +45,14 @@ const BusinessOverview: React.FC = () => {
   const [data, setData] = useState<Overview | null>(null);
 
   useEffect(() => {
-    if (!user || !organizationId) return;
+    if (!user || !organizationId) {
+      setOrg(null);
+      setData(null);
+      setLoading(false);
+      return;
+    }
+    setOrg(null);
+    setData(null);
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, organizationId]);

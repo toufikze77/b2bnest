@@ -73,6 +73,10 @@ export const useRota = () => {
     if (organizationId) {
       setLoading(true);
       fetchEmployees().finally(() => setLoading(false));
+    } else {
+      setEmployees([]);
+      setShifts([]);
+      setLoading(false);
     }
   }, [organizationId, fetchEmployees]);
 
