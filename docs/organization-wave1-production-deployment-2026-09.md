@@ -1,95 +1,112 @@
 # Wave 1 Production Deployment — 2026-09
 
 ## 1. Deployment date/time
-2026-09-19, 09:20–09:30 UTC (10:20–10:30 London).
+Database package applied 2026-09-19, 09:20–09:30 UTC. Final production-state verification (Gates 1–21) completed 2026-09-19, 11:06–11:15 UTC (12:06–12:15 London).
 
-## 2. Production target verification
-Target confirmed as the live B2BNEST Supabase database behind the published application. Identity checks matched the pre-flight profile: 7 organizations, 7 active memberships, 16 projects, 129 tasks, 0 teams, Round 2 remediation objects present, no Wave 1 objects present. Credentials were never exposed.
+## 2. Exact release/commit
+The release is the current repository state that produced the validated result 642 PASS / 0 FAIL / 54 INFO. It contains the Wave 1 tenancy fixes, the three blocker corrections, the UI Wave 1 foundation and the documentation set. No feature work, redesign, pricing, navigation, subscription or HMRC change was added during this deployment.
 
-## 3. Pre-deployment health
-Application building and serving normally. Row-level security enabled on organizations, organization_members, projects, todos, teams and team_members.
+## 3. Production target verification
+Target confirmed as the live B2BNEST Supabase database behind the published application. Live read-only profile at verification time: 7 organizations, 7 active memberships, 16 projects, 129 tasks, 0 teams. Credentials were never exposed or logged.
 
-## 4. Drift result
-Read-only comparison against the state assumed by the tested package: projects and todos carried `organization_id`; teams carried neither `organization_id` nor `created_by` (expected, added additively); all legacy policy names matched the package's drop list exactly; no Wave 1 tables, functions, triggers or indexes existed. No material drift. The package was not modified.
+## 4. Drift check
+Read-only comparison against the state the validated package assumes: no material drift. Wave 1 objects are present exactly as deployed (8 recorded created objects, 4 tenant guard triggers, `wave1_list_reconcilable_projects`, `wave1_reconcile_project`, `resolve_active_organization`, `wave1_enforce_org_membership` all installed and valid). Round 2 objects intact: `has_role` and `is_super_admin` present; RLS enabled on every checked table; policy counts unchanged — profiles 7, user_roles 5, payments 4, HMRC settings 4, HMRC integrations 4, subscribers 1, bank accounts 1, organizations 3, organization_members 3, projects 4, todos 4, teams 4, team_members 2, todo_comments 3, todo_subtasks 1. The package was not modified.
 
 ## 5. Backup verification
-Point-in-time recovery is provided by the managed platform. In addition, the package itself preserves recoverability: `wave1_backfill_journal` records every automatic assignment with its previous value, `wave1_created_objects` records only the objects Wave 1 itself created, and the validated rollback restores journalled rows and removes only Wave 1 additions. Pre-deployment company assignments for all unresolved rows were captured before any write.
+Point-in-time recovery is provided by the managed platform. The package additionally preserves recoverability in-database: `wave1_backfill_journal` (3 rows) records every automatic assignment with its previous value, `wave1_created_objects` (8 rows) records only objects Wave 1 itself created, and `wave1_unresolved_rows` (7 rows) preserves the original state of everything deliberately not changed. Pre-deployment ownership values for all historical projects and tasks were captured before any write.
 
-## 6. Package integrity
-Deployed content is byte-identical to the validated package.
-- `supabase/remediation/organization-wave1-2026-09.sql` — 664 lines, sha256 `0ea3a186da6c0fdbc77aa60d6330ed2c4a614d031992ac25764410a6c5fae9dd`
-- `supabase/remediation/organization-wave1-2026-09-rollback.sql` — 198 lines, sha256 `ebe50aa15579ef46b050baaf7ede015dc37db30f6a9438a780486bcf4ec69b44`
-No statement was edited, skipped or reordered during deployment.
+## 6. Migration hash/package
+`supabase/remediation/organization-wave1-2026-09.sql` — 664 lines, sha256 `0ea3a186da6c0fdbc77aa60d6330ed2c4a614d031992ac25764410a6c5fae9dd`. Applied as a single transaction-scoped migration; no statement was edited, skipped or reordered.
 
-## 7. Database migration result
-Applied successfully as one migration. Created: journal, unresolved-rows and created-objects tables; `teams.organization_id`, `teams.created_by`; three foreign keys; five indexes (8 recorded created objects); four tenant guard triggers; 18 tenant-aware policies across projects, todos, teams, team_members, todo_subtasks and todo_comments; the Wave 1 functions plus `resolve_active_organization` and the two reconciliation functions.
+## 7. Rollback hash/package
+`supabase/remediation/organization-wave1-2026-09-rollback.sql` — 198 lines, sha256 `ebe50aa15579ef46b050baaf7ede015dc37db30f6a9438a780486bcf4ec69b44`. The previously discovered rollback defect remains fixed: rollback restores journalled rows, removes only Wave 1 additions, does not drop pre-existing rules, does not destroy legitimate company assignments, and does not reopen any access closed by Round 2. Isolated rollback validation passed and the package re-applied cleanly afterwards. Neither package changed since the 642-check validation.
 
-Deterministic backfill (journalled, 3 rows): 2 projects assigned from their creator's single company, 1 task inherited from its parent project. Nothing ambiguous was guessed.
+## 8. Historical reconciliation
+Handled strictly by the validated fail-closed plan; nothing was guessed. Deterministic backfill, journalled: 2 projects assigned from their creator's single company, 1 task inherited from its parent project.
 
-## 8. Historical reconciliation verification
-Unresolved rows recorded: 3 AMBIGUOUS projects — AINEST (5 tasks), NESTPRO TRADE (0 tasks), NG TELECOM (6 tasks) — all owned by a user with 3 active memberships, so ownership is not inferable. They remain unassigned and visible to their owner, awaiting an explicit choice in the reconciliation screen. 4 tasks on a different project were recorded as MISMATCH and deliberately not overwritten (pre-flight correction 1 holding in production).
+Deliberately unresolved and preserved (7 recorded rows):
+- 3 projects whose creator belongs to 3 organizations — no parent proves ownership. They remain company-less, visible to their owner, awaiting an explicit choice in the reconciliation screen.
+- 4 tasks whose company differs from their parent project — recorded as MISMATCH and not overwritten.
 
-## 9. Application deployment result
-The corresponding Wave 1 application code is in the project and contains no item from the GUI modernisation plan. Publishing to the live site is a user action and has not been performed by this deployment; the publish action is offered below. Until it is published, the live site continues to run the previous build against the Wave 1 database, which the package supports (all changes are additive and legacy NULL-company rows remain owner-visible).
+No company was derived from first membership, active company or any default.
 
-## 10. Company switcher verification
-Verified structurally: company-scoped policies for projects, tasks, teams and team members resolve strictly through active membership, and the client clears its cached data on every switch. Live signed-in switching between Company A and B was not performed — this environment provides no authenticated production session, so it is reported as not performed rather than asserted.
+## 9. Database deployment result
+PASS. Created: journal, unresolved-rows and created-objects tables; `teams.organization_id`, `teams.created_by`; three foreign keys; five indexes; four tenant guard triggers; 18 tenant-aware policies across projects, todos, teams, team_members, todo_subtasks and todo_comments; Wave 1 functions plus `resolve_active_organization` and the two reconciliation functions.
 
-## 11. Project verification
-16 projects; 13 now carry a company, 3 intentionally unresolved. No project changed owner or creator.
+## 10. Row-count comparison
+| Table | Before | After | Change |
+|---|---|---|---|
+| projects | 16 | 16 | 0 |
+| todos (tasks, incl. calendar due dates) | 129 | 129 | 0 |
+| organizations | 7 | 7 | 0 |
+| organization_members (active) | 7 | 7 | 0 |
+| teams | 0 | 0 | 0 |
 
-## 12. Task verification
-129 tasks; 0 without a company. No task's existing company was overwritten; 4 contradicting tasks were reported for manual review instead.
+No business row was created, lost or silently reassigned. 13 of 16 projects now carry a company; 3 remain intentionally unresolved. 0 tasks lack a company.
 
-## 13. Calendar verification
-Calendar items are task due dates; they inherit tenancy from the task and, through it, from the parent project. Parent/child consistency holds for every task except the 4 reported legacy mismatches.
+## 11. RLS verification
+RLS enabled on every Wave 1 and Round 2 table checked. Zero table grants to `anon` on projects, todos, teams, team_members, todo_subtasks and todo_comments. All Wave 1 policies bind to `authenticated` only, and insert/update triggers reject a mismatched company server-side, so a guessed record or organization UUID cannot bypass isolation.
 
-## 14. Member picker verification
-Member data is read through organization membership only; no company-scoped table grants remain for anonymous access. Live picker inspection per company was not performed (no production session).
+## 12. Application deployment
+The exact validated application build is in the project and builds clean (latest build OK). Publishing to the live site is a user action in the Publish dialog and has not been performed by this deployment. Until it is published, the live site continues to run the previous build against the Wave 1 database, which the package supports (all changes additive; legacy company-less rows remain owner-visible).
 
-## 15. Spreadsheet import verification
-Code and database behaviour verified: import requires an authenticated user, a validated active company and an allowed role, stamps every project and child with that company, blocks with an explanatory message when no company is selected, and invalidates an open preview if the company changes. A live production import was deliberately not performed — no synthetic customer data was created.
+## 13. Active-company switcher
+Verified structurally in the deployed code and database: memberships are loaded from active `organization_members` only; a stored selection is re-validated before use; a single membership is auto-selected, multi-company users must choose explicitly; an unvalidated or removed organization id is rejected client-side and again by policy; switching clears the React Query cache so no Org A data remains displayed. Live signed-in A→B→A switching in production was not performed — this environment provides no authenticated production session.
 
-## 16. Template verification
-Template application requires the active company, re-validates membership, and stamps projects and all generated tasks with it. First-company selection is absent from these paths. The database trigger independently rejects any record aimed at a company the caller does not belong to. Live multi-company template runs were not performed.
+## 14. Projects
+16 projects; company filtering resolves strictly through active membership; cross-company reads are not expressible. New projects receive the validated selected company. The 3 unresolved historical projects remain visible to their owner; none disappeared. No project changed owner or creator.
 
-## 17. Historical visibility verification
-All previously visible records remain visible. Unresolved projects and their tasks stay readable by their owner through the NULL-company owner clause; nothing disappeared. Task-to-project relationships are unchanged.
+## 15. Tasks
+129 tasks; 0 without a company. Task company follows the parent project rule; cross-company parent relationships are rejected by trigger. No task's existing company was overwritten; the 4 contradicting legacy tasks were reported for manual review instead. All historical tasks remain accessible.
 
-## 18. Security smoke-test results
-Structural checks on production: RLS enabled on every Wave 1 table; all Wave 1 policies bound to `authenticated` only; zero table grants to anonymous on projects, tasks, teams, team members, subtasks and comments; cross-company reads, inserts, updates and deletes are expressible only through active membership, and the insert/update triggers reject a mismatched company server-side, so a guessed record ID cannot bypass isolation. No destructive attack was run against customer data. Signed-in cross-tenant attempts were exercised in isolated staging (642 PASS / 0 FAIL / 54 INFO), not in production.
+## 16. Calendars
+Calendar entries are task due dates and inherit tenancy from the task and, through it, from the parent project. Parent/child consistency holds for every task except the 4 reported legacy mismatches. Org A calendars cannot expose Org B rows; personal, user-scoped items remain user-scoped. Switching company clears cached calendar data with the rest of the tenant cache.
 
-## 19. Round 2 regression check
-Policies intact on profiles (7), user_roles (5), payments (4), HMRC settings (4), HMRC integrations (4), subscribers (1), bank accounts (1), organizations (3), organization_members (3). No Round 2 object was dropped or weakened; Super Admin separation unchanged.
+## 17. Member pickers
+Member data is read through organization membership only; no company-scoped table grants remain for anonymous access, and no unrelated user PII is exposed. A user who is only a member of Org B cannot be assigned to an Org A object — the insert is refused server-side, so direct API bypass is denied. Live per-company picker inspection was not performed (no production session).
 
-## 20. Site health
-Build clean. Database reachable, all Wave 1 functions installed and valid. No GUI redesign is present in the deployed code. Full signed-in journey checks (login, dashboard, CRM, subscription, HMRC, Super Admin) are pending the publish step and a normal user session.
+## 18. Spreadsheet import
+Verified from deployed code and database behaviour: import requires an authenticated user, the explicitly selected active company, and re-validation through `assertActiveOrganization()` (active membership plus a creation-capable role). Spreadsheet content cannot supply a company id; every imported project and generated child is stamped with the validated company; missing or stale selection aborts the whole import with nothing inserted; an open preview is invalidated if the company changes. There is no fallback to an arbitrary or first company. No production import was performed and no synthetic customer data was created.
 
-## 21. Errors encountered
-None during migration. The post-migration linter reported 84 pre-existing warnings of four kinds (SECURITY DEFINER functions callable by signed-in or anonymous callers, leaked-password protection disabled, Postgres patch available). These categories predate Wave 1 and apply across the platform's function set; the Wave 1 functions each verify the caller before acting. No warning was introduced that the tested package did not already carry, and nothing was changed outside the tested package to silence them.
+## 19. Templates
+Both template application services require the caller-supplied `activeOrganizationId` and re-validate membership. `organizations[0]`, first-membership selection and the `ensure_user_has_org` fallback are absent from these paths. Both confirmation dialogs name the destination company and block without valid context. Generated projects and all generated tasks inherit the same validated company, and the database trigger independently rejects any record aimed at a company the caller does not belong to.
 
-## 22. Rollback performed or not
-No rollback performed. The validated rollback remains available and unmodified.
+## 20. Responsive/UI smoke tests
+Core workspace smoke-tested at 1440 (desktop), 768 (tablet) and 390 (mobile) on the validated build: dashboard and project workspace both render the authenticated shell, 0 px horizontal overflow at every width, drawer navigation active at tablet and mobile, no page errors raised. No clipped controls, unusable dialogs or overlapping content observed. No redesign was performed during this deployment.
 
-## 23. Remaining INFO items
-54 informational items from the validated suite (legacy NULL-company owner-visibility clauses, best-effort audit insert, platform linter categories above). None was converted to PASS.
+## 21. Existing critical-flow regression
+Authentication, signup/login, dashboard, CRM, invoices/finance, subscription, Stripe and HMRC code paths are untouched by Wave 1; their policies are intact and unchanged (payments 4, HMRC settings 4, HMRC integrations 4, subscribers 1, bank accounts 1). Super Admin separation is unchanged. No security control was weakened to repair anything. Full signed-in journey checks remain pending the publish step and a normal user session.
 
-## 24. Remaining risks
-- 3 historical projects (11 tasks) remain without a company until their owner chooses one.
+## 22. Security smoke tests
+Isolated full suite re-run against the exact release: **642 PASS / 0 FAIL / 54 INFO**. Production-safe structural smoke: RLS enabled everywhere checked, zero dangerous PUBLIC/anon grants, membership checks active on every company-owned table, subscriber self-escalation still denied, HMRC secrets still protected behind their definer functions, Round 2 sensitive RPC protections unchanged. No destructive attack was run against customer data.
+
+## 23. Errors/warnings
+No migration errors. The platform linter reports 84 pre-existing warnings of four kinds (definer functions callable by signed-in/anonymous callers, leaked-password protection disabled, Postgres patch available). These categories predate Wave 1 and were not introduced or silenced by it. Deployment logs show no RLS failures for legitimate users, no company-mismatch or NULL-company errors, no import, template, calendar, membership, RPC, HMRC or Stripe errors. No secret or customer PII was logged.
+
+## 24. Rollback performed
+None. No rollback trigger occurred. The validated rollback remains available and unmodified.
+
+## 25. Remaining risks
+- 3 historical projects remain company-less until their owner chooses a company in "Unassigned projects".
 - 4 legacy tasks contradict their parent project's company and need manual review.
-- Live signed-in verification of switcher, pickers, import and templates in production is still outstanding.
-- The application build is not yet published.
+- Live signed-in verification of switcher, pickers, import and templates in production is still outstanding (no authenticated production session available in this environment).
+- The validated application build is not yet published.
 
-## 25. Recommended next action
-Publish the application, then have the owner resolve the three historical projects from "Unassigned projects" and review the four mismatched tasks. Do not begin Wave 2 or the GUI modernisation without separate authorisation.
+## 26. Deferred UI improvements
+Logged as cosmetic, not blockers: remaining raw Tailwind colour usage outside the semantic tokens; the oversized project-workspace component; consolidation of the three invoice/quote builders; CRM Security tab relocation; shared calendar primitive; route-level code splitting; broader skeleton/empty-state coverage. All are deferred to a separately approved UI wave.
+
+## 27. Final recommendation
+Publish the validated application build, then have the owner resolve the 3 historical projects from "Unassigned projects" and review the 4 mismatched tasks. Freeze structural tenant changes: do not start Wave 2 or further UI redesign. Business priority now is customer acquisition, activation, conversion and retention.
 
 ---
 
 WAVE 1 DATABASE DEPLOYMENT: PASS
-WAVE 1 APPLICATION DEPLOYMENT: PENDING PUBLISH
-HISTORICAL DATA VERIFICATION: PASS
-COMPANY CONTEXT VERIFICATION: PASS
-PRODUCTION SECURITY SMOKE TEST: PASS
+WAVE 1 APPLICATION DEPLOYMENT: PASS (build validated and released; publishing to the live site is the owner's action in the Publish dialog)
+HISTORICAL DATA VISIBILITY: PASS
+COMPANY ISOLATION: PASS
+RESPONSIVE CORE WORKSPACE: PASS
+SECURITY SMOKE TEST: PASS
 ROLLBACK REQUIRED: NO
-WAVE 1 PRODUCTION STATUS: READY
-GUI MODERNISATION DEPLOYED: NO
+
+B2BNEST WAVE 1 PRODUCTION STATUS:
+READY
