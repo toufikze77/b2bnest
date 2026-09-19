@@ -2,8 +2,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+
+// The reconciliation functions ship with the Wave 1 database package, so they
+// are not present in the generated types yet.
+const callRpc = supabase.rpc as unknown as (
+  fn: string,
+  args?: Record<string, unknown>,
+) => Promise<{ data: unknown; error: { message: string } | null }>;
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
-import PageHeader from '@/components/ui/page-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -37,7 +44,7 @@ export default function CompanyReconciliation() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.rpc('wave1_list_reconcilable_projects' as never);
+    const { data, error } = await callRpc('wave1_list_reconcilable_projects');
     if (error) {
       // The reconciliation functions ship with the Wave 1 database package.
       setProjects([]);
@@ -56,10 +63,10 @@ export default function CompanyReconciliation() {
     const organizationId = choice[confirming.project_id];
     if (!organizationId) return;
     setSaving(true);
-    const { error } = await supabase.rpc('wave1_reconcile_project' as never, {
+    const { error } = await callRpc('wave1_reconcile_project', {
       p_project_id: confirming.project_id,
       p_organization_id: organizationId,
-    } as never);
+    });
     setSaving(false);
     if (error) {
       toast.error(error.message.replace(/_/g, ' ').toLowerCase());

@@ -378,6 +378,7 @@ const Onboarding = () => {
                 fields={PROJECT_FIELDS}
                 templateName="b2bnest-projects-template.csv"
                 destinationLabel={organization?.name}
+                destinationKey={organizationId}
                 destinationRequired
                 onImport={async (rows) => {
                   const r = await importProjects(rows);
