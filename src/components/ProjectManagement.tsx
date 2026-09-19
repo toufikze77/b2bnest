@@ -2644,21 +2644,45 @@ const ProjectManagement = () => {
   };
   const saveEvent = async () => {
     if (!eventForm.title.trim() || !eventForm.start_at) return;
-    const payload = { title: eventForm.title, start_at: eventForm.start_at, end_at: eventForm.end_at || null, project_id: selectedProject !== 'all' ? selectedProject : editingEvent?.project_id || null } as any;
-    if (editingEvent) {
-      const { data, error } = await supabase.from('calendar_events' as any)
-        .update(payload).eq('id', editingEvent.id).select().single();
-      if (!error && data) setCalendarEvents(prev => prev.map(e => e.id === editingEvent.id ? data as any : e));
-    } else {
-      const { data, error } = await supabase.from('calendar_events' as any)
-        .insert(payload).select().single();
-      if (!error && data) setCalendarEvents(prev => [...prev, data as any]);
+    try {
+      const tenant = await assertActiveOrganization(organizationId);
+      const projectId = selectedProject !== 'all' ? selectedProject : editingEvent?.project_id || null;
+      const payload = {
+        title: eventForm.title.trim(),
+        description: eventForm.end_at ? `Ends ${eventForm.end_at}` : '',
+        due_date: eventForm.start_at,
+        project_id: projectId,
+        organization_id: tenant.organizationId,
+        user_id: tenant.userId,
+      };
+      const result = editingEvent
+        ? await supabase.from('todos').update(payload).eq('id', editingEvent.id).eq('organization_id', tenant.organizationId).select().single()
+        : await supabase.from('todos').insert({ ...payload, status: 'todo', priority: 'medium' }).select().single();
+      if (result.error) throw result.error;
+      await Promise.all([loadTasks(), fetchCalendarEvents()]);
+      setEventDialogOpen(false);
+    } catch (error) {
+      toast({
+        title: 'Unable to save event',
+        description: error instanceof Error ? error.message : 'Choose a valid company and try again.',
+        variant: 'destructive',
+      });
     }
-    setEventDialogOpen(false);
   };
   const deleteEvent = async (ev: CalendarEventItem) => {
-    const { error } = await supabase.from('calendar_events' as any).delete().eq('id', ev.id);
-    if (!error) setCalendarEvents(prev => prev.filter(e => e.id !== ev.id));
+    try {
+      const tenant = await assertActiveOrganization(organizationId);
+      const { error } = await supabase.from('todos').delete().eq('id', ev.id).eq('organization_id', tenant.organizationId);
+      if (error) throw error;
+      setCalendarEvents(prev => prev.filter(e => e.id !== ev.id));
+      setTasks(prev => prev.filter(task => task.id !== ev.id));
+    } catch (error) {
+      toast({
+        title: 'Unable to delete event',
+        description: error instanceof Error ? error.message : 'Choose a valid company and try again.',
+        variant: 'destructive',
+      });
+    }
   };
   const sortedEvents = [...projectScopedCalendarEvents].sort((a,b) => {
     const aDate = a.start_at || '';
