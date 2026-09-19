@@ -224,7 +224,7 @@ const CreateProjectDialog = ({ isOpen, onOpenChange, onCreateProject }: CreatePr
               <Label>Initial Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value: any) => setFormData(prev => ({ ...prev, status: value }))}
+                onValueChange={(value: ProjectFormData['status']) => setFormData(prev => ({ ...prev, status: value }))}
               >
                 <SelectTrigger>
                   <SelectValue />

@@ -76,8 +76,8 @@ export default function CsvImportWizard({ title, description, fields, templateNa
       setResult(total);
       toast.success(`${total.inserted} rows imported. ${total.skipped} skipped.`);
       reset();
-    } catch (e: any) {
-      toast.error(e?.message || 'Import failed');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Import failed');
     } finally {
       setImporting(false);
     }

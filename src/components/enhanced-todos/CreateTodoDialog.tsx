@@ -224,6 +224,7 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
   const [showAISuggestions, setShowAISuggestions] = useState(false);
   const [availableUsers, setAvailableUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const teamMemberDependency = Array.isArray(teamMembers) ? teamMembers.join('|') : '';
 
   // Populate form when editing existing task
   useEffect(() => {
@@ -315,7 +316,7 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
         }
 
         // Map profiles to user format
-        let users = (profilesData || []).map((profile: any) => ({
+        const users = (profilesData || []).map((profile: { id: string; display_name: string | null; full_name: string | null; email: string | null }) => ({
           id: profile.id,
           display_name: profile.display_name || profile.full_name || 'Unknown User',
           email: profile.email || null,
@@ -334,7 +335,7 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
     if (isOpen) {
       fetchUsers();
     }
-  }, [isOpen, teamId, activeOrganizationId, user?.id, Array.isArray(teamMembers) ? teamMembers.join('|') : '']);
+  }, [isOpen, teamId, activeOrganizationId, user?.id, teamMemberDependency]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
