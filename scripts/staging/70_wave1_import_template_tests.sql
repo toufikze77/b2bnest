@@ -34,9 +34,9 @@ perform sec.t('IMP-09','IMPORT','projects','MULTI_ORG','SELECT','imported A row 
   format('select 1 from public.projects where organization_id=%L and name=''Imported-A''', ORG_B));
 perform sec.t('IMP-10','IMPORT','projects','MULTI_ORG','INSERT','missing active company','DENY_ERROR',
   'insert into public.projects(user_id, name) values (sec.actor_uid(''MULTI_ORG''),''Imported-none'')');
-perform sec.t('IMP-11','IMPORT','todos','MULTI_ORG','INSERT','imported child inherits A parent when org omitted','ALLOW',
+perform sec.t('IMP-11','IMPORT','todos','MULTI_ORG','INSERT','imported child without explicit company is rejected','DENY_ERROR',
   format('insert into public.todos(user_id, project_id, title) values (sec.actor_uid(''MULTI_ORG''),%L,''Imported-child-A'')', PRJ_A));
-perform sec.t('IMP-12','IMPORT','todos','MULTI_ORG','SELECT','imported child stored in A','ALLOW',
+perform sec.t('IMP-12','IMPORT','todos','MULTI_ORG','SELECT','rejected child leaves no partial row','ZERO_ROWS',
   format('select 1 from public.todos where project_id=%L and title=''Imported-child-A'' and organization_id=%L', PRJ_A, ORG_A));
 
 -- ==================== PHASE 21 — TEMPLATE APPLICATION =======================
