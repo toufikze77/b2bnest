@@ -34,3 +34,14 @@
 - [x] Publish the exact final blocker report and canonical 32-section UI audit
 - [x] Remove multi-company first-membership fallback and validate core mobile overflow
 - [ ] Production publish (blocked by explicit prohibition; separate authorization required)
+
+# Post-Wave-1 product experience / UI modernization (backlog — not authorized)
+
+- [x] Deep codebase UI audit and 30-section report: `docs/ui-ux-modernization-audit-2026-09.md`
+- [ ] Wave 1 operational completion first: publish validated build; assign 3 unassigned projects; review 4 mismatched tasks; production smoke test; freeze Wave 1
+- [ ] UI Wave 1 — Foundation completion (tokens, page surface, sidebar IA fixes, breadcrumbs, notifications, route lazy loading)
+- [ ] UI Wave 2 — Activation (dashboard consolidation, needs-attention, first-run checklist, empty/loading/error families)
+- [ ] UI Wave 3 — Work & customers (projects views, tasks, calendar, CRM table + side panel)
+- [ ] UI Wave 4 — Money & insights (invoices/quotes consolidation, finance tables, analytics)
+- [ ] UI Wave 5 — Scale (AI Studio, integrations, team, settings, admin token alignment)
+- [ ] Constraint: Wave 1 tenant architecture and Round 2 controls frozen; each wave gated by 642 PASS / 0 FAIL and five-width visual checks
