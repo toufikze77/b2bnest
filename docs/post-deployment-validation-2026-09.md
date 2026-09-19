@@ -90,3 +90,15 @@ The owner must run tests 1–14 and 16 manually on the live site.
 - Headless route/responsive/promotion scan: `/tmp/browser/postdeploy/smoke.py` output captured above.
 - Rollback path if ever needed: revert the previous version from History. No database rollback
   script is applicable — this release contains no migrations.
+
+## J. Wave 1 closure (2026-09-19, post-deployment)
+
+- Closure record: `docs/wave1-closure-2026-09.md` — manual authenticated test checklist
+  (9 BLOCKED tests plus tenant/switching/import/template/rota/selector tests), read-only legacy
+  data report (3 unassigned projects, 4 mismatched tasks — unmodified), and the pricing vs Stripe
+  checkout comparison.
+- Pricing finding (read-only, nothing changed): checkout annual amounts are monthly-equivalents
+  for all three plans, and Professional/Enterprise monthly checkout amounts (£49/£99) exceed the
+  advertised £35/£85. Owner decision required.
+- Status: **WAVE 1: READY FOR OWNER VERIFICATION**.
+
