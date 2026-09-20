@@ -137,7 +137,7 @@ const PricingPlans = () => {
     } catch (err: unknown) {
       toast({
         title: 'Checkout unavailable',
-        description: err?.message || 'Please try again later.',
+        description: err instanceof Error ? err.message : 'Please try again later.',
         variant: 'destructive',
       });
     } finally {
