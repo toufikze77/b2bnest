@@ -116,9 +116,8 @@ const PricingPlans = () => {
       });
 
       if (error) {
-        const details = (error as any)?.context
-          ? await (error as any).context.text().catch(() => '')
-          : '';
+        const context = (error as { context?: { text: () => Promise<string> } }).context;
+        const details = context ? await context.text().catch(() => '') : '';
         if (details.includes('already_subscribed')) {
           toast({
             title: 'You already have a subscription',
@@ -135,7 +134,7 @@ const PricingPlans = () => {
         return;
       }
       throw new Error('Could not start checkout');
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({
         title: 'Checkout unavailable',
         description: err?.message || 'Please try again later.',

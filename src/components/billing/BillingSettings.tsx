@@ -21,10 +21,10 @@ const BillingSettings = () => {
         return;
       }
       throw new Error('Could not open the billing portal');
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({
         title: 'Billing portal unavailable',
-        description: err?.message || 'Please try again later.',
+        description: err instanceof Error ? err.message : 'Please try again later.',
         variant: 'destructive',
       });
     } finally {
