@@ -8,7 +8,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import PaymentMethodSelector from '@/components/checkout/PaymentMethodSelector';
 
 const PricingPlans = () => {
   const [isAnnual, setIsAnnual] = useState(false);
@@ -41,7 +40,7 @@ const PricingPlans = () => {
         'Email support',
         'Mobile app access',
       ],
-      cta: 'Buy now',
+      cta: 'Subscribe',
       popular: false,
     },
     {
@@ -67,7 +66,7 @@ const PricingPlans = () => {
         'Team collaboration tools',
         'Custom integrations',
       ],
-      cta: 'Buy now',
+      cta: 'Subscribe',
       popular: true,
     },
     {
@@ -94,7 +93,7 @@ const PricingPlans = () => {
         'Training & onboarding',
         'SLA guarantee',
       ],
-      cta: 'Buy now',
+      cta: 'Subscribe',
       popular: false,
     },
   ];
@@ -330,7 +329,7 @@ const PricingPlans = () => {
                 Can I change plans anytime?
               </h4>
               <p className="text-gray-600">
-                Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately.
+                Yes. Manage or cancel your subscription any time from Settings → Billing, which opens your secure Stripe billing portal.
               </p>
             </div>
             <div className="text-left">
@@ -346,7 +345,7 @@ const PricingPlans = () => {
               What payment methods do you accept?
             </h4>
             <p className="text-gray-600">
-              We accept all major credit cards and cryptocurrencies (Bitcoin, Ethereum, Litecoin, etc.) via Stripe and Coinbase Commerce.
+              Subscriptions are billed securely by Stripe and accept all major credit and debit cards. Crypto payment remains available for one-off purchases.
             </p>
             </div>
             <div className="text-left">
