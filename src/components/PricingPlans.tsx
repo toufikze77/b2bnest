@@ -8,15 +8,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import PaymentMethodSelector from '@/components/checkout/PaymentMethodSelector';
 
 const PricingPlans = () => {
   const [isAnnual, setIsAnnual] = useState(false);
-  const [showUpgrade, setShowUpgrade] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState('');
-  const [showPaymentSelector, setShowPaymentSelector] = useState(false);
-  const [paymentAmount, setPaymentAmount] = useState(0);
-  const [paymentItemName, setPaymentItemName] = useState('');
+  const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null);
   const { user } = useAuth();
   const { isPremium, subscription_tier } = useSubscription();
 
@@ -45,7 +40,7 @@ const PricingPlans = () => {
         'Email support',
         'Mobile app access',
       ],
-      cta: 'Buy now',
+      cta: 'Subscribe',
       popular: false,
     },
     {
@@ -71,7 +66,7 @@ const PricingPlans = () => {
         'Team collaboration tools',
         'Custom integrations',
       ],
-      cta: 'Buy now',
+      cta: 'Subscribe',
       popular: true,
     },
     {
@@ -98,7 +93,7 @@ const PricingPlans = () => {
         'Training & onboarding',
         'SLA guarantee',
       ],
-      cta: 'Buy now',
+      cta: 'Subscribe',
       popular: false,
     },
   ];
@@ -107,39 +102,49 @@ const PricingPlans = () => {
     if (!user) {
       toast({
         title: "Sign In Required",
-        description: "Please sign in to purchase a plan.",
+        description: "Please sign in to subscribe to a plan.",
         variant: "destructive"
       });
       window.location.href = '/auth';
       return;
     }
 
-    const plan = plans.find(p => p.id === planId);
-    if (!plan) return;
+    setCheckoutPlan(planId);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-subscription-checkout', {
+        body: { planId, isAnnual },
+      });
 
-    const price = isAnnual ? plan.annual : plan.monthly;
-    setPaymentAmount(price);
-    setPaymentItemName(`${plan.name} Plan - ${isAnnual ? 'Annual' : 'Monthly'}`);
-    setSelectedPlan(planId);
-    setShowPaymentSelector(true);
+      if (error) {
+        const context = (error as { context?: { text: () => Promise<string> } }).context;
+        const details = context ? await context.text().catch(() => '') : '';
+        if (details.includes('already_subscribed')) {
+          toast({
+            title: 'You already have a subscription',
+            description: 'Open Settings → Billing to change or cancel your current plan.',
+            variant: 'destructive',
+          });
+          return;
+        }
+        throw error;
+      }
+
+      if (data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+      throw new Error('Could not start checkout');
+    } catch (err: unknown) {
+      toast({
+        title: 'Checkout unavailable',
+        description: err instanceof Error ? err.message : 'Please try again later.',
+        variant: 'destructive',
+      });
+    } finally {
+      setCheckoutPlan(null);
+    }
   };
 
-  const handlePaymentSuccess = async (paymentData: any) => {
-    toast({
-      title: "Payment Successful!",
-      description: `Welcome to the ${selectedPlan} plan! Your subscription is now active.`,
-    });
-    setShowPaymentSelector(false);
-    // You could also update the user's subscription status here
-  };
-
-  const handlePaymentError = (error: string) => {
-    toast({
-      title: "Payment Failed",
-      description: error,
-      variant: "destructive"
-    });
-  };
 
   const handleStartTrial = async () => {
     if (!user) {
@@ -286,6 +291,7 @@ const PricingPlans = () => {
                 <CardContent className="pt-0">
                   <Button 
                     onClick={() => handlePlanSelect(plan.id)}
+                    disabled={checkoutPlan !== null}
                     className={`w-full mb-6 ${
                       plan.popular 
                         ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700' 
@@ -294,7 +300,7 @@ const PricingPlans = () => {
                         : 'bg-gray-900 hover:bg-gray-800'
                     } text-white font-semibold py-3`}
                   >
-                    {plan.cta}
+                    {checkoutPlan === plan.id ? 'Redirecting to checkout…' : plan.cta}
                   </Button>
 
                   <ul className="space-y-3">
@@ -322,7 +328,7 @@ const PricingPlans = () => {
                 Can I change plans anytime?
               </h4>
               <p className="text-gray-600">
-                Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately.
+                Yes. Manage or cancel your subscription any time from Settings → Billing, which opens your secure Stripe billing portal.
               </p>
             </div>
             <div className="text-left">
@@ -338,7 +344,7 @@ const PricingPlans = () => {
               What payment methods do you accept?
             </h4>
             <p className="text-gray-600">
-              We accept all major credit cards and cryptocurrencies (Bitcoin, Ethereum, Litecoin, etc.) via Stripe and Coinbase Commerce.
+              Subscriptions are billed securely by Stripe and accept all major credit and debit cards. Crypto payment remains available for one-off purchases.
             </p>
             </div>
             <div className="text-left">
@@ -371,32 +377,6 @@ const PricingPlans = () => {
         </div>
       </div>
 
-      {/* Payment Method Selector Modal */}
-      {showPaymentSelector && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full">
-            <div className="p-4 border-b">
-              <h3 className="text-lg font-semibold">Choose Payment Method</h3>
-              <button 
-                onClick={() => setShowPaymentSelector(false)}
-                aria-label="Close payment method dialog"
-                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-              >
-                ×
-              </button>
-            </div>
-            <div className="p-4">
-              <PaymentMethodSelector
-                amount={paymentAmount}
-                currency="GBP"
-                itemName={paymentItemName}
-                onPaymentSuccess={handlePaymentSuccess}
-                onPaymentError={handlePaymentError}
-              />
-            </div>
-          </div>
-        </div>
-      )}
       </div>
     </>
   );

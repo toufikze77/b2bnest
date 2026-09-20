@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { planFromAmount, planFromLookupKey } from "../_shared/plans.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -105,12 +106,14 @@ serve(async (req) => {
     // Generate invoice number
     const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
-    // Determine plan name based on amount
-    let planName = "Subscription Plan";
+    // Determine the plan from the Stripe price itself (lookup key first, exact amount as
+    // fallback). No amount-range guessing — that is what mislabelled a £350 payment before.
     const amount = price.unit_amount || 0;
-    if (amount <= 1500) planName = "Starter Plan";
-    else if (amount <= 4900) planName = "Professional Plan";
-    else if (amount >= 7900) planName = "Enterprise Plan";
+    const resolved = planFromLookupKey(price.lookup_key) ??
+      planFromAmount(amount, price.recurring?.interval);
+    const planName = resolved
+      ? `${resolved.plan.name} (${resolved.interval === "year" ? "Annual" : "Monthly"})`
+      : "Subscription Plan";
 
     // Create invoice record
     const invoiceData = {

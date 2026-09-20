@@ -53,3 +53,19 @@ verify_jwt = true
 
 [functions.verify-2fa-code]
 verify_jwt = false
+
+# Stripe calls this endpoint directly; authenticity is proven by the signature header.
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.create-subscription-checkout]
+verify_jwt = true
+
+[functions.customer-portal]
+verify_jwt = true
+
+[functions.create-subscription-invoice]
+verify_jwt = true
+
+[functions.check-subscription]
+verify_jwt = true
