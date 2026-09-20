@@ -103,39 +103,50 @@ const PricingPlans = () => {
     if (!user) {
       toast({
         title: "Sign In Required",
-        description: "Please sign in to purchase a plan.",
+        description: "Please sign in to subscribe to a plan.",
         variant: "destructive"
       });
       window.location.href = '/auth';
       return;
     }
 
-    const plan = plans.find(p => p.id === planId);
-    if (!plan) return;
+    setCheckoutPlan(planId);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-subscription-checkout', {
+        body: { planId, isAnnual },
+      });
 
-    const price = isAnnual ? plan.annual : plan.monthly;
-    setPaymentAmount(price);
-    setPaymentItemName(`${plan.name} Plan - ${isAnnual ? 'Annual' : 'Monthly'}`);
-    setSelectedPlan(planId);
-    setShowPaymentSelector(true);
+      if (error) {
+        const details = (error as any)?.context
+          ? await (error as any).context.text().catch(() => '')
+          : '';
+        if (details.includes('already_subscribed')) {
+          toast({
+            title: 'You already have a subscription',
+            description: 'Open Settings → Billing to change or cancel your current plan.',
+            variant: 'destructive',
+          });
+          return;
+        }
+        throw error;
+      }
+
+      if (data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+      throw new Error('Could not start checkout');
+    } catch (err: any) {
+      toast({
+        title: 'Checkout unavailable',
+        description: err?.message || 'Please try again later.',
+        variant: 'destructive',
+      });
+    } finally {
+      setCheckoutPlan(null);
+    }
   };
 
-  const handlePaymentSuccess = async (paymentData: any) => {
-    toast({
-      title: "Payment Successful!",
-      description: `Welcome to the ${selectedPlan} plan! Your subscription is now active.`,
-    });
-    setShowPaymentSelector(false);
-    // You could also update the user's subscription status here
-  };
-
-  const handlePaymentError = (error: string) => {
-    toast({
-      title: "Payment Failed",
-      description: error,
-      variant: "destructive"
-    });
-  };
 
   const handleStartTrial = async () => {
     if (!user) {
