@@ -2,8 +2,9 @@ import React from 'react';
 import AccountSettings from '@/components/AccountSettings';
 import NotificationPreferences from '@/components/NotificationPreferences';
 import HMRCSettings from '@/components/hmrc/HMRCSettings';
+import BillingSettings from '@/components/billing/BillingSettings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Bell, Building2 } from 'lucide-react';
+import { User, Bell, Building2, CreditCard } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 
 const Settings = () => {
@@ -14,10 +15,14 @@ const Settings = () => {
           <PageHeader className="mb-6" eyebrow="Settings" title="Account settings" description="Manage your account preferences, notifications and secure connections." />
           
           <Tabs defaultValue="account" className="space-y-6">
-            <TabsList className="grid w-full max-w-lg grid-cols-3">
+            <TabsList className="grid w-full max-w-2xl grid-cols-4">
               <TabsTrigger value="account" className="flex items-center gap-2">
                 <User className="h-4 w-4" />
                 Account
+              </TabsTrigger>
+              <TabsTrigger value="billing" className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                Billing
               </TabsTrigger>
               <TabsTrigger value="notifications" className="flex items-center gap-2">
                 <Bell className="h-4 w-4" />
@@ -31,6 +36,10 @@ const Settings = () => {
             
             <TabsContent value="account">
               <AccountSettings />
+            </TabsContent>
+
+            <TabsContent value="billing">
+              <BillingSettings />
             </TabsContent>
             
             <TabsContent value="notifications">
