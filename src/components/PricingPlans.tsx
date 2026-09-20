@@ -293,6 +293,7 @@ const PricingPlans = () => {
                 <CardContent className="pt-0">
                   <Button 
                     onClick={() => handlePlanSelect(plan.id)}
+                    disabled={checkoutPlan !== null}
                     className={`w-full mb-6 ${
                       plan.popular 
                         ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700' 
@@ -301,7 +302,7 @@ const PricingPlans = () => {
                         : 'bg-gray-900 hover:bg-gray-800'
                     } text-white font-semibold py-3`}
                   >
-                    {plan.cta}
+                    {checkoutPlan === plan.id ? 'Redirecting to checkout…' : plan.cta}
                   </Button>
 
                   <ul className="space-y-3">
@@ -378,32 +379,6 @@ const PricingPlans = () => {
         </div>
       </div>
 
-      {/* Payment Method Selector Modal */}
-      {showPaymentSelector && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full">
-            <div className="p-4 border-b">
-              <h3 className="text-lg font-semibold">Choose Payment Method</h3>
-              <button 
-                onClick={() => setShowPaymentSelector(false)}
-                aria-label="Close payment method dialog"
-                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-              >
-                ×
-              </button>
-            </div>
-            <div className="p-4">
-              <PaymentMethodSelector
-                amount={paymentAmount}
-                currency="GBP"
-                itemName={paymentItemName}
-                onPaymentSuccess={handlePaymentSuccess}
-                onPaymentError={handlePaymentError}
-              />
-            </div>
-          </div>
-        </div>
-      )}
       </div>
     </>
   );
