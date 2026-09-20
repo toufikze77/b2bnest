@@ -62,3 +62,15 @@
 - [x] Publish `docs/production-pre-deployment-audit-2026-09.md`
 - [ ] Owner: resolve 3 unassigned projects and review 4 task/company mismatches
 - [ ] Owner: publish the release and run the post-deployment smoke tests
+
+## Billing — recurring Stripe subscriptions (2026-09)
+- [x] Server-side plan catalogue with stable Stripe price lookup keys (£19/£190, £35/£350, £85/£850)
+- [x] Subscription checkout (mode: subscription) replacing one-off plan payments
+- [x] Idempotent, signature-verified webhook covering the subscription lifecycle
+- [x] Subscriber fields for subscription id, price, plan, interval, status, period, cancellation
+- [x] Stripe Customer Portal via Settings → Billing
+- [x] Legacy stale price path and invoice mislabelling removed
+- [x] Tenant/security suite re-run: 642 PASS / 0 FAIL / 54 INFO
+- [ ] Owner: Stripe test-mode validation of the six combinations + portal/webhook configuration
+- [ ] Owner: decide whether any legacy live subscriptions need a migration proposal
+- [ ] Owner: publish to production after Stripe validation
