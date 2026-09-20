@@ -3255,17 +3255,48 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_webhook_events: {
+        Row: {
+          event_id: string
+          event_type: string
+          id: string
+          processed_at: string
+        }
+        Insert: {
+          event_id: string
+          event_type: string
+          id?: string
+          processed_at?: string
+        }
+        Update: {
+          event_id?: string
+          event_type?: string
+          id?: string
+          processed_at?: string
+        }
+        Relationships: []
+      }
       subscribers: {
         Row: {
           ai_credits_limit: number | null
           ai_credits_remaining: number | null
           ai_credits_reset_date: string | null
+          billing_interval: string | null
+          cancel_at_period_end: boolean
+          canceled_at: string | null
           created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
           email: string
           id: string
+          payment_status: string | null
+          plan_key: string | null
           stripe_customer_id: string | null
+          stripe_price_id: string | null
+          stripe_subscription_id: string | null
           subscribed: boolean
           subscription_end: string | null
+          subscription_status: string | null
           subscription_tier: string | null
           updated_at: string
           user_id: string | null
@@ -3274,12 +3305,22 @@ export type Database = {
           ai_credits_limit?: number | null
           ai_credits_remaining?: number | null
           ai_credits_reset_date?: string | null
+          billing_interval?: string | null
+          cancel_at_period_end?: boolean
+          canceled_at?: string | null
           created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
           email: string
           id?: string
+          payment_status?: string | null
+          plan_key?: string | null
           stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
           subscribed?: boolean
           subscription_end?: string | null
+          subscription_status?: string | null
           subscription_tier?: string | null
           updated_at?: string
           user_id?: string | null
@@ -3288,12 +3329,22 @@ export type Database = {
           ai_credits_limit?: number | null
           ai_credits_remaining?: number | null
           ai_credits_reset_date?: string | null
+          billing_interval?: string | null
+          cancel_at_period_end?: boolean
+          canceled_at?: string | null
           created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
           email?: string
           id?: string
+          payment_status?: string | null
+          plan_key?: string | null
           stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
           subscribed?: boolean
           subscription_end?: string | null
+          subscription_status?: string | null
           subscription_tier?: string | null
           updated_at?: string
           user_id?: string | null
