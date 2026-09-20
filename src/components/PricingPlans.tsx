@@ -12,11 +12,7 @@ import PaymentMethodSelector from '@/components/checkout/PaymentMethodSelector';
 
 const PricingPlans = () => {
   const [isAnnual, setIsAnnual] = useState(false);
-  const [showUpgrade, setShowUpgrade] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState('');
-  const [showPaymentSelector, setShowPaymentSelector] = useState(false);
-  const [paymentAmount, setPaymentAmount] = useState(0);
-  const [paymentItemName, setPaymentItemName] = useState('');
+  const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null);
   const { user } = useAuth();
   const { isPremium, subscription_tier } = useSubscription();
 
