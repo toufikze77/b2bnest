@@ -2,7 +2,7 @@ import { ReactNode, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   BarChart3, Bell, Bot, BriefcaseBusiness, CalendarDays, CircleDollarSign,
-  FileText, FolderKanban, HelpCircle, LayoutGrid, LogOut, Plus, Receipt,
+  FileText, FolderKanban, HelpCircle, Home, LayoutGrid, LogOut, Plus, Receipt,
   Settings, ShieldCheck, Sparkles, Target, Users, WandSparkles,
 } from 'lucide-react';
 import logo from '@/assets/b2bnest-logo.png';
@@ -25,7 +25,10 @@ import {
 import { GlobalCommand } from './GlobalCommand';
 
 const groups = [
-  { label: 'Overview', items: [{ label: 'Dashboard', to: '/dashboard', icon: BarChart3 }] },
+  { label: 'Overview', items: [
+    { label: 'Home', to: '/', icon: Home },
+    { label: 'Dashboard', to: '/dashboard', icon: BarChart3 },
+  ] },
   { label: 'Work', items: [
     { label: 'Projects', to: '/project-management', icon: FolderKanban },
     { label: 'Tasks', to: '/project-management?view=list', icon: FileText },
@@ -80,9 +83,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         Skip to content
       </a>
       <Sidebar collapsible="icon" className="border-sidebar-border bg-sidebar">
-        <SidebarHeader className="h-16 justify-center border-b border-sidebar-border px-3">
+        <SidebarHeader className="h-20 justify-center border-b border-sidebar-border px-3">
           <Link to="/dashboard" className="flex items-center gap-2 overflow-hidden rounded-md px-1 py-1" aria-label="B2BNest dashboard">
-            <img src={logo} alt="" className="h-7 w-auto max-w-[168px] object-contain dark:brightness-0 dark:invert" />
+            <img src={logo} alt="" className="h-11 w-auto max-w-[188px] object-contain dark:brightness-0 dark:invert" />
           </Link>
         </SidebarHeader>
         <SidebarContent className="py-3">
