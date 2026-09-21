@@ -44,13 +44,13 @@ const Header = () => {
   return (
     <header className="bg-white dark:bg-card shadow-sm border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex h-20 items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center">
             <img 
               src={logo} 
               alt="B2BNEST — Connect, Collaborate, Grow. All-in-one business platform" 
-              className="h-8 md:h-10 w-auto object-contain dark:brightness-0 dark:invert"
+              className="h-11 w-auto max-w-[152px] object-contain dark:brightness-0 dark:invert sm:h-12 sm:max-w-[184px]"
             />
           </Link>
 
