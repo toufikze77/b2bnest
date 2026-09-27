@@ -23,6 +23,27 @@ const Auth = () => {
   const [showTwoFactor, setShowTwoFactor] = useState(false);
   const [twoFactorEmail, setTwoFactorEmail] = useState('');
   const [isVerification, setIsVerification] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [resending, setResending] = useState(false);
+
+  const handleResend = async () => {
+    const target = (pendingEmail || email).trim();
+    if (!target) return;
+    setResending(true);
+    const redirectUrl = window.location.origin.replace('http://', window.location.origin.includes('localhost') ? 'http://' : 'https://');
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: target,
+      options: { emailRedirectTo: `${redirectUrl}/` },
+    });
+    setResending(false);
+    const msg = error?.message || '';
+    if (error && !(error.status === 504 || msg === '{}' || msg.toLowerCase().includes('deadline'))) {
+      toast({ title: 'Could not resend', description: msg || 'Please wait a minute and try again.', variant: 'destructive' });
+    } else {
+      toast({ title: 'Activation email sent', description: `We sent a new activation link to ${target}. Check your inbox and spam folder.` });
+    }
+  };
   
   // Check for invitation parameters
   const isInvited = searchParams.get('invited') === 'true';
@@ -89,9 +110,11 @@ const Auth = () => {
       if (isLogin) {
         const { error, needs2FA, email: userEmail } = await signIn(email, password);
         if (error) {
+          const notConfirmed = (error.message || '').toLowerCase().includes('not confirmed');
+          if (notConfirmed) setPendingEmail(email);
           toast({
-            title: "Sign In Failed",
-            description: error.message || "An unexpected error occurred",
+            title: notConfirmed ? "Account not activated" : "Sign In Failed",
+            description: notConfirmed ? "Please activate your account using the link we emailed you, or resend it from the red banner." : (error.message || "An unexpected error occurred"),
             variant: "destructive"
           });
         } else if (needs2FA) {
@@ -126,6 +149,7 @@ const Auth = () => {
         const { error, needsVerification } = await signUp(email, password, fullName, companyName);
         if (error) {
           const isEmailDeliveryDelay = error.code === 'email_delivery_timeout';
+          if (isEmailDeliveryDelay) setPendingEmail(email);
           toast({
             title: isEmailDeliveryDelay ? "Check Your Email" : "Sign Up Failed",
             description: error.message || "An unexpected error occurred",
@@ -149,6 +173,7 @@ const Auth = () => {
             title: "Account Created!",
             description: "Check your email and click the confirmation link to activate your account, then sign in."
           });
+          setPendingEmail(email);
           setIsLogin(true);
         }
       }
@@ -215,6 +240,22 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
       <div className="max-w-6xl mx-auto">
+        {isLogin && (
+          <div role="alert" className="mb-4 flex flex-col gap-3 rounded-md border border-destructive bg-destructive p-3 text-destructive-foreground sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm font-medium">
+              Didn't get your activation email{pendingEmail ? ` for ${pendingEmail}` : ''}? Enter your email below and resend it.
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={handleResend}
+              disabled={resending || !(pendingEmail || email).trim()}
+            >
+              {resending ? 'Sending...' : 'Resend activation email'}
+            </Button>
+          </div>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
           {/* Left Column - Auth Form */}
           <div className="flex items-center justify-center min-h-screen lg:min-h-0 lg:py-8">
