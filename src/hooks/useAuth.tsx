@@ -71,16 +71,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error, needsVerification: false };
       }
 
-      // Send verification code via email
-      const { error: codeError } = await sendVerificationCode(email, 'verification');
-      
-      if (codeError) {
-        console.error('Failed to send verification code:', codeError);
-        return { error: codeError, needsVerification: false };
+      // Email already registered: Supabase returns a user with no identities
+      if (data.user && (data.user.identities?.length ?? 0) === 0) {
+        return {
+          error: { message: 'An account with this email already exists. Please sign in or reset your password.' },
+          needsVerification: false,
+        };
       }
 
-      // Return success with verification flag
-      return { error: null, needsVerification: true };
+      // New users are not signed in until they confirm their email, so the
+      // confirmation link sent by the auth system is the verification step.
+      return { error: null, needsVerification: false, needsEmailConfirmation: !data.session };
     } catch (err: any) {
       return { error: err, needsVerification: false };
     }
