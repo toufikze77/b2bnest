@@ -146,8 +146,9 @@ const Auth = () => {
           }
           toast({
             title: "Account Created!",
-            description: isInvited ? "Welcome to the organization! You can now access the team." : "You can now sign in to your account."
+            description: "Check your email and click the confirmation link to activate your account, then sign in."
           });
+          setIsLogin(true);
         }
       }
     } finally {
