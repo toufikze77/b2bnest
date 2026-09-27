@@ -20,17 +20,23 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const getSignUpErrorMessage = (error: unknown) => {
+const normalizeSignUpError = (error: unknown) => {
   const authError = error as { message?: unknown; status?: unknown; code?: unknown } | null;
   const message = typeof authError?.message === 'string' ? authError.message.trim() : '';
   const status = typeof authError?.status === 'number' ? authError.status : undefined;
   const code = typeof authError?.code === 'string' ? authError.code : '';
 
   if (status === 504 || code === 'request_timeout' || message === '{}' || message.toLowerCase().includes('deadline exceeded')) {
-    return 'The confirmation email took too long to send. Check your inbox first. If no B2BNEST email arrives, wait one minute and try again.';
+    return {
+      code: 'email_delivery_timeout',
+      message: 'Your request was received, but the confirmation email is taking longer than expected. Check your inbox and spam folder. If it does not arrive within one minute, try again.',
+    };
   }
 
-  return message || 'We could not create your account. Please wait one minute and try again.';
+  return {
+    code: code || 'signup_failed',
+    message: message || 'We could not create your account. Please wait one minute and try again.',
+  };
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -82,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         return {
-          error: { message: getSignUpErrorMessage(error) },
+          error: normalizeSignUpError(error),
           needsVerification: false,
         };
       }
@@ -100,7 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error: null, needsVerification: false, needsEmailConfirmation: !data.session };
     } catch (err: unknown) {
       return {
-        error: { message: getSignUpErrorMessage(err) },
+        error: normalizeSignUpError(err),
         needsVerification: false,
       };
     }
