@@ -240,7 +240,7 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
       <div className="max-w-6xl mx-auto">
-        {isLogin && (
+        {isLogin && pendingEmail && (
           <div role="alert" className="mb-4 flex flex-col gap-3 rounded-md border border-destructive bg-destructive p-3 text-destructive-foreground sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm font-medium">
               Didn't get your activation email{pendingEmail ? ` for ${pendingEmail}` : ''}? Enter your email below and resend it.
@@ -407,7 +407,7 @@ const Auth = () => {
                         : 'Already have an account? Sign in'
                       }
                     </button>
-                    {isLogin && (
+                    {isLogin && pendingEmail && (
                       <Link 
                         to="/forgot-password" 
                         className="text-blue-600 hover:text-blue-700 text-sm block"
