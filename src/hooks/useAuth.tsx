@@ -20,7 +20,7 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const normalizeSignUpError = (error: unknown) => {
+const normalizeAuthError = (error: unknown) => {
   const authError = error as { message?: unknown; status?: unknown; code?: unknown } | null;
   const message = typeof authError?.message === 'string' ? authError.message.trim() : '';
   const status = typeof authError?.status === 'number' ? authError.status : undefined;
@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Email + password sign-in
   const signIn = async (email: string, password: string) => {
-    return await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password }); return { data, error: error ? normalizeAuthError(error) : null };
   };
 
   // Email + password sign-up
@@ -88,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         return {
-          error: normalizeSignUpError(error),
+          error: normalizeAuthError(error),
           needsVerification: false,
         };
       }
@@ -106,7 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error: null, needsVerification: false, needsEmailConfirmation: !data.session };
     } catch (err: unknown) {
       return {
-        error: normalizeSignUpError(err),
+        error: normalizeAuthError(err),
         needsVerification: false,
       };
     }
