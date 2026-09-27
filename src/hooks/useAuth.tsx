@@ -20,6 +20,19 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const getSignUpErrorMessage = (error: unknown) => {
+  const authError = error as { message?: unknown; status?: unknown; code?: unknown } | null;
+  const message = typeof authError?.message === 'string' ? authError.message.trim() : '';
+  const status = typeof authError?.status === 'number' ? authError.status : undefined;
+  const code = typeof authError?.code === 'string' ? authError.code : '';
+
+  if (status === 504 || code === 'request_timeout' || message === '{}' || message.toLowerCase().includes('deadline exceeded')) {
+    return 'The confirmation email took too long to send. Check your inbox first. If no B2BNEST email arrives, wait one minute and try again.';
+  }
+
+  return message || 'We could not create your account. Please wait one minute and try again.';
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -68,7 +81,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) {
-        return { error, needsVerification: false };
+        return {
+          error: { message: getSignUpErrorMessage(error) },
+          needsVerification: false,
+        };
       }
 
       // Email already registered: Supabase returns a user with no identities
@@ -82,8 +98,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // New users are not signed in until they confirm their email, so the
       // confirmation link sent by the auth system is the verification step.
       return { error: null, needsVerification: false, needsEmailConfirmation: !data.session };
-    } catch (err: any) {
-      return { error: err, needsVerification: false };
+    } catch (err: unknown) {
+      return {
+        error: { message: getSignUpErrorMessage(err) },
+        needsVerification: false,
+      };
     }
   };
 
