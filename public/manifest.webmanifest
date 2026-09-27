@@ -1,5 +1,5 @@
 {
-  "name": "B2BNest — Business Tools & AI",
+  "name": "B2BNest \u2014 Business Tools & AI",
   "short_name": "B2BNest",
   "description": "Affordable business tools and free AI-powered solutions for modern entrepreneurs.",
   "start_url": "/",
@@ -11,16 +11,22 @@
   "lang": "en",
   "icons": [
     {
-      "src": "/favicon.png",
+      "src": "/icon-2026-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/favicon.png",
+      "src": "/icon-2026-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-2026-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
