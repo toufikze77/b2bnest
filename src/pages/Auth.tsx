@@ -104,6 +104,7 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setPendingEmail('');
     setIsSubmitting(true);
 
     try {
@@ -149,7 +150,6 @@ const Auth = () => {
         const { error, needsVerification } = await signUp(email, password, fullName, companyName);
         if (error) {
           const isEmailDeliveryDelay = error.code === 'email_delivery_timeout';
-          if (isEmailDeliveryDelay) setPendingEmail(email);
           toast({
             title: isEmailDeliveryDelay ? "Check Your Email" : "Sign Up Failed",
             description: error.message || "An unexpected error occurred",
@@ -173,7 +173,6 @@ const Auth = () => {
             title: "Account Created!",
             description: "Check your email and click the confirmation link to activate your account, then sign in."
           });
-          setPendingEmail(email);
           setIsLogin(true);
         }
       }
@@ -399,7 +398,10 @@ const Auth = () => {
                   <div className="mt-6 text-center space-y-2">
                     <button
                       type="button"
-                      onClick={() => setIsLogin(!isLogin)}
+                      onClick={() => {
+                        setPendingEmail('');
+                        setIsLogin(!isLogin);
+                      }}
                       className="text-blue-600 hover:text-blue-700 text-sm block w-full"
                     >
                       {isLogin 
