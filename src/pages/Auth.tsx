@@ -407,7 +407,7 @@ const Auth = () => {
                         : 'Already have an account? Sign in'
                       }
                     </button>
-                    {isLogin && pendingEmail && (
+                    {isLogin && (
                       <Link 
                         to="/forgot-password" 
                         className="text-blue-600 hover:text-blue-700 text-sm block"
