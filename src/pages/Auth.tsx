@@ -91,7 +91,7 @@ const Auth = () => {
         if (error) {
           toast({
             title: "Sign In Failed",
-            description: error.message,
+            description: error.message || "An unexpected error occurred",
             variant: "destructive"
           });
         } else if (needs2FA) {
@@ -125,10 +125,11 @@ const Auth = () => {
         
         const { error, needsVerification } = await signUp(email, password, fullName, companyName);
         if (error) {
+          const isEmailDeliveryDelay = error.code === 'email_delivery_timeout';
           toast({
-            title: "Sign Up Failed",
-            description: error.message,
-            variant: "destructive"
+            title: isEmailDeliveryDelay ? "Check Your Email" : "Sign Up Failed",
+            description: error.message || "An unexpected error occurred",
+            variant: isEmailDeliveryDelay ? "default" : "destructive"
           });
         } else if (needsVerification) {
           // Move to verification step
