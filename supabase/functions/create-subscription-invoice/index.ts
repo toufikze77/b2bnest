@@ -87,14 +87,23 @@ serve(async (req) => {
       });
     }
 
-    // Get user from email
-    const { data: userData, error: userError } = await supabaseService.auth.admin.getUserByEmail(customer.email as string);
-    if (userError || !userData.user) {
-      throw new Error("User not found");
-    }
+    // Caller is already verified and matches the Stripe customer email
+    const user = callerData.user;
+    logStep("Found user", { userId: user.id });
 
-    const user = userData.user;
-    logStep("Found user", { userId: user.id, email: user.email });
+    // Idempotency: one invoice per checkout session
+    const { data: existing } = await supabaseService
+      .from('invoices')
+      .select('id, invoice_number, total_amount, currency')
+      .eq('user_id', user.id)
+      .ilike('notes', `%${sessionId}%`)
+      .maybeSingle();
+    if (existing) {
+      return new Response(JSON.stringify({ success: true, invoice: {
+        id: existing.id, invoice_number: existing.invoice_number,
+        amount: existing.total_amount, currency: existing.currency,
+      } }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
+    }
 
     // Get user profile for company info
     const { data: profile } = await supabaseService
@@ -127,8 +136,8 @@ serve(async (req) => {
       items: [{
         description: planName,
         quantity: 1,
-        price: (amount / 100), // Convert from pence to pounds
-        total: (amount / 100)
+        rate: (amount / 100), // Convert from pence to pounds
+        amount: (amount / 100)
       }],
       subtotal: (amount / 100),
       tax_rate: 20, // 20% VAT
