@@ -146,6 +146,11 @@ const Auth = () => {
           });
           return;
         }
+
+        toast({
+          title: "Creating Your Account",
+          description: "Please wait while we request your activation email.",
+        });
         
         const { error, needsVerification } = await signUp(email, password, fullName, companyName);
         if (error) {
