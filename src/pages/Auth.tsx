@@ -38,8 +38,19 @@ const Auth = () => {
     });
     setResending(false);
     const msg = error?.message || '';
-    if (error && !(error.status === 504 || msg === '{}' || msg.toLowerCase().includes('deadline'))) {
+    const isDeliveryTimeout = Boolean(error) && (
+      error?.status === 504 ||
+      msg === '{}' ||
+      msg.toLowerCase().includes('deadline') ||
+      msg.toLowerCase().includes('timeout')
+    );
+    if (error && !isDeliveryTimeout) {
       toast({ title: 'Could not resend', description: msg || 'Please wait a minute and try again.', variant: 'destructive' });
+    } else if (isDeliveryTimeout) {
+      toast({
+        title: 'Activation Requested',
+        description: 'The email service is taking longer than expected. Check your inbox shortly, then try again if it does not arrive.',
+      });
     } else {
       toast({ title: 'Activation email sent', description: `We sent a new activation link to ${target}. Check your inbox and spam folder.` });
     }
