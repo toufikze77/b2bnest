@@ -136,8 +136,8 @@ serve(async (req) => {
       items: [{
         description: planName,
         quantity: 1,
-        price: (amount / 100), // Convert from pence to pounds
-        total: (amount / 100)
+        rate: (amount / 100), // Convert from pence to pounds
+        amount: (amount / 100)
       }],
       subtotal: (amount / 100),
       tax_rate: 20, // 20% VAT
