@@ -3,7 +3,7 @@ import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavoriteTools } from '@/hooks/useFavoriteTools';
@@ -71,6 +71,13 @@ const BusinessTools = () => {
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, []);
+
+  // Sync when the side menu links to a tool while already on this page
+  const location = useLocation();
+  useEffect(() => {
+    const toolParam = new URLSearchParams(location.search).get('tool') as ToolType | null;
+    setCurrentToolState(toolParam || 'overview');
+  }, [location.search]);
 
   const tools = [
     {
