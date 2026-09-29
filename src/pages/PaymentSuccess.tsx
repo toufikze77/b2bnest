@@ -33,8 +33,8 @@ const PaymentSuccess = () => {
           } else {
             setInvoiceCreated(true);
             toast({
-              title: "Invoice Created",
-              description: "Your payment invoice has been generated and is available in your dashboard.",
+              title: "Added to Expenses",
+              description: "This payment has been added to your Expenses. Your official B2BNEST invoice is emailed by Stripe and available under Manage billing.",
             });
           }
         } catch (error) {
@@ -60,7 +60,7 @@ const PaymentSuccess = () => {
   };
 
   const handleViewDashboard = () => {
-    navigate('/dashboard');
+    navigate('/business-tools?tool=business-finance-assistant&tab=expenses');
   };
 
   if (paymentStatus === 'processing') {
@@ -103,7 +103,7 @@ const PaymentSuccess = () => {
               Your payment has been processed successfully. You should receive a confirmation email shortly.
               {invoiceCreated && (
                 <span className="block mt-2 text-primary font-medium">
-                  Your invoice has been automatically generated and is available in your dashboard.
+                  This payment has been added to your Expenses. Your official B2BNEST invoice is available under Manage billing.
                 </span>
               )}
             </p>
@@ -118,7 +118,7 @@ const PaymentSuccess = () => {
             {invoiceCreated && (
               <Button onClick={handleViewDashboard} className="w-full" variant="default">
                 <FileText className="h-4 w-4 mr-2" />
-                View Invoice in Dashboard
+                View in Expenses
               </Button>
             )}
             <Button onClick={handleReturnHome} className="w-full" variant={invoiceCreated ? "outline" : "default"}>

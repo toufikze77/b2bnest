@@ -91,88 +91,63 @@ serve(async (req) => {
     const user = callerData.user;
     logStep("Found user", { userId: user.id });
 
-    // Idempotency: one invoice per checkout session
+    // The official invoice is the one Stripe issues on behalf of B2BNEST (shown in the
+    // customer portal, branded via Stripe settings). For the customer's own books we record
+    // this purchase as an EXPENSE (money they paid to B2BNEST) — never as a sales invoice.
+    const sessionTag = `ref:${sessionId}`;
     const { data: existing } = await supabaseService
-      .from('invoices')
-      .select('id, invoice_number, total_amount, currency')
+      .from('expenses')
+      .select('id, amount, description')
       .eq('user_id', user.id)
-      .ilike('notes', `%${sessionId}%`)
+      .ilike('description', `%${sessionTag}%`)
       .maybeSingle();
     if (existing) {
-      return new Response(JSON.stringify({ success: true, invoice: {
-        id: existing.id, invoice_number: existing.invoice_number,
-        amount: existing.total_amount, currency: existing.currency,
-      } }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
+      return new Response(JSON.stringify({ success: true, expense: existing }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
+      });
     }
 
-    // Get user profile for company info
-    const { data: profile } = await supabaseService
-      .from('profiles')
-      .select('full_name, company')
-      .eq('id', user.id)
-      .single();
-
-    // Generate invoice number
-    const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-
-    // Determine the plan from the Stripe price itself (lookup key first, exact amount as
-    // fallback). No amount-range guessing — that is what mislabelled a £350 payment before.
-    const amount = price.unit_amount || 0;
     const resolved = planFromLookupKey(price.lookup_key) ??
-      planFromAmount(amount, price.recurring?.interval);
+      planFromAmount(price.unit_amount || 0, price.recurring?.interval);
     const planName = resolved
       ? `${resolved.plan.name} (${resolved.interval === "year" ? "Annual" : "Monthly"})`
       : "Subscription Plan";
 
-    // Create invoice record
-    const invoiceData = {
-      user_id: user.id,
-      invoice_number: invoiceNumber,
-      company_name: "BusinessForms Pro",
-      company_address: "123 Business Street, London, UK",
-      client_name: profile?.full_name || customer.name || user.email,
-      client_email: user.email,
-      client_address: customer.address ? `${customer.address.line1}, ${customer.address.city}, ${customer.address.country}` : null,
-      items: [{
-        description: planName,
-        quantity: 1,
-        rate: (amount / 100), // Convert from pence to pounds
-        amount: (amount / 100)
-      }],
-      subtotal: (amount / 100),
-      tax_rate: 20, // 20% VAT
-      tax_amount: (amount / 100) * 0.2,
-      total_amount: (amount / 100) * 1.2,
-      currency: price.currency.toUpperCase(),
-      status: 'paid',
-      due_date: new Date().toISOString().split('T')[0], // Today's date
-      notes: `Payment processed via Stripe. Subscription ID: ${subscription.id}. Session ID: ${sessionId}.`,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+    // Amount actually paid (Stripe total, already inclusive of any tax Stripe charged).
+    const paidTotal = (session.amount_total ?? price.unit_amount ?? 0) / 100;
 
-    const { data: invoice, error: invoiceError } = await supabaseService
-      .from('invoices')
-      .insert(invoiceData)
+    let stripeInvoiceNumber: string | null = null;
+    let stripeInvoiceUrl: string | null = null;
+    if (session.invoice) {
+      try {
+        const inv = await stripe.invoices.retrieve(session.invoice as string);
+        stripeInvoiceNumber = inv.number ?? null;
+        stripeInvoiceUrl = inv.hosted_invoice_url ?? inv.invoice_pdf ?? null;
+      } catch (_) { /* optional */ }
+    }
+
+    const { data: expense, error: expenseError } = await supabaseService
+      .from('expenses')
+      .insert({
+        user_id: user.id,
+        category: 'Software subscription',
+        description: `B2BNEST ${planName}${stripeInvoiceNumber ? ` · Invoice ${stripeInvoiceNumber}` : ''} (${price.currency.toUpperCase()}) ${sessionTag}`,
+        amount: paidTotal,
+        date: new Date().toISOString().split('T')[0],
+        receipt_url: stripeInvoiceUrl,
+        status: 'paid',
+      })
       .select()
       .single();
 
-    if (invoiceError) {
-      logStep("Error creating invoice", invoiceError);
-      throw new Error(`Failed to create invoice: ${invoiceError.message}`);
+    if (expenseError) {
+      logStep("Error recording expense", expenseError);
+      throw new Error(`Failed to record expense: ${expenseError.message}`);
     }
 
-    logStep("Invoice created successfully", { invoiceId: invoice.id, invoiceNumber });
+    logStep("Expense recorded", { expenseId: expense.id });
 
-    return new Response(JSON.stringify({ 
-      success: true, 
-      invoice: {
-        id: invoice.id,
-        invoice_number: invoiceNumber,
-        amount: invoiceData.total_amount,
-        currency: invoiceData.currency
-      }
-    }), {
+    return new Response(JSON.stringify({ success: true, expense }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

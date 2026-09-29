@@ -41,8 +41,10 @@ const groups = [
     { label: 'Lead generation', to: '/lead-generation', icon: BriefcaseBusiness },
   ] },
   { label: 'Money', items: [
-    { label: 'Invoices & quotes', to: '/business-tools', icon: Receipt },
-    { label: 'Finance', to: '/business-overview', icon: CircleDollarSign },
+    { label: 'Invoices & quotes', to: '/business-tools?tool=business-finance-assistant&tab=invoices', icon: Receipt },
+    { label: 'Expenses', to: '/business-tools?tool=business-finance-assistant&tab=expenses', icon: Receipt },
+    { label: 'Finance', to: '/business-tools?tool=business-finance-assistant&tab=dashboard', icon: CircleDollarSign },
+    { label: 'Business overview', to: '/business-overview', icon: BarChart3 },
   ] },
   { label: 'Team', items: [{ label: 'Employee rota', to: '/rota', icon: Users }] },
   { label: 'Automate', items: [

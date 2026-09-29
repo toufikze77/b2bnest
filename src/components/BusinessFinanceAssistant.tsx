@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { supabase } from '@/integrations/supabase/client';
@@ -398,7 +399,18 @@ const BusinessFinanceAssistant = () => {
   const { settings } = useUserSettings();
   const { templateFor } = useDocumentTemplates();
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'quotes' | 'invoices' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'banking' | 'payroll' | 'reports' | 'analytics' | 'templates'>('dashboard');
+  type FinanceTab = 'dashboard' | 'create' | 'quotes' | 'invoices' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'banking' | 'payroll' | 'reports' | 'analytics' | 'templates';
+  const FINANCE_TABS: FinanceTab[] = ['dashboard', 'create', 'quotes', 'invoices', 'products', 'suppliers', 'expenses', 'outgoings', 'banking', 'payroll', 'reports', 'analytics', 'templates'];
+  const location = useLocation();
+  const tabFromUrl = (): FinanceTab => {
+    const t = new URLSearchParams(location.search).get('tab') as FinanceTab | null;
+    return t && FINANCE_TABS.includes(t) ? t : 'dashboard';
+  };
+  const [activeTab, setActiveTab] = useState<FinanceTab>(tabFromUrl);
+  useEffect(() => {
+    setActiveTab(tabFromUrl());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
   const [documentType, setDocumentType] = useState<'invoice' | 'quote'>('quote');
   const [editingDocument, setEditingDocument] = useState<Quote | Invoice | null>(null);
   const [showDocumentList, setShowDocumentList] = useState(false);
