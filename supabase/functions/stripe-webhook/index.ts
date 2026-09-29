@@ -64,9 +64,29 @@ serve(async (req) => {
   }
 
   const syncSubscription = async (subscriptionId: string) => {
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+    let subscription = await stripe.subscriptions.retrieve(subscriptionId, {
       expand: ["items.data.price"],
     });
+    // If this subscription no longer grants access but the customer holds another
+    // live one, sync the live one instead so the account is never briefly downgraded.
+    if (!ENTITLED_STATUSES.includes(subscription.status)) {
+      const others = await stripe.subscriptions.list({
+        customer: subscription.customer as string,
+        status: "all",
+        limit: 20,
+        expand: ["data.items.data.price"],
+      });
+      const live = others.data
+        .filter((s) => s.id !== subscription.id && ENTITLED_STATUSES.includes(s.status))
+        .sort((a, b) => (b.current_period_end ?? 0) - (a.current_period_end ?? 0))[0];
+      if (live) {
+        logStep("Ended subscription superseded by another live one", {
+          ended: subscription.id,
+          live: live.id,
+        });
+        subscription = live;
+      }
+    }
     const item = subscription.items.data[0];
     const price = item?.price;
     const resolved = planFromLookupKey(price?.lookup_key) ??
