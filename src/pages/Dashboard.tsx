@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Activity, AlarmClock, ArrowRight, Building2, CalendarClock, CalendarDays, CheckCircle2, CheckSquare2, Circle,
+  Activity, AlarmClock, ArrowRight, Building2, CalendarClock, CalendarPlus, ChevronDown, CalendarDays, CheckCircle2, CheckSquare2, Circle,
   FolderKanban, FolderPlus, LayoutGrid, LayoutTemplate, ListTodo, Plus, Receipt, UserRound, Users, X,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState, LoadingRows } from '@/components/ui/states';
 import { cn } from '@/lib/utils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const fmtDate = (d: string) => formatDueDate(d);
 const fmtRelative = (iso: string | null | undefined) => {
@@ -118,6 +119,43 @@ function StepList({ heading, note, steps }: { heading: string; note?: string; st
   );
 }
 
+const projectHref = (id: string) => `/project-management?view=list&project=${id}`;
+const editDeadlineHref = (id: string) => `/project-management?view=list&project=${id}&edit=${id}`;
+
+function DeadlineEmpty({ canManage, projects }: { canManage: boolean; projects: { id: string; name: string }[] }) {
+  if (projects.length === 0) {
+    return (
+      <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">{canManage ? 'No projects yet. Create one, then set its deadline.' : 'No projects yet. A company owner, admin or manager can create one.'}</p>
+        {canManage && <Button size="sm" variant="outline" asChild><Link to="/project-management?create=project"><FolderPlus className="h-4 w-4" aria-hidden="true" />Create project</Link></Button>}
+      </div>
+    );
+  }
+  if (!canManage) {
+    return <p className="px-5 py-4 text-sm text-muted-foreground">No active project has a deadline yet. Ask a company owner, admin or manager to add one.</p>;
+  }
+  return (
+    <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-muted-foreground">No active project has a deadline yet.</p>
+      {projects.length === 1 ? (
+        <Button size="sm" variant="outline" asChild><Link to={editDeadlineHref(projects[0].id)}><CalendarPlus className="h-4 w-4" aria-hidden="true" />Add project deadline</Link></Button>
+      ) : (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="outline"><CalendarPlus className="h-4 w-4" aria-hidden="true" />Add project deadline<ChevronDown className="h-4 w-4" aria-hidden="true" /></Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="max-h-72 w-64 overflow-y-auto">
+            <DropdownMenuLabel>Choose a project</DropdownMenuLabel>
+            {projects.map((p) => (
+              <DropdownMenuItem key={p.id} asChild><Link to={editDeadlineHref(p.id)} className="truncate">{p.name}</Link></DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+    </div>
+  );
+}
+
 const Dashboard = () => {
   const { user } = useAuth();
   const { organizationId, organization, loading: orgLoading } = useActiveOrganization();
@@ -126,6 +164,7 @@ const Dashboard = () => {
   const groups = data.groups;
   const attentionCount = groups.overdue.items.length + groups.dueToday.items.length + groups.upcoming.items.length;
   const companyName = organization?.name || 'this company';
+  const canManageProjects = hasRole(role, [...ADMIN_ROLES, 'manager']);
 
   const dKey = user && organizationId ? dismissKey(user.id, organizationId) : null;
   const [dismissed, setDismissed] = useState(false);
@@ -263,17 +302,17 @@ const Dashboard = () => {
             {data.loading ? <LoadingRows rows={2} label="Loading deadlines" /> : data.projectsError ? (
               <p className="px-5 py-4 text-sm text-muted-foreground">Deadlines couldn't be loaded.</p>
             ) : deadlines.length === 0 ? (
-              <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-muted-foreground">No active project has a deadline set.{!hasRole(role, [...ADMIN_ROLES, 'manager']) && ' Ask a company admin to add one.'}</p>
-                {hasRole(role, [...ADMIN_ROLES, 'manager']) && <Button size="sm" variant="outline" asChild><Link to="/project-management">Set deadlines</Link></Button>}
-              </div>
+              <DeadlineEmpty canManage={canManageProjects} projects={data.activeProjects} />
             ) : (
               <ul className="divide-y divide-border">
                 {deadlines.map((p) => (
-                  <li key={p.id} className="flex items-center gap-3 px-5 py-2.5 text-sm">
-                    <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                    <span className="min-w-0 flex-1 truncate">{p.name}</span>
-                    <span className="shrink-0 text-[13px] font-medium tabular-nums">{fmtDate(p.deadline!)}</span>
+                  <li key={p.id}>
+                    <Link to={projectHref(p.id)} className="flex items-center gap-3 px-5 py-2.5 text-sm hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
+                      <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                      <span className="min-w-0 flex-1 truncate font-medium">{p.name}</span>
+                      <span className="shrink-0 text-sm font-medium tabular-nums">{fmtDate(p.deadline!)}</span>
+                      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    </Link>
                   </li>
                 ))}
               </ul>
