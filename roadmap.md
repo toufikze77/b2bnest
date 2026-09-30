@@ -42,7 +42,8 @@
 - [x] UI Wave 1 — Foundation completion implemented in preview (page frame + breadcrumbs, backgrounds, sidebar IA, notifications panel, lazy routes): `docs/ui-wave1-foundation-report-2026-09-30.md`
   - [x] Build, typecheck, five-width overflow, keyboard/focus, active-state checks
   - [ ] Owner signed-in review (notifications data, company switching, deep links)
-  - [ ] Tenant/security suite re-run (harness unavailable this session)
+  - [x] Notification panel fixes + 4/4 targeted tests
+  - [x] Tenant/security suite re-run: 642 PASS / 0 FAIL / 54 INFO (2026-09-30)
   - [ ] Production publish (after owner review)
 - [ ] UI Wave 2 — Activation (dashboard consolidation, needs-attention, first-run checklist, empty/loading/error families)
 - [ ] UI Wave 3 — Work & customers (projects views, tasks, calendar, CRM table + side panel)
@@ -56,7 +57,7 @@
 - [x] Preserve published pricing at Starter £19/£190, Professional £35/£350, and Enterprise £85/£850
 - [x] Verify import, template, and rota creation require the validated selected company
 - [x] Verify historical-project cleanup remains fail-closed and document unresolved owner decisions without guessing
-- [ ] Re-run the complete Wave 1 safety suite when the disposable local PostgreSQL harness is available
+- [x] Re-run the complete Wave 1 safety suite on a disposable local PostgreSQL harness (642/0/54, 2026-09-30)
 
 # Final production pre-deployment audit (2026-09-19)
 
