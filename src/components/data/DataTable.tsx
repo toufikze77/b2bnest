@@ -54,7 +54,20 @@ export function DataTable<T>({ rows, columns, rowKey, pageSize = 25, caption, em
 
   return (
     <div className="space-y-3">
-      <div className="w-full overflow-x-auto rounded-lg border bg-card [contain:inline-size]">
+      <ul aria-label={caption} className="divide-y rounded-lg border bg-card md:hidden">
+        {visible.map((r) => (
+          <li key={rowKey(r)} className="space-y-1.5 p-3">
+            {columns.map((c, i) => (
+              <div key={c.id} className={i === 0 ? 'text-base' : 'flex justify-between gap-3 text-sm'}>
+                {i > 0 && <span className="text-muted-foreground">{c.header}</span>}
+                <span className="min-w-0 truncate">{c.cell(r)}</span>
+              </div>
+            ))}
+            {rowActions && <div className="flex justify-end">{rowActions(r)}</div>}
+          </li>
+        ))}
+      </ul>
+      <div className="hidden w-full overflow-x-auto rounded-lg border bg-card md:block">
         <table className="w-full min-w-[640px] text-sm">
           <caption className="sr-only">{caption}</caption>
           <thead className="border-b bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">

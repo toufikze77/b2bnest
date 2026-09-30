@@ -35,7 +35,34 @@ export function TaskListView<T extends ListTask>({ tasks, onEdit, onArchive, onC
   }
   const today = toDay(new Date());
   return (
-    <div className="w-full overflow-x-auto rounded-lg border bg-card [contain:inline-size]">
+    <>
+    <ul aria-label="Tasks" className="divide-y rounded-lg border bg-card md:hidden">
+      {tasks.map((t) => {
+        const day = toDay(t.dueDate);
+        const overdue = !!day && day < today && t.status !== 'done';
+        return (
+          <li key={t.id} className="flex items-start justify-between gap-2 p-3">
+            <div className="min-w-0 space-y-1">
+              <button type="button" onClick={() => onEdit(t)} className="rounded-sm text-left font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{t.title}</button>
+              <div className="flex flex-wrap items-center gap-1.5 text-[13px] text-muted-foreground">
+                <StatusBadge value={t.status} prefix="Status" /><StatusBadge value={t.priority} prefix="Priority" />
+                <span className={overdue ? 'font-medium text-destructive' : ''}>{day ? formatDueDate(day) : 'No due date'}</span>
+              </div>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="ghost" aria-label={`Actions for ${t.title}`}><MoreHorizontal className="h-4 w-4" /></Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => onEdit(t)}>Edit</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onArchive(t.id)}>Archive</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </li>
+        );
+      })}
+    </ul>
+    <div className="hidden w-full overflow-x-auto rounded-lg border bg-card md:block">
       <table className="w-full min-w-[640px] text-sm">
         <thead className="border-b bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
           <tr>
@@ -88,5 +115,6 @@ export function TaskListView<T extends ListTask>({ tasks, onEdit, onArchive, onC
         </tbody>
       </table>
     </div>
+    </>
   );
 }
