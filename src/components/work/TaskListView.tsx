@@ -35,7 +35,7 @@ export function TaskListView<T extends ListTask>({ tasks, onEdit, onArchive, onC
   }
   const today = toDay(new Date());
   return (
-    <div className="overflow-x-auto rounded-lg border bg-card">
+    <div className="w-full overflow-x-auto rounded-lg border bg-card [contain:inline-size]">
       <table className="w-full min-w-[640px] text-sm">
         <thead className="border-b bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
           <tr>

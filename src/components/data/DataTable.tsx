@@ -54,7 +54,7 @@ export function DataTable<T>({ rows, columns, rowKey, pageSize = 25, caption, em
 
   return (
     <div className="space-y-3">
-      <div className="overflow-x-auto rounded-lg border bg-card">
+      <div className="w-full overflow-x-auto rounded-lg border bg-card [contain:inline-size]">
         <table className="w-full min-w-[640px] text-sm">
           <caption className="sr-only">{caption}</caption>
           <thead className="border-b bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
