@@ -29,32 +29,61 @@ const addDays = (days: number) => {
  * custom_fields.workspace.id so they open together in /workspaces/:id.
  * If any step fails, rows created by this call are removed again.
  */
+export type DuplicateReason = 'already_created' | 'in_progress' | 'incomplete';
+
 export class DuplicateTemplateApplicationError extends Error {
-  constructor(message: string, public existing: AppliedWorkspace | null) {
+  constructor(
+    message: string,
+    public existing: AppliedWorkspace | null,
+    public reason: DuplicateReason = existing ? 'already_created' : 'in_progress',
+    public workspaceId: string | null = null,
+  ) {
     super(message);
     this.name = 'DuplicateTemplateApplicationError';
   }
 }
 
+/** A 'pending' attempt older than this is treated as stalled (tab closed / crashed). */
+export const STALLED_ATTEMPT_MS = 10 * 60 * 1000;
+
 const claims = () => (supabase as any).from('template_applications');
 
 /**
  * Durable duplicate protection: records the attempt key in
- * template_applications (UNIQUE per company). A second request with the same
- * key — another tab, a double-sent request — is refused, and if the first one
- * already finished its result is returned so the caller can open it.
+ * template_applications (UNIQUE organization_id + idempotency_key).
+ * - done: returns the existing result so the caller opens it (no new copy)
+ * - pending: refused as "in progress", unless stalled and created by this
+ *   user — then the stale record is removed and the attempt re-claimed once
+ * - incomplete: refused with the workspace id so leftovers can be recovered
  */
-const claimAttempt = async (organizationId: string, key: string, templateSlug: string): Promise<AppliedWorkspace | null> => {
-  const { error } = await claims().insert({ organization_id: organizationId, idempotency_key: key, template_slug: templateSlug });
+const claimAttempt = async (
+  organizationId: string, userId: string, key: string, templateSlug: string, retried = false,
+): Promise<AppliedWorkspace | null> => {
+  const { error } = await claims().insert({ organization_id: organizationId, idempotency_key: key, template_slug: templateSlug, created_by: userId });
   if (!error) return null;
   if (error.code !== '23505') throw new Error(error.message || 'Could not start creating this template.');
   const { data } = await claims()
-    .select('status, kind, workspace_id, primary_project_id')
+    .select('status, kind, workspace_id, primary_project_id, created_by, created_at')
     .eq('organization_id', organizationId).eq('idempotency_key', key).maybeSingle();
   if (data?.status === 'done') {
     return { kind: data.kind, workspaceId: data.workspace_id, projects: [], primaryProjectId: data.primary_project_id ?? '', totalTasks: 0 };
   }
-  throw new DuplicateTemplateApplicationError('This template is already being created — please wait for it to finish.', null);
+  if (data?.status === 'incomplete') {
+    throw new DuplicateTemplateApplicationError(
+      `An earlier attempt was left incomplete (workspace ${data.workspace_id ?? 'unknown'}). Remove its leftover boards before creating another copy.`,
+      null, 'incomplete', data.workspace_id ?? null,
+    );
+  }
+  const stalled = data?.status === 'pending' && data.created_by === userId && data.created_at
+    && Date.now() - new Date(data.created_at).getTime() > STALLED_ATTEMPT_MS;
+  if (stalled && !retried) {
+    const { data: removed, error: delError } = await claims().delete()
+      .eq('organization_id', organizationId).eq('idempotency_key', key).eq('status', 'pending').select('id');
+    if (!delError && Array.isArray(removed) && removed.length === 1) {
+      return claimAttempt(organizationId, userId, key, templateSlug, true);
+    }
+  }
+  throw new DuplicateTemplateApplicationError('This template is already being created — please wait for it to finish.', null, 'in_progress');
 };
 
 export const applyWorkspaceTemplate = async (
@@ -69,7 +98,7 @@ export const applyWorkspaceTemplate = async (
   const { userId, organizationId } = await assertActiveOrganization(options.organizationId);
   const key = options.idempotencyKey;
   if (key) {
-    const existing = await claimAttempt(organizationId, key, template.slug);
+    const existing = await claimAttempt(organizationId, userId, key, template.slug);
     if (existing) throw new DuplicateTemplateApplicationError('This template was already created.', existing);
   }
   const kind = getTemplateKind(template);
