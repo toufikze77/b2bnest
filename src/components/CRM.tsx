@@ -495,6 +495,9 @@ const CRM = () => {
     }
   };
 
+  // Old deep link: CRM security moved to company settings.
+  if (params.get('tab') === 'security') return <Navigate to="/settings?tab=company-security" replace />;
+
   if (!canAccessCRM) {
     return (
       <div className="max-w-4xl mx-auto p-6">
