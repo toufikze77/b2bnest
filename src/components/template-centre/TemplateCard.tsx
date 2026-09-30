@@ -1,4 +1,4 @@
-import { getTemplateKind, TEMPLATE_KIND_LABELS } from '@/lib/templateKind';
+import { getTemplateKind, getTemplateAvailability, TEMPLATE_KIND_LABELS } from '@/lib/templateKind';
 import React from 'react';
 import { Sparkles, LayoutGrid, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +27,7 @@ export const categoryName = (id: string) =>
 const TemplateCard = ({ template, usage, hasPremiumAccess, onPreview, onUse }: Props) => {
   const uses = usage?.created ?? 0;
   const plan = planLabel(template, hasPremiumAccess);
+  const availability = getTemplateAvailability(template);
 
   return (
     <article
@@ -54,6 +55,9 @@ const TemplateCard = ({ template, usage, hasPremiumAccess, onPreview, onUse }: P
           {TEMPLATE_KIND_LABELS[getTemplateKind(template)]}
           {template.boards.length > 1 ? ` · ${template.boards.length} boards` : ''}
         </Badge>
+        {!availability.available && (
+          <Badge variant="outline" className="border-destructive/40 text-[11px] text-destructive">Not available yet</Badge>
+        )}
         <Badge variant="outline" className="text-[11px] font-normal">
           {categoryName(template.category)}
         </Badge>
@@ -77,6 +81,10 @@ const TemplateCard = ({ template, usage, hasPremiumAccess, onPreview, onUse }: P
         </p>
       )}
 
+      {!availability.available && (
+        <p className="mt-3 text-xs text-muted-foreground">{availability.reason}</p>
+      )}
+
       <div className="mt-4 flex gap-2 border-t border-border pt-3">
         <Button
           variant="outline"
@@ -92,12 +100,14 @@ const TemplateCard = ({ template, usage, hasPremiumAccess, onPreview, onUse }: P
         <Button
           size="sm"
           className="flex-1"
+          disabled={!availability.available}
+          aria-label={availability.available ? `Use ${template.name}` : `${template.name} is not available yet`}
           onClick={(e) => {
             e.stopPropagation();
-            onUse(template);
+            if (availability.available) onUse(template);
           }}
         >
-          <LayoutGrid className="mr-1 h-4 w-4" /> Use template
+          <LayoutGrid className="mr-1 h-4 w-4" /> {availability.available ? 'Use template' : 'Unavailable'}
         </Button>
       </div>
     </article>

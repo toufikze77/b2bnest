@@ -2,7 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { WorkspaceTemplate } from '@/types/workspaceTemplate';
 import { logTemplateEvent } from '@/services/workspaceTemplateService';
 import { assertActiveOrganization } from '@/lib/activeOrganization';
-import { getTemplateKind, TemplateKind } from '@/lib/templateKind';
+import { getTemplateKind, getTemplateAvailability, TemplateKind, TemplateUnavailableError } from '@/lib/templateKind';
 
 export interface AppliedWorkspace {
   kind: TemplateKind;
@@ -95,6 +95,8 @@ export const applyWorkspaceTemplate = async (
     idempotencyKey?: string;
   },
 ): Promise<AppliedWorkspace> => {
+  const availability = getTemplateAvailability(template);
+  if (!availability.available) throw new TemplateUnavailableError(availability.reason ?? 'This template cannot be created.');
   const { userId, organizationId } = await assertActiveOrganization(options.organizationId);
   const key = options.idempotencyKey;
   if (key) {

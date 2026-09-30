@@ -59,6 +59,8 @@ export interface WorkspaceTemplate {
   subcategory: string;
   industries: string[];
   templateType: TemplateType;
+  /** Explicit destination; overrides inference from type/board count. */
+  kind?: 'project' | 'workspace';
   tags: string[];
   isAiPowered: boolean;
   aiFeatures: string[];
