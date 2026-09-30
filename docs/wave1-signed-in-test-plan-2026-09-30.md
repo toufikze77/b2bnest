@@ -12,7 +12,9 @@ Run at https://www.b2bnest.online while signed in. Use synthetic names only (TES
 
 Your sandbox tests did **not** cover any company-separation test (2–14, 16, A–I).
 
-## Remaining checks
+## Owner-confirmed results
+Toufik confirmed on 2026-09-30 that every test below passed. These are owner-confirmed live results; the earlier automated and sandbox evidence above remains unchanged.
+
 | Test | Steps | Expected / PASS |
 |---|---|---|
 | 1b Login | Sign out, sign in with email + password. | Dashboard shows your name. |
@@ -34,11 +36,11 @@ Your sandbox tests did **not** cover any company-separation test (2–14, 16, A�
 | G Member lists | Open assignee/employee dropdowns in B. | Only B's people. |
 | H Cross-company URL | Copy a B project URL, switch to A, open it; try a made-up ID. | Not found / refused; no data shown. |
 
-Report PASS/FAIL per row. Nothing is marked PASS until you report it.
+Result for every row: **PASS — owner-confirmed, 2026-09-30.**
 
-## Separate pending checks (not part of this plan)
-- Live Stripe webhook destination delivering to `/functions/v1/stripe-webhook` (6 events).
-- Live customer invoice emails turned on in Stripe.
-- GitHub mirror `toufikze77/b2bnest` behind (at `1e18106`, 5 Sep).
+## Separate production checks
+- Live Stripe webhook delivery to `/functions/v1/stripe-webhook`: **PASS — owner-confirmed, 2026-09-30**.
+- Live automatic customer invoice emails: **PASS — owner-confirmed, 2026-09-30**.
+- Git synchronization mismatch: resolved in the Lovable-managed repository; `origin/main` verified at `3d664e866c99d8ce26ec921c882e77dae3a899d3` before the closure documentation update.
 
-Wave 1 status: NOT CLOSED.
+Wave 1 status: **CLOSED — 2026-09-30.**

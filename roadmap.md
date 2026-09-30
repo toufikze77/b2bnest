@@ -38,7 +38,7 @@
 # Post-Wave-1 product experience / UI modernization (backlog — not authorized)
 
 - [x] Deep codebase UI audit and 30-section report: `docs/ui-ux-modernization-audit-2026-09.md`
-- [ ] Wave 1 operational completion first: publish validated build; assign 3 unassigned projects; review 4 mismatched tasks; production smoke test; freeze Wave 1
+- [x] Wave 1 operational completion: validated build published; historical assignments resolved; production signed-in, live webhook and live invoice-email checks passed (owner-confirmed); Wave 1 CLOSED 2026-09-30
 - [ ] UI Wave 1 — Foundation completion (tokens, page surface, sidebar IA fixes, breadcrumbs, notifications, route lazy loading)
 - [ ] UI Wave 2 — Activation (dashboard consolidation, needs-attention, first-run checklist, empty/loading/error families)
 - [ ] UI Wave 3 — Work & customers (projects views, tasks, calendar, CRM table + side panel)
@@ -60,8 +60,8 @@
 - [x] Verify production RLS coverage, grants and Wave 1 package already applied
 - [x] Confirm the pending release is application-only with no migration
 - [x] Publish `docs/production-pre-deployment-audit-2026-09.md`
-- [ ] Owner: resolve 3 unassigned projects and review 4 task/company mismatches
-- [ ] Owner: publish the release and run the post-deployment smoke tests
+- [x] Owner: resolved 3 unassigned projects and task/company mismatches
+- [x] Owner: published the release and confirmed all signed-in post-deployment checks passed
 
 ## Billing — recurring Stripe subscriptions (2026-09)
 - [x] Server-side plan catalogue with stable Stripe price lookup keys (£19/£190, £35/£350, £85/£850)
@@ -71,6 +71,16 @@
 - [x] Stripe Customer Portal via Settings → Billing
 - [x] Legacy stale price path and invoice mislabelling removed
 - [x] Tenant/security suite re-run: 642 PASS / 0 FAIL / 54 INFO
-- [ ] Owner: Stripe test-mode validation of the six combinations + portal/webhook configuration
+- [x] Owner: Stripe test-mode validation completed; live webhook delivery and automatic invoice emails confirmed
 - [ ] Owner: decide whether any legacy live subscriptions need a migration proposal
-- [ ] Owner: publish to production after Stripe validation
+- [x] Owner: publish to production after Stripe validation
+
+# Wave 1 closure (2026-09-30)
+
+- [x] Automated migration, isolation and rollback evidence preserved: 642 PASS / 0 FAIL / 54 INFO
+- [x] Signed-in tests 1–16 and A–I passed (owner-confirmed)
+- [x] Live Stripe webhook delivery passed (owner-confirmed)
+- [x] Live automatic customer invoice emails passed (owner-confirmed)
+- [x] Git synchronization verified before closure documentation update
+- [x] **WAVE 1 CLOSED**
+- [ ] Next task: GUI modernisation (separate authorization and release track)
