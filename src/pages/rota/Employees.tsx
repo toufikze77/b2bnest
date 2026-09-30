@@ -17,7 +17,14 @@ export default function Employees() {
   const [editing, setEditing] = useState<RotaEmployee | null>(null);
   const { toast } = useToast();
 
-  const openNew = () => { setEditing(null); setDialogOpen(true); };
+  const openNew = () => {
+    if (!organizationId) {
+      toast({ title: 'Choose a company first', description: 'Pick a company from the drop-down in the top bar, then add the employee.', variant: 'destructive' });
+      return;
+    }
+    setEditing(null);
+    setDialogOpen(true);
+  };
   const openEdit = (e: RotaEmployee) => { setEditing(e); setDialogOpen(true); };
 
   const remove = async (e: RotaEmployee) => {
