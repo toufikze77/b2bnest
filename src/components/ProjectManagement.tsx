@@ -93,7 +93,7 @@ import {
 } from 'lucide-react';
 import { TodoComments } from './enhanced-todos/TodoComments';
 import { CommentButton } from './CommentButton';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { EnhancedTodoView } from './enhanced-todos/EnhancedTodoView';
 import { ProjectCalendarView } from './project-management/ProjectCalendarView';
@@ -891,7 +891,7 @@ const ProjectManagement = () => {
     color: project.color,
     progress: project.progress,
     members: Array.isArray(project.members) ? project.members as string[] : [],
-    deadline: project.deadline ? new Date(project.deadline) : null,
+    deadline: project.deadline ? parseISO(String(project.deadline).slice(0, 10)) : null,
     budget: project.budget ? parseFloat(project.budget.toString()) : undefined,
     client: project.client,
     status: project.status as 'planning' | 'active' | 'on-hold' | 'completed',
@@ -920,7 +920,7 @@ const ProjectManagement = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      if (data) setProjects(data.map(formatProjectRow));
+      if (data) { setProjects(data.map(formatProjectRow)); setProjectsLoaded(true); }
 
       // Archived (not deleted, but archived)
       const { data: archived } = await projectsForActiveOrg()
@@ -952,6 +952,18 @@ const ProjectManagement = () => {
     setEditingProject(p);
     setShowEditProject(true);
   };
+
+  // Deep link from the dashboard: ?edit=<projectId> opens that company project's edit dialog once real data has loaded.
+  const [projectsLoaded, setProjectsLoaded] = useState(false);
+  useEffect(() => { setProjectsLoaded(false); }, [organizationId]);
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    if (!editId || !projectsLoaded) return;
+    const target = projects.find((x) => x.id === editId);
+    if (target) handleEditProject(target);
+    else toast({ title: 'Project not found', description: 'That project is not in the selected company, or you do not have access.', variant: 'destructive' });
+    setSearchParams((prev) => { const n = new URLSearchParams(prev); n.delete('edit'); return n; }, { replace: true });
+  }, [searchParams, projectsLoaded, projects]);
 
   const handleShareProject = (proj: any) => {
     const p = projects.find(x => x.id === proj.id) || proj;
