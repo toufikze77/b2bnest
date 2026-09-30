@@ -282,10 +282,10 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
               <Button variant="outline" size="sm" onClick={handleToday}>
                 Today
               </Button>
-              <Button variant="ghost" size="icon" onClick={handlePrevMonth}>
+              <Button variant="ghost" size="icon" onClick={handlePrevMonth} aria-label="Previous month">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={handleNextMonth}>
+              <Button variant="ghost" size="icon" onClick={handleNextMonth} aria-label="Next month">
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
