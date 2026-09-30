@@ -42,3 +42,13 @@ Tasks, projects and member counts filtered by `organization_id` of the top-bar c
 - Typecheck clean; `vite build` OK.
 - Full tenant/security suite (disposable PostgreSQL 17.9): 662 PASS / 0 FAIL / 54 INFO, exit 0.
 - Not verified signed in on real data — owner review still required. Still preview only.
+
+## Revision — operational dashboard (2026-09-30, preview only)
+
+- Layout: full-width frame (max 1760px); header with company, date and one primary action (New task); summary row (active projects, open tasks, overdue tasks, completed this week — all selected-company queries, "—/Unavailable" on failure, never 0); main column Needs attention + Active projects (name, status, done/total progress bar, next open due date, link); side column Workspaces (from `custom_fields.workspace`, links to /workspaces/:id), Project deadlines, Recently updated tasks, compact Quick actions, a separate "Your records" block (CRM/invoices are per-user), and the Get started checklist.
+- Removed duplicate CTAs (New task only in the header; empty state keeps a contextual Create task).
+- No revenue/invoice metrics (no company attribution yet). "Completed this week" relies on `todos.completed_at`; tasks closed without that timestamp are not counted.
+- Sidebar: collapsible groups (remembered per browser; the group with the current page cannot collapse), stronger active state, `aria-current`. All links/URLs unchanged.
+- Tests: 56/56 app tests (new: summary metrics + progress + workspace links + org scoping; failed metric shows Unavailable; summarizeProjects/weekStart/deadlines). Typecheck clean. No database changes.
+- Screenshots (synthetic data, every name marked "(sample)", served by intercepted network responses — not a real account): 1815×1321, 1440, 390. No horizontal overflow at any width.
+- Not checked: signed-in with real data.

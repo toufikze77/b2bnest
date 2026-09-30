@@ -250,7 +250,7 @@ const Dashboard = () => {
                   <li key={w.id}>
                     <Link to={w.href} className="flex items-center gap-3 px-5 py-3 text-sm hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
                       <span className="flex h-8 w-8 items-center justify-center rounded-md bg-info/10 text-info"><LayoutGrid className="h-4 w-4" aria-hidden="true" /></span>
-                      <span className="min-w-0 flex-1"><span className="block truncate font-medium">{w.name}</span><span className="block text-xs text-muted-foreground">{w.boards} boards · {w.open} open tasks</span></span>
+                      <span className="min-w-0 flex-1"><span className="block truncate font-medium">{w.name}</span><span className="block text-xs text-muted-foreground">{w.boards} {w.boards === 1 ? "board" : "boards"} · {w.open} open {w.open === 1 ? "task" : "tasks"}</span></span>
                       <ArrowRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                     </Link>
                   </li>
