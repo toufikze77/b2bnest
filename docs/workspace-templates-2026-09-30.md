@@ -48,7 +48,7 @@
 - Move creation into a SECURITY INVOKER Postgres function `apply_workspace_template(org, key, payload)` that runs in one transaction (true rollback) and returns the existing workspace when the key was already used.
 
 ## Verification
-Fresh run 2026-09-30 ~01:30 UTC:
+Fresh run 2026-09-30 01:23 UTC:
 - Production build: OK (vite build). Typecheck: clean.
 - Regression tests (vitest, mocked Supabase client): 21/21 pass across 5 files — incl. WorkspaceView (delayed board response, delayed previous-company response, column order + unsupported + empty group, boards Retry, concurrent status edits incl. zero-row update, failed update after board switch), apply service (company stamping, verified cleanup, incomplete creation on partial delete and on delete error), board helpers.
 - Tenant/security suite (disposable local PostgreSQL 17.9, fresh run): 642 PASS / 0 FAIL / 54 INFO, exit 0.
