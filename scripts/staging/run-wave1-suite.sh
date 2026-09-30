@@ -41,6 +41,16 @@ run_sql scripts/staging/60_wave1_tests.sql
 run_sql scripts/staging/70_wave1_import_template_tests.sql
 run_sql scripts/staging/80_wave1_reconciliation_tests.sql
 
+echo "==> Workspace-template duplicate protection (template_applications)"
+run_sql scripts/staging/90_template_applications_tests.sql
+# Real concurrency: two separate sessions claim the same key at the same time.
+CONC_SQL="begin; set local role authenticated; select set_config('request.jwt.claims', json_build_object('sub','aaaaaaaa-0000-4000-8000-000000000003','role','authenticated')::text, true); select pg_sleep(0.5); insert into public.template_applications(organization_id, idempotency_key) values ('0a000000-0000-4000-8000-000000000001','conc-key'); commit;"
+"${PSQL[@]}" -q -c "$CONC_SQL" >/dev/null 2>&1 & p1=$!
+"${PSQL[@]}" -q -c "$CONC_SQL" >/dev/null 2>&1 & p2=$!
+wait $p1 || true; wait $p2 || true
+conc="$("${PSQL[@]}" -At -c "select count(*) from public.template_applications where idempotency_key='conc-key'")"
+"${PSQL[@]}" -q -c "insert into sec.results(test_no, phase, resource, actor, action, target, expected, actual, verdict, evidence) values ('TA-20','TEMPLATE_APPS','template_applications','A_MEMBER x2','INSERT','two concurrent sessions, same key','ONE_ROW','ROWS=$conc', case when '$conc'='1' then 'PASS' else 'FAIL' end, 'parallel psql sessions')"
+
 read -r pass fail info other <<<"$("${PSQL[@]}" -At -F' ' -c "select count(*) filter (where verdict='PASS'), count(*) filter (where verdict='FAIL'), count(*) filter (where verdict='INFO'), count(*) filter (where verdict not in ('PASS','FAIL','INFO')) from sec.results;")"
 printf 'TOTAL SECURITY CHECKS: %s PASS / %s FAIL / %s INFO\n' "$pass" "$fail" "$info"
 if [[ "$fail" != "0" || "$other" != "0" ]]; then
