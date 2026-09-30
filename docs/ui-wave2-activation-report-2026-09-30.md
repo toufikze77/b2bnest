@@ -110,3 +110,13 @@ Release remains unpublished.
 
 ### Verification (sample data, stand-in backend, not real database)
 Browser run on the full rendered List and Board screens (/tmp/browser/edit/check_edit.py): one dialog + one overlay open; Escape closes it and focus returns to the Edit button; renaming a task sends one update and the new title shows after refresh; ⋯ menu lists Edit, Archive; Board Edit opens one dialog; Edit project saved deadline `2026-09-20` (UK time) and Dashboard showed "Website relaunch (sample) · 20 Sept" after reload. App tests 68/68 pass; code check clean. No database change. Signed-in owner re-check still required.
+
+## Save failures (owner-confirmed, signed-in preview) — 2026-09-30
+
+Owner checks: **Edit project save — FAILED**; **Edit task save — FAILED** ("Column todos.organization_id does not exist").
+
+Root causes (reproduced against the live API, project gvftvswyrevummbvyhxa, with signed-out requests):
+- Task: not a missing column, trigger or other database. `todos.organization_id` exists in the live schema and types. PostgREST re-applies the `.or(organization_id…, user_id…)` filter to the rows returned by `.select('id')`; columns absent from the select fail with 42703. Reproduced: `PATCH …&select=id` → 42703; `select=id,organization_id` → "column todos.user_id does not exist"; `select=id,organization_id,user_id` → normal permission check. Fix: select every filtered column. Company filter, RLS, triggers (membership, project–company consistency) and completion timestamps unchanged.
+- Project: the form sent UI-only fields (`customColumns`, etc.); the API replied PGRST204 "Could not find the 'customColumns' column", which was only logged to the console. Fix: send only real `projects` columns, scope to the selected company (same filter as reads), require exactly one updated row, show "Saving…", an inline error and a toast on failure.
+
+Checks: typecheck clean; app tests pass (mocked client); fresh suite 662 PASS / 0 FAIL / 54 INFO. Live API accepts the corrected request shapes (they reach the normal permission check). **Not verified:** a signed-in save and refresh on real data — no signed-in session is available in the sandbox; owner re-check required.

@@ -13,6 +13,9 @@ import { CalendarIcon, Loader2, X, Plus, DollarSign, Users, Target, Clock } from
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { useActiveOrganization } from '@/contexts/OrganizationContext';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 interface EditProjectDialogProps {
   isOpen: boolean;
@@ -72,7 +75,12 @@ const stageOptions = [
 ];
 
 const EditProjectDialog = ({ isOpen, onOpenChange, project, onUpdateProject }: EditProjectDialogProps) => {
+  const { organizationId } = useActiveOrganization();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  useEffect(() => { if (isOpen) setSaveError(null); }, [isOpen]);
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [formData, setFormData] = useState<Partial<Project>>({});
@@ -136,34 +144,58 @@ const EditProjectDialog = ({ isOpen, onOpenChange, project, onUpdateProject }: E
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!project || !formData.name?.trim()) return;
+    setSaveError(null);
+    if (!project) return;
+    if (!formData.name?.trim()) { setSaveError('Enter a project name.'); return; }
 
     setLoading(true);
     try {
+      // Send only real `projects` columns. The form state also carries UI-only
+      // fields (e.g. customColumns, created_at) that the API rejects.
       const updateData = {
-        ...formData,
+        name: formData.name.trim(),
+        description: formData.description ?? '',
+        color: formData.color,
+        status: formData.status,
+        client: formData.client ?? null,
+        budget: formData.budget ?? null,
+        members: formData.members ?? [],
+        stage: formData.stage ?? null,
+        priority: formData.priority ?? null,
+        progress: formData.progress ?? 0,
+        estimated_hours: formData.estimated_hours ?? null,
+        actual_hours: formData.actual_hours ?? null,
+        custom_fields: formData.custom_fields ?? {},
         // DATE column: send the local calendar day, not a UTC timestamp (which can shift a day).
         deadline: formData.deadline ? format(formData.deadline, 'yyyy-MM-dd') : null,
-        updated_at: new Date().toISOString(),
       };
 
-      const { data, error } = await supabase
-        .from('projects')
-        .update(updateData)
-        .eq('id', project.id)
-        .select()
-        .single();
+      let q = supabase.from('projects').update(updateData as any).eq('id', project.id);
+      // Stay inside the selected company; RLS still decides who may update.
+      // Filtered columns must also be selected (PostgREST re-applies filters to the returned rows).
+      if (organizationId && user) {
+        q = q.or(`organization_id.eq.${organizationId},and(organization_id.is.null,user_id.eq.${user.id})`);
+      }
+      const { data, error } = await q.select('*');
 
       if (error) throw error;
+      if (!data || data.length !== 1) {
+        throw new Error('You do not have permission to edit this project in the selected company.');
+      }
+      const row = data[0] as any;
 
       onUpdateProject({
-        ...data,
-        deadline: data.deadline ? new Date(data.deadline) : undefined,
-        status: data.status as 'planning' | 'active' | 'on-hold' | 'completed',
+        ...row,
+        deadline: row.deadline ? parseISO(String(row.deadline).slice(0, 10)) : undefined,
+        status: row.status as 'planning' | 'active' | 'on-hold' | 'completed',
       } as Project);
+      toast({ title: 'Project updated' });
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating project:', error);
+      const msg = error?.message || 'Project could not be saved.';
+      setSaveError(msg);
+      toast({ title: 'Project not saved', description: msg, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -566,14 +598,19 @@ const EditProjectDialog = ({ isOpen, onOpenChange, project, onUpdateProject }: E
             )}
           </div>
 
+          {saveError && (
+            <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              Project not saved: {saveError}
+            </p>
+          )}
           {/* Submit Buttons */}
           <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading || !formData.name?.trim()}>
               {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Update Project
+              {loading ? 'Saving…' : 'Update Project'}
             </Button>
           </div>
         </form>

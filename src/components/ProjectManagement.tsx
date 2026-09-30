@@ -2445,7 +2445,10 @@ const ProjectManagement = () => {
       .update(patch as any)
       .eq('id', taskId)
       .or(`organization_id.eq.${organizationId},and(organization_id.is.null,user_id.eq.${user.id})`)
-      .select('id');
+      // Every column used in the .or() filter must be in the returned select:
+      // PostgREST re-applies that filter to the returned rows, and a missing
+      // column fails with "column todos.organization_id does not exist".
+      .select('id, organization_id, user_id');
     if (error || !data || data.length !== 1) {
       toast({ title: 'Task not saved', description: error?.message || 'You do not have permission to edit this task in the selected company.', variant: 'destructive' });
       return;
