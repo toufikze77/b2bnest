@@ -173,7 +173,7 @@ describe('Dashboard', () => {
         { project_id: 'p1', status: 'done', due_date: null }, { project_id: 'p1', status: 'todo', due_date: addDaysIso(today, 2) }, { project_id: 'b1', status: 'todo', due_date: null },
       ], error: null };
       if (c.table === 'todos' && c.filters.some((f) => f[0] === 'gte')) return { count: 4, error: null };
-      if (c.table === 'todos' && c.filters.some((f) => f[0] === 'select' && f[2]?.head)) return { count: 9, error: null };
+      if (c.table === 'todos' && c.filters.some((f) => f[0] === 'select' && (f[2] as { head?: boolean } | undefined)?.head)) return { count: 9, error: null };
       return c.table === 'todos' ? { data: [], count: 0, error: null } : counts(0);
     };
     render(ui());
