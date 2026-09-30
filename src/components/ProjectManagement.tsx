@@ -97,7 +97,8 @@ import { format } from 'date-fns';
 import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { EnhancedTodoView } from './enhanced-todos/EnhancedTodoView';
 import { ProjectCalendarView } from './project-management/ProjectCalendarView';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
+import { PM_VIEWS, PmView, normalizePmParams, readPmProject, readPmTab, writePmProject, writePmTab } from '@/lib/pmView';
 
 // Enhanced interfaces
 interface Task {
@@ -307,17 +308,19 @@ const ProjectManagement = () => {
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'kanban' | 'list' | 'calendar' | 'timeline'>('kanban');
-  const [activeTab, setActiveTab] = useState('kanban');
-  const [selectedProject, setSelectedProject] = useState(() => {
-    // Honour a ?project=<id> deep link (used when applying a template), else show all tasks
-    try {
-      localStorage.removeItem('pm_selected_project'); // Clear any saved project filter
-      const fromUrl = new URLSearchParams(window.location.search).get('project');
-      if (fromUrl) return fromUrl;
-    } catch {}
-    return 'all';
-  });
+  // URL is the single source of truth for the view/tab and selected project (see src/lib/pmView.ts).
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = readPmTab(searchParams);
+  const activeView: PmView = (PM_VIEWS as readonly string[]).includes(activeTab) ? (activeTab as PmView) : 'kanban';
+  const setActiveTab = (tab: string) => {
+    setSearchParams((prev) => writePmTab(prev, readPmTab(new URLSearchParams({ tab }))));
+  };
+  const setActiveView = (view: PmView) => setActiveTab(view);
+  const selectedProject = readPmProject(searchParams);
+  const setSelectedProject = (projectId: string) => {
+    setSearchParams((prev) => writePmProject(prev, projectId));
+  };
+  useEffect(() => { try { localStorage.removeItem('pm_selected_project'); } catch {} }, []);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateTask, setShowCreateTask] = useState(false);
@@ -525,22 +528,22 @@ const ProjectManagement = () => {
   const [eventsSort, setEventsSort] = useState<'newest' | 'oldest'>('newest');
   const [eventsPage, setEventsPage] = useState(1);
 
+  // Normalize invalid/alias params and consume one-shot ?create= actions (removed so refresh doesn't reopen dialogs).
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const view = params.get('view');
-    const tab = params.get('tab');
     const create = params.get('create');
-    if (view === 'list' || view === 'calendar' || view === 'kanban' || view === 'timeline') {
-      setActiveView(view);
-      setActiveTab(view === 'timeline' ? 'timeline' : view);
+    let next = normalizePmParams(params) ?? params;
+    if (create) {
+      next = new URLSearchParams(next);
+      next.delete('create');
+      if (create === 'project') setShowCreateProject(true);
+      if (create === 'task') setShowCreateTask(true);
+      if (create === 'event') {
+        next = writePmTab(next, 'calendar');
+        openNewEventDialog();
+      }
     }
-    if (tab) setActiveTab(tab);
-    if (create === 'project') setShowCreateProject(true);
-    if (create === 'task') setShowCreateTask(true);
-    if (create === 'event') {
-      setActiveTab('calendar');
-      openNewEventDialog();
-    }
+    if (next.toString() !== params.toString()) setSearchParams(next, { replace: true });
   }, [location.search]);
 
   // Comment dialog state
