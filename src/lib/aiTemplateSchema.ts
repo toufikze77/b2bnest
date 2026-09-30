@@ -80,7 +80,7 @@ export function toWorkspaceTemplate(t: AiTemplate, id: string): WorkspaceTemplat
     boards: t.boards.map((b, i) => ({
       name: b.name, description: b.description, color: COLORS[i % COLORS.length],
       columns: [], statuses: [...STATUSES], views: [...b.views],
-      groups: b.groups.map((g) => ({ name: g.name, tasks: g.tasks.map((k) => ({ ...k })) })),
+      groups: b.groups.map((g) => ({ name: g.name as string, tasks: g.tasks.map((k) => ({ title: k.title as string, description: k.description, status: k.status!, priority: k.priority!, dayOffset: k.dayOffset as number })) })),
     })),
   };
 }
