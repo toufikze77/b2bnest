@@ -35,11 +35,15 @@
 - [x] Remove multi-company first-membership fallback and validate core mobile overflow
 - [ ] Production publish (blocked by explicit prohibition; separate authorization required)
 
-# Post-Wave-1 product experience / UI modernization (backlog — not authorized)
+# Post-Wave-1 product experience / UI modernization (UI Wave 1 authorized 2026-09-30; later waves not authorized)
 
 - [x] Deep codebase UI audit and 30-section report: `docs/ui-ux-modernization-audit-2026-09.md`
 - [x] Wave 1 operational completion: validated build published; historical assignments resolved; production signed-in, live webhook and live invoice-email checks passed (owner-confirmed); Wave 1 CLOSED 2026-09-30
-- [ ] UI Wave 1 — Foundation completion (tokens, page surface, sidebar IA fixes, breadcrumbs, notifications, route lazy loading)
+- [x] UI Wave 1 — Foundation completion implemented in preview (page frame + breadcrumbs, backgrounds, sidebar IA, notifications panel, lazy routes): `docs/ui-wave1-foundation-report-2026-09-30.md`
+  - [x] Build, typecheck, five-width overflow, keyboard/focus, active-state checks
+  - [ ] Owner signed-in review (notifications data, company switching, deep links)
+  - [ ] Tenant/security suite re-run (harness unavailable this session)
+  - [ ] Production publish (after owner review)
 - [ ] UI Wave 2 — Activation (dashboard consolidation, needs-attention, first-run checklist, empty/loading/error families)
 - [ ] UI Wave 3 — Work & customers (projects views, tasks, calendar, CRM table + side panel)
 - [ ] UI Wave 4 — Money & insights (invoices/quotes consolidation, finance tables, analytics)
@@ -83,4 +87,4 @@
 - [x] Live automatic customer invoice emails passed (owner-confirmed)
 - [x] Git synchronization verified before closure documentation update
 - [x] **WAVE 1 CLOSED**
-- [ ] Next task: GUI modernisation (separate authorization and release track)
+- [x] Next task: GUI modernisation authorized — UI Wave 1 in preview

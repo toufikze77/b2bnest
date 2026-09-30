@@ -164,7 +164,7 @@ const BusinessOverview: React.FC = () => {
   const netCash = data ? data.revenue - data.expensesTotal - data.billsDue : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-full">
       <SEOHead title="Business Overview | B2BNest" description="Unified overview of revenue, expenses, projects, tasks and CRM across your organization." canonicalUrl="https://www.b2bnest.online/business-overview" />
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-6">
@@ -172,7 +172,7 @@ const BusinessOverview: React.FC = () => {
             <ArrowLeft className="w-4 h-4" /> Back
           </Button>
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900">Business Overview</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[28px]">Business Overview</h1>
             <p className="text-gray-600">
               Unified view across {org?.name || 'your organization'} · {org?.memberIds.length || 1} member(s)
             </p>

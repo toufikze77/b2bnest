@@ -460,7 +460,7 @@ const BusinessTools = () => {
                 Comprehensive tools to help you start, manage, and grow your business with confidence.
               </p>
               
-               <div className="flex gap-2 mt-4">
+               <div className="flex flex-wrap gap-2 mt-4">
                 <Button
                   variant={filter === 'all' ? 'default' : 'outline'}
                   size="sm"
@@ -683,12 +683,12 @@ const BusinessTools = () => {
 
             {/* Quick Access to Quotes & Invoices */}
             <div className="mt-12 bg-gradient-to-r from-green-100/60 to-blue-100/60 rounded-lg p-6 border border-slate-200">
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
                 <div>
                   <h2 className="text-2xl font-bold mb-2">Quotes & Invoices</h2>
                   <p className="text-gray-600">Quick access to view and manage your business documents</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                   <Button
                     onClick={() => navigate('/dashboard')}
                     className="flex items-center gap-2"
@@ -774,10 +774,10 @@ const BusinessTools = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-full">
       <BusinessToolsSEO />
       {currentTool !== 'overview' && (
-        <div className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur border-b border-slate-200">
+        <div className="sticky top-16 z-10 bg-surface/95 backdrop-blur border-b border-border">
           <div className="max-w-6xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               <Button
