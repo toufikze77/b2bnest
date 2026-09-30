@@ -85,7 +85,7 @@ const TemplateCard = ({ template, usage, hasPremiumAccess, onPreview, onUse }: P
         <p className="mt-3 text-xs text-muted-foreground">{availability.reason}</p>
       )}
 
-      <div className="mt-4 flex gap-2 border-t border-border pt-3">
+      <div className="mt-auto flex flex-wrap gap-2 border-t border-border pt-3 [&>button]:min-w-[7rem]">
         <Button
           variant="outline"
           size="sm"

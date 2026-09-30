@@ -471,7 +471,7 @@ const TemplateCenter = () => {
             </div>
           ) : filtered.length === 0 ? (
             <div className="py-20 text-center">
-              {activeCategory && !query.trim() && templates.every((t) => t.category !== activeCategory) ? (
+              {activeCategory && !query.trim() && templates.every((t) => t.category !== activeCategory || (!!activeSubcategory && t.subcategory !== activeSubcategory)) ? (
                 <>
                   <p className="font-medium">No templates in this category yet</p>
                   <p className="mt-1 text-sm text-muted-foreground">
