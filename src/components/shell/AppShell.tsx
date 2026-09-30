@@ -66,13 +66,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const initials = (displayName || user?.email || '?').slice(0, 2).toUpperCase();
 
-  const active = (to: string) => {
+  const matches = (to: string) => {
     const [path, query] = to.split('?');
     if (location.pathname !== path) return false;
     if (!query) return true;
     const target = new URLSearchParams(query);
     return [...target.entries()].every(([key, value]) => new URLSearchParams(location.search).get(key) === value);
   };
+  // Only the most specific matching item is active (e.g. Calendar, not also Projects).
+  const allTargets = groups.flatMap((g) => g.items.map((i) => i.to));
+  const activeTo = allTargets.filter(matches).sort((x, y) => y.length - x.length)[0];
+  const active = (to: string) => to === activeTo;
 
   const handleSignOut = async () => {
     await signOut();
