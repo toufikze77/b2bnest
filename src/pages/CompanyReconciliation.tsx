@@ -82,6 +82,7 @@ export default function CompanyReconciliation() {
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
       <PageHeader
+        breadcrumbs={[{ label: 'Settings', to: '/settings?tab=companies' }, { label: 'Unassigned projects' }]}
         title="Unassigned projects"
         description="These projects were created before companies existed. Choose the company each one belongs to — we never guess."
       />
