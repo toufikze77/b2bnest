@@ -38,6 +38,7 @@ const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
 
   useEffect(() => {
     setName(template?.name ?? '');
+    setIncomplete(null);
   }, [template]);
 
   if (!template) return null;
