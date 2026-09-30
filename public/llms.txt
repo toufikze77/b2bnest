@@ -1,25 +1,26 @@
 # B2BNest
 
-> AI-powered all-in-one business platform offering 50+ free and affordable tools for entrepreneurs and small businesses — CRM, project management, invoicing, AI document generation, financial tracking, and more.
+> B2BNest is a SaaS business software platform for entrepreneurs and small businesses: 25+ business tools in one place, including CRM, projects and tasks, invoicing, expenses, HMRC-connected finance tools, AI document generation and an AI business advisor.
 
-B2BNest replaces multiple expensive SaaS subscriptions with a single, intelligent business ecosystem. The platform combines free utilities (QR generator, currency converter, business name generator) with affordable premium tools (CRM, project management, AI assistants) starting at $9.99/month.
+B2BNest replaces several separate subscriptions with one workspace that supports multiple companies per account. Free utilities (QR code generator, currency converter, business name generator and more) are available without a paid plan.
+
+## Pricing (GBP)
+
+- Starter: £19/month or £190/year — 1 user, 250 AI credits/month
+- Professional: £35/month or £350/year — 5 users, 1,000 AI credits/month
+- Enterprise: £85/month or £850/year — 25 users, 5,000 AI credits/month
 
 ## Pages
 
 - [Home](/): Overview of the B2BNest platform and featured tools
 - [About](/about): Company mission, values, and story
 - [Pricing](/pricing): Plans, features, and subscription tiers
-- [Business Tools](/business-tools): Full catalog of 50+ free and premium business tools
+- [Business Tools](/business-tools): Catalogue of 25+ business tools
 - [Contact](/contact): Get in touch with the B2BNest team
 - [Blog](/blog): Articles on business documentation, compliance, and operational efficiency
 - [Knowledge Base](/knowledge-base): Guides and how-to articles
 - [AI Showcase](/ai-showcase): Demonstrations of AI capabilities
 - [AI Studio](/ai-studio): AI-powered creation workspace
-- [Fundraising](/fundraising): B2BNEST token presale information
-- [Whitepaper](/whitepaper): Technical documentation and roadmap
-- [Tokenomics](/tokenomics): Token distribution and economics
-- [Live Charts](/live-charts): Market data and price tracking
-- [Business News](/business-news): Latest business and tech news
 - [Forum](/forum): Community discussion
 
 ## Categories
