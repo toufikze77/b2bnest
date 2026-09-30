@@ -88,3 +88,8 @@ Tasks, projects and member counts filtered by `organization_id` of the top-bar c
 - Save a project deadline from Dashboard, refresh, and confirm the exact date.
 
 Release remains unpublished.
+
+### Create task "two dialogs" investigation (2026-09-30)
+- Cause: ProjectManagement rendered `CreateTodoDialog` twice from the same `showCreateTask` flag (and the edit dialog twice from `showEditTask`), so opening Create task mounted two stacked modal dialogs and two overlays. The form also had a second, custom close (X) button next to the built-in one.
+- Fix: duplicate create/edit mounts removed (one of each remains); custom X removed; the dialog now returns focus to the element that opened it (it is opened from state, not a trigger).
+- Mocked browser check (sample data): one dialog and one overlay when open; 25 Tab presses never left the form; one Close button; Escape closed it with no leftover dialog, overlay or pointer lock; focus returned to "New Task"; `?create=task` opens exactly one dialog. App tests 68/68; typecheck clean.

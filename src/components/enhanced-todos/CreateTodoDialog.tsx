@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Plus, Flag, Calendar as CalendarIcon, Users, Brain, X, Check } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -208,6 +208,13 @@ const projectManagementTemplate = {
 const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null, teamId = 'all', teamMembers = [] }) => {
   const { user } = useAuth();
   const { organizationId: activeOrganizationId } = useActiveOrganization();
+  // Opened from state (no DialogTrigger): remember the element that opened it and return focus there on close.
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    if (isOpen && document.activeElement instanceof HTMLElement && document.activeElement !== document.body) {
+      returnFocusRef.current = document.activeElement;
+    }
+  }, [isOpen]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -400,11 +407,18 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="max-w-4xl max-h-[90vh] overflow-y-auto"
+        onCloseAutoFocus={(e) => {
+          const el = returnFocusRef.current;
+          if (el && el.isConnected) { e.preventDefault(); el.focus(); }
+          returnFocusRef.current = null;
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             {editTask ? 'Edit Task' : 'Create New Task'}
-            <div className="flex gap-2">
+            <div className="mr-8 flex gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -413,14 +427,6 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
               >
                 <Brain className="h-4 w-4 mr-2" />
                 {showAISuggestions ? 'Hide' : 'Show'} AI Suggestions
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => onOpenChange(false)}
-              >
-                <X className="h-4 w-4" />
               </Button>
             </div>
           </DialogTitle>
