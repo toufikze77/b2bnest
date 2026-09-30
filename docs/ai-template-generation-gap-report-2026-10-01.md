@@ -76,3 +76,23 @@ sections: **owner-confirmed PASS** (2026-09-30). Recorded separately from automa
 ## 7. Tests
 Frontend change only. Remaining brief §7 tests depend on §4 and are not yet run; nothing here
 claims they passed.
+
+## 8. Owner decisions (2026-10-01)
+- Test-copy database work approved; no live migration.
+- Personal credits retained initially.
+- Generation price NOT approved — calculate provider cost and credit value first.
+- Admin budget: separate, capped, configurable; size from cost estimates.
+- Provider: keep current OpenAI setup initially, subject to suitability check.
+- AI generation remains a separate pending implementation.
+
+## 9. Catalogue cleanup (preview, 2026-10-01)
+Owner reported empty categories (AI & Automation, Industries, Customer Support) — FAILED acceptance.
+Fix: `src/lib/templateCatalogue.ts` builds every customer menu, chip, type filter, industry list,
+quick link and count from usable templates only; empty parents/subcategories/industries/types hidden.
+Old `?category=` links to empty categories show the full available catalogue with a notice.
+"No templates in this category yet" message removed. Admin catalogue unchanged (all definitions).
+Tests (stand-in data, no database): 4 new, 91/91 pass; typecheck clean.
+Browser (signed out, desktop 1280 + phone 390): AI & Automation absent; "No templates in this
+category" absent; Customer Support shown with 1 usable template (Support Tickets); Industries filter
+lists only industries with usable templates (Real Estate hidden); `?category=ai-automation` shows notice
+and full catalogue. Signed-in owner check pending.

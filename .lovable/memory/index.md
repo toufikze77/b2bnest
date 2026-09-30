@@ -15,6 +15,7 @@ Updated: now
 - [Email Delivery System](mem://architecture/email-delivery-gmail-smtp) — Gmail SMTP standards and configurations
 - [AI Credit System](mem://features/ai-credit-system) — Plan limits and monthly reset rules for OpenAI calls
 - [Removed Features](mem://features/removed-from-platform) — Features permanently removed per user request
+- [AI template generation](mem://features/ai-template-generation) — Credit/price/budget/provider decisions; catalogue shows usable templates only
 - [NotePro Tool](mem://features/notepro-tool) — Free note-taking utility specifications
 - [Team Collaboration RLS](mem://architecture/rls-policy-team-collaboration) — Cross-user visibility rules for organizations
 - [HMRC Settings](mem://features/hmrc-integration-settings) — HMRC API credential configuration
