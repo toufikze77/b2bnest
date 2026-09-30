@@ -1,4 +1,7 @@
-import { completionPatch } from '@/lib/dashboardData';
+import { completionPatch, formatDueDate } from '@/lib/dashboardData';
+import { FilterBar } from '@/components/data/FilterBar';
+import { StatusBadge } from '@/components/data/StatusBadge';
+import { NoResults } from '@/components/ui/states';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { AlertCircle, ChevronLeft, ChevronRight, Info, Loader2, LayoutGrid } from 'lucide-react';
@@ -130,6 +133,12 @@ export default function WorkspaceView() {
   const unsupportedColumns = columns.filter((c) => !c.field).map((c) => c.label);
   const view = (supportedViews.includes(params.get('view') as ViewKey) ? params.get('view') : 'table') as ViewKey;
   const statusLabels = statusLabelsFor(board?.statuses);
+  // Shared filter bar (same component as Projects & tasks); filtering is display-only.
+  const [q, setQ] = useState('');
+  const [prio, setPrio] = useState('all');
+  const shown = useMemo(() => tasks === null ? null : tasks.filter((t) =>
+    (!q.trim() || t.title.toLowerCase().includes(q.trim().toLowerCase())) && (prio === 'all' || t.priority === prio)), [tasks, q, prio]);
+  const filterCount = (q.trim() ? 1 : 0) + (prio !== 'all' ? 1 : 0);
 
   const setParam = (key: string, value: string) => {
     const next = new URLSearchParams(params); next.set(key, value); setParams(next, { replace: key === 'view' });
@@ -212,12 +221,19 @@ export default function WorkspaceView() {
           </p>
         )}
 
+        {tasks !== null && tasks.length > 0 && (
+          <div className="mb-4">
+            <FilterBar search={q} onSearch={setQ} searchLabel="Search tasks" activeCount={filterCount} onClear={() => { setQ(''); setPrio('all'); }}
+              selects={[{ id: 'priority', label: 'Priority', value: prio, onChange: setPrio, options: [{ value: 'all', label: 'All priorities' }, { value: 'low', label: 'Low' }, { value: 'medium', label: 'Medium' }, { value: 'high', label: 'High' }, { value: 'urgent', label: 'Urgent' }] }]} />
+          </div>
+        )}
         {tasksCur.error ? <ErrorBox text={tasksCur.error} onRetry={loadTasks} />
           : tasks === null ? <Loading text="Loading tasks…" />
-          : view === 'table' ? <TableView tasks={tasks} groups={board.groups} columns={columns} statusLabels={statusLabels} onStatus={updateStatus} />
+          : filterCount > 0 && shown && shown.length === 0 ? <NoResults query={q.trim() || undefined} onClear={() => { setQ(''); setPrio('all'); }} />
+          : view === 'table' ? <TableView tasks={shown ?? tasks} groups={board.groups} columns={columns} statusLabels={statusLabels} onStatus={updateStatus} />
           : tasks.length === 0 ? <Empty title="No tasks on this board" text="Add tasks from Projects & tasks." />
-          : view === 'board' ? <KanbanView tasks={tasks} statusLabels={statusLabels} onStatus={updateStatus} />
-          : <CalendarView tasks={tasks} />}
+          : view === 'board' ? <KanbanView tasks={shown ?? tasks} statusLabels={statusLabels} onStatus={updateStatus} />
+          : <CalendarView tasks={shown ?? tasks} />}
       </section>
     </div>
   );
@@ -240,8 +256,8 @@ function Cell({ col, task, group, labels, onStatus }: { col: BoardColumn; task: 
   switch (col.field) {
     case 'title': return <span className="text-foreground">{task.title}</span>;
     case 'status': return <StatusSelect task={task} labels={labels} onStatus={onStatus} />;
-    case 'priority': return <span className="capitalize text-muted-foreground">{task.priority}</span>;
-    case 'due_date': return <span className="text-muted-foreground">{task.due_date ?? '—'}</span>;
+    case 'priority': return <StatusBadge value={task.priority} prefix="Priority" />;
+    case 'due_date': return <span className="whitespace-nowrap text-muted-foreground">{task.due_date ? formatDueDate(task.due_date) : '—'}</span>;
     case 'estimated_hours': return <span className="text-muted-foreground">{task.estimated_hours ?? '—'}</span>;
     case 'group': return <span className="text-muted-foreground">{group}</span>;
     default: return <span className="text-muted-foreground/60" title="Not yet supported">Not supported</span>;
@@ -308,7 +324,7 @@ function KanbanView({ tasks, statusLabels, onStatus }: { tasks: Task[]; statusLa
               {list.map((t) => (
                 <div key={t.id} draggable onDragStart={() => setDragId(t.id)} className="rounded-md border border-border bg-card p-2 text-sm shadow-sm">
                   <p className="text-foreground">{t.title}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{t.due_date ?? 'No due date'} · <span className="capitalize">{t.priority}</span></p>
+                  <p className="mt-1 flex items-center gap-2 text-[13px] text-muted-foreground">{t.due_date ? formatDueDate(t.due_date) : 'No due date'} <StatusBadge value={t.priority} prefix="Priority" /></p>
                   <div className="mt-2"><StatusSelect task={t} labels={statusLabels} onStatus={onStatus} /></div>
                 </div>
               ))}
