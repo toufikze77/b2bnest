@@ -8,9 +8,12 @@ begin;
 create table public.ai_generation_config (
   id boolean primary key default true check (id),
   paid_generation_enabled boolean not null default false,
-  customer_price_credits integer check (customer_price_credits is null or customer_price_credits between 1 and 100),
-  admin_price_credits integer check (admin_price_credits is null or admin_price_credits between 1 and 100),
-  admin_budget_cap integer not null default 0 check (admin_budget_cap >= 0),
+  -- Provisional owner settings 2026-10-01 (paid generation still disabled):
+  customer_price_credits integer default 1 check (customer_price_credits is null or customer_price_credits between 1 and 100),
+  admin_price_credits integer default 1 check (admin_price_credits is null or admin_price_credits between 1 and 100),
+  admin_budget_cap integer not null default 300 check (admin_budget_cap >= 0),        -- successful admin generations / month
+  admin_provider_spend_cap_pence integer not null default 500 check (admin_provider_spend_cap_pence >= 0), -- £5 / month
+  usd_to_gbp numeric(6,4) not null default 0.7800,
   admin_budget_used integer not null default 0 check (admin_budget_used >= 0),
   admin_budget_period_start timestamptz not null default date_trunc('month', now()),
   reservation_ttl interval not null default interval '10 minutes',
@@ -25,7 +28,7 @@ create policy "Signed-in users can read AI generation config" on public.ai_gener
   for select to authenticated using (true);
 create policy "Super admins can update AI generation config" on public.ai_generation_config
   for update to authenticated using (public.is_super_admin(auth.uid())) with check (public.is_super_admin(auth.uid()));
-grant update (paid_generation_enabled, customer_price_credits, admin_price_credits, admin_budget_cap, reservation_ttl)
+grant update (paid_generation_enabled, customer_price_credits, admin_price_credits, admin_budget_cap, admin_provider_spend_cap_pence, usd_to_gbp, reservation_ttl)
   on public.ai_generation_config to authenticated;
 
 -- 2. Generation requests (idempotency key per user)
@@ -108,7 +111,42 @@ create policy "Owners edit their own unpublished templates" on public.generated_
 create policy "Owners delete their own unpublished templates" on public.generated_templates
   for delete to authenticated using (owner_user_id = auth.uid() and review_status <> 'approved');
 
+-- 4b. Every provider call (success, failure, retry, timeout) for spend accounting. No prompt text.
+create table public.ai_provider_calls (
+  id bigint generated always as identity primary key,
+  request_id uuid references public.ai_generation_requests(id) on delete set null,
+  user_id uuid not null,
+  purpose text not null check (purpose in ('customer','admin_catalogue','cost_probe')),
+  model text not null,
+  outcome text not null check (outcome in ('ok','invalid_output','provider_error','timeout')),
+  input_tokens integer not null default 0,
+  output_tokens integer not null default 0,
+  cost_usd_micros bigint not null default 0,
+  latency_ms integer,
+  created_at timestamptz not null default now()
+);
+grant select on public.ai_provider_calls to authenticated;
+grant all on public.ai_provider_calls to service_role;
+alter table public.ai_provider_calls enable row level security;
+create policy "Super admins read provider calls" on public.ai_provider_calls
+  for select to authenticated using (public.is_super_admin(auth.uid()));
+
 -- 5. Functions. Reserve/settle/refund/expire: service_role only (called by the edge function).
+create or replace function public.ai_admin_spend_pence_this_month()
+returns numeric language sql stable security definer set search_path = '' as $$
+  select coalesce(sum(c.cost_usd_micros), 0) / 1e6 * 100 * (select usd_to_gbp from public.ai_generation_config where id)
+  from public.ai_provider_calls c
+  where c.purpose in ('admin_catalogue','cost_probe') and c.created_at >= date_trunc('month', now())
+$$;
+
+create or replace function public.ai_record_provider_call(
+  p_request uuid, p_user uuid, p_purpose text, p_model text, p_outcome text,
+  p_in integer, p_out integer, p_cost_micros bigint, p_latency integer)
+returns void language sql security definer set search_path = '' as $$
+  insert into public.ai_provider_calls(request_id, user_id, purpose, model, outcome, input_tokens, output_tokens, cost_usd_micros, latency_ms)
+  values (p_request, p_user, p_purpose, p_model, p_outcome, greatest(p_in,0), greatest(p_out,0), greatest(p_cost_micros,0), p_latency)
+$$;
+
 create or replace function public.ai_reserve_generation(
   p_user uuid, p_org uuid, p_key text, p_purpose text)
 returns json language plpgsql security definer set search_path = '' as $$
@@ -144,6 +182,9 @@ begin
     end if;
     if cfg.admin_budget_cap - cfg.admin_budget_used < price then
       return json_build_object('ok', false, 'error', 'admin_budget_exhausted');
+    end if;
+    if public.ai_admin_spend_pence_this_month() >= cfg.admin_provider_spend_cap_pence then
+      return json_build_object('ok', false, 'error', 'admin_spend_cap_reached');
     end if;
     update public.ai_generation_config set admin_budget_used = admin_budget_used + price where id
       returning admin_budget_cap - admin_budget_used into bal;
@@ -256,7 +297,11 @@ end $$;
 
 revoke all on function public.ai_reserve_generation(uuid,uuid,text,text), public.ai_refund_generation(uuid,text),
   public.ai_settle_generation(uuid,text,jsonb), public.ai_expire_stale_generations(),
-  public.submit_generated_template(uuid), public.review_generated_template(uuid,boolean,text) from public, anon, authenticated;
+  public.submit_generated_template(uuid), public.review_generated_template(uuid,boolean,text),
+  public.ai_admin_spend_pence_this_month(), public.ai_record_provider_call(uuid,uuid,text,text,text,integer,integer,bigint,integer)
+  from public, anon, authenticated;
+grant execute on function public.ai_admin_spend_pence_this_month(),
+  public.ai_record_provider_call(uuid,uuid,text,text,text,integer,integer,bigint,integer) to service_role;
 grant execute on function public.ai_reserve_generation(uuid,uuid,text,text), public.ai_refund_generation(uuid,text),
   public.ai_settle_generation(uuid,text,jsonb), public.ai_expire_stale_generations() to service_role;
 grant execute on function public.submit_generated_template(uuid), public.review_generated_template(uuid,boolean,text) to authenticated, service_role;
