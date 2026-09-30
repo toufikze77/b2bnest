@@ -1,58 +1,66 @@
-import React from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import AccountSettings from '@/components/AccountSettings';
 import NotificationPreferences from '@/components/NotificationPreferences';
 import HMRCSettings from '@/components/hmrc/HMRCSettings';
 import BillingSettings from '@/components/billing/BillingSettings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Bell, Building2, CreditCard } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { User, Bell, Building2, CreditCard, ShieldCheck, ArrowRight } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
+import { PageContainer } from '@/components/ui/page-container';
+
+const TABS = ['account', 'billing', 'notifications', 'hmrc', 'companies'] as const;
 
 const Settings = () => {
-  return (
-    <div className="min-h-screen bg-muted/20">
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          <PageHeader className="mb-6" eyebrow="Settings" title="Account settings" description="Manage your account preferences, notifications and secure connections." />
-          
-          <Tabs defaultValue="account" className="space-y-6">
-            <TabsList className="grid w-full max-w-2xl grid-cols-4">
-              <TabsTrigger value="account" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Account
-              </TabsTrigger>
-              <TabsTrigger value="billing" className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4" />
-                Billing
-              </TabsTrigger>
-              <TabsTrigger value="notifications" className="flex items-center gap-2">
-                <Bell className="h-4 w-4" />
-                Notifications
-              </TabsTrigger>
-              <TabsTrigger value="hmrc" className="flex items-center gap-2">
-                <Building2 className="h-4 w-4" />
-                HMRC
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="account">
-              <AccountSettings />
-            </TabsContent>
+  const [params, setParams] = useSearchParams();
+  const requested = params.get('tab');
+  const tab = TABS.includes(requested as typeof TABS[number]) ? requested! : 'account';
 
-            <TabsContent value="billing">
-              <BillingSettings />
-            </TabsContent>
-            
-            <TabsContent value="notifications">
-              <NotificationPreferences />
-            </TabsContent>
-            
-            <TabsContent value="hmrc">
-              <HMRCSettings onDisconnect={() => {}} />
-            </TabsContent>
-          </Tabs>
+  const onTabChange = (value: string) => {
+    const next = new URLSearchParams(params);
+    if (value === 'account') next.delete('tab'); else next.set('tab', value);
+    setParams(next, { replace: true });
+  };
+
+  return (
+    <PageContainer width="narrow">
+      <PageHeader
+        breadcrumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Settings' }]}
+        title="Account settings"
+        description="Manage your account preferences, notifications, company data and secure connections."
+      />
+
+      <Tabs value={tab} onValueChange={onTabChange} className="space-y-6">
+        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <TabsList className="inline-flex w-max">
+            <TabsTrigger value="account" className="gap-2"><User className="h-4 w-4" />Account</TabsTrigger>
+            <TabsTrigger value="billing" className="gap-2"><CreditCard className="h-4 w-4" />Billing</TabsTrigger>
+            <TabsTrigger value="notifications" className="gap-2"><Bell className="h-4 w-4" />Notifications</TabsTrigger>
+            <TabsTrigger value="hmrc" className="gap-2"><Building2 className="h-4 w-4" />HMRC</TabsTrigger>
+            <TabsTrigger value="companies" className="gap-2"><ShieldCheck className="h-4 w-4" />Company data</TabsTrigger>
+          </TabsList>
         </div>
-      </div>
-    </div>
+
+        <TabsContent value="account"><AccountSettings /></TabsContent>
+        <TabsContent value="billing"><BillingSettings /></TabsContent>
+        <TabsContent value="notifications"><NotificationPreferences /></TabsContent>
+        <TabsContent value="hmrc"><HMRCSettings onDisconnect={() => {}} /></TabsContent>
+        <TabsContent value="companies">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Unassigned projects</CardTitle>
+              <CardDescription>Review projects created before companies existed and choose the company each one belongs to.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild variant="outline" className="gap-2">
+                <Link to="/settings/unassigned-projects">Review unassigned projects<ArrowRight className="h-4 w-4" /></Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </PageContainer>
   );
 };
 
