@@ -51,8 +51,8 @@ function Harness() {
 describe('view persistence', () => {
   it('view switch then refresh keeps the view and project', () => {
     const { unmount } = render(<MemoryRouter initialEntries={['/pm?project=p1']}><Harness /></MemoryRouter>);
-    fireEvent.click(screen.getByText('kanban'));
-    fireEvent.click(screen.getByText('list'));
+    fireEvent.click(screen.getByRole('button', { name: 'kanban' }));
+    fireEvent.click(screen.getByRole('button', { name: 'list' }));
     const url = screen.getByTestId('url').textContent!;
     expect(url).toBe('?project=p1&view=list');
     unmount(); // "refresh": remount from the same URL
@@ -62,7 +62,7 @@ describe('view persistence', () => {
   });
   it('goals survives refresh', () => {
     const { unmount } = render(<MemoryRouter initialEntries={['/pm']}><Harness /></MemoryRouter>);
-    fireEvent.click(screen.getByText('goals'));
+    fireEvent.click(screen.getByRole('button', { name: 'goals' }));
     const url = screen.getByTestId('url').textContent!;
     unmount();
     render(<MemoryRouter initialEntries={[`/pm${url}`]}><Harness /></MemoryRouter>);
@@ -70,14 +70,14 @@ describe('view persistence', () => {
   });
   it('Back/Forward restore views', async () => {
     render(<MemoryRouter initialEntries={['/pm']}><Harness /></MemoryRouter>);
-    fireEvent.click(screen.getByText('kanban'));
-    fireEvent.click(screen.getByText('calendar'));
-    fireEvent.click(screen.getByText('timeline'));
-    await act(async () => { fireEvent.click(screen.getByText('back')); });
+    fireEvent.click(screen.getByRole('button', { name: 'kanban' }));
+    fireEvent.click(screen.getByRole('button', { name: 'calendar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'timeline' }));
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'back' })); });
     expect(screen.getByTestId('tab').textContent).toBe('calendar');
-    await act(async () => { fireEvent.click(screen.getByText('back')); });
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'back' })); });
     expect(screen.getByTestId('tab').textContent).toBe('kanban');
-    await act(async () => { fireEvent.click(screen.getByText('forward')); });
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'forward' })); });
     expect(screen.getByTestId('tab').textContent).toBe('calendar');
   });
 });
