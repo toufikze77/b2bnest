@@ -109,3 +109,5 @@
 - [x] Published full preview (owner chose "publish everything") — commit bdbd9e7, 2026-09-30 ~01:49 UTC
 - [x] Workspace template code-review fixes (keyed state, safe status updates, verified cleanup, column order, empty groups, retry, tests)
 - [ ] Transactional creation and cross-device duplicate protection — not built; awaits owner approval (same-browser duplicate protection done)
+
+- [ ] Owner signed-in re-check: Edit project deadline + task editing in Projects & tasks (preview, unpublished)
