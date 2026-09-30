@@ -15,7 +15,8 @@ function builder(table: string) {
   chain.then = (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) => {
     calls.push(c);
     const p = new Promise((r) => { c.resolve = r; });
-    const v = auto(c);
+    // Recent-activity query (ordered by updated_at) gets its own empty answer so group fixtures don't double up.
+    const v = c.table === 'todos' && c.filters.some((f) => f[0] === 'order' && f[1] === 'updated_at') ? { data: [], error: null } : auto(c);
     if (v !== undefined) c.resolve!(v);
     return p.then(res, rej);
   };
