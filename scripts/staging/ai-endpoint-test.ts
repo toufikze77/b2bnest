@@ -32,12 +32,12 @@ const provider = Deno.serve({ port: 18081, onListen() {} }, async (req) => {
 
 const handler = createHandler({
   corsHeaders: {}, openaiUrl: 'http://127.0.0.1:18081/v1/chat/completions', openaiKey: 'staging-fake', timeoutMs: 500,
-  async getUserId(h) { return h?.replace('Bearer ', '') || null; },
+  async getUserId(h) { const v = (h ?? '').replace(/^Bearer\s*/, '').trim(); return /^[0-9a-f-]{36}$/.test(v) ? v : null; },
   async rpc(fn, args) {
     try {
       const names = Object.keys(args);
       const call = `select public.${fn}(${names.map((n, i) => `${n} => $${i + 1}`).join(', ')}) as r`;
-      const vals = names.map((n) => (args[n] !== null && typeof args[n] === 'object') ? JSON.stringify(args[n]) : args[n]);
+      const vals = names.map((n) => (args[n] !== null && typeof args[n] === 'object') ? sql.json(args[n] as any) : args[n]);
       const rows = await sql.unsafe(call, vals as any[]);
       const r = rows[0]?.r;
       return { data: typeof r === 'string' ? JSON.parse(r) : r, error: null };
