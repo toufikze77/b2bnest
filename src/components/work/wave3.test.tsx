@@ -82,7 +82,7 @@ describe('TaskListView', () => {
   it('opens the shared editor from the title and the Edit button', () => {
     const onEdit = vi.fn();
     render(<TaskListView tasks={tasks} onEdit={onEdit} onArchive={() => {}} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Write brief' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Write brief' })[0]); // phone list and desktop table both render in jsdom
     fireEvent.click(screen.getByRole('button', { name: 'Edit task Ship site' }));
     expect(onEdit.mock.calls.map((c) => c[0].id)).toEqual(['1', '3']);
   });
