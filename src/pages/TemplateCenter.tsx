@@ -31,6 +31,8 @@ import Footer from '@/components/Footer';
 import TemplateCard from '@/components/template-centre/TemplateCard';
 import TemplatePreviewDialog from '@/components/template-centre/TemplatePreviewDialog';
 import { getTemplateAvailability } from '@/lib/templateKind';
+import { buildCatalogueNav, customerTemplates, isCategoryAvailable } from '@/lib/templateCatalogue';
+import { useSearchParams } from 'react-router-dom';
 import UseWorkspaceTemplateDialog from '@/components/template-centre/UseWorkspaceTemplateDialog';
 import { INDUSTRIES, TEMPLATE_CATEGORIES } from '@/data/workspaceTemplates';
 import {
@@ -69,6 +71,8 @@ const TemplateCenter = () => {
   const [templates, setTemplates] = useState<WorkspaceTemplate[]>([]);
   const [usage, setUsage] = useState<Record<string, TemplateUsage>>({});
   const [loading, setLoading] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [unavailableLink, setUnavailableLink] = useState<string | null>(null);
 
   const [query, setQuery] = useState('');
   const [activeView, setActiveView] = useState('all');
@@ -92,7 +96,7 @@ const TemplateCenter = () => {
       // Customer catalogue shows only usable templates. Unavailable definitions
       // stay in the data layer for admin review but never appear here, in
       // search results or in category counts.
-      setTemplates(list.filter((t) => getTemplateAvailability(t).available));
+      setTemplates(customerTemplates(list));
       setUsage(counts);
       setLoading(false);
     })();
@@ -177,6 +181,33 @@ const TemplateCenter = () => {
     [templates],
   );
 
+  const nav = useMemo(() => buildCatalogueNav(templates), [templates]);
+  const quickLinks = QUICK_LINKS.filter(
+    (l) => !(l.id in nav.quick) || nav.quick[l.id as keyof typeof nav.quick] > 0,
+  );
+
+  // Old category links (?category=…&sub=…): open only if the category has usable templates.
+  useEffect(() => {
+    if (loading) return;
+    const cat = searchParams.get('category');
+    if (!cat) return;
+    const sub = searchParams.get('sub');
+    if (isCategoryAvailable(nav, cat, sub)) {
+      setActiveCategory(cat);
+      setActiveSubcategory(sub);
+      setUnavailableLink(null);
+    } else {
+      setActiveCategory(null);
+      setActiveSubcategory(null);
+      setUnavailableLink(cat);
+      const next = new URLSearchParams(searchParams);
+      next.delete('category');
+      next.delete('sub');
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, nav]);
+
   const showFeaturedRow =
     activeView === 'all' && !activeCategory && !activeSubcategory && !query && featured.length > 0;
 
@@ -241,7 +272,7 @@ const TemplateCenter = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="max-h-96 w-64 overflow-y-auto bg-popover">
                 <DropdownMenuLabel>Template type</DropdownMenuLabel>
-                {(Object.keys(TEMPLATE_TYPE_LABELS) as TemplateType[]).map((t) => (
+                {nav.types.map((t) => (
                   <DropdownMenuCheckboxItem
                     key={t}
                     checked={types.includes(t)}
@@ -259,7 +290,7 @@ const TemplateCenter = () => {
                   onValueChange={(v) => setIndustry(v === 'all' ? null : v)}
                 >
                   <DropdownMenuRadioItem value="all">All industries</DropdownMenuRadioItem>
-                  {INDUSTRIES.map((i) => (
+                  {nav.industries.map((i) => (
                     <DropdownMenuRadioItem key={i} value={i}>
                       {i}
                     </DropdownMenuRadioItem>
@@ -308,7 +339,7 @@ const TemplateCenter = () => {
           <ScrollArea className="h-full">
             <div className="p-4">
               <nav className="space-y-1 border-b border-border pb-4">
-                {QUICK_LINKS.map(({ id, label, icon: Icon }) => (
+                {quickLinks.map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
                     onClick={() => {
@@ -328,7 +359,7 @@ const TemplateCenter = () => {
               </nav>
 
               <div className="mt-4 space-y-4">
-                {TEMPLATE_CATEGORIES.map((cat) => (
+                {nav.categories.map((cat) => (
                   <div key={cat.id}>
                     <button
                       onClick={() => selectCategory(cat.id)}
@@ -339,7 +370,7 @@ const TemplateCenter = () => {
                       {cat.name}
                     </button>
                     <div className="space-y-0.5">
-                      {cat.subcategories.map((sub) => (
+                      {cat.subcategories.map(({ name: sub, count }) => (
                         <button
                           key={`${cat.id}-${sub}`}
                           onClick={() => selectCategory(cat.id, sub)}
@@ -349,19 +380,19 @@ const TemplateCenter = () => {
                               : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                           }`}
                         >
-                          {sub}
+                          {sub} <span className="text-xs text-muted-foreground">({count})</span>
                         </button>
                       ))}
                     </div>
                   </div>
                 ))}
 
-                <div>
+                {nav.industries.length > 0 && <div>
                   <p className="mb-1 px-2 text-xs font-semibold uppercase tracking-wide">
                     Industries
                   </p>
                   <div className="space-y-0.5">
-                    {INDUSTRIES.map((i) => (
+                    {nav.industries.map((i) => (
                       <button
                         key={i}
                         onClick={() => {
@@ -378,7 +409,7 @@ const TemplateCenter = () => {
                       </button>
                     ))}
                   </div>
-                </div>
+                </div>}
               </div>
             </div>
           </ScrollArea>
@@ -388,7 +419,7 @@ const TemplateCenter = () => {
         <main className="min-w-0 flex-1 px-4 py-6 md:px-8">
           {/* Mobile chips */}
           <div className="mb-5 flex gap-2 overflow-x-auto lg:hidden">
-            {QUICK_LINKS.map((l) => (
+            {quickLinks.map((l) => (
               <button
                 key={l.id}
                 onClick={() => {
@@ -405,7 +436,7 @@ const TemplateCenter = () => {
                 {l.label}
               </button>
             ))}
-            {TEMPLATE_CATEGORIES.map((c) => (
+            {nav.categories.map((c) => (
               <button
                 key={c.id}
                 onClick={() => selectCategory(c.id)}
@@ -419,6 +450,12 @@ const TemplateCenter = () => {
               </button>
             ))}
           </div>
+
+          {unavailableLink && (
+            <div role="status" className="mb-5 rounded-md border border-border bg-muted/40 px-4 py-3 text-sm">
+              That category has no templates you can use right now. Showing all available templates instead.
+            </div>
+          )}
 
           {showFeaturedRow && (
             <section className="mb-8">
@@ -474,14 +511,7 @@ const TemplateCenter = () => {
             </div>
           ) : filtered.length === 0 ? (
             <div className="py-20 text-center">
-              {activeCategory && !query.trim() && templates.every((t) => t.category !== activeCategory || (!!activeSubcategory && t.subcategory !== activeSubcategory)) ? (
-                <>
-                  <p className="font-medium">No templates in this category yet</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    We haven't published any templates here. You can request one below.
-                  </p>
-                </>
-              ) : (
+              {(
                 <>
                   <p className="font-medium">No templates match your search</p>
                   <p className="mt-1 text-sm text-muted-foreground">
