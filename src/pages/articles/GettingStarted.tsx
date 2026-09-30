@@ -90,7 +90,6 @@ const GettingStarted = () => {
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
                   <li><strong>Business Tools:</strong> Access invoicing, CRM, time tracking, and more</li>
                   <li><strong>Market:</strong> Explore PLR documents and business templates</li>
-                  <li><strong>Fundraising:</strong> Information about B2BN token presale</li>
                   <li><strong>Dashboard:</strong> Your personalized activity overview</li>
                 </ul>
               </div>

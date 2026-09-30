@@ -3,9 +3,8 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, Wallet, Bitcoin } from 'lucide-react';
+import { CreditCard } from 'lucide-react';
 import StripeCheckout from './StripeCheckout';
-import CoinbaseCheckout from './CoinbaseCheckout';
 
 interface PaymentMethodSelectorProps {
   amount: number;
@@ -21,7 +20,7 @@ interface PaymentMethodSelectorProps {
   } | null;
 }
 
-type PaymentMethod = 'stripe' | 'coinbase' | null;
+type PaymentMethod = 'stripe' | null;
 
 const PaymentMethodSelector = ({
   amount,
@@ -49,18 +48,6 @@ const PaymentMethodSelector = ({
     );
   }
 
-
-  if (selectedMethod === 'coinbase') {
-    return (
-      <CoinbaseCheckout
-        amount={amount}
-        itemName={itemName}
-        onSuccess={onPaymentSuccess}
-        onError={onPaymentError}
-        onCancel={resetSelection}
-      />
-    );
-  }
 
   return (
     <Card className="w-full max-w-md">
@@ -91,22 +78,10 @@ const PaymentMethodSelector = ({
             </Badge>
           </Button>
 
-
-          <Button
-            onClick={() => setSelectedMethod('coinbase')}
-            className="w-full h-12 bg-orange-600 hover:bg-orange-700"
-            size="lg"
-          >
-            <Bitcoin className="h-5 w-5 mr-2" />
-            Pay with Crypto
-            <Badge variant="secondary" className="ml-2 text-xs">
-              BTC, ETH, LTC & More
-            </Badge>
-          </Button>
         </div>
 
         <div className="text-center text-xs text-gray-500 mt-4">
-          Secure payments powered by Stripe and Coinbase Commerce
+          Secure payments powered by Stripe
         </div>
       </CardContent>
     </Card>

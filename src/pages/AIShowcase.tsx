@@ -181,20 +181,15 @@ const AIShowcase = () => {
         <Card className="mt-12 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
           <CardContent className="p-8 text-center">
             <h3 className="text-2xl font-bold mb-4">
-              Ready to invest in the future of AI-powered business automation?
+              Ready to put AI to work in your business?
             </h3>
             <p className="text-lg mb-6 opacity-90">
               This AI technology gives our platform an unbeatable competitive advantage with zero ongoing costs and maximum enterprise appeal.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/fundraising">
-                <Button size="lg" variant="secondary" className="bg-white text-blue-600 hover:bg-gray-100">
-                  View Investment Opportunity
-                </Button>
-              </Link>
               <Link to="/contact">
                 <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
-                  Schedule Investor Call
+                  Talk to our team
                 </Button>
               </Link>
             </div>

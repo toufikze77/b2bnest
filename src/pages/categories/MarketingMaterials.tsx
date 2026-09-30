@@ -114,7 +114,7 @@ const MarketingMaterials = () => {
     <>
       <SEOHead 
         title="Marketing Materials - B2BNEST"
-        description="Download marketing materials for B2BNEST business tools and B2BN token"
+        description="Download marketing materials for B2BNEST business tools"
       />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
