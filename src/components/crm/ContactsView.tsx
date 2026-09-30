@@ -179,13 +179,13 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-3">
         <div className="flex flex-wrap gap-4 [&>*]:min-w-0">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <Input 
               placeholder="Search contacts..." 
-              className="pl-10 w-80" 
+              className="pl-10 w-full sm:w-80" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
