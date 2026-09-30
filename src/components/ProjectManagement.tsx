@@ -861,6 +861,7 @@ const ProjectManagement = () => {
       if (error) throw error;
       if (key !== orgRef.current) return; // stale response from a previous company
       if (data) { setProjects(data.map(formatProjectRow)); setProjectsLoaded(true); }
+      setReadyFor((r) => ({ ...r, projects: key })); // active list is enough to render; archive/trash load after
 
       // Archived (not deleted, but archived)
       const { data: archived } = await projectsForActiveOrg()
