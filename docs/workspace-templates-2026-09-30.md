@@ -113,3 +113,6 @@ The earlier 21 tests do NOT cover this protection. New, dedicated checks:
 Recorded on Toufik's (owner) confirmation. These are **owner-confirmed**, not automated tests and not run by the agent:
 - All five signed-in workspace checks: PASSED (owner-confirmed).
 Limitations still in force: duplicate protection covers the same browser only (tabs, double-clicks, re-sent requests); two different devices can still each create a workspace; creation is not transactional (cleanup is best-effort).
+
+## Owner-confirmed 2026-09-30
+- Template destinations and Settings security sections (signed-in): owner-confirmed PASS. Separate from automated tests.
