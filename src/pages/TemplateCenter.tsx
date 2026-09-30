@@ -89,7 +89,10 @@ const TemplateCenter = () => {
     (async () => {
       const [list, counts] = await Promise.all([loadTemplates(), loadUsage()]);
       if (!active) return;
-      setTemplates(list);
+      // Customer catalogue shows only usable templates. Unavailable definitions
+      // stay in the data layer for admin review but never appear here, in
+      // search results or in category counts.
+      setTemplates(list.filter((t) => getTemplateAvailability(t).available));
       setUsage(counts);
       setLoading(false);
     })();
