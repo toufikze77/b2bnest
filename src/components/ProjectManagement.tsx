@@ -312,8 +312,11 @@ const ProjectManagement = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = readPmTab(searchParams);
   const activeView: PmView = (PM_VIEWS as readonly string[]).includes(activeTab) ? (activeTab as PmView) : 'kanban';
+  // Skip no-op writes: tab triggers fire on both mousedown and focus, which would add duplicate history entries.
   const setActiveTab = (tab: string) => {
-    setSearchParams((prev) => writePmTab(prev, readPmTab(new URLSearchParams({ tab }))));
+    const current = new URLSearchParams(window.location.search);
+    const next = writePmTab(current, readPmTab(new URLSearchParams({ tab })));
+    if (next.toString() !== current.toString()) setSearchParams(next);
   };
   const setActiveView = (view: PmView) => setActiveTab(view);
   const selectedProject = readPmProject(searchParams);
