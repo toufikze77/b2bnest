@@ -1,7 +1,7 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  BarChart3, Bot, BriefcaseBusiness, CalendarDays, CircleDollarSign,
+  BarChart3, Bot, ChevronDown, BriefcaseBusiness, CalendarDays, CircleDollarSign,
   FileText, FolderKanban, HelpCircle, Home, LayoutGrid, LogOut, Plus, Receipt,
   Settings, Sparkles, Target, Users, WandSparkles,
 } from 'lucide-react';
@@ -81,6 +81,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const activeTo = allTargets.filter(matches).sort((x, y) => y.length - x.length)[0];
   const active = (to: string) => to === activeTo;
 
+  // Collapsible groups (remembered per browser). The group holding the active page always stays open.
+  const [closed, setClosed] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('b2bnest.sidebar.closed') || '[]'); } catch { return []; }
+  });
+  useEffect(() => { localStorage.setItem('b2bnest.sidebar.closed', JSON.stringify(closed)); }, [closed]);
+  const toggleGroup = (label: string) => setClosed((c) => (c.includes(label) ? c.filter((x) => x !== label) : [...c, label]));
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
@@ -97,23 +104,33 @@ export function AppShell({ children }: { children: ReactNode }) {
             <img src={logo} alt="" className="h-11 w-auto max-w-[188px] object-contain dark:brightness-0 dark:invert" />
           </Link>
         </SidebarHeader>
-        <SidebarContent className="py-3">
-          {groups.map((group) => (
-            <SidebarGroup key={group.label}>
-              <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {group.items.map(({ label, to, icon: Icon }) => (
-                    <SidebarMenuItem key={to}>
-                      <SidebarMenuButton asChild tooltip={label} isActive={active(to)}>
-                        <Link to={to}><Icon /><span>{label}</span></Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          ))}
+        <SidebarContent className="gap-1 py-3">
+          {groups.map((group) => {
+            const hasActive = group.items.some((i) => active(i.to));
+            const open = hasActive || !closed.includes(group.label);
+            const gid = `nav-${group.label.toLowerCase()}`;
+            return (
+              <SidebarGroup key={group.label} className="py-1">
+                <SidebarGroupLabel asChild className="text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">
+                  <button type="button" onClick={() => toggleGroup(group.label)} aria-expanded={open} aria-controls={gid} disabled={hasActive} className="w-full justify-between hover:text-sidebar-foreground disabled:cursor-default">
+                    {group.label}
+                    {!hasActive && <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? '' : '-rotate-90'}`} aria-hidden="true" />}
+                  </button>
+                </SidebarGroupLabel>
+                <SidebarGroupContent id={gid} hidden={!open} className="group-data-[collapsible=icon]:!block">
+                  <SidebarMenu className="gap-0.5">
+                    {group.items.map(({ label, to, icon: Icon }) => (
+                      <SidebarMenuItem key={to}>
+                        <SidebarMenuButton asChild tooltip={label} isActive={active(to)} className="h-9 data-[active=true]:bg-primary/10 data-[active=true]:font-semibold data-[active=true]:text-primary">
+                          <Link to={to} aria-current={active(to) ? 'page' : undefined}><Icon /><span>{label}</span></Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            );
+          })}
         </SidebarContent>
         <SidebarFooter className="border-t border-sidebar-border p-3">
           <SidebarMenu>

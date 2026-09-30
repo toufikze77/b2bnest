@@ -43,3 +43,25 @@ describe('buildActivationSteps', () => {
     expect(hasRole(null, ROTA_ROLES)).toBe(false);
   });
 });
+
+import { summarizeProjects, weekStartIso, projectDeadlines } from './dashboardData';
+describe('project summaries', () => {
+  const base = { color: null, status: 'active', deadline: null, updated_at: '' };
+  it('computes real progress, next open due date and separates workspaces', () => {
+    const r = summarizeProjects(
+      [{ ...base, id: 'p1', name: 'Site', custom_fields: null }, { ...base, id: 'b1', name: 'Board', custom_fields: { workspace: { id: 'w1', name: 'Sales' } } }, { ...base, id: 'b2', name: 'Board 2', custom_fields: { workspace: { id: 'w1', name: 'Sales' } } }],
+      [{ project_id: 'p1', status: 'done', due_date: '2026-01-01' }, { project_id: 'p1', status: 'todo', due_date: '2026-02-03' }, { project_id: 'p1', status: 'todo', due_date: '2026-02-01' }, { project_id: 'b2', status: 'todo', due_date: null }],
+    );
+    expect(r.projects).toEqual([expect.objectContaining({ id: 'p1', done: 1, total: 3, nextDue: '2026-02-01', href: '/project-management?view=list&project=p1' })]);
+    expect(r.workspaces).toEqual([{ id: 'w1', name: 'Sales', boards: 2, open: 1, href: '/workspaces/w1' }]);
+  });
+  it('week starts on Monday', () => {
+    expect(weekStartIso(new Date(2026, 8, 30))).toBe('2026-09-28');
+    expect(weekStartIso(new Date(2026, 8, 28))).toBe('2026-09-28');
+    expect(weekStartIso(new Date(2026, 9, 4))).toBe('2026-09-28');
+  });
+  it('deadlines sorted soonest first, undated skipped', () => {
+    const d = projectDeadlines([{ ...base, id: 'a', name: 'a', custom_fields: null, deadline: '2026-12-01' }, { ...base, id: 'b', name: 'b', custom_fields: null }, { ...base, id: 'c', name: 'c', custom_fields: null, deadline: '2026-10-01' }]);
+    expect(d.map((p) => p.id)).toEqual(['c', 'a']);
+  });
+});

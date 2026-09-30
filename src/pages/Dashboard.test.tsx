@@ -11,11 +11,12 @@ function builder(table: string) {
   const c: Call = { table, filters: [] };
   const chain: Record<string, unknown> = {};
   const add = (n: string) => (...a: unknown[]) => { c.filters.push([n, ...a]); return chain; };
-  ['eq', 'is', 'not', 'lte', 'lt', 'gt', 'order', 'limit', 'select'].forEach((m) => { chain[m] = add(m); });
+  ['eq', 'is', 'not', 'lte', 'lt', 'gt', 'gte', 'in', 'order', 'limit', 'select'].forEach((m) => { chain[m] = add(m); });
   chain.then = (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) => {
     calls.push(c);
     const p = new Promise((r) => { c.resolve = r; });
-    const v = auto(c);
+    // Recent-activity query (ordered by updated_at) gets its own empty answer so group fixtures don't double up.
+    const v = c.table === 'todos' && c.filters.some((f) => f[0] === 'order' && f[1] === 'updated_at') ? { data: [], error: null } : auto(c);
     if (v !== undefined) c.resolve!(v);
     return p.then(res, rej);
   };
@@ -141,14 +142,15 @@ describe('Dashboard', () => {
     expect(screen.getByText(/Showing 5 of 150/)).toBeInTheDocument();
     expect(screen.getAllByText(/^Over task/)).toHaveLength(5);
     const todos = calls.filter((c) => c.table === 'todos');
-    expect(todos).toHaveLength(3);
+    expect(todos.filter((c) => isGroup(c, 'overdue') || isGroup(c, 'upcoming') || eqVal(c, 'due_date'))).toHaveLength(3);
     for (const c of todos) expect(eqVal(c, 'organization_id')).toBe('org-1');
   });
 
   it('quick actions are labelled for where they go', async () => {
     render(ui());
     await screen.findByText('Nothing needs attention');
-    const qa = within(screen.getByRole('region', { name: 'Quick actions' }));
+    const qa = within(screen.getByRole('region', { name: 'Your records' }));
+    expect(screen.getByText(/belong to your account/)).toBeInTheDocument();
     expect(qa.getByRole('link', { name: 'Open CRM' })).toHaveAttribute('href', '/crm');
     expect(qa.getByRole('link', { name: 'Open invoices' })).toHaveAttribute('href', '/business-tools?tool=business-finance-assistant&tab=invoices');
     expect(screen.queryByText(/Add contact|New invoice|linked to a company/)).toBeNull();
@@ -159,5 +161,36 @@ describe('Dashboard', () => {
     render(ui());
     expect(await screen.findByText('Choose a company')).toBeInTheDocument();
     expect(calls).toHaveLength(0);
+  });
+
+  it('summary row shows real company metrics, project progress and workspaces', async () => {
+    auto = (c) => {
+      if (c.table === 'projects' && c.filters.some((f) => f[0] === 'order')) return { data: [
+        { id: 'p1', name: 'Website', color: null, status: 'active', deadline: addDaysIso(today, 10), custom_fields: null, updated_at: today },
+        { id: 'b1', name: 'Leads', color: null, status: 'active', deadline: null, custom_fields: { workspace: { id: 'w1', name: 'Sales CRM' } }, updated_at: today },
+      ], count: 2, error: null };
+      if (c.table === 'todos' && c.filters.some((f) => f[0] === 'in' && f[1] === 'project_id')) return { data: [
+        { project_id: 'p1', status: 'done', due_date: null }, { project_id: 'p1', status: 'todo', due_date: addDaysIso(today, 2) }, { project_id: 'b1', status: 'todo', due_date: null },
+      ], error: null };
+      if (c.table === 'todos' && c.filters.some((f) => f[0] === 'gte')) return { count: 4, error: null };
+      if (c.table === 'todos' && c.filters.some((f) => f[0] === 'select' && (f[2] as { head?: boolean } | undefined)?.head)) return { count: 9, error: null };
+      return c.table === 'todos' ? { data: [], count: 0, error: null } : counts(0);
+    };
+    render(ui());
+    const summary = within(await screen.findByLabelText('Company summary'));
+    await waitFor(() => expect(summary.getByRole('link', { name: /Active projects\s*2/ })).toBeInTheDocument());
+    expect(summary.getByRole('link', { name: /Open tasks\s*9/ })).toBeInTheDocument();
+    expect(summary.getByRole('link', { name: /Completed this week\s*4/ })).toBeInTheDocument();
+    expect(await screen.findByLabelText('1 of 2 tasks done')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Website/ })).toHaveAttribute('href', '/project-management?view=list&project=p1');
+    expect(screen.getByRole('link', { name: /Sales CRM/ })).toHaveAttribute('href', '/workspaces/w1');
+    for (const c of calls.filter((x) => x.table === 'projects' || x.table === 'todos')) expect(eqVal(c, 'organization_id')).toBe('org-1');
+  });
+
+  it('a failed metric shows as unavailable, never as zero', async () => {
+    auto = (c) => (c.table === 'todos' && c.filters.some((f) => f[0] === 'gte') ? { error: { message: 'x' } } : c.table === 'todos' ? { data: [], count: 0, error: null } : counts(0));
+    render(ui());
+    const summary = within(await screen.findByLabelText('Company summary'));
+    await waitFor(() => expect(summary.getByRole('link', { name: /Completed this week\s*—\s*Unavailable/ })).toBeInTheDocument());
   });
 });
