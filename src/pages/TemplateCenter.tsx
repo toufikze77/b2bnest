@@ -33,6 +33,7 @@ import TemplatePreviewDialog from '@/components/template-centre/TemplatePreviewD
 import { getTemplateAvailability } from '@/lib/templateKind';
 import { buildCatalogueNav, customerTemplates, isCategoryAvailable } from '@/lib/templateCatalogue';
 import { useSearchParams } from 'react-router-dom';
+import AiTemplateDialog from '@/components/template-centre/AiTemplateDialog';
 import UseWorkspaceTemplateDialog from '@/components/template-centre/UseWorkspaceTemplateDialog';
 import { TEMPLATE_CATEGORIES } from '@/data/workspaceTemplates';
 import {
@@ -73,6 +74,7 @@ const TemplateCenter = () => {
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
   const [unavailableLink, setUnavailableLink] = useState<string | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
 
   const [query, setQuery] = useState('');
   const [activeView, setActiveView] = useState('all');
@@ -250,6 +252,9 @@ const TemplateCenter = () => {
               <LayoutGrid className="h-4 w-4" />
             </span>
             <h1 className="text-lg font-semibold">Template Centre</h1>
+            <Button variant="outline" size="sm" className="ml-2" onClick={() => setAiOpen(true)}>
+              <Sparkles className="mr-1 h-4 w-4" /> Create with AI
+            </Button>
           </div>
 
           <div className="relative flex-1 md:mx-6 md:max-w-xl">
@@ -553,6 +558,12 @@ const TemplateCenter = () => {
         hasPremiumAccess={!!isPremium}
         onClose={() => setPreview(null)}
         onUse={handleUse}
+      />
+
+      <AiTemplateDialog
+        open={aiOpen}
+        onClose={() => setAiOpen(false)}
+        onCreate={(t) => { setAiOpen(false); setUseTemplate(t); }}
       />
 
       <UseWorkspaceTemplateDialog

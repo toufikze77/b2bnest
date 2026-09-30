@@ -30,8 +30,10 @@ begin
   select ai_credits_remaining into bal from public.subscribers where user_id = AM;
   perform sec.ok('AI-02','no charge while disabled', bal = 5, 'bal='||bal);
 
+  perform sec.ok('AI-00','provisional defaults: 1 credit, 300/month, £5 spend cap, disabled',
+    (select customer_price_credits = 1 and admin_price_credits = 1 and admin_budget_cap = 300 and admin_provider_spend_cap_pence = 500 and not paid_generation_enabled from public.ai_generation_config), 'defaults');
   -- Enabled but no price set
-  update public.ai_generation_config set paid_generation_enabled = true;
+  update public.ai_generation_config set paid_generation_enabled = true, customer_price_credits = null, admin_price_credits = null;
   j := public.ai_reserve_generation(AM, ORG_A, 'key-noprice-1', 'customer');
   perform sec.ok('AI-03','no price => refused', j->>'error' = 'price_not_set', j::text);
 
@@ -102,6 +104,13 @@ begin
     (select source from public.ai_credit_ledger where request_id = (j->>'request_id')::uuid and entry='reserve') = 'admin_budget', 'ok');
   perform public.ai_refund_generation((j->>'request_id')::uuid, 'test');
   perform sec.ok('AI-19','admin refund restores budget', (select admin_budget_used from public.ai_generation_config) = 0, 'ok');
+  -- £5 spend cap counts failed calls too
+  update public.ai_generation_config set admin_budget_cap = 300, admin_budget_used = 0;
+  perform public.ai_record_provider_call(null, SA, 'admin_catalogue', 'gpt-4o-mini', 'provider_error', 0, 0, 3000000, 10);
+  perform public.ai_record_provider_call(null, SA, 'cost_probe', 'gpt-4o-mini', 'timeout', 100, 0, 3500000, 10);
+  j := public.ai_reserve_generation(SA, ORG_A, 'key-admin-spend', 'admin_catalogue');
+  perform sec.ok('AI-19b','£5 admin spend cap includes failed calls', j->>'error' = 'admin_spend_cap_reached', j::text);
+  delete from public.ai_provider_calls;
 end $$;
 
 -- Permissions via simulated sessions
@@ -110,6 +119,9 @@ declare ORG_A text := '0a000000-0000-4000-8000-000000000001'; ORG_B text := '0b0
 begin
 perform sec.t('AI-20','AI_TEMPLATES','ai_reserve_generation','A_MEMBER','EXECUTE','customer calls reserve directly','DENY_ERROR',
   format('select public.ai_reserve_generation(sec.actor_uid(''A_MEMBER''), %L, ''key-direct-01'', ''customer'')', ORG_A));
+perform sec.t('AI-21b','AI_TEMPLATES','ai_record_provider_call','A_MEMBER','EXECUTE','customer forges provider spend','DENY_ERROR',
+  'select public.ai_record_provider_call(null, sec.actor_uid(''A_MEMBER''), ''customer'', ''m'', ''ok'', 1, 1, 1, 1)');
+perform sec.t('AI-21c','AI_TEMPLATES','ai_provider_calls','A_ADMIN','SELECT','company admin reads platform spend','ZERO_ROWS','select 1 from public.ai_provider_calls');
 perform sec.t('AI-21','AI_TEMPLATES','ai_refund_generation','A_MEMBER','EXECUTE','customer self-refund','DENY_ERROR',
   'select public.ai_refund_generation(gen_random_uuid(), ''x'')');
 perform sec.t('AI-22','AI_TEMPLATES','ai_generation_requests','ANON','SELECT','anon read','DENY_ERROR','select 1 from public.ai_generation_requests');

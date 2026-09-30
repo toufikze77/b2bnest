@@ -67,9 +67,11 @@ for i in 1 2; do
 done; wait
 row="$("${PSQL[@]}" -At -c "select (select ai_credits_remaining from public.subscribers where user_id='$BM')||':'||(select count(*) from public.ai_generation_requests where idempotency_key='conc-same-key')")"
 "${PSQL[@]}" -q -c "insert into sec.results(test_no, phase, resource, actor, action, target, expected, actual, verdict, evidence) values ('AI-43','AI_TEMPLATES','ai_reserve_generation','B_MEMBER x2','EXECUTE','concurrent same key, 10 credits, price 2','8:1','$row', case when '$row'='8:1' then 'PASS' else 'FAIL' end, 'parallel psql sessions')"
+# Real generate-template handler over HTTP against this database (local stand-in provider).
+(cd /tmp && PGHOST="$PGHOST" PGPORT="$PGPORT" DENO_NO_PACKAGE_JSON=1 deno run --node-modules-dir=none --allow-net --allow-env --allow-read --allow-sys "$ROOT/scripts/staging/ai-endpoint-test.ts")
 # Rollback script leaves the rest of the schema intact.
 run_sql supabase/staging/ai-templates-2026-10-01-rollback.sql
-left="$("${PSQL[@]}" -At -c "select count(*) from pg_tables where schemaname='public' and tablename in ('ai_generation_config','ai_generation_requests','ai_credit_ledger','generated_templates')")"
+left="$("${PSQL[@]}" -At -c "select count(*) from pg_tables where schemaname='public' and tablename in ('ai_generation_config','ai_generation_requests','ai_credit_ledger','generated_templates','ai_provider_calls')")"
 "${PSQL[@]}" -q -c "insert into sec.results(test_no, phase, resource, actor, action, target, expected, actual, verdict, evidence) values ('AI-44','AI_TEMPLATES','rollback','SERVICE','ROLLBACK','all new tables removed','0','$left', case when '$left'='0' then 'PASS' else 'FAIL' end, 'rollback script')"
 
 read -r pass fail info other <<<"$("${PSQL[@]}" -At -F' ' -c "select count(*) filter (where verdict='PASS'), count(*) filter (where verdict='FAIL'), count(*) filter (where verdict='INFO'), count(*) filter (where verdict not in ('PASS','FAIL','INFO')) from sec.results;")"

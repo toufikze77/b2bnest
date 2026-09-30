@@ -91,6 +91,7 @@ const AdminExport = lazy(() => import('@/pages/admin/AdminExport'));
 const AdminSystemHealth = lazy(() => import('@/pages/admin/AdminSystemHealth'));
 const AdminSettings = lazy(() => import('@/pages/admin/AdminSettings'));
 const AdminTemplates = lazy(() => import('@/pages/admin/AdminTemplates'));
+const AdminAITemplates = lazy(() => import('@/pages/admin/AdminAITemplates'));
 import RouteMeta from '@/components/RouteMeta';
 
 const queryClient = new QueryClient();
@@ -190,6 +191,7 @@ function App() {
                  <Route path="documents" element={<AdminDocuments />} />
                  <Route path="social" element={<AdminSocial />} />
                   <Route path="templates" element={<AdminTemplates />} />
+                  <Route path="ai-templates" element={<AdminAITemplates />} />
                   <Route path="support" element={<AdminSupport />} />
                  <Route path="analytics" element={<AdminAnalytics />} />
                  <Route path="audit-logs" element={<AdminAuditLogs />} />

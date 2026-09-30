@@ -88,3 +88,17 @@ before "Create". No customer records are sent to the model.
 - No real OpenAI call made; no signed-in check possible. Cost figures are estimates from list prices.
 - Live deployment: apply the migration via the migration tool only after your approval; rollback = the rollback script
   (run `ai_expire_stale_generations()` first, export the ledger if needed).
+
+## Update — OpenAI connection and screens (preview, paid generation OFF)
+
+**Pricing basis (estimate, not measured):** model `gpt-4o-mini`; OpenAI list price $0.15 / 1M input, $0.60 / 1M output tokens; output capped at 6,000 tokens; £1 = $1/0.78 (config `usd_to_gbp` 0.78). Estimated typical call ≈ 1,200 in / 2,500 out ≈ $0.0017 ≈ 0.13p; worst case (6,000 out) ≈ 0.3p.
+
+**Provisional settings (configurable, not approved):** 1 customer credit per successful validated generation; 300 successful admin generations/month; separate £5/month admin provider-spend cap; applying a saved template is free. Every provider call, including failures, timeouts and retries, is logged in `ai_provider_calls` and counts towards spend.
+
+**Built:** `generate-template` server function deployed (returns "generation disabled" while the tables are absent on live); customer "Create with AI" dialog in Template Centre (company, cost and balance shown before generating; explanation that each Generate click is a new charge; editable preview re-validated; separate explicit Create click; "Start blank" free path); admin page /admin/ai-templates (budget/settings, capped real cost test of 6 briefs incl. one prompt-injection attempt, drafts review).
+
+**Actual results so far:** real server endpoint over HTTP against the disposable database with a stand-in provider: refunds, idempotent retry and timeout recovery PASS (part of 724 PASS / 0 FAIL / 54 INFO). App tests 101/101. **No real OpenAI generation has been run** — the sandbox has no signed-in super-admin identity. Real token usage, cost, validation failures and quality are therefore NOT yet recorded.
+
+**Screenshot:** `docs/ai-template-dialog-disabled.png` (signed out, disabled state). Preview/editor screens not screenshotted — they need a working generation.
+
+**Remaining before paid generation:** owner runs the capped cost test at /admin/ai-templates and sends results; pricing and budget approval; staging migration approved for live; signed-in checks of both screens.

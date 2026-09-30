@@ -118,7 +118,8 @@
 - [ ] Company-scoped audit log (needs approved schema change).
 
 - [x] Hide unavailable templates from customer catalogue (preview)
-- [ ] AI template generation — blocked on owner decisions in docs/ai-template-generation-gap-report-2026-10-01.md
+- [ ] AI templates: screens built, real cost test pending owner run (blocked: signed-in super admin)
+- [ ] NEXT: Workflow Studio simplification
 - [x] Catalogue: categories/filters/counts from usable templates only (preview)
 - [ ] Future template categories (AI & Automation etc.) — internal roadmap only
 - [x] AI generation staging: credit ledger/reservation SQL, rollback, 44 DB checks, v1 schema (not live)
