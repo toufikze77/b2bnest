@@ -109,10 +109,16 @@ export const applyWorkspaceTemplate = async (
       projects.push({ id: project.id, name: project.name, taskCount: tasks.length });
     }
   } catch (error) {
-    // Best-effort cleanup of rows created by this call only (RLS still applies).
+    // Best-effort cleanup (creation is NOT transactional): remove only rows
+    // created by this attempt, then verify the deletes actually happened.
     if (createdIds.length) {
-      await supabase.from('todos').delete().in('project_id', createdIds).eq('organization_id', organizationId);
-      await supabase.from('projects').delete().in('id', createdIds).eq('organization_id', organizationId);
+      const cleanup = await cleanupCreated(createdIds, organizationId);
+      if (!cleanup.ok) {
+        throw new WorkspaceCreationIncompleteError(
+          error instanceof Error ? error.message : 'Creation failed.',
+          { organizationId, workspaceId, workspaceName, templateSlug: template.slug, leftoverProjectIds: cleanup.leftoverProjectIds, cleanupError: cleanup.error },
+        );
+      }
     }
     throw error;
   }
@@ -126,4 +132,38 @@ export const applyWorkspaceTemplate = async (
     primaryProjectId: projects[0]?.id ?? '',
     totalTasks: projects.reduce((sum, p) => sum + p.taskCount, 0),
   };
+};
+
+export interface IncompleteCreationInfo {
+  organizationId: string;
+  workspaceId: string | null;
+  workspaceName: string;
+  templateSlug: string;
+  leftoverProjectIds: string[];
+  cleanupError: string | null;
+}
+
+/** Thrown when creation failed AND automatic cleanup could not remove everything. */
+export class WorkspaceCreationIncompleteError extends Error {
+  info: IncompleteCreationInfo;
+  constructor(cause: string, info: IncompleteCreationInfo) {
+    super(
+      `Creation failed (${cause}) and ${info.leftoverProjectIds.length} partly created board(s) could not be removed automatically.`,
+    );
+    this.name = 'WorkspaceCreationIncompleteError';
+    this.info = info;
+    // Keep a recoverable record in the browser console for support.
+    console.error('[workspace-template] incomplete creation', info);
+  }
+}
+
+export const cleanupCreated = async (projectIds: string[], organizationId: string) => {
+  const { error: tErr } = await supabase
+    .from('todos').delete().in('project_id', projectIds).eq('organization_id', organizationId);
+  const { data, error: pErr } = await supabase
+    .from('projects').delete().in('id', projectIds).eq('organization_id', organizationId).select('id');
+  const deleted = new Set(((data ?? []) as { id: string }[]).map((r) => r.id));
+  const leftoverProjectIds = projectIds.filter((id) => !deleted.has(id));
+  const error = tErr?.message ?? pErr?.message ?? null;
+  return { ok: !error && leftoverProjectIds.length === 0, leftoverProjectIds, error };
 };

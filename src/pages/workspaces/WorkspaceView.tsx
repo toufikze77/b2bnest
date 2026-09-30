@@ -1,16 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { AlertCircle, ChevronLeft, ChevronRight, Info, Loader2, LayoutGrid } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
-import {
-  isSupportedColumn, resolveView, statusLabelsFor, TASK_STATUS_KEYS,
-} from '@/lib/templateKind';
+import { resolveView, statusLabelsFor, TASK_STATUS_KEYS } from '@/lib/templateKind';
+import { BoardColumn, buildColumns, contextKey, groupTasks } from '@/lib/workspaceBoard';
 
 interface Board {
   id: string; name: string; color: string | null; index: number;
@@ -21,6 +19,7 @@ interface Task {
   due_date: string | null; labels: string[] | null; estimated_hours: number | null;
 }
 type ViewKey = 'table' | 'board' | 'calendar';
+type Keyed<T> = { key: string; data: T | null; error: string | null };
 
 const VIEW_LABEL: Record<ViewKey, string> = { table: 'Table', board: 'Board', calendar: 'Calendar' };
 
@@ -28,16 +27,15 @@ export default function WorkspaceView() {
   const { workspaceId } = useParams();
   const [params, setParams] = useSearchParams();
   const { organizationId, organization } = useActiveOrganization();
-  const [boards, setBoards] = useState<Board[] | null>(null);
-  const [boardsError, setBoardsError] = useState<string | null>(null);
-  const [tasks, setTasks] = useState<Task[] | null>(null);
-  const [tasksError, setTasksError] = useState<string | null>(null);
 
-  // Boards — always scoped to the company selected in the top bar.
+  // Boards: keyed to company + workspace; responses for an older key are ignored.
+  const boardsKey = contextKey(organizationId, workspaceId, null);
+  const [boardsState, setBoardsState] = useState<Keyed<Board[]>>({ key: '', data: null, error: null });
+  const [boardsNonce, setBoardsNonce] = useState(0);
   useEffect(() => {
     let cancelled = false;
-    setBoards(null); setBoardsError(null);
-    if (!organizationId || !workspaceId) { setBoards([]); return; }
+    setBoardsState({ key: boardsKey, data: null, error: null });
+    if (!organizationId || !workspaceId) return;
     supabase
       .from('projects')
       .select('id, name, color, custom_fields')
@@ -45,8 +43,8 @@ export default function WorkspaceView() {
       .eq('custom_fields->workspace->>id', workspaceId)
       .then(({ data, error }) => {
         if (cancelled) return;
-        if (error) { setBoardsError(error.message); return; }
-        const list = (data ?? []).map((p) => {
+        if (error) { setBoardsState({ key: boardsKey, data: null, error: error.message }); return; }
+        const list = (data ?? []).map((p: any) => {
           const cf = (p.custom_fields ?? {}) as any;
           return {
             id: p.id, name: p.name, color: p.color,
@@ -56,30 +54,30 @@ export default function WorkspaceView() {
             statuses: cf.board_statuses ?? [], groups: cf.board_groups ?? [],
           } as Board;
         }).sort((a, b) => a.index - b.index);
-        setBoards(list);
+        setBoardsState({ key: boardsKey, data: list, error: null });
       });
     return () => { cancelled = true; };
-  }, [organizationId, workspaceId]);
+  }, [organizationId, workspaceId, boardsKey, boardsNonce]);
+  const current = boardsState.key === boardsKey ? boardsState : { key: boardsKey, data: null, error: null };
+  const boards = current.data;
 
   const board = useMemo(() => {
     if (!boards?.length) return null;
     return boards.find((b) => b.id === params.get('board')) ?? boards[0];
   }, [boards, params]);
 
-  const supportedViews = useMemo<ViewKey[]>(() => {
-    const set = new Set<ViewKey>(['table']);
-    board?.views.forEach((v) => { const r = resolveView(v); if (r) set.add(r); });
-    set.add('board'); set.add('calendar'); // always available from task data
-    return ['table', 'board', 'calendar'].filter((v) => set.has(v as ViewKey)) as ViewKey[];
-  }, [board]);
-  const unsupportedViews = board?.views.filter((v) => !resolveView(v)) ?? [];
-  const unsupportedColumns = board?.columns.filter((c) => !isSupportedColumn(c)) ?? [];
-  const view = (supportedViews.includes(params.get('view') as ViewKey) ? params.get('view') : 'table') as ViewKey;
-  const statusLabels = statusLabelsFor(board?.statuses);
+  // Tasks: keyed to company + workspace + board. Only tasks whose key matches
+  // the current context are ever rendered, so a previous board never flashes.
+  const tasksKey = contextKey(organizationId, workspaceId, board?.id);
+  const [tasksState, setTasksState] = useState<Keyed<Task[]>>({ key: '', data: null, error: null });
+  const activeKey = useRef(tasksKey);
+  activeKey.current = tasksKey;
+  const taskVersion = useRef(new Map<string, number>());
 
   const loadTasks = useCallback(async () => {
+    const key = tasksKey;
+    setTasksState({ key, data: null, error: null });
     if (!board || !organizationId) return;
-    setTasks(null); setTasksError(null);
     const { data, error } = await supabase
       .from('todos')
       .select('id, title, status, priority, due_date, labels, estimated_hours')
@@ -88,21 +86,49 @@ export default function WorkspaceView() {
       .is('archived_at', null)
       .is('parent_id', null)
       .order('due_date', { ascending: true, nullsFirst: false });
-    if (error) setTasksError(error.message);
-    else setTasks((data ?? []) as Task[]);
-  }, [board, organizationId]);
+    if (activeKey.current !== key) return; // stale response
+    setTasksState({ key, data: error ? null : ((data ?? []) as Task[]), error: error?.message ?? null });
+  }, [board, organizationId, tasksKey]);
 
   useEffect(() => { void loadTasks(); }, [loadTasks]);
+  const tasksCur = tasksState.key === tasksKey ? tasksState : { key: tasksKey, data: null, error: null };
+  const tasks = tasksCur.data;
+
+  const patchTask = (key: string, id: string, patch: Partial<Task>) =>
+    setTasksState((s) => (s.key !== key || !s.data ? s : { ...s, data: s.data.map((t) => (t.id === id ? { ...t, ...patch } : t)) }));
 
   const updateStatus = async (task: Task, status: string) => {
-    const prev = tasks;
-    setTasks((t) => t?.map((x) => (x.id === task.id ? { ...x, status } : x)) ?? null);
-    const { error } = await supabase.from('todos').update({ status }).eq('id', task.id).eq('organization_id', organizationId!);
-    if (error) {
-      setTasks(prev);
-      toast({ title: 'Could not update status', description: error.message, variant: 'destructive' });
-    }
+    if (!organizationId || !board) return;
+    const key = tasksKey;
+    const previous = task.status;
+    const version = (taskVersion.current.get(task.id) ?? 0) + 1;
+    taskVersion.current.set(task.id, version);
+    patchTask(key, task.id, { status });
+    const { data, error } = await supabase
+      .from('todos')
+      .update({ status })
+      .eq('id', task.id)
+      .eq('project_id', board.id)
+      .eq('organization_id', organizationId)
+      .select('id');
+    const ok = !error && Array.isArray(data) && data.length === 1;
+    if (ok) return;
+    // Roll back only this task, only in its original context, and only if no
+    // newer edit to the same task has been made since.
+    if (taskVersion.current.get(task.id) === version) patchTask(key, task.id, { status: previous });
+    toast({
+      title: 'Status not saved',
+      description: error?.message ?? 'You may not have permission to change this task, or it no longer exists.',
+      variant: 'destructive',
+    });
   };
+
+  const supportedViews: ViewKey[] = ['table', 'board', 'calendar'];
+  const unsupportedViews = board?.views.filter((v) => !resolveView(v)) ?? [];
+  const columns = useMemo(() => buildColumns(board?.columns ?? []), [board]);
+  const unsupportedColumns = columns.filter((c) => !c.field).map((c) => c.label);
+  const view = (supportedViews.includes(params.get('view') as ViewKey) ? params.get('view') : 'table') as ViewKey;
+  const statusLabels = statusLabelsFor(board?.statuses);
 
   const setParam = (key: string, value: string) => {
     const next = new URLSearchParams(params); next.set(key, value); setParams(next, { replace: key === 'view' });
@@ -111,7 +137,7 @@ export default function WorkspaceView() {
   if (!organizationId) {
     return <Shell><Empty title="Choose a company" text="Pick a company in the top bar to open this workspace." /></Shell>;
   }
-  if (boardsError) return <Shell><ErrorBox text={boardsError} /></Shell>;
+  if (current.error) return <Shell><ErrorBox text={current.error} onRetry={() => setBoardsNonce((n) => n + 1)} /></Shell>;
   if (boards === null) return <Shell><Loading text="Loading workspace…" /></Shell>;
   if (!boards.length || !board) {
     return (
@@ -126,7 +152,6 @@ export default function WorkspaceView() {
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col md:flex-row">
-      {/* Board navigation */}
       <aside className="border-b border-border bg-muted/30 md:w-60 md:shrink-0 md:border-b-0 md:border-r">
         <div className="p-4">
           <Link to="/workspaces" className="text-xs text-muted-foreground hover:text-foreground">← All workspaces</Link>
@@ -153,7 +178,6 @@ export default function WorkspaceView() {
         </nav>
       </aside>
 
-      {/* Selected board */}
       <section className="min-w-0 flex-1 p-4 md:p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-semibold text-foreground">{board.name}</h2>
@@ -187,10 +211,10 @@ export default function WorkspaceView() {
           </p>
         )}
 
-        {tasksError ? <ErrorBox text={tasksError} onRetry={loadTasks} />
+        {tasksCur.error ? <ErrorBox text={tasksCur.error} onRetry={loadTasks} />
           : tasks === null ? <Loading text="Loading tasks…" />
+          : view === 'table' ? <TableView tasks={tasks} groups={board.groups} columns={columns} statusLabels={statusLabels} onStatus={updateStatus} />
           : tasks.length === 0 ? <Empty title="No tasks on this board" text="Add tasks from Projects & tasks." />
-          : view === 'table' ? <TableView tasks={tasks} groups={board.groups} statusLabels={statusLabels} onStatus={updateStatus} />
           : view === 'board' ? <KanbanView tasks={tasks} statusLabels={statusLabels} onStatus={updateStatus} />
           : <CalendarView tasks={tasks} />}
       </section>
@@ -200,48 +224,63 @@ export default function WorkspaceView() {
 
 function StatusSelect({ task, labels, onStatus }: { task: Task; labels: Record<string, string>; onStatus: (t: Task, s: string) => void }) {
   return (
-    <Select value={task.status} onValueChange={(s) => onStatus(task, s)}>
-      <SelectTrigger className="h-8 w-36 text-xs" aria-label={`Status of ${task.title}`}><SelectValue /></SelectTrigger>
-      <SelectContent>
-        {TASK_STATUS_KEYS.map((k) => <SelectItem key={k} value={k}>{labels[k]}</SelectItem>)}
-      </SelectContent>
-    </Select>
+    <select
+      value={task.status}
+      onChange={(e) => onStatus(task, e.target.value)}
+      aria-label={`Status of ${task.title}`}
+      className="h-8 w-36 rounded-md border border-input bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {TASK_STATUS_KEYS.map((k) => <option key={k} value={k}>{labels[k]}</option>)}
+    </select>
   );
 }
 
-function TableView({ tasks, groups, statusLabels, onStatus }: { tasks: Task[]; groups: string[]; statusLabels: Record<string, string>; onStatus: (t: Task, s: string) => void }) {
-  const byGroup = new Map<string, Task[]>();
-  groups.forEach((g) => byGroup.set(g, []));
-  tasks.forEach((t) => {
-    const g = t.labels?.find((l) => byGroup.has(l)) ?? 'Other';
-    if (!byGroup.has(g)) byGroup.set(g, []);
-    byGroup.get(g)!.push(t);
-  });
+function Cell({ col, task, group, labels, onStatus }: { col: BoardColumn; task: Task; group: string; labels: Record<string, string>; onStatus: (t: Task, s: string) => void }) {
+  switch (col.field) {
+    case 'title': return <span className="text-foreground">{task.title}</span>;
+    case 'status': return <StatusSelect task={task} labels={labels} onStatus={onStatus} />;
+    case 'priority': return <span className="capitalize text-muted-foreground">{task.priority}</span>;
+    case 'due_date': return <span className="text-muted-foreground">{task.due_date ?? '—'}</span>;
+    case 'estimated_hours': return <span className="text-muted-foreground">{task.estimated_hours ?? '—'}</span>;
+    case 'group': return <span className="text-muted-foreground">{group}</span>;
+    default: return <span className="text-muted-foreground/60" title="Not yet supported">Not supported</span>;
+  }
+}
+
+function TableView({ tasks, groups, columns, statusLabels, onStatus }: { tasks: Task[]; groups: string[]; columns: BoardColumn[]; statusLabels: Record<string, string>; onStatus: (t: Task, s: string) => void }) {
+  const grouped = groupTasks(tasks, groups);
+  if (!grouped.length) return <Empty title="No tasks on this board" text="Add tasks from Projects & tasks." />;
   return (
     <div className="space-y-6">
-      {[...byGroup.entries()].filter(([, list]) => list.length).map(([group, list]) => (
-        <div key={group} className="overflow-x-auto rounded-lg border border-border">
+      {grouped.map(({ name, tasks: list }) => (
+        <div key={name} className="overflow-x-auto rounded-lg border border-border" data-testid={`group-${name}`}>
           <div className="flex items-center gap-2 border-b border-border bg-muted/40 px-3 py-2">
             <span className="h-3 w-1 rounded bg-primary" />
-            <h3 className="text-sm font-semibold text-foreground">{group}</h3>
+            <h3 className="text-sm font-semibold text-foreground">{name}</h3>
             <Badge variant="secondary" className="text-[10px]">{list.length}</Badge>
           </div>
-          <table className="w-full min-w-[640px] text-sm">
-            <thead className="text-left text-xs text-muted-foreground">
-              <tr><th className="px-3 py-2 font-medium">Task</th><th className="px-3 py-2 font-medium">Status</th><th className="px-3 py-2 font-medium">Priority</th><th className="px-3 py-2 font-medium">Due date</th><th className="px-3 py-2 font-medium">Est. hours</th></tr>
-            </thead>
-            <tbody>
-              {list.map((t) => (
-                <tr key={t.id} className="border-t border-border">
-                  <td className="px-3 py-2 text-foreground">{t.title}</td>
-                  <td className="px-3 py-2"><StatusSelect task={t} labels={statusLabels} onStatus={onStatus} /></td>
-                  <td className="px-3 py-2 capitalize text-muted-foreground">{t.priority}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{t.due_date ?? '—'}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{t.estimated_hours ?? '—'}</td>
+          {list.length === 0 ? (
+            <p className="px-3 py-3 text-sm text-muted-foreground">No tasks in this group yet.</p>
+          ) : (
+            <table className="w-full min-w-[640px] text-sm">
+              <thead className="text-left text-xs text-muted-foreground">
+                <tr>
+                  {columns.map((c) => (
+                    <th key={c.label} className={cn('px-3 py-2 font-medium', !c.field && 'italic text-muted-foreground/60')}>
+                      {c.label}{!c.field && ' (not supported)'}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {list.map((t) => (
+                  <tr key={t.id} className="border-t border-border">
+                    {columns.map((c) => <td key={c.label} className="px-3 py-2"><Cell col={c} task={t} group={name} labels={statusLabels} onStatus={onStatus} /></td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       ))}
     </div>
