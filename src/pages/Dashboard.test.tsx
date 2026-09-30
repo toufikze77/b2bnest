@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { isoDay, addDaysIso } from '@/lib/dashboardData';
@@ -148,8 +148,9 @@ describe('Dashboard', () => {
   it('quick actions are labelled for where they go', async () => {
     render(ui());
     await screen.findByText('Nothing needs attention');
-    expect(screen.getByRole('link', { name: 'Open CRM' })).toHaveAttribute('href', '/crm');
-    expect(screen.getByRole('link', { name: 'Open invoices' })).toHaveAttribute('href', '/business-tools?tool=business-finance-assistant&tab=invoices');
+    const qa = within(screen.getByRole('region', { name: 'Quick actions' }));
+    expect(qa.getByRole('link', { name: 'Open CRM' })).toHaveAttribute('href', '/crm');
+    expect(qa.getByRole('link', { name: 'Open invoices' })).toHaveAttribute('href', '/business-tools?tool=business-finance-assistant&tab=invoices');
     expect(screen.queryByText(/Add contact|New invoice|linked to a company/)).toBeNull();
   });
 
