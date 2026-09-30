@@ -71,14 +71,14 @@ const AiTemplateDialog = ({ open, onClose, onCreate }: Props) => {
   const edit = (next: AiTemplate) => {
     setDraft(next);
     const r = parseAiTemplate(next);
-    setDraftErrors(r.ok ? [] : r.errors);
+    setDraftErrors('errors' in r ? r.errors : []);
   };
 
   const create = () => {
     if (!draft) return;
     const r = parseAiTemplate(draft);
-    if (!r.ok) { setDraftErrors(r.errors); return; }
-    onCreate(toWorkspaceTemplate(r.template, draftId ?? crypto.randomUUID()));
+    if ('errors' in r) { setDraftErrors(r.errors); return; }
+    onCreate(toWorkspaceTemplate((r as { template: AiTemplate }).template, draftId ?? crypto.randomUUID()));
   };
 
   const close = () => { setDraft(null); setError(null); onClose(); };
