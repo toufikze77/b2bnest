@@ -120,3 +120,14 @@ Root causes (reproduced against the live API, project gvftvswyrevummbvyhxa, with
 - Project: the form sent UI-only fields (`customColumns`, etc.); the API replied PGRST204 "Could not find the 'customColumns' column", which was only logged to the console. Fix: send only real `projects` columns, scope to the selected company (same filter as reads), require exactly one updated row, show "Saving…", an inline error and a toast on failure.
 
 Checks: typecheck clean; app tests pass (mocked client); fresh suite 662 PASS / 0 FAIL / 54 INFO. Live API accepts the corrected request shapes (they reach the normal permission check). **Not verified:** a signed-in save and refresh on real data — no signed-in session is available in the sandbox; owner re-check required.
+
+## Final owner-confirmed signed-in checks — 2026-09-30 22:02 UTC
+
+Owner-confirmed (Toufik, signed in on the preview with real data; separate from automated tests):
+- Project editing and deadline saving persist after refresh — **PASS**
+- Task editing saves without the schema error and persists after refresh — **PASS**
+- View selection survives refresh without flashing — **PASS**
+- Deadline links select the correct project — **PASS**
+
+The save-failure root causes and fixes are recorded above: task select now includes the filtered columns, and the project save sends only real columns and checks exactly one updated row. Final automated results: typecheck clean, build OK, 68/68 app tests (mocked), and the fresh suite at 662 PASS / 0 FAIL / 54 INFO.
+Status: UI Wave 2 approved for publishing.

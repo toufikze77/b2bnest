@@ -47,6 +47,7 @@
   - [ ] Production publish (after owner review)
 - [x] UI Wave 2 — Activation implemented in preview (awaiting owner signed-in review before publish): one dashboard, needs attention, first-run checklist, shared states, quick actions; report docs/ui-wave2-activation-report-2026-09-30.md
 - [x] UI Wave 2 final revision: year shown on out-of-year dates, "Completed this week" replaced (no completion history), 13–14px text, deadlines action; suite 662/0/54. Signed-in owner review pending; unpublished.
+- [x] UI Wave 2 save fixes (task select columns; project save sends only real columns and checks one updated row) — owner-confirmed signed-in PASS for all four final checks on 2026-09-30; published.
 - [x] Projects & tasks refresh flash fixed (skeleton until the selected company's data loads; placeholder data removed); mocked full-screen browser checks, create/edit shortcuts, deadline in UK + New York; suite 662/0/54. Unpublished.
 - [ ] Owner signed-in check: no flash on refresh; save a Dashboard deadline and confirm the exact date after refresh (real database).
   - [ ] Proposals needing review: company-scoped contacts/invoices, company invitation flow, cross-device checklist dismissal
