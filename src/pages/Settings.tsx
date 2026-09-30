@@ -2,15 +2,18 @@ import { Link, useSearchParams } from 'react-router-dom';
 import AccountSettings from '@/components/AccountSettings';
 import NotificationPreferences from '@/components/NotificationPreferences';
 import HMRCSettings from '@/components/hmrc/HMRCSettings';
+import AccountSecurity from '@/components/settings/AccountSecurity';
+import CompanyMembers from '@/components/settings/CompanyMembers';
+import CompanySecurity from '@/components/settings/CompanySecurity';
 import BillingSettings from '@/components/billing/BillingSettings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { User, Bell, Building2, CreditCard, ShieldCheck, ArrowRight } from 'lucide-react';
+import { User, Bell, Building2, CreditCard, ShieldCheck, ArrowRight, Lock, Users, FileLock2 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { PageContainer } from '@/components/ui/page-container';
 
-const TABS = ['account', 'billing', 'notifications', 'hmrc', 'companies'] as const;
+const TABS = ['account', 'security', 'billing', 'notifications', 'hmrc', 'members', 'company-security', 'companies'] as const;
 
 const Settings = () => {
   const [params, setParams] = useSearchParams();
@@ -35,14 +38,20 @@ const Settings = () => {
         <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           <TabsList className="inline-flex w-max">
             <TabsTrigger value="account" className="gap-2"><User className="h-4 w-4" />Account</TabsTrigger>
+            <TabsTrigger value="security" className="gap-2"><Lock className="h-4 w-4" />Security</TabsTrigger>
             <TabsTrigger value="billing" className="gap-2"><CreditCard className="h-4 w-4" />Billing</TabsTrigger>
             <TabsTrigger value="notifications" className="gap-2"><Bell className="h-4 w-4" />Notifications</TabsTrigger>
             <TabsTrigger value="hmrc" className="gap-2"><Building2 className="h-4 w-4" />HMRC</TabsTrigger>
+            <TabsTrigger value="members" className="gap-2"><Users className="h-4 w-4" />Members &amp; roles</TabsTrigger>
+            <TabsTrigger value="company-security" className="gap-2"><FileLock2 className="h-4 w-4" />Company security</TabsTrigger>
             <TabsTrigger value="companies" className="gap-2"><ShieldCheck className="h-4 w-4" />Company data</TabsTrigger>
           </TabsList>
         </div>
 
         <TabsContent value="account"><AccountSettings /></TabsContent>
+        <TabsContent value="security"><AccountSecurity /></TabsContent>
+        <TabsContent value="members"><CompanyMembers /></TabsContent>
+        <TabsContent value="company-security"><CompanySecurity /></TabsContent>
         <TabsContent value="billing"><BillingSettings /></TabsContent>
         <TabsContent value="notifications"><NotificationPreferences /></TabsContent>
         <TabsContent value="hmrc"><HMRCSettings onDisconnect={() => {}} /></TabsContent>

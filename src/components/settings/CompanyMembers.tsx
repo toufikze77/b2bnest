@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
 import { batchGetUserDisplayInfo } from '@/utils/profileUtils';
 
-export const COMPANY_ROLES = ['owner', 'admin', 'manager', 'member', 'viewer'] as const;
+export const COMPANY_ROLES = ['owner', 'admin', 'manager', 'member'] as const;
 
 export interface MemberRow { id: string; user_id: string; role: string; name: string }
 
