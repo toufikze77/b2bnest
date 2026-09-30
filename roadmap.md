@@ -119,3 +119,5 @@
 
 - [x] Hide unavailable templates from customer catalogue (preview)
 - [ ] AI template generation — blocked on owner decisions in docs/ai-template-generation-gap-report-2026-10-01.md
+- [x] Catalogue: categories/filters/counts from usable templates only (preview)
+- [ ] Future template categories (AI & Automation etc.) — internal roadmap only
