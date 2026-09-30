@@ -5,6 +5,7 @@ const widths = {
   narrow: 'max-w-4xl',
   default: 'max-w-6xl',
   wide: 'max-w-[1440px]',
+  full: 'max-w-[1760px]',
 } as const;
 
 interface PageContainerProps {
