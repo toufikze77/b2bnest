@@ -48,3 +48,31 @@ No database, RLS, billing, HMRC, auth or pricing change. No migration.
 - A signed-in check on real data: filters, List/Board editing and saving, the calendar agenda on a phone, the CRM table and panel, and company switching. No signed-in session is available in the sandbox (external Supabase).
 - Company switching was not browser-tested with two companies in this wave. Scoping code is unchanged from Wave 2.
 - Not done: the Timeline view was not restyled; the Board kanban internals were not split out of ProjectManagement.tsx (still about 3,800 lines); the calendar has no week view.
+
+## Owner review follow-up (2026-09-30, late)
+
+**Owner review: template behaviour FAILED.** Owner reported templates opening ordinary Projects & tasks and entries with no usable template behind them.
+
+### Root cause
+- Destination was decided only by board count (`boards.length > 1`). 45 of 50 built-in templates have one board, so they were always created as plain projects, including the CRM template type.
+- 20 templates (types dashboard, workflow, automation, ai-workflow) advertise dashboards, automations or AI steps that are not built; creating them produced only a task list.
+
+### Fix (preview only, no database change)
+- `getTemplateKind`: explicit `kind` on the template wins → otherwise type `crm`/`multi-component` = workspace → board count only as fallback. A one-board workspace is supported (`kind: 'workspace'` can be set in the admin catalogue JSON; no schema change required).
+- `getTemplateAvailability`: unpublished, empty, or unbuilt-type templates are marked "Not available yet" on the card and in the preview, the Use button is disabled, and the creation service refuses them (`TemplateUnavailableError`) before touching the company or the database. Unavailable items sort last.
+- Create dialog states the board count and destination. On failure it stays open with the error; it never falls back to Projects & tasks.
+- Empty category/sub-category shows "No templates in this category yet".
+- Company validation, RLS, duplicate protection and incomplete-creation recovery unchanged.
+
+### Security moved out of CRM
+Audit of the old CRM Security tab: every value was fake or unenforced — role counts hardcoded (1/3/5/12), active sessions "24" and failed logins "3" hardcoded, "Security score" computed from the switches themselves, OAuth/2FA/SSO switches and session-timeout/threshold inputs only saved to `integration_settings` and were never enforced. "Manage user roles" edited platform-wide `user_roles` (super admins only by RLS).
+- Settings → **Security**: real two-step status (`user_2fa_settings`), "Sign out other devices" (Supabase `signOut({scope:'others'})`), own last 20 audit entries.
+- Settings → **Members & roles**: members of the selected company from `organization_members`; owners change any role, admins non-owner roles, nobody their own (same as RLS); success only when exactly one row updated.
+- Settings → **Company security**: owner/admin only; role counts from real membership. Company audit log shown as **unavailable** — `audit_logs` has no company column. Proposed separately (not applied): add `organization_id` to `audit_logs` + RLS for company owners/admins; rollback = drop column/policy.
+- Super Admin → Settings: read-only "Sign-in and authentication" card linking to Supabase providers. No global auth changes; platform roles stay under Admin → Users.
+- CRM Security tab and `SecurityTab.tsx` removed; `/crm?tab=security` redirects to `/settings?tab=company-security`.
+
+### Results
+- Mocked app tests: 87/87 (6 new: kind resolution incl. one-board workspace, availability, disabled card button, project label, role-assignment rules). These use a stand-in database.
+- Typecheck clean. Fresh tenant/security suite: 662 PASS / 0 FAIL / 54 INFO.
+- Real signed-in checks: **pending owner** (preview cannot sign in for this project): create a multi-board workspace and a project template, confirm destination and refresh, switch company A→B→A, confirm an unavailable template cannot be created, and check the new Settings tabs as member, admin and super admin.
