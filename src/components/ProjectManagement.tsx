@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -1014,6 +1015,8 @@ const ProjectManagement = () => {
         description: "Failed to load tasks. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      if (key === orgRef.current) setReadyFor((r) => ({ ...r, tasks: key }));
     }
   };
 
@@ -2637,6 +2640,24 @@ const ProjectManagement = () => {
     return eventsSort === 'newest' ? bDate.localeCompare(aDate) : aDate.localeCompare(bDate);
   });
   const pagedEvents = sortedEvents.slice((eventsPage-1)*PAGE_SIZE, eventsPage*PAGE_SIZE);
+
+  // Neutral skeleton until auth, access and this company's projects + tasks have resolved.
+  const dataReady = readyFor.projects === orgKey && readyFor.tasks === orgKey;
+  if (!user || hasAccess === null || (hasAccess && !dataReady)) {
+    return (
+      <div className="min-w-0 max-w-full space-y-5 pt-5" role="status" aria-busy="true" aria-live="polite" data-testid="pm-loading">
+        <span className="sr-only">Loading projects and tasks…</span>
+        <div className="flex items-center justify-between gap-3">
+          <Skeleton className="h-8 w-56" />
+          <Skeleton className="h-9 w-32" />
+        </div>
+        <Skeleton className="h-11 w-full" />
+        <div className="grid gap-4 md:grid-cols-3">
+          {[0, 1, 2].map((i) => <Skeleton key={i} className="h-64 w-full" />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-w-0 max-w-full space-y-5 overflow-x-hidden pt-5">
