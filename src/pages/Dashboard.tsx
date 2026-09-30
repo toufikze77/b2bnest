@@ -19,7 +19,8 @@ import { ErrorState, LoadingRows } from '@/components/ui/states';
 import { cn } from '@/lib/utils';
 
 const fmtDate = (d: string) => new Date(d.slice(0, 10) + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-const fmtRelative = (iso: string) => {
+const fmtRelative = (iso: string | null | undefined) => {
+  if (!iso || Number.isNaN(new Date(iso).getTime())) return '';
   const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
   if (mins < 1) return 'just now';
   if (mins < 60) return `${mins} min ago`;
