@@ -24,13 +24,14 @@ export const useUserRole = () => {
           .from('user_roles')
           .select('role')
           .eq('user_id', user.id)
-          .single();
+          .limit(1)
+          .maybeSingle();
 
         if (error) {
           console.error('Error fetching user role:', error);
           setRole('user'); // Default to user role
         } else {
-          setRole(data.role);
+          setRole(data?.role ?? 'user');
         }
       } catch (error) {
         console.error('Error in fetchUserRole:', error);
@@ -44,7 +45,7 @@ export const useUserRole = () => {
   }, [user]);
 
   const isOwner = role === 'owner';
-  const isAdmin = role === 'admin' || role === 'owner';
+  const isAdmin = role === 'admin' || role === 'owner' || role === 'super_admin';
   const isManager = role === 'manager' || isAdmin;
   const canUpload = isAdmin;
   const canModify = isAdmin;

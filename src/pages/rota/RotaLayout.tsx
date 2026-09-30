@@ -20,7 +20,7 @@ export default function RotaLayout({ children }: { children: ReactNode }) {
         <Alert>
           <ShieldAlert className="h-4 w-4" />
           <AlertDescription>
-            Only organization owners and admins can manage the rota. Please contact your administrator.
+            Rota access is for company owners, admins and managers. Ask your company owner to give you the Admin or Manager role in Settings → Team.
           </AlertDescription>
         </Alert>
       </div>

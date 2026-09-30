@@ -30,9 +30,9 @@ const OrganizationSwitcher = () => {
   return (
     <div className="flex min-w-0 items-center gap-2">
       <Building2 className="hidden h-4 w-4 shrink-0 text-muted-foreground sm:block" aria-hidden="true" />
-      <Select value={organizationId} onValueChange={setActiveOrganization}>
+      <Select value={organizationId ?? undefined} onValueChange={setActiveOrganization}>
         <SelectTrigger className="h-10 w-[190px] max-w-[42vw] bg-surface shadow-xs" aria-label="Active company">
-          <SelectValue />
+          <SelectValue placeholder="Choose a company" />
         </SelectTrigger>
         <SelectContent>
           {memberships.map((m) => (
