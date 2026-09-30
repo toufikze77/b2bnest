@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import {
-  ActivationStep, buildActivationSteps, dismissKey, hasRole, isOpen, projectDeadlines, ROTA_ROLES,
+  ActivationStep, ADMIN_ROLES, buildActivationSteps, formatDueDate, dismissKey, hasRole, isOpen, projectDeadlines, ROTA_ROLES,
   summarizeProjects, TaskGroupData, taskHref,
 } from '@/lib/dashboardData';
 import { PageContainer } from '@/components/ui/page-container';
@@ -18,7 +18,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState, LoadingRows } from '@/components/ui/states';
 import { cn } from '@/lib/utils';
 
-const fmtDate = (d: string) => new Date(d.slice(0, 10) + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+const fmtDate = (d: string) => formatDueDate(d);
 const fmtRelative = (iso: string | null | undefined) => {
   if (!iso || Number.isNaN(new Date(iso).getTime())) return '';
   const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
@@ -54,7 +54,7 @@ function Stat({ label, value, icon: Icon, tone, href, hint }: { label: string; v
         <span className={cn('flex h-8 w-8 items-center justify-center rounded-md', toneCls)}><Icon className="h-4 w-4" aria-hidden="true" /></span>
       </div>
       <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight text-foreground">{value === null ? '—' : value.toLocaleString()}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{value === null ? 'Unavailable' : hint}</p>
+      <p className="mt-1 text-[13px] text-muted-foreground">{value === null ? 'Unavailable' : hint}</p>
     </Link>
   );
 }
@@ -68,7 +68,7 @@ function TaskGroup({ title, icon: Icon, group, tone }: { title: string; icon: ty
   const bar = tone === 'danger' ? 'bg-destructive' : tone === 'warning' ? 'bg-warning' : 'bg-border';
   return (
     <section aria-labelledby={headingId}>
-      <h3 id={headingId} className="flex items-center gap-2 px-5 pb-1.5 pt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <h3 id={headingId} className="flex items-center gap-2 px-5 pb-1.5 pt-4 text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
         <Icon className="h-3.5 w-3.5" aria-hidden="true" />{title}
         <Badge variant={tone === 'danger' ? 'destructive' : tone === 'warning' ? 'warning' : 'neutral'} className="ml-1" aria-label={`${total} in total`}>{total}</Badge>
       </h3>
@@ -78,14 +78,14 @@ function TaskGroup({ title, icon: Icon, group, tone }: { title: string; icon: ty
             <Link to={taskHref(t)} className="flex min-h-12 items-center gap-3 px-5 py-2.5 text-sm hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
               <span className={cn('h-6 w-1 shrink-0 rounded-full', bar)} aria-hidden="true" />
               <span className="min-w-0 flex-1 truncate font-medium text-foreground">{t.title}</span>
-              <span className="hidden shrink-0 text-xs capitalize text-muted-foreground sm:inline">{t.priority}</span>
-              <span className="w-14 shrink-0 text-right text-xs tabular-nums text-muted-foreground">{fmtDate(t.due_date!)}</span>
+              <span className="hidden shrink-0 text-[13px] capitalize text-muted-foreground sm:inline">{t.priority}</span>
+              <span className="w-24 shrink-0 text-right text-sm tabular-nums text-muted-foreground">{fmtDate(t.due_date!)}</span>
             </Link>
           </li>
         ))}
       </ul>
       {(hidden > 0 || group.total === null) && (
-        <p className="px-5 pb-2 pt-1 text-xs text-muted-foreground">
+        <p className="px-5 pb-2 pt-1 text-[13px] text-muted-foreground">
           {group.total === null ? `Showing ${tasks.length}. ` : `Showing ${tasks.length} of ${total}. `}
           <Link to="/project-management?view=list" className="underline underline-offset-2 hover:text-foreground">See all in Projects &amp; tasks</Link>
         </p>
@@ -99,8 +99,8 @@ function StepList({ heading, note, steps }: { heading: string; note?: string; st
   return (
     <div>
       <div className="border-b border-border bg-muted/40 px-5 py-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{heading}</h3>
-        {note && <p className="text-xs text-muted-foreground">{note}</p>}
+        <h3 className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">{heading}</h3>
+        {note && <p className="text-[13px] text-muted-foreground">{note}</p>}
       </div>
       <ul className="divide-y divide-border border-b border-border last:border-b-0">
         {steps.map((s) => (
@@ -108,7 +108,7 @@ function StepList({ heading, note, steps }: { heading: string; note?: string; st
             <Circle className={`mt-0.5 h-4 w-4 ${s.state === 'unknown' ? 'text-muted-foreground' : 'text-primary'}`} aria-hidden="true" />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium">{s.title}</p>
-              <p className="text-xs text-muted-foreground">{s.description}</p>
+              <p className="text-[13px] text-muted-foreground">{s.description}</p>
             </div>
             <Button size="sm" variant="outline" asChild><Link to={s.href}>{s.actionLabel}</Link></Button>
           </li>
@@ -173,7 +173,7 @@ const Dashboard = () => {
         <Stat label="Active projects" value={data.loading ? null : data.summary.activeProjects} icon={FolderKanban} tone="primary" href="/project-management" hint="Not completed or cancelled" />
         <Stat label="Open tasks" value={data.loading ? null : data.summary.openTasks} icon={ListTodo} tone="info" href="/project-management?view=list" hint="Across all projects" />
         <Stat label="Overdue tasks" value={data.loading || data.tasksError ? null : groups.overdue.total} icon={AlarmClock} tone="danger" href="/project-management?view=list" hint="Past their due date" />
-        <Stat label="Completed this week" value={data.loading ? null : data.summary.completedWeek} icon={CheckCircle2} tone="success" href="/project-management?view=list" hint="Since Monday" />
+        <Stat label="Due in next 7 days" value={data.loading || data.tasksError ? null : groups.upcoming.total} icon={CalendarDays} tone="success" href="/project-management?view=calendar" hint="Open tasks, after today" />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-12">
@@ -214,13 +214,13 @@ const Dashboard = () => {
                         <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-sm font-semibold text-primary" aria-hidden="true">{p.name.slice(0, 1).toUpperCase()}</span>
                         <span className="min-w-0">
                           <span className="block truncate text-sm font-medium text-foreground">{p.name}</span>
-                          <span className="block text-xs text-muted-foreground">{statusLabel(p.status)}</span>
+                          <span className="block text-[13px] text-muted-foreground">{statusLabel(p.status)}</span>
                         </span>
                         <span className="col-span-3 row-start-2 sm:col-span-1 sm:row-start-auto" aria-label={`${p.done} of ${p.total} tasks done`}>
-                          <span className="flex items-center justify-between text-xs text-muted-foreground"><span>{p.done}/{p.total} tasks</span><span className="tabular-nums">{pct}%</span></span>
+                          <span className="flex items-center justify-between text-[13px] text-muted-foreground"><span>{p.done}/{p.total} tasks</span><span className="tabular-nums">{pct}%</span></span>
                           <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-muted"><span className="block h-full rounded-full bg-primary" style={{ width: `${pct}%` }} /></span>
                         </span>
-                        <span className="col-start-3 row-start-1 text-right text-xs text-muted-foreground sm:col-start-auto sm:row-start-auto">
+                        <span className="col-start-3 row-start-1 text-right text-[13px] text-muted-foreground sm:col-start-auto sm:row-start-auto">
                           {p.nextDue ? <>Next due<br /><span className="font-medium text-foreground">{fmtDate(p.nextDue)}</span></> : 'No due tasks'}
                         </span>
                       </Link>
@@ -229,7 +229,7 @@ const Dashboard = () => {
                 })}
               </ul>
             )}
-            {projects.length > 6 && <p className="border-t border-border px-5 py-2 text-xs text-muted-foreground">Showing 6 of {projects.length} loaded. <Link to="/project-management" className="underline underline-offset-2 hover:text-foreground">See all</Link></p>}
+            {projects.length > 6 && <p className="border-t border-border px-5 py-2 text-[13px] text-muted-foreground">Showing 6 of {projects.length} loaded. <Link to="/project-management" className="underline underline-offset-2 hover:text-foreground">See all</Link></p>}
           </Panel>
         </div>
 
@@ -250,7 +250,7 @@ const Dashboard = () => {
                   <li key={w.id}>
                     <Link to={w.href} className="flex items-center gap-3 px-5 py-3 text-sm hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
                       <span className="flex h-8 w-8 items-center justify-center rounded-md bg-info/10 text-info"><LayoutGrid className="h-4 w-4" aria-hidden="true" /></span>
-                      <span className="min-w-0 flex-1"><span className="block truncate font-medium">{w.name}</span><span className="block text-xs text-muted-foreground">{w.boards} {w.boards === 1 ? "board" : "boards"} · {w.open} open {w.open === 1 ? "task" : "tasks"}</span></span>
+                      <span className="min-w-0 flex-1"><span className="block truncate font-medium">{w.name}</span><span className="block text-[13px] text-muted-foreground">{w.boards} {w.boards === 1 ? "board" : "boards"} · {w.open} open {w.open === 1 ? "task" : "tasks"}</span></span>
                       <ArrowRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                     </Link>
                   </li>
@@ -263,14 +263,17 @@ const Dashboard = () => {
             {data.loading ? <LoadingRows rows={2} label="Loading deadlines" /> : data.projectsError ? (
               <p className="px-5 py-4 text-sm text-muted-foreground">Deadlines couldn't be loaded.</p>
             ) : deadlines.length === 0 ? (
-              <p className="px-5 py-4 text-sm text-muted-foreground">No active project has a deadline set.</p>
+              <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">No active project has a deadline set.{!hasRole(role, [...ADMIN_ROLES, 'manager']) && ' Ask a company admin to add one.'}</p>
+                {hasRole(role, [...ADMIN_ROLES, 'manager']) && <Button size="sm" variant="outline" asChild><Link to="/project-management">Set deadlines</Link></Button>}
+              </div>
             ) : (
               <ul className="divide-y divide-border">
                 {deadlines.map((p) => (
                   <li key={p.id} className="flex items-center gap-3 px-5 py-2.5 text-sm">
                     <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                     <span className="min-w-0 flex-1 truncate">{p.name}</span>
-                    <span className="shrink-0 text-xs font-medium tabular-nums">{fmtDate(p.deadline!)}</span>
+                    <span className="shrink-0 text-[13px] font-medium tabular-nums">{fmtDate(p.deadline!)}</span>
                   </li>
                 ))}
               </ul>
@@ -290,9 +293,9 @@ const Dashboard = () => {
                       <Activity className={cn('mt-0.5 h-4 w-4 shrink-0', isOpen(t.status) ? 'text-muted-foreground' : 'text-success')} aria-hidden="true" />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-medium">{t.title}</span>
-                        <span className="block truncate text-xs text-muted-foreground">{statusLabel(t.status)}{t.project_id && projectName.get(t.project_id) ? ` · ${projectName.get(t.project_id)}` : ''}</span>
+                        <span className="block truncate text-[13px] text-muted-foreground">{statusLabel(t.status)}{t.project_id && projectName.get(t.project_id) ? ` · ${projectName.get(t.project_id)}` : ''}</span>
                       </span>
-                      <span className="shrink-0 text-xs text-muted-foreground">{fmtRelative(t.updated_at)}</span>
+                      <span className="shrink-0 text-[13px] text-muted-foreground">{fmtRelative(t.updated_at)}</span>
                     </Link>
                   </li>
                 ))}
@@ -314,7 +317,7 @@ const Dashboard = () => {
           {/* Personal records — kept visibly separate from company data */}
           <section aria-labelledby="your-records" className="rounded-lg border border-dashed border-border p-4">
             <h2 id="your-records" className="flex items-center gap-2 text-sm font-semibold"><UserRound className="h-4 w-4" aria-hidden="true" />Your records</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">Contacts and invoices belong to your account, not only to {companyName}.</p>
+            <p className="mt-0.5 text-[13px] text-muted-foreground">Contacts and invoices belong to your account, not only to {companyName}.</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Button variant="ghost" size="sm" asChild><Link to="/crm"><Users className="h-4 w-4" aria-hidden="true" />Open CRM</Link></Button>
               <Button variant="ghost" size="sm" asChild><Link to="/business-tools?tool=business-finance-assistant&tab=invoices"><Receipt className="h-4 w-4" aria-hidden="true" />Open invoices</Link></Button>
@@ -326,7 +329,7 @@ const Dashboard = () => {
               <div className="flex items-start justify-between border-b border-border px-5 py-3">
                 <div>
                   <h2 id="get-started" className="text-base font-semibold">Get started</h2>
-                  <p className="text-xs text-muted-foreground">{doneCount} of {steps.length} done</p>
+                  <p className="text-[13px] text-muted-foreground">{doneCount} of {steps.length} done</p>
                 </div>
                 <Button variant="ghost" size="icon" aria-label="Dismiss get started checklist" onClick={() => { if (dKey) localStorage.setItem(dKey, '1'); setDismissed(true); }}>
                   <X className="h-4 w-4" />
@@ -338,7 +341,7 @@ const Dashboard = () => {
               <StepList heading={`For ${organization?.name || 'this company'}`} steps={openSteps.filter((s) => s.scope === 'company')} />
               <StepList heading="For your account" note={`Counts your own records, not just ${organization?.name || 'this company'}'s.`} steps={openSteps.filter((s) => s.scope === 'personal')} />
               {doneCount > 0 && (
-                <p className="flex items-center gap-1.5 border-t border-border px-5 py-2 text-xs text-muted-foreground">
+                <p className="flex items-center gap-1.5 border-t border-border px-5 py-2 text-[13px] text-muted-foreground">
                   <CheckCircle2 className="h-3.5 w-3.5 text-primary" aria-hidden="true" />Completed steps are hidden.
                 </p>
               )}

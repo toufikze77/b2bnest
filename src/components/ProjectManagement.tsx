@@ -1419,7 +1419,7 @@ const ProjectManagement = () => {
       // Update in database
       const { error } = await supabase
         .from('todos')
-        .update({ status: newStatus })
+        .update(completionPatch(newStatus))
         .eq('id', taskId);
 
       if (error) throw error;

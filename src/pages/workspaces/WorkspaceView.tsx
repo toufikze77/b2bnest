@@ -106,7 +106,7 @@ export default function WorkspaceView() {
     patchTask(key, task.id, { status });
     const { data, error } = await supabase
       .from('todos')
-      .update({ status })
+      .update(completionPatch(status))
       .eq('id', task.id)
       .eq('project_id', board.id)
       .eq('organization_id', organizationId)

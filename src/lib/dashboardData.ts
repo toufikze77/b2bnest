@@ -159,3 +159,18 @@ export function summarizeProjects(projects: DashProject[], tasks: ProgressTask[]
 /** Active projects with a deadline, soonest first. */
 export const projectDeadlines = (projects: DashProject[], limit = 5) =>
   projects.filter((p) => p.deadline).sort((a, b) => (a.deadline! < b.deadline! ? -1 : 1)).slice(0, limit);
+
+/** Status update payload that also records (or clears) the real completion time. */
+export const completionPatch = (status: string, now = new Date()) => ({
+  status,
+  completed_at: ['done', 'completed'].includes((status || '').toLowerCase()) ? now.toISOString() : null,
+});
+
+/** "5 Oct", or "5 Oct 2025" when the date is outside the current year. */
+export const formatDueDate = (d: string, now = new Date()) => {
+  const day = d.slice(0, 10);
+  const date = new Date(day + 'T00:00:00');
+  const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
+  if (Number(day.slice(0, 4)) !== now.getFullYear()) opts.year = 'numeric';
+  return date.toLocaleDateString('en-GB', opts);
+};
