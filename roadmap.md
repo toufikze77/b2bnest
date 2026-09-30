@@ -100,5 +100,7 @@
 - [x] Distinguish project vs workspace templates; /workspaces view with Table/Board/Calendar
 - [ ] Owner signed-in check: create workspace template in selected company, switch company and confirm it is hidden
 - [ ] Schema for full workspaces/groups/custom columns — awaits owner approval (docs/workspace-templates-2026-09-30.md)
+- [x] Durable duplicate protection: DB table applied (production DB, unused until publish), 9 app + 20 DB tests, suite 662/0/54
+- [ ] Owner signed-in check of duplicate protection (two tabs), then publish frontend
 - [x] Workspace template code-review fixes (keyed state, safe status updates, verified cleanup, column order, empty groups, retry, tests)
 - [ ] Durable idempotency + transactional creation — awaits owner approval

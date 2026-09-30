@@ -43,11 +43,46 @@
 5. Table columns follow template order; unsupported columns shown as "(not supported)" headers/cells; boards without columns use Task/Status/Priority/Due date/Est. hours; empty template groups are kept ("No tasks in this group yet").
 6. Retry button on workspace/board load errors.
 
-## Durable idempotency (APPLIED 2026-09-30, owner-approved)
-- Applied: `template_applications` table (UNIQUE organization_id + idempotency_key, GRANTs, org-member RLS). The dialog reuses one key per company + template (shared across tabs via localStorage) until success; a duplicate request is refused, or opens the already-created copy. Clean failures release the key; incomplete creations are marked `incomplete`.
-- Still not applied (original proposal below): transactional creation function.
-- Client generates an idempotency key per dialog session; store it in a new `template_applications(organization_id, idempotency_key UNIQUE, workspace_id, status, created_by)` table with GRANTs + org-member RLS.
-- Move creation into a SECURITY INVOKER Postgres function `apply_workspace_template(org, key, payload)` that runs in one transaction (true rollback) and returns the existing workspace when the key was already used.
+## Durable duplicate protection (owner-approved 2026-09-30, frontend in preview only)
+
+### Which database was changed
+- The migration ran on the one connected Supabase project, `gvftvswyrevummbvyhxa`. The preview **and** the published site (b2bnest.online) both use it, so **the production database was changed** even though the frontend was not published.
+- What changed: one new, empty table (`template_applications`) with its grants, RLS policies and an updated_at trigger. No existing table, row, policy, function, billing or HMRC object was changed. The published frontend does not use the table, so live behaviour is unchanged until the frontend is published.
+- Migration file: `supabase/migrations/20260930013054_403c6633-cfd2-4e79-a4e5-1f85ae854a26.sql`.
+
+### New database objects
+- Table `public.template_applications`: id, organization_id (FK organizations, ON DELETE CASCADE), idempotency_key, template_slug, workspace_id, primary_project_id, kind, status (`pending` | `done` | `incomplete`), created_by (default auth.uid()), created_at, updated_at.
+- Constraint `UNIQUE (organization_id, idempotency_key)` — the duplicate-detection key.
+- Trigger `template_applications_updated_at` (existing `handle_updated_at()`).
+- No new functions, so no new SECURITY DEFINER surface.
+
+### Grants and RLS
+- Grants: `authenticated` SELECT/INSERT/UPDATE/DELETE; `service_role` ALL; **no `anon` grant**.
+- SELECT: active members of the company (`user_is_organization_member`).
+- INSERT: only as yourself (`created_by = auth.uid()`) into a company you belong to.
+- UPDATE: only your own records, and only within a company you belong to (cannot move a record to another company).
+- DELETE: only your own records.
+
+### Duplicate-detection key and intentional copies
+- The dialog makes one random key per **company + template** and keeps it in the browser's localStorage, so every tab and every retry in that browser sends the same key.
+- **Concurrent/duplicate requests** (two tabs, double-sent request) share the key: the database's unique rule lets only one claim succeed; the other is refused as "in progress", or — if the first already finished — told "already created" and taken to that workspace.
+- **Intentional later copy**: after success the key is removed from the browser, so using the template again makes a new key and a new workspace.
+- Limit: the key lives in one browser. Two different browsers/devices clicking at the same moment get different keys and can still both create a copy (each is then a deliberate action by that user).
+- Clean failure: the claim is deleted and the key stays, so retry works.
+- Incomplete cleanup: the claim is marked `incomplete` with the workspace id; the same key is refused with that id, so no accidental second copy is made until leftovers are handled.
+
+### Stalled attempt recovery
+- A `pending` claim older than 10 minutes (tab closed or crashed mid-creation) is treated as stalled. When **the same user** retries, the stale claim is removed and creation proceeds. Another user's stalled claim is never taken over; recent ones are still "in progress".
+- Manual path (owner, Supabase SQL editor): find it with `select * from template_applications where status in ('pending','incomplete') and created_at < now() - interval '10 minutes';`, remove leftover boards listed by `workspace_id` (projects where `custom_fields->'workspace'->>'id' = '<workspace_id>'` and their todos), then `delete from template_applications where id = '<id>';`. The user can also clear the browser key by clearing site data.
+
+### Not done
+- Creation is still not transactional (no single database function); cleanup remains best-effort.
+
+## Deployment and rollback
+- Database: **already applied** to `gvftvswyrevummbvyhxa` (see above). Safe with the currently published frontend (unused table).
+- Frontend: publish from Lovable after the owner's signed-in check. Order: database first (done), then frontend.
+- Rollback, frontend only (preferred): restore the previous version in Lovable history and republish; the table stays unused and harmless.
+- Rollback, database (only after the frontend no longer references the table): `drop table if exists public.template_applications;` — it only holds attempt records, no customer business data. Validated in the disposable harness as a standalone object with no dependants.
 
 ## Verification
 Fresh run 2026-09-30 01:23 UTC:
@@ -55,4 +90,11 @@ Fresh run 2026-09-30 01:23 UTC:
 - Regression tests (vitest, mocked Supabase client): 21/21 pass across 5 files — incl. WorkspaceView (delayed board response, delayed previous-company response, column order + unsupported + empty group, boards Retry, concurrent status edits incl. zero-row update, failed update after board switch), apply service (company stamping, verified cleanup, incomplete creation on partial delete and on delete error), board helpers.
 - Tenant/security suite (disposable local PostgreSQL 17.9, fresh run): 642 PASS / 0 FAIL / 54 INFO, exit 0.
 
-Limitations: tests use a mocked client, not the live database. Signed-in creation and cross-company checks in the real app could not run here (external Supabase, no session) — owner signed-in review needed before publishing. Durable idempotency applied; transactional creation not implemented.
+Limitations: tests use a mocked client, not the live database. Signed-in creation and cross-company checks in the real app could not run here (external Supabase, no session) — owner signed-in review needed before publishing. Transactional creation not implemented.
+
+### Duplicate-protection verification (fresh run 2026-09-30 ~01:37 UTC)
+The earlier 21 tests do NOT cover this protection. New, dedicated checks:
+- App logic (vitest, in-memory fake enforcing the same unique rule), `src/services/workspaceTemplateIdempotency.test.ts`: 9/9 pass — two concurrent tabs → exactly one workspace; repeat after success → existing workspace returned, nothing created; intentional later copy → second workspace; clean failure → retry works; incomplete cleanup → recovery info kept, same key blocked; key scoped per company; stalled attempt (same user, >10 min) recovered; recent pending stays blocked; another user's stalled claim not taken over.
+- Database (disposable PostgreSQL 17.9, the real migration file), `scripts/staging/90_template_applications_tests.sql` + concurrency step: 20/20 pass (TA-01…TA-20) — anon denied; same-company read allowed; cross-company read/insert/update/delete denied; cross-user insert/update/delete within the company denied; moving a record to another company denied; duplicate key refused (23505); same key in another company allowed; no-company user denied; two parallel database sessions with the same key → exactly 1 row.
+- Full tenant/security suite, fresh: **662 PASS / 0 FAIL / 54 INFO**, exit 0 (previous 642 + 20 new).
+- Whole vitest run: 30/30. Not yet checked signed-in in the real app.
