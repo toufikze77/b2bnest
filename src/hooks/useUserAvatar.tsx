@@ -34,9 +34,18 @@ export function useUserAvatar() {
         setAvatarUrl(detail.url || '');
       }
     };
+    const nameHandler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { userId?: string; name?: string } | undefined;
+      if (detail?.userId && user && detail.userId === user.id && detail.name) setDisplayName(detail.name);
+    };
     window.addEventListener('profile-avatar-updated', handler);
-    return () => { cancelled = true; window.removeEventListener('profile-avatar-updated', handler); };
+    window.addEventListener('profile-updated', nameHandler);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('profile-avatar-updated', handler);
+      window.removeEventListener('profile-updated', nameHandler);
+    };
   }, [user]);
 
-  return { avatarUrl, displayName };
+  return { avatarUrl, displayName, email: user?.email || '' };
 }

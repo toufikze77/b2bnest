@@ -9,16 +9,16 @@ const OrganizationSwitcher = () => {
     return <div className="h-10 w-44 animate-pulse rounded-md bg-muted" aria-label="Loading active company" />;
   }
 
-  if (!organizationId || !organization) {
+  if (memberships.length === 0) {
     return (
-      <div className="flex h-10 min-w-0 max-w-52 items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 text-sm text-destructive">
+      <div className="flex h-10 min-w-0 max-w-52 items-center gap-2 rounded-md border border-border bg-surface px-3 text-sm text-muted-foreground">
         <Building2 className="h-4 w-4 shrink-0" aria-hidden="true" />
-        <span className="truncate">No company selected</span>
+        <span className="truncate">No company yet</span>
       </div>
     );
   }
 
-  if (memberships.length < 2) {
+  if (memberships.length === 1 && organization) {
     return (
       <div className="flex h-10 min-w-0 max-w-56 items-center gap-2 rounded-md border border-border bg-surface px-3 text-sm font-medium text-foreground shadow-xs">
         <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
