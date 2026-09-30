@@ -45,7 +45,8 @@
   - [x] Notification panel fixes + 4/4 targeted tests
   - [x] Tenant/security suite re-run: 642 PASS / 0 FAIL / 54 INFO (2026-09-30)
   - [ ] Production publish (after owner review)
-- [ ] UI Wave 2 — Activation (IN PROGRESS, preview only): one dashboard, needs attention, first-run checklist, shared states, quick actions; report docs/ui-wave2-activation-report-2026-09-30.md
+- [x] UI Wave 2 — Activation implemented in preview (awaiting owner signed-in review before publish): one dashboard, needs attention, first-run checklist, shared states, quick actions; report docs/ui-wave2-activation-report-2026-09-30.md
+  - [ ] Proposals needing review: company-scoped contacts/invoices, company invitation flow, cross-device checklist dismissal
 - [ ] UI Wave 3 — Work & customers (projects views, tasks, calendar, CRM table + side panel)
 - [ ] UI Wave 4 — Money & insights (invoices/quotes consolidation, finance tables, analytics)
 - [ ] UI Wave 5 — Scale (AI Studio, integrations, team, settings, admin token alignment)
