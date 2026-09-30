@@ -3463,6 +3463,56 @@ export type Database = {
           },
         ]
       }
+      template_applications: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          idempotency_key: string
+          kind: string | null
+          organization_id: string
+          primary_project_id: string | null
+          status: string
+          template_slug: string | null
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          idempotency_key: string
+          kind?: string | null
+          organization_id: string
+          primary_project_id?: string | null
+          status?: string
+          template_slug?: string | null
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          idempotency_key?: string
+          kind?: string | null
+          organization_id?: string
+          primary_project_id?: string | null
+          status?: string
+          template_slug?: string | null
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_applications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       template_catalog: {
         Row: {
           created_at: string
