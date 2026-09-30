@@ -5,6 +5,10 @@
 set client_min_messages = warning;
 
 \ir ../../supabase/migrations/20260930013054_403c6633-cfd2-4e79-a4e5-1f85ae854a26.sql
+-- Reproduce the live mismatch found 2026-09-30: the hosted project's default
+-- privileges also gave anon access. Then apply the live correction migration.
+grant all on public.template_applications to anon;
+\ir ../../supabase/migrations/20260930014210_56adcafc-45f7-40af-aba1-30fcd1bd6e5a.sql
 
 -- Seed one attempt per company (as superuser).
 insert into public.template_applications(id, organization_id, idempotency_key, template_slug, status, created_by) values
