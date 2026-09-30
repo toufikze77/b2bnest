@@ -9,6 +9,14 @@ const NotFound = () => {
       "404 Error: User attempted to access non-existent route:",
       location.pathname
     );
+    // Static hosting returns 200 for every path; tell crawlers not to index missing/retired URLs.
+    document.title = "Page not found | B2BNest";
+    const meta = document.createElement("meta");
+    meta.name = "robots";
+    meta.content = "noindex";
+    meta.setAttribute("data-notfound", "true");
+    document.head.appendChild(meta);
+    return () => meta.remove();
   }, [location.pathname]);
 
   return (

@@ -21,7 +21,6 @@ const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const BusinessTools = lazy(() => import('@/pages/BusinessTools'));
 const TemplateCenter = lazy(() => import('@/pages/TemplateCenter'));
 const Onboarding = lazy(() => import('@/pages/Onboarding'));
-const Fundraising = lazy(() => import('@/pages/Fundraising'));
 const PLR = lazy(() => import('@/pages/PLR'));
 const NotePro = lazy(() => import('@/components/NotePro'));
 import NotFound from "@/pages/NotFound";
@@ -32,9 +31,7 @@ const Forum = lazy(() => import('@/pages/Forum'));
 const AIShowcase = lazy(() => import('@/pages/AIShowcase'));
 const AIStudio = lazy(() => import('@/pages/AIStudio'));
 const AIWorkspace = lazy(() => import('@/pages/AIWorkspace'));
-const Whitepaper = lazy(() => import('@/pages/Whitepaper'));
 const WorkflowStudio = lazy(() => import('@/pages/WorkflowStudio'));
-const Tokenomics = lazy(() => import('@/pages/Tokenomics'));
 const Pricing = lazy(() => import('@/pages/Pricing'));
 const HumanResources = lazy(() => import('@/pages/categories/HumanResources'));
 const LegalDocuments = lazy(() => import('@/pages/categories/LegalDocuments'));
@@ -48,8 +45,6 @@ const Settings = lazy(() => import('@/pages/Settings'));
 const CompanyReconciliation = lazy(() => import('@/pages/CompanyReconciliation'));
 const PaymentSuccess = lazy(() => import('@/pages/PaymentSuccess'));
 import ProtectedRoute from "@/components/ProtectedRoute";
-const Market = lazy(() => import('@/pages/Market'));
-const BusinessNews = lazy(() => import('@/pages/BusinessNews'));
 const PublicWorkRequest = lazy(() => import('@/pages/PublicWorkRequest'));
 const B2BForm = lazy(() => import('@/pages/B2BForm'));
 const Help = lazy(() => import('@/pages/Help'));
@@ -132,9 +127,6 @@ function App() {
               <Route path="/ai-workspace" element={<ProtectedRoute><AIWorkspace /></ProtectedRoute>} />
               <Route path="/workflow-studio" element={<ProtectedRoute><WorkflowStudio /></ProtectedRoute>} />
               <Route path="/integrations/whatsapp" element={<ProtectedRoute><WhatsAppSettings /></ProtectedRoute>} />
-              <Route path="/fundraising" element={<Fundraising />} />
-              <Route path="/whitepaper" element={<Whitepaper />} />
-            <Route path="/tokenomics" element={<Tokenomics />} />
             <Route path="/forum" element={<Forum />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/plr" element={<PLR />} />
@@ -169,8 +161,6 @@ function App() {
               <Route path="/knowledge-base/workflows" element={<WorkflowGuide />} />
               <Route path="/knowledge-base/security" element={<SecurityGuide />} />
               <Route path="/knowledge-base/lead-generation" element={<LeadGenerationGuide />} />
-              <Route path="/live-charts" element={<Market />} />
-              <Route path="/business-news" element={<BusinessNews />} />
                 <Route path="/payment-success" element={<PaymentSuccess />} />
                 <Route path="/help" element={<Help />} />
                 <Route path="/knowledge-base" element={<KnowledgeBase />} />

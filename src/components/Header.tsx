@@ -12,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
-import LivePriceSidebars from '@/components/sidebars/LivePriceSidebars';
 import ShareButton from '@/components/ShareButton';
 import InstallAppButton from '@/components/InstallAppButton';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -24,9 +23,7 @@ import OrganizationSwitcher from '@/components/OrganizationSwitcher';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isPriceSidebarOpen, setIsPriceSidebarOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-  const [activePriceTab, setActivePriceTab] = useState<'crypto' | 'forex'>('crypto');
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
@@ -354,13 +351,6 @@ const Header = () => {
           </div>
         )}
       </div>
-
-      {/* Live Price Sidebars */}
-      <LivePriceSidebars 
-        isOpen={isPriceSidebarOpen}
-        onClose={() => setIsPriceSidebarOpen(false)}
-        defaultTab={activePriceTab}
-      />
 
       <SupportFeedbackDialog open={isFeedbackOpen} onOpenChange={setIsFeedbackOpen} />
 

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import VideoTutorialSection from "@/components/fundraising/VideoTutorialSection";
+import VideoTutorialSection from "@/components/media/VideoTutorialSection";
 import SEOHead from "@/components/SEOHead";
 
 

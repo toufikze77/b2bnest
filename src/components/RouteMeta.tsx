@@ -44,10 +44,6 @@ const ROUTE_META: Record<string, Meta> = {
     title: 'Terms of Service | B2BNest Platform Agreement',
     description: 'The terms and conditions that govern your use of the B2BNest business platform, subscriptions, and connected integrations.',
   },
-  '/business-news': {
-    title: 'Business News | Daily Updates for Founders & SMEs',
-    description: 'Stay current with curated business, finance and technology news relevant to founders, freelancers and growing companies.',
-  },
   '/categories/human-resources': {
     title: 'HR Templates | Contracts, Policies & Onboarding Documents',
     description: 'Download human resources templates including employment contracts, staff policies, onboarding checklists and appraisal forms.',
