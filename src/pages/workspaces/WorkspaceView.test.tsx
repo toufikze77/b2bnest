@@ -134,6 +134,7 @@ describe('WorkspaceView', () => {
     fireEvent.change(await screen.findByLabelText('Status of Lead task'), { target: { value: 'done' } });
     await act(async () => {});
     fireEvent.click(screen.getByRole('button', { name: /Deals/ }));
+    await waitFor(() => expect(pendingTodos('org-1-b2').length).toBe(1));
     await act(async () => { pendingTodos('org-1-b2')[0].resolve!({ data: [task('l1', 'Same id elsewhere')], error: null }); });
     await act(async () => { calls.find((c) => c.op === 'update')!.resolve!({ data: null, error: { message: 'x' } }); });
     expect((screen.getByLabelText('Status of Same id elsewhere') as HTMLSelectElement).value).toBe('todo');
