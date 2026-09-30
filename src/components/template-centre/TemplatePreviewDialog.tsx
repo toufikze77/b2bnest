@@ -1,3 +1,4 @@
+import { getTemplateAvailability } from '@/lib/templateKind';
 import React from 'react';
 import { Sparkles, CheckCircle2, LayoutGrid, Workflow, Users, Target } from 'lucide-react';
 import {
@@ -132,8 +133,12 @@ const TemplatePreviewDialog = ({ template, isOpen, hasPremiumAccess, onClose, on
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>
-          <Button onClick={() => onUse(template)}>
-            <LayoutGrid className="mr-2 h-4 w-4" /> Use template
+          {!getTemplateAvailability(template).available && (
+            <p className="mr-auto self-center text-xs text-muted-foreground">{getTemplateAvailability(template).reason}</p>
+          )}
+          <Button onClick={() => onUse(template)} disabled={!getTemplateAvailability(template).available}>
+            <LayoutGrid className="mr-2 h-4 w-4" />
+            {getTemplateAvailability(template).available ? 'Use template' : 'Not available yet'}
           </Button>
         </DialogFooter>
       </DialogContent>

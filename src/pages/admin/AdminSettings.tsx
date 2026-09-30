@@ -102,6 +102,20 @@ export default function AdminSettings() {
             ))}
           </CardContent>
         </Card>
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">Sign-in and authentication</CardTitle>
+            <CardDescription>Platform-wide. Company admins cannot change these.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            <p>Google and Microsoft sign-in, password rules and session length are set in the Supabase authentication dashboard, not in B2BNest. They apply to every company.</p>
+            <p>This page does not change them, so nothing here can switch sign-in methods on or off.</p>
+            <Button asChild variant="outline" size="sm">
+              <a href="https://supabase.com/dashboard/project/gvftvswyrevummbvyhxa/auth/providers" target="_blank" rel="noreferrer">Open authentication providers</a>
+            </Button>
+            <p>Platform roles (super admin, admin) are managed under Users.</p>
+          </CardContent>
+        </Card>
       </div>
     </>
   );

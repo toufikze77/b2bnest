@@ -17,7 +17,7 @@ import {
 import ContactsView from './crm/ContactsView';
 import DealsView from './crm/DealsView';
 import MarketingTab from './crm/MarketingTab';
-import SecurityTab from './crm/SecurityTab';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import ReportsTab from './crm/ReportsTab';
 import AnalyticsTab from './crm/AnalyticsTab';
 import SubscriptionUpgrade from './SubscriptionUpgrade';
@@ -59,7 +59,8 @@ const CRM = () => {
   const { user } = useAuth();
   const { canAccessFeature } = useSubscription();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('contacts');
+  const [params] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(params.get('tab') && params.get('tab') !== 'security' ? params.get('tab')! : 'contacts');
   const [loading, setLoading] = useState(true);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
@@ -494,6 +495,9 @@ const CRM = () => {
     }
   };
 
+  // Old deep link: CRM security moved to company settings.
+  if (params.get('tab') === 'security') return <Navigate to="/settings?tab=company-security" replace />;
+
   if (!canAccessCRM) {
     return (
       <div className="max-w-4xl mx-auto p-6">
@@ -593,7 +597,6 @@ const CRM = () => {
           <TabsTrigger value="contacts">Contacts</TabsTrigger>
           <TabsTrigger value="deals">Sales Pipeline</TabsTrigger>
           <TabsTrigger value="marketing">Marketing</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
@@ -623,9 +626,6 @@ const CRM = () => {
           <MarketingTab />
         </TabsContent>
 
-        <TabsContent value="security" className="mt-6">
-          <SecurityTab />
-        </TabsContent>
 
         <TabsContent value="reports" className="mt-6">
           <ReportsTab totalRevenue={totalRevenue} />

@@ -30,6 +30,7 @@ import SEOHead from '@/components/SEOHead';
 import Footer from '@/components/Footer';
 import TemplateCard from '@/components/template-centre/TemplateCard';
 import TemplatePreviewDialog from '@/components/template-centre/TemplatePreviewDialog';
+import { getTemplateAvailability } from '@/lib/templateKind';
 import UseWorkspaceTemplateDialog from '@/components/template-centre/UseWorkspaceTemplateDialog';
 import { INDUSTRIES, TEMPLATE_CATEGORIES } from '@/data/workspaceTemplates';
 import {
@@ -98,7 +99,7 @@ const TemplateCenter = () => {
   }, []);
 
   const filtered = useMemo(() => {
-    let list = [...templates];
+    let list = [...templates].sort((a, b) => Number(getTemplateAvailability(b).available) - Number(getTemplateAvailability(a).available));
     const q = query.trim().toLowerCase();
 
     if (q) {
@@ -182,6 +183,7 @@ const TemplateCenter = () => {
   };
 
   const handleUse = (t: WorkspaceTemplate) => {
+    if (!getTemplateAvailability(t).available) return;
     setPreview(null);
     setUseTemplate(t);
     void logTemplateEvent(t.slug, 'use_click');
@@ -469,10 +471,21 @@ const TemplateCenter = () => {
             </div>
           ) : filtered.length === 0 ? (
             <div className="py-20 text-center">
-              <p className="font-medium">No templates match your search</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Try a different keyword or clear the filters.
-              </p>
+              {activeCategory && !query.trim() && templates.every((t) => t.category !== activeCategory || (!!activeSubcategory && t.subcategory !== activeSubcategory)) ? (
+                <>
+                  <p className="font-medium">No templates in this category yet</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    We haven't published any templates here. You can request one below.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-medium">No templates match your search</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Try a different keyword or clear the filters.
+                  </p>
+                </>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">

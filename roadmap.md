@@ -113,3 +113,6 @@
 
 - [ ] Owner signed-in re-check: Edit project deadline + task editing in Projects & tasks (preview, unpublished)
 - [x] UI Wave 3 (Work and Customers) in preview, unpublished: shared view switcher and URL filters, list table, calendar agenda, workspace filters, CRM DataTable and side panel. 81/81 tests, suite 662/0/54. Owner signed-in review pending. Report: docs/ui-wave3-work-customers-report-2026-09-30.md
+- [x] Wave 3 follow-up: template kind/availability fix, security moved from CRM to Settings/Admin (preview). Template behaviour had FAILED owner review.
+- [ ] Owner signed-in checks for the above (blocked: owner sign-in).
+- [ ] Company-scoped audit log (needs approved schema change).
