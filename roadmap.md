@@ -116,3 +116,6 @@
 - [x] Wave 3 follow-up: template kind/availability fix, security moved from CRM to Settings/Admin (preview). Template behaviour had FAILED owner review.
 - [ ] Owner signed-in checks for the above (blocked: owner sign-in).
 - [ ] Company-scoped audit log (needs approved schema change).
+
+- [x] Hide unavailable templates from customer catalogue (preview)
+- [ ] AI template generation — blocked on owner decisions in docs/ai-template-generation-gap-report-2026-10-01.md
