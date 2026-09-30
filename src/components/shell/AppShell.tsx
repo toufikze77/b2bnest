@@ -32,6 +32,7 @@ const groups = [
     { label: 'Dashboard', to: '/dashboard', icon: BarChart3 },
   ] },
   { label: 'Work', items: [
+    { label: 'Workspaces', to: '/workspaces', icon: LayoutGrid },
     { label: 'Projects', to: '/project-management', icon: FolderKanban },
     { label: 'Tasks', to: '/project-management?view=list', icon: FileText },
     { label: 'Calendar', to: '/project-management?view=calendar', icon: CalendarDays },

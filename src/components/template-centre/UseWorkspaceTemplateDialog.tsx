@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, LayoutGrid, CheckCircle2 } from 'lucide-react';
 import {
@@ -19,6 +19,7 @@ import { WorkspaceTemplate } from '@/types/workspaceTemplate';
 import { applyWorkspaceTemplate } from '@/services/workspaceTemplateApply';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
+import { getTemplateKind, TEMPLATE_KIND_LABELS } from '@/lib/templateKind';
 
 interface Props {
   template: WorkspaceTemplate | null;
@@ -32,6 +33,7 @@ const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
   const { organizationId, organization } = useActiveOrganization();
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
+  const inFlight = useRef(false);
 
   useEffect(() => {
     setName(template?.name ?? '');
@@ -44,7 +46,10 @@ const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
     0,
   );
 
+  const kind = getTemplateKind(template);
+
   const handleApply = async () => {
+    if (inFlight.current) return; // block repeated clicks
     if (!user) {
       toast({
         title: 'Sign in required',
@@ -55,6 +60,7 @@ const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
       return;
     }
 
+    inFlight.current = true;
     setSaving(true);
     try {
       const result = await applyWorkspaceTemplate(template, {
@@ -68,7 +74,11 @@ const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
         } created with ${result.totalTasks} tasks.`,
       });
       onClose();
-      navigate(`/project-management?project=${result.primaryProjectId}`);
+      if (result.kind === 'workspace' && result.workspaceId) {
+        navigate(`/workspaces/${result.workspaceId}`);
+      } else {
+        navigate(`/project-management?project=${result.primaryProjectId}`);
+      }
     } catch (error) {
       toast({
         title: 'Could not use this template',
@@ -76,6 +86,7 @@ const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
         variant: 'destructive',
       });
     } finally {
+      inFlight.current = false;
       setSaving(false);
     }
   };
@@ -86,12 +97,14 @@ const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <LayoutGrid className="h-5 w-5 text-primary" />
-            Use “{template.name}” in your workspace
+            Use “{template.name}”
+            <Badge variant="outline" className="ml-1 text-[11px] font-normal">{TEMPLATE_KIND_LABELS[kind]}</Badge>
           </DialogTitle>
           <DialogDescription>
-            B2BNest creates a real working copy inside your own account — boards, groups, tasks,
-            owners and due dates. Everything stays private to your organisation and is fully
-            editable.
+            {kind === 'workspace'
+              ? 'Creates a workspace with several boards, their groups and tasks. It opens in its own workspace view with the boards listed on the left.'
+              : 'Creates one project with its groups and tasks, opened in Projects & tasks.'}{' '}
+            Everything stays inside the selected company and is fully editable.
           </DialogDescription>
         </DialogHeader>
 
@@ -101,7 +114,7 @@ const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
             <span className="truncate font-medium text-foreground">{organization?.name || 'No company selected'}</span>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="workspace-name">Workspace name</Label>
+            <Label htmlFor="workspace-name">{kind === 'workspace' ? 'Workspace name' : 'Project name'}</Label>
             <Input
               id="workspace-name"
               value={name}

@@ -95,3 +95,8 @@
 - [ ] Real 410/404 for retired URLs — blocked: Lovable static hosting serves the app with HTTP 200 on every path; mitigated with noindex on not-found
 - [ ] Delete news_articles rows + fetch-news cron, retire fetch-news and create-coinbase-charge functions — needs owner authorization (database/backend change)
 - [ ] Post-publish HTTP/asset verification on www.b2bnest.online
+
+## Workspace templates (preview)
+- [x] Distinguish project vs workspace templates; /workspaces view with Table/Board/Calendar
+- [ ] Owner signed-in check: create workspace template in selected company, switch company and confirm it is hidden
+- [ ] Schema for full workspaces/groups/custom columns — awaits owner approval (docs/workspace-templates-2026-09-30.md)

@@ -1,3 +1,4 @@
+import { getTemplateKind, TEMPLATE_KIND_LABELS } from '@/lib/templateKind';
 import React from 'react';
 import { Sparkles, LayoutGrid, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +50,10 @@ const TemplateCard = ({ template, usage, hasPremiumAccess, onPreview, onUse }: P
       <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{template.description}</p>
 
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        <Badge variant="secondary" className="text-[11px]">
+          {TEMPLATE_KIND_LABELS[getTemplateKind(template)]}
+          {template.boards.length > 1 ? ` · ${template.boards.length} boards` : ''}
+        </Badge>
         <Badge variant="outline" className="text-[11px] font-normal">
           {categoryName(template.category)}
         </Badge>
