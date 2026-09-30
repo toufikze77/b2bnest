@@ -21,6 +21,7 @@ const NAV = [
   { to: '/admin/projects', label: 'Projects', icon: FolderKanban },
   { to: '/admin/documents', label: 'Documents & Templates', icon: FileText },
   { to: '/admin/templates', label: 'Template Centre', icon: LayoutTemplate },
+  { to: '/admin/ai-templates', label: 'AI template drafts', icon: Brain },
   { to: '/admin/social', label: 'Social / Community', icon: MessagesSquare },
   { to: '/admin/support', label: 'Support', icon: LifeBuoy },
   { to: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
