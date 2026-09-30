@@ -1313,7 +1313,7 @@ const ProjectManagement = () => {
   const projectScopedProjects = selectedProject === 'all' ? projects : projects.filter(project => project.id === selectedProject);
 
   const handleProjectSelection = (projectId: string) => {
-    setSelectedProject(projectId);
+    if (projectId !== selectedProject) setSelectedProject(projectId);
     setTaskPositions({});
     setShowJiraTask(false);
     setSelectedTaskForJira(null);
@@ -3302,7 +3302,8 @@ const ProjectManagement = () => {
                     onClick={() => {
                       if (projectsView !== 'active') return;
                       handleProjectSelection(project.id);
-                      setActiveTab('summary');
+                      // One URL write so project + tab don't overwrite each other.
+                      setSearchParams((prev) => writePmTab(writePmProject(prev, project.id), 'summary'));
                       toast({ title: "Project Selected", description: `Now viewing: ${project.name}` });
                     }}
                     onEdit={handleEditProject}
