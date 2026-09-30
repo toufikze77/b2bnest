@@ -71,7 +71,7 @@ const Dashboard = () => {
 
   if (!orgLoading && !organizationId) {
     return (
-      <PageContainer>
+      <PageContainer className="space-y-6">
         <PageHeader title="Dashboard" description="Your company's work at a glance." />
         <EmptyState icon={Building2} title="Choose a company" description="Pick a company from the drop-down at the top of the page to see its work." />
       </PageContainer>
@@ -79,7 +79,7 @@ const Dashboard = () => {
   }
 
   return (
-    <PageContainer>
+    <PageContainer className="space-y-6">
       <PageHeader
         eyebrow={<span className="inline-flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" aria-hidden="true" />{organization?.name || 'Company'}</span>}
         title="Today at a glance"
