@@ -418,7 +418,7 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             {editTask ? 'Edit Task' : 'Create New Task'}
-            <div className="flex gap-2">
+            <div className="mr-8 flex gap-2">
               <Button
                 type="button"
                 variant="outline"
