@@ -62,3 +62,29 @@ Tasks, projects and member counts filtered by `organization_id` of the top-bar c
 5. **Checks (actual)** — app tests 57/57 (mocked client); fresh tenant/security suite **662 PASS / 0 FAIL / 54 INFO** on a disposable PostgreSQL copy.
 
 **Pending:** signed-in owner review on real data. Unpublished.
+
+## Revision — refresh flash fix and final preview verification (2026-09-30)
+
+**Cause of the flash.** The selected view was already read from the URL on the first render, but the screen rendered immediately with built-in placeholder projects/tasks ("Website Redesign", "Mobile App Development") and before the company's data had loaded, so a refresh briefly showed content that was not the chosen view's real data.
+
+**Fix (src/components/ProjectManagement.tsx).** Placeholder data removed (initial projects/tasks are empty). A neutral skeleton (`data-testid="pm-loading"`, `aria-busy`) is shown until the user, access check and the *selected company's* projects and tasks have resolved (readiness keyed to the company id). Responses from a previously selected company are discarded. View/tab/project remain derived directly from the URL (no effect-based correction). Archive/trash lists load after the main screen appears. Unchanged: one history entry per view click, Back/Forward, invalid-URL normalization, `?create=`/`?edit=` consumed once, sidebar highlighting.
+
+### Automated tests
+- App tests: 68/68 pass (mocked Supabase client). Typecheck clean; build OK.
+- Fresh full tenant/security suite on disposable PostgreSQL: **662 PASS / 0 FAIL / 54 INFO**.
+
+### Mocked browser checks (full Projects & tasks screen; mocked session and sample data, not the live database)
+- Refresh with 2 s delayed data for List, Goals, Calendar, Timeline and an invalid view: every animation frame recorded; sequence was blank → skeleton → chosen view. No frame showed a different tab or placeholder data. Invalid view normalized to `view=kanban`.
+- Create task / Create project / Create event: each form opened once; only `create` was removed from the URL (project and view kept; event switches to Calendar); refresh did not reopen. Deadline edit shortcut (`edit=`) opened once and did not reopen after refresh.
+- Wrong-company edit link: no form opened; "Project not found" shown.
+- Three view clicks added exactly three history entries; Back and Forward restored the right views.
+- Dashboard deadline flow (keyboard Enter → edit → pick 20th → save → refresh): saved `2026-09-20` and showed "20 Sept" with a working project link in both Europe/London and America/New_York (UTC−4). Saves went to a stand-in, not the live database.
+
+### Owner-confirmed signed-in checks
+- View persistence after refresh works (owner). The refresh flash was reported by the owner; fixed and verified in mocked browser checks only — **not yet owner-confirmed**.
+
+### Remaining checks (owner, signed in, real database)
+- Refresh List/Goals/Calendar/Timeline and confirm no flash.
+- Save a project deadline from Dashboard, refresh, and confirm the exact date.
+
+Release remains unpublished.
