@@ -32,7 +32,7 @@ $RUN pg_ctl -D "$PGDATA" stop -m fast >/dev/null 2>&1 || true
 rm -rf "$PGDATA" "$PGHOST"; mkdir -p "$PGDATA" "$PGHOST"
 if [ -n "$RUN" ]; then chown lovable:lovable "$PGDATA" "$PGHOST"; fi
 $RUN initdb -D "$PGDATA" -U "$PGUSER" >/dev/null
-$RUN pg_ctl -D "$PGDATA" -o "-k $PGHOST -p $PGPORT -c listen_addresses=" -l "$PGHOST/pg.log" start >/dev/null
+$RUN pg_ctl -D "$PGDATA" -o "-k $PGHOST -p $PGPORT -c listen_addresses=127.0.0.1" -l "$PGHOST/pg.log" start >/dev/null
 for _ in $(seq 1 30); do psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -c 'select 1' >/dev/null 2>&1 && break; sleep 1; done
 
 

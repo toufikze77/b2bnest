@@ -7,7 +7,7 @@ import { createHandler } from '../../supabase/functions/generate-template/handle
 const host = Deno.env.get('PGHOST') ?? '/tmp/pgs2';
 if (!host.startsWith('/') && host !== 'localhost' && host !== '127.0.0.1') throw new Error('REFUSING: local database only');
 const port = Number(Deno.env.get('PGPORT') ?? 55433);
-const sql = postgres(host.startsWith('/') ? { path: `${host}/.s.PGSQL.${port}`, user: 'postgres', database: 'postgres', max: 4 } : { host, port, user: 'postgres', database: 'postgres', max: 4 });
+const sql = postgres({ host: '127.0.0.1', port, user: 'postgres', database: 'postgres', max: 4 }); // loopback only
 
 const AM = 'aaaaaaaa-0000-4000-8000-000000000003';
 const AO = 'aaaaaaaa-0000-4000-8000-000000000001';
