@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { toDay } from '@/lib/workFilters';
+import { CalendarAgenda } from './CalendarAgenda';
 
 interface Task {
   id: string;
@@ -108,7 +110,8 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
       ...tasks.filter(t => t.dueDate).map(t => ({
         id: t.id,
         title: t.title,
-        date: t.dueDate!.toISOString(),
+        // Date-only due dates stay on their calendar day (no UTC conversion).
+        date: `${toDay(t.dueDate)}T00:00:00`,
         type: 'task' as const,
         status: t.status,
         priority: t.priority,
@@ -297,7 +300,19 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
           </div>
 
           {/* Calendar Grid */}
-          <div className="border-2 rounded-lg overflow-hidden shadow-sm">
+          <div className="md:hidden">
+            <CalendarAgenda
+              items={filteredItems.map(i => ({ id: i.id, title: i.title, day: toDay(i.type === 'task' ? i.date : format(new Date(i.date), 'yyyy-MM-dd')), type: i.type, status: (i as any).status, priority: (i as any).priority }))}
+              fromDay={format(monthStart, 'yyyy-MM-dd')}
+              toDay={format(monthEnd, 'yyyy-MM-dd')}
+              today={format(new Date(), 'yyyy-MM-dd')}
+              onOpen={(i) => {
+                const item = filteredItems.find(x => x.id === i.id && x.type === i.type);
+                if (item) handleItemClick(item, { stopPropagation: () => {} } as React.MouseEvent);
+              }}
+            />
+          </div>
+          <div className="hidden md:block border-2 rounded-lg overflow-hidden shadow-sm">
             {/* Week day headers */}
             <div className="grid grid-cols-7 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10">
               {weekDays.map(day => (
@@ -339,18 +354,19 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
 
                     <div className="space-y-1.5">
                       {dayItems.slice(0, 3).map(item => (
-                        <div
+                        <button
+                          type="button"
                           key={item.id}
                           onClick={(e) => handleItemClick(item, e)}
                           className={cn(
-                            "text-xs p-1.5 rounded-md truncate cursor-pointer transition-all duration-200",
-                            "hover:scale-105 hover:shadow-sm font-medium",
+                            "block w-full text-left text-[13px] p-1.5 rounded-md truncate cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all duration-200",
+                            "hover:shadow-sm font-medium",
                             getItemColorClasses(item)
                           )}
                           title={item.title}
                         >
                           {item.title}
-                        </div>
+                        </button>
                       ))}
                       {dayItems.length > 3 && (
                         <div className="text-xs text-muted-foreground">
