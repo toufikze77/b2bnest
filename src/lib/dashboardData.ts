@@ -95,3 +95,67 @@ export const dismissKey = (userId: string, orgId: string) => `b2bnest.activation
 /** One Needs-attention group: up to GROUP_LIMIT items shown, `total` = exact count of all matching tasks (null = count unavailable). */
 export interface TaskGroupData { items: DashTask[]; total: number | null }
 export const GROUP_LIMIT = 5;
+
+/* ---------- Summary, projects, workspaces (UI Wave 2 revision) ---------- */
+
+export const CLOSED_PROJECT_STATUSES = ['completed', 'cancelled'];
+
+/** Monday of the current local week, YYYY-MM-DD. */
+export const weekStartIso = (d: Date) => {
+  const day = (d.getDay() + 6) % 7; // Monday = 0
+  return isoDay(new Date(d.getFullYear(), d.getMonth(), d.getDate() - day));
+};
+
+export interface DashProject {
+  id: string;
+  name: string;
+  color: string | null;
+  status: string;
+  deadline: string | null;
+  custom_fields: unknown;
+  updated_at: string;
+}
+export interface ProgressTask { project_id: string | null; status: string; due_date: string | null }
+
+export interface ProjectSummary {
+  id: string; name: string; color: string | null; status: string;
+  done: number; total: number; nextDue: string | null; deadline: string | null; href: string;
+}
+export interface WorkspaceSummary { id: string; name: string; boards: number; open: number; href: string }
+
+type WsMeta = { id?: string; name?: string };
+const wsOf = (p: DashProject): WsMeta | null => {
+  const cf = p.custom_fields as { workspace?: WsMeta } | null;
+  return cf && typeof cf === 'object' && cf.workspace?.id ? cf.workspace : null;
+};
+
+/** Splits active projects into standalone projects and template workspaces, with real task progress. */
+export function summarizeProjects(projects: DashProject[], tasks: ProgressTask[]) {
+  const stats = new Map<string, { done: number; total: number; nextDue: string | null }>();
+  for (const t of tasks) {
+    if (!t.project_id) continue;
+    const s = stats.get(t.project_id) ?? { done: 0, total: 0, nextDue: null };
+    s.total++;
+    if (!isOpen(t.status)) s.done++;
+    else if (t.due_date) { const d = t.due_date.slice(0, 10); if (!s.nextDue || d < s.nextDue) s.nextDue = d; }
+    stats.set(t.project_id, s);
+  }
+  const standalone: ProjectSummary[] = [];
+  const ws = new Map<string, WorkspaceSummary>();
+  for (const p of projects) {
+    const s = stats.get(p.id) ?? { done: 0, total: 0, nextDue: null };
+    const w = wsOf(p);
+    if (w?.id) {
+      const cur = ws.get(w.id) ?? { id: w.id, name: w.name || 'Workspace', boards: 0, open: 0, href: `/workspaces/${w.id}` };
+      cur.boards++; cur.open += s.total - s.done;
+      ws.set(w.id, cur);
+    } else {
+      standalone.push({ id: p.id, name: p.name, color: p.color, status: p.status, deadline: p.deadline, ...s, href: `/project-management?view=list&project=${p.id}` });
+    }
+  }
+  return { projects: standalone, workspaces: [...ws.values()] };
+}
+
+/** Active projects with a deadline, soonest first. */
+export const projectDeadlines = (projects: DashProject[], limit = 5) =>
+  projects.filter((p) => p.deadline).sort((a, b) => (a.deadline! < b.deadline! ? -1 : 1)).slice(0, limit);
