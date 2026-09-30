@@ -137,7 +137,7 @@ perform sec.t('AI-37','AI_TEMPLATES','generated_templates','A_OWNER','UPDATE','c
 perform sec.t('AI-38','AI_TEMPLATES','submit_generated_template','A_MEMBER','EXECUTE','owner submits for review','ALLOW',
   'select public.submit_generated_template(id) from public.generated_templates where owner_user_id = sec.actor_uid(''A_MEMBER'')');
 perform sec.t('AI-39','AI_TEMPLATES','review_generated_template','A_OWNER','EXECUTE','company owner approves catalogue entry','DENY_ERROR',
-  'select public.review_generated_template(id, true, null) from public.generated_templates');
+  'select public.review_generated_template(gen_random_uuid(), true, null)');
 end $$;
 
 -- Stateful review flow (as simulated users, committed)
