@@ -34,7 +34,7 @@ import { getTemplateAvailability } from '@/lib/templateKind';
 import { buildCatalogueNav, customerTemplates, isCategoryAvailable } from '@/lib/templateCatalogue';
 import { useSearchParams } from 'react-router-dom';
 import UseWorkspaceTemplateDialog from '@/components/template-centre/UseWorkspaceTemplateDialog';
-import { INDUSTRIES, TEMPLATE_CATEGORIES } from '@/data/workspaceTemplates';
+import { TEMPLATE_CATEGORIES } from '@/data/workspaceTemplates';
 import {
   loadTemplates,
   loadUsage,
@@ -239,7 +239,7 @@ const TemplateCenter = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="Template Centre — Ready-Made Business Workflows | B2BNest"
-        description="Browse ready-made business workflow templates for CRM, sales, marketing, finance, HR, operations and AI automation. Preview a template and create a working workspace in one click."
+        description="Browse ready-made business workflow templates you can use today. Preview a template and create a working workspace in one click."
         canonical="https://www.b2bnest.online/template-center"
       />
 
