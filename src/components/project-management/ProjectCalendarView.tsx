@@ -302,7 +302,7 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
           {/* Calendar Grid */}
           <div className="md:hidden">
             <CalendarAgenda
-              items={filteredItems.map(i => ({ id: i.id, title: i.title, day: toDay(i.type === 'task' ? i.date : format(new Date(i.date), 'yyyy-MM-dd')), type: i.type, status: (i as any).status, priority: (i as any).priority }))}
+              items={filteredItems.map(i => ({ id: i.id, title: i.title, day: i.type === 'task' ? toDay(i.date) : (i.date && !isNaN(new Date(i.date).getTime()) ? format(new Date(i.date), 'yyyy-MM-dd') : ''), type: i.type, status: (i as any).status, priority: (i as any).priority }))}
               fromDay={format(monthStart, 'yyyy-MM-dd')}
               toDay={format(monthEnd, 'yyyy-MM-dd')}
               today={format(new Date(), 'yyyy-MM-dd')}
