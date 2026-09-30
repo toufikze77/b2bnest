@@ -17,6 +17,8 @@ import Auth from "@/pages/Auth";
 const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const WorkspacesIndex = lazy(() => import('@/pages/workspaces/WorkspacesIndex'));
+const WorkspaceView = lazy(() => import('@/pages/workspaces/WorkspaceView'));
 
 const BusinessTools = lazy(() => import('@/pages/BusinessTools'));
 const TemplateCenter = lazy(() => import('@/pages/TemplateCenter'));
@@ -152,6 +154,8 @@ function App() {
               <Route path="/rota/schedule" element={<ProtectedRoute><RotaSchedule /></ProtectedRoute>} />
               <Route path="/f/:formId" element={<PublicForm />} />
               <Route path="/p/:slug" element={<PublicPage />} />
+              <Route path="/workspaces" element={<ProtectedRoute><WorkspacesIndex /></ProtectedRoute>} />
+              <Route path="/workspaces/:workspaceId" element={<ProtectedRoute><WorkspaceView /></ProtectedRoute>} />
               <Route path="/project-management" element={<ProtectedRoute><ProjectManagementPage /></ProtectedRoute>} />
 
               <Route path="/knowledge-base/getting-started" element={<GettingStarted />} />
