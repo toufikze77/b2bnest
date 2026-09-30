@@ -177,14 +177,14 @@ const AIShowcase = () => {
           </Card>
         </div>
 
-        {/* Call to Action for Investors */}
+        {/* Call to Action */}
         <Card className="mt-12 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
           <CardContent className="p-8 text-center">
             <h3 className="text-2xl font-bold mb-4">
               Ready to put AI to work in your business?
             </h3>
             <p className="text-lg mb-6 opacity-90">
-              This AI technology gives our platform an unbeatable competitive advantage with zero ongoing costs and maximum enterprise appeal.
+              Draft documents, analyse your numbers and automate routine work from one place.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/contact">

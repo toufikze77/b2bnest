@@ -5,7 +5,7 @@ const BusinessToolsSEO = () => {
     "@context": "https://schema.org",
     "@type": "ItemList",
     "name": "Free Business Tools Collection for Entrepreneurs",
-    "description": "Collection of free and affordable business tools including free QR generator, currency converter, crypto converter, invoice creator, contract generator, ROI calculator and more",
+    "description": "Collection of free and affordable business tools including free QR generator, currency converter, invoice creator, contract generator, ROI calculator and more",
     "numberOfItems": 10,
     "itemListElement": [
       {
@@ -35,20 +35,6 @@ const BusinessToolsSEO = () => {
         "operatingSystem": "Web Browser",
         "url": "https://b2bnest.online/business-tools?tool=currency-converter",
         "description": "Real-time currency conversion for 150+ currencies - completely free",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        }
-      },
-      {
-        "@type": "SoftwareApplication",
-        "position": 3,
-        "name": "Free Crypto Converter",
-        "applicationCategory": "BusinessApplication",
-        "operatingSystem": "Web Browser",
-        "url": "https://b2bnest.online/business-tools?tool=crypto-converter",
-        "description": "Convert between cryptocurrencies in real time - completely free",
         "offers": {
           "@type": "Offer",
           "price": "0",
@@ -162,7 +148,7 @@ const BusinessToolsSEO = () => {
     <SEOHead
       title="Free Business Tools Online | B2BNest"
       description="Free QR generator, invoice maker, currency converter, time tracker and ROI calculator — no signup needed. Plus affordable CRM from $9.99/month."
-      keywords="free business tools, free QR code generator, free invoice generator, free time tracker, free currency converter, free crypto converter, free ROI calculator, free contract generator, free cash flow tracker, free tools for small business, free online business tools, business tools no signup, free tools for entrepreneurs, free business calculator, affordable CRM, cheap project management, free business software, business tools under $10, free financial tools, entrepreneur tools free, small business free tools, free productivity tools, free business resources, no credit card required business tools, instant access business tools, free business utilities"
+      keywords="free business tools, free QR code generator, free invoice generator, free time tracker, free currency converter, free free ROI calculator, free contract generator, free cash flow tracker, free tools for small business, free online business tools, business tools no signup, free tools for entrepreneurs, free business calculator, affordable CRM, cheap project management, free business software, business tools under $10, free financial tools, entrepreneur tools free, small business free tools, free productivity tools, free business resources, no credit card required business tools, instant access business tools, free business utilities"
       schemaMarkup={schemaMarkup}
       canonicalUrl="https://b2bnest.online/business-tools"
       ogTitle="Free Business Tools - QR Generator, Invoice Maker & More | No Signup"

@@ -26,13 +26,12 @@ import ROICalculator from '@/components/ROICalculator';
 import ContractGenerator from '@/components/ContractGenerator';
 import PrivacyPolicyGenerator from '@/components/PrivacyPolicyGenerator';
 import CurrencyConverter from '@/components/CurrencyConverter';
-import CryptoConverter from '@/components/CryptoConverter';
 import CustomerSurveyBuilder from '@/components/CustomerSurveyBuilder';
 import BusinessFinanceAssistant from '@/components/BusinessFinanceAssistant';
 import HMRCIntegration from '@/components/HMRCIntegration';
 import BusinessToolsSEO from '@/components/BusinessToolsSEO';
 
-type ToolType = 'overview' | 'notepro' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'qr-code-generator' | 'coupon-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'customer-survey-builder' | 'business-finance-assistant' | 'currency-converter' | 'crypto-converter' | 'hmrc-integration' | 'workflow-studio' | 'lead-generation' | 'employee-rota';
+type ToolType = 'overview' | 'notepro' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'qr-code-generator' | 'coupon-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'customer-survey-builder' | 'business-finance-assistant' | 'currency-converter' | 'hmrc-integration' | 'workflow-studio' | 'lead-generation' | 'employee-rota';
 
 type FilterType = 'all' | 'premium' | 'favorites' | 'free';
 
@@ -236,15 +235,6 @@ const BusinessTools = () => {
       isPremium: false
     },
     {
-      id: 'crypto-converter' as ToolType,
-      title: 'Crypto Converter',
-      description: 'Convert cryptocurrencies to fiat currencies with real-time prices',
-      icon: TrendingUp,
-      color: 'bg-orange-600',
-      benefits: ['Real-time prices', 'Auto-refresh', '15+ cryptos', 'Market data'],
-      isPremium: false
-    },
-    {
       id: 'cost-calculator' as ToolType,
       title: 'Cost Calculator',
       description: 'Calculate setup costs for your business structure',
@@ -439,8 +429,6 @@ const BusinessTools = () => {
         return <CRM />;
       case 'currency-converter':
         return <CurrencyConverter />;
-      case 'crypto-converter':
-        return <CryptoConverter />;
       default:
         return (
           <div className="max-w-6xl mx-auto p-6">

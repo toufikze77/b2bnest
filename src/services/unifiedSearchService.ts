@@ -374,7 +374,7 @@ class UnifiedSearchService {
       'invoice generator', 'contract generator', 'privacy policy',
       'qr code', 'cost calculator', 'time tracker', 'roi calculator',
       'crm system', 'ai workspace', 'cash flow tracker', 'currency converter',
-      'crypto converter', 'customer survey', 'coupon generator'
+      'customer survey', 'coupon generator'
     ];
 
     commonTerms.forEach(term => {
