@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { CalendarIcon, Loader2, X, Plus, DollarSign, Users, Target, Clock } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -84,7 +84,7 @@ const EditProjectDialog = ({ isOpen, onOpenChange, project, onUpdateProject }: E
     if (project && isOpen) {
       setFormData({
         ...project,
-        deadline: project.deadline ? new Date(project.deadline) : undefined,
+        deadline: project.deadline ? (typeof project.deadline === 'string' ? parseISO(project.deadline) : new Date(project.deadline)) : undefined,
         stage: project.stage || 'discovery',
         priority: project.priority || 'medium',
         progress: project.progress || 0,
@@ -142,7 +142,8 @@ const EditProjectDialog = ({ isOpen, onOpenChange, project, onUpdateProject }: E
     try {
       const updateData = {
         ...formData,
-        deadline: formData.deadline?.toISOString(),
+        // DATE column: send the local calendar day, not a UTC timestamp (which can shift a day).
+        deadline: formData.deadline ? format(formData.deadline, 'yyyy-MM-dd') : null,
         updated_at: new Date().toISOString(),
       };
 

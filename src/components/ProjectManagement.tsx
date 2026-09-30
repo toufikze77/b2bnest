@@ -93,7 +93,7 @@ import {
 } from 'lucide-react';
 import { TodoComments } from './enhanced-todos/TodoComments';
 import { CommentButton } from './CommentButton';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { EnhancedTodoView } from './enhanced-todos/EnhancedTodoView';
 import { ProjectCalendarView } from './project-management/ProjectCalendarView';
@@ -891,7 +891,7 @@ const ProjectManagement = () => {
     color: project.color,
     progress: project.progress,
     members: Array.isArray(project.members) ? project.members as string[] : [],
-    deadline: project.deadline ? new Date(project.deadline) : null,
+    deadline: project.deadline ? parseISO(String(project.deadline).slice(0, 10)) : null,
     budget: project.budget ? parseFloat(project.budget.toString()) : undefined,
     client: project.client,
     status: project.status as 'planning' | 'active' | 'on-hold' | 'completed',
