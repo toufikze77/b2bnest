@@ -52,3 +52,13 @@ Tasks, projects and member counts filtered by `organization_id` of the top-bar c
 - Tests: 56/56 app tests (new: summary metrics + progress + workspace links + org scoping; failed metric shows Unavailable; summarizeProjects/weekStart/deadlines). Typecheck clean. No database changes.
 - Screenshots (synthetic data, every name marked "(sample)", served by intercepted network responses — not a real account): 1815×1321, 1440, 390. No horizontal overflow at any width.
 - Not checked: signed-in with real data.
+
+## Final pre-publish revision (2026-09-30, 13:30 London)
+
+1. **Overdue "5 Oct / 18 Oct" under 30 Sept** — investigated on the live database (read-only): 35 dated tasks have a 2025 due date (19 still open); 203 are in 2026. The October dates were 5/18 Oct **2025**, correctly classified as overdue; the display hid the year. Dates outside the current year now show the year ("5 Oct 2025"). Tests: past-year (2025) overdue, future-year (2027) not upcoming, year shown/hidden.
+2. **"Completed this week"** — the query used `todos.completed_at` (never `updated_at`), but all 16 closed dated tasks have `completed_at` NULL: the main status-change paths (Projects & tasks, workspace boards) never recorded it. The metric is **removed** and replaced by "Due in next 7 days" (exact upcoming count). Both status paths now write `completed_at` on close and clear it on reopen (`completionPatch`, tested), so completion history starts accruing; the metric can return once enough history exists. No database change.
+3. **Readability at 100% zoom** — task titles/body 14px; secondary labels raised from 12px to 13px; due-date column widened for years.
+4. **Project deadlines empty state** — owners/admins/managers get a "Set deadlines" button to Projects & tasks; other members see "Ask a company admin to add one."
+5. **Checks (actual)** — app tests 57/57 (mocked client); fresh tenant/security suite **662 PASS / 0 FAIL / 54 INFO** on a disposable PostgreSQL copy.
+
+**Pending:** signed-in owner review on real data. Unpublished.
