@@ -43,7 +43,9 @@
 5. Table columns follow template order; unsupported columns shown as "(not supported)" headers/cells; boards without columns use Task/Status/Priority/Due date/Est. hours; empty template groups are kept ("No tasks in this group yet").
 6. Retry button on workspace/board load errors.
 
-## Proposed durable idempotency (NOT applied — needs approval + migration)
+## Durable idempotency (APPLIED 2026-09-30, owner-approved)
+- Applied: `template_applications` table (UNIQUE organization_id + idempotency_key, GRANTs, org-member RLS). The dialog reuses one key per company + template (shared across tabs via localStorage) until success; a duplicate request is refused, or opens the already-created copy. Clean failures release the key; incomplete creations are marked `incomplete`.
+- Still not applied (original proposal below): transactional creation function.
 - Client generates an idempotency key per dialog session; store it in a new `template_applications(organization_id, idempotency_key UNIQUE, workspace_id, status, created_by)` table with GRANTs + org-member RLS.
 - Move creation into a SECURITY INVOKER Postgres function `apply_workspace_template(org, key, payload)` that runs in one transaction (true rollback) and returns the existing workspace when the key was already used.
 
@@ -53,4 +55,4 @@ Fresh run 2026-09-30 01:23 UTC:
 - Regression tests (vitest, mocked Supabase client): 21/21 pass across 5 files — incl. WorkspaceView (delayed board response, delayed previous-company response, column order + unsupported + empty group, boards Retry, concurrent status edits incl. zero-row update, failed update after board switch), apply service (company stamping, verified cleanup, incomplete creation on partial delete and on delete error), board helpers.
 - Tenant/security suite (disposable local PostgreSQL 17.9, fresh run): 642 PASS / 0 FAIL / 54 INFO, exit 0.
 
-Limitations: tests use a mocked client, not the live database. Signed-in creation and cross-company checks in the real app could not run here (external Supabase, no session) — owner signed-in review needed before publishing. Durable idempotency and transactional creation not implemented.
+Limitations: tests use a mocked client, not the live database. Signed-in creation and cross-company checks in the real app could not run here (external Supabase, no session) — owner signed-in review needed before publishing. Durable idempotency applied; transactional creation not implemented.

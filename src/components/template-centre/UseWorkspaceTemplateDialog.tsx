@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from '@/components/ui/use-toast';
 import { WorkspaceTemplate } from '@/types/workspaceTemplate';
-import { applyWorkspaceTemplate, WorkspaceCreationIncompleteError, IncompleteCreationInfo } from '@/services/workspaceTemplateApply';
+import { applyWorkspaceTemplate, WorkspaceCreationIncompleteError, IncompleteCreationInfo, DuplicateTemplateApplicationError } from '@/services/workspaceTemplateApply';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
 import { getTemplateKind, TEMPLATE_KIND_LABELS } from '@/lib/templateKind';
@@ -64,25 +64,43 @@ const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
 
     inFlight.current = true;
     setSaving(true);
+    // Same key across tabs/retries for this company + template until it succeeds.
+    const storageKey = `tpl-apply:${organizationId}:${template.slug}`;
+    let idempotencyKey = localStorage.getItem(storageKey);
+    if (!idempotencyKey) {
+      idempotencyKey = crypto.randomUUID();
+      localStorage.setItem(storageKey, idempotencyKey);
+    }
+    const openResult = (r: { kind: string; workspaceId: string | null; primaryProjectId: string }) => {
+      onClose();
+      if (r.kind === 'workspace' && r.workspaceId) navigate(`/workspaces/${r.workspaceId}`);
+      else if (r.primaryProjectId) navigate(`/project-management?project=${r.primaryProjectId}`);
+    };
     try {
       const result = await applyWorkspaceTemplate(template, {
         organizationId,
         workspaceName: name,
+        idempotencyKey,
       });
+      localStorage.removeItem(storageKey);
       toast({
         title: 'Template added to your workspace',
         description: `${result.projects.length} ${
           result.projects.length === 1 ? 'board' : 'boards'
         } created with ${result.totalTasks} tasks.`,
       });
-      onClose();
-      if (result.kind === 'workspace' && result.workspaceId) {
-        navigate(`/workspaces/${result.workspaceId}`);
-      } else {
-        navigate(`/project-management?project=${result.primaryProjectId}`);
-      }
+      openResult(result);
     } catch (error) {
+      if (error instanceof DuplicateTemplateApplicationError && error.existing) {
+        localStorage.removeItem(storageKey);
+        toast({ title: 'Already created', description: 'Opening the copy that was already made.' });
+        openResult(error.existing);
+        return;
+      }
       if (error instanceof WorkspaceCreationIncompleteError) setIncomplete(error.info);
+      if (!(error instanceof DuplicateTemplateApplicationError) && !(error instanceof WorkspaceCreationIncompleteError)) {
+        localStorage.removeItem(storageKey);
+      }
       toast({
         title: 'Could not use this template',
         description: error instanceof Error ? error.message : 'Please try again.',
