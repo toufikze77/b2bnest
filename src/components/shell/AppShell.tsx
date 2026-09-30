@@ -1,9 +1,9 @@
 import { ReactNode, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  BarChart3, Bell, Bot, BriefcaseBusiness, CalendarDays, CircleDollarSign,
+  BarChart3, Bot, BriefcaseBusiness, CalendarDays, CircleDollarSign,
   FileText, FolderKanban, HelpCircle, Home, LayoutGrid, LogOut, Plus, Receipt,
-  Settings, ShieldCheck, Sparkles, Target, Users, WandSparkles,
+  Settings, Sparkles, Target, Users, WandSparkles,
 } from 'lucide-react';
 import logo from '@/assets/b2bnest-logo.png';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,6 +23,7 @@ import {
   SidebarMenuItem, SidebarProvider, SidebarRail, SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { GlobalCommand } from './GlobalCommand';
+import { NotificationsPanel } from './NotificationsPanel';
 
 const groups = [
   { label: 'Overview', items: [
@@ -34,7 +35,6 @@ const groups = [
     { label: 'Tasks', to: '/project-management?view=list', icon: FileText },
     { label: 'Calendar', to: '/project-management?view=calendar', icon: CalendarDays },
     { label: 'Goals', to: '/project-management?tab=goals', icon: Target },
-    { label: 'Unassigned projects', to: '/settings/unassigned-projects', icon: ShieldCheck },
   ] },
   { label: 'Customers', items: [
     { label: 'CRM', to: '/crm', icon: Users },
@@ -111,7 +111,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <SidebarFooter className="border-t border-sidebar-border p-3">
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="Settings" isActive={location.pathname === '/settings'}>
+              <SidebarMenuButton asChild tooltip="Settings" isActive={location.pathname === '/settings' || location.pathname.startsWith('/settings/')}>
                 <Link to="/settings"><Settings /><span>Settings</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -141,7 +141,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </DropdownMenuContent>
             </DropdownMenu>
             <Button variant="ghost" size="icon" className="hidden h-10 w-10 sm:inline-flex" onClick={() => navigate('/ai-workspace')} aria-label="Open AI workspace" title="AI workspace"><Bot className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" className="hidden h-10 w-10 lg:inline-flex" onClick={() => navigate('/settings')} aria-label="Notifications" title="Notifications"><Bell className="h-4 w-4" /></Button>
+            <NotificationsPanel />
             <Button variant="ghost" size="icon" className="hidden h-10 w-10 lg:inline-flex" onClick={() => setFeedbackOpen(true)} aria-label="Help and feedback" title="Help and feedback"><HelpCircle className="h-4 w-4" /></Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
