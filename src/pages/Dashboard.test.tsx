@@ -182,7 +182,8 @@ describe('Dashboard', () => {
     expect(summary.getByRole('link', { name: /Open tasks\s*9/ })).toBeInTheDocument();
     expect(summary.queryByText('Completed this week')).toBeNull();
     expect(await screen.findByLabelText('1 of 2 tasks done')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Website/ })).toHaveAttribute('href', '/project-management?view=list&project=p1');
+    for (const l of screen.getAllByRole('link', { name: /Website/ })) expect(l).toHaveAttribute('href', '/project-management?view=list&project=p1');
+    expect(within(screen.getByRole('region', { name: 'Project deadlines' })).getByRole('link', { name: /Website/ })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Sales CRM/ })).toHaveAttribute('href', '/workspaces/w1');
     for (const c of calls.filter((x) => x.table === 'projects' || x.table === 'todos')) expect(eqVal(c, 'organization_id')).toBe('org-1');
   });
@@ -192,5 +193,50 @@ describe('Dashboard', () => {
     render(ui());
     const summary = within(await screen.findByLabelText('Company summary'));
     await waitFor(() => expect(summary.getByRole('link', { name: /Open tasks\s*—\s*Unavailable/ })).toBeInTheDocument());
+  });
+
+  describe('Project deadlines panel', () => {
+    const withProjects = (rows: object[]) => (c: Call) =>
+      c.table === 'projects' && c.filters.some((f) => f[0] === 'order') ? { data: rows, count: rows.length, error: null }
+        : c.table === 'todos' ? { data: [], count: 0, error: null } : counts(0);
+    const proj = (id: string, name: string, deadline: string | null = null) => ({ id, name, color: null, status: 'active', deadline, custom_fields: null, updated_at: today });
+    const panel = async () => within(await screen.findByRole('region', { name: 'Project deadlines' }));
+
+    it('rows link to the project and are keyboard-focusable', async () => {
+      auto = withProjects([proj('p9', 'Launch', addDaysIso(today, 3))]);
+      render(ui());
+      const p = await panel();
+      const link = await p.findByRole('link', { name: /Launch/ });
+      expect(link).toHaveAttribute('href', '/project-management?view=list&project=p9');
+      link.focus(); expect(link).toHaveFocus();
+    });
+    it('managers get Add project deadline opening the edit flow (single project)', async () => {
+      org.organization.role = 'manager';
+      auto = withProjects([proj('p1', 'Solo')]);
+      render(ui());
+      const p = await panel();
+      expect(await p.findByRole('link', { name: /Add project deadline/ })).toHaveAttribute('href', '/project-management?view=list&project=p1&edit=p1');
+    });
+    it('admins choose a project when several exist', async () => {
+      org.organization.role = 'admin';
+      auto = withProjects([proj('p1', 'One'), proj('p2', 'Two')]);
+      render(ui());
+      const p = await panel();
+      expect(await p.findByRole('button', { name: /Add project deadline/ })).toBeInTheDocument();
+    });
+    it('owners with no projects get Create project', async () => {
+      org.organization.role = 'owner';
+      render(ui());
+      const p = await panel();
+      expect(await p.findByRole('link', { name: /Create project/ })).toHaveAttribute('href', '/project-management?create=project');
+    });
+    it('members get guidance and no button', async () => {
+      auto = withProjects([proj('p1', 'Solo')]);
+      render(ui());
+      const p = await panel();
+      expect(await p.findByText(/Ask a company owner, admin or manager/)).toBeInTheDocument();
+      expect(p.queryByRole('button')).toBeNull();
+      expect(p.queryByRole('link')).toBeNull();
+    });
   });
 });
