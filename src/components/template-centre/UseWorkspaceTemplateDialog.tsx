@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from '@/components/ui/use-toast';
 import { WorkspaceTemplate } from '@/types/workspaceTemplate';
-import { applyWorkspaceTemplate } from '@/services/workspaceTemplateApply';
+import { applyWorkspaceTemplate, WorkspaceCreationIncompleteError, IncompleteCreationInfo } from '@/services/workspaceTemplateApply';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
 import { getTemplateKind, TEMPLATE_KIND_LABELS } from '@/lib/templateKind';
@@ -33,7 +33,8 @@ const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
   const { organizationId, organization } = useActiveOrganization();
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
-  const inFlight = useRef(false);
+  const inFlight = useRef(false); // guards ONE in-flight attempt in this dialog only
+  const [incomplete, setIncomplete] = useState<IncompleteCreationInfo | null>(null);
 
   useEffect(() => {
     setName(template?.name ?? '');
@@ -80,6 +81,7 @@ const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
         navigate(`/project-management?project=${result.primaryProjectId}`);
       }
     } catch (error) {
+      if (error instanceof WorkspaceCreationIncompleteError) setIncomplete(error.info);
       toast({
         title: 'Could not use this template',
         description: error instanceof Error ? error.message : 'Please try again.',
@@ -168,6 +170,19 @@ const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
           </div>
         </div>
 
+        {incomplete && (
+          <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+            <p className="font-medium">Creation was incomplete.</p>
+            <p className="mt-1">
+              {incomplete.leftoverProjectIds.length} partly created board(s) could not be removed automatically
+              {incomplete.workspaceId ? ' and will appear under Workspaces' : ' and will appear in Projects & tasks'}.
+              You can delete them there, or send these references to support:
+            </p>
+            <p className="mt-1 break-all font-mono">
+              workspace {incomplete.workspaceId ?? '—'} · boards {incomplete.leftoverProjectIds.join(', ')}
+            </p>
+          </div>
+        )}
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={saving}>
             Cancel
