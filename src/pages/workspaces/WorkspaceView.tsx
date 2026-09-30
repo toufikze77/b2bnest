@@ -1,3 +1,4 @@
+import { completionPatch } from '@/lib/dashboardData';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { AlertCircle, ChevronLeft, ChevronRight, Info, Loader2, LayoutGrid } from 'lucide-react';
