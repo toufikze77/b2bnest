@@ -1,11 +1,12 @@
 import { completionPatch } from '@/lib/dashboardData';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -300,6 +301,11 @@ const ProjectManagement = () => {
   console.log('🔧 ProjectManagement component loading...');
   const { user } = useAuth();
   const { organizationId } = useActiveOrganization();
+  // Readiness is tracked per company so the screen never shows another company's (or placeholder) data.
+  const orgKey = organizationId ?? 'none';
+  const orgRef = useRef(orgKey);
+  orgRef.current = orgKey;
+  const [readyFor, setReadyFor] = useState<{ projects?: string; tasks?: string }>({});
   const { canAccessFeature } = useSubscription();
   const { toast } = useToast();
   const location = useLocation();
@@ -356,77 +362,9 @@ const ProjectManagement = () => {
   }, [boardDensity]);
 
   // Sample data with enhanced features - moved before conditional returns
-  const [projects, setProjects] = useState<Project[]>([
-    {
-      id: '1',
-      name: 'Website Redesign',
-      description: 'Complete overhaul of company website with modern UI/UX',
-      color: 'bg-blue-500',
-      progress: 75,
-      members: ['John Doe', 'Jane Smith', 'Mike Johnson'],
-      deadline: new Date(2024, 2, 30),
-      budget: 50000,
-      client: 'Tech Corp',
-      status: 'active',
-      customColumns: [
-        { id: 'backlog', title: 'Backlog', color: 'bg-gray-100', order: 1 },
-        { id: 'todo', title: 'To Do', color: 'bg-blue-100', order: 2 },
-        { id: 'in-progress', title: 'In Progress', color: 'bg-yellow-100', order: 3 },
-        { id: 'review', title: 'Review', color: 'bg-purple-100', order: 4 },
-        { id: 'done', title: 'Done', color: 'bg-green-100', order: 5 }
-      ]
-    },
-    {
-      id: '2',
-      name: 'Mobile App Development',
-      description: 'Cross-platform mobile application',
-      color: 'bg-green-500',
-      progress: 45,
-      members: ['Sarah Wilson', 'Alex Chen'],
-      deadline: new Date(2024, 4, 15),
-      budget: 75000,
-      client: 'Startup Inc',
-      status: 'active'
-    }
-  ]);
+  const [projects, setProjects] = useState<Project[]>([]);
 
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: '1',
-      title: 'Design Homepage Mockup',
-      description: 'Create responsive homepage design with modern aesthetics',
-      status: 'in-progress',
-      priority: 'high',
-      assignee: 'John Doe',
-      dueDate: new Date(2024, 2, 15),
-      project: 'Website Redesign',
-      tags: ['design', 'ui/ux', 'homepage'],
-      estimatedHours: 20,
-      actualHours: 12,
-      progress: 60,
-      subtasks: [
-        { id: 's1', title: 'Research competitor designs', completed: true, assignee: 'John Doe' },
-        { id: 's2', title: 'Create wireframes', completed: true, assignee: 'John Doe' },
-        { id: 's3', title: 'Design high-fidelity mockup', completed: false, assignee: 'John Doe' }
-      ],
-      comments: [
-        { id: 'c1', content: 'Great progress on the wireframes!', author: 'Jane Smith', timestamp: new Date() }
-      ]
-    },
-    {
-      id: '2',
-      title: 'Setup Authentication System',
-      description: 'Implement secure user authentication with JWT',
-      status: 'todo',
-      priority: 'urgent',
-      assignee: 'Jane Smith',
-      dueDate: new Date(2024, 2, 20),
-      project: 'Website Redesign',
-      tags: ['backend', 'security', 'auth'],
-      estimatedHours: 15,
-      dependencies: ['1']
-    }
-  ]);
+  const [tasks, setTasks] = useState<Task[]>([]);
 
   const [milestones, setMilestones] = useState<Milestone[]>([
     {
@@ -912,6 +850,7 @@ const ProjectManagement = () => {
   };
 
   const loadProjects = async () => {
+    const key = orgRef.current;
     try {
       setLoading(true);
       const { data, error } = await projectsForActiveOrg()
@@ -920,19 +859,23 @@ const ProjectManagement = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      if (key !== orgRef.current) return; // stale response from a previous company
       if (data) { setProjects(data.map(formatProjectRow)); setProjectsLoaded(true); }
+      setReadyFor((r) => ({ ...r, projects: key })); // active list is enough to render; archive/trash load after
 
       // Archived (not deleted, but archived)
       const { data: archived } = await projectsForActiveOrg()
         .is('deleted_at', null)
         .not('archived_at', 'is', null)
         .order('archived_at', { ascending: false });
+      if (key !== orgRef.current) return;
       if (archived) setArchivedProjects(archived.map(formatProjectRow));
 
       // Trashed
       const { data: trashed } = await projectsForActiveOrg()
         .not('deleted_at', 'is', null)
         .order('deleted_at', { ascending: false });
+      if (key !== orgRef.current) return;
       if (trashed) setTrashedProjects(trashed.map(formatProjectRow));
     } catch (error) {
       console.error('Error loading projects:', error);
@@ -942,6 +885,7 @@ const ProjectManagement = () => {
         variant: "destructive"
       });
     } finally {
+      if (key === orgRef.current) setReadyFor((r) => ({ ...r, projects: key }));
       setLoading(false);
     }
   };
@@ -1009,6 +953,7 @@ const ProjectManagement = () => {
   };
 
   const loadTasks = async () => {
+    const key = orgRef.current;
     try {
       let query = supabase
         .from('todos')
@@ -1061,6 +1006,7 @@ const ProjectManagement = () => {
             archived_at: todo.archived_at || null,
           } as Task;
         }));
+        if (key !== orgRef.current) return; // stale response from a previous company
         setTasks(formattedTasks);
       }
     } catch (error) {
@@ -1070,6 +1016,8 @@ const ProjectManagement = () => {
         description: "Failed to load tasks. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      if (key === orgRef.current) setReadyFor((r) => ({ ...r, tasks: key }));
     }
   };
 
@@ -2693,6 +2641,24 @@ const ProjectManagement = () => {
     return eventsSort === 'newest' ? bDate.localeCompare(aDate) : aDate.localeCompare(bDate);
   });
   const pagedEvents = sortedEvents.slice((eventsPage-1)*PAGE_SIZE, eventsPage*PAGE_SIZE);
+
+  // Neutral skeleton until auth, access and this company's projects + tasks have resolved.
+  const dataReady = readyFor.projects === orgKey && readyFor.tasks === orgKey;
+  if (!user || hasAccess === null || (hasAccess && !dataReady)) {
+    return (
+      <div className="min-w-0 max-w-full space-y-5 pt-5" role="status" aria-busy="true" aria-live="polite" data-testid="pm-loading">
+        <span className="sr-only">Loading projects and tasks…</span>
+        <div className="flex items-center justify-between gap-3">
+          <Skeleton className="h-8 w-56" />
+          <Skeleton className="h-9 w-32" />
+        </div>
+        <Skeleton className="h-11 w-full" />
+        <div className="grid gap-4 md:grid-cols-3">
+          {[0, 1, 2].map((i) => <Skeleton key={i} className="h-64 w-full" />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-w-0 max-w-full space-y-5 overflow-x-hidden pt-5">
