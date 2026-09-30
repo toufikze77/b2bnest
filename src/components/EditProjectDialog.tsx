@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 interface EditProjectDialogProps {
   isOpen: boolean;
@@ -75,6 +76,7 @@ const stageOptions = [
 
 const EditProjectDialog = ({ isOpen, onOpenChange, project, onUpdateProject }: EditProjectDialogProps) => {
   const { organizationId } = useActiveOrganization();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -171,7 +173,9 @@ const EditProjectDialog = ({ isOpen, onOpenChange, project, onUpdateProject }: E
       let q = supabase.from('projects').update(updateData as any).eq('id', project.id);
       // Stay inside the selected company; RLS still decides who may update.
       // Filtered columns must also be selected (PostgREST re-applies filters to the returned rows).
-      if (organizationId) q = q.eq('organization_id', organizationId);
+      if (organizationId && user) {
+        q = q.or(`organization_id.eq.${organizationId},and(organization_id.is.null,user_id.eq.${user.id})`);
+      }
       const { data, error } = await q.select('*');
 
       if (error) throw error;
