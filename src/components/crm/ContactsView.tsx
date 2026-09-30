@@ -10,6 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { formatCurrency } from '@/utils/currencyUtils';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { DataTable } from '@/components/data/DataTable';
+import { StatusBadge } from '@/components/data/StatusBadge';
+import { formatDueDate } from '@/lib/dashboardData';
 import { 
   Phone, 
   Mail, 
@@ -58,6 +62,7 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [viewing, setViewing] = useState<Contact | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -182,8 +187,9 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div className="flex flex-wrap gap-4 [&>*]:min-w-0">
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Search aria-hidden className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <Input 
+              aria-label="Search your contacts"
               placeholder="Search contacts..." 
               className="pl-10 w-full sm:w-80" 
               value={searchTerm}
@@ -191,7 +197,7 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-40" aria-label="Status">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
@@ -335,92 +341,77 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
         </Dialog>
       </div>
 
-      <div className="grid gap-4">
-        {filteredContacts.map(contact => {
-          const engagementScore = calculateEngagementScore(contact);
-          return (
-            <Card key={contact.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <Avatar className="w-12 h-12">
-                      <AvatarFallback>
-                        {contact.name.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                     <div>
-                      <h3 className="font-semibold">{contact.name}</h3>
-                      <p className="text-sm text-gray-600">
-                        {contact.position && contact.company ? `${contact.position} at ${contact.company}` : contact.position || contact.company || 'No company specified'}
-                      </p>
-                      <div className="flex items-center gap-4 mt-2">
-                        {contact.email && (
-                          <div className="flex items-center gap-1 text-sm text-gray-500">
-                            <Mail className="w-4 h-4" />
-                            {contact.email}
-                          </div>
-                        )}
-                        {contact.phone && (
-                          <div className="flex items-center gap-1 text-sm text-gray-500">
-                            <Phone className="w-4 h-4" />
-                            {contact.phone}
-                          </div>
-                        )}
-                      </div>
-                      {contact.source && (
-                        <div className="flex items-center gap-1 text-xs text-gray-400 mt-1">
-                          <Target className="w-3 h-3" />
-                          Source: {contact.source}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                   <div className="text-right">
-                      <p className="font-semibold">{formatCurrency(contact.value || 0, settings?.currency_code || 'USD')}</p>
-                      <p className="text-sm text-gray-500">Potential Value</p>
-                      <div className="flex items-center gap-1 text-xs text-gray-400 mt-1">
-                        <Star className="w-3 h-3" />
-                        Score: {engagementScore}%
-                      </div>
-                    </div>
-                    {contact.status && (
-                      <Badge className={`text-white ${statusColors[contact.status] || 'bg-gray-500'}`}>
-                        {contact.status}
-                      </Badge>
-                    )}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => handleEditContact(contact)}>
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit Contact
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => handleDeleteContact(contact.id)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete Contact
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+      <p className="text-sm text-muted-foreground">Your contacts — records you created. They aren't shared as company records.</p>
+      <DataTable
+        caption="Your contacts"
+        rows={filteredContacts}
+        rowKey={(c) => c.id}
+        filtered={!!searchTerm || statusFilter !== 'all'}
+        onClearFilters={() => { setSearchTerm(''); setStatusFilter('all'); }}
+        empty={<p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">No contacts yet. Use “Add Contact” to create your first one.</p>}
+        initialSort={{ id: 'name', dir: 'asc' }}
+        columns={[
+          { id: 'name', header: 'Name', sortValue: (c) => c.name, cell: (c) => (
+            <button type="button" onClick={() => setViewing(c)} className="rounded-sm text-left font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{c.name}</button>
+          ) },
+          { id: 'company', header: 'Company', sortValue: (c) => c.company, cell: (c) => <span className="text-muted-foreground">{[c.position, c.company].filter(Boolean).join(' · ') || '—'}</span> },
+          { id: 'email', header: 'Email', sortValue: (c) => c.email, cell: (c) => c.email ? <a href={`mailto:${c.email}`} className="text-primary hover:underline">{c.email}</a> : <span className="text-muted-foreground">—</span> },
+          { id: 'status', header: 'Status', sortValue: (c) => c.status, cell: (c) => <StatusBadge value={c.status || 'lead'} prefix="Status" /> },
+          { id: 'value', header: 'Potential value', className: 'text-right', sortValue: (c) => c.value ?? 0, cell: (c) => formatCurrency(c.value || 0, settings?.currency_code || 'USD') },
+          { id: 'updated', header: 'Updated', sortValue: (c) => c.updated_at, cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{c.updated_at ? formatDueDate(c.updated_at) : '—'}</span> },
+        ]}
+        rowActions={(contact) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" aria-label={`Actions for ${contact.name}`}>
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setViewing(contact)}>View details</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleEditContact(contact)}>
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Contact
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDeleteContact(contact.id)} className="text-destructive">
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Contact
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      />
+
+      <Sheet open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
+        <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+          {viewing && (
+            <>
+              <SheetHeader>
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-11 w-11"><AvatarFallback>{viewing.name.split(' ').map(n => n[0]).join('').slice(0, 2)}</AvatarFallback></Avatar>
+                  <div className="text-left">
+                    <SheetTitle>{viewing.name}</SheetTitle>
+                    <SheetDescription>{[viewing.position, viewing.company].filter(Boolean).join(' at ') || 'No company specified'}</SheetDescription>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-        {filteredContacts.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            {searchTerm || statusFilter !== 'all' ? 'No contacts match your filters' : 'No contacts yet. Add your first contact!'}
-          </div>
-        )}
-      </div>
+              </SheetHeader>
+              <dl className="mt-6 grid grid-cols-[auto,1fr] gap-x-4 gap-y-3 text-sm">
+                <dt className="text-muted-foreground">Status</dt><dd><StatusBadge value={viewing.status || 'lead'} /></dd>
+                <dt className="text-muted-foreground"><Mail className="inline h-4 w-4" aria-hidden /> Email</dt><dd>{viewing.email ? <a className="text-primary hover:underline" href={`mailto:${viewing.email}`}>{viewing.email}</a> : '—'}</dd>
+                <dt className="text-muted-foreground"><Phone className="inline h-4 w-4" aria-hidden /> Phone</dt><dd>{viewing.phone ? <a className="text-primary hover:underline" href={`tel:${viewing.phone}`}>{viewing.phone}</a> : '—'}</dd>
+                <dt className="text-muted-foreground"><Target className="inline h-4 w-4" aria-hidden /> Source</dt><dd>{viewing.source || '—'}</dd>
+                <dt className="text-muted-foreground">Potential value</dt><dd>{formatCurrency(viewing.value || 0, settings?.currency_code || 'USD')}</dd>
+                <dt className="text-muted-foreground"><Star className="inline h-4 w-4" aria-hidden /> Profile</dt><dd>{calculateEngagementScore(viewing)}% complete</dd>
+                <dt className="text-muted-foreground">Notes</dt><dd className="whitespace-pre-wrap">{viewing.notes || '—'}</dd>
+              </dl>
+              <div className="mt-6 flex gap-2">
+                <Button onClick={() => { const c = viewing; setViewing(null); handleEditContact(c); }}><Edit className="mr-2 h-4 w-4" />Edit contact</Button>
+                <Button variant="outline" onClick={() => setViewing(null)}>Close</Button>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
