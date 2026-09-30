@@ -110,6 +110,7 @@ describe('WorkspaceView', () => {
     fireEvent.change(sel, { target: { value: 'review' } }); // edit 1
     fireEvent.change(sel, { target: { value: 'done' } }); // edit 2
     fireEvent.change(screen.getByLabelText('Status of Other task'), { target: { value: 'backlog' } });
+    await act(async () => {});
     const updates = calls.filter((c) => c.op === 'update');
     expect(updates).toHaveLength(3);
     for (const u of updates) {
@@ -131,6 +132,7 @@ describe('WorkspaceView', () => {
     await screen.findByRole('heading', { name: 'Leads' });
     await act(async () => { pendingTodos('org-1-b1')[0].resolve!({ data: [task('l1', 'Lead task')], error: null }); });
     fireEvent.change(await screen.findByLabelText('Status of Lead task'), { target: { value: 'done' } });
+    await act(async () => {});
     fireEvent.click(screen.getByRole('button', { name: /Deals/ }));
     await act(async () => { pendingTodos('org-1-b2')[0].resolve!({ data: [task('l1', 'Same id elsewhere')], error: null }); });
     await act(async () => { calls.find((c) => c.op === 'update')!.resolve!({ data: null, error: { message: 'x' } }); });
