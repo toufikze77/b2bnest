@@ -101,6 +101,10 @@ import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, 
 import { EnhancedTodoView } from './enhanced-todos/EnhancedTodoView';
 import { ProjectCalendarView } from './project-management/ProjectCalendarView';
 import { useLocation, useSearchParams } from 'react-router-dom';
+import { ViewSwitcher } from '@/components/work/ViewSwitcher';
+import { WorkFilterBar, useWorkFilters } from '@/components/work/WorkFilterBar';
+import { TaskListView } from '@/components/work/TaskListView';
+import { applyWorkFilters } from '@/lib/workFilters';
 import { PM_VIEWS, PmView, normalizePmParams, readPmProject, readPmTab, writePmProject, writePmTab } from '@/lib/pmView';
 
 // Enhanced interfaces
@@ -333,7 +337,7 @@ const ProjectManagement = () => {
   };
   useEffect(() => { try { localStorage.removeItem('pm_selected_project'); } catch {} }, []);
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const { filters: workFilters, clear: clearWorkFilters, activeCount: workFilterCount } = useWorkFilters();
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showAutomationBuilder, setShowAutomationBuilder] = useState(false);
@@ -1256,12 +1260,8 @@ const ProjectManagement = () => {
     return selectedProject === 'all' || task.projectId === selectedProject;
   });
 
-  const filteredTasks = projectScopedTasks.filter(task => {
-    const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         task.description.toLowerCase().includes(searchTerm.toLowerCase());
-
-    return matchesSearch;
-  });
+  // Shared URL-backed filters (search, status, priority, assignee, due dates).
+  const filteredTasks = applyWorkFilters(projectScopedTasks, workFilters);
 
   const projectScopedMilestones = milestones.filter(milestone =>
     selectedProject === 'all' || milestone.projectId === selectedProject || milestone.project === selectedProjectDetails?.name
@@ -2822,21 +2822,12 @@ const ProjectManagement = () => {
         </Card>
       </div>
 
-      {/* Enhanced Filters and Search */}
+      {/* Project, view switcher and shared filters */}
       <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <Input
-                placeholder="Search tasks, projects, or team members..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+        <CardContent className="space-y-3 p-4">
+          <div className="flex flex-wrap items-center gap-3">
             <Select value={selectedProject} onValueChange={handleProjectSelection}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-[220px]" aria-label="Project">
                 <SelectValue placeholder="Filter by project" />
               </SelectTrigger>
               <SelectContent>
@@ -2848,102 +2839,17 @@ const ProjectManagement = () => {
                 ))}
               </SelectContent>
             </Select>
-            <div className="flex gap-2">
-              <Button
-                variant={activeView === 'kanban' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveView('kanban')}
-                aria-label="Board view"
-              >
-                <KanbanSquare className="w-4 h-4" />
-              </Button>
-              <Button
-                variant={activeView === 'list' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveView('list')}
-                aria-label="List view"
-              >
-                <List className="w-4 h-4" />
-              </Button>
-              <Button
-                variant={activeView === 'calendar' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveView('calendar')}
-                aria-label="Calendar view"
-              >
-                <CalendarIcon className="w-4 h-4" />
-              </Button>
-            </div>
+            <ViewSwitcher active={activeTab} onChange={setActiveTab} />
           </div>
+          <WorkFilterBar
+            statuses={statusColumns.map(c => ({ value: c.id, label: c.title }))}
+            assignees={Array.from(new Set(projectScopedTasks.map(t => t.assignee).filter(a => a && a !== 'Unassigned')))}
+          />
         </CardContent>
       </Card>
 
       {/* Enhanced Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="min-w-0">
-        <div className="max-w-full overflow-x-auto pb-1">
-        <TabsList className="h-auto w-max min-w-full justify-start bg-muted/30 p-1.5">
-          <TabsTrigger 
-            value="summary" 
-            className="data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all"
-          >
-            Summary
-          </TabsTrigger>
-          <TabsTrigger 
-            value="timeline"
-            className="data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all"
-          >
-            Timeline
-          </TabsTrigger>
-          <TabsTrigger 
-            value="kanban"
-            className="data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all"
-          >
-            Board
-          </TabsTrigger>
-          <TabsTrigger 
-            value="calendar"
-            className="data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all"
-          >
-            Calendar
-          </TabsTrigger>
-          <TabsTrigger 
-            value="list"
-            className="data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all"
-          >
-            List
-          </TabsTrigger>
-          <TabsTrigger 
-            value="forms"
-            className="data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all"
-          >
-            Forms
-          </TabsTrigger>
-          <TabsTrigger 
-            value="goals"
-            className="data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all"
-          >
-            Goals
-          </TabsTrigger>
-          <TabsTrigger 
-            value="all"
-            className="data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all"
-          >
-            All work
-          </TabsTrigger>
-          <TabsTrigger 
-            value="archived"
-            className="data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all"
-          >
-            Archived
-          </TabsTrigger>
-          <TabsTrigger 
-            value="teams"
-            className="data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all"
-          >
-            Teams
-          </TabsTrigger>
-        </TabsList>
-        </div>
 
         <TabsContent value="summary" className="mt-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -3095,36 +3001,7 @@ const ProjectManagement = () => {
         </TabsContent>
 
         <TabsContent value="list" className="mt-6">
-          <Card>
-            <CardHeader><CardTitle>All Tasks (List)</CardTitle></CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {filteredTasks.filter(t => !(t as any).archived_at).map(t => (
-                  <div key={t.id} className="p-3 border rounded-lg flex items-center justify-between">
-                    <div className="min-w-0">
-                      <button type="button" className="text-left font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm" onClick={() => openTaskEditor(t)}>{t.title}</button>
-                      <div className="text-sm text-muted-foreground">{t.status} • {t.priority}</div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">{t.project}</Badge>
-                      <Button size="sm" variant="outline" onClick={() => openTaskEditor(t)} aria-label={`Edit task ${t.title}`}>
-                        <EditIcon className="mr-1 h-4 w-4" />Edit
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button size="sm" variant="ghost" aria-label={`More actions for ${t.title}`}><TaskMenuIcon className="h-4 w-4" /></Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => openTaskEditor(t)}>Edit</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => archiveTask(t.id)}>Archive</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <TaskListView tasks={filteredTasks.filter(t => !(t as any).archived_at)} onEdit={openTaskEditor} onArchive={archiveTask} filtered={workFilterCount > 0} onClearFilters={clearWorkFilters} />
         </TabsContent>
 
         <TabsContent value="forms" className="mt-6">
