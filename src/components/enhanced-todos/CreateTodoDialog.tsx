@@ -428,14 +428,6 @@ const CreateTodoDialog = ({ onCreateTodo, isOpen, onOpenChange, editTask = null,
                 <Brain className="h-4 w-4 mr-2" />
                 {showAISuggestions ? 'Hide' : 'Show'} AI Suggestions
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => onOpenChange(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
             </div>
           </DialogTitle>
         </DialogHeader>
