@@ -29,15 +29,49 @@ const addDays = (days: number) => {
  * custom_fields.workspace.id so they open together in /workspaces/:id.
  * If any step fails, rows created by this call are removed again.
  */
+export class DuplicateTemplateApplicationError extends Error {
+  constructor(message: string, public existing: AppliedWorkspace | null) {
+    super(message);
+    this.name = 'DuplicateTemplateApplicationError';
+  }
+}
+
+const claims = () => (supabase as any).from('template_applications');
+
+/**
+ * Durable duplicate protection: records the attempt key in
+ * template_applications (UNIQUE per company). A second request with the same
+ * key — another tab, a double-sent request — is refused, and if the first one
+ * already finished its result is returned so the caller can open it.
+ */
+const claimAttempt = async (organizationId: string, key: string, templateSlug: string): Promise<AppliedWorkspace | null> => {
+  const { error } = await claims().insert({ organization_id: organizationId, idempotency_key: key, template_slug: templateSlug });
+  if (!error) return null;
+  if (error.code !== '23505') throw new Error(error.message || 'Could not start creating this template.');
+  const { data } = await claims()
+    .select('status, kind, workspace_id, primary_project_id')
+    .eq('organization_id', organizationId).eq('idempotency_key', key).maybeSingle();
+  if (data?.status === 'done') {
+    return { kind: data.kind, workspaceId: data.workspace_id, projects: [], primaryProjectId: data.primary_project_id ?? '', totalTasks: 0 };
+  }
+  throw new DuplicateTemplateApplicationError('This template is already being created — please wait for it to finish.', null);
+};
+
 export const applyWorkspaceTemplate = async (
   template: WorkspaceTemplate,
   options: {
     organizationId: string | null;
     workspaceName?: string;
     boardNames?: Record<string, string>;
+    idempotencyKey?: string;
   },
 ): Promise<AppliedWorkspace> => {
   const { userId, organizationId } = await assertActiveOrganization(options.organizationId);
+  const key = options.idempotencyKey;
+  if (key) {
+    const existing = await claimAttempt(organizationId, key, template.slug);
+    if (existing) throw new DuplicateTemplateApplicationError('This template was already created.', existing);
+  }
   const kind = getTemplateKind(template);
   const prefix = options?.workspaceName?.trim();
   const workspaceId = kind === 'workspace' ? crypto.randomUUID() : null;
@@ -114,13 +148,25 @@ export const applyWorkspaceTemplate = async (
     if (createdIds.length) {
       const cleanup = await cleanupCreated(createdIds, organizationId);
       if (!cleanup.ok) {
+        if (key) {
+          await claims().update({ status: 'incomplete', workspace_id: workspaceId })
+            .eq('organization_id', organizationId).eq('idempotency_key', key);
+        }
         throw new WorkspaceCreationIncompleteError(
           error instanceof Error ? error.message : 'Creation failed.',
           { organizationId, workspaceId, workspaceName, templateSlug: template.slug, leftoverProjectIds: cleanup.leftoverProjectIds, cleanupError: cleanup.error },
         );
       }
     }
+    // Clean failure: release the key so the user can try again.
+    if (key) await claims().delete().eq('organization_id', organizationId).eq('idempotency_key', key);
     throw error;
+  }
+
+  const primaryProjectId = projects[0]?.id ?? '';
+  if (key) {
+    await claims().update({ status: 'done', kind, workspace_id: workspaceId, primary_project_id: primaryProjectId || null })
+      .eq('organization_id', organizationId).eq('idempotency_key', key);
   }
 
   await logTemplateEvent(template.slug, 'created');
@@ -129,7 +175,7 @@ export const applyWorkspaceTemplate = async (
     kind,
     workspaceId,
     projects,
-    primaryProjectId: projects[0]?.id ?? '',
+    primaryProjectId,
     totalTasks: projects.reduce((sum, p) => sum + p.taskCount, 0),
   };
 };
