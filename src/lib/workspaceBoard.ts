@@ -23,9 +23,13 @@ export const fieldForColumn = (label: string): ColumnField | null =>
  * Keeps the template's column order. Supported columns map to task fields,
  * unsupported ones stay in place with field = null. A task-title column is
  * prepended only if the template has none; duplicate field mappings are kept
- * once (first occurrence wins) so a value is never shown twice.
+ * once (first occurrence wins) so a value is never shown twice. Boards with
+ * no template columns fall back to DEFAULT_COLUMNS.
  */
+export const DEFAULT_COLUMNS = ['Task', 'Status', 'Priority', 'Due date', 'Estimated hours'];
+
 export const buildColumns = (templateColumns: string[]): BoardColumn[] => {
+  if (!templateColumns.length) templateColumns = DEFAULT_COLUMNS; // board without defined columns
   const seen = new Set<ColumnField>();
   const cols: BoardColumn[] = [];
   for (const label of templateColumns) {

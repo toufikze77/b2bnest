@@ -19,6 +19,12 @@ describe('buildColumns', () => {
   });
 });
 
+describe('buildColumns defaults', () => {
+  it('uses default columns when the template defines none', () => {
+    expect(buildColumns([]).map((c) => c.field)).toEqual(['title', 'status', 'priority', 'due_date', 'estimated_hours']);
+  });
+});
+
 describe('groupTasks', () => {
   const t = (id: string, labels: string[] | null) => ({ id, labels });
   it('preserves template group order including empty groups', () => {
