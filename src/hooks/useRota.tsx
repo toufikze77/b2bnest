@@ -37,9 +37,12 @@ export const PREVIEW_EMPLOYEE_LIMIT = 3;
 
 export const useRota = () => {
   const { user } = useAuth();
-  const { organizationId, loading: orgLoading } = useActiveOrganization();
+  const { organizationId, organization, loading: orgLoading } = useActiveOrganization();
   const sub = useSubscription();
-  const { isAdmin, loading: roleLoading } = useUserRole();
+  const { role, isAdmin: isGlobalAdmin, loading: roleLoading } = useUserRole();
+  const orgRole = (organization?.role || '').toLowerCase();
+  // Any platform admin, or the owner/admin/manager of the active company, can manage the rota.
+  const isAdmin = isGlobalAdmin || role === 'super_admin' || ['owner', 'admin', 'manager'].includes(orgRole);
 
   const [employees, setEmployees] = useState<RotaEmployee[]>([]);
   const [shifts, setShifts] = useState<RotaShift[]>([]);

@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUserAvatar } from '@/hooks/useUserAvatar';
 import SupportFeedbackDialog from '@/components/SupportFeedbackDialog';
 import OrganizationSwitcher from '@/components/OrganizationSwitcher';
+import ProfileEditDialog from '@/components/ProfileEditDialog';
 
 
 const Header = () => {
@@ -27,7 +28,8 @@ const Header = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const { avatarUrl, displayName } = useUserAvatar();
+  const { avatarUrl, displayName, email: profileEmail } = useUserAvatar();
+  const [profileOpen, setProfileOpen] = useState(false);
   const initials = (displayName || user?.email || '?').slice(0, 2).toUpperCase();
 
   
@@ -151,7 +153,16 @@ const Header = () => {
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-64">
+                  <div className="px-2 py-1.5">
+                    <p className="truncate text-sm font-medium">{displayName || 'Your profile'}</p>
+                    <p className="truncate text-xs text-muted-foreground">{profileEmail}</p>
+                  </div>
+                  <DropdownMenuItem onSelect={() => setProfileOpen(true)}>
+                    <User className="h-4 w-4 mr-2" />
+                    Edit profile
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link to="/dashboard" className="flex items-center w-full">
                       <BarChart3 className="h-4 w-4 mr-2" />
@@ -352,6 +363,7 @@ const Header = () => {
         )}
       </div>
 
+      <ProfileEditDialog open={profileOpen} onOpenChange={setProfileOpen} />
       <SupportFeedbackDialog open={isFeedbackOpen} onOpenChange={setIsFeedbackOpen} />
 
     </header>

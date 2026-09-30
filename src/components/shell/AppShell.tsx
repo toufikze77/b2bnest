@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useUserAvatar } from '@/hooks/useUserAvatar';
 import OrganizationSwitcher from '@/components/OrganizationSwitcher';
+import ProfileEditDialog from '@/components/ProfileEditDialog';
 import SupportFeedbackDialog from '@/components/SupportFeedbackDialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -62,7 +63,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { toggleTheme } = useTheme();
-  const { avatarUrl, displayName } = useUserAvatar();
+  const { avatarUrl, displayName, email: profileEmail } = useUserAvatar();
+  const [profileOpen, setProfileOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const initials = (displayName || user?.email || '?').slice(0, 2).toUpperCase();
 
@@ -153,9 +155,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <Avatar className="h-8 w-8"><AvatarImage src={avatarUrl} alt="" /><AvatarFallback>{initials}</AvatarFallback></Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel className="truncate">{displayName || user?.email}</DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel className="font-normal">
+                  <p className="truncate text-sm font-medium">{displayName || 'Your profile'}</p>
+                  <p className="truncate text-xs text-muted-foreground">{profileEmail || user?.email}</p>
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => setProfileOpen(true)}><Users className="mr-2 h-4 w-4" />Edit profile</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => navigate('/settings')}><Settings className="mr-2 h-4 w-4" />Account settings</DropdownMenuItem>
                 <DropdownMenuItem onSelect={toggleTheme}><Sparkles className="mr-2 h-4 w-4" />Switch theme</DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -166,6 +172,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
         <main id="app-content" className="min-w-0 flex-1">{children}</main>
       </SidebarInset>
+      <ProfileEditDialog open={profileOpen} onOpenChange={setProfileOpen} />
       <SupportFeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
     </SidebarProvider>
   );
