@@ -57,19 +57,21 @@
 - No new functions, so no new SECURITY DEFINER surface.
 
 ### Grants and RLS
-- Grants: `authenticated` SELECT/INSERT/UPDATE/DELETE; `service_role` ALL; **no `anon` grant**.
+- Grants (intended and, since 01:42 UTC, live): `authenticated` SELECT/INSERT/UPDATE/DELETE; `service_role` ALL; **no `anon` access**.
+- **Live mismatch found and corrected:** on the live project the table initially also allowed `anon` (hosted default privileges), unlike the disposable test copy. RLS still returned no rows to anon (all policies are `TO authenticated`), but the grant was looser than documented. Corrected by migration `20260930014210_56adcafc-...sql` (REVOKE ALL FROM anon, PUBLIC; re-GRANT authenticated/service_role). The 2 existing records were preserved.
 - SELECT: active members of the company (`user_is_organization_member`).
 - INSERT: only as yourself (`created_by = auth.uid()`) into a company you belong to.
 - UPDATE: only your own records, and only within a company you belong to (cannot move a record to another company).
 - DELETE: only your own records.
 
-### Duplicate-detection key and intentional copies
-- The dialog makes one random key per **company + template** and keeps it in the browser's localStorage, so every tab and every retry in that browser sends the same key.
-- **Concurrent/duplicate requests** (two tabs, double-sent request) share the key: the database's unique rule lets only one claim succeed; the other is refused as "in progress", or — if the first already finished — told "already created" and taken to that workspace.
-- **Intentional later copy**: after success the key is removed from the browser, so using the template again makes a new key and a new workspace.
-- Limit: the key lives in one browser. Two different browsers/devices clicking at the same moment get different keys and can still both create a copy (each is then a deliberate action by that user).
+### Duplicate-detection key: what it protects and what it does not
+- The key is a random id the dialog creates per **company + template**, stored in that browser's localStorage. It is shared by all tabs of the same browser profile and by retries of the same request. It is **not** shared between different browsers, profiles or devices.
+- **Request-retry / same-browser protection (supported):** a double-click, a re-sent request, or two tabs in one browser send the same key. The database unique rule `(organization_id, idempotency_key)` accepts only one; the other is refused as "in progress" or sent to the already-created workspace.
+- **Cross-device protection (NOT supported):** two computers, phones or browser profiles each generate their own key, so the database sees two different attempts and **two workspaces can be created**. Test `NOT SUPPORTED: two devices (different keys)…` confirms this. Supporting it would need a server-side rule (e.g. one in-progress attempt per company + template + user), which is not built.
+- "Exactly one record" in the database concurrency check (TA-20) means: two simultaneous requests **with the same key** make one record. It does not mean universal duplicate prevention.
+- **Intentional later copy:** after success the browser discards the key, so using the template again creates a new key and a new workspace — by design.
 - Clean failure: the claim is deleted and the key stays, so retry works.
-- Incomplete cleanup: the claim is marked `incomplete` with the workspace id; the same key is refused with that id, so no accidental second copy is made until leftovers are handled.
+- Incomplete cleanup: the claim is marked `incomplete` with the workspace id; the same key is refused with that id until leftovers are handled (same browser only).
 
 ### Stalled attempt recovery
 - A `pending` claim older than 10 minutes (tab closed or crashed mid-creation) is treated as stalled. When **the same user** retries, the stale claim is removed and creation proceeds. Another user's stalled claim is never taken over; recent ones are still "in progress".
@@ -98,3 +100,11 @@ The earlier 21 tests do NOT cover this protection. New, dedicated checks:
 - Database (disposable PostgreSQL 17.9, the real migration file), `scripts/staging/90_template_applications_tests.sql` + concurrency step: 20/20 pass (TA-01…TA-20) — anon denied; same-company read allowed; cross-company read/insert/update/delete denied; cross-user insert/update/delete within the company denied; moving a record to another company denied; duplicate key refused (23505); same key in another company allowed; no-company user denied; two parallel database sessions with the same key → exactly 1 row.
 - Full tenant/security suite, fresh: **662 PASS / 0 FAIL / 54 INFO**, exit 0 (previous 642 + 20 new).
 - Whole vitest run: 30/30. Not yet checked signed-in in the real app.
+
+### Live permission correction and re-verification (2026-09-30 ~01:43 UTC)
+- Live database (`gvftvswyrevummbvyhxa`) checked directly after the correction: anon SELECT/INSERT privilege = false; authenticated SELECT/INSERT/UPDATE/DELETE = true; service_role = true; 4 policies unchanged (all `TO authenticated`); records = 2 (preserved).
+- Live signed-out API test (public REST endpoint with the public key): read → HTTP 401 `42501 permission denied`; insert → HTTP 401 `42501 permission denied`.
+- Live signed-in company/user isolation: **not exercised on the live database** — no signed-in session is available here and the read-only query tool cannot evaluate the membership function. Isolation is verified on the disposable copy only (below); owner's signed-in check still pending.
+- Disposable copy, fresh run, reproducing the live mismatch (anon granted) then applying the same correction migration: anon denied (TA-01/02), cross-company and cross-user denied (TA-05…TA-13, TA-19), same-key concurrency → 1 row (TA-20): 20/20 PASS. Full suite **662 PASS / 0 FAIL / 54 INFO**, exit 0.
+- App tests: 10/10 duplicate-protection tests (9 earlier + 1 new two-device test that confirms the unsupported case); whole vitest run 31/31.
+- Frontend still unpublished. Password-protection and database-update warnings intentionally not touched in this task.
