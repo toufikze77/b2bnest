@@ -19,7 +19,7 @@ import { WorkspaceTemplate } from '@/types/workspaceTemplate';
 import { applyWorkspaceTemplate, WorkspaceCreationIncompleteError, IncompleteCreationInfo, DuplicateTemplateApplicationError } from '@/services/workspaceTemplateApply';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
-import { getTemplateKind, TEMPLATE_KIND_LABELS } from '@/lib/templateKind';
+import { getTemplateKind, getTemplateAvailability, TEMPLATE_KIND_LABELS } from '@/lib/templateKind';
 
 interface Props {
   template: WorkspaceTemplate | null;
@@ -49,6 +49,7 @@ const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
   );
 
   const kind = getTemplateKind(template);
+  const availability = getTemplateAvailability(template);
 
   const handleApply = async () => {
     if (inFlight.current) return; // block repeated clicks
@@ -123,7 +124,7 @@ const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
           </DialogTitle>
           <DialogDescription>
             {kind === 'workspace'
-              ? 'Creates a workspace with several boards, their groups and tasks. It opens in its own workspace view with the boards listed on the left.'
+              ? `Creates a workspace with ${template.boards.length} linked ${template.boards.length === 1 ? 'board' : 'boards'}, their groups and tasks. It opens in its own workspace view with the boards listed on the left.`
               : 'Creates one project with its groups and tasks, opened in Projects & tasks.'}{' '}
             Everything stays inside the selected company and is fully editable.
           </DialogDescription>
@@ -206,7 +207,7 @@ const UseWorkspaceTemplateDialog = ({ template, isOpen, onClose }: Props) => {
           <Button variant="outline" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
-          <Button onClick={handleApply} disabled={saving || !organizationId || !organization}>
+          <Button onClick={handleApply} disabled={saving || !organizationId || !organization || !availability.available}>
             {saving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating…
