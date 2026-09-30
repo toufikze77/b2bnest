@@ -2969,7 +2969,7 @@ const ProjectManagement = () => {
 
         <TabsContent value="calendar" className="mt-6">
           <ProjectCalendarView
-            tasks={projectScopedTasks}
+            tasks={filteredTasks.filter(t => !(t as any).archived_at)}
             events={projectScopedCalendarEvents}
             onCreateEvent={(event) => {
               if (!user?.id) return;
