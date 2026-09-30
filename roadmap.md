@@ -121,3 +121,6 @@
 - [ ] AI template generation — blocked on owner decisions in docs/ai-template-generation-gap-report-2026-10-01.md
 - [x] Catalogue: categories/filters/counts from usable templates only (preview)
 - [ ] Future template categories (AI & Automation etc.) — internal roadmap only
+- [x] AI generation staging: credit ledger/reservation SQL, rollback, 44 DB checks, v1 schema (not live)
+- [ ] AI generation: approve price (proposed 1 credit) + admin cap (proposed 300/month) — owner
+- [ ] AI generation: edge function + customer/admin screens — after approval
