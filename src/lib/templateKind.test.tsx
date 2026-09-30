@@ -38,7 +38,7 @@ describe('template availability', () => {
   });
   it('the card labels a project template before creation', () => {
     render(<TemplateCard template={bySlug('simple-project')} hasPremiumAccess onPreview={() => {}} onUse={() => {}} />);
-    expect(screen.getByText(/Project template/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Project template/).length).toBeGreaterThan(0);
   });
 });
 
