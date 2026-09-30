@@ -29,6 +29,8 @@ import ProjectActivityTimeline from './ProjectActivityTimeline';
 import StatsCard from './cards/StatsCard';
 import ProjectCard from './cards/ProjectCard';
 import JiraTaskView from './JiraTaskView';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal as TaskMenuIcon, Pencil as EditIcon } from 'lucide-react';
 import { 
   Plus, 
   Calendar as CalendarIcon, 
@@ -1542,8 +1544,20 @@ const ProjectManagement = () => {
                     }}
                   >
                     {/* Header */}
-                    <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-start justify-between gap-2 mb-2">
                       <h4 className="font-medium text-sm">{task.title}</h4>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 shrink-0"
+                        aria-label={`Edit task ${task.title}`}
+                        onClick={(e) => { e.stopPropagation(); openTaskEditor(task); }}
+                        onKeyDown={(e) => e.stopPropagation()}
+                      >
+                        <EditIcon className="h-4 w-4" />
+                        <span className="ml-1">Edit</span>
+                      </Button>
                     </div>
 
                     {/* Description */}
@@ -2403,6 +2417,45 @@ const ProjectManagement = () => {
   const typesOfWork = ['Development', 'Design', 'QA', 'Documentation', 'Client Communication'];
 
   // Archive handlers
+  // Open the existing task editor (CreateTodoDialog in edit mode) for one task.
+  const openTaskEditor = (task: Task) => {
+    const due = task.dueDate ? `${task.dueDate.getFullYear()}-${String(task.dueDate.getMonth() + 1).padStart(2, '0')}-${String(task.dueDate.getDate()).padStart(2, '0')}` : '';
+    setEditingTask({ ...task, due_date: due, estimated_hours: task.estimatedHours, labels: task.tags } as any);
+    setShowEditTask(true);
+  };
+
+  // Persist task edits. Scoped to the selected company (same filter as reads); RLS still decides.
+  const saveTaskEdit = async (taskId: string, taskData: any) => {
+    const patch: Record<string, any> = {
+      title: taskData.title,
+      description: taskData.description ?? null,
+      priority: taskData.priority,
+      due_date: taskData.due_date || null,
+      start_date: taskData.start_date || null,
+      estimated_hours: taskData.estimated_hours ?? null,
+      labels: taskData.labels ?? [],
+    };
+    if (taskData.assigned_to) patch.assigned_to = taskData.assigned_to;
+    if (!organizationId || !user) {
+      toast({ title: 'Task not saved', description: 'Choose a company in the top bar first.', variant: 'destructive' });
+      return;
+    }
+    const { data, error } = await supabase
+      .from('todos')
+      .update(patch as any)
+      .eq('id', taskId)
+      .or(`organization_id.eq.${organizationId},and(organization_id.is.null,user_id.eq.${user.id})`)
+      .select('id');
+    if (error || !data || data.length !== 1) {
+      toast({ title: 'Task not saved', description: error?.message || 'You do not have permission to edit this task in the selected company.', variant: 'destructive' });
+      return;
+    }
+    setShowEditTask(false);
+    setEditingTask(null);
+    toast({ title: 'Task updated' });
+    await loadTasks();
+  };
+
   const archiveTask = async (taskId: string) => {
     const { error } = await supabase.from('todos' as any).update({ archived_at: new Date().toISOString() }).eq('id', taskId);
     if (error) { toast({ title: 'Archive failed', description: error.message, variant: 'destructive' }); return; }
@@ -2665,7 +2718,16 @@ const ProjectManagement = () => {
       {/* Enhanced Header */}
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <h2 className="text-lg font-semibold">{selectedProjectName}</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-semibold">{selectedProjectName}</h2>
+            {selectedProjectDetails ? (
+              <Button size="sm" variant="outline" onClick={() => handleEditProject(selectedProjectDetails)}>
+                <EditIcon className="mr-1 h-4 w-4" />Edit project
+              </Button>
+            ) : projects.length > 0 ? (
+              <span className="text-sm text-muted-foreground">Choose a project to edit it</span>
+            ) : null}
+          </div>
           <p className="text-sm text-muted-foreground">Plan, assign and deliver work</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -3036,13 +3098,24 @@ const ProjectManagement = () => {
               <div className="space-y-2">
                 {filteredTasks.filter(t => !(t as any).archived_at).map(t => (
                   <div key={t.id} className="p-3 border rounded-lg flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">{t.title}</div>
-                      <div className="text-xs text-gray-500">{t.status} • {t.priority}</div>
+                    <div className="min-w-0">
+                      <button type="button" className="text-left font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm" onClick={() => openTaskEditor(t)}>{t.title}</button>
+                      <div className="text-sm text-muted-foreground">{t.status} • {t.priority}</div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline">{t.project}</Badge>
-                      <Button size="sm" variant="ghost" onClick={() => archiveTask(t.id)}>Archive</Button>
+                      <Button size="sm" variant="outline" onClick={() => openTaskEditor(t)} aria-label={`Edit task ${t.title}`}>
+                        <EditIcon className="mr-1 h-4 w-4" />Edit
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="ghost" aria-label={`More actions for ${t.title}`}><TaskMenuIcon className="h-4 w-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onSelect={() => openTaskEditor(t)}>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => archiveTask(t.id)}>Archive</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 ))}
@@ -3163,13 +3236,24 @@ const ProjectManagement = () => {
               <div className="space-y-2">
                 {filteredTasks.filter(t => !(t as any).archived_at).map(t => (
                   <div key={t.id} className="p-3 border rounded-lg flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">{t.title}</div>
-                      <div className="text-xs text-gray-500">{t.status} • {t.priority}</div>
+                    <div className="min-w-0">
+                      <button type="button" className="text-left font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm" onClick={() => openTaskEditor(t)}>{t.title}</button>
+                      <div className="text-sm text-muted-foreground">{t.status} • {t.priority}</div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline">{t.project}</Badge>
-                      <Button size="sm" variant="ghost" onClick={() => archiveTask(t.id)}>Archive</Button>
+                      <Button size="sm" variant="outline" onClick={() => openTaskEditor(t)} aria-label={`Edit task ${t.title}`}>
+                        <EditIcon className="mr-1 h-4 w-4" />Edit
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="ghost" aria-label={`More actions for ${t.title}`}><TaskMenuIcon className="h-4 w-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onSelect={() => openTaskEditor(t)}>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => archiveTask(t.id)}>Archive</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 ))}
@@ -3359,16 +3443,7 @@ const ProjectManagement = () => {
           isOpen={showEditTask}
           onOpenChange={setShowEditTask}
           editTask={editingTask}
-          onCreateTodo={(taskData) => {
-            setTasks(prev => prev.map(t => 
-              t.id === editingTask.id 
-                ? { ...editingTask, ...taskData }
-                : t
-            ));
-            setShowEditTask(false);
-            setEditingTask(null);
-            toast({ title: "Task Updated", description: "Task updated successfully." });
-          }}
+          onCreateTodo={(taskData) => saveTaskEdit(editingTask.id, taskData)}
         />
       )}
 

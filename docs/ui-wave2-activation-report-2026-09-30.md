@@ -93,3 +93,20 @@ Release remains unpublished.
 - Cause: ProjectManagement rendered `CreateTodoDialog` twice from the same `showCreateTask` flag (and the edit dialog twice from `showEditTask`), so opening Create task mounted two stacked modal dialogs and two overlays. The form also had a second, custom close (X) button next to the built-in one.
 - Fix: duplicate create/edit mounts removed (one of each remains); custom X removed; the dialog now returns focus to the element that opened it (it is opened from state, not a trigger).
 - Mocked browser check (sample data): one dialog and one overlay when open; 25 Tab presses never left the form; one Close button; Escape closed it with no leftover dialog, overlay or pointer lock; focus returned to "New Task"; `?create=task` opens exactly one dialog. App tests 68/68; typecheck clean.
+
+## Projects & tasks editing controls (2026-09-30, preview only, unpublished)
+
+### Owner-confirmed results (Toufik, signed in on preview)
+- Refresh flash: **passed**.
+- Deadline link selects correct project: **passed**.
+- Project deadline editing: **blocked by missing control** (fixed below, re-check pending).
+- Task editing: **blocked by missing control** (fixed below, re-check pending).
+
+### Changes
+- "Edit project" button next to the project heading when a specific project is selected; opens the existing EditProjectDialog. With "All projects" the heading says "Choose a project to edit it".
+- List and All work rows: task title opens the editor; visible "Edit" button; "⋯" menu with Edit and Archive.
+- Board cards: "Edit" button on each card (card click still opens task details).
+- The Edit task dialog reused CreateTodoDialog but was never opened and only changed on-screen state. It now saves to `todos`, filtered by task id and the selected company (same filter as task reads), requires exactly one updated row, otherwise shows "Task not saved". No permission was widened; RLS decides who may save. Edit project visibility matches the existing project-card Edit action; saving is still enforced by the database.
+
+### Verification (sample data, stand-in backend, not real database)
+Browser run on the full rendered List and Board screens (/tmp/browser/edit/check_edit.py): one dialog + one overlay open; Escape closes it and focus returns to the Edit button; renaming a task sends one update and the new title shows after refresh; ⋯ menu lists Edit, Archive; Board Edit opens one dialog; Edit project saved deadline `2026-09-20` (UK time) and Dashboard showed "Website relaunch (sample) · 20 Sept" after reload. App tests 68/68 pass; code check clean. No database change. Signed-in owner re-check still required.
