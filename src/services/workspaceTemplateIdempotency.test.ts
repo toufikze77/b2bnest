@@ -140,6 +140,16 @@ describe('durable workspace duplicate protection', () => {
     expect(db.projects.length).toBe(before);
   });
 
+  it('NOT SUPPORTED: two devices (different keys) creating at the same moment each get a workspace', async () => {
+    // Each browser/device generates its own key, so the unique rule cannot link them.
+    const results = await Promise.allSettled([
+      applyWorkspaceTemplate(template, { organizationId: 'org-A', idempotencyKey: 'device-laptop-key' }),
+      applyWorkspaceTemplate(template, { organizationId: 'org-A', idempotencyKey: 'device-phone-key' }),
+    ]);
+    expect(results.every((r) => r.status === 'fulfilled')).toBe(true);
+    expect(workspacesIn('org-A').size).toBe(2); // documents the limitation
+  });
+
   it('the same key in a different company is independent (key is scoped per company)', async () => {
     await applyWorkspaceTemplate(template, { organizationId: 'org-A', idempotencyKey: 'key-1' });
     await applyWorkspaceTemplate(template, { organizationId: 'org-B', idempotencyKey: 'key-1' });
