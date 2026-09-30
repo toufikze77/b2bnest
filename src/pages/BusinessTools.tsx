@@ -460,7 +460,7 @@ const BusinessTools = () => {
                 Comprehensive tools to help you start, manage, and grow your business with confidence.
               </p>
               
-               <div className="flex gap-2 mt-4">
+               <div className="flex flex-wrap gap-2 mt-4">
                 <Button
                   variant={filter === 'all' ? 'default' : 'outline'}
                   size="sm"
