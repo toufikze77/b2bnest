@@ -108,3 +108,8 @@ The earlier 21 tests do NOT cover this protection. New, dedicated checks:
 - Disposable copy, fresh run, reproducing the live mismatch (anon granted) then applying the same correction migration: anon denied (TA-01/02), cross-company and cross-user denied (TA-05…TA-13, TA-19), same-key concurrency → 1 row (TA-20): 20/20 PASS. Full suite **662 PASS / 0 FAIL / 54 INFO**, exit 0.
 - App tests: 10/10 duplicate-protection tests (9 earlier + 1 new two-device test that confirms the unsupported case); whole vitest run 31/31.
 - Frontend still unpublished. Password-protection and database-update warnings intentionally not touched in this task.
+
+## Owner-confirmed signed-in checks (2026-09-30 ~01:47 UTC)
+Recorded on Toufik's (owner) confirmation. These are **owner-confirmed**, not automated tests and not run by the agent:
+- All five signed-in workspace checks: PASSED (owner-confirmed).
+Limitations still in force: duplicate protection covers the same browser only (tabs, double-clicks, re-sent requests); two different devices can still each create a workspace; creation is not transactional (cleanup is best-effort).
