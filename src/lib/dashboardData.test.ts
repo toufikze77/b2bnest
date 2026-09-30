@@ -65,3 +65,22 @@ describe('project summaries', () => {
     expect(d.map((p) => p.id)).toEqual(['c', 'a']);
   });
 });
+
+import { formatDueDate, completionPatch } from './dashboardData';
+describe('due date display and completion time', () => {
+  const now = new Date(2026, 8, 30);
+  it('hides the year for current-year dates, shows it for past and future years', () => {
+    expect(formatDueDate('2026-10-05', now)).toBe('5 Oct');
+    expect(formatDueDate('2025-10-05', now)).toBe('5 Oct 2025');
+    expect(formatDueDate('2027-01-18', now)).toBe('18 Jan 2027');
+  });
+  it('a past-year October task is overdue, a next-year one is not upcoming', () => {
+    const r = classifyTasks([t('old', '2025-10-18'), t('next', '2027-10-05')], '2026-09-30');
+    expect(r.overdue.map((x) => x.id)).toEqual(['old']);
+    expect(r.upcoming).toEqual([]);
+  });
+  it('records completed_at only when a task is closed', () => {
+    expect(completionPatch('done', now).completed_at).toBe(now.toISOString());
+    expect(completionPatch('todo', now).completed_at).toBeNull();
+  });
+});

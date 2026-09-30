@@ -180,7 +180,7 @@ describe('Dashboard', () => {
     const summary = within(await screen.findByLabelText('Company summary'));
     await waitFor(() => expect(summary.getByRole('link', { name: /Active projects\s*2/ })).toBeInTheDocument());
     expect(summary.getByRole('link', { name: /Open tasks\s*9/ })).toBeInTheDocument();
-    expect(summary.getByRole('link', { name: /Completed this week\s*4/ })).toBeInTheDocument();
+    expect(summary.queryByText('Completed this week')).toBeNull();
     expect(await screen.findByLabelText('1 of 2 tasks done')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Website/ })).toHaveAttribute('href', '/project-management?view=list&project=p1');
     expect(screen.getByRole('link', { name: /Sales CRM/ })).toHaveAttribute('href', '/workspaces/w1');
@@ -188,9 +188,9 @@ describe('Dashboard', () => {
   });
 
   it('a failed metric shows as unavailable, never as zero', async () => {
-    auto = (c) => (c.table === 'todos' && c.filters.some((f) => f[0] === 'gte') ? { error: { message: 'x' } } : c.table === 'todos' ? { data: [], count: 0, error: null } : counts(0));
+    auto = (c) => (c.table === 'todos' && c.filters.some((f) => f[0] === 'select' && (f[2] as { head?: boolean } | undefined)?.head) ? { error: { message: 'x' } } : c.table === 'todos' ? { data: [], count: 0, error: null } : counts(0));
     render(ui());
     const summary = within(await screen.findByLabelText('Company summary'));
-    await waitFor(() => expect(summary.getByRole('link', { name: /Completed this week\s*—\s*Unavailable/ })).toBeInTheDocument());
+    await waitFor(() => expect(summary.getByRole('link', { name: /Open tasks\s*—\s*Unavailable/ })).toBeInTheDocument());
   });
 });

@@ -1,3 +1,4 @@
+import { completionPatch } from '@/lib/dashboardData';
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -1419,7 +1420,7 @@ const ProjectManagement = () => {
       // Update in database
       const { error } = await supabase
         .from('todos')
-        .update({ status: newStatus })
+        .update(completionPatch(newStatus))
         .eq('id', taskId);
 
       if (error) throw error;

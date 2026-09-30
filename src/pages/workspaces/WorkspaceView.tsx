@@ -1,3 +1,4 @@
+import { completionPatch } from '@/lib/dashboardData';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { AlertCircle, ChevronLeft, ChevronRight, Info, Loader2, LayoutGrid } from 'lucide-react';
@@ -106,7 +107,7 @@ export default function WorkspaceView() {
     patchTask(key, task.id, { status });
     const { data, error } = await supabase
       .from('todos')
-      .update({ status })
+      .update(completionPatch(status))
       .eq('id', task.id)
       .eq('project_id', board.id)
       .eq('organization_id', organizationId)
