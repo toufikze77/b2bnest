@@ -30,3 +30,15 @@ Tasks, projects and member counts filtered by `organization_id` of the top-bar c
 - Visual: 390/768/1024/1280/1440 px, no horizontal overflow. Populated with **synthetic sample data** (network responses mocked in the browser; not real customer data, not a real sign-in). "Before" screenshots were not captured this turn.
 - Keyboard/a11y: skip link first in tab order; every link/button in the main area has an accessible name (0 unnamed); dismiss button labelled; sections labelled by headings; loading has role=status, errors role=alert.
 - Not verified: real signed-in data in the live database — owner review required.
+
+## Review fixes (2026-09-30 ~02:05 UTC, preview only)
+1. **Personal vs company progress.** The checklist is now split into "For <company>" (project/template workspace — measured by `organization_id`) and "For your account" with the note "Counts your own records, not just <company>'s." (first contact, first invoice — measured by `user_id`, because `crm_contacts` and `invoices` have no company column). Each step carries `scope: 'company' | 'personal'`. No database change.
+2. **No silent 100-task limit.** Needs attention now runs three independent queries (overdue `< today`, due today `= today`, upcoming `> today and <= today+7`; `due_date` is a DATE column), each org-scoped, limited to 5 rows and requesting an exact count. The badge shows the true total; when more exist the group says "Showing 5 of N. See all in Projects & tasks". If a count is unavailable it says "Showing N." without claiming a total. A large overdue backlog can no longer hide today's or upcoming tasks.
+3. **Quick-action labels.** The app has no deep link that opens the contact-creation or invoice-creation form, so the actions are now labelled "Open CRM" and "Open invoices" (checklist buttons likewise: "Open CRM", "Open invoices").
+4. **Customer-facing wording.** Removed the dashboard sentence about invoices not being linked to a company. The technical limitation (no `organization_id` on `invoices`/`crm_contacts`, so overdue invoices are not in Needs attention) remains documented above.
+
+### Results (fresh)
+- App tests: 49/49 (8 files, mocked Supabase client). New: 150 overdue + 2 due today + 3 upcoming → all today/upcoming tasks shown, badge "150", "Showing 5 of 150", exactly three org-scoped task queries; quick-action labels/destinations; checklist split labels.
+- Typecheck clean; `vite build` OK.
+- Full tenant/security suite (disposable PostgreSQL 17.9): 662 PASS / 0 FAIL / 54 INFO, exit 0.
+- Not verified signed in on real data — owner review still required. Still preview only.

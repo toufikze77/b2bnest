@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlarmClock, Building2, CalendarClock, CalendarDays, CheckCircle2, CheckSquare2, Circle, FolderPlus,
@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import {
-  buildActivationSteps, classifyTasks, DashTask, dismissKey, hasRole, isoDay, ROTA_ROLES, taskHref,
+  ActivationStep, buildActivationSteps, dismissKey, hasRole, ROTA_ROLES, TaskGroupData, taskHref,
 } from '@/lib/dashboardData';
 import { PageContainer } from '@/components/ui/page-container';
 import { PageHeader } from '@/components/ui/page-header';
@@ -19,17 +19,20 @@ import { ErrorState, LoadingRows } from '@/components/ui/states';
 
 const fmtDate = (d: string) => new Date(d.slice(0, 10) + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 
-function TaskGroup({ title, icon: Icon, tasks, tone }: { title: string; icon: typeof AlarmClock; tasks: DashTask[]; tone: 'danger' | 'warning' | 'neutral' }) {
+function TaskGroup({ title, icon: Icon, group, tone }: { title: string; icon: typeof AlarmClock; group: TaskGroupData; tone: 'danger' | 'warning' | 'neutral' }) {
+  const tasks = group.items;
   if (tasks.length === 0) return null;
+  const total = group.total ?? tasks.length;
+  const hidden = total - tasks.length;
   const headingId = `attn-${title.replace(/\s+/g, '-').toLowerCase()}`;
   return (
     <section aria-labelledby={headingId}>
       <h3 id={headingId} className="flex items-center gap-2 px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         <Icon className="h-3.5 w-3.5" aria-hidden="true" />{title}
-        <Badge variant={tone === 'danger' ? 'destructive' : tone === 'warning' ? 'warning' : 'neutral'} className="ml-1">{tasks.length}</Badge>
+        <Badge variant={tone === 'danger' ? 'destructive' : tone === 'warning' ? 'warning' : 'neutral'} className="ml-1" aria-label={`${total} in total`}>{total}</Badge>
       </h3>
       <ul className="divide-y divide-border">
-        {tasks.slice(0, 5).map((t) => (
+        {tasks.map((t) => (
           <li key={t.id}>
             <Link to={taskHref(t)} className="flex min-h-12 items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
               <span className="min-w-0 flex-1 truncate font-medium text-foreground">{t.title}</span>
@@ -38,8 +41,37 @@ function TaskGroup({ title, icon: Icon, tasks, tone }: { title: string; icon: ty
           </li>
         ))}
       </ul>
-      {tasks.length > 5 && <p className="px-4 pb-2 pt-1 text-xs text-muted-foreground">+{tasks.length - 5} more in Projects &amp; tasks</p>}
+      {(hidden > 0 || group.total === null) && (
+        <p className="px-4 pb-2 pt-1 text-xs text-muted-foreground">
+          {group.total === null ? `Showing ${tasks.length}. ` : `Showing ${tasks.length} of ${total}. `}
+          <Link to="/project-management?view=list" className="underline underline-offset-2 hover:text-foreground">See all in Projects &amp; tasks</Link>
+        </p>
+      )}
     </section>
+  );
+}
+
+function StepList({ heading, note, steps }: { heading: string; note?: string; steps: ActivationStep[] }) {
+  if (steps.length === 0) return null;
+  return (
+    <div>
+      <div className="border-b border-border bg-muted/40 px-4 py-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{heading}</h3>
+        {note && <p className="text-xs text-muted-foreground">{note}</p>}
+      </div>
+      <ul className="divide-y divide-border border-b border-border last:border-b-0">
+        {steps.map((s) => (
+          <li key={s.id} className="flex items-start gap-3 px-4 py-3">
+            <Circle className={`mt-0.5 h-4 w-4 ${s.state === 'unknown' ? 'text-muted-foreground' : 'text-primary'}`} aria-hidden="true" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium">{s.title}</p>
+              <p className="text-xs text-muted-foreground">{s.description}</p>
+            </div>
+            <Button size="sm" variant="outline" asChild><Link to={s.href}>{s.actionLabel}</Link></Button>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -48,9 +80,8 @@ const Dashboard = () => {
   const { organizationId, organization, loading: orgLoading } = useActiveOrganization();
   const data = useDashboardData(user?.id, organizationId);
   const role = organization?.role ?? null;
-  const today = isoDay(new Date());
-  const groups = useMemo(() => classifyTasks(data.tasks, today), [data.tasks, today]);
-  const attentionCount = groups.overdue.length + groups.dueToday.length + groups.upcoming.length;
+  const groups = data.groups;
+  const attentionCount = groups.overdue.items.length + groups.dueToday.items.length + groups.upcoming.items.length;
 
   const dKey = user && organizationId ? dismissKey(user.id, organizationId) : null;
   const [dismissed, setDismissed] = useState(false);
@@ -64,8 +95,8 @@ const Dashboard = () => {
     { label: 'New task', to: '/project-management?create=task', icon: Plus },
     { label: 'New project', to: '/project-management?create=project', icon: FolderPlus },
     { label: 'Use a template', to: '/template-center', icon: LayoutTemplate },
-    { label: 'Add contact', to: '/crm', icon: UserPlus },
-    { label: 'New invoice', to: '/business-tools?tool=business-finance-assistant&tab=invoices', icon: Receipt },
+    { label: 'Open CRM', to: '/crm', icon: UserPlus },
+    { label: 'Open invoices', to: '/business-tools?tool=business-finance-assistant&tab=invoices', icon: Receipt },
     ...(hasRole(role, ROTA_ROLES) ? [{ label: 'Plan the rota', to: '/rota/schedule', icon: Users }] : []),
   ];
 
@@ -105,12 +136,11 @@ const Dashboard = () => {
             <EmptyState icon={CheckSquare2} className="border-0" title="Nothing needs attention" description="No open tasks are overdue or due in the next 7 days." action={<Button size="sm" asChild><Link to="/project-management?create=task">Create task</Link></Button>} />
           ) : (
             <div className="pb-2">
-              <TaskGroup title="Overdue" icon={AlarmClock} tasks={groups.overdue} tone="danger" />
-              <TaskGroup title="Due today" icon={CalendarClock} tasks={groups.dueToday} tone="warning" />
-              <TaskGroup title="Upcoming" icon={CalendarDays} tasks={groups.upcoming} tone="neutral" />
+              <TaskGroup title="Overdue" icon={AlarmClock} group={groups.overdue} tone="danger" />
+              <TaskGroup title="Due today" icon={CalendarClock} group={groups.dueToday} tone="warning" />
+              <TaskGroup title="Upcoming" icon={CalendarDays} group={groups.upcoming} tone="neutral" />
             </div>
           )}
-          <p className="border-t border-border px-4 py-2 text-xs text-muted-foreground">Invoices aren't linked to a company yet, so overdue invoices aren't listed here.</p>
         </section>
 
         <div className="space-y-6">
@@ -139,18 +169,8 @@ const Dashboard = () => {
               {data.countErrors.length > 0 && (
                 <ErrorState className="m-3" title="Couldn't check some steps" description="Some progress couldn't be loaded." onRetry={data.reload} />
               )}
-              <ul className="divide-y divide-border">
-                {openSteps.map((s) => (
-                  <li key={s.id} className="flex items-start gap-3 px-4 py-3">
-                    {s.state === 'unknown' ? <Circle className="mt-0.5 h-4 w-4 text-muted-foreground" aria-hidden="true" /> : <Circle className="mt-0.5 h-4 w-4 text-primary" aria-hidden="true" />}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{s.title}</p>
-                      <p className="text-xs text-muted-foreground">{s.description}</p>
-                    </div>
-                    <Button size="sm" variant="outline" asChild><Link to={s.href}>{s.actionLabel}</Link></Button>
-                  </li>
-                ))}
-              </ul>
+              <StepList heading={`For ${organization?.name || 'this company'}`} steps={openSteps.filter((s) => s.scope === 'company')} />
+              <StepList heading="For your account" note={`Counts your own records, not just ${organization?.name || 'this company'}'s.`} steps={openSteps.filter((s) => s.scope === 'personal')} />
               {doneCount > 0 && (
                 <p className="flex items-center gap-1.5 border-t border-border px-4 py-2 text-xs text-muted-foreground">
                   <CheckCircle2 className="h-3.5 w-3.5 text-primary" aria-hidden="true" />Completed steps are hidden.
