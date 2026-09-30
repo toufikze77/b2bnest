@@ -235,7 +235,7 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
               </span>
             </CardTitle>
             
-            <p className="text-sm text-muted-foreground">Uses the filters above. Events show unless a filter hides tasks only.</p>
+            <p className="text-sm text-muted-foreground">Tasks follow the filters above; calendar events always show.</p>
           </div>
         </CardHeader>
 
