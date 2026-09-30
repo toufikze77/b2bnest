@@ -683,12 +683,12 @@ const BusinessTools = () => {
 
             {/* Quick Access to Quotes & Invoices */}
             <div className="mt-12 bg-gradient-to-r from-green-100/60 to-blue-100/60 rounded-lg p-6 border border-slate-200">
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
                 <div>
                   <h2 className="text-2xl font-bold mb-2">Quotes & Invoices</h2>
                   <p className="text-gray-600">Quick access to view and manage your business documents</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                   <Button
                     onClick={() => navigate('/dashboard')}
                     className="flex items-center gap-2"

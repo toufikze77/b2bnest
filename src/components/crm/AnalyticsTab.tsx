@@ -85,7 +85,7 @@ const AnalyticsTab = ({ totalRevenue }: AnalyticsTabProps) => {
       {/* Header with Controls */}
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Analytics & Insights</h2>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4">
           <CurrencySelector value={currency} onValueChange={setCurrency} className="w-40" />
           <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger className="w-32">

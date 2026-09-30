@@ -180,7 +180,7 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4 [&>*]:min-w-0">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <Input 
