@@ -104,4 +104,4 @@
 - [x] Owner signed-in checks (all five) — owner-confirmed 2026-09-30
 - [ ] Publish workspace-template release (awaiting owner decision: publish also ships other unpublished preview work)
 - [x] Workspace template code-review fixes (keyed state, safe status updates, verified cleanup, column order, empty groups, retry, tests)
-- [ ] Durable idempotency + transactional creation — awaits owner approval
+- [ ] Transactional creation and cross-device duplicate protection — not built; awaits owner approval (same-browser duplicate protection done)
