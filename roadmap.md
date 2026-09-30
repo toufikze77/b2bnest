@@ -89,3 +89,9 @@
 - [x] Git synchronization verified before closure documentation update
 - [x] **WAVE 1 CLOSED**
 - [x] Next task: GUI modernisation authorized — UI Wave 1 in preview
+
+## Crypto content retirement (2026-09-30) — preview done, not published
+- [x] Remove crypto pages, footer Invest section, price sidebars, crypto checkout, converter tool, crypto images, crypto SEO/sitemap/llms.txt
+- [ ] Real 410/404 for retired URLs — blocked: Lovable static hosting serves the app with HTTP 200 on every path; mitigated with noindex on not-found
+- [ ] Delete news_articles rows + fetch-news cron, retire fetch-news and create-coinbase-charge functions — needs owner authorization (database/backend change)
+- [ ] Post-publish HTTP/asset verification on www.b2bnest.online
