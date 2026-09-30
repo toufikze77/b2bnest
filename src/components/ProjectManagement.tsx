@@ -2442,7 +2442,7 @@ const ProjectManagement = () => {
     }
     const { data, error } = await supabase
       .from('todos')
-      .update(patch)
+      .update(patch as any)
       .eq('id', taskId)
       .or(`organization_id.eq.${organizationId},and(organization_id.is.null,user_id.eq.${user.id})`)
       .select('id');
