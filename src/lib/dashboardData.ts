@@ -63,6 +63,8 @@ export interface ActivationStep {
   href: string;
   actionLabel: string;
   state: StepState;
+  /** company = measured for the selected company; personal = measured for the signed-in user only. */
+  scope: 'company' | 'personal';
 }
 
 export const ADMIN_ROLES = ['owner', 'admin', 'super_admin'];
@@ -78,14 +80,18 @@ const stateOf = (n: number | null, threshold = 0): StepState => (n === null ? 'u
  */
 export function buildActivationSteps(counts: ActivationCounts, role: string | null | undefined, opts: { canInvite?: boolean } = {}): ActivationStep[] {
   const steps: ActivationStep[] = [
-    { id: 'contact', title: 'Create a first contact', description: 'Add a customer or lead to your CRM contacts.', href: '/crm', actionLabel: 'Open CRM', state: stateOf(counts.contacts) },
-    { id: 'project', title: 'Create a project or template workspace', description: 'Start a project, or use a template to set up boards for this company.', href: '/project-management?create=project', actionLabel: 'Create project', state: stateOf(counts.projects) },
-    { id: 'invoice', title: 'Create a first invoice', description: 'Bill a customer from Invoices & quotes.', href: '/business-tools?tool=business-finance-assistant&tab=invoices', actionLabel: 'Create invoice', state: stateOf(counts.invoices) },
+    { id: 'project', scope: 'company', title: 'Create a project or template workspace', description: 'Start a project, or use a template to set up boards for this company.', href: '/project-management?create=project', actionLabel: 'Create project', state: stateOf(counts.projects) },
+    { id: 'contact', scope: 'personal', title: 'Add your first contact', description: 'Add a customer or lead in CRM.', href: '/crm', actionLabel: 'Open CRM', state: stateOf(counts.contacts) },
+    { id: 'invoice', scope: 'personal', title: 'Create your first invoice', description: 'Bill a customer from Invoices & quotes.', href: '/business-tools?tool=business-finance-assistant&tab=invoices', actionLabel: 'Open invoices', state: stateOf(counts.invoices) },
   ];
   if (opts.canInvite && hasRole(role, ADMIN_ROLES)) {
-    steps.push({ id: 'invite', title: 'Invite a teammate', description: 'Give a colleague access to this company.', href: '/settings?tab=team', actionLabel: 'Invite teammate', state: stateOf(counts.members, 1) });
+    steps.push({ id: 'invite', scope: 'company', title: 'Invite a teammate', description: 'Give a colleague access to this company.', href: '/settings?tab=team', actionLabel: 'Invite teammate', state: stateOf(counts.members, 1) });
   }
   return steps;
 }
 
 export const dismissKey = (userId: string, orgId: string) => `b2bnest.activation.dismissed.${userId}.${orgId}`;
+
+/** One Needs-attention group: up to GROUP_LIMIT items shown, `total` = exact count of all matching tasks (null = count unavailable). */
+export interface TaskGroupData { items: DashTask[]; total: number | null }
+export const GROUP_LIMIT = 5;
