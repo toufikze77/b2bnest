@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import StagingCostTestCard from '@/components/admin/StagingCostTestCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -78,6 +79,8 @@ const AdminAITemplates = () => {
           )}
         </CardContent>
       </Card>
+
+      <StagingCostTestCard />
 
       <Card>
         <CardHeader>
