@@ -65,7 +65,23 @@ export interface ProbeResult {
   errors?: string[]; status?: number; template?: any; spendRecorded: boolean;
 }
 
-export async function runCostProbe(briefs: Brief[]): Promise<{ status: number; model?: string; results?: ProbeResult[]; error?: string }> {
+export interface ProbeInfo {
+  model: string; maxCalls: number; maxOutputTokens: number; usdToGbp: number;
+  worstCasePencePerCall: number; worstCasePence: number; spentPenceThisMonth: number; capPence: number;
+  setupComplete: boolean; setupError?: string;
+}
+
+/** Server-side preflight: model, call count, worst-case spend, cap and whether recording is installed. */
+export async function loadProbeInfo(calls: number): Promise<{ status: number; info?: ProbeInfo; error?: string }> {
+  const { status, data } = await invoke({ mode: 'probe_info' });
+  if (status !== 200) return { status, error: data?.error ?? 'unavailable' };
+  const info = data as ProbeInfo;
+  // Server reports the 8-call maximum; scale to the briefs actually sent.
+  const scaled = Math.round(info.worstCasePencePerCall * calls * 1000) / 1000;
+  return { status, info: { ...info, maxCalls: calls, worstCasePence: scaled } };
+}
+
+export async function runCostProbe(briefs: Brief[]): Promise<{ status: number; model?: string; results?: ProbeResult[]; error?: string; setupError?: string }> {
   const { status, data } = await invoke({ mode: 'cost_probe', briefs });
   return { status, ...data };
 }
