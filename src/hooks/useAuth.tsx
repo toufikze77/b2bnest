@@ -90,17 +90,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ? window.location.origin 
         : window.location.origin.replace('http://', 'https://');
       
-      const { data, error } = await Promise.race([
-        supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${redirectUrl}/`,
-            data: { full_name: fullName, company_name: companyName }
-          }
-        }),
-        signUpFeedbackTimeout(),
-      ]);
+      // Wait for the real result: abandoning early made created accounts look failed.
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${redirectUrl}/`,
+          data: { full_name: fullName, company_name: companyName }
+        }
+      });
 
       if (error) {
         return {

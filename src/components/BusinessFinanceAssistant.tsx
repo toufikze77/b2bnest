@@ -410,7 +410,7 @@ const BusinessFinanceAssistant = () => {
   useEffect(() => {
     setActiveTab(tabFromUrl());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.search]);
+  }, [location.search, location.key]);
   const [documentType, setDocumentType] = useState<'invoice' | 'quote'>('quote');
   const [editingDocument, setEditingDocument] = useState<Quote | Invoice | null>(null);
   const [showDocumentList, setShowDocumentList] = useState(false);
