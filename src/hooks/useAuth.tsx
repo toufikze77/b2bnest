@@ -20,19 +20,6 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const SIGN_UP_FEEDBACK_TIMEOUT_MS = 8000;
-
-const signUpFeedbackTimeout = () =>
-  new Promise<never>((_, reject) => {
-    window.setTimeout(() => {
-      reject({
-        status: 504,
-        code: 'request_timeout',
-        message: 'The activation email service is taking longer than expected.',
-      });
-    }, SIGN_UP_FEEDBACK_TIMEOUT_MS);
-  });
-
 const normalizeAuthError = (error: unknown) => {
   const authError = error as { message?: unknown; status?: unknown; code?: unknown } | null;
   const message = typeof authError?.message === 'string' ? authError.message.trim() : '';
@@ -90,17 +77,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ? window.location.origin 
         : window.location.origin.replace('http://', 'https://');
       
-      const { data, error } = await Promise.race([
-        supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${redirectUrl}/`,
-            data: { full_name: fullName, company_name: companyName }
-          }
-        }),
-        signUpFeedbackTimeout(),
-      ]);
+      // Wait for the real result: abandoning early made created accounts look failed.
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${redirectUrl}/`,
+          data: { full_name: fullName, company_name: companyName }
+        }
+      });
 
       if (error) {
         return {

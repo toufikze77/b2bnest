@@ -839,6 +839,14 @@ const ProjectManagement = () => {
     budget: project.budget ? parseFloat(project.budget.toString()) : undefined,
     client: project.client,
     status: project.status as 'planning' | 'active' | 'on-hold' | 'completed',
+    // Carry stored fields so the edit dialog shows and re-saves real values, not defaults.
+    ...({
+      stage: project.stage ?? undefined,
+      priority: project.priority ?? undefined,
+      estimated_hours: project.estimated_hours ?? undefined,
+      actual_hours: project.actual_hours ?? undefined,
+      custom_fields: project.custom_fields ?? undefined,
+    } as Record<string, unknown>),
     customColumns: Array.isArray(project.custom_columns) ? project.custom_columns as unknown as KanbanColumn[] : [
       { id: 'backlog', title: 'Backlog', color: 'bg-gray-100', order: 1 },
       { id: 'todo', title: 'To Do', color: 'bg-blue-100', order: 2 },

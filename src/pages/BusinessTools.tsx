@@ -76,7 +76,7 @@ const BusinessTools = () => {
   useEffect(() => {
     const toolParam = new URLSearchParams(location.search).get('tool') as ToolType | null;
     setCurrentToolState(toolParam || 'overview');
-  }, [location.search]);
+  }, [location.search, location.key]);
 
   const tools = [
     {
