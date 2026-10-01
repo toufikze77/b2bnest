@@ -120,3 +120,21 @@ before "Create". No customer records are sent to the model.
 - Live deployed function: unsigned request returns 401 (checked).
 - Not yet done: any real OpenAI call. Actual token usage, cost and quality remain unmeasured.
 - Separate totals: security suite 729 PASS / 0 FAIL / 54 INFO (includes the 5 new CP checks); app tests 101/101 using mocked AI.
+
+## One-off capped OpenAI cost test (owner-approved 2026-10-01)
+
+**Uses live Supabase infrastructure** (project gvftvswyrevummbvyhxa): a temporary table and a temporary function. The larger AI schema is NOT applied; customer credits, subscriptions and paid generation are untouched (paid generation stays disabled).
+
+- Migration: `supabase/staging/cost-test-lock-2026-10-01.sql` — rollback: `supabase/staging/cost-test-lock-2026-10-01-rollback.sql`
+- Table `public.staging_cost_test_runs`: primary key `id = 1` (CHECK) is the atomic single-run lock; `planned_calls` CHECK 1–4; RLS enabled, no policies; anon/authenticated have no privileges; service_role only. (Linter INFO "RLS enabled, no policy" is intentional: deny-all.)
+- Function `staging-cost-test`: server-side super-admin check (`is_super_admin`); accepts only `{"mode":"plan"|"status"|"run"}` — any prompt/model field is refused; model fixed to gpt-4o-mini; 4 fixed synthetic prompts; no retries; 45s timeout per call; failures/timeouts count toward the 4 calls; results saved after every call; key read from `OPENAI_STAGING_KEY`; no secrets or auth headers logged.
+- Limits and cost (OpenAI list price $0.15 / $0.60 per 1M tokens): ≤1,200 input + ≤2,500 output tokens per call → worst case $0.00168/call, **$0.0072 per batch ≈ £0.0056 (estimate, £1 = $1.28)**, under the £0.05 ceiling (checked server-side before the run).
+
+### Pre-run verification (actual)
+- Throwaway PostgreSQL: 7/7 — server can claim the run; second run blocked; no second row; calls capped at 4; anon and authenticated denied; RLS on; rollback removes the table.
+- Function unit tests (stand-in provider): 4/4 — signed-out 401, non-admin 403, prompt/model fields 400, one run then 409; 3 concurrent runs → one 200, two 409, exactly 4 provider calls; provider errors and timeouts count, no retries.
+- Live: table exists, 0 rows, RLS on, anon/authenticated no SELECT/INSERT, service_role yes; deployed function refuses signed-out requests (401).
+- Not verified: the admin screen signed in as super admin (no signed-in session available to the agent).
+
+### Results
+Pending the owner's run.
