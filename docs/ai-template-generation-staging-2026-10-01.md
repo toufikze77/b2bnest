@@ -102,3 +102,21 @@ before "Create". No customer records are sent to the model.
 **Screenshot:** `docs/ai-template-dialog-disabled.png` (signed out, disabled state). Preview/editor screens not screenshotted — they need a working generation.
 
 **Remaining before paid generation:** owner runs the capped cost test at /admin/ai-templates and sends results; pricing and budget approval; staging migration approved for live; signed-in checks of both screens.
+
+## Capped cost test readiness (2026-10-01, 10:40 UTC)
+
+**Which database:** the preview and the live site both use the live Supabase project `gvftvswyrevummbvyhxa`. Checked directly: none of the AI cost-test tables or functions (`ai_generation_config`, `ai_provider_calls`, `ai_probe_budget`, `ai_record_provider_call`, ...) exist there. They exist only in the disposable staging database. **The cost test cannot run or record results from the preview until the live migration is approved.** Running it from the preview now shows "Setup incomplete" and makes no OpenAI call.
+
+**Server behaviour (edge function `generate-template`, deployed):**
+- `probe_info` (platform super admin only): returns model `gpt-4o-mini`, call count, worst-case spend, monthly spend and cap, and whether setup is complete.
+- `cost_probe` (super admin only): refuses with 503 `setup_incomplete` before any provider call if `ai_probe_budget` is missing; refuses with 403 `admin_spend_cap_reached` if spent + worst case > cap; skips any remaining call that would cross the cap; stops with `recording_failed` if a call cannot be recorded. No customer credits are touched.
+- Worst case per call: 2,000 input + 6,000 output tokens = $0.0039 ≈ 0.30p at £1 = $1.28 (0.78). 6 calls ≈ 1.83p. Cap: £5/month (provisional).
+- Admin screen shows model, calls and maximum spend and asks for confirmation before sending.
+
+**Separate proposal for the live database (NOT applied):** apply `supabase/staging/ai-templates-2026-10-01.sql` (now includes `ai_probe_budget()`, service-role only). Rollback: `supabase/staging/ai-templates-2026-10-01-rollback.sql`. Paid generation stays off after applying (`paid_generation_enabled = false`).
+
+**Actual checks, reported separately:**
+- Staging endpoint checks over real HTTP with a local stand-in AI (no OpenAI): CP-01..CP-05 PASS — non-admin refused, preflight figures returned, 2 calls recorded with token counts and no credits charged, cap refused before any call, missing setup refused before any call.
+- Live deployed function: unsigned request returns 401 (checked).
+- Not yet done: any real OpenAI call. Actual token usage, cost and quality remain unmeasured.
+- Separate totals: security suite 729 PASS / 0 FAIL / 54 INFO (includes the 5 new CP checks); app tests 101/101 using mocked AI.
