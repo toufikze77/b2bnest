@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  ConfigState, GeneratedTemplateRow, ProbeResult, listGeneratedTemplates, loadAiConfig, reviewGeneratedTemplate, runCostProbe,
+  ConfigState, GeneratedTemplateRow, ProbeInfo, ProbeResult, listGeneratedTemplates, loadAiConfig, loadProbeInfo, reviewGeneratedTemplate, runCostProbe,
 } from '@/services/aiTemplateService';
 
 // Capped real-provider test set (max 8 calls; server enforces the cap too).
@@ -24,15 +24,18 @@ const AdminAITemplates = () => {
   const [config, setConfig] = useState<ConfigState | null>(null);
   const [rows, setRows] = useState<GeneratedTemplateRow[] | null>(null);
   const [rowsOk, setRowsOk] = useState(true);
-  const [probe, setProbe] = useState<{ status: number; results?: ProbeResult[]; error?: string } | null>(null);
+  const [probe, setProbe] = useState<{ status: number; results?: ProbeResult[]; error?: string; setupError?: string } | null>(null);
   const [probing, setProbing] = useState(false);
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [info, setInfo] = useState<{ status: number; info?: ProbeInfo; error?: string } | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
   const refresh = async () => {
     setConfig(await loadAiConfig());
     const r = await listGeneratedTemplates();
     setRowsOk(r.ok);
     setRows(r.rows);
+    setInfo(await loadProbeInfo(PROBE_BRIEFS.length));
   };
   useEffect(() => { void refresh(); }, []);
 
@@ -79,11 +82,34 @@ const AdminAITemplates = () => {
       <Card>
         <CardHeader>
           <CardTitle>Real cost test</CardTitle>
-          <CardDescription>Sends {PROBE_BRIEFS.length} sample business needs to OpenAI (gpt-4o-mini) once. No credits are used. Worst case under 3p in total.</CardDescription>
+          <CardDescription>Sends sample business needs to OpenAI once. No customer credits are used. Only platform admins can run it.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
-          <Button onClick={doProbe} disabled={probing}>{probing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Running…</> : 'Run capped cost test'}</Button>
-          {probe && probe.error && <p role="alert" className="text-destructive">Test failed: {probe.error} (status {probe.status})</p>}
+          {info === null ? <Loader2 className="h-4 w-4 animate-spin" /> : info.error ? (
+            <p role="alert" className="text-destructive">Cost test unavailable: {info.error} (status {info.status})</p>
+          ) : info.info && (
+            <>
+              <dl className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                <div><dt className="text-muted-foreground">Model</dt><dd>{info.info.model}</dd></div>
+                <div><dt className="text-muted-foreground">Calls</dt><dd>{info.info.maxCalls}</dd></div>
+                <div><dt className="text-muted-foreground">Maximum spend</dt><dd>{info.info.worstCasePence.toFixed(2)}p (£1 = ${(1 / info.info.usdToGbp).toFixed(2)})</dd></div>
+                <div><dt className="text-muted-foreground">Spent / cap this month</dt><dd>{info.info.setupComplete ? `${info.info.spentPenceThisMonth.toFixed(2)}p / ${info.info.capPence}p` : '—'}</dd></div>
+              </dl>
+              {!info.info.setupComplete ? (
+                <p role="alert" className="text-destructive">Setup incomplete: {info.info.setupError} The test is switched off on this database.</p>
+              ) : !confirming ? (
+                <Button onClick={() => setConfirming(true)} disabled={probing}>Run capped cost test…</Button>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span>Send {info.info.maxCalls} calls to {info.info.model}, spending at most {info.info.worstCasePence.toFixed(2)}p?</span>
+                  <Button onClick={() => { setConfirming(false); void doProbe(); }} disabled={probing}>Confirm</Button>
+                  <Button variant="outline" onClick={() => setConfirming(false)}>Cancel</Button>
+                </div>
+              )}
+              {probing && <p><Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> Running…</p>}
+            </>
+          )}
+          {probe && probe.error && <p role="alert" className="text-destructive">Test failed: {probe.setupError ?? probe.error} (status {probe.status})</p>}
           {probe?.results && (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">

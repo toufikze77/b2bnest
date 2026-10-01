@@ -107,4 +107,26 @@ const rs = await Promise.all(['ep-conc-a-001', 'ep-conc-b-001', 'ep-conc-c-001']
 const settled = rs.filter((x) => x.body.status === 'settled').length;
 await rec('EP-14', '3 concurrent requests, 1 credit: exactly one settles, balance 0', settled === 1 && (await bal(AM)) === 0, rs.map((x) => x.status));
 
+// Capped cost test (admin only, recorded, cap enforced server-side, setup errors before any call).
+const [{ sa }] = await sql`select sec.actor_uid('SUPER_ADMIN')::text as sa`;
+const probe = (n: number) => ({ mode: 'cost_probe', briefs: Array.from({ length: n }, () => ({ businessPurpose: 'A hair salon needing bookings' })) });
+const credSA = await bal(sa);
+r = await call(AM, { mode: 'probe_info' });
+await rec('CP-01', 'probe_info refused for non-admin', r.status === 403, r);
+r = await call(sa, { mode: 'probe_info' });
+await rec('CP-02', 'probe_info shows model, calls, worst-case spend, cap, setup complete', r.status === 200 && r.body.model === 'gpt-4o-mini' && r.body.setupComplete === true && r.body.worstCasePence > 0 && r.body.capPence === 500, r.body);
+const pc4 = providerCalls;
+r = await call(sa, probe(2));
+const logged = (await sql`select count(*)::int n, sum(input_tokens)::int i from public.ai_provider_calls where purpose = 'cost_probe'`)[0];
+await rec('CP-03', 'cost test runs 2 real HTTP calls, records tokens and cost, no customer credits', r.status === 200 && providerCalls === pc4 + 2 && logged.n === 2 && logged.i === 1800 && r.body.results.every((x: any) => x.spendRecorded) && (await bal(sa)) === credSA, { s: r.status, logged });
+await sql`update public.ai_generation_config set admin_provider_spend_cap_pence = 0`;
+const pc5 = providerCalls;
+r = await call(sa, probe(2));
+await rec('CP-04', 'spend cap reached => refused before any provider call', r.status === 403 && r.body.error === 'admin_spend_cap_reached' && providerCalls === pc5, r.status);
+await sql`update public.ai_generation_config set admin_provider_spend_cap_pence = 500`;
+await sql`alter function public.ai_probe_budget() rename to ai_probe_budget_hidden`;
+r = await call(sa, probe(2));
+await rec('CP-05', 'setup missing => 503 setup_incomplete, no provider call', r.status === 503 && r.body.error === 'setup_incomplete' && providerCalls === pc5, r.status);
+await sql`alter function public.ai_probe_budget_hidden() rename to ai_probe_budget`;
+
 await server.shutdown(); await provider.shutdown(); await sql.end();

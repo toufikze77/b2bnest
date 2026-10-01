@@ -11,6 +11,10 @@ export const PROBE_MAX_CALLS = 8;
 
 export const costMicros = (inTok: number, outTok: number) =>
   Math.round(inTok * PRICE_USD_PER_M.input + outTok * PRICE_USD_PER_M.output); // tokens * $/M == micro-dollars
+// Worst case per call: prompt bounded by the brief limits (~2,000 tokens) + MAX_OUTPUT_TOKENS.
+export const WORST_INPUT_TOKENS = 2000;
+export const WORST_CALL_MICROS = costMicros(WORST_INPUT_TOKENS, MAX_OUTPUT_TOKENS);
+export const penceOf = (micros: number, rate: number) => Math.round((micros / 1e6) * rate * 100 * 1000) / 1000;
 
 export interface Deps {
   getUserId(authHeader: string | null): Promise<string | null>;
@@ -38,6 +42,7 @@ const Body = z.discriminatedUnion('mode', [
     brief: Brief,
   }).strict(),
   z.object({ mode: z.literal('cost_probe'), briefs: z.array(Brief).min(1).max(PROBE_MAX_CALLS) }).strict(),
+  z.object({ mode: z.literal('probe_info') }).strict(),
 ]);
 
 const SYSTEM = `You design task-management templates for small businesses in B2BNEST.
@@ -114,21 +119,41 @@ export function createHandler(deps: Deps) {
     const body = parsed.data;
     if (!deps.openaiKey) return json({ error: 'provider_not_configured' }, 503);
 
-    // Admin-only capped cost probe: real provider calls, no credits touched, spend recorded when the table exists.
-    if (body.mode === 'cost_probe') {
+    // Admin-only capped cost test. Refuses before any provider call unless recording + cap are set up.
+    if (body.mode === 'probe_info' || body.mode === 'cost_probe') {
       if (!(await deps.isSuperAdmin(userId))) return json({ error: 'forbidden' }, 403);
+      const budget = await deps.rpc('ai_probe_budget', {});
+      const setupOk = !budget.error && budget.data && typeof budget.data.cap_pence === 'number';
+      const rate = setupOk ? Number(budget.data.usd_to_gbp) : 0.78;
+      const spent = setupOk ? Number(budget.data.spent_pence) : 0;
+      const cap = setupOk ? Number(budget.data.cap_pence) : 0;
+      const calls = body.mode === 'cost_probe' ? body.briefs.length : PROBE_MAX_CALLS;
+      const maxPence = penceOf(WORST_CALL_MICROS * calls, rate);
+      const info = {
+        model: MODEL, maxCalls: calls, maxOutputTokens: MAX_OUTPUT_TOKENS, pricesUsdPerM: PRICE_USD_PER_M,
+        usdToGbp: rate, worstCasePencePerCall: penceOf(WORST_CALL_MICROS, rate), worstCasePence: maxPence,
+        spentPenceThisMonth: spent, capPence: cap, setupComplete: !!setupOk,
+        setupError: setupOk ? undefined : 'The cost-test tables and functions are not installed on this database. Nothing was sent to OpenAI.',
+      };
+      if (body.mode === 'probe_info') return json(info);
+      if (!setupOk) return json({ error: 'setup_incomplete', ...info }, 503);
+      if (spent + maxPence > cap) return json({ error: 'admin_spend_cap_reached', ...info }, 403);
       const results = [];
+      let running = spent;
       for (const b of body.briefs) {
+        if (running + penceOf(WORST_CALL_MICROS, rate) > cap) { results.push({ outcome: 'skipped_cap', inputTokens: 0, outputTokens: 0, costUsdMicros: 0, latencyMs: 0, spendRecorded: false }); continue; }
         const r = await callProvider(deps, b);
         const micros = costMicros(r.inTok, r.outTok);
         const rec = await deps.rpc('ai_record_provider_call', {
           p_request: null, p_user: userId, p_purpose: 'cost_probe', p_model: MODEL, p_outcome: r.outcome,
           p_in: r.inTok, p_out: r.outTok, p_cost_micros: micros, p_latency: r.latency,
         });
+        running += penceOf(micros, rate);
         results.push({ outcome: r.outcome, inputTokens: r.inTok, outputTokens: r.outTok, costUsdMicros: micros,
           latencyMs: r.latency, errors: r.errors, status: r.status, template: r.template, spendRecorded: !rec.error });
+        if (rec.error) return json({ error: 'recording_failed', ...info, results }, 500);
       }
-      return json({ model: MODEL, results });
+      return json({ ...info, results });
     }
 
     // Paid generation: reserve -> provider -> validate -> settle, else refund. Never retried automatically.
