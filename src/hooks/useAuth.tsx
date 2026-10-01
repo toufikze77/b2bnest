@@ -20,19 +20,6 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const SIGN_UP_FEEDBACK_TIMEOUT_MS = 8000;
-
-const signUpFeedbackTimeout = () =>
-  new Promise<never>((_, reject) => {
-    window.setTimeout(() => {
-      reject({
-        status: 504,
-        code: 'request_timeout',
-        message: 'The activation email service is taking longer than expected.',
-      });
-    }, SIGN_UP_FEEDBACK_TIMEOUT_MS);
-  });
-
 const normalizeAuthError = (error: unknown) => {
   const authError = error as { message?: unknown; status?: unknown; code?: unknown } | null;
   const message = typeof authError?.message === 'string' ? authError.message.trim() : '';
