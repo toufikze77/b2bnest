@@ -139,6 +139,16 @@ returns numeric language sql stable security definer set search_path = '' as $$
   where c.purpose in ('admin_catalogue','cost_probe') and c.created_at >= date_trunc('month', now())
 $$;
 
+-- Cost-test preflight: current month admin spend, cap and exchange rate (service_role only).
+create or replace function public.ai_probe_budget()
+returns jsonb language sql stable security definer set search_path = '' as $$
+  select jsonb_build_object('spent_pence', public.ai_admin_spend_pence_this_month(),
+    'cap_pence', c.admin_provider_spend_cap_pence, 'usd_to_gbp', c.usd_to_gbp)
+  from public.ai_generation_config c where c.id
+$$;
+revoke all on function public.ai_probe_budget() from public, anon, authenticated;
+grant execute on function public.ai_probe_budget() to service_role;
+
 create or replace function public.ai_record_provider_call(
   p_request uuid, p_user uuid, p_purpose text, p_model text, p_outcome text,
   p_in integer, p_out integer, p_cost_micros bigint, p_latency integer)

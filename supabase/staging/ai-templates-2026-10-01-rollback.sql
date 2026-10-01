@@ -10,6 +10,7 @@ drop function if exists public.ai_settle_generation(uuid,text,jsonb);
 drop function if exists public.ai_refund_generation(uuid,text);
 drop function if exists public.ai_reserve_generation(uuid,uuid,text,text);
 drop function if exists public.ai_record_provider_call(uuid,uuid,text,text,text,integer,integer,bigint,integer);
+drop function if exists public.ai_probe_budget();
 drop function if exists public.ai_admin_spend_pence_this_month();
 drop table if exists public.ai_provider_calls;
 drop table if exists public.generated_templates;
