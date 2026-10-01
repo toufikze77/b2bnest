@@ -3020,6 +3020,42 @@ export type Database = {
           },
         ]
       }
+      staging_cost_test_runs: {
+        Row: {
+          finished_at: string | null
+          id: number
+          max_batch_usd_micros: number
+          model: string
+          planned_calls: number
+          results: Json
+          started_at: string
+          started_by: string
+          status: string
+        }
+        Insert: {
+          finished_at?: string | null
+          id?: number
+          max_batch_usd_micros: number
+          model: string
+          planned_calls: number
+          results?: Json
+          started_at?: string
+          started_by: string
+          status?: string
+        }
+        Update: {
+          finished_at?: string | null
+          id?: number
+          max_batch_usd_micros?: number
+          model?: string
+          planned_calls?: number
+          results?: Json
+          started_at?: string
+          started_by?: string
+          status?: string
+        }
+        Relationships: []
+      }
       staking_reward_pools: {
         Row: {
           created_at: string
