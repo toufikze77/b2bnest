@@ -1,7 +1,7 @@
 // One-off capped OpenAI cost/quality test. Temporary: removed after the run.
 // Fixed model, fixed synthetic prompts, no retries, single durable run (DB primary-key lock).
 // Never logs secrets or authorization headers.
-import { parseAiTemplate, LIMITS, SUPPORTED_VIEWS } from '../generate-template/schema.ts';
+import { parseAiTemplate, LIMITS, SUPPORTED_VIEWS } from './schema.ts';
 
 export const MODEL = 'gpt-4o-mini';
 // OpenAI list price for gpt-4o-mini (USD per 1M tokens), checked 2026-10-01.
