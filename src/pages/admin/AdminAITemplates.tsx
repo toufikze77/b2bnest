@@ -36,7 +36,6 @@ const AdminAITemplates = () => {
     const r = await listGeneratedTemplates();
     setRowsOk(r.ok);
     setRows(r.rows);
-    setInfo(await loadProbeInfo(PROBE_BRIEFS.length));
   };
   useEffect(() => { void refresh(); }, []);
 
@@ -82,57 +81,6 @@ const AdminAITemplates = () => {
 
       <StagingCostTestCard />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Real cost test</CardTitle>
-          <CardDescription>Sends sample business needs to OpenAI once. No customer credits are used. Only platform admins can run it.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          {info === null ? <Loader2 className="h-4 w-4 animate-spin" /> : info.error ? (
-            <p role="alert" className="text-destructive">Cost test unavailable: {info.error} (status {info.status})</p>
-          ) : info.info && (
-            <>
-              <dl className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                <div><dt className="text-muted-foreground">Model</dt><dd>{info.info.model}</dd></div>
-                <div><dt className="text-muted-foreground">Calls</dt><dd>{info.info.maxCalls}</dd></div>
-                <div><dt className="text-muted-foreground">Maximum spend</dt><dd>{info.info.worstCasePence.toFixed(2)}p (£1 = ${(1 / info.info.usdToGbp).toFixed(2)})</dd></div>
-                <div><dt className="text-muted-foreground">Spent / cap this month</dt><dd>{info.info.setupComplete ? `${info.info.spentPenceThisMonth.toFixed(2)}p / ${info.info.capPence}p` : '—'}</dd></div>
-              </dl>
-              {!info.info.setupComplete ? (
-                <p role="alert" className="text-destructive">Setup incomplete: {info.info.setupError} The test is switched off on this database.</p>
-              ) : !confirming ? (
-                <Button onClick={() => setConfirming(true)} disabled={probing}>Run capped cost test…</Button>
-              ) : (
-                <div className="flex flex-wrap items-center gap-2">
-                  <span>Send {info.info.maxCalls} calls to {info.info.model}, spending at most {info.info.worstCasePence.toFixed(2)}p?</span>
-                  <Button onClick={() => { setConfirming(false); void doProbe(); }} disabled={probing}>Confirm</Button>
-                  <Button variant="outline" onClick={() => setConfirming(false)}>Cancel</Button>
-                </div>
-              )}
-              {probing && <p><Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> Running…</p>}
-            </>
-          )}
-          {probe && probe.error && <p role="alert" className="text-destructive">Test failed: {probe.setupError ?? probe.error} (status {probe.status})</p>}
-          {probe?.results && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead><tr className="border-b border-border"><th className="py-1">Need</th><th>Result</th><th>Input</th><th>Output</th><th>Cost (p)</th><th>Time</th><th>Output summary</th></tr></thead>
-                <tbody>
-                  {probe.results.map((r, i) => (
-                    <tr key={i} className="border-b border-border align-top">
-                      <td className="py-1 pr-2">{PROBE_BRIEFS[i].businessPurpose.slice(0, 40)}…</td>
-                      <td><Badge variant={r.outcome === 'ok' ? 'secondary' : 'destructive'}>{r.outcome}</Badge>{r.errors && <div className="text-xs text-muted-foreground">{r.errors.join('; ')}</div>}</td>
-                      <td>{r.inputTokens}</td><td>{r.outputTokens}</td><td>{pence(r.costUsdMicros)}</td><td>{(r.latencyMs / 1000).toFixed(1)}s</td>
-                      <td className="text-xs">{r.template ? `${r.template.kind}: ${r.template.boards?.map((b: any) => `${b.name} (${b.groups.reduce((n: number, g: any) => n + g.tasks.length, 0)})`).join(', ')}` : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {totals && <p className="mt-2">Total: {totals.in} input + {totals.out} output tokens ≈ {pence(totals.micros)}p (${(totals.micros / 1e6).toFixed(5)}). Copy these results into the report.</p>}
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader><CardTitle>Drafts and submissions</CardTitle></CardHeader>
