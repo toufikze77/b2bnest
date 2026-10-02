@@ -6,6 +6,8 @@ const url = Deno.env.get('SUPABASE_URL')!;
 const anon = Deno.env.get('SUPABASE_ANON_KEY')!;
 const svc = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
 const T = 'staging_cost_test_runs';
+// Run 1 (failed: no OpenAI credit) is preserved. Owner approved exactly one more run: record 2.
+const RUN_ID = 2;
 
 Deno.serve(createHandler({
   corsHeaders,
@@ -24,18 +26,18 @@ Deno.serve(createHandler({
   },
   store: {
     async claim(row) {
-      const { error } = await svc.from(T).insert({ id: 1, ...row });
+      const { error } = await svc.from(T).insert({ id: RUN_ID, ...row });
       if (!error) return 'ok';
       return error.code === '23505' ? 'taken' : 'error';
     },
     async saveResults(results, status) {
       const patch: Record<string, unknown> = { results };
       if (status) { patch.status = status; patch.finished_at = new Date().toISOString(); }
-      const { error } = await svc.from(T).update(patch).eq('id', 1);
+      const { error } = await svc.from(T).update(patch).eq('id', RUN_ID);
       return !error;
     },
     async read() {
-      const { data, error } = await svc.from(T).select('*').eq('id', 1).maybeSingle();
+      const { data, error } = await svc.from(T).select('*').eq('id', RUN_ID).maybeSingle();
       if (error) return undefined; // table missing => setup incomplete
       return data;
     },
