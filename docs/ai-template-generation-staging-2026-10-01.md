@@ -151,3 +151,6 @@ Read from `staging_cost_test_runs` id=1 (status `finished`). The run lock is use
 - **Cost and template quality remain UNMEASURED.** No tokens were used; no template was produced.
 - To retry: add credit to the OpenAI organisation/project behind the staging key; then a second run needs separate owner approval (reset of the lock or a new lock row).
 - Customer paid generation remains disabled. The obsolete six-call "Real cost test" panel was removed from the admin page.
+
+### Second run approval (2 Oct 2026, 23:53 UTC)
+Owner added $5 credit and approved one additional four-call run (same model, prompts, no retries, £0.05 ceiling, no customer credits). Run 1 record (four 429 credit_balance_exhausted) preserved unchanged as record 1. Lock widened to ids 1 and 2 only; the function now claims record 2 atomically, so exactly one more run is possible across tabs/devices. Results: pending.

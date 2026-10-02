@@ -3034,7 +3034,7 @@ export type Database = {
         }
         Insert: {
           finished_at?: string | null
-          id?: number
+          id: number
           max_batch_usd_micros: number
           model: string
           planned_calls: number
