@@ -73,6 +73,7 @@ const StagingCostTestCard = () => {
             {running && <p><Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> Running (up to a few minutes)…</p>}
           </>
         )}
+        {rows.length > 0 && rows.every((r) => r.outcome !== 'ok') && <p role="alert" className="text-destructive">No call succeeded, so cost and template quality remain unmeasured. A second run needs separate approval.</p>}
         {result?.error && <p role="alert" className="text-destructive">Run refused: {result.error}</p>}
         {rows.length > 0 && (
           <div className="overflow-x-auto">
@@ -81,7 +82,7 @@ const StagingCostTestCard = () => {
               <tbody>{rows.map((r) => (
                 <tr key={r.call} className="border-b border-border align-top">
                   <td className="py-1 pr-2">{r.prompt}</td>
-                  <td><Badge variant={r.outcome === 'ok' ? 'secondary' : 'destructive'}>{r.outcome}</Badge>{r.errors && <div className="text-xs text-muted-foreground">{r.errors.join('; ')}</div>}</td>
+                  <td><Badge variant={r.outcome === 'ok' ? 'secondary' : 'destructive'}>{r.outcome}</Badge>{r.httpStatus && <div className="text-xs text-muted-foreground">HTTP {r.httpStatus}{r.providerMessage ? ` · ${r.providerMessage}` : ''}</div>}{r.errors && <div className="text-xs text-muted-foreground">{r.errors.join('; ')}</div>}</td>
                   <td>{r.inputTokens}</td><td>{r.outputTokens}</td><td>{(r.costUsdMicros / 1e6).toFixed(6)}</td><td>{(r.latencyMs / 1000).toFixed(1)}s</td>
                   <td className="text-xs">{r.quality ? `${r.quality.kind} "${r.quality.name}": ${r.quality.boards} boards, ${r.quality.tasks} tasks — ${r.quality.boardNames.join(', ')}. e.g. ${r.quality.sampleTasks.join('; ')}` : '—'}</td>
                 </tr>))}</tbody>
