@@ -136,5 +136,18 @@ before "Create". No customer records are sent to the model.
 - Live: table exists, 0 rows, RLS on, anon/authenticated no SELECT/INSERT, service_role yes; deployed function refuses signed-out requests (401).
 - Not verified: the admin screen signed in as super admin (no signed-in session available to the agent).
 
-### Results
-Pending the owner's run.
+### Results — run FAILED (2026-10-02 23:37:06–23:37:09 UTC, run by super admin)
+Read from `staging_cost_test_runs` id=1 (status `finished`). The run lock is used and was NOT reset; no further OpenAI calls were made.
+
+| Call | Business | HTTP | OpenAI error code | Tokens in/out | Cost | Time |
+|---|---|---|---|---|---|---|
+| 1 | Hair salon | 429 | credit_balance_exhausted | 0 / 0 | $0 | 2.2s |
+| 2 | Building contractor | 429 | credit_balance_exhausted | 0 / 0 | $0 | 0.6s |
+| 3 | Accountancy practice | 429 | credit_balance_exhausted | 0 / 0 | $0 | 0.1s |
+| 4 | Café | 429 | credit_balance_exhausted | 0 / 0 | $0 | 0.6s |
+
+- **Cause:** OpenAI refused every call before running the model because the staging key's OpenAI project/organisation has no prepaid credit balance. This is a billing state, not a key-permission, model-access or request-format fault: a bad key returns 401, missing model access returns 403/404, and a malformed request returns 400. The request reached OpenAI and was authenticated.
+- **Safe error message:** not recorded — the function stores only the error code (max 60 chars), by design. Function logs contain no extra detail (it never logs responses, keys or headers).
+- **Cost and template quality remain UNMEASURED.** No tokens were used; no template was produced.
+- To retry: add credit to the OpenAI organisation/project behind the staging key; then a second run needs separate owner approval (reset of the lock or a new lock row).
+- Customer paid generation remains disabled. The obsolete six-call "Real cost test" panel was removed from the admin page.
