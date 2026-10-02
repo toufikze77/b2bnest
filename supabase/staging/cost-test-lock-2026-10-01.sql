@@ -16,3 +16,8 @@ REVOKE ALL ON public.staging_cost_test_runs FROM anon, authenticated, PUBLIC;
 GRANT ALL ON public.staging_cost_test_runs TO service_role;
 ALTER TABLE public.staging_cost_test_runs ENABLE ROW LEVEL SECURITY;
 -- No policies: anon/authenticated have no grants and no policies; only service_role (bypasses RLS) can use it.
+
+-- 2026-10-02 owner-approved rearm (applied live): run 1 preserved; exactly one more run (id 2).
+-- ALTER TABLE public.staging_cost_test_runs DROP CONSTRAINT staging_cost_test_runs_id_check;
+-- ALTER TABLE public.staging_cost_test_runs ADD CONSTRAINT staging_cost_test_runs_id_check CHECK (id IN (1, 2));
+-- ALTER TABLE public.staging_cost_test_runs ALTER COLUMN id DROP DEFAULT;
