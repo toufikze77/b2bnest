@@ -29,7 +29,7 @@ const Help = () => {
     },
     {
       question: "What payment methods do you accept?",
-      answer: "We accept all major credit cards, PayPal, and cryptocurrency payments through our secure payment gateway."
+      answer: "Subscriptions are billed securely by Stripe and accept all major credit and debit cards."
     },
     {
       question: "Can I cancel my subscription anytime?",
@@ -37,7 +37,7 @@ const Help = () => {
     },
     {
       question: "How do I upgrade or downgrade my plan?",
-      answer: "Go to Settings > Subscription, select your desired plan, and click 'Change Plan'. Changes take effect immediately, and we'll prorate the difference."
+      answer: "Go to Settings → Billing and click 'Change plan', or open the Pricing page. Your current plan is marked 'Your current plan'; choose 'Switch to' on another plan. Your existing subscription is updated (never duplicated) and Stripe adjusts the next invoice for the time remaining."
     },
     {
       question: "Is my data secure?",
@@ -53,7 +53,7 @@ const Help = () => {
     },
     {
       question: "How do workflows work?",
-      answer: "Workflows allow you to automate tasks using visual drag-and-drop builders. Connect triggers (like 'new invoice') to actions (like 'send email' or 'post to Twitter') to create powerful automations."
+      answer: "In Workflows you list steps under 'Do this' — send an email, send a WhatsApp message, post on X or post on LinkedIn — and run them all when you click 'Run now'. Automatic starts (schedules, form submissions, new records) aren't available yet. WhatsApp, X and LinkedIn need your accounts connected first."
     },
   ];
 

@@ -97,7 +97,6 @@ const AIDocumentAssistant = ({ onTemplateSelect }: AIDocumentAssistantProps) => 
         'Version Control',
         'Digital Signatures',
         'Document Storage & Search',
-        'Automated Workflows'
       ],
       pricing: 'Starting at £11/month per user'
     }

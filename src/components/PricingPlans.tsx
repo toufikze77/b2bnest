@@ -199,7 +199,7 @@ const PricingPlans = () => {
     }
   };
   const getCurrentPlanBadge = (planId: string) =>
-    isCurrent(planId) ? <Badge className="absolute -top-1 -right-2 bg-success text-success-foreground">Your current plan</Badge> : null;
+    isCurrent(planId) ? <Badge className="absolute -top-1 -right-2">Your current plan</Badge> : null;
 
   return (
     <>
