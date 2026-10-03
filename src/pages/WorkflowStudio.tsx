@@ -250,7 +250,7 @@ const WorkflowStudio = () => {
                 </Select>
               </div>
               <p className="text-xs text-muted-foreground">
-                Connect accounts in <Link to="/settings?tab=integrations" className="underline">Settings → Integrations</Link> or <Link to="/integrations/whatsapp" className="underline">WhatsApp</Link> first.
+                Connect accounts in <Link to="/business-tools?tool=integrations" className="underline">Integrations</Link> or <Link to="/integrations/whatsapp" className="underline">WhatsApp</Link> first.
               </p>
             </CardContent>
           </Card>

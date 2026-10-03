@@ -36,12 +36,12 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
   },
   {
     kind: 'x', nodeName: 'Twitter Post', label: 'Post on X (Twitter)',
-    help: 'Needs your X account connected in Settings → Integrations.',
+    help: 'Needs your X account connected in Business tools → Integrations.',
     fields: [{ key: 'text', label: 'Post text', multiline: true, required: true }],
   },
   {
     kind: 'linkedin', nodeName: 'LinkedIn Post', label: 'Post on LinkedIn',
-    help: 'Needs your LinkedIn account connected in Settings → Integrations.',
+    help: 'Needs your LinkedIn account connected in Business tools → Integrations.',
     fields: [{ key: 'text', label: 'Post text', multiline: true, required: true }],
   },
 ];
