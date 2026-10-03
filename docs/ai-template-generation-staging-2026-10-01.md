@@ -195,3 +195,9 @@ Supported functionality: all outputs used only supported views (table/board/cale
 
 ### Cleanup
 See the cleanup section below for verification.
+
+## Cleanup verification (3 Oct 2026, ~00:10 UTC)
+- Edge function `staging-cost-test` deleted; its code and the admin test card removed from the app. A request to its old address no longer reaches a function (see HTTP code recorded in chat).
+- Secret `OPENAI_STAGING_KEY` deleted from the project. Owner to revoke the key in OpenAI.
+- Table `staging_cost_test_runs` dropped (`to_regclass` returns null). Both run records are preserved above.
+- Customer paid generation: still disabled — the AI generation tables/settings were never applied to the live database. The larger AI migration remains pending review.
