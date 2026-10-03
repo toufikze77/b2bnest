@@ -59,7 +59,33 @@ export function parseAiTemplate(raw: unknown): ParseResult {
   }
   const r = AiTemplateV1.safeParse(data);
   if (!r.success) return { ok: false, errors: r.error.issues.slice(0, 10).map((i) => `${i.path.join('.') || 'template'}: ${i.message}`) };
+  const quality = qualityIssues(r.data);
+  if (quality.length) return { ok: false, errors: quality };
   return { ok: true, template: r.data };
+}
+
+// Placeholder titles: "Job A", "Quote 1", "Task", "Item 3", "Example", "TBD".
+const PLACEHOLDER = /^(?:(?:[\w&'-]+\s+){0,3}(?:[A-Z]|\d{1,3}|#\d+)|task|item|example|tbd|todo|placeholder|new task)$/i;
+const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+/**
+ * Usefulness checks beyond schema validity (stored-fixture tested). Rejects repeated
+ * task titles, placeholder titles and near-empty templates. Passing this is still not
+ * approval for the catalogue; that needs admin review.
+ */
+export function qualityIssues(t: AiTemplate): string[] {
+  const titles = t.boards.flatMap((b) => b.groups.flatMap((g) => g.tasks.map((k) => k.title)));
+  const issues: string[] = [];
+  if (titles.length < 3) issues.push('quality: fewer than 3 tasks');
+  const seen = new Map<string, number>();
+  for (const x of titles) seen.set(norm(x), (seen.get(norm(x)) ?? 0) + 1);
+  const dup = [...seen].filter(([, n]) => n > 1).map(([k]) => k);
+  if (dup.length) issues.push(`quality: repeated task titles (${dup.slice(0, 3).join(', ')})`);
+  const ph = titles.filter((x) => PLACEHOLDER.test(x.trim()));
+  if (ph.length) issues.push(`quality: placeholder task titles (${ph.slice(0, 3).join(', ')})`);
+  const boardNames = t.boards.map((b) => norm(b.name));
+  if (new Set(boardNames).size !== boardNames.length) issues.push('quality: repeated board names');
+  return issues;
 }
 
 const COLORS = ['#2563eb', '#16a34a', '#d97706', '#9333ea', '#dc2626', '#0891b2', '#4f46e5', '#65a30d'];
