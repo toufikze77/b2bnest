@@ -4,7 +4,8 @@ import { parseAiTemplate, toWorkspaceTemplate, LIMITS } from './aiTemplateSchema
 import { getTemplateKind } from './templateKind';
 
 const task = { title: 'Call client', status: 'todo', priority: 'medium', dayOffset: 2 };
-const board = (name = 'Tickets') => ({ name, description: 'Support work', views: ['table', 'board'], groups: [{ name: 'New', tasks: [task] }] });
+// Distinct titles per board so the usefulness gate (no repeats, >= 3 tasks) passes.
+const board = (name = 'Tickets') => ({ name, description: 'Support work', views: ['table', 'board'], groups: [{ name: 'New', tasks: ['Call client', 'Log request', 'Send summary'].map((x) => ({ ...task, title: `${x} (${name})` })) }] });
 const tpl = (o: Record<string, unknown> = {}) => ({ schemaVersion: 1, kind: 'workspace', name: 'Support desk', description: 'Handle tickets', boards: [board()], ...o });
 
 describe('AI template schema v1', () => {
