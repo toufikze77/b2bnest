@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDown, ArrowUp, CheckCircle2, Loader2, MousePointerClick, Play, Plus, Save, Trash2, XCircle, Zap } from 'lucide-react';
 import { toast } from 'sonner';
@@ -67,6 +67,7 @@ const WorkflowStudio = () => {
   const [saving, setSaving] = useState(false);
   const [running, setRunning] = useState(false);
   const [results, setResults] = useState<Record<string, StepResult>>({});
+  const runLock = useRef(false);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -118,7 +119,9 @@ const WorkflowStudio = () => {
   const canRun = steps.length > 0 && !unsupported.length && !problems.length && !running;
 
   const run = async () => {
-    if (!canRun || running) return;
+    if (!canRun || runLock.current) return;
+    runLock.current = true;
+    try {
     if (!window.confirm(`Run "${name}" now? This really sends ${steps.length} message${steps.length === 1 ? '' : 's'}/post${steps.length === 1 ? '' : 's'}.`)) return;
     setRunning(true); setResults({});
     let failed = 0;
@@ -128,6 +131,7 @@ const WorkflowStudio = () => {
       setResults((prev) => ({ ...prev, [step.id]: r }));
     }
     setRunning(false);
+    } finally { runLock.current = false; }
     if (failed) toast.error(`${failed} of ${steps.length} steps failed — see the results below.`);
     else toast.success('All steps completed');
   };

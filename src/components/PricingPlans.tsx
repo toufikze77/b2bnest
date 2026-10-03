@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Check, Zap, Crown, Building2, Sparkles, Users, TrendingUp, Shield } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -99,26 +99,48 @@ const PricingPlans = () => {
     },
   ];
 
+  const changeLock = useRef(false);
+  const readError = async (error: unknown) => {
+    const ctx = (error as { context?: { json: () => Promise<{ error?: string; message?: string }> } }).context;
+    return ctx ? await ctx.json().catch(() => null) : null;
+  };
   const handlePlanChange = async (planId: string, planName: string) => {
-    if (!window.confirm(`Switch your subscription to ${planName} (${isAnnual ? 'annual' : 'monthly'})? Your existing subscription is updated and Stripe adjusts the next invoice for the time remaining.`)) return;
+    if (changeLock.current) return;
+    changeLock.current = true;
     setCheckoutPlan(planId);
     try {
-      const { data, error } = await supabase.functions.invoke('change-subscription-plan', { body: { planId, isAnnual } });
+      const { data: preview, error: previewError } = await supabase.functions.invoke('change-subscription-plan', { body: { mode: 'preview', planId, isAnnual } });
+      if (previewError) {
+        const body = await readError(previewError);
+        throw new Error(body?.error === 'no_subscription' ? 'No active subscription was found. Open Settings → Billing, or contact support.' : body?.message || previewError.message);
+      }
+      const money = (pence: number) => `£${(Math.abs(pence) / 100).toFixed(2)}`;
+      const per = preview.newInterval === 'year' ? 'year' : 'month';
+      const due = Number(preview.amountDueNow) || 0;
+      const message = [
+        `Switch from ${preview.currentPlan ?? 'your current plan'} to ${preview.newPlan} (${money(preview.newPrice)} per ${per})?`,
+        '',
+        'Your existing subscription is updated — no second subscription is created.',
+        due > 0
+          ? `You'll be charged ${money(due)} now for the rest of this billing period (the new price minus unused time on your current plan).`
+          : due < 0 ? `Unused time on your current plan (${money(due)}) is credited to your next invoice.` : 'Nothing extra is charged now.',
+        preview.intervalChanges ? `Your billing period changes to ${per}ly, starting today.` : '',
+        'If the payment fails, your current plan stays as it is.',
+      ].filter((l) => l !== undefined).join('\n');
+      if (!window.confirm(message)) return;
+      const requestId = crypto.randomUUID();
+      const { data, error } = await supabase.functions.invoke('change-subscription-plan', { body: { planId, isAnnual, requestId } });
       if (error) {
-        const ctx = (error as { context?: { json: () => Promise<{ error?: string; message?: string }> } }).context;
-        const body = ctx ? await ctx.json().catch(() => null) : null;
-        if (body?.error === 'no_subscription') {
-          toast({ title: 'No active subscription found', description: 'Open Settings → Billing, or contact support.', variant: 'destructive' });
-          return;
-        }
+        const body = await readError(error);
         throw new Error(body?.message || error.message);
       }
       await supabase.functions.invoke('check-subscription').catch(() => undefined);
       toast({ title: 'Plan changed', description: `You're now on ${data?.plan ?? planName}.` });
       window.location.reload();
     } catch (err: unknown) {
-      toast({ title: 'Plan not changed', description: err instanceof Error ? err.message : 'Please try again later.', variant: 'destructive' });
+      toast({ title: 'Plan not changed', description: err instanceof Error ? err.message : 'Your plan hasn\'t changed. Please try again later.', variant: 'destructive' });
     } finally {
+      changeLock.current = false;
       setCheckoutPlan(null);
     }
   };
@@ -299,7 +321,7 @@ const PricingPlans = () => {
                         : 'bg-gray-900 hover:bg-gray-800'
                     } text-white font-semibold py-3`}
                   >
-                    {isCurrent(plan.id) ? 'Your current plan' : checkoutPlan === plan.id ? (subscribed ? 'Changing plan…' : 'Redirecting to checkout…') : subscribed ? `Switch to ${plan.name}` : plan.cta}
+                    {isCurrent(plan.id) ? 'Your current plan' : checkoutPlan === plan.id ? (subscribed ? 'Checking…' : 'Redirecting to checkout…') : subscribed ? `Switch to ${plan.name}` : plan.cta}
                   </Button>
 
                   <ul className="space-y-3">
