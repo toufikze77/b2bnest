@@ -41,7 +41,7 @@ const Help = () => {
     },
     {
       question: "Is my data secure?",
-      answer: "Absolutely. We use enterprise-grade encryption, secure OAuth connections, and follow GDPR compliance. Your data is stored securely and never shared with third parties."
+      answer: "Each company's records are kept separate, and only its members can see them. Passwords and sign-in are handled by our authentication provider, card payments by Stripe (we never see card numbers), and connected-account tokens are stored encrypted. We don't sell your data."
     },
     {
       question: "How do I export my data?",

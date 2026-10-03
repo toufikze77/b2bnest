@@ -135,4 +135,5 @@
 - [x] Pricing: current plan disabled "Your current plan"; plan changes update the existing Stripe subscription
 - [x] Update Help / Knowledge base / assistant answers
 - [ ] Separate review (not started): Starter 1 / Professional 25 / Enterprise 50 seats — no entitlement change
-- [ ] Owner signed-in review: plan switch on a real subscription; Workflows run on real accounts
+- [ ] Stripe sandbox verification of plan switching (blocked: no sandbox key)
+- [ ] Owner: one workflow email to own address

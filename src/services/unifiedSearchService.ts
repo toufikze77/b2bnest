@@ -140,16 +140,6 @@ const PLATFORM_TOOLS: ToolDefinition[] = [
     featured: true
   },
   {
-    id: 'ai-showcase',
-    title: 'AI Showcase',
-    description: 'Explore AI-powered business features',
-    category: 'AI Tools',
-    url: '/ai-showcase',
-    icon: '🌟',
-    tags: ['ai', 'showcase', 'features', 'demo'],
-    featured: true
-  },
-  {
     id: 'contract-generator',
     title: 'Contract Generator',
     description: 'Create professional business contracts with AI assistance',

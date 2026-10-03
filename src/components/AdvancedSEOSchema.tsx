@@ -15,7 +15,7 @@ const AdvancedSEOSchema = ({ page = 'home' }: AdvancedSEOSchemaProps) => {
       "@context": "https://schema.org",
       "@type": "Product",
       "name": "B2BNest Business Tools Suite",
-      "description": "Comprehensive collection of 50+ free and affordable business tools designed for entrepreneurs, startups, and small businesses",
+      "description": "Free and affordable business tools designed for entrepreneurs, startups, and small businesses",
       "category": "Business Software",
       "brand": {
         "@type": "Brand",
@@ -28,37 +28,18 @@ const AdvancedSEOSchema = ({ page = 'home' }: AdvancedSEOSchemaProps) => {
           "price": "0",
           "priceCurrency": "USD",
           "availability": "https://schema.org/InStock",
-          "description": "20+ completely free business tools including QR generator, currency converter, business name generator, domain checker, and more"
+          "description": "Free business tools including QR generator, currency converter, business name generator, domain checker, and more"
         },
         {
           "@type": "Offer",
           "name": "Premium Tools Package", 
-          "price": "9.99",
-          "priceCurrency": "USD",
-          "priceValidUntil": "2025-12-31",
+          "price": "19",
+          "priceCurrency": "GBP",
           "availability": "https://schema.org/InStock",
           "billingDuration": "P1M",
-          "description": "30+ premium business tools including CRM, project management, AI assistants, financial tracking, HMRC integration, and advanced features"
+          "description": "Paid plans including CRM, project management, AI assistants, financial tracking, HMRC integration, and advanced features"
         }
-      ],
-      "review": {
-        "@type": "Review",
-        "reviewRating": {
-          "@type": "Rating",
-          "ratingValue": "4.8",
-          "bestRating": "5"
-        },
-        "author": {
-          "@type": "Person",
-          "name": "Business Tools Review"
-        }
-      },
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "4.8",
-        "reviewCount": "150",
-        "bestRating": "5"
-      }
+      ]
     };
 
     // Breadcrumb navigation schema

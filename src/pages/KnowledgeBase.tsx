@@ -204,7 +204,6 @@ const KnowledgeBase = () => {
                           <p className="text-sm text-muted-foreground">{article.category}</p>
                         </div>
                       </div>
-                      <Badge variant="secondary">{article.views} views</Badge>
                     </Link>
                   ))}
                 </div>

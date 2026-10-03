@@ -30,7 +30,6 @@ const PrivacyPolicy = lazy(() => import('@/pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('@/pages/TermsOfService'));
 const ProfileSetup = lazy(() => import('@/pages/ProfileSetup'));
 const Forum = lazy(() => import('@/pages/Forum'));
-const AIShowcase = lazy(() => import('@/pages/AIShowcase'));
 const AIStudio = lazy(() => import('@/pages/AIStudio'));
 const WorkflowStudio = lazy(() => import('@/pages/WorkflowStudio'));
 const Pricing = lazy(() => import('@/pages/Pricing'));
@@ -124,7 +123,7 @@ function App() {
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
 
               <Route path="/business-tools/notepro" element={<ProtectedRoute><NotePro /></ProtectedRoute>} />
-              <Route path="/ai-showcase" element={<AIShowcase />} />
+              <Route path="/ai-showcase" element={<Navigate to="/ai-studio" replace />} />
               <Route path="/ai-studio" element={<AIStudio />} />
               <Route path="/ai-workspace" element={<Navigate to="/ai-studio" replace />} />
               <Route path="/workflow-studio" element={<ProtectedRoute><WorkflowStudio /></ProtectedRoute>} />

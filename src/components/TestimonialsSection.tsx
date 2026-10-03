@@ -79,8 +79,7 @@ const TestimonialsSection = () => {
             What Our Clients Say
           </h3>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Join thousands of businesses who trust B2BNest to run and scale their
-            operations
+            
           </p>
         </div>
 
