@@ -122,18 +122,20 @@ const WorkflowStudio = () => {
     if (!canRun || runLock.current) return;
     runLock.current = true;
     try {
-    if (!window.confirm(`Run "${name}" now? This really sends ${steps.length} message${steps.length === 1 ? '' : 's'}/post${steps.length === 1 ? '' : 's'}.`)) return;
-    setRunning(true); setResults({});
-    let failed = 0;
-    for (const step of steps) {
-      const r = await runStep(step, id).catch((e) => ({ ok: false, message: e instanceof Error ? e.message : 'Failed' }));
-      if (!r.ok) failed++;
-      setResults((prev) => ({ ...prev, [step.id]: r }));
+      if (!window.confirm(`Run "${name}" now? This really sends ${steps.length} message${steps.length === 1 ? '' : 's'}/post${steps.length === 1 ? '' : 's'}.`)) return;
+      setRunning(true); setResults({});
+      let failed = 0;
+      for (const step of steps) {
+        const r = await runStep(step, id).catch((e) => ({ ok: false, message: e instanceof Error ? e.message : 'Failed' }));
+        if (!r.ok) failed++;
+        setResults((prev) => ({ ...prev, [step.id]: r }));
+      }
+      if (failed) toast.error(`${failed} of ${steps.length} steps failed — see the results below.`);
+      else toast.success('All steps completed');
+    } finally {
+      setRunning(false);
+      runLock.current = false;
     }
-    setRunning(false);
-    } finally { runLock.current = false; }
-    if (failed) toast.error(`${failed} of ${steps.length} steps failed — see the results below.`);
-    else toast.success('All steps completed');
   };
 
   return (
