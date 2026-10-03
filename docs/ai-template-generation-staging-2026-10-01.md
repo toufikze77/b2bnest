@@ -153,4 +153,45 @@ Read from `staging_cost_test_runs` id=1 (status `finished`). The run lock is use
 - Customer paid generation remains disabled. The obsolete six-call "Real cost test" panel was removed from the admin page.
 
 ### Second run approval (2 Oct 2026, 23:53 UTC)
-Owner added $5 credit and approved one additional four-call run (same model, prompts, no retries, £0.05 ceiling, no customer credits). Run 1 record (four 429 credit_balance_exhausted) preserved unchanged as record 1. Lock widened to ids 1 and 2 only; the function now claims record 2 atomically, so exactly one more run is possible across tabs/devices. Results: pending.
+Owner added $5 credit and approved one additional four-call run (same model, prompts, no retries, £0.05 ceiling, no customer credits). Run 1 record (four 429 credit_balance_exhausted) preserved unchanged as record 1. Lock widened to ids 1 and 2 only; the function now claims record 2 atomically, so exactly one more run is possible across tabs/devices.
+
+## Cost test results — both runs (sanitized; no prompts beyond the fixed synthetic ones, no keys, no auth data)
+
+Infrastructure: live Supabase project (temporary edge function `staging-cost-test` + temporary table `staging_cost_test_runs`), separate staging OpenAI key. Model requested `gpt-4o-mini`; served `gpt-4o-mini-2024-07-18`. Prices used: $0.15 / $0.60 per 1M input / output tokens. GBP figures are estimates at £1 = $1.28 (×0.78). No customer credits touched; paid generation stayed disabled.
+
+### Run 1 — 2 Oct 2026 23:37 UTC — all failed (no OpenAI credit)
+| Call | Business | Outcome | HTTP | Code | Tokens in/out | Cost | Time |
+|---|---|---|---|---|---|---|---|
+| 1 | Hair salon | provider_error | 429 | credit_balance_exhausted | 0/0 | $0 | 2.2s |
+| 2 | Building contractor | provider_error | 429 | credit_balance_exhausted | 0/0 | $0 | 0.6s |
+| 3 | Accountancy practice | provider_error | 429 | credit_balance_exhausted | 0/0 | $0 | 0.1s |
+| 4 | Café | provider_error | 429 | credit_balance_exhausted | 0/0 | $0 | 0.6s |
+
+### Run 2 — 2 Oct 2026 23:59 UTC — all four `ok` (finish_reason `stop`, schema-valid)
+| Call | Business | Tokens in | Tokens out | Cost (USD) | Est. GBP | Time | Boards / tasks |
+|---|---|---|---|---|---|---|---|
+| 1 | Hair salon | 248 | 302 | $0.000218 | £0.00017 | 5.1s | 3 / 9 |
+| 2 | Building contractor | 250 | 362 | $0.000255 | £0.00020 | 6.1s | 1 / 13 |
+| 3 | Accountancy practice | 249 | 576 | $0.000383 | £0.00030 | 9.0s | 4 / 20 |
+| 4 | Café | 250 | 390 | $0.000272 | £0.00021 | 6.5s | 1 / 15 |
+| **Total** | | **997** | **1,630** | **$0.001128** | **≈ £0.00088 (0.09p)** | 26.7s | |
+
+Average ≈ $0.00028 (≈ 0.02p) per generation — about 1/25 of the pre-run worst-case bound ($0.0018 per call). Well within the £0.05 batch ceiling.
+
+### Quality review (schema validity is NOT catalogue approval)
+| Business | Verdict | Notes |
+|---|---|---|
+| Hair salon | **Not useful** | Titles repeat: "Client Appointment" ×3, "Stylist Shift" ×3. These are individual records, not reusable work. Stock board lists product names (Shampoo, Conditioner) as tasks. Board split itself is sensible. |
+| Building contractor | **Not useful** | Placeholder filler: "Job A…Job G", "Quote A/B", "Safety Check A/B", "Subcontractor A/B". Everything crammed into one board with status-named groups that duplicate the status field. |
+| Accountancy practice | **Useful with light edits** | Four sensible boards, 20 distinct concrete tasks (Collect VAT data → Prepare → Client approval → Submit). Mild generic filler ("Review Client Satisfaction"). Real VAT/year-end deadlines are not dated (offsets are relative). |
+| Café | **Useful** | Concrete opening/closing checklists, supplier orders, training. Weaknesses: one board only; all checklist items dayOffset 0 and status backlog, so no recurrence (recurring tasks aren't supported). |
+
+Supported functionality: all outputs used only supported views (table/board/calendar), supported statuses and priorities; none claimed automations or integrations. Result: 2 of 4 usable, so **no catalogue publication** on this evidence; every AI template still needs admin review.
+
+### Improvements made after the run (no additional paid calls)
+- Generation prompt now requires unique, concrete, reusable task titles and forbids placeholders ("Job A", "Quote 1", "Task", "Item") and repeated generic titles; asks for separate boards for separate areas of work.
+- New usefulness gate `qualityIssues` in the shared schema (app + server copy, kept identical by the sync test): rejects repeated task titles (ignoring case/punctuation), placeholder titles, fewer than 3 tasks and repeated board names. A rejected output is refunded like any invalid output.
+- Tested on stored fixtures of the run-2 outputs (`src/lib/aiTemplateQuality.test.ts`): salon rejected (repeats), builder rejected (placeholders), accountancy and café accepted, plus edge cases. App tests: 106/106 pass. The improved prompt itself has not been tried against the model — that would need another paid call.
+
+### Cleanup
+See the cleanup section below for verification.
