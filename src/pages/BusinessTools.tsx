@@ -213,7 +213,7 @@ const BusinessTools = () => {
       description: 'Create GDPR-compliant privacy policies',
       icon: Shield,
       color: 'bg-green-700',
-      benefits: ['GDPR compliant', 'Customizable sections', 'Legal protection'],
+      benefits: ['Covers GDPR topics', 'Customizable sections', 'Legal protection'],
       isPremium: true
     },
     {

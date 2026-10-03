@@ -18,7 +18,7 @@ const SITE_URL = "https://www.b2bnest.online";
 
 const SEOHead = ({
   title = "B2BNest — Affordable Business Tools & Free AI",
-  description = "50+ free and affordable business tools in one platform: AI documents, CRM, invoicing, and financial tracking for modern entrepreneurs.",
+  description = "Free and affordable business tools in one platform: AI documents, CRM, invoicing, and financial tracking for modern entrepreneurs.",
   keywords = "affordable business tools, free business tools, free CRM, free project management, free invoice generator, affordable SaaS, business automation, small business tools",
   canonical,
   canonicalUrl,

@@ -264,7 +264,7 @@ This privacy policy template is for general guidance only and should be reviewed
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle className="h-4 w-4 text-green-600" />
-                  <span>GDPR Compliant</span>
+                  <span>Covers GDPR topics</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle className="h-4 w-4 text-green-600" />

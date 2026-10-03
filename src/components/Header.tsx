@@ -75,9 +75,6 @@ const Header = () => {
                 <DropdownMenuItem asChild>
                   <Link to="/ai-studio">AI Studio</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/ai-showcase">AI Showcase</Link>
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <Link to="/pricing" className="text-gray-700 hover:text-blue-600 transition-colors">
@@ -274,13 +271,6 @@ const Header = () => {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     AI Studio
-                  </Link>
-                  <Link
-                    to="/ai-showcase"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    AI Showcase
                   </Link>
                 </div>
               </div>

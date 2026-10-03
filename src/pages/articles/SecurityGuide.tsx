@@ -123,12 +123,10 @@ const SecurityGuide = () => {
               <div>
                 <h3 className="font-semibold mb-2">How We Protect Your Data</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li>AES-256 encryption at rest</li>
-                  <li>TLS 1.3 encryption in transit</li>
-                  <li>Regular security audits and penetration testing</li>
-                  <li>Isolated database environments</li>
-                  <li>Automatic daily backups</li>
-                  <li>SOC 2 Type II certified data centers</li>
+                  <li>Each company's records are separated by database access rules</li>
+                  <li>Connected-account tokens are stored encrypted</li>
+                  <li>Card payments are handled by Stripe; we never store card numbers</li>
+                  <li>Connections to B2BNEST use HTTPS</li>
                 </ul>
               </div>
 
@@ -166,7 +164,7 @@ const SecurityGuide = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                B2BNEST is fully compliant with the EU General Data Protection Regulation (GDPR).
+                Your rights under the UK and EU General Data Protection Regulation (GDPR) are described below. Contact us to exercise them.
               </p>
 
               <div>

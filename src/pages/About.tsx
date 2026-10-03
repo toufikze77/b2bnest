@@ -128,11 +128,7 @@ const About = () => {
                   They envisioned a world where any business, regardless of size or industry, could access 
                   the same caliber of automation tools used by Fortune 500 companies.
                 </p>
-                <p>
-                  Today, our platform serves thousands of businesses worldwide, from startups to established 
-                  enterprises, helping them automate workflows, leverage AI insights, and maintain competitive advantages 
-                  through intelligent automation.
-                </p>
+                
               </div>
             </CardContent>
           </Card>

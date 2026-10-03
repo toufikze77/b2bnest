@@ -112,7 +112,7 @@ const PLR = () => {
             Premium PLR Content for Your Business
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Access thousands of high-quality, ready-to-use business content that you can customize, 
+            Access high-quality, ready-to-use business content that you can customize, 
             rebrand, and sell as your own. Save time and money while building your content library.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -349,7 +349,7 @@ const PLR = () => {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Start Building Your Content Library?</h2>
           <p className="text-xl mb-8">
-            Join thousands of entrepreneurs who are saving time and money with our premium PLR content
+            Save time with ready-to-use PLR content
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" variant="secondary" className="px-8 py-3">

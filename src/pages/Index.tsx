@@ -7,7 +7,6 @@ import AdvancedSEOSchema from "@/components/AdvancedSEOSchema";
 
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
-import TestimonialsSection from "@/components/TestimonialsSection";
 import SearchResults from "@/components/SearchResults";
 import UnifiedSearchResults from "@/components/UnifiedSearchResults";
 import AIDocumentAssistant from "@/components/AIDocumentAssistant";
@@ -41,7 +40,7 @@ const IndexContent = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <SEOHead
         title="B2BNest — Affordable Business Tools & Free AI"
-        description="50+ free and affordable business tools in one platform: AI documents, CRM, invoicing, and financial tracking for modern entrepreneurs."
+        description="Free and affordable business tools in one platform: AI documents, CRM, invoicing, and financial tracking for modern entrepreneurs."
         canonicalUrl="https://www.b2bnest.online/"
       />
       <AdvancedSEOSchema page="home" />
@@ -82,7 +81,6 @@ const IndexContent = () => {
       {!showSearchResults && <BusinessToolsSection />}
 
       {/* Testimonials Section - only show when not searching */}
-      {!showSearchResults && <TestimonialsSection />}
 
       <CTASection />
       <Footer />

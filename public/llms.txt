@@ -1,6 +1,6 @@
 # B2BNest
 
-> B2BNest is a SaaS business software platform for entrepreneurs and small businesses: 25+ business tools in one place, including CRM, projects and tasks, invoicing, expenses, HMRC-connected finance tools, AI document generation and an AI business advisor.
+> B2BNest is a SaaS business software platform for entrepreneurs and small businesses: business tools in one place, including CRM, projects and tasks, invoicing, expenses, HMRC-connected finance tools, AI document generation and an AI business advisor.
 
 B2BNest replaces several separate subscriptions with one workspace that supports multiple companies per account. Free utilities (QR code generator, currency converter, business name generator and more) are available without a paid plan.
 
@@ -15,7 +15,7 @@ B2BNest replaces several separate subscriptions with one workspace that supports
 - [Home](/): Overview of the B2BNest platform and featured tools
 - [About](/about): Company mission, values, and story
 - [Pricing](/pricing): Plans, features, and subscription tiers
-- [Business Tools](/business-tools): Catalogue of 25+ business tools
+- [Business Tools](/business-tools): Catalogue of business tools
 - [Contact](/contact): Get in touch with the B2BNest team
 - [Blog](/blog): Articles on business documentation, compliance, and operational efficiency
 - [Knowledge Base](/knowledge-base): Guides and how-to articles

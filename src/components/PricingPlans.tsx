@@ -86,12 +86,11 @@ const PricingPlans = () => {
         'AI Studio (Enterprise features)',
         'Custom AI model training',
         'Advanced workflow automation',
-        'Enterprise-grade analytics',
+        'Advanced analytics',
         'Custom AI integrations',
         'White-label AI solutions',
         'Dedicated account manager',
         'Custom integrations & API',
-        'Advanced security controls',
         'Training & onboarding',
         'SLA guarantee',
       ],
@@ -214,7 +213,6 @@ const PricingPlans = () => {
             </h2>
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-            Join 8,200+ businesses already scaling with our AI-powered platform. 
             Choose the plan that fits your growth stage.
           </p>
           
@@ -231,22 +229,6 @@ const PricingPlans = () => {
             <span className={`text-lg font-medium ${isAnnual ? 'text-gray-900' : 'text-gray-500'}`}>
               Annual
             </span>
-          </div>
-
-          {/* Social Proof */}
-          <div className="flex items-center justify-center gap-8 text-sm text-gray-500 mb-12">
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              <span>8,200+ businesses</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              <span>180% YoY growth</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              <span>SOC 2 compliant</span>
-            </div>
           </div>
         </div>
 
@@ -364,14 +346,6 @@ const PricingPlans = () => {
               Subscriptions are billed securely by Stripe and accept all major credit and debit cards.
             </p>
             </div>
-            <div className="text-left">
-              <h4 className="font-semibold text-gray-900 mb-2">
-                Do you offer discounts for nonprofits?
-              </h4>
-              <p className="text-gray-600">
-                Yes! We offer 50% off all plans for verified nonprofit organizations.
-              </p>
-            </div>
           </div>
         </div>
 
@@ -382,7 +356,7 @@ const PricingPlans = () => {
               Ready to Scale Your Business?
             </h3>
             <p className="text-lg mb-6 opacity-90">
-              Join thousands of entrepreneurs already using our AI-powered platform
+              Try every feature free for 14 days.
             </p>
             <Button 
               onClick={handleStartTrial}

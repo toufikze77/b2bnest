@@ -79,9 +79,9 @@ const BusinessToolsSection = () => {
   ];
 
   const additionalTools = [
-    { icon: CheckSquare, title: "Setup Checklist", count: "25+ Steps" },
+    { icon: CheckSquare, title: "Setup Checklist", count: "Step by step" },
     { icon: Shield, title: "Compliance Checker", count: "Industry Specific" },
-    { icon: Zap, title: "Integrations", count: "10+ Services" }
+    { icon: Zap, title: "Integrations", count: "Connect your accounts" }
   ];
 
   return (
@@ -103,10 +103,6 @@ const BusinessToolsSection = () => {
             From project management to CRM, we've got you covered.
           </p>
           <div className="flex items-center justify-center gap-6 text-sm text-gray-500">
-            <div className="flex items-center gap-2">
-              <Target className="h-4 w-4 text-green-500" />
-              <span>Save 10+ hours/week</span>
-            </div>
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-blue-500" />
               <span>Team collaboration</span>
