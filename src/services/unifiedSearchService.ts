@@ -140,16 +140,6 @@ const PLATFORM_TOOLS: ToolDefinition[] = [
     featured: true
   },
   {
-    id: 'ai-workspace',
-    title: 'AI Workspace',
-    description: 'Collaborative AI-powered workspace',
-    category: 'AI Tools',
-    url: '/ai-workspace',
-    icon: '🤖',
-    tags: ['ai', 'workspace', 'collaboration', 'productivity'],
-    featured: true
-  },
-  {
     id: 'ai-showcase',
     title: 'AI Showcase',
     description: 'Explore AI-powered business features',
@@ -393,7 +383,7 @@ class UnifiedSearchService {
       'Contract Generator',
       'Privacy Policy',
       'CRM System',
-      'AI Workspace',
+      'Workspaces',
       'ROI Calculator',
       'Cash Flow Tracker',
       'Time Tracker'

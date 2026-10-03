@@ -10,7 +10,6 @@ import { useSubscription } from "@/hooks/useSubscription";
 import Footer from "@/components/Footer";
 import AIBusinessAdvisor from "@/components/ai/AIBusinessAdvisor";
 import IntelligentAnalytics from "@/components/ai/IntelligentAnalytics";
-import WorkflowBuilder from "@/components/ai/WorkflowBuilder";
 import SmartPersonalization from "@/components/ai/SmartPersonalization";
 import SubscriptionUpgrade from "@/components/SubscriptionUpgrade";
 
@@ -38,7 +37,7 @@ const AIStudio = () => {
     {
       id: "workflows",
       title: "Workflow Builder",
-      description: "Design automated business processes with AI assistance",
+      description: "Send emails, WhatsApp messages and posts in one click",
       icon: Workflow,
       color: "from-orange-500 to-red-600"
     },
@@ -140,14 +139,15 @@ const AIStudio = () => {
           </TabsContent>
 
           <TabsContent value="workflows" className="space-y-6">
-            {canAccessFeature('workflows') ? (
-              <WorkflowBuilder />
-            ) : (
-              <SubscriptionUpgrade 
-                featureName="Workflow Builder" 
-                onUpgrade={() => window.location.reload()}
-              />
-            )}
+            <Card>
+              <CardHeader>
+                <CardTitle>Workflows have moved</CardTitle>
+                <CardDescription>Set up "When this happens → Do this" workflows that send emails, WhatsApp messages and social posts in Workflows.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => navigate('/workflow-studio')}>Open Workflows</Button>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="personalization" className="space-y-6">
