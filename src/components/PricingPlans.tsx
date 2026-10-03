@@ -13,7 +13,9 @@ const PricingPlans = () => {
   const [isAnnual, setIsAnnual] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null);
   const { user } = useAuth();
-  const { isPremium, subscription_tier } = useSubscription();
+  const { subscribed, subscription_tier } = useSubscription();
+  const currentPlanId = subscribed ? String(subscription_tier || '').toLowerCase() : null;
+  const isCurrent = (planId: string) => currentPlanId === planId;
 
   const plans = [
     {
@@ -98,6 +100,30 @@ const PricingPlans = () => {
     },
   ];
 
+  const handlePlanChange = async (planId: string, planName: string) => {
+    if (!window.confirm(`Switch your subscription to ${planName} (${isAnnual ? 'annual' : 'monthly'})? Your existing subscription is updated and Stripe adjusts the next invoice for the time remaining.`)) return;
+    setCheckoutPlan(planId);
+    try {
+      const { data, error } = await supabase.functions.invoke('change-subscription-plan', { body: { planId, isAnnual } });
+      if (error) {
+        const ctx = (error as { context?: { json: () => Promise<{ error?: string; message?: string }> } }).context;
+        const body = ctx ? await ctx.json().catch(() => null) : null;
+        if (body?.error === 'no_subscription') {
+          toast({ title: 'No active subscription found', description: 'Open Settings → Billing, or contact support.', variant: 'destructive' });
+          return;
+        }
+        throw new Error(body?.message || error.message);
+      }
+      await supabase.functions.invoke('check-subscription').catch(() => undefined);
+      toast({ title: 'Plan changed', description: `You're now on ${data?.plan ?? planName}.` });
+      window.location.reload();
+    } catch (err: unknown) {
+      toast({ title: 'Plan not changed', description: err instanceof Error ? err.message : 'Please try again later.', variant: 'destructive' });
+    } finally {
+      setCheckoutPlan(null);
+    }
+  };
+
   const handlePlanSelect = async (planId: string) => {
     if (!user) {
       toast({
@@ -172,18 +198,8 @@ const PricingPlans = () => {
       });
     }
   };
-  const getCurrentPlanBadge = (planId: string) => {
-    if (!isPremium && planId === 'starter') {
-      return <Badge className="absolute -top-1 -right-2 bg-green-500">Current Plan</Badge>;
-    }
-    if (isPremium && subscription_tier === 'Professional' && planId === 'professional') {
-      return <Badge className="absolute -top-1 -right-2 bg-green-500">Current Plan</Badge>;
-    }
-    if (isPremium && subscription_tier === 'Enterprise' && planId === 'enterprise') {
-      return <Badge className="absolute -top-1 -right-2 bg-green-500">Current Plan</Badge>;
-    }
-    return null;
-  };
+  const getCurrentPlanBadge = (planId: string) =>
+    isCurrent(planId) ? <Badge className="absolute -top-1 -right-2 bg-success text-success-foreground">Your current plan</Badge> : null;
 
   return (
     <>
@@ -290,8 +306,9 @@ const PricingPlans = () => {
 
                 <CardContent className="pt-0">
                   <Button 
-                    onClick={() => handlePlanSelect(plan.id)}
-                    disabled={checkoutPlan !== null}
+                    onClick={() => (subscribed ? handlePlanChange(plan.id, plan.name) : handlePlanSelect(plan.id))}
+                    disabled={checkoutPlan !== null || isCurrent(plan.id)}
+                    aria-disabled={isCurrent(plan.id)}
                     className={`w-full mb-6 ${
                       plan.popular 
                         ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700' 
@@ -300,7 +317,7 @@ const PricingPlans = () => {
                         : 'bg-gray-900 hover:bg-gray-800'
                     } text-white font-semibold py-3`}
                   >
-                    {checkoutPlan === plan.id ? 'Redirecting to checkout…' : plan.cta}
+                    {isCurrent(plan.id) ? 'Your current plan' : checkoutPlan === plan.id ? (subscribed ? 'Changing plan…' : 'Redirecting to checkout…') : subscribed ? `Switch to ${plan.name}` : plan.cta}
                   </Button>
 
                   <ul className="space-y-3">
@@ -328,7 +345,7 @@ const PricingPlans = () => {
                 Can I change plans anytime?
               </h4>
               <p className="text-gray-600">
-                Yes. Manage or cancel your subscription any time from Settings → Billing, which opens your secure Stripe billing portal.
+                Yes. On this page, choose \"Switch to\" on another plan — your existing subscription is updated, never duplicated, and Stripe adjusts the next invoice. To cancel or update your card, use Settings → Billing.
               </p>
             </div>
             <div className="text-left">
@@ -344,7 +361,7 @@ const PricingPlans = () => {
               What payment methods do you accept?
             </h4>
             <p className="text-gray-600">
-              Subscriptions are billed securely by Stripe and accept all major credit and debit cards. Crypto payment remains available for one-off purchases.
+              Subscriptions are billed securely by Stripe and accept all major credit and debit cards.
             </p>
             </div>
             <div className="text-left">
