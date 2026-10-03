@@ -124,3 +124,37 @@ export function validateStep(step: SimpleStep): string | null {
   if (step.kind === 'x' && step.config.text.length > 280) return 'X: post is longer than 280 characters';
   return null;
 }
+
+export interface StepResult { ok: boolean; message: string }
+export type Invoke = (fn: string, body: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
+
+async function errorText(error: unknown): Promise<string> {
+  const ctx = (error as { context?: { json?: () => Promise<{ error?: string; message?: string }> } })?.context;
+  if (ctx?.json) {
+    const body = await ctx.json().catch(() => null);
+    if (body?.error || body?.message) return String(body.error || body.message);
+  }
+  return error instanceof Error ? error.message : 'Something went wrong';
+}
+
+/** Runs one step. Success is reported ONLY when the server explicitly confirms it. */
+export async function executeStep(step: SimpleStep, workflowId: string | null, invoke: Invoke): Promise<StepResult> {
+  const c = step.config;
+  const confirmed = async (fn: string, body: Record<string, unknown>, okMessage: string): Promise<StepResult> => {
+    const { data, error } = await invoke(fn, body);
+    if (error) return { ok: false, message: await errorText(error) };
+    const d = data as { success?: boolean; error?: string; message?: string } | null;
+    return d?.success === true ? { ok: true, message: okMessage } : { ok: false, message: d?.error || d?.message || 'Not confirmed by the server' };
+  };
+  try {
+    if (step.kind === 'email') return await confirmed('workflow-send-email', { to: c.to, subject: c.subject, body: c.body, workflowId }, 'Email sent');
+    if (step.kind === 'x') return await confirmed('workflow-twitter-post', { text: c.text, workflowId }, 'Posted on X');
+    if (step.kind === 'linkedin') return await confirmed('workflow-linkedin-post', { text: c.text, visibility: 'PUBLIC', workflowId }, 'Posted on LinkedIn');
+    const { data, error } = await invoke('workflow-execute', { workflow_id: workflowId, steps: [{ type: 'whatsapp.send', to: c.to.trim(), body: c.body }] });
+    if (error) return { ok: false, message: await errorText(error) };
+    const r = (data as { results?: { ok?: boolean; error?: string; message?: string }[] } | null)?.results?.[0];
+    return r?.ok === true ? { ok: true, message: 'WhatsApp message sent' } : { ok: false, message: r?.message || r?.error || 'Not confirmed by the server' };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : 'Failed' };
+  }
+}

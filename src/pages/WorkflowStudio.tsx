@@ -12,11 +12,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  STEP_DEFINITIONS, SimpleStep, StepKind, parseSavedSteps, serializeSteps, stepDefinition, validateStep,
+  STEP_DEFINITIONS, SimpleStep, StepResult, StepKind, parseSavedSteps, serializeSteps, stepDefinition, validateStep, executeStep,
 } from '@/lib/workflowSteps';
 
 interface SavedWorkflow { id: string; name: string; description: string | null; workflow_steps: unknown; updated_at: string }
-interface StepResult { ok: boolean; message: string }
 
 const newStep = (kind: StepKind): SimpleStep => ({
   id: `step_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
@@ -24,36 +23,8 @@ const newStep = (kind: StepKind): SimpleStep => ({
   config: Object.fromEntries(stepDefinition(kind).fields.map((f) => [f.key, ''])),
 });
 
-async function errorText(error: unknown): Promise<string> {
-  const ctx = (error as { context?: { json?: () => Promise<{ error?: string; message?: string }> } })?.context;
-  if (ctx?.json) {
-    const body = await ctx.json().catch(() => null);
-    if (body?.message || body?.error) return String(body.message || body.error);
-  }
-  return error instanceof Error ? error.message : 'Something went wrong';
-}
-
-async function runStep(step: SimpleStep, workflowId: string | null): Promise<StepResult> {
-  const c = step.config;
-  if (step.kind === 'email') {
-    const { error } = await supabase.functions.invoke('workflow-send-email', { body: { to: c.to, subject: c.subject, body: c.body, workflowId } });
-    return error ? { ok: false, message: await errorText(error) } : { ok: true, message: 'Email sent' };
-  }
-  if (step.kind === 'x') {
-    const { error } = await supabase.functions.invoke('workflow-twitter-post', { body: { text: c.text, workflowId } });
-    return error ? { ok: false, message: await errorText(error) } : { ok: true, message: 'Posted on X' };
-  }
-  if (step.kind === 'linkedin') {
-    const { error } = await supabase.functions.invoke('workflow-linkedin-post', { body: { text: c.text, visibility: 'PUBLIC', workflowId } });
-    return error ? { ok: false, message: await errorText(error) } : { ok: true, message: 'Posted on LinkedIn' };
-  }
-  const { data, error } = await supabase.functions.invoke('workflow-execute', {
-    body: { workflow_id: workflowId, steps: [{ type: 'whatsapp.send', to: c.to.trim(), body: c.body }] },
-  });
-  if (error) return { ok: false, message: await errorText(error) };
-  const r = data?.results?.[0];
-  return r?.ok ? { ok: true, message: 'WhatsApp message sent' } : { ok: false, message: r?.message || r?.error || 'Not sent' };
-}
+const runStep = (step: SimpleStep, workflowId: string | null) =>
+  executeStep(step, workflowId, (fn, body) => supabase.functions.invoke(fn, { body }));
 
 const WorkflowStudio = () => {
   const { user } = useAuth();
