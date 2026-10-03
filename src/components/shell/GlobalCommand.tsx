@@ -16,7 +16,7 @@ const destinations = [
   { label: 'Tasks', path: '/project-management?view=list', icon: FileText },
   { label: 'Calendar', path: '/project-management?view=calendar', icon: CalendarDays },
   { label: 'CRM and contacts', path: '/crm', icon: Users },
-  { label: 'AI workspace', path: '/ai-workspace', icon: Bot },
+  { label: 'AI Studio', path: '/ai-studio', icon: Bot },
   { label: 'Settings', path: '/settings', icon: Settings },
 ];
 

@@ -91,7 +91,7 @@ const UnifiedSearchResults = ({
             <Badge variant="outline">Invoice Generator</Badge>
             <Badge variant="outline">Contract Templates</Badge>
             <Badge variant="outline">CRM System</Badge>
-            <Badge variant="outline">AI Workspace</Badge>
+            <Badge variant="outline">Workspaces</Badge>
             <Badge variant="outline">Business Cards</Badge>
           </div>
         </CardContent>

@@ -50,7 +50,7 @@ const STEPS: TourStep[] = [
     icon: MessageSquare,
     title: 'AI Assistant — your 24/7 helper 💬',
     body: 'Ask questions about your business in plain English. The assistant works with your own data to give instant insights and recommendations.',
-    cta: { label: 'Try the assistant', to: '/ai-workspace' },
+    cta: { label: 'Try the assistant', to: '/ai-studio' },
     accent: 'from-sky-500/20 to-sky-500/5',
   },
   {

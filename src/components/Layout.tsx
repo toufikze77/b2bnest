@@ -12,7 +12,7 @@ const Layout = ({ children }: LayoutProps) => {
   const { pathname } = useLocation();
   const appPrefixes = [
     '/dashboard', '/business-overview', '/settings', '/profile-setup', '/onboarding',
-    '/crm', '/project-management', '/lead-generation', '/rota', '/ai-workspace',
+    '/crm', '/project-management', '/lead-generation', '/rota',
     '/workflow-studio', '/integrations/', '/business-tools', '/template-center', '/workspaces',
   ];
   const isAppRoute = appPrefixes.some((path) => pathname === path || pathname.startsWith(`${path}/`));

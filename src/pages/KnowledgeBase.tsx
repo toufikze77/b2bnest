@@ -64,7 +64,7 @@ const KnowledgeBase = () => {
         { title: 'iCloud Calendar Setup', description: 'Connect your Apple calendar to B2BNEST', readTime: '4 min' },
         { title: 'Outlook 365 Integration', description: 'Microsoft calendar and email integration', readTime: '6 min' },
         { title: 'OneDrive Connection', description: 'Access and manage your OneDrive files', readTime: '5 min' },
-        { title: 'Social Media Automation', description: 'Connect Twitter, LinkedIn, and Facebook', readTime: '8 min' },
+        { title: 'Social Media Automation', description: 'Connect X (Twitter) and LinkedIn for workflow posts', readTime: '8 min' },
         { title: 'HMRC Integration Setup', description: 'Step-by-step guide to connect HMRC: obtain Client ID/Secret from HMRC Developer Hub, configure in Settings → HMRC tab, and start OAuth flow', readTime: '12 min' },
         { title: 'HMRC Client ID & Secret', description: 'How to register on HMRC Developer Hub, create an application, and obtain your API credentials for Making Tax Digital', readTime: '8 min' },
         { title: 'Email Notifications Setup', description: 'Configure notification preferences for tasks, projects, and team updates in Settings → Notifications', readTime: '4 min' }
@@ -90,11 +90,8 @@ const KnowledgeBase = () => {
       icon: Zap,
       color: 'bg-indigo-500',
       articles: [
-        { title: 'Creating Your First Workflow', description: 'Visual workflow builder tutorial', readTime: '8 min' },
-        { title: 'Workflow Triggers', description: 'Understanding events that start workflows', readTime: '6 min' },
-        { title: 'Email Automation', description: 'Automate email sending with workflows', readTime: '7 min' },
-        { title: 'Social Media Scheduling', description: 'Auto-post to Twitter, LinkedIn, Facebook', readTime: '9 min' },
-        { title: 'Advanced Workflows', description: 'Complex automation with conditions and loops', readTime: '12 min' }
+        { title: 'Creating Your First Workflow', description: 'Set up "When I click Run now → Do this" steps', readTime: '4 min' },
+        { title: 'Workflow Steps', description: 'Send an email, a WhatsApp message, or post on X or LinkedIn', readTime: '4 min' }
       ]
     },
     {

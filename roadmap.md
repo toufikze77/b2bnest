@@ -125,3 +125,14 @@
 - [x] AI generation staging: credit ledger/reservation SQL, rollback, 44 DB checks, v1 schema (not live)
 - [ ] AI generation: approve price (proposed 1 credit) + admin cap (proposed 300/month) — owner
 - [ ] AI generation: edge function + customer/admin screens — after approval
+
+# Simplification round (2026-10-03, preview)
+
+- [x] Temporary AI cost test recorded complete and cleaned up (function, secret, lock table removed); customer AI generation stays off; larger AI migration not applied
+- [x] Remove standalone AI Workspace from navigation/promotion; /ai-workspace redirects; saved data kept
+- [x] Workflow Studio: audit + simplify to "When this happens → Do this"; hide steps that don't run
+- [x] Remove "Request a template" from Template Centre
+- [x] Pricing: current plan disabled "Your current plan"; plan changes update the existing Stripe subscription
+- [x] Update Help / Knowledge base / assistant answers
+- [ ] Separate review (not started): Starter 1 / Professional 25 / Enterprise 50 seats — no entitlement change
+- [ ] Owner signed-in review: plan switch on a real subscription; Workflows run on real accounts

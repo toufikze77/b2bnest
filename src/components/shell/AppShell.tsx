@@ -50,7 +50,7 @@ const groups = [
   ] },
   { label: 'Team', items: [{ label: 'Employee rota', to: '/rota', icon: Users }] },
   { label: 'Automate', items: [
-    { label: 'AI workspace', to: '/ai-workspace', icon: Bot },
+    { label: 'AI Studio', to: '/ai-studio', icon: Bot },
     { label: 'Workflows', to: '/workflow-studio', icon: WandSparkles },
   ] },
   { label: 'More', items: [
@@ -164,7 +164,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <DropdownMenuItem onSelect={() => navigate('/business-tools')}><Receipt className="mr-2 h-4 w-4" />Invoice or quote</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="ghost" size="icon" className="hidden h-10 w-10 sm:inline-flex" onClick={() => navigate('/ai-workspace')} aria-label="Open AI workspace" title="AI workspace"><Bot className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="hidden h-10 w-10 sm:inline-flex" onClick={() => navigate('/ai-studio')} aria-label="Open AI Studio" title="AI Studio"><Bot className="h-4 w-4" /></Button>
             <NotificationsPanel />
             <Button variant="ghost" size="icon" className="hidden h-10 w-10 lg:inline-flex" onClick={() => setFeedbackOpen(true)} aria-label="Help and feedback" title="Help and feedback"><HelpCircle className="h-4 w-4" /></Button>
             <DropdownMenu>

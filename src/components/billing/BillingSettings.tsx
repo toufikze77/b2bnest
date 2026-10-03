@@ -66,11 +66,9 @@ const BillingSettings = () => {
             {opening ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ExternalLink className="h-4 w-4 mr-2" />}
             Manage billing
           </Button>
-          {!subscribed && (
-            <Button variant="outline" onClick={() => (window.location.href = '/pricing')}>
-              View plans
-            </Button>
-          )}
+          <Button variant="outline" onClick={() => (window.location.href = '/pricing')}>
+            {subscribed ? 'Change plan' : 'View plans'}
+          </Button>
         </div>
 
         <p className="text-xs text-muted-foreground">

@@ -1,427 +1,261 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Play, Save, Settings, History, Share2, Download, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { AlertTriangle, ArrowDown, ArrowUp, CheckCircle2, Loader2, MousePointerClick, Play, Plus, Save, Trash2, XCircle, Zap } from 'lucide-react';
+import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import WorkflowCanvas from '@/components/workflow/WorkflowCanvas';
-import WorkflowSidebar from '@/components/workflow/WorkflowSidebar';
-import NodeConfigurator from '@/components/workflow/NodeConfigurator';
-import ExecutionHistory from '@/components/workflow/ExecutionHistory';
-import WorkflowTemplateSelector from '@/components/workflow/WorkflowTemplateSelector';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { WorkflowTemplate } from '@/data/workflowTemplates';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  STEP_DEFINITIONS, SimpleStep, StepKind, parseSavedSteps, serializeSteps, stepDefinition, validateStep,
+} from '@/lib/workflowSteps';
 
-export interface WorkflowNode {
-  id: string;
-  type: 'trigger' | 'action' | 'condition' | 'transform' | 'integration';
-  category: string;
-  name: string;
-  position: { x: number; y: number };
-  config: Record<string, any>;
-  connections: string[];
+interface SavedWorkflow { id: string; name: string; description: string | null; workflow_steps: unknown; updated_at: string }
+interface StepResult { ok: boolean; message: string }
+
+const newStep = (kind: StepKind): SimpleStep => ({
+  id: `step_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+  kind,
+  config: Object.fromEntries(stepDefinition(kind).fields.map((f) => [f.key, ''])),
+});
+
+async function errorText(error: unknown): Promise<string> {
+  const ctx = (error as { context?: { json?: () => Promise<{ error?: string; message?: string }> } })?.context;
+  if (ctx?.json) {
+    const body = await ctx.json().catch(() => null);
+    if (body?.message || body?.error) return String(body.message || body.error);
+  }
+  return error instanceof Error ? error.message : 'Something went wrong';
 }
 
-export interface Workflow {
-  id?: string;
-  name: string;
-  description: string;
-  nodes: WorkflowNode[];
-  is_active: boolean;
-  execution_count: number;
+async function runStep(step: SimpleStep, workflowId: string | null): Promise<StepResult> {
+  const c = step.config;
+  if (step.kind === 'email') {
+    const { error } = await supabase.functions.invoke('workflow-send-email', { body: { to: c.to, subject: c.subject, body: c.body, workflowId } });
+    return error ? { ok: false, message: await errorText(error) } : { ok: true, message: 'Email sent' };
+  }
+  if (step.kind === 'x') {
+    const { error } = await supabase.functions.invoke('workflow-twitter-post', { body: { text: c.text, workflowId } });
+    return error ? { ok: false, message: await errorText(error) } : { ok: true, message: 'Posted on X' };
+  }
+  if (step.kind === 'linkedin') {
+    const { error } = await supabase.functions.invoke('workflow-linkedin-post', { body: { text: c.text, visibility: 'PUBLIC', workflowId } });
+    return error ? { ok: false, message: await errorText(error) } : { ok: true, message: 'Posted on LinkedIn' };
+  }
+  const { data, error } = await supabase.functions.invoke('workflow-execute', {
+    body: { workflow_id: workflowId, steps: [{ type: 'whatsapp.send', to: c.to.trim(), body: c.body }] },
+  });
+  if (error) return { ok: false, message: await errorText(error) };
+  const r = data?.results?.[0];
+  return r?.ok ? { ok: true, message: 'WhatsApp message sent' } : { ok: false, message: r?.message || r?.error || 'Not sent' };
 }
 
 const WorkflowStudio = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
-  const [workflow, setWorkflow] = useState<Workflow>({
-    name: 'Untitled Workflow',
-    description: '',
-    nodes: [],
-    is_active: false,
-    execution_count: 0
-  });
-  const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isExecuting, setIsExecuting] = useState(false);
-  const [showTemplateSelector, setShowTemplateSelector] = useState(true);
+  const [list, setList] = useState<SavedWorkflow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [id, setId] = useState<string | null>(null);
+  const [name, setName] = useState('Untitled workflow');
+  const [steps, setSteps] = useState<SimpleStep[]>([]);
+  const [unsupported, setUnsupported] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [results, setResults] = useState<Record<string, StepResult>>({});
 
-  useEffect(() => {
-    loadWorkflow();
-  }, []);
-
-  const loadWorkflow = async () => {
+  const load = useCallback(async () => {
     if (!user) return;
-    
-    // Load the most recent workflow or create a new one
-    const { data, error } = await supabase
-      .from('ai_workflows')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .single();
+    setLoading(true); setLoadError(null);
+    const { data, error } = await supabase.from('ai_workflows')
+      .select('id, name, description, workflow_steps, updated_at')
+      .eq('user_id', user.id).order('updated_at', { ascending: false });
+    if (error) setLoadError(error.message); else setList((data ?? []) as SavedWorkflow[]);
+    setLoading(false);
+  }, [user]);
 
-    if (data && !error) {
-      const nodes = Array.isArray(data.workflow_steps) 
-        ? (data.workflow_steps as unknown as WorkflowNode[])
-        : [];
-      
-      setWorkflow({
-        id: data.id,
-        name: data.name,
-        description: data.description || '',
-        nodes,
-        is_active: data.is_active,
-        execution_count: data.usage_count
-      });
-    }
+  useEffect(() => { load(); }, [load]);
+
+  const open = (w: SavedWorkflow | null) => {
+    setResults({});
+    if (!w) { setId(null); setName('Untitled workflow'); setSteps([]); setUnsupported([]); return; }
+    const parsed = parseSavedSteps(w.workflow_steps);
+    setId(w.id); setName(w.name); setSteps(parsed.steps); setUnsupported(parsed.unsupported);
   };
 
-  const saveWorkflow = async () => {
-    if (!user) {
-      toast.error('Please sign in to save workflows');
-      return;
-    }
+  const update = (sid: string, key: string, value: string) =>
+    setSteps((s) => s.map((x) => (x.id === sid ? { ...x, config: { ...x.config, [key]: value } } : x)));
+  const move = (i: number, d: -1 | 1) => setSteps((s) => {
+    const n = [...s]; const j = i + d; if (j < 0 || j >= n.length) return s;
+    [n[i], n[j]] = [n[j], n[i]]; return n;
+  });
 
-    setIsSaving(true);
-    try {
-      const workflowData = {
-        user_id: user.id,
-        name: workflow.name,
-        description: workflow.description,
-        workflow_steps: workflow.nodes as any,
-        is_active: workflow.is_active,
-        updated_at: new Date().toISOString()
-      };
-
-      if (workflow.id) {
-        const { error } = await supabase
-          .from('ai_workflows')
-          .update(workflowData)
-          .eq('id', workflow.id);
-
-        if (error) throw error;
-      } else {
-        const { data, error } = await supabase
-          .from('ai_workflows')
-          .insert(workflowData)
-          .select()
-          .single();
-
-        if (error) throw error;
-        setWorkflow(prev => ({ ...prev, id: data.id }));
-      }
-
-      toast.success('Workflow saved successfully!');
-    } catch (error) {
-      console.error('Error saving workflow:', error);
-      toast.error('Failed to save workflow');
-    } finally {
-      setIsSaving(false);
-    }
+  const save = async () => {
+    if (!user) return;
+    if (unsupported.length) { toast.error('Remove the steps that can\'t run before saving.'); return; }
+    setSaving(true);
+    const row = { user_id: user.id, name: name.trim() || 'Untitled workflow', workflow_steps: serializeSteps(steps) as never, updated_at: new Date().toISOString() };
+    const res = id
+      ? await supabase.from('ai_workflows').update(row).eq('id', id).eq('user_id', user.id).select('id')
+      : await supabase.from('ai_workflows').insert(row).select('id');
+    setSaving(false);
+    if (res.error || !res.data?.length) { toast.error(`Workflow not saved: ${res.error?.message ?? 'no changes were stored'}`); return; }
+    setId(res.data[0].id); toast.success('Workflow saved'); load();
   };
 
-  const executeWorkflow = async () => {
-    if (!workflow.nodes.length) {
-      toast.error('Add nodes to your workflow first');
-      return;
-    }
-
-    setIsExecuting(true);
-    try {
-      console.log('Executing workflow with nodes:', workflow.nodes);
-      
-      // Execute nodes in sequence
-      for (const node of workflow.nodes) {
-        await executeNode(node);
-      }
-      
-      setWorkflow(prev => ({
-        ...prev,
-        execution_count: prev.execution_count + 1
-      }));
-
-      toast.success('Workflow executed successfully!');
-    } catch (error: any) {
-      console.error('Error executing workflow:', error);
-      toast.error(error.message || 'Failed to execute workflow');
-    } finally {
-      setIsExecuting(false);
-    }
+  const remove = async () => {
+    if (!id || !user || !window.confirm('Delete this workflow? This can\'t be undone.')) return;
+    const { error } = await supabase.from('ai_workflows').delete().eq('id', id).eq('user_id', user.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success('Workflow deleted'); open(null); load();
   };
 
-  const executeNode = async (node: WorkflowNode) => {
-    console.log(`Executing node: ${node.name} (${node.type})`);
-    
-    // Execute based on node type and name
-    if (node.name === 'Send Email (Resend)') {
-      const { data, error } = await supabase.functions.invoke('workflow-send-email', {
-        body: {
-          to: node.config.to,
-          subject: node.config.subject,
-          body: node.config.body,
-          from: node.config.from,
-          workflowId: workflow.id
-        }
-      });
-      
-      if (error) throw new Error(`Email sending failed: ${error.message}`);
-      console.log('Email sent:', data);
+  const problems = steps.map(validateStep).filter(Boolean) as string[];
+  const canRun = steps.length > 0 && !unsupported.length && !problems.length && !running;
+
+  const run = async () => {
+    if (!canRun) return;
+    if (!window.confirm(`Run "${name}" now? This really sends ${steps.length} message${steps.length === 1 ? '' : 's'}/post${steps.length === 1 ? '' : 's'}.`)) return;
+    setRunning(true); setResults({});
+    let failed = 0;
+    for (const step of steps) {
+      const r = await runStep(step, id).catch((e) => ({ ok: false, message: e instanceof Error ? e.message : 'Failed' }));
+      if (!r.ok) failed++;
+      setResults((prev) => ({ ...prev, [step.id]: r }));
     }
-    
-    if (node.name === 'Twitter Post') {
-      const { data, error } = await supabase.functions.invoke('workflow-twitter-post', {
-        body: {
-          text: node.config.text,
-          workflowId: workflow.id
-        }
-      });
-      
-      if (error) throw new Error(`Twitter post failed: ${error.message}`);
-      console.log('Tweet posted:', data);
-    }
-    
-    if (node.name === 'LinkedIn Post') {
-      const { data, error } = await supabase.functions.invoke('workflow-linkedin-post', {
-        body: {
-          text: node.config.text,
-          visibility: node.config.visibility,
-          workflowId: workflow.id
-        }
-      });
-      
-      if (error) throw new Error(`LinkedIn post failed: ${error.message}`);
-      console.log('LinkedIn post created:', data);
-    }
-    
-
-    if (node.name === 'Send WhatsApp') {
-      const { data, error } = await supabase.functions.invoke('workflow-execute', {
-        body: {
-          workflow_id: workflow.id,
-          steps: [{
-            type: 'whatsapp.send',
-            to: node.config.to,
-            body: node.config.body,
-            mediaUrl: node.config.mediaUrl || undefined,
-          }],
-        },
-      });
-      if (error) throw new Error(`WhatsApp send failed: ${error.message}`);
-      const result = data?.results?.[0];
-      if (!result?.ok) throw new Error(`WhatsApp send failed: ${result?.error || 'unknown'}`);
-      console.log('WhatsApp sent:', result);
-    }
-
-    // Add delay between nodes to avoid rate limiting
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  };
-
-  const addNode = (nodeType: WorkflowNode) => {
-    const newNode: WorkflowNode = {
-      ...nodeType,
-      id: `node_${Date.now()}`,
-      position: { x: 100, y: 100 + workflow.nodes.length * 120 },
-      connections: []
-    };
-
-    setWorkflow(prev => ({
-      ...prev,
-      nodes: [...prev.nodes, newNode]
-    }));
-  };
-
-  const updateNode = (nodeId: string, updates: Partial<WorkflowNode>) => {
-    setWorkflow(prev => ({
-      ...prev,
-      nodes: prev.nodes.map(node =>
-        node.id === nodeId ? { ...node, ...updates } : node
-      )
-    }));
-  };
-
-  const deleteNode = (nodeId: string) => {
-    setWorkflow(prev => ({
-      ...prev,
-      nodes: prev.nodes.filter(node => node.id !== nodeId)
-    }));
-    if (selectedNode?.id === nodeId) {
-      setSelectedNode(null);
-    }
-  };
-
-  const connectNodes = (fromId: string, toId: string) => {
-    setWorkflow(prev => ({
-      ...prev,
-      nodes: prev.nodes.map(node =>
-        node.id === fromId
-          ? { ...node, connections: [...node.connections, toId] }
-          : node
-      )
-    }));
-  };
-
-  const handleTemplateSelect = (template: WorkflowTemplate) => {
-    setWorkflow({
-      name: template.name,
-      description: template.description,
-      nodes: template.presetNodes || [],
-      is_active: false,
-      execution_count: 0
-    });
-    toast.success(`Created workflow: ${template.name}`);
-  };
-
-  const createNewWorkflow = () => {
-    setShowTemplateSelector(true);
+    setRunning(false);
+    if (failed) toast.error(`${failed} of ${steps.length} steps failed — see the results below.`);
+    else toast.success('All steps completed');
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(-1)}
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <input
-                type="text"
-                value={workflow.name}
-                onChange={(e) => setWorkflow(prev => ({ ...prev, name: e.target.value }))}
-                className="text-xl font-semibold bg-transparent border-none outline-none"
-                placeholder="Workflow Name"
-              />
-              <p className="text-sm text-muted-foreground">
-                {workflow.nodes.length} nodes • {workflow.execution_count} executions
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={createNewWorkflow}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={executeWorkflow}
-              disabled={isExecuting || !workflow.nodes.length}
-            >
-              <Play className="h-4 w-4 mr-2" />
-              {isExecuting ? 'Executing...' : 'Test Run'}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={saveWorkflow}
-              disabled={isSaving}
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {isSaving ? 'Saving...' : 'Save'}
-            </Button>
-            <Button variant="outline" size="sm">
-              <Share2 className="h-4 w-4 mr-2" />
-              Share
-            </Button>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar - Node Library */}
-        <WorkflowSidebar onAddNode={addNode} />
-
-        {/* Canvas Area */}
-        <div className="flex-1 flex flex-col">
-          <Tabs defaultValue="canvas" className="flex-1 flex flex-col">
-            <div className="border-b px-6">
-              <TabsList>
-                <TabsTrigger value="canvas">Canvas</TabsTrigger>
-                <TabsTrigger value="history">Execution History</TabsTrigger>
-                <TabsTrigger value="settings">Settings</TabsTrigger>
-              </TabsList>
-            </div>
-
-            <TabsContent value="canvas" className="flex-1 m-0">
-              <WorkflowCanvas
-                nodes={workflow.nodes}
-                selectedNode={selectedNode}
-                onNodeSelect={setSelectedNode}
-                onNodeUpdate={updateNode}
-                onNodeDelete={deleteNode}
-                onNodeConnect={connectNodes}
-              />
-            </TabsContent>
-
-            <TabsContent value="history" className="flex-1 m-0 p-6 overflow-auto">
-              <ExecutionHistory workflowId={workflow.id} />
-            </TabsContent>
-
-            <TabsContent value="settings" className="flex-1 m-0 p-6 overflow-auto">
-              <div className="max-w-2xl space-y-6">
-                <div>
-                  <label className="text-sm font-medium">Workflow Description</label>
-                  <textarea
-                    value={workflow.description}
-                    onChange={(e) => setWorkflow(prev => ({ ...prev, description: e.target.value }))}
-                    className="w-full mt-2 p-3 border rounded-lg"
-                    rows={4}
-                    placeholder="Describe what this workflow does..."
-                  />
-                </div>
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <p className="font-medium">Active Status</p>
-                    <p className="text-sm text-muted-foreground">
-                      Enable this workflow to run automatically
-                    </p>
-                  </div>
-                  <Button
-                    variant={workflow.is_active ? 'default' : 'outline'}
-                    onClick={() => setWorkflow(prev => ({ ...prev, is_active: !prev.is_active }))}
-                  >
-                    {workflow.is_active ? 'Active' : 'Inactive'}
-                  </Button>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Right Sidebar - Node Configuration */}
-        {selectedNode && (
-          <NodeConfigurator
-            node={selectedNode}
-            onUpdate={(updates) => updateNode(selectedNode.id, updates)}
-            onClose={() => setSelectedNode(null)}
-          />
-        )}
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold tracking-tight">Workflows</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Set up a list of messages and posts, then send them all with one click.</p>
       </div>
 
-      {/* Template Selector Dialog */}
-      <WorkflowTemplateSelector
-        open={showTemplateSelector}
-        onSelect={handleTemplateSelect}
-        onClose={() => setShowTemplateSelector(false)}
-      />
+      <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+        <aside className="space-y-2">
+          <Button className="w-full" onClick={() => open(null)}><Plus className="mr-2 h-4 w-4" />New workflow</Button>
+          {loading ? <p className="flex items-center gap-2 p-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Loading…</p>
+            : loadError ? <div className="p-2 text-sm text-destructive">Couldn't load workflows. <button className="underline" onClick={load}>Retry</button></div>
+            : list.length === 0 ? <p className="p-2 text-sm text-muted-foreground">No saved workflows yet.</p>
+            : (
+              <ul className="space-y-1" aria-label="Saved workflows">
+                {list.map((w) => {
+                  const p = parseSavedSteps(w.workflow_steps);
+                  return (
+                    <li key={w.id}>
+                      <button onClick={() => open(w)} aria-current={w.id === id ? 'true' : undefined}
+                        className={`w-full rounded-md border px-3 py-2 text-left text-sm transition-colors hover:bg-muted ${w.id === id ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                        <span className="block truncate font-medium">{w.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {p.unsupported.length ? 'Old workflow — can\'t run' : `${p.steps.length} step${p.steps.length === 1 ? '' : 's'}`}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+        </aside>
+
+        <section className="space-y-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-[220px] flex-1">
+              <Label htmlFor="wf-name">Workflow name</Label>
+              <Input id="wf-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} />
+            </div>
+            <Button variant="outline" onClick={save} disabled={saving}>{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Save</Button>
+            <Button onClick={run} disabled={!canRun}>{running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}Run now</Button>
+            {id && <Button variant="ghost" size="icon" onClick={remove} aria-label="Delete workflow"><Trash2 className="h-4 w-4" /></Button>}
+          </div>
+
+          {unsupported.length > 0 && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>This workflow was made in the old builder and can't run</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p>These steps were never carried out automatically: {unsupported.join(', ')}. Your saved workflow hasn't been changed.</p>
+                <Button size="sm" variant="outline" onClick={() => setUnsupported([])}>Remove these steps (saved only when you click Save)</Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base"><MousePointerClick className="h-4 w-4 text-primary" />When this happens</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm font-medium">When I click "Run now"</div>
+              <p className="mt-2 text-xs text-muted-foreground">Automatic starts (on a schedule, when a form is submitted or a record changes) aren't available yet.</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base"><Zap className="h-4 w-4 text-primary" />Do this</CardTitle>
+              <CardDescription>Steps run in order. Each one really sends a message or post.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {steps.length === 0 && <p className="text-sm text-muted-foreground">No steps yet. Add one below.</p>}
+              {steps.map((s, i) => {
+                const def = stepDefinition(s.kind); const r = results[s.id]; const problem = validateStep(s);
+                return (
+                  <div key={s.id} className="rounded-lg border border-border p-4">
+                    <div className="mb-3 flex items-center gap-2">
+                      <Badge variant="secondary">{i + 1}</Badge>
+                      <span className="font-medium">{def.label}</span>
+                      <div className="ml-auto flex">
+                        <Button variant="ghost" size="icon" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Move step up"><ArrowUp className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => move(i, 1)} disabled={i === steps.length - 1} aria-label="Move step down"><ArrowDown className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => setSteps((x) => x.filter((y) => y.id !== s.id))} aria-label="Remove step"><Trash2 className="h-4 w-4" /></Button>
+                      </div>
+                    </div>
+                    <p className="mb-3 text-xs text-muted-foreground">{def.help}</p>
+                    <div className="space-y-3">
+                      {def.fields.map((f) => {
+                        const fid = `${s.id}-${f.key}`;
+                        return (
+                          <div key={f.key}>
+                            <Label htmlFor={fid}>{f.label}</Label>
+                            {f.multiline
+                              ? <Textarea id={fid} rows={3} value={s.config[f.key]} placeholder={f.placeholder} onChange={(e) => update(s.id, f.key, e.target.value)} />
+                              : <Input id={fid} value={s.config[f.key]} placeholder={f.placeholder} onChange={(e) => update(s.id, f.key, e.target.value)} />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {problem && <p className="mt-2 text-xs text-muted-foreground">{problem}</p>}
+                    {r && (
+                      <p className={`mt-3 flex items-center gap-2 text-sm ${r.ok ? 'text-success' : 'text-destructive'}`} role="status">
+                        {r.ok ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}{r.message}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+              <div className="flex items-center gap-2">
+                <Select value="" onValueChange={(v) => setSteps((x) => [...x, newStep(v as StepKind)])}>
+                  <SelectTrigger className="w-[260px]" aria-label="Add a step"><SelectValue placeholder="+ Add a step" /></SelectTrigger>
+                  <SelectContent>
+                    {STEP_DEFINITIONS.map((d) => <SelectItem key={d.kind} value={d.kind}>{d.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Connect accounts in <Link to="/business-tools?tool=integrations" className="underline">Integrations</Link> or <Link to="/integrations/whatsapp" className="underline">WhatsApp</Link> first.
+              </p>
+            </CardContent>
+          </Card>
+        </section>
+      </div>
     </div>
   );
 };

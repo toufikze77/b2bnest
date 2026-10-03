@@ -36,12 +36,12 @@ describe('AI template quality gate (stored fixtures)', () => {
   it('rejects the salon output for repeated task titles', () => {
     const r = parseAiTemplate(salon);
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.errors.join(' ')).toMatch(/repeated task titles.*client appointment/);
+    if (!r.ok) expect((r as { errors: string[] }).errors.join(' ')).toMatch(/repeated task titles.*client appointment/);
   });
   it('rejects the builder output for "Job A / Job B" placeholders', () => {
     const r = parseAiTemplate(builder);
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.errors.join(' ')).toMatch(/placeholder task titles \(Job A, Job B, Job C\)/);
+    if (!r.ok) expect((r as { errors: string[] }).errors.join(' ')).toMatch(/placeholder task titles \(Job A, Job B, Job C\)/);
   });
   it('accepts the accountancy and café outputs', () => {
     expect(parseAiTemplate(accountancy).ok).toBe(true);

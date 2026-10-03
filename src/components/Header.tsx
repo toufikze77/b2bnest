@@ -78,12 +78,6 @@ const Header = () => {
                 <DropdownMenuItem asChild>
                   <Link to="/ai-showcase">AI Showcase</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/ai-workspace">
-                    <Brain className="h-4 w-4 mr-2" />
-                    AI Workspace
-                  </Link>
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <Link to="/pricing" className="text-gray-700 hover:text-blue-600 transition-colors">
@@ -287,14 +281,6 @@ const Header = () => {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     AI Showcase
-                  </Link>
-                  <Link
-                    to="/ai-workspace"
-                    className="block text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Brain className="h-4 w-4 mr-2" />
-                    AI Workspace
                   </Link>
                 </div>
               </div>

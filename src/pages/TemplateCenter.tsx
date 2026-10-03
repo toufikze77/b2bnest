@@ -539,16 +539,6 @@ const TemplateCenter = () => {
               ))}
             </div>
           )}
-
-          <div className="mt-10 rounded-xl border border-border bg-muted/30 p-6">
-            <h2 className="text-lg font-semibold">Need something specific?</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Tell us the workflow you run and we will add it to the Template Centre.
-            </p>
-            <Button asChild size="sm" variant="outline" className="mt-3">
-              <Link to="/contact">Request a template</Link>
-            </Button>
-          </div>
         </main>
       </div>
 

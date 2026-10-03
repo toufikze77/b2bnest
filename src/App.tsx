@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import RouteFallback from "@/components/shell/RouteFallback";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/hooks/useAuth";
 import { UserSettingsProvider } from "@/hooks/useUserSettings";
@@ -32,7 +32,6 @@ const ProfileSetup = lazy(() => import('@/pages/ProfileSetup'));
 const Forum = lazy(() => import('@/pages/Forum'));
 const AIShowcase = lazy(() => import('@/pages/AIShowcase'));
 const AIStudio = lazy(() => import('@/pages/AIStudio'));
-const AIWorkspace = lazy(() => import('@/pages/AIWorkspace'));
 const WorkflowStudio = lazy(() => import('@/pages/WorkflowStudio'));
 const Pricing = lazy(() => import('@/pages/Pricing'));
 const HumanResources = lazy(() => import('@/pages/categories/HumanResources'));
@@ -127,7 +126,7 @@ function App() {
               <Route path="/business-tools/notepro" element={<ProtectedRoute><NotePro /></ProtectedRoute>} />
               <Route path="/ai-showcase" element={<AIShowcase />} />
               <Route path="/ai-studio" element={<AIStudio />} />
-              <Route path="/ai-workspace" element={<ProtectedRoute><AIWorkspace /></ProtectedRoute>} />
+              <Route path="/ai-workspace" element={<Navigate to="/ai-studio" replace />} />
               <Route path="/workflow-studio" element={<ProtectedRoute><WorkflowStudio /></ProtectedRoute>} />
               <Route path="/integrations/whatsapp" element={<ProtectedRoute><WhatsAppSettings /></ProtectedRoute>} />
             <Route path="/forum" element={<Forum />} />
