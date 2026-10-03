@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS public.staging_cost_test_runs;
