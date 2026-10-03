@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, ArrowDown, ArrowUp, CheckCircle2, Loader2, MousePointerClick, Play, Plus, Save, Trash2, XCircle, Zap } from 'lucide-react';
+import { ArrowDown, ArrowUp, CheckCircle2, Loader2, MousePointerClick, Play, Plus, Save, Trash2, XCircle, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   STEP_DEFINITIONS, SimpleStep, StepKind, parseSavedSteps, serializeSteps, stepDefinition, validateStep,
@@ -81,9 +80,9 @@ const WorkflowStudio = () => {
 
   useEffect(() => { load(); }, [load]);
 
-  const open = (w: SavedWorkflow | null) => {
+  const open = (w: SavedWorkflow | null, newName = 'Untitled workflow') => {
     setResults({});
-    if (!w) { setId(null); setName('Untitled workflow'); setSteps([]); setUnsupported([]); return; }
+    if (!w) { setId(null); setName(newName); setSteps([]); setUnsupported([]); return; }
     const parsed = parseSavedSteps(w.workflow_steps);
     setId(w.id); setName(w.name); setSteps(parsed.steps); setUnsupported(parsed.unsupported);
   };
@@ -97,7 +96,7 @@ const WorkflowStudio = () => {
 
   const save = async () => {
     if (!user) return;
-    if (unsupported.length) { toast.error('Remove the steps that can\'t run before saving.'); return; }
+    if (unsupported.length) return; // archived legacy workflows are read-only
     setSaving(true);
     const row = { user_id: user.id, name: name.trim() || 'Untitled workflow', workflow_steps: serializeSteps(steps) as never, updated_at: new Date().toISOString() };
     const res = id
@@ -109,7 +108,7 @@ const WorkflowStudio = () => {
   };
 
   const remove = async () => {
-    if (!id || !user || !window.confirm('Delete this workflow? This can\'t be undone.')) return;
+    if (!id || !user || unsupported.length || !window.confirm('Delete this workflow? This can\'t be undone.')) return;
     const { error } = await supabase.from('ai_workflows').delete().eq('id', id).eq('user_id', user.id);
     if (error) { toast.error(error.message); return; }
     toast.success('Workflow deleted'); open(null); load();
@@ -119,7 +118,7 @@ const WorkflowStudio = () => {
   const canRun = steps.length > 0 && !unsupported.length && !problems.length && !running;
 
   const run = async () => {
-    if (!canRun) return;
+    if (!canRun || running) return;
     if (!window.confirm(`Run "${name}" now? This really sends ${steps.length} message${steps.length === 1 ? '' : 's'}/post${steps.length === 1 ? '' : 's'}.`)) return;
     setRunning(true); setResults({});
     let failed = 0;
@@ -156,7 +155,7 @@ const WorkflowStudio = () => {
                         className={`w-full rounded-md border px-3 py-2 text-left text-sm transition-colors hover:bg-muted ${w.id === id ? 'border-primary bg-primary/5' : 'border-border'}`}>
                         <span className="block truncate font-medium">{w.name}</span>
                         <span className="text-xs text-muted-foreground">
-                          {p.unsupported.length ? 'Old workflow — can\'t run' : `${p.steps.length} step${p.steps.length === 1 ? '' : 's'}`}
+                          {p.unsupported.length ? 'Archived · Can\'t run' : `${p.steps.length} step${p.steps.length === 1 ? '' : 's'}`}
                         </span>
                       </button>
                     </li>
@@ -167,6 +166,25 @@ const WorkflowStudio = () => {
         </aside>
 
         <section className="space-y-4">
+          {unsupported.length > 0 ? (
+            <Card>
+              <CardHeader>
+                <div className="flex flex-wrap items-center gap-2">
+                  <CardTitle className="text-lg">{name}</CardTitle>
+                  <Badge variant="destructive">Can't run</Badge>
+                  <Badge variant="outline">Archived · read-only</Badge>
+                </div>
+                <CardDescription>Made in the old builder. None of these steps were ever carried out, so this workflow can't run. It's kept exactly as saved and can't be edited here.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ol className="list-decimal space-y-1 pl-6 text-sm text-muted-foreground" aria-label="Saved steps">
+                  {[...unsupported, ...steps.map((x) => stepDefinition(x.kind).label)].map((n, i) => <li key={i}>{n}</li>)}
+                </ol>
+                <Button onClick={() => open(null, `${name} (working)`)}><Plus className="mr-2 h-4 w-4" />Create a working workflow</Button>
+                <p className="text-xs text-muted-foreground">This starts a new, separate workflow. The archived one stays unchanged.</p>
+              </CardContent>
+            </Card>
+          ) : (<>
           <div className="flex flex-wrap items-end gap-3">
             <div className="min-w-[220px] flex-1">
               <Label htmlFor="wf-name">Workflow name</Label>
@@ -177,16 +195,6 @@ const WorkflowStudio = () => {
             {id && <Button variant="ghost" size="icon" onClick={remove} aria-label="Delete workflow"><Trash2 className="h-4 w-4" /></Button>}
           </div>
 
-          {unsupported.length > 0 && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>This workflow was made in the old builder and can't run</AlertTitle>
-              <AlertDescription className="space-y-2">
-                <p>These steps were never carried out automatically: {unsupported.join(', ')}. Your saved workflow hasn't been changed.</p>
-                <Button size="sm" variant="outline" onClick={() => setUnsupported([])}>Remove these steps (saved only when you click Save)</Button>
-              </AlertDescription>
-            </Alert>
-          )}
 
           <Card>
             <CardHeader className="pb-3">
@@ -254,6 +262,7 @@ const WorkflowStudio = () => {
               </p>
             </CardContent>
           </Card>
+          </>)}
         </section>
       </div>
     </div>
