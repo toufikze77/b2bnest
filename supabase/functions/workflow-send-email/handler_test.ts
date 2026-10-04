@@ -61,3 +61,52 @@ Deno.test("SMTP_* (Office 365) settings take priority over Gmail", async () => {
   await makeHandler(deps({ env: (n) => env[n], send: async (c) => { host = c.hostname; } }))(req(ok));
   assertEquals(host, "smtp.office365.com");
 });
+
+import { closeQuietly, classifySmtpError, sanitizeError, UNKNOWN_STATUS } from "./handler.ts";
+
+Deno.test("timeout → 'Delivery status unknown', never 'Nothing was sent'", async () => {
+  const d = deps({ send: () => new Promise((res) => setTimeout(res, 200)) });
+  const b = await (await makeHandler(d)(req(ok))).json();
+  assertEquals(b.error, UNKNOWN_STATUS); assertEquals(b.sent, "unknown");
+  await new Promise((res) => setTimeout(res, 220));
+});
+
+Deno.test("unexplained exception → status unknown, not 'Nothing was sent'", async () => {
+  const r = await makeHandler(deps({ send: async () => { throw new TypeError("Cannot read properties of undefined (reading 'catch')"); } }))(req(ok));
+  const b = await r.json();
+  assertEquals(r.status, 502); assertEquals(b.sent, "unknown"); assertEquals(b.error.includes("Nothing was sent"), false);
+  assertEquals(b.error.includes(UNKNOWN_STATUS), true);
+});
+
+Deno.test("DNS / connection refused / TLS → confirmed not sent", () => {
+  assertEquals(classifySmtpError(Object.assign(new Error("failed to lookup address"), { name: "NotFound" })).code, "provider_unreachable");
+  assertEquals(classifySmtpError(Object.assign(new Error("Connection refused (os error 111)"), { name: "ConnectionRefused" })).sent, "not_sent");
+  assertEquals(classifySmtpError(Object.assign(new Error("invalid peer certificate"), { name: "InvalidData" })).code, "provider_tls_error");
+});
+
+Deno.test("real Gmail 534 text from the live server → auth rejected, not sent", () => {
+  const c = classifySmtpError(new Error("534: 5.7.9 Please log in with your web browser and then try again. For more,5.7.9 information, go to,5.7.9 https://support.google.com/mail/?p=WebLoginRequired x - gsmtp"));
+  assertEquals(c.code, "provider_auth_rejected"); assertEquals(c.sent, "not_sent");
+});
+
+Deno.test("sanitizeError removes the password and username, plain and base64", () => {
+  const s = sanitizeError(new Error(`bad pw hunter2 ${btoa("hunter2")} user me@x.co`), { username: "me@x.co", password: "hunter2" });
+  assertEquals(s.includes("hunter2"), false); assertEquals(s.includes(btoa("hunter2")), false); assertEquals(s.includes("me@x.co"), false);
+});
+
+Deno.test("closeQuietly copes with a synchronous close() (the live bug) and a throwing one", async () => {
+  await closeQuietly({ close: () => undefined });
+  await closeQuietly({ close: () => { throw new Error("closed"); } });
+  await closeQuietly({ close: async () => { throw new Error("closed"); } });
+});
+
+Deno.test("connection check: admins only, never sends mail", async () => {
+  let probed = 0;
+  const base = { probe: async () => { probed++; return { ok: false, stage: "auth", host: "h", port: 465, smtpCode: 534 }; } };
+  const noAdmin = deps({ ...base, isSuperAdmin: async () => false });
+  assertEquals((await makeHandler(noAdmin)(req({ probe: true }))).status, 403);
+  const admin = deps({ ...base, isSuperAdmin: async () => true });
+  const b = await (await makeHandler(admin)(req({ probe: true }))).json();
+  assertEquals(b.probe.smtpCode, 534); assertEquals(b.sent, false); assertEquals(probed, 1);
+  assertEquals(noAdmin.sent + admin.sent, 0);
+});
