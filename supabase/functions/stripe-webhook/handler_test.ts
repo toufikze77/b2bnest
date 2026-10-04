@@ -4,30 +4,31 @@ import { ApplyResult, ClaimResult, makeHandler, Store } from "./handler.ts";
 
 // In-memory store with the same semantics as the SQL functions (atomic claim with lease).
 function memStore() {
-  const events = new Map<string, { status: string; lockedUntil: number }>();
+  const events = new Map<string, { status: string; lockedUntil: number; token: string | null }>();
   const subs = new Map<string, Record<string, unknown> & { at: number }>();
   const payments = new Map<string, string>([["cs_1", "pending"]]);
-  let now = 0;
+  let now = 0, n = 0;
+  const own = (id: string, t: string) => { const e = events.get(id); if (!e || e.token !== t || e.status !== "processing") throw new Error("claim_lost"); };
   const s = {
     events, subs, payments, failNextApply: 0, applyCalls: 0, paymentCalls: 0,
     advance: (ms: number) => { now += ms; },
     async claim(id: string): Promise<ClaimResult> {
-      const e = events.get(id);
-      if (!e) { events.set(id, { status: "processing", lockedUntil: now + 120_000 }); return "claimed"; }
-      if (e.status === "completed") return "completed";
-      if (e.status === "processing" && e.lockedUntil > now) return "busy";
-      e.status = "processing"; e.lockedUntil = now + 120_000; return "claimed";
+      const e = events.get(id); const token = `t${++n}`;
+      if (!e) { events.set(id, { status: "processing", lockedUntil: now + 120_000, token }); return { result: "claimed", token }; }
+      if (e.status === "completed") return { result: "completed" };
+      if (e.status === "processing" && e.lockedUntil > now) return { result: "busy" };
+      Object.assign(e, { status: "processing", lockedUntil: now + 120_000, token }); return { result: "claimed", token };
     },
-    async complete(id: string) { events.get(id)!.status = "completed"; },
-    async release(id: string) { const e = events.get(id)!; if (e.status === "processing") { e.status = "failed"; e.lockedUntil = 0; } },
-    async applySubscriber(row: Record<string, unknown>, at: number): Promise<ApplyResult> {
-      s.applyCalls++;
+    async complete(id: string, t: string) { own(id, t); Object.assign(events.get(id)!, { status: "completed", token: null }); },
+    async release(id: string, t: string) { const e = events.get(id)!; if (e.token === t && e.status === "processing") Object.assign(e, { status: "failed", lockedUntil: 0, token: null }); },
+    async applySubscriber(id: string, t: string, row: Record<string, unknown>, at: number): Promise<ApplyResult> {
+      own(id, t); s.applyCalls++;
       if (s.failNextApply > 0) { s.failNextApply--; throw new Error("db unavailable"); }
       const cur = subs.get(row.email as string);
       if (cur && cur.at > at) return "stale";
       subs.set(row.email as string, { ...row, at }); return "applied";
     },
-    async updatePaymentStatus(a: Record<string, unknown>) { s.paymentCalls++; if (payments.has(a.p_stripe_session_id as string)) payments.set(a.p_stripe_session_id as string, a.p_status as string); },
+    async updatePaymentStatus(id: string, t: string, a: Record<string, unknown>) { own(id, t); s.paymentCalls++; if (payments.has(a.p_stripe_session_id as string)) payments.set(a.p_stripe_session_id as string, a.p_status as string); },
   };
   return s;
 }
@@ -74,7 +75,7 @@ Deno.test("2. simultaneous duplicate deliveries → applied once, the other gets
 Deno.test("3. processing stops partway → lease expires, reclaimed, no duplicate records or credits", async () => {
   const { store, h } = setup();
   // Simulate a crash after claiming: event left 'processing', nothing written.
-  await store.claim("evt_3");
+  await store.claim("evt_3", "checkout.session.completed");
   const e = ev("evt_3", "checkout.session.completed", { id: "cs_1", mode: "payment", payment_intent: "pi_1" });
   const busy = await post(h, e); await busy.body?.cancel(); assertEquals(busy.status, 409);
   store.advance(121_000);
@@ -112,4 +113,35 @@ Deno.test("bad signature → 400, nothing claimed", async () => {
   const h = makeHandler({ store: store as unknown as Store, stripe: {}, verify: async () => { throw new Error("bad"); } });
   const r = await post(h, {}); await r.body?.cancel();
   assertEquals(r.status, 400); assertEquals(store.events.size, 0);
+});
+
+Deno.test("6. expired claim taken over: the old worker can neither write nor complete", async () => {
+  const store = memStore(); const lookup = { value: "b2bnest_starter_monthly_gbp" };
+  let releaseOld!: () => void; const gate = new Promise<void>((r) => { releaseOld = r; });
+  let first = true;
+  const stripe = fakeStripe(lookup);
+  const slow = { ...stripe, customers: { retrieve: async () => { if (first) { first = false; await gate; } return { email: "owner@example.com", metadata: {} }; } } };
+  const h = makeHandler({ store: store as unknown as Store, stripe: slow, verify: async (b) => JSON.parse(b) });
+  const e = ev("evt_6", "customer.subscription.updated", { id: "sub_1" });
+  const oldRun = post(h, e);                       // old worker claims, then stalls mid-processing
+  await new Promise((r) => setTimeout(r, 5));
+  store.advance(121_000);                          // its lease expires
+  lookup.value = "b2bnest_enterprise_monthly_gbp";
+  const fresh = await post(h, e); await fresh.body?.cancel();
+  assertEquals(fresh.status, 200);                 // new worker takes over and completes
+  lookup.value = "b2bnest_starter_monthly_gbp";
+  releaseOld();
+  const old = await oldRun; await old.body?.cancel();
+  assertEquals(old.status, 500);                   // fenced out: claim_lost
+  assertEquals(store.subs.get("owner@example.com")!.plan_key, "enterprise");
+  assertEquals(store.events.get("evt_6")!.status, "completed");
+  assertEquals(store.applyCalls, 1);
+});
+
+Deno.test("7. equal event timestamps are applied (later-processed sync wins)", async () => {
+  const { store, lookup, h } = setup("b2bnest_starter_monthly_gbp");
+  await (await post(h, ev("evt_a", "customer.subscription.updated", { id: "sub_1" }, 1500))).body?.cancel();
+  lookup.value = "b2bnest_professional_monthly_gbp";
+  await (await post(h, ev("evt_b", "invoice.paid", { subscription: "sub_1" }, 1500))).body?.cancel();
+  assertEquals(store.subs.get("owner@example.com")!.plan_key, "professional");
 });
