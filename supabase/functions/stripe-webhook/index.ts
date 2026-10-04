@@ -22,6 +22,8 @@ const handler = stripeSecretKey && webhookSecret
     return makeHandler({
       stripe,
       log: logStep,
+      // Derived from the key prefix (sk_live_/rk_live_ vs sk_test_/rk_test_); no extra secret needed.
+      expectedLivemode: /^(sk|rk)_live_/.test(stripeSecretKey),
       verify: (body, sig) => stripe.webhooks.constructEventAsync(body, sig, webhookSecret),
       store: {
         claim: async (id, type) => {
