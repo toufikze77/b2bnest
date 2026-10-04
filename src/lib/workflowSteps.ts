@@ -147,7 +147,7 @@ export async function executeStep(step: SimpleStep, workflowId: string | null, i
     return d?.success === true ? { ok: true, message: okMessage } : { ok: false, message: d?.error || d?.message || 'Not confirmed by the server' };
   };
   try {
-    if (step.kind === 'email') return await confirmed('workflow-send-email', { to: c.to, subject: c.subject, body: c.body, workflowId }, 'Email sent');
+    if (step.kind === 'email') return await confirmed('workflow-send-email', { to: c.to, subject: c.subject, body: c.body, workflowId }, 'Accepted by the email provider (inbox delivery not confirmed)');
     if (step.kind === 'x') return await confirmed('workflow-twitter-post', { text: c.text, workflowId }, 'Posted on X');
     if (step.kind === 'linkedin') return await confirmed('workflow-linkedin-post', { text: c.text, visibility: 'PUBLIC', workflowId }, 'Posted on LinkedIn');
     const { data, error } = await invoke('workflow-execute', { workflow_id: workflowId, steps: [{ type: 'whatsapp.send', to: c.to.trim(), body: c.body }] });
