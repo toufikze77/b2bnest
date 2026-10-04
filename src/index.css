@@ -37,9 +37,9 @@
     --priority-high: 25 95% 92%;
     --priority-high-foreground: 22 78% 30%;
     --priority-high-border: 24 88% 75%;
-    --priority-medium: 204 94% 92%;
-    --priority-medium-foreground: 205 82% 31%;
-    --priority-medium-border: 203 84% 75%;
+    --priority-medium: 38 96% 90%;
+    --priority-medium-foreground: 30 80% 27%;
+    --priority-medium-border: 36 88% 72%;
     --priority-low: 142 62% 92%;
     --priority-low-foreground: 145 68% 27%;
     --priority-low-border: 142 50% 72%;
@@ -89,9 +89,9 @@
     --priority-high: 24 54% 20%;
     --priority-high-foreground: 28 96% 78%;
     --priority-high-border: 25 64% 41%;
-    --priority-medium: 204 52% 20%;
-    --priority-medium-foreground: 203 95% 80%;
-    --priority-medium-border: 204 60% 41%;
+    --priority-medium: 35 52% 20%;
+    --priority-medium-foreground: 39 96% 76%;
+    --priority-medium-border: 35 61% 39%;
     --priority-low: 143 46% 19%;
     --priority-low-foreground: 142 72% 78%;
     --priority-low-border: 143 47% 36%;

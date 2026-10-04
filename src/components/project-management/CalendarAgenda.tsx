@@ -1,4 +1,4 @@
-import { StatusBadge } from '@/components/data/StatusBadge';
+import { PriorityBadge, StatusBadge } from '@/components/data/StatusBadge';
 
 export interface AgendaItem {
   id: string;
@@ -40,7 +40,7 @@ export function CalendarAgenda({ items, fromDay, toDay, today, onOpen }: { items
                 <button type="button" onClick={() => onOpen(i)} className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-sm hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                   <span className="min-w-0 truncate font-medium">{i.title}</span>
                   <span className="flex shrink-0 gap-1">
-                    {i.type === 'event' ? <StatusBadge value="Event" tone="info" /> : <><StatusBadge value={i.status} prefix="Status" />{i.priority && <StatusBadge value={i.priority} prefix="Priority" />}</>}
+                    {i.type === 'event' ? <StatusBadge value="Event" tone="info" /> : <><StatusBadge value={i.status} prefix="Status" />{i.priority && <PriorityBadge value={i.priority} />}</>}
                   </span>
                 </button>
               </li>

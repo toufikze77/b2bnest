@@ -112,7 +112,7 @@
 - [ ] Transactional creation and cross-device duplicate protection — not built; awaits owner approval (same-browser duplicate protection done)
 
 - [x] Owner signed-in re-check: Edit project deadline + task editing in Projects & tasks — owner-confirmed PASS 2026-10-04
-- [x] UI Wave 3 (Work and Customers) in preview, unpublished: shared view switcher and URL filters, list table, calendar agenda, workspace filters, CRM DataTable and side panel. 81/81 tests, suite 662/0/54. Owner signed-in review pending. Report: docs/ui-wave3-work-customers-report-2026-09-30.md
+- [x] UI Wave 3 (Work and Customers) in preview, unpublished: shared view switcher and URL filters, list table, calendar agenda, workspace filters, CRM DataTable and side panel. Owner signed-in review PASS 2026-10-04. Report: docs/ui-wave3-work-customers-report-2026-09-30.md
 - [x] Wave 3 follow-up: template kind/availability fix, security moved from CRM to Settings/Admin (preview). Template behaviour had FAILED owner review.
 - [x] Owner signed-in checks for the above — owner-confirmed PASS 2026-10-04
 - [ ] Company-scoped audit log (needs approved schema change).
@@ -146,10 +146,10 @@
 - [x] Wave 2 refresh flash, project deadline save, project/task save; template + security settings checks
 ## Release blockers
 - [x] Wave 3 signed-in checks (including task edit via the new List view and company isolation) — owner-confirmed PASS 2026-10-04; personal CRM contacts/deals may remain visible across companies
-- [ ] Stripe plan switch in isolated sandbox project (needs owner sk_test key in a separate backend)
+- [x] Stripe plan switch in isolated sandbox project — sandbox checkout and Starter → Professional switch owner-confirmed PASS
 ## Unverified (not tested)
 - X, LinkedIn, WhatsApp workflow delivery — switched off for customers in preview until verified
-- [ ] Webhook retry fix (claim tokens, leases, stale-event guard) prepared + tested locally; apply to SANDBOX copy only, then Stripe test; production needs separate approval
+- [x] Webhook retry fix (claim tokens, leases, stale-event guard) deployed to production with owner approval 2026-10-04
 - Known limitation: a retried payment-status update can add a duplicate payment_audit_logs entry (no duplicate payments)
 ## Deferred decisions (no change)
 - Seat limits; AI template pricing; customer AI generation disabled; legacy subscriptions; old news data; DKIM/DMARC

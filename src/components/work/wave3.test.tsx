@@ -137,7 +137,7 @@ describe('StatusBadge', () => {
     render(<StatusBadge value="in-progress" prefix="Status" />);
     expect(screen.getByText('In progress')).toBeInTheDocument();
   });
-  it('uses the shared red, orange, light-blue and green priority palette', () => {
+  it('uses one shared priority palette for all four labels', () => {
     render(<>{(['urgent', 'high', 'medium', 'low'] as const).map((priority) => <PriorityBadge key={priority} value={priority} />)}</>);
     for (const priority of ['urgent', 'high', 'medium', 'low'] as const) {
       const badge = screen.getByText(priority[0].toUpperCase() + priority.slice(1));
