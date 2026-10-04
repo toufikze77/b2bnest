@@ -44,9 +44,9 @@ No database, RLS, billing, HMRC, auth or pricing change. No migration.
   - No horizontal overflow and no page errors at 390/768/1024/1280/1440 on List, Board, Calendar and CRM.
 - Screenshots: /mnt/documents/ui-wave3/ (after only; "before" is Wave 2 as published).
 
-## Not verified / pending owner
-- A signed-in check on real data: filters, List/Board editing and saving, the calendar agenda on a phone, the CRM table and panel, and company switching. No signed-in session is available in the sandbox (external Supabase).
-- Company switching was not browser-tested with two companies in this wave. Scoping code is unchanged from Wave 2.
+## Owner verification
+- All outstanding signed-in checks are owner-confirmed PASS (2026-10-04): filters, List/Board editing and saving, the calendar agenda on a phone, the CRM table and panel, and company switching.
+- Company-owned records remained isolated when switching companies. Personal CRM contacts and deals may remain visible across companies by design.
 - Not done: the Timeline view was not restyled; the Board kanban internals were not split out of ProjectManagement.tsx (still about 3,800 lines); the calendar has no week view.
 
 ## Owner review follow-up (2026-09-30, late)
@@ -75,4 +75,4 @@ Audit of the old CRM Security tab: every value was fake or unenforced — role c
 ### Results
 - Mocked app tests: 87/87 (6 new: kind resolution incl. one-board workspace, availability, disabled card button, project label, role-assignment rules). These use a stand-in database.
 - Typecheck clean. Fresh tenant/security suite: 662 PASS / 0 FAIL / 54 INFO.
-- Real signed-in checks: **pending owner** (preview cannot sign in for this project): create a multi-board workspace and a project template, confirm destination and refresh, switch company A→B→A, confirm an unavailable template cannot be created, and check the new Settings tabs as member, admin and super admin.
+- Real signed-in checks: **owner-confirmed PASS 2026-10-04**: multi-board workspace and project-template destination and refresh, company A→B→A switching, unavailable-template refusal, and the new Settings tabs for member, admin and super admin.
