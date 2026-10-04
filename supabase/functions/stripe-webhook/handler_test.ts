@@ -1,4 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.190.0/testing/asserts.ts";
+import { PLAN_CATALOG } from "../_shared/plans.ts";
 import { ApplyResult, ClaimResult, makeHandler, Store } from "./handler.ts";
 
 // In-memory store with the same semantics as the SQL functions (atomic claim with lease).
@@ -84,7 +85,8 @@ Deno.test("3. processing stops partway → lease expires, reclaimed, no duplicat
   const s = setup(); s.store.failNextApply = 1;
   const se = ev("evt_3b", "invoice.paid", { subscription: "sub_1" });
   await (await post(s.h, se)).body?.cancel(); await (await post(s.h, se)).body?.cancel();
-  assertEquals(s.store.subs.get("owner@example.com")!.ai_credits_limit, s.store.subs.get("owner@example.com")!.ai_credits_limit);
+  assertEquals(s.store.subs.get("owner@example.com")!.ai_credits_limit, PLAN_CATALOG.professional.aiCreditLimit);
+  assertEquals(s.store.events.get("evt_3b")!.status, "completed");
   assertEquals(s.store.subs.size, 1);
 });
 
