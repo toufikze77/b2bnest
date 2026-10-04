@@ -60,7 +60,7 @@ export function sanitizeError(e: unknown, cfg?: Pick<SmtpConfig, "username" | "p
   const name = e instanceof Error ? e.name : typeof e;
   let msg = e instanceof Error ? e.message : (() => { try { return JSON.stringify(e); } catch { return String(e); } })();
   for (const s of [cfg?.password, cfg?.username]) {
-    if (!s) continue;
+    if (!s || s.length < 4) continue; // very short test values would mangle ordinary words
     const b64 = (() => { try { return btoa(s); } catch { return ""; } })();
     msg = msg.split(s).join("[redacted]");
     if (b64) msg = msg.split(b64).join("[redacted]");
