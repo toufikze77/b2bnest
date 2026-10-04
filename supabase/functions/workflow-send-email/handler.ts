@@ -90,6 +90,11 @@ export function classifySmtpError(e: unknown): { code: string; message: string; 
   return { code: "provider_error", sent: "unknown", message: `The email provider connection failed unexpectedly. ${UNKNOWN_STATUS}` };
 }
 
+/** Closes an SMTP client whose close() may be sync, async or throwing, without masking the send result. */
+export async function closeQuietly(client: { close: () => unknown }): Promise<void> {
+  try { await client.close(); } catch { /* connection already closed */ }
+}
+
 export function makeHandler(deps: Deps) {
   return async (req: Request): Promise<Response> => {
     if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });

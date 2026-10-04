@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
-import { makeHandler } from "./handler.ts";
+import { closeQuietly, makeHandler } from "./handler.ts";
 import { probeSmtp } from "./probe.ts";
 
 const admin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "", { auth: { persistSession: false } });
@@ -24,7 +24,7 @@ serve(makeHandler({
     } finally {
       // denomailer's close() is synchronous (returns undefined); calling .catch on it threw
       // a TypeError that replaced the real SMTP error and also turned successful sends into failures.
-      try { await client.close(); } catch { /* connection already closed */ }
+      await closeQuietly(client);
     }
   },
 }));
