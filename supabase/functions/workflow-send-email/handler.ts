@@ -55,7 +55,12 @@ export function resolveSmtp(env: Deps["env"]): SmtpConfig | null {
   return null;
 }
 
-/** Exception text safe for logs: credentials and their base64 forms removed, length capped. */
+/** Replaces anything that looks like an email address (provider replies can echo recipients). */
+export function redactEmails(s: string): string {
+  return s.replace(/[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}/g, "[email]");
+}
+
+/** Exception text safe for logs: credentials, their base64 forms and email addresses removed, length capped. */
 export function sanitizeError(e: unknown, cfg?: Pick<SmtpConfig, "username" | "password">): string {
   const name = e instanceof Error ? e.name : typeof e;
   let msg = e instanceof Error ? e.message : (() => { try { return JSON.stringify(e); } catch { return String(e); } })();
@@ -65,7 +70,7 @@ export function sanitizeError(e: unknown, cfg?: Pick<SmtpConfig, "username" | "p
     msg = msg.split(s).join("[redacted]");
     if (b64) msg = msg.split(b64).join("[redacted]");
   }
-  return `${name}: ${msg}`.replace(/\s+/g, " ").slice(0, 400);
+  return redactEmails(`${name}: ${msg}`).replace(/\s+/g, " ").slice(0, 400);
 }
 
 export type SentState = "not_sent" | "unknown";
@@ -117,7 +122,8 @@ export function makeHandler(deps: Deps) {
       const cfg = resolveSmtp(deps.env);
       if (!cfg) return json(503, { success: false, code: "not_configured", error: "Email sending isn't set up on the server yet." });
       if (!deps.probe) return json(501, { success: false, error: "Connection check unavailable." });
-      const p = await deps.probe(cfg);
+      const raw = await deps.probe(cfg);
+      const p = { ...raw, ...(raw.reply ? { reply: redactEmails(raw.reply) } : {}), ...(raw.exception ? { exception: redactEmails(raw.exception) } : {}) };
       console.log("workflow-send-email: probe", { provider: cfg.provider, ...p });
       return json(200, { success: p.ok, provider: cfg.provider, probe: p, sent: false });
     }

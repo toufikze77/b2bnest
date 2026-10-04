@@ -136,4 +136,6 @@
 - [x] Update Help / Knowledge base / assistant answers
 - [ ] Separate review (not started): Starter 1 / Professional 25 / Enterprise 50 seats — no entitlement change
 - [ ] Stripe sandbox verification of plan switching (blocked: no sandbox key)
-- [ ] Owner: one workflow email to own address
+- [x] Workflow email sending: owner-confirmed PASS 2026-10-04 (provider accepted; arrived in junk — inbox placement not guaranteed). SMTP troubleshooting CLOSED.
+- [x] Redact email addresses from logged provider replies
+- [ ] Deliverability: DKIM not enabled for b2bnest.online in Microsoft 365; DMARC p=none, no rua (owner DNS/M365 action)
