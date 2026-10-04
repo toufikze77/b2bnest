@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { ArrowDown, ArrowUp, CheckCircle2, Loader2, MousePointerClick, Play, Plus, Save, Trash2, XCircle, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -206,7 +205,7 @@ const WorkflowStudio = () => {
                         <Button variant="ghost" size="icon" onClick={() => setSteps((x) => x.filter((y) => y.id !== s.id))} aria-label="Remove step"><Trash2 className="h-4 w-4" /></Button>
                       </div>
                     </div>
-                    <p className="mb-3 text-xs text-muted-foreground">{def.help}</p>
+                    <p className="mb-3 text-xs text-muted-foreground">{def.verified ? def.help : 'Not available yet: this step has not been verified and will not run.'}</p>
                     <div className="space-y-3">
                       {def.fields.map((f) => {
                         const fid = `${s.id}-${f.key}`;
@@ -233,12 +232,12 @@ const WorkflowStudio = () => {
                 <Select value="" onValueChange={(v) => setSteps((x) => [...x, newStep(v as StepKind)])}>
                   <SelectTrigger className="w-[260px]" aria-label="Add a step"><SelectValue placeholder="+ Add a step" /></SelectTrigger>
                   <SelectContent>
-                    {STEP_DEFINITIONS.map((d) => <SelectItem key={d.kind} value={d.kind}>{d.label}</SelectItem>)}
+                    {STEP_DEFINITIONS.map((d) => <SelectItem key={d.kind} value={d.kind} disabled={!d.verified}>{d.label}{d.verified ? '' : ' — not available yet'}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <p className="text-xs text-muted-foreground">
-                Connect accounts in <Link to="/business-tools?tool=integrations" className="underline">Integrations</Link> or <Link to="/integrations/whatsapp" className="underline">WhatsApp</Link> first.
+                Only email is available right now. X, LinkedIn and WhatsApp steps are switched off until their delivery has been verified.
               </p>
             </CardContent>
           </Card>
