@@ -24,11 +24,19 @@ const handler = stripeSecretKey && webhookSecret
       log: logStep,
       verify: (body, sig) => stripe.webhooks.constructEventAsync(body, sig, webhookSecret),
       store: {
-        claim: (id, type) => rpc("claim_stripe_webhook_event", { p_event_id: id, p_event_type: type, p_lease_seconds: 120 }),
-        complete: async (id) => { await rpc("complete_stripe_webhook_event", { p_event_id: id }); },
-        release: async (id, err) => { await rpc("release_stripe_webhook_event", { p_event_id: id, p_error: err }); },
-        applySubscriber: (row, created) => rpc("apply_stripe_subscriber_state", { p_row: row, p_event_created: created }),
-        updatePaymentStatus: async (args) => { await rpc("update_payment_status", args); },
+        claim: async (id, type) => {
+          const r = (await rpc("claim_stripe_webhook_event", { p_event_id: id, p_event_type: type, p_lease_seconds: 120 }))?.[0];
+          return r?.result === "claimed" ? { result: "claimed", token: r.token } : { result: r?.result === "completed" ? "completed" : "busy" };
+        },
+        complete: async (id, token) => { await rpc("complete_stripe_webhook_event", { p_event_id: id, p_token: token }); },
+        release: async (id, token, err) => { await rpc("release_stripe_webhook_event", { p_event_id: id, p_token: token, p_error: err }); },
+        applySubscriber: (id, token, row, created) => rpc("apply_stripe_subscriber_state", { p_event_id: id, p_token: token, p_row: row, p_event_created: created }),
+        updatePaymentStatus: async (id, token, a) => {
+          await rpc("apply_stripe_payment_status", {
+            p_event_id: id, p_token: token, p_status: a.p_status, p_stripe_session_id: a.p_stripe_session_id ?? null,
+            p_stripe_payment_intent_id: a.p_stripe_payment_intent_id ?? null, p_payment_method: a.p_payment_method ?? null, p_metadata: a.p_metadata ?? null,
+          });
+        },
       },
     });
   })()
