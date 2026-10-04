@@ -55,3 +55,11 @@ describe('workflow execution (mocked server, nothing is sent)', () => {
     expect((await executeStep(wa, null, async () => ({ data: { ok: true, results: [] }, error: null }))).ok).toBe(false);
   });
 });
+
+describe('unknown outcomes', () => {
+  it('says delivery status is unknown when there is no readable server answer', async () => {
+    const email = { id: 'e', kind: 'email' as const, config: { to: 'a@b.co', subject: 's', body: 'b' } };
+    expect((await executeStep(email, null, async () => ({ data: null, error: new Error('fetch failed') }))).message).toBe('Delivery status unknown. Check your inbox before trying again.');
+    expect((await executeStep(email, null, async () => { throw new Error('offline'); })).message).toBe('Delivery status unknown. Check your inbox before trying again.');
+  });
+});
