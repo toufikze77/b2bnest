@@ -40,3 +40,11 @@
 
 ## Known limitation
 Retried payment-status updates can add a duplicate `payment_audit_logs` entry (no duplicate payments).
+
+## Production release result (2026-10-04, target gvftvswyrevummbvyhxa)
+- Previous webhook saved for rollback: `supabase/rollback/stripe-webhook-pre-2026-10-04/index.ts` (last committed pre-fix version).
+- Migration applied. 6 new functions: service_role only (anon/authenticated denied). Existing 23 events kept, all `completed`.
+- `stripe-webhook` deployed. Unsigned probe → 400 "No Stripe signature"; forged signature → 400 "Invalid signature"
+  (confirms live secrets loaded). No event rows written by probes. No payment created, no subscription changed.
+- Next genuine live event: PENDING VERIFICATION (expect log "Entitlements synced" and row status=completed).
+- Rollback: redeploy the saved index.ts (it imports ../_shared/plans.ts), then run the rollback SQL.

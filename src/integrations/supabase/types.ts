@@ -3257,22 +3257,40 @@ export type Database = {
       }
       stripe_webhook_events: {
         Row: {
+          attempts: number
+          claim_token: string | null
+          completed_at: string | null
           event_id: string
           event_type: string
           id: string
+          last_error: string | null
+          locked_until: string | null
           processed_at: string
+          status: string
         }
         Insert: {
+          attempts?: number
+          claim_token?: string | null
+          completed_at?: string | null
           event_id: string
           event_type: string
           id?: string
+          last_error?: string | null
+          locked_until?: string | null
           processed_at?: string
+          status?: string
         }
         Update: {
+          attempts?: number
+          claim_token?: string | null
+          completed_at?: string | null
           event_id?: string
           event_type?: string
           id?: string
+          last_error?: string | null
+          locked_until?: string | null
           processed_at?: string
+          status?: string
         }
         Relationships: []
       }
@@ -3293,6 +3311,7 @@ export type Database = {
           plan_key: string | null
           stripe_customer_id: string | null
           stripe_price_id: string | null
+          stripe_state_at: number | null
           stripe_subscription_id: string | null
           subscribed: boolean
           subscription_end: string | null
@@ -3317,6 +3336,7 @@ export type Database = {
           plan_key?: string | null
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
+          stripe_state_at?: number | null
           stripe_subscription_id?: string | null
           subscribed?: boolean
           subscription_end?: string | null
@@ -3341,6 +3361,7 @@ export type Database = {
           plan_key?: string | null
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
+          stripe_state_at?: number | null
           stripe_subscription_id?: string | null
           subscribed?: boolean
           subscription_end?: string | null
@@ -4443,7 +4464,32 @@ export type Database = {
         Args: { _name?: string; _org_id: string; _plan?: string }
         Returns: boolean
       }
+      apply_stripe_payment_status: {
+        Args: {
+          p_event_id: string
+          p_metadata: Json
+          p_payment_method: string
+          p_status: string
+          p_stripe_payment_intent_id: string
+          p_stripe_session_id: string
+          p_token: string
+        }
+        Returns: boolean
+      }
+      apply_stripe_subscriber_state: {
+        Args: {
+          p_event_created: number
+          p_event_id: string
+          p_row: Json
+          p_token: string
+        }
+        Returns: string
+      }
       assert_self: { Args: { p_user_id: string }; Returns: undefined }
+      assert_stripe_claim: {
+        Args: { p_event_id: string; p_token: string }
+        Returns: undefined
+      }
       audit_profile_access: {
         Args: { access_type?: string; accessed_user_id: string }
         Returns: undefined
@@ -4462,7 +4508,22 @@ export type Database = {
           trial_expired: boolean
         }[]
       }
+      claim_stripe_webhook_event: {
+        Args: {
+          p_event_id: string
+          p_event_type: string
+          p_lease_seconds?: number
+        }
+        Returns: {
+          result: string
+          token: string
+        }[]
+      }
       cleanup_expired_2fa_codes: { Args: never; Returns: undefined }
+      complete_stripe_webhook_event: {
+        Args: { p_event_id: string; p_token: string }
+        Returns: undefined
+      }
       create_payment_record: {
         Args: {
           p_amount: number
@@ -4692,6 +4753,10 @@ export type Database = {
           user_share_percent: number
           user_weighted_stake: number
         }[]
+      }
+      release_stripe_webhook_event: {
+        Args: { p_error: string; p_event_id: string; p_token: string }
+        Returns: undefined
       }
       resolve_active_organization: {
         Args: { p_requested?: string }
