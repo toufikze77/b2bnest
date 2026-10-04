@@ -145,3 +145,24 @@ Deno.test("7. equal event timestamps are applied (later-processed sync wins)", a
   await (await post(h, ev("evt_b", "invoice.paid", { subscription: "sub_1" }, 1500))).body?.cancel();
   assertEquals(store.subs.get("owner@example.com")!.plan_key, "professional");
 });
+
+Deno.test("8. identical payload: DB write fails once, byte-identical redelivery succeeds", async () => {
+  const { store, h } = setup(); store.failNextApply = 1;
+  const body = JSON.stringify(ev("evt_8", "invoice.paid", { subscription: "sub_1" }, 1700));
+  const send = () => h(new Request("http://x", { method: "POST", headers: { "stripe-signature": "t" }, body }));
+  const r1 = await send(); await r1.body?.cancel();
+  assertEquals(r1.status, 500); assertEquals(store.events.get("evt_8")!.status, "failed"); assertEquals(store.subs.size, 0);
+  const r2 = await send(); await r2.body?.cancel();
+  assertEquals(r2.status, 200); assertEquals(store.events.get("evt_8")!.status, "completed");
+  assertEquals(store.applyCalls, 2); assertEquals(store.subs.size, 1);
+  assertEquals(store.subs.get("owner@example.com")!.ai_credits_limit, PLAN_CATALOG.professional.aiCreditLimit);
+});
+
+Deno.test("9. live endpoint rejects a test-mode event before any database write", async () => {
+  const store = memStore(); const lookup = { value: "b2bnest_starter_monthly_gbp" };
+  const h = makeHandler({ store: store as unknown as Store, stripe: fakeStripe(lookup), verify: async (b) => JSON.parse(b), expectedLivemode: true });
+  const r = await post(h, { ...ev("evt_9", "invoice.paid", { subscription: "sub_1" }), livemode: false }); await r.body?.cancel();
+  assertEquals(r.status, 400); assertEquals(store.events.size, 0); assertEquals(store.applyCalls, 0);
+  const ok = await post(h, { ...ev("evt_9b", "invoice.paid", { subscription: "sub_1" }), livemode: true }); await ok.body?.cancel();
+  assertEquals(ok.status, 200);
+});

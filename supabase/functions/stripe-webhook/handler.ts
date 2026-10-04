@@ -44,6 +44,8 @@ export interface Deps {
   stripe: Any;
   store: Store;
   log?: (step: string, details?: unknown) => void;
+  /** true = live key (accept only livemode events), false = test key. Undefined disables the guard (tests only). */
+  expectedLivemode?: boolean;
 }
 
 const json = (status: number, body: Record<string, unknown>) =>
@@ -113,6 +115,13 @@ export function makeHandler(deps: Deps) {
     try { event = await deps.verify(body, signature); } catch (e) {
       log("Signature verification failed", { error: (e as Error).message });
       return new Response("Invalid signature", { status: 400, headers: corsHeaders });
+    }
+
+    // Environment guard: a test-mode event must never touch a live database (and vice versa).
+    // Runs before claim, so a mismatched event causes no database write at all.
+    if (typeof deps.expectedLivemode === "boolean" && event.livemode !== deps.expectedLivemode) {
+      log("Rejected event from wrong Stripe mode", { livemode: event.livemode ?? null });
+      return new Response("Wrong Stripe mode", { status: 400, headers: corsHeaders });
     }
 
     let claim: ClaimResult;
