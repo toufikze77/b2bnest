@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
-import { closeQuietly, makeHandler } from "./handler.ts";
+import { makeHandler } from "./handler.ts";
 import { probeSmtp } from "./probe.ts";
+import { sendSmtp } from "./smtp.ts";
 
 const admin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "", { auth: { persistSession: false } });
 
@@ -17,14 +17,9 @@ serve(makeHandler({
     return data === true;
   },
   probe: (cfg) => probeSmtp(cfg),
+  // Own SMTP sender (denomailer hid the failing command behind "invalid cmd").
   send: async (cfg, mail) => {
-    const client = new SMTPClient({ connection: { hostname: cfg.hostname, port: cfg.port, tls: cfg.tls, auth: { username: cfg.username, password: cfg.password } } });
-    try {
-      await client.send(mail);
-    } finally {
-      // denomailer's close() is synchronous (returns undefined); calling .catch on it threw
-      // a TypeError that replaced the real SMTP error and also turned successful sends into failures.
-      await closeQuietly(client);
-    }
+    const r = await sendSmtp(cfg, mail);
+    console.log("workflow-send-email: server queued", { reply: r.reply.slice(0, 200) });
   },
 }));
