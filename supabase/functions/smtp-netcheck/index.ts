@@ -3,8 +3,8 @@
 // replay the real send path, which cannot deliver without a successful sign-in, to
 // capture the exact library exception. Secrets are never returned.
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
-import { resolveSmtp, sanitizeError, classifySmtpError } from "../workflow-send-email/handler.ts";
-import { probeSmtp } from "../workflow-send-email/probe.ts";
+import { resolveSmtp, sanitizeError, classifySmtpError } from "./handler.ts";
+import { probeSmtp } from "./probe.ts";
 
 Deno.serve(async () => {
   const cfg = resolveSmtp((n) => Deno.env.get(n));
