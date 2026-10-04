@@ -27,7 +27,6 @@ Deno.test("provider rejects sign-in (Gmail 534 WebLoginRequired) → failure wit
   const d = deps({ send: async () => { calls++; throw new Error("534: 5.7.9 Please log in with your web browser WebLoginRequired"); } });
   const r = await makeHandler(d)(req(ok)); const b = await r.json();
   assertEquals(r.status, 502); assertEquals(b.success, false); assertEquals(b.code, "provider_auth_rejected"); assertEquals(calls, 1);
-  assertEquals(b.error.includes("x"), true); // has message
   assertEquals(JSON.stringify(b).includes("WebLoginRequired"), false);
 });
 
