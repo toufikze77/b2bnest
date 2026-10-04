@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   STEP_DEFINITIONS, SimpleStep, StepResult, StepKind, parseSavedSteps, serializeSteps, stepDefinition, validateStep, executeStep,
 } from '@/lib/workflowSteps';
+import { EmailConnectionCheck } from '@/components/workflows/EmailConnectionCheck';
 
 interface SavedWorkflow { id: string; name: string; description: string | null; workflow_steps: unknown; updated_at: string }
 
@@ -115,6 +116,8 @@ const WorkflowStudio = () => {
         <h1 className="text-2xl font-semibold tracking-tight">Workflows</h1>
         <p className="mt-1 text-sm text-muted-foreground">Set up a list of messages and posts, then send them all with one click.</p>
       </div>
+
+      <EmailConnectionCheck />
 
       <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
         <aside className="space-y-2">
