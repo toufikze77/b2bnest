@@ -155,3 +155,7 @@
 - Seat limits; AI template pricing; customer AI generation disabled; legacy subscriptions; old news data; DKIM/DMARC
 
 - [x] Production webhook release deployed 2026-10-04. [ ] Next genuine live Stripe event — pending verification (waits on a real event).
+
+## Downgrade policy (end-of-period, Stripe subscription schedule) — OPEN
+- Blocked: sandbox copy lives in a separate project; edits to billing server code in this project go to production. Awaiting owner choice of where to prepare it.
+- Priority badges solid palette (Urgent #DC2626, High #C2410C, Medium #FBBF24/#422006, Low #15803D): DONE.
