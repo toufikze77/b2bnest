@@ -153,3 +153,5 @@
 - Known limitation: a retried payment-status update can add a duplicate payment_audit_logs entry (no duplicate payments)
 ## Deferred decisions (no change)
 - Seat limits; AI template pricing; customer AI generation disabled; legacy subscriptions; old news data; DKIM/DMARC
+
+- [ ] Production webhook release (retry fix + test-mode guard) — package ready in docs/stripe-webhook-production-release-2026-10-04.md; awaiting owner approval to deploy.
