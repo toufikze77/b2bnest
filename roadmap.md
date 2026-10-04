@@ -139,3 +139,15 @@
 - [x] Workflow email sending: owner-confirmed PASS 2026-10-04 (provider accepted; arrived in junk — inbox placement not guaranteed). SMTP troubleshooting CLOSED.
 - [x] Redact email addresses from logged provider replies
 - [ ] Deliverability: DKIM not enabled for b2bnest.online in Microsoft 365; DMARC p=none, no rua (owner DNS/M365 action)
+
+# Release checklist (reconciled 2026-10-04, preview unpublished)
+## Confirmed passes (owner)
+- [x] Workflow email sending (provider accepted; arrived in junk; inbox placement not guaranteed)
+- [x] Wave 2 refresh flash, project deadline save, project/task save; template + security settings checks
+## Release blockers
+- [ ] Wave 3 signed-in checks (incl. task edit via new List view — entry point changed in Wave 3)
+- [ ] Stripe plan switch in isolated sandbox project (needs owner sk_test key in a separate backend)
+## Unverified (not tested)
+- X, LinkedIn, WhatsApp workflow delivery
+## Deferred decisions (no change)
+- Seat limits; AI template pricing; customer AI generation disabled; legacy subscriptions; old news data; DKIM/DMARC
