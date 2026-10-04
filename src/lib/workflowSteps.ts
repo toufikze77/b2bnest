@@ -13,12 +13,14 @@ export interface StepDefinition {
   nodeName: string;
   label: string;
   help: string;
+  /** False until delivery has been verified end-to-end; such steps are shown disabled and never run. */
+  verified: boolean;
   fields: StepField[];
 }
 
 export const STEP_DEFINITIONS: StepDefinition[] = [
   {
-    kind: 'email', nodeName: 'Send Email', label: 'Send an email',
+    kind: 'email', nodeName: 'Send Email', label: 'Send an email', verified: true,
     help: 'Sent from B2BNEST notifications. Up to 10 recipients, separated by commas.',
     fields: [
       { key: 'to', label: 'To', placeholder: 'name@example.com', required: true },
@@ -27,7 +29,7 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
     ],
   },
   {
-    kind: 'whatsapp', nodeName: 'Send WhatsApp', label: 'Send a WhatsApp message',
+    kind: 'whatsapp', nodeName: 'Send WhatsApp', label: 'Send a WhatsApp message', verified: false,
     help: 'Needs your Twilio account connected in Integrations → WhatsApp. Number in international format, e.g. +447700900123.',
     fields: [
       { key: 'to', label: 'To (phone number)', placeholder: '+447700900123', required: true },
@@ -35,12 +37,12 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
     ],
   },
   {
-    kind: 'x', nodeName: 'Twitter Post', label: 'Post on X (Twitter)',
+    kind: 'x', nodeName: 'Twitter Post', label: 'Post on X (Twitter)', verified: false,
     help: 'Needs your X account connected in Business tools → Integrations.',
     fields: [{ key: 'text', label: 'Post text', multiline: true, required: true }],
   },
   {
-    kind: 'linkedin', nodeName: 'LinkedIn Post', label: 'Post on LinkedIn',
+    kind: 'linkedin', nodeName: 'LinkedIn Post', label: 'Post on LinkedIn', verified: false,
     help: 'Needs your LinkedIn account connected in Business tools → Integrations.',
     fields: [{ key: 'text', label: 'Post text', multiline: true, required: true }],
   },
@@ -128,6 +130,8 @@ export function validateStep(step: SimpleStep): string | null {
 export interface StepResult { ok: boolean; message: string }
 export type Invoke = (fn: string, body: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
 
+export const NOT_YET_AVAILABLE = 'Not available yet — this step has not been verified, so it was not run.';
+
 export const EMAIL_STATUS_UNKNOWN = 'Delivery status unknown. Check your inbox before trying again.';
 
 /** Reads the server's reason; null when the server gave no readable answer (network drop, relay error). */
@@ -151,6 +155,7 @@ export async function executeStep(step: SimpleStep, workflowId: string | null, i
     const d = data as { success?: boolean; error?: string; message?: string } | null;
     return d?.success === true ? { ok: true, message: okMessage } : { ok: false, message: d?.error || d?.message || 'Not confirmed by the server' };
   };
+  if (!stepDefinition(step.kind).verified) return { ok: false, message: NOT_YET_AVAILABLE };
   try {
     if (step.kind === 'email') return await confirmed('workflow-send-email', { to: c.to, subject: c.subject, body: c.body, workflowId }, 'Accepted by the email provider (inbox delivery not confirmed)');
     if (step.kind === 'x') return await confirmed('workflow-twitter-post', { text: c.text, workflowId }, 'Posted on X');
