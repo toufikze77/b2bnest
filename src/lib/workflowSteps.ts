@@ -156,10 +156,11 @@ export async function executeStep(step: SimpleStep, workflowId: string | null, i
     if (step.kind === 'x') return await confirmed('workflow-twitter-post', { text: c.text, workflowId }, 'Posted on X');
     if (step.kind === 'linkedin') return await confirmed('workflow-linkedin-post', { text: c.text, visibility: 'PUBLIC', workflowId }, 'Posted on LinkedIn');
     const { data, error } = await invoke('workflow-execute', { workflow_id: workflowId, steps: [{ type: 'whatsapp.send', to: c.to.trim(), body: c.body }] });
-    if (error) return { ok: false, message: await errorText(error) };
+    if (error) return { ok: false, message: (await errorText(error)) ?? unknown };
     const r = (data as { results?: { ok?: boolean; error?: string; message?: string }[] } | null)?.results?.[0];
     return r?.ok === true ? { ok: true, message: 'WhatsApp message sent' } : { ok: false, message: r?.message || r?.error || 'Not confirmed by the server' };
-  } catch (e) {
-    return { ok: false, message: e instanceof Error ? e.message : 'Failed' };
+  } catch {
+    // The request itself broke (e.g. connection dropped) — the outcome is unknown.
+    return { ok: false, message: unknown };
   }
 }
