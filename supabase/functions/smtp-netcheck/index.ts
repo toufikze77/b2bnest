@@ -25,7 +25,7 @@ Deno.serve(async () => {
       out.libraryException = sanitizeError(e, cfg);
       out.libraryErrorIsError = e instanceof Error;
       out.classified = classifySmtpError(e);
-    } finally { await client.close().catch((e) => { out.closeException = sanitizeError(e, cfg); }); }
+    } finally { try { await client.close(); } catch (e) { out.closeException = sanitizeError(e, cfg); } }
   }
   return Response.json(out);
 });

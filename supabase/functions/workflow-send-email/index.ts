@@ -19,6 +19,12 @@ serve(makeHandler({
   probe: (cfg) => probeSmtp(cfg),
   send: async (cfg, mail) => {
     const client = new SMTPClient({ connection: { hostname: cfg.hostname, port: cfg.port, tls: cfg.tls, auth: { username: cfg.username, password: cfg.password } } });
-    try { await client.send(mail); } finally { await client.close().catch(() => {}); }
+    try {
+      await client.send(mail);
+    } finally {
+      // denomailer's close() is synchronous (returns undefined); calling .catch on it threw
+      // a TypeError that replaced the real SMTP error and also turned successful sends into failures.
+      try { await client.close(); } catch { /* connection already closed */ }
+    }
   },
 }));
