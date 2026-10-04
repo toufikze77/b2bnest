@@ -59,6 +59,20 @@ export default {
 				success: 'hsl(var(--success))',
 				warning: 'hsl(var(--warning))',
 				info: 'hsl(var(--info))',
+				priority: {
+					urgent: 'hsl(var(--priority-urgent))',
+					'urgent-foreground': 'hsl(var(--priority-urgent-foreground))',
+					'urgent-border': 'hsl(var(--priority-urgent-border))',
+					high: 'hsl(var(--priority-high))',
+					'high-foreground': 'hsl(var(--priority-high-foreground))',
+					'high-border': 'hsl(var(--priority-high-border))',
+					medium: 'hsl(var(--priority-medium))',
+					'medium-foreground': 'hsl(var(--priority-medium-foreground))',
+					'medium-border': 'hsl(var(--priority-medium-border))',
+					low: 'hsl(var(--priority-low))',
+					'low-foreground': 'hsl(var(--priority-low-foreground))',
+					'low-border': 'hsl(var(--priority-low-border))'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',

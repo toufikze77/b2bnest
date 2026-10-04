@@ -1,6 +1,6 @@
 import { completionPatch, formatDueDate } from '@/lib/dashboardData';
 import { FilterBar } from '@/components/data/FilterBar';
-import { StatusBadge } from '@/components/data/StatusBadge';
+import { PriorityBadge, StatusBadge } from '@/components/data/StatusBadge';
 import { NoResults } from '@/components/ui/states';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
@@ -256,7 +256,7 @@ function Cell({ col, task, group, labels, onStatus }: { col: BoardColumn; task: 
   switch (col.field) {
     case 'title': return <span className="text-foreground">{task.title}</span>;
     case 'status': return <StatusSelect task={task} labels={labels} onStatus={onStatus} />;
-    case 'priority': return <StatusBadge value={task.priority} prefix="Priority" />;
+    case 'priority': return <PriorityBadge value={task.priority} />;
     case 'due_date': return <span className="whitespace-nowrap text-muted-foreground">{task.due_date ? formatDueDate(task.due_date) : '—'}</span>;
     case 'estimated_hours': return <span className="text-muted-foreground">{task.estimated_hours ?? '—'}</span>;
     case 'group': return <span className="text-muted-foreground">{group}</span>;
@@ -324,7 +324,7 @@ function KanbanView({ tasks, statusLabels, onStatus }: { tasks: Task[]; statusLa
               {list.map((t) => (
                 <div key={t.id} draggable onDragStart={() => setDragId(t.id)} className="rounded-md border border-border bg-card p-2 text-sm shadow-sm">
                   <p className="text-foreground">{t.title}</p>
-                  <p className="mt-1 flex items-center gap-2 text-[13px] text-muted-foreground">{t.due_date ? formatDueDate(t.due_date) : 'No due date'} <StatusBadge value={t.priority} prefix="Priority" /></p>
+                  <p className="mt-1 flex items-center gap-2 text-[13px] text-muted-foreground">{t.due_date ? formatDueDate(t.due_date) : 'No due date'} <PriorityBadge value={t.priority} /></p>
                   <div className="mt-2"><StatusSelect task={t} labels={statusLabels} onStatus={onStatus} /></div>
                 </div>
               ))}

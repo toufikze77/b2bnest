@@ -7,7 +7,7 @@ import { CalendarAgenda, groupAgenda } from '@/components/project-management/Cal
 import { ViewSwitcher } from '@/components/work/ViewSwitcher';
 import { TaskListView } from '@/components/work/TaskListView';
 import { WorkFilterBar } from '@/components/work/WorkFilterBar';
-import { StatusBadge } from '@/components/data/StatusBadge';
+import { PRIORITY_STYLES, PriorityBadge, StatusBadge } from '@/components/data/StatusBadge';
 
 const d = (s: string) => new Date(`${s}T00:00:00`);
 const tasks = [
@@ -136,5 +136,12 @@ describe('StatusBadge', () => {
   it('labels known statuses', () => {
     render(<StatusBadge value="in-progress" prefix="Status" />);
     expect(screen.getByText('In progress')).toBeInTheDocument();
+  });
+  it('uses one shared priority palette for all four labels', () => {
+    render(<>{(['urgent', 'high', 'medium', 'low'] as const).map((priority) => <PriorityBadge key={priority} value={priority} />)}</>);
+    for (const priority of ['urgent', 'high', 'medium', 'low'] as const) {
+      const badge = screen.getByText(priority[0].toUpperCase() + priority.slice(1));
+      for (const className of PRIORITY_STYLES[priority].split(' ')) expect(badge).toHaveClass(className);
+    }
   });
 });

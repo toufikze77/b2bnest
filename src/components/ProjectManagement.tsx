@@ -31,6 +31,7 @@ import ProjectCard from './cards/ProjectCard';
 import JiraTaskView from './JiraTaskView';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal as TaskMenuIcon, Pencil as EditIcon } from 'lucide-react';
+import { PriorityBadge } from '@/components/data/StatusBadge';
 import { 
   Plus, 
   Calendar as CalendarIcon, 
@@ -288,21 +289,6 @@ const DEFAULT_STATUS_COLUMNS: KanbanColumn[] = [
   { id: 'review', title: 'Review', color: 'bg-purple-100', order: 4 },
   { id: 'done', title: 'Done', color: 'bg-green-100', order: 5 }
 ];
-// ---- Priority badge styles & labels ----
-const priorityColors: Record<Task['priority'], string> = {
-  low: 'bg-green-500 text-white',
-  medium: 'bg-yellow-500 text-black',
-  high: 'bg-orange-500 text-white',
-  urgent: 'bg-red-500 text-white',
-};
-
-const priorityLabels: Record<Task['priority'], string> = {
-  low: 'Low',
-  medium: 'Medium',
-  high: 'High',
-  urgent: 'Urgent',
-};
-
 const ProjectManagement = () => {
   console.log('🔧 ProjectManagement component loading...');
   const { user } = useAuth();
@@ -1257,13 +1243,6 @@ const ProjectManagement = () => {
   const selectedProjectName = selectedProjectDetails?.name || 'All Projects';
   const statusColumns = selectedProjectDetails?.customColumns || DEFAULT_STATUS_COLUMNS;
 
-  const priorityColors = {
-    low: 'bg-green-500',
-    medium: 'bg-yellow-500',
-    high: 'bg-orange-500',
-    urgent: 'bg-red-500'
-  };
-
   const projectScopedTasks = (tasks || []).filter(task => {
     return selectedProject === 'all' || task.projectId === selectedProject;
   });
@@ -1582,13 +1561,7 @@ const ProjectManagement = () => {
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         {/* Priority badge */}
-                        {task.priority && (
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${priorityColors[task.priority]}`}
-                          >
-                            {priorityLabels[task.priority]}
-                          </span>
-                        )}
+                        {task.priority && <PriorityBadge value={task.priority} />}
                         
                         {/* Comment button */}
                         <CommentButton

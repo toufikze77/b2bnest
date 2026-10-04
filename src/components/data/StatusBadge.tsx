@@ -2,6 +2,8 @@ import { cn } from '@/lib/utils';
 
 type Tone = 'neutral' | 'info' | 'warning' | 'success' | 'danger' | 'accent';
 
+export type Priority = 'urgent' | 'high' | 'medium' | 'low';
+
 const TONES: Record<Tone, string> = {
   neutral: 'bg-muted text-muted-foreground border-border',
   info: 'bg-primary/10 text-primary border-primary/20',
@@ -9,6 +11,14 @@ const TONES: Record<Tone, string> = {
   success: 'bg-secondary text-secondary-foreground border-border',
   danger: 'bg-destructive/10 text-destructive border-destructive/30',
   accent: 'bg-primary text-primary-foreground border-primary',
+};
+
+/** Shared priority palette for every task view. */
+export const PRIORITY_STYLES: Record<Priority, string> = {
+  urgent: 'border-priority-urgent-border bg-priority-urgent text-priority-urgent-foreground',
+  high: 'border-priority-high-border bg-priority-high text-priority-high-foreground',
+  medium: 'border-priority-medium-border bg-priority-medium text-priority-medium-foreground',
+  low: 'border-priority-low-border bg-priority-low text-priority-low-foreground',
 };
 
 const KNOWN: Record<string, { label: string; tone: Tone }> = {
@@ -41,6 +51,17 @@ export function StatusBadge({ value, tone, className, prefix }: { value?: string
   return (
     <span className={cn('inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-medium', TONES[t], className)}>
       {prefix && <span className="sr-only">{prefix}: </span>}
+      {statusLabel(value)}
+    </span>
+  );
+}
+
+export function PriorityBadge({ value, className }: { value?: string | null; className?: string }) {
+  const priority = value?.toLowerCase();
+  const style = priority && priority in PRIORITY_STYLES ? PRIORITY_STYLES[priority as Priority] : TONES.neutral;
+  return (
+    <span className={cn('inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-medium', style, className)}>
+      <span className="sr-only">Priority: </span>
       {statusLabel(value)}
     </span>
   );

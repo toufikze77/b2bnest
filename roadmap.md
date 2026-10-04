@@ -41,7 +41,7 @@
 - [x] Wave 1 operational completion: validated build published; historical assignments resolved; production signed-in, live webhook and live invoice-email checks passed (owner-confirmed); Wave 1 CLOSED 2026-09-30
 - [x] UI Wave 1 — Foundation completion implemented in preview (page frame + breadcrumbs, backgrounds, sidebar IA, notifications panel, lazy routes): `docs/ui-wave1-foundation-report-2026-09-30.md`
   - [x] Build, typecheck, five-width overflow, keyboard/focus, active-state checks
-  - [ ] Owner signed-in review (notifications data, company switching, deep links)
+  - [x] Owner signed-in review (notifications data, company switching, deep links) — owner-confirmed PASS
   - [x] Notification panel fixes + 4/4 targeted tests
   - [x] Tenant/security suite re-run: 642 PASS / 0 FAIL / 54 INFO (2026-09-30)
   - [ ] Production publish (after owner review)
@@ -49,9 +49,9 @@
 - [x] UI Wave 2 final revision: year shown on out-of-year dates, "Completed this week" replaced (no completion history), 13–14px text, deadlines action; suite 662/0/54. Signed-in owner review pending; unpublished.
 - [x] UI Wave 2 save fixes (task select columns; project save sends only real columns and checks one updated row) — owner-confirmed signed-in PASS for all four final checks on 2026-09-30; published.
 - [x] Projects & tasks refresh flash fixed (skeleton until the selected company's data loads; placeholder data removed); mocked full-screen browser checks, create/edit shortcuts, deadline in UK + New York; suite 662/0/54. Unpublished.
-- [ ] Owner signed-in check: no flash on refresh; save a Dashboard deadline and confirm the exact date after refresh (real database).
+- [x] Owner signed-in check: no flash on refresh; save a Dashboard deadline and confirm the exact date after refresh — owner-confirmed PASS
   - [ ] Proposals needing review: company-scoped contacts/invoices, company invitation flow, cross-device checklist dismissal
-- [ ] UI Wave 3 — Work & customers (projects views, tasks, calendar, CRM table + side panel)
+- [x] UI Wave 3 — Work & customers (projects views, tasks, calendar, CRM table + side panel); signed-in checks owner-confirmed PASS 2026-10-04
 - [ ] UI Wave 4 — Money & insights (invoices/quotes consolidation, finance tables, analytics)
 - [ ] UI Wave 5 — Scale (AI Studio, integrations, team, settings, admin token alignment)
 - [ ] Constraint: Wave 1 tenant architecture and Round 2 controls frozen; each wave gated by 642 PASS / 0 FAIL and five-width visual checks
@@ -111,10 +111,10 @@
 - [x] Workspace template code-review fixes (keyed state, safe status updates, verified cleanup, column order, empty groups, retry, tests)
 - [ ] Transactional creation and cross-device duplicate protection — not built; awaits owner approval (same-browser duplicate protection done)
 
-- [ ] Owner signed-in re-check: Edit project deadline + task editing in Projects & tasks (preview, unpublished)
-- [x] UI Wave 3 (Work and Customers) in preview, unpublished: shared view switcher and URL filters, list table, calendar agenda, workspace filters, CRM DataTable and side panel. 81/81 tests, suite 662/0/54. Owner signed-in review pending. Report: docs/ui-wave3-work-customers-report-2026-09-30.md
+- [x] Owner signed-in re-check: Edit project deadline + task editing in Projects & tasks — owner-confirmed PASS 2026-10-04
+- [x] UI Wave 3 (Work and Customers) in preview, unpublished: shared view switcher and URL filters, list table, calendar agenda, workspace filters, CRM DataTable and side panel. Owner signed-in review PASS 2026-10-04. Report: docs/ui-wave3-work-customers-report-2026-09-30.md
 - [x] Wave 3 follow-up: template kind/availability fix, security moved from CRM to Settings/Admin (preview). Template behaviour had FAILED owner review.
-- [ ] Owner signed-in checks for the above (blocked: owner sign-in).
+- [x] Owner signed-in checks for the above — owner-confirmed PASS 2026-10-04
 - [ ] Company-scoped audit log (needs approved schema change).
 
 - [x] Hide unavailable templates from customer catalogue (preview)
@@ -145,11 +145,11 @@
 - [x] Workflow email sending (provider accepted; arrived in junk; inbox placement not guaranteed)
 - [x] Wave 2 refresh flash, project deadline save, project/task save; template + security settings checks
 ## Release blockers
-- [ ] Wave 3 signed-in checks (incl. task edit via new List view). Company switch: company-owned records isolated; personal CRM contacts/deals may stay visible
-- [ ] Stripe plan switch in isolated sandbox project (needs owner sk_test key in a separate backend)
+- [x] Wave 3 signed-in checks (including task edit via the new List view and company isolation) — owner-confirmed PASS 2026-10-04; personal CRM contacts/deals may remain visible across companies
+- [x] Stripe plan switch in isolated sandbox project — sandbox checkout and Starter → Professional switch owner-confirmed PASS
 ## Unverified (not tested)
 - X, LinkedIn, WhatsApp workflow delivery — switched off for customers in preview until verified
-- [ ] Webhook retry fix (claim tokens, leases, stale-event guard) prepared + tested locally; apply to SANDBOX copy only, then Stripe test; production needs separate approval
+- [x] Webhook retry fix (claim tokens, leases, stale-event guard) deployed to production with owner approval 2026-10-04
 - Known limitation: a retried payment-status update can add a duplicate payment_audit_logs entry (no duplicate payments)
 ## Deferred decisions (no change)
 - Seat limits; AI template pricing; customer AI generation disabled; legacy subscriptions; old news data; DKIM/DMARC
