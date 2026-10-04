@@ -149,6 +149,6 @@
 - [ ] Stripe plan switch in isolated sandbox project (needs owner sk_test key in a separate backend)
 ## Unverified (not tested)
 - X, LinkedIn, WhatsApp workflow delivery — switched off for customers in preview until verified
-- Webhook finding for review: event id stored before processing, so a failed sync is not retried by Stripe
+- [ ] Webhook retry fix prepared + tested locally (supabase/remediation/stripe-webhook-retry-2026-10-04*.sql); awaiting owner approval to apply migration, then deploy stripe-webhook
 ## Deferred decisions (no change)
 - Seat limits; AI template pricing; customer AI generation disabled; legacy subscriptions; old news data; DKIM/DMARC
