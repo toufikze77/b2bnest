@@ -33,7 +33,7 @@ describe('workflow steps', () => {
   });
 });
 
-import { executeStep, STEP_DEFINITIONS } from './workflowSteps';
+import { executeStep, NOT_YET_AVAILABLE, STEP_DEFINITIONS } from './workflowSteps';
 
 describe('workflow execution (mocked server, nothing is sent)', () => {
   it('offers exactly the four supported actions', () => {
@@ -47,12 +47,17 @@ describe('workflow execution (mocked server, nothing is sent)', () => {
     expect((await executeStep(email, null, async () => ({ data: null, error: null }))).ok).toBe(false);
     expect((await executeStep(email, null, async () => ({ data: { success: false, error: 'X not connected' }, error: null })))).toEqual({ ok: false, message: 'X not connected' });
   });
-  it('turns server errors, thrown errors and WhatsApp failures into failures', async () => {
-    const err = Object.assign(new Error('Edge function returned 500'), { context: { json: async () => ({ error: 'Twitter not connected' }) } });
-    expect(await executeStep({ id: 'x', kind: 'x', config: { text: 'hi' } }, null, async () => ({ data: null, error: err }))).toEqual({ ok: false, message: 'Twitter not connected' });
+  it('turns server errors and thrown errors into failures', async () => {
+    const err = Object.assign(new Error('Edge function returned 500'), { context: { json: async () => ({ error: 'Provider refused' }) } });
+    expect(await executeStep(email, null, async () => ({ data: null, error: err }))).toEqual({ ok: false, message: 'Provider refused' });
     expect((await executeStep(email, null, async () => { throw new Error('offline'); })).ok).toBe(false);
-    expect((await executeStep(wa, null, async () => ({ data: { ok: true, results: [{ ok: false, error: 'whatsapp_not_connected' }] }, error: null })))).toEqual({ ok: false, message: 'whatsapp_not_connected' });
-    expect((await executeStep(wa, null, async () => ({ data: { ok: true, results: [] }, error: null }))).ok).toBe(false);
+  });
+  it('never runs unverified X, LinkedIn or WhatsApp steps', async () => {
+    let calls = 0; const inv = async () => { calls++; return { data: { success: true, ok: true, results: [{ ok: true }] }, error: null }; };
+    for (const s of [wa, { id: 'x', kind: 'x' as const, config: { text: 'hi' } }, { id: 'l', kind: 'linkedin' as const, config: { text: 'hi' } }])
+      expect(await executeStep(s, null, inv)).toEqual({ ok: false, message: NOT_YET_AVAILABLE });
+    expect(calls).toBe(0);
+    expect(STEP_DEFINITIONS.filter((d) => d.verified).map((d) => d.kind)).toEqual(['email']);
   });
 });
 
