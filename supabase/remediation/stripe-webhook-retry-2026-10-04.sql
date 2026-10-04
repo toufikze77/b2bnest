@@ -1,4 +1,4 @@
--- Stripe webhook retry safety (FOR REVIEW — not applied).
+-- Stripe webhook retry safety (FOR REVIEW — apply to the ISOLATED SANDBOX backend only; not production).
 -- Additive only: existing event rows become 'completed' (they were already processed).
 
 ALTER TABLE public.stripe_webhook_events
@@ -6,52 +6,68 @@ ALTER TABLE public.stripe_webhook_events
   ADD COLUMN IF NOT EXISTS attempts integer NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS locked_until timestamptz,
   ADD COLUMN IF NOT EXISTS completed_at timestamptz,
-  ADD COLUMN IF NOT EXISTS last_error text;
+  ADD COLUMN IF NOT EXISTS last_error text,
+  ADD COLUMN IF NOT EXISTS claim_token uuid;
 
 ALTER TABLE public.subscribers
   ADD COLUMN IF NOT EXISTS stripe_state_at bigint;
 
--- Claim an event: 'claimed' (caller must process), 'completed' (skip), 'busy' (another delivery holds a live lease).
+-- Claim an event. result: 'claimed' (caller must process, using token), 'completed' (skip), 'busy' (live lease held).
 CREATE OR REPLACE FUNCTION public.claim_stripe_webhook_event(p_event_id text, p_event_type text, p_lease_seconds integer DEFAULT 120)
-RETURNS text LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
-DECLARE r public.stripe_webhook_events%ROWTYPE;
+RETURNS TABLE(result text, token uuid) LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE r public.stripe_webhook_events%ROWTYPE; v_token uuid := gen_random_uuid();
 BEGIN
-  INSERT INTO public.stripe_webhook_events (event_id, event_type, status, attempts, locked_until)
-  VALUES (p_event_id, p_event_type, 'processing', 1, now() + make_interval(secs => p_lease_seconds))
+  INSERT INTO public.stripe_webhook_events (event_id, event_type, status, attempts, locked_until, claim_token)
+  VALUES (p_event_id, p_event_type, 'processing', 1, now() + make_interval(secs => p_lease_seconds), v_token)
   ON CONFLICT (event_id) DO NOTHING;
-  IF FOUND THEN RETURN 'claimed'; END IF;
+  IF FOUND THEN RETURN QUERY SELECT 'claimed'::text, v_token; RETURN; END IF;
 
-  SELECT * INTO r FROM public.stripe_webhook_events WHERE event_id = p_event_id FOR UPDATE;
-  IF r.status = 'completed' THEN RETURN 'completed'; END IF;
-  IF r.status = 'processing' AND r.locked_until > now() THEN RETURN 'busy'; END IF;
-  -- failed, or processing whose lease expired (processing stopped partway): take over.
-  UPDATE public.stripe_webhook_events
-     SET status = 'processing', attempts = attempts + 1, locked_until = now() + make_interval(secs => p_lease_seconds)
-   WHERE event_id = p_event_id;
-  RETURN 'claimed';
+  SELECT * INTO r FROM public.stripe_webhook_events e WHERE e.event_id = p_event_id FOR UPDATE;
+  IF r.status = 'completed' THEN RETURN QUERY SELECT 'completed'::text, NULL::uuid; RETURN; END IF;
+  IF r.status = 'processing' AND r.locked_until > now() THEN RETURN QUERY SELECT 'busy'::text, NULL::uuid; RETURN; END IF;
+  -- failed, or processing whose lease expired: take over with a NEW token (the old worker is fenced out).
+  UPDATE public.stripe_webhook_events e
+     SET status = 'processing', attempts = e.attempts + 1, locked_until = now() + make_interval(secs => p_lease_seconds), claim_token = v_token
+   WHERE e.event_id = p_event_id;
+  RETURN QUERY SELECT 'claimed'::text, v_token;
 END $$;
 
-CREATE OR REPLACE FUNCTION public.complete_stripe_webhook_event(p_event_id text)
-RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path TO '' AS $$
+-- Locks the event row and raises 'claim_lost' unless the caller still owns the claim.
+-- Holding the row lock until commit means a takeover cannot interleave with the caller's write.
+CREATE OR REPLACE FUNCTION public.assert_stripe_claim(p_event_id text, p_token uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+BEGIN
+  PERFORM 1 FROM public.stripe_webhook_events
+   WHERE event_id = p_event_id AND claim_token = p_token AND status = 'processing' FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'claim_lost' USING ERRCODE = 'P0001'; END IF;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.complete_stripe_webhook_event(p_event_id text, p_token uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+BEGIN
+  PERFORM public.assert_stripe_claim(p_event_id, p_token);
   UPDATE public.stripe_webhook_events
-     SET status = 'completed', completed_at = now(), processed_at = now(), locked_until = NULL, last_error = NULL
+     SET status = 'completed', completed_at = now(), processed_at = now(), locked_until = NULL, last_error = NULL, claim_token = NULL
    WHERE event_id = p_event_id;
-$$;
+END $$;
 
-CREATE OR REPLACE FUNCTION public.release_stripe_webhook_event(p_event_id text, p_error text)
+-- No-op if the caller no longer owns the claim (never disturbs the new owner).
+CREATE OR REPLACE FUNCTION public.release_stripe_webhook_event(p_event_id text, p_token uuid, p_error text)
 RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path TO '' AS $$
   UPDATE public.stripe_webhook_events
-     SET status = 'failed', locked_until = NULL, last_error = left(p_error, 500)
-   WHERE event_id = p_event_id AND status = 'processing';
+     SET status = 'failed', locked_until = NULL, claim_token = NULL, last_error = left(p_error, 500)
+   WHERE event_id = p_event_id AND claim_token = p_token AND status = 'processing';
 $$;
 
--- Writes subscriber state unless state from a later Stripe event is already stored. Returns 'applied' or 'stale'.
-CREATE OR REPLACE FUNCTION public.apply_stripe_subscriber_state(p_row jsonb, p_event_created bigint)
+-- Writes subscriber state if the caller owns the claim and no later Stripe event's state is stored.
+-- Equal event times are applied (the later-processed sync re-read Stripe more recently). Returns 'applied' | 'stale'.
+CREATE OR REPLACE FUNCTION public.apply_stripe_subscriber_state(p_event_id text, p_token uuid, p_row jsonb, p_event_created bigint)
 RETURNS text LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
 DECLARE v_email text := p_row->>'email'; v_at bigint;
 BEGIN
+  PERFORM public.assert_stripe_claim(p_event_id, p_token);
   IF v_email IS NULL THEN RAISE EXCEPTION 'email required'; END IF;
-  INSERT INTO public.subscribers (email, stripe_state_at) VALUES (v_email, NULL) ON CONFLICT (email) DO NOTHING;
+  INSERT INTO public.subscribers (email) VALUES (v_email) ON CONFLICT (email) DO NOTHING;
   SELECT stripe_state_at INTO v_at FROM public.subscribers WHERE email = v_email FOR UPDATE;
   IF v_at IS NOT NULL AND v_at > p_event_created THEN RETURN 'stale'; END IF;
   UPDATE public.subscribers SET
@@ -76,11 +92,24 @@ BEGIN
   RETURN 'applied';
 END $$;
 
-REVOKE ALL ON FUNCTION public.claim_stripe_webhook_event(text, text, integer) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.complete_stripe_webhook_event(text) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.release_stripe_webhook_event(text, text) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.apply_stripe_subscriber_state(jsonb, bigint) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.claim_stripe_webhook_event(text, text, integer) TO service_role;
-GRANT EXECUTE ON FUNCTION public.complete_stripe_webhook_event(text) TO service_role;
-GRANT EXECUTE ON FUNCTION public.release_stripe_webhook_event(text, text) TO service_role;
-GRANT EXECUTE ON FUNCTION public.apply_stripe_subscriber_state(jsonb, bigint) TO service_role;
+-- Fenced wrapper around the existing update_payment_status (unchanged).
+-- Known limitation: update_payment_status writes one payment_audit_logs row per call, so a retried
+-- event can add a duplicate AUDIT entry. Payment records themselves are never duplicated.
+CREATE OR REPLACE FUNCTION public.apply_stripe_payment_status(p_event_id text, p_token uuid, p_status text,
+  p_stripe_session_id text, p_stripe_payment_intent_id text, p_payment_method text, p_metadata jsonb)
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+BEGIN
+  PERFORM public.assert_stripe_claim(p_event_id, p_token);
+  RETURN public.update_payment_status(p_status, p_stripe_session_id, p_stripe_payment_intent_id, p_payment_method, p_metadata);
+END $$;
+
+DO $$ DECLARE f text; BEGIN
+  FOREACH f IN ARRAY ARRAY[
+    'public.claim_stripe_webhook_event(text, text, integer)', 'public.assert_stripe_claim(text, uuid)',
+    'public.complete_stripe_webhook_event(text, uuid)', 'public.release_stripe_webhook_event(text, uuid, text)',
+    'public.apply_stripe_subscriber_state(text, uuid, jsonb, bigint)',
+    'public.apply_stripe_payment_status(text, uuid, text, text, text, text, jsonb)'] LOOP
+    EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC, anon, authenticated', f);
+    EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO service_role', f);
+  END LOOP;
+END $$;

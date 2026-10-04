@@ -6,7 +6,11 @@
 // - A database lease (claim) stops simultaneous deliveries applying the same event twice;
 //   a delivery that finds the event in progress gets 409 and Stripe retries later.
 // - If processing stops partway (crash/timeout), the lease expires and a later delivery reclaims it.
+// - Each claim carries a unique token; all writes and completion check it inside the database, so a
+//   worker whose lease expired and was taken over cannot write records or mark the event complete.
 // - Subscriber state carries the Stripe event time; an older event can never overwrite newer state.
+//   Equal timestamps (Stripe's `created` is whole seconds) are APPLIED, not skipped: each sync re-reads
+//   the subscription from Stripe at processing time, so the later-processed write holds the fresher state.
 import { planFromAmount, planFromLookupKey } from "../_shared/plans.ts";
 
 export const corsHeaders = {
@@ -17,7 +21,7 @@ export const corsHeaders = {
 // past_due / unpaid keep access during Stripe's retry window — no data is ever deleted.
 export const ENTITLED_STATUSES = ["active", "trialing", "past_due", "unpaid"];
 
-export type ClaimResult = "claimed" | "completed" | "busy";
+export type ClaimResult = { result: "claimed"; token: string } | { result: "completed" | "busy" };
 export type ApplyResult = "applied" | "stale";
 
 // deno-lint-ignore no-explicit-any
@@ -25,12 +29,14 @@ type Any = any;
 
 export interface Store {
   claim(eventId: string, eventType: string): Promise<ClaimResult>;
-  complete(eventId: string): Promise<void>;
-  release(eventId: string, error: string): Promise<void>;
+  // Every write below is fenced by the claim token: it throws "claim_lost" if another worker has
+  // since taken the event over, so a worker whose claim expired can neither write nor complete.
+  complete(eventId: string, token: string): Promise<void>;
+  release(eventId: string, token: string, error: string): Promise<void>;
   /** Atomically writes subscriber state unless newer state (later Stripe event) is already stored. */
-  applySubscriber(row: Record<string, unknown>, eventCreated: number): Promise<ApplyResult>;
+  applySubscriber(eventId: string, token: string, row: Record<string, unknown>, eventCreated: number): Promise<ApplyResult>;
   /** Idempotent: sets a payment's status by session / payment-intent id; never inserts a second record. */
-  updatePaymentStatus(args: Record<string, unknown>): Promise<void>;
+  updatePaymentStatus(eventId: string, token: string, args: Record<string, unknown>): Promise<void>;
 }
 
 export interface Deps {
@@ -47,7 +53,7 @@ export function makeHandler(deps: Deps) {
   const log = deps.log ?? (() => {});
   const { stripe, store } = deps;
 
-  const syncSubscription = async (subscriptionId: string, eventCreated: number) => {
+  const syncSubscription = async (eventId: string, token: string, subscriptionId: string, eventCreated: number) => {
     let subscription = await stripe.subscriptions.retrieve(subscriptionId, { expand: ["items.data.price"] });
     // If this subscription no longer grants access but the customer holds another live one,
     // sync the live one instead so the account is never briefly downgraded.
@@ -93,7 +99,7 @@ export function makeHandler(deps: Deps) {
     // Sets the plan's credit LIMIT (absolute value); never adds credits, so a retry cannot double-allocate.
     if (entitled && resolved) row.ai_credits_limit = resolved.plan.aiCreditLimit;
 
-    const r = await store.applySubscriber(row, eventCreated);
+    const r = await store.applySubscriber(eventId, token, row, eventCreated);
     log(r === "applied" ? "Entitlements synced" : "Older event ignored (newer state stored)", { status: subscription.status, plan: resolved?.plan.key });
   };
 
@@ -114,17 +120,19 @@ export function makeHandler(deps: Deps) {
       log("Could not claim event", { error: (e as Error).message });
       return json(500, { error: "claim_failed" });
     }
-    if (claim === "completed") return json(200, { received: true, duplicate: true });
-    if (claim === "busy") return json(409, { error: "in_progress" }); // Stripe retries non-2xx later
+    if (claim.result === "completed") return json(200, { received: true, duplicate: true });
+    if (claim.result === "busy") return json(409, { error: "in_progress" }); // Stripe retries non-2xx later
+    const token = (claim as { token: string }).token;
+    const sync = (subId: string, created: number) => syncSubscription(event.id, token, subId, created);
 
     try {
       const created = Number(event.created) || 0;
       const obj = event.data.object;
       switch (event.type) {
         case "checkout.session.completed":
-          if (obj.mode === "subscription" && obj.subscription) await syncSubscription(obj.subscription, created);
+          if (obj.mode === "subscription" && obj.subscription) await sync(obj.subscription, created);
           else {
-            await store.updatePaymentStatus({
+            await store.updatePaymentStatus(event.id, token, {
               p_status: "completed", p_stripe_session_id: obj.id, p_stripe_payment_intent_id: obj.payment_intent,
               p_payment_method: obj.payment_method_types?.[0] || "card",
               p_metadata: { webhook_event_id: event.id, payment_status: obj.payment_status, amount_total: obj.amount_total, currency: obj.currency },
@@ -134,14 +142,14 @@ export function makeHandler(deps: Deps) {
         case "customer.subscription.created":
         case "customer.subscription.updated":
         case "customer.subscription.deleted":
-          await syncSubscription(obj.id, created);
+          await sync(obj.id, created);
           break;
         case "invoice.paid":
         case "invoice.payment_failed":
-          if (obj.subscription) await syncSubscription(obj.subscription, created);
+          if (obj.subscription) await sync(obj.subscription, created);
           break;
         case "payment_intent.payment_failed":
-          await store.updatePaymentStatus({
+          await store.updatePaymentStatus(event.id, token, {
             p_status: "failed", p_stripe_payment_intent_id: obj.id,
             p_metadata: { webhook_event_id: event.id, failure_reason: obj.last_payment_error?.message },
           });
@@ -149,12 +157,12 @@ export function makeHandler(deps: Deps) {
         default:
           log("Unhandled event type", { type: event.type });
       }
-      await store.complete(event.id);
+      await store.complete(event.id, token);
       return json(200, { received: true });
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       log("ERROR", { message });
-      await store.release(event.id, message.slice(0, 500)).catch(() => {}); // lease expiry covers a failed release
+      await store.release(event.id, token, message.slice(0, 500)).catch(() => {}); // lease expiry covers a failed release
       return json(500, { error: "processing_failed" });
     }
   };

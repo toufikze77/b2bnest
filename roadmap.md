@@ -149,6 +149,7 @@
 - [ ] Stripe plan switch in isolated sandbox project (needs owner sk_test key in a separate backend)
 ## Unverified (not tested)
 - X, LinkedIn, WhatsApp workflow delivery — switched off for customers in preview until verified
-- [ ] Webhook retry fix prepared + tested locally (supabase/remediation/stripe-webhook-retry-2026-10-04*.sql); awaiting owner approval to apply migration, then deploy stripe-webhook
+- [ ] Webhook retry fix (claim tokens, leases, stale-event guard) prepared + tested locally; apply to SANDBOX copy only, then Stripe test; production needs separate approval
+- Known limitation: a retried payment-status update can add a duplicate payment_audit_logs entry (no duplicate payments)
 ## Deferred decisions (no change)
 - Seat limits; AI template pricing; customer AI generation disabled; legacy subscriptions; old news data; DKIM/DMARC
