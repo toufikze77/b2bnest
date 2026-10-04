@@ -122,7 +122,7 @@ export function makeHandler(deps: Deps) {
     }
     if (claim.result === "completed") return json(200, { received: true, duplicate: true });
     if (claim.result === "busy") return json(409, { error: "in_progress" }); // Stripe retries non-2xx later
-    const token = claim.token;
+    const token = (claim as { token: string }).token;
     const sync = (subId: string, created: number) => syncSubscription(event.id, token, subId, created);
 
     try {

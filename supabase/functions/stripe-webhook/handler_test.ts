@@ -75,7 +75,7 @@ Deno.test("2. simultaneous duplicate deliveries → applied once, the other gets
 Deno.test("3. processing stops partway → lease expires, reclaimed, no duplicate records or credits", async () => {
   const { store, h } = setup();
   // Simulate a crash after claiming: event left 'processing', nothing written.
-  await store.claim("evt_3", "checkout.session.completed");
+  await store.claim("evt_3");
   const e = ev("evt_3", "checkout.session.completed", { id: "cs_1", mode: "payment", payment_intent: "pi_1" });
   const busy = await post(h, e); await busy.body?.cancel(); assertEquals(busy.status, 409);
   store.advance(121_000);
