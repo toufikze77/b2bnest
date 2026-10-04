@@ -145,9 +145,10 @@
 - [x] Workflow email sending (provider accepted; arrived in junk; inbox placement not guaranteed)
 - [x] Wave 2 refresh flash, project deadline save, project/task save; template + security settings checks
 ## Release blockers
-- [ ] Wave 3 signed-in checks (incl. task edit via new List view — entry point changed in Wave 3)
+- [ ] Wave 3 signed-in checks (incl. task edit via new List view). Company switch: company-owned records isolated; personal CRM contacts/deals may stay visible
 - [ ] Stripe plan switch in isolated sandbox project (needs owner sk_test key in a separate backend)
 ## Unverified (not tested)
-- X, LinkedIn, WhatsApp workflow delivery
+- X, LinkedIn, WhatsApp workflow delivery — switched off for customers in preview until verified
+- Webhook finding for review: event id stored before processing, so a failed sync is not retried by Stripe
 ## Deferred decisions (no change)
 - Seat limits; AI template pricing; customer AI generation disabled; legacy subscriptions; old news data; DKIM/DMARC
