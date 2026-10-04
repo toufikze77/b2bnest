@@ -87,6 +87,9 @@ export function classifySmtpError(e: unknown): { code: string; message: string; 
     return { code: "provider_unreachable", sent: "not_sent", message: "Couldn't connect to the email provider. Nothing was sent." };
   if (/InvalidData|certificate|tls|handshake/i.test(raw))
     return { code: "provider_tls_error", sent: "not_sent", message: "A secure connection to the email provider couldn't be set up. Nothing was sent." };
+  const st = raw.match(/stage=(\w+)/)?.[1];
+  if (st && !["data_end", "quit"].includes(st))
+    return { code: "provider_error", sent: "not_sent", message: `The email provider connection broke before the message was handed over (${st}). Nothing was sent.` };
   return { code: "provider_error", sent: "unknown", message: `The email provider connection failed unexpectedly. ${UNKNOWN_STATUS}` };
 }
 
