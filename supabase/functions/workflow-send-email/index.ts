@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { makeHandler } from "./handler.ts";
+import { makeHandler, redactEmails } from "./handler.ts";
 import { probeSmtp } from "./probe.ts";
 import { sendSmtp } from "./smtp.ts";
 
@@ -20,6 +20,6 @@ serve(makeHandler({
   // Own SMTP sender (denomailer hid the failing command behind "invalid cmd").
   send: async (cfg, mail) => {
     const r = await sendSmtp(cfg, mail);
-    console.log("workflow-send-email: server queued", { reply: r.reply.slice(0, 200) });
+    console.log("workflow-send-email: server queued", { reply: redactEmails(r.reply).slice(0, 200) });
   },
 }));

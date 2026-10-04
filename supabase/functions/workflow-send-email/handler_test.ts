@@ -110,3 +110,9 @@ Deno.test("connection check: admins only, never sends mail", async () => {
   assertEquals(b.probe.smtpCode, 534); assertEquals(b.sent, false); assertEquals(probed, 1);
   assertEquals(noAdmin.sent + admin.sent, 0);
 });
+
+import { redactEmails } from "./handler.ts";
+Deno.test("email addresses are redacted from provider replies and logged errors", () => {
+  assertEquals(redactEmails("550 5.1.1 <bob.smith+x@example.co.uk> unknown"), "550 5.1.1 <[email]> unknown");
+  assertEquals(sanitizeError(new Error("stage=rcpt_to 550 jane@corp.com rejected")).includes("jane@corp.com"), false);
+});
