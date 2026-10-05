@@ -5,25 +5,20 @@ const PRICES: Record<string, { id: string; lookup_key: string; recurring: { inte
   starter_month: { id: "price_sm", lookup_key: "b2bnest_starter_monthly_gbp", recurring: { interval: "month" } },
   professional_month: { id: "price_pm", lookup_key: "b2bnest_professional_monthly_gbp", recurring: { interval: "month" } },
   professional_year: { id: "price_py", lookup_key: "b2bnest_professional_annual_gbp", recurring: { interval: "year" } },
-  enterprise_month: { id: "price_em", lookup_key: "b2bnest_enterprise_monthly_gbp", recurring: { interval: "month" } },
 };
 
 function fakeStripe(opts: { subs?: number; failPayment?: boolean; price?: string } = {}) {
   const state = {
     subs: Array.from({ length: opts.subs ?? 1 }, (_, i) => ({
-      id: `sub_${i}`, status: "active", metadata: {}, schedule: null as string | null,
-      current_period_start: 1_700_000_000, current_period_end: 1_702_592_000, cancel_at_period_end: false,
+      id: `sub_${i}`, status: "active", metadata: {},
       items: { data: [{ id: `si_${i}`, price: PRICES[opts.price ?? "starter_month"] }] },
     })),
     updates: 0, created: 0, keys: new Set<string>(),
-    // deno-lint-ignore no-explicit-any
-    schedules: new Map<string, any>(), schedulesCreated: 0, released: 0, invoicesCreated: 0,
   };
   const stripe = {
     customers: { list: async () => ({ data: [{ id: "cus_1" }] }) },
     subscriptions: {
       list: async () => ({ data: state.subs }),
-      retrieve: async (id: string) => state.subs.find((s) => s.id === id),
       create: async () => { state.created++; },
       update: async (id: string, params: { items: { price: string }[] }, o: { idempotencyKey: string }) => {
         const sub = state.subs.find((s) => s.id === id)!;
@@ -37,22 +32,6 @@ function fakeStripe(opts: { subs?: number; failPayment?: boolean; price?: string
       },
     },
     invoices: { retrieveUpcoming: async () => ({ amount_due: 1600, currency: "gbp" }) },
-    subscriptionSchedules: {
-      create: async ({ from_subscription }: { from_subscription: string }) => {
-        const sub = state.subs.find((s) => s.id === from_subscription)!;
-        if (sub.schedule) throw new Error("already has a schedule"); // Stripe: one schedule per subscription
-        state.schedulesCreated++;
-        const sch = { id: `sub_sched_${state.schedulesCreated}`, metadata: {}, phases: [{ start_date: sub.current_period_start }] };
-        state.schedules.set(sch.id, sch); sub.schedule = sch.id; return sch;
-      },
-      retrieve: async (id: string) => state.schedules.get(id),
-      // deno-lint-ignore no-explicit-any
-      update: async (id: string, p: any) => { const sch = state.schedules.get(id); Object.assign(sch, p); return sch; },
-      release: async (id: string) => {
-        state.released++; state.schedules.delete(id);
-        state.subs.forEach((s) => { if (s.schedule === id) s.schedule = null; });
-      },
-    },
   };
   const deps: Deps = {
     stripe,
@@ -127,71 +106,4 @@ Deno.test("no subscription or several subscriptions: nothing is created or chang
   const many = fakeStripe({ subs: 2 });
   assertEquals((await changePlan("good", { planId: "professional", requestId: "req-00000008" }, many.deps)).body.error, "multiple_subscriptions");
   assert(none.state.created === 0 && many.state.updates === 0);
-});
-
-Deno.test("downgrade is scheduled for period end on the same subscription: no charge, plan unchanged now", async () => {
-  const { state, deps } = fakeStripe({ price: "professional_month" });
-  const r = await changePlan("good", { planId: "starter", requestId: "req-00000101" }, deps);
-  assertEquals(r.status, 200);
-  assertEquals(r.body.scheduled, true);
-  assertEquals(r.body.amountDueNow, 0);
-  assertEquals(r.body.effectiveDate, new Date(1_702_592_000 * 1000).toISOString());
-  assertEquals(state.subs[0].items.data[0].price.id, "price_pm"); // still Professional
-  assertEquals(state.updates, 0);
-  assertEquals(state.created, 0);
-  const sch = state.schedules.get(state.subs[0].schedule!);
-  assertEquals(sch.proration_behavior, "none");
-  assertEquals(sch.end_behavior, "release");
-  assertEquals(sch.phases[0].end_date, 1_702_592_000);
-  assertEquals(sch.phases[1].items[0].price, "price_sm");
-  const st = await changePlan("good", { mode: "status" }, deps);
-  assertEquals((st.body.pendingDowngrade as { plan: string }).plan, "Starter");
-  assertEquals((st.body.pendingDowngrade as { price: number }).price, 1900);
-});
-
-Deno.test("repeated and concurrent downgrade requests create one schedule", async () => {
-  const { state, deps } = fakeStripe({ price: "professional_month" });
-  await Promise.all([1, 2, 3].map((i) => changePlan("good", { planId: "starter", requestId: `req-0000020${i}` }, deps)));
-  const again = await changePlan("good", { planId: "starter", requestId: "req-00000209" }, deps);
-  assertEquals(again.body.alreadyScheduled, true);
-  assertEquals(state.schedulesCreated, 1);
-  assertEquals(state.subs.length, 1);
-  assertEquals(state.created, 0);
-});
-
-Deno.test("annual to monthly on the same tier is a downgrade at the annual renewal", async () => {
-  const { state, deps } = fakeStripe({ price: "professional_year" });
-  const r = await changePlan("good", { planId: "professional", isAnnual: false, requestId: "req-00000301" }, deps);
-  assertEquals(r.body.scheduled, true);
-  assertEquals(state.subs[0].items.data[0].price.id, "price_py");
-});
-
-Deno.test("cancelling a pending downgrade keeps the current plan", async () => {
-  const { state, deps } = fakeStripe({ price: "professional_month" });
-  await changePlan("good", { planId: "starter", requestId: "req-00000401" }, deps);
-  const c = await changePlan("good", { mode: "cancel_downgrade", requestId: "req-00000402" }, deps);
-  assertEquals(c.body.cancelled, true);
-  assertEquals(state.subs[0].schedule, null);
-  assertEquals(state.subs[0].items.data[0].price.id, "price_pm");
-  assertEquals((await changePlan("good", { mode: "status" }, deps)).body.pendingDowngrade, null);
-  const c2 = await changePlan("good", { mode: "cancel_downgrade", requestId: "req-00000403" }, deps);
-  assertEquals(c2.body.cancelled, false);
-});
-
-Deno.test("upgrade while a downgrade is pending cancels it and upgrades immediately", async () => {
-  const { state, deps } = fakeStripe({ price: "professional_month" });
-  await changePlan("good", { planId: "starter", requestId: "req-00000501" }, deps);
-  const r = await changePlan("good", { planId: "enterprise", requestId: "req-00000502" }, deps);
-  assertEquals(r.status, 200);
-  assertEquals(state.released, 1);
-  assertEquals(state.subs[0].items.data[0].price.id, "price_em");
-});
-
-Deno.test("a schedule not created by this app is never modified", async () => {
-  const { state, deps } = fakeStripe({ price: "professional_month" });
-  state.schedules.set("sub_sched_x", { id: "sub_sched_x", metadata: { other: "1" }, phases: [] });
-  state.subs[0].schedule = "sub_sched_x";
-  assertEquals((await changePlan("good", { planId: "starter", requestId: "req-00000601" }, deps)).body.error, "unsupported_schedule");
-  assertEquals((await changePlan("good", { mode: "cancel_downgrade", requestId: "req-00000602" }, deps)).body.error, "unsupported_schedule");
-  assertEquals(state.released, 0);
 });
