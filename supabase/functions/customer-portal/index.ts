@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { resolvePortalConfiguration } from "../_shared/portal-config.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -47,9 +48,12 @@ serve(async (req) => {
     }
     if (!customerId) return json({ error: "No billing account found for this user" }, 404);
 
+    // Policy configuration: no plan switching in the portal, cancellation at period end without proration.
+    const configuration = await resolvePortalConfiguration(stripe);
     const origin = req.headers.get("origin") || "https://www.b2bnest.online";
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
+      configuration,
       return_url: `${origin}/settings`,
     });
 

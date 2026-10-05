@@ -37,7 +37,11 @@ const Help = () => {
     },
     {
       question: "How do I upgrade or downgrade my plan?",
-      answer: "Go to Settings → Billing and click 'Change plan', or open the Pricing page. Your current plan is marked 'Your current plan'; choose 'Switch to' on another plan. Your existing subscription is updated (never duplicated) and Stripe adjusts the next invoice for the time remaining."
+      answer: "Open the Pricing page (or Settings → Billing → 'Change plan') and choose 'Switch to' on another plan. Your existing subscription is changed — never duplicated. Upgrades start straight away and you pay the difference for the rest of the current billing period. Downgrades (a lower plan, or annual to monthly) start at the end of the period you've already paid for: you keep your current plan until then, nothing is charged now, and there's no automatic refund or credit for unused time. Annual plans stay active until their annual renewal. Settings → Billing shows any pending change, its start date and next price, and lets you keep your current plan instead. This doesn't affect your statutory rights."
+    },
+    {
+      question: "Will I get a refund if I downgrade or cancel?",
+      answer: "Downgrades and cancellations take effect at the end of your paid billing period, and you keep full access until then. We don't automatically refund or credit unused time. This doesn't affect any refund rights you have under consumer law — contact support if you think one applies."
     },
     {
       question: "Is my data secure?",
