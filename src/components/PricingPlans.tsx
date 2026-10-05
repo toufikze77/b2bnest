@@ -117,22 +117,34 @@ const PricingPlans = () => {
       const money = (pence: number) => `£${(Math.abs(pence) / 100).toFixed(2)}`;
       const per = preview.newInterval === 'year' ? 'year' : 'month';
       const due = Number(preview.amountDueNow) || 0;
-      const message = [
+      const dateText = (d?: string | null) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'the end of your billing period';
+      const message = (preview.scheduled ? [
+        `Switch from ${preview.currentPlan ?? 'your current plan'} to ${preview.newPlan} (${money(preview.newPrice)} per ${per})?`,
+        '',
+        `This change starts on ${dateText(preview.effectiveDate)}, at the end of the period you've already paid for.`,
+        `You keep ${preview.currentPlan ?? 'your current plan'} until then. Nothing is charged now, and there's no automatic refund or credit for unused time.`,
+        'You can keep your current plan instead from Settings → Billing before that date.',
+      ] : [
         `Switch from ${preview.currentPlan ?? 'your current plan'} to ${preview.newPlan} (${money(preview.newPrice)} per ${per})?`,
         '',
         'Your existing subscription is updated — no second subscription is created.',
         due > 0
           ? `You'll be charged ${money(due)} now for the rest of this billing period (the new price minus unused time on your current plan).`
-          : due < 0 ? `Unused time on your current plan (${money(due)}) is credited to your next invoice.` : 'Nothing extra is charged now.',
+          : 'Nothing extra is charged now.',
         preview.intervalChanges ? `Your billing period changes to ${per}ly, starting today.` : '',
+        preview.cancelsPendingDowngrade ? 'Your pending downgrade will be cancelled.' : '',
         'If the payment fails, your current plan stays as it is.',
-      ].filter((l) => l !== undefined).join('\n');
+      ]).filter((l) => l !== undefined).join('\n');
       if (!window.confirm(message)) return;
       const requestId = crypto.randomUUID();
       const { data, error } = await supabase.functions.invoke('change-subscription-plan', { body: { planId, isAnnual, requestId } });
       if (error) {
         const body = await readError(error);
         throw new Error(body?.message || error.message);
+      }
+      if (data?.scheduled) {
+        toast({ title: 'Plan change scheduled', description: `You'll move to ${data?.newPlan ?? planName} on ${dateText(data?.effectiveDate)}. You keep your current plan until then.` });
+        return;
       }
       await supabase.functions.invoke('check-subscription').catch(() => undefined);
       toast({ title: 'Plan changed', description: `You're now on ${data?.plan ?? planName}.` });
@@ -349,7 +361,7 @@ const PricingPlans = () => {
                 Can I change plans anytime?
               </h4>
               <p className="text-gray-600">
-                Yes. On this page, choose \"Switch to\" on another plan — your existing subscription is updated, never duplicated, and Stripe adjusts the next invoice. To cancel or update your card, use Settings → Billing.
+                Yes. Choose "Switch to" on another plan — your existing subscription is changed, never duplicated. Upgrades start now and you pay the difference for the rest of the period. Downgrades start at the end of your paid period, with no charge now and no automatic refund or credit for unused time (your statutory rights are unaffected). To cancel, keep your current plan or update your card, use Settings → Billing.
               </p>
             </div>
             <div className="text-left">
