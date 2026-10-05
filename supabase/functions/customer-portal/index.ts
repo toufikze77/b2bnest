@@ -51,13 +51,27 @@ serve(async (req) => {
     // Policy configuration: no plan switching in the portal, cancellation at period end without proration.
     const configuration = await resolvePortalConfiguration(stripe);
     const origin = req.headers.get("origin") || "https://www.b2bnest.online";
-    const session = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      configuration,
-      return_url: `${origin}/settings`,
-    });
+    const createSession = (customer: string) =>
+      stripe.billingPortal.sessions.create({ customer, configuration, return_url: `${origin}/settings` });
 
-    return json({ url: session.url });
+    try {
+      const session = await createSession(customerId);
+      return json({ url: session.url });
+    } catch (err) {
+      // The stored id may not exist in this Stripe account/mode. Look the customer up by email in the
+      // account the live key belongs to; never write it back here (no record changes in the portal path).
+      // deno-lint-ignore no-explicit-any
+      if ((err as any)?.code !== "resource_missing") throw err;
+      console.error("[CUSTOMER-PORTAL] stored customer not found in this Stripe account; trying email lookup");
+      const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+      const fallbackId = customers.data[0]?.id;
+      if (!fallbackId || fallbackId === customerId) {
+        console.error("[CUSTOMER-PORTAL] no customer for this account in this Stripe mode");
+        return json({ error: "No billing account found in live Stripe for this user" }, 404);
+      }
+      const session = await createSession(fallbackId);
+      return json({ url: session.url });
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("[CUSTOMER-PORTAL] error", message);
