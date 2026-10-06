@@ -3,6 +3,7 @@ import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { resolveStripePrice } from "../_shared/plans.ts";
 import { changePlan } from "./handler.ts";
+import { resolveVerifiedCustomer } from "../_shared/verified-customer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,7 +31,11 @@ serve(async (req) => {
       },
       getStoredCustomerId: async (userId) => {
         const { data } = await supabase.from("subscribers").select("stripe_customer_id").eq("user_id", userId).maybeSingle();
-        return (data?.stripe_customer_id as string | null) ?? null;
+        const { data: u } = await supabase.auth.getUser(token);
+        const email = u?.user?.email ?? "";
+        const r = await resolveVerifiedCustomer(stripe, { id: userId, email }, (data?.stripe_customer_id as string | null) ?? null);
+        if (!r.customerId) console.error("[CHANGE-PLAN] no verified customer", r.reason);
+        return r.customerId;
       },
       resolvePrice: async (plan, interval) => (await resolveStripePrice(stripe, plan, interval)).priceId,
     });
