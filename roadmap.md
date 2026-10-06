@@ -159,3 +159,8 @@
 ## Downgrade policy (end-of-period, Stripe subscription schedule) — OPEN
 - Blocked: sandbox copy lives in a separate project; edits to billing server code in this project go to production. Awaiting owner choice of where to prepare it.
 - Priority badges solid palette (Urgent #DC2626, High #C2410C, Medium #FBBF24/#422006, Low #15803D): DONE.
+
+## Owner decision needed — test-created Enterprise access (recorded 2026-10-06)
+- toufikze@gmail.com, b2bnest@gmail.com, toufik@ngtelecom.co.uk: Enterprise came from the 29 Sep Stripe test-mode run; no live Stripe subscription verified. Access unchanged until owner decides (keep as complimentary / let lapse / link a verified live customer).
+- Open gaps (not deployed): saved-customer path checks existence, not ownership metadata; check-subscription uses first email match and would reset these accounts to free on its next run.
+- Proposed: explicit complimentary access, separate from Stripe status (needs reviewed migration).
