@@ -49,8 +49,9 @@ export async function changePlan(token: string, payload: Record<string, unknown>
   }
 
   const { stripe } = deps;
-  let customerId = await deps.getStoredCustomerId(user.id);
-  if (!customerId) customerId = (await stripe.customers.list({ email: user.email, limit: 1 })).data[0]?.id ?? null;
+  // getStoredCustomerId returns only a customer that exists in this Stripe account or a single
+  // ownership-verified email match (see _shared/verified-customer.ts). No first-match guessing here.
+  const customerId = await deps.getStoredCustomerId(user.id);
   if (!customerId) return { status: 404, body: { error: "no_subscription" } };
 
   const live = (await stripe.subscriptions.list({ customer: customerId, status: "all", limit: 20 })).data

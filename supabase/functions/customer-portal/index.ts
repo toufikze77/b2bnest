@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { resolvePortalConfiguration } from "../_shared/portal-config.ts";
+import { resolveVerifiedCustomer } from "../_shared/verified-customer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,44 +35,25 @@ serve(async (req) => {
     if (!stripeKey) return json({ error: "Billing is not configured" }, 503);
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
-    // Prefer the stored customer id; fall back to an email lookup.
     const { data: subscriber } = await supabase
       .from("subscribers")
       .select("stripe_customer_id")
       .eq("user_id", user.id)
       .maybeSingle();
 
-    let customerId = subscriber?.stripe_customer_id as string | null;
-    if (!customerId) {
-      const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-      customerId = customers.data[0]?.id ?? null;
+    // Stored id if it exists in this Stripe account; otherwise only a single, ownership-verified email match.
+    const resolved = await resolveVerifiedCustomer(stripe, { id: user.id, email: user.email }, (subscriber?.stripe_customer_id as string | null) ?? null);
+    if (!resolved.customerId) {
+      console.error("[CUSTOMER-PORTAL] no verified customer", resolved.reason);
+      return json({ error: "No verified billing account found for this user. Please contact support.", reason: resolved.reason }, 404);
     }
-    if (!customerId) return json({ error: "No billing account found for this user" }, 404);
+    if (resolved.storedMissing) console.error("[CUSTOMER-PORTAL] stored customer missing; using verified email match");
 
     // Policy configuration: no plan switching in the portal, cancellation at period end without proration.
     const configuration = await resolvePortalConfiguration(stripe);
     const origin = req.headers.get("origin") || "https://www.b2bnest.online";
-    const createSession = (customer: string) =>
-      stripe.billingPortal.sessions.create({ customer, configuration, return_url: `${origin}/settings` });
-
-    try {
-      const session = await createSession(customerId);
-      return json({ url: session.url });
-    } catch (err) {
-      // The stored id may not exist in this Stripe account/mode. Look the customer up by email in the
-      // account the live key belongs to; never write it back here (no record changes in the portal path).
-      // deno-lint-ignore no-explicit-any
-      if ((err as any)?.code !== "resource_missing") throw err;
-      console.error("[CUSTOMER-PORTAL] stored customer not found in this Stripe account; trying email lookup");
-      const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-      const fallbackId = customers.data[0]?.id;
-      if (!fallbackId || fallbackId === customerId) {
-        console.error("[CUSTOMER-PORTAL] no customer for this account in this Stripe mode");
-        return json({ error: "No billing account found in live Stripe for this user" }, 404);
-      }
-      const session = await createSession(fallbackId);
-      return json({ url: session.url });
-    }
+    const session = await stripe.billingPortal.sessions.create({ customer: resolved.customerId, configuration, return_url: `${origin}/settings` });
+    return json({ url: session.url });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("[CUSTOMER-PORTAL] error", message);
