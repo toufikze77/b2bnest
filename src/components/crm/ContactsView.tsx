@@ -208,6 +208,8 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
             </SelectContent>
           </Select>
         </div>
+        <div className="flex flex-wrap gap-2">
+        <ContactsImportExport contacts={contacts} onImported={onRefresh} />
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
