@@ -14,6 +14,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { DataTable } from '@/components/data/DataTable';
 import { StatusBadge } from '@/components/data/StatusBadge';
 import { formatDueDate } from '@/lib/dashboardData';
+import ContactsImportExport from './ContactsImportExport';
 import { 
   Phone, 
   Mail, 
@@ -275,6 +276,7 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
             </div>
           </DialogContent>
         </Dialog>
+        </div>
 
         {/* Edit Contact Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
