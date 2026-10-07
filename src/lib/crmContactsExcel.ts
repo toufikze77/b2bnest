@@ -3,7 +3,7 @@ import { parseCsv, toNumber } from './csvImport';
 
 export const CONTACT_COLUMNS = [
   { key: 'name', label: 'Name', match: ['name', 'full name', 'contact'] },
-  { key: 'email', label: 'Email', match: ['email', 'e-mail'] },
+  { key: 'email', label: 'Email', match: ['email', 'e mail'] },
   { key: 'phone', label: 'Phone', match: ['phone', 'mobile', 'tel'] },
   { key: 'company', label: 'Company', match: ['company', 'organisation', 'organization', 'account'] },
   { key: 'position', label: 'Position', match: ['position', 'title', 'role', 'job'] },
