@@ -14,6 +14,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { DataTable } from '@/components/data/DataTable';
 import { StatusBadge } from '@/components/data/StatusBadge';
 import { formatDueDate } from '@/lib/dashboardData';
+import ContactsImportExport from './ContactsImportExport';
 import { 
   Phone, 
   Mail, 
@@ -208,6 +209,8 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
             </SelectContent>
           </Select>
         </div>
+        <div className="flex flex-wrap gap-2">
+        <ContactsImportExport contacts={contacts} onImported={onRefresh} />
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -273,6 +276,7 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
             </div>
           </DialogContent>
         </Dialog>
+        </div>
 
         {/* Edit Contact Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
