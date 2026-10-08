@@ -15,6 +15,11 @@ import { DataTable } from '@/components/data/DataTable';
 import { StatusBadge } from '@/components/data/StatusBadge';
 import { formatDueDate } from '@/lib/dashboardData';
 import ContactsImportExport from './ContactsImportExport';
+import { Textarea } from '@/components/ui/textarea';
+import { extractLinkedIn, isUsableEmail } from '@/lib/crmContactsExcel';
+
+const NoEmail = () => <span className="text-muted-foreground">Email unavailable — not verified</span>;
+const EmailLink = ({ email }: { email: string | null }) => isUsableEmail(email) ? <a href={`mailto:${email}`} className="text-primary hover:underline">{email}</a> : <NoEmail />;
 import { 
   Phone, 
   Mail, 
@@ -105,8 +110,13 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
       return;
     }
 
+    if (formData.email.trim() && !isUsableEmail(formData.email)) {
+      toast({ title: "Error", description: "Enter a real email address or leave it blank.", variant: "destructive" });
+      return;
+    }
     const contactData = {
       ...formData,
+      email: formData.email.trim() || null,
       value: formData.value ? parseFloat(formData.value) : 0
     };
 
@@ -153,8 +163,13 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
       return;
     }
 
+    if (editFormData.email.trim() && !isUsableEmail(editFormData.email)) {
+      toast({ title: "Error", description: "Enter a real email address or leave it blank. Keep research notes in Notes.", variant: "destructive" });
+      return;
+    }
     const contactData = {
       ...editFormData,
+      email: editFormData.email.trim() || null,
       value: editFormData.value ? parseFloat(editFormData.value) : 0
     };
 
@@ -175,7 +190,7 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
 
   const calculateEngagementScore = (contact: Contact) => {
     let score = 0;
-    if (contact.email) score += 20;
+    if (isUsableEmail(contact.email)) score += 20;
     if (contact.phone) score += 20;
     if (contact.company) score += 15;
     if (contact.position) score += 15;
@@ -322,11 +337,15 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
                 value={editFormData.source}
                 onChange={(e) => setEditFormData({ ...editFormData, source: e.target.value })}
               />
-              <Input 
-                placeholder="Notes" 
+              <Textarea
+                placeholder="Notes"
+                rows={6}
                 value={editFormData.notes}
                 onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
               />
+              {extractLinkedIn(editFormData.notes) && (
+                <p className="text-xs text-muted-foreground">LinkedIn profile (from notes): <a href={extractLinkedIn(editFormData.notes)!} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline break-all">{extractLinkedIn(editFormData.notes)}</a></p>
+              )}
               <Select value={editFormData.status} onValueChange={(value) => setEditFormData({ ...editFormData, status: value })}>
                 <SelectTrigger>
                   <SelectValue />
@@ -359,7 +378,7 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
             <button type="button" onClick={() => setViewing(c)} className="rounded-sm text-left font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{c.name}</button>
           ) },
           { id: 'company', header: 'Company', sortValue: (c) => c.company, cell: (c) => <span className="text-muted-foreground">{[c.position, c.company].filter(Boolean).join(' · ') || '—'}</span> },
-          { id: 'email', header: 'Email', sortValue: (c) => c.email, cell: (c) => c.email ? <a href={`mailto:${c.email}`} className="text-primary hover:underline">{c.email}</a> : <span className="text-muted-foreground">—</span> },
+          { id: 'email', header: 'Email', sortValue: (c) => c.email, cell: (c) => <EmailLink email={c.email} /> },
           { id: 'status', header: 'Status', sortValue: (c) => c.status, cell: (c) => <StatusBadge value={c.status || 'lead'} prefix="Status" /> },
           { id: 'value', header: 'Potential value', className: 'text-right', sortValue: (c) => c.value ?? 0, cell: (c) => formatCurrency(c.value || 0, settings?.currency_code || 'USD') },
           { id: 'updated', header: 'Updated', sortValue: (c) => c.updated_at, cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{c.updated_at ? formatDueDate(c.updated_at) : '—'}</span> },
@@ -401,7 +420,8 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
               </SheetHeader>
               <dl className="mt-6 grid grid-cols-[auto,1fr] gap-x-4 gap-y-3 text-sm">
                 <dt className="text-muted-foreground">Status</dt><dd><StatusBadge value={viewing.status || 'lead'} /></dd>
-                <dt className="text-muted-foreground"><Mail className="inline h-4 w-4" aria-hidden /> Email</dt><dd>{viewing.email ? <a className="text-primary hover:underline" href={`mailto:${viewing.email}`}>{viewing.email}</a> : '—'}</dd>
+                <dt className="text-muted-foreground"><Mail className="inline h-4 w-4" aria-hidden /> Email</dt><dd><EmailLink email={viewing.email} /></dd>
+                <dt className="text-muted-foreground">LinkedIn</dt><dd>{extractLinkedIn(viewing.notes) ? <a className="text-primary hover:underline break-all" href={extractLinkedIn(viewing.notes)!} target="_blank" rel="noopener noreferrer">{extractLinkedIn(viewing.notes)}</a> : '—'}</dd>
                 <dt className="text-muted-foreground"><Phone className="inline h-4 w-4" aria-hidden /> Phone</dt><dd>{viewing.phone ? <a className="text-primary hover:underline" href={`tel:${viewing.phone}`}>{viewing.phone}</a> : '—'}</dd>
                 <dt className="text-muted-foreground"><Target className="inline h-4 w-4" aria-hidden /> Source</dt><dd>{viewing.source || '—'}</dd>
                 <dt className="text-muted-foreground">Potential value</dt><dd>{formatCurrency(viewing.value || 0, settings?.currency_code || 'USD')}</dd>
