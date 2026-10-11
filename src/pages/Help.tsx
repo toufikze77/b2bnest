@@ -16,6 +16,10 @@ const Help = () => {
       answer: "We support Google Calendar, iCloud Calendar, Outlook 365, OneDrive, Twitter, LinkedIn, Facebook, HMRC, and Firecrawl for web scraping. More integrations are being added regularly."
     },
     {
+      question: "What does the CRM Marketing tab do?",
+      answer: "It helps you plan. You can filter your own CRM contacts by status, source and whether they have an email address or a LinkedIn profile, then plan content and follow-ups in Tasks and Calendar. It doesn't send emails, SMS or social posts, and it doesn't show opens or clicks. Mailchimp, SendGrid and Twilio are not connected. Your contacts stay private to you."
+    },
+    {
       question: "How do I connect my HMRC account?",
       answer: "First, go to Settings → HMRC tab and enter your HMRC Client ID and Client Secret (obtained from the HMRC Developer Hub at developer.service.hmrc.gov.uk). Save the settings, then navigate to Business Tools → HMRC Integration and click 'Connect to HMRC Government Gateway'. If you see 'missing Client ID in setting', it means you need to configure your credentials in Settings → HMRC first."
     },
