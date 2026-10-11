@@ -1,331 +1,98 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { 
-  Mail, 
-  Star, 
-  MessageSquare, 
-  Phone,
-  Plus,
-  Settings,
-  Bot,
-  ExternalLink,
-  Send,
-  Users,
-  BarChart,
-  Zap
-} from 'lucide-react';
+import { Users, CalendarDays, Megaphone, Info } from 'lucide-react';
+import { filterAudience, type AudienceContact, type AudienceFilter } from '@/lib/marketingAudience';
 
-const MarketingTab = () => {
-  const { toast } = useToast();
-  const [isCampaignDialogOpen, setIsCampaignDialogOpen] = useState(false);
-  const [isChatBotOpen, setIsChatBotOpen] = useState(false);
-  const [isLeadScoringOpen, setIsLeadScoringOpen] = useState(false);
-  const [campaignData, setCampaignData] = useState({
-    name: '',
-    subject: '',
-    content: '',
-    audience: 'all',
-    schedule: ''
-  });
-  const [chatMessages, setChatMessages] = useState([
-    { role: 'bot', message: 'Hello! I\'m your AI assistant. How can I help you with your CRM today?' }
-  ]);
-  const [newMessage, setNewMessage] = useState('');
-
-  const handleCreateCampaign = () => {
-    if (!campaignData.name || !campaignData.subject || !campaignData.content) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Simulate campaign creation
-    toast({
-      title: "Campaign Created",
-      description: `Email campaign "${campaignData.name}" has been created and scheduled!`
-    });
-    
-    setIsCampaignDialogOpen(false);
-    setCampaignData({ name: '', subject: '', content: '', audience: 'all', schedule: '' });
-  };
-
-  const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
-
-    const userMessage = { role: 'user', message: newMessage };
-    setChatMessages(prev => [...prev, userMessage]);
-
-    // Simulate AI response
-    setTimeout(() => {
-      const botResponse = { 
-        role: 'bot', 
-        message: `I understand you're asking about "${newMessage}". As your AI assistant, I can help you with lead management, deal tracking, and customer insights. What specific aspect would you like to explore?`
-      };
-      setChatMessages(prev => [...prev, botResponse]);
-    }, 1000);
-
-    setNewMessage('');
-  };
-
-  const handleConfigureScoring = () => {
-    toast({
-      title: "Lead Scoring Updated",
-      description: "AI lead scoring rules have been configured successfully!"
-    });
-    setIsLeadScoringOpen(false);
-  };
+/**
+ * Marketing planning workspace. Planning only: nothing here sends email, SMS or social posts.
+ * Audiences are computed live from the signed-in user's own CRM contacts (existing access rules).
+ */
+const MarketingTab = ({ contacts }: { contacts: (AudienceContact & { id: string; name: string; company?: string | null })[] }) => {
+  const [f, setF] = useState<AudienceFilter>({ status: 'all', source: 'all', reach: 'any' });
+  const sources = useMemo(() => Array.from(new Set(contacts.map((c) => c.source).filter(Boolean) as string[])).sort(), [contacts]);
+  const audience = useMemo(() => filterAudience(contacts, f), [contacts, f]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mail className="w-5 h-5" />
-            Email Marketing Automation
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 border rounded-lg hover:shadow-md cursor-pointer">
-              <div className="flex items-center gap-2 mb-2">
-                <ExternalLink className="w-4 h-4" />
-                <span className="font-medium">Mailchimp</span>
-              </div>
-              <p className="text-sm text-gray-600">Email campaigns & automation</p>
-              <Badge className="mt-2 bg-green-100 text-green-800">Connected</Badge>
-            </div>
-            <div className="p-4 border rounded-lg hover:shadow-md cursor-pointer">
-              <div className="flex items-center gap-2 mb-2">
-                <ExternalLink className="w-4 h-4" />
-                <span className="font-medium">SendGrid</span>
-              </div>
-              <p className="text-sm text-gray-600">Transactional emails</p>
-              <Badge className="mt-2 bg-yellow-100 text-yellow-800">Setup Required</Badge>
-            </div>
-          </div>
-          <Dialog open={isCampaignDialogOpen} onOpenChange={setIsCampaignDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="w-full">
-                <Plus className="w-4 h-4 mr-2" />
-                Create Email Campaign
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Create Email Campaign</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <Input 
-                  placeholder="Campaign Name *" 
-                  value={campaignData.name}
-                  onChange={(e) => setCampaignData({ ...campaignData, name: e.target.value })}
-                />
-                <Input 
-                  placeholder="Email Subject *" 
-                  value={campaignData.subject}
-                  onChange={(e) => setCampaignData({ ...campaignData, subject: e.target.value })}
-                />
-                <Textarea 
-                  placeholder="Email Content *" 
-                  value={campaignData.content}
-                  onChange={(e) => setCampaignData({ ...campaignData, content: e.target.value })}
-                  rows={4}
-                />
-                <Select value={campaignData.audience} onValueChange={(value) => setCampaignData({ ...campaignData, audience: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Audience" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Contacts</SelectItem>
-                    <SelectItem value="leads">Leads Only</SelectItem>
-                    <SelectItem value="prospects">Prospects Only</SelectItem>
-                    <SelectItem value="customers">Customers Only</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Input 
-                  placeholder="Schedule Date (optional)" 
-                  type="datetime-local" 
-                  value={campaignData.schedule}
-                  onChange={(e) => setCampaignData({ ...campaignData, schedule: e.target.value })}
-                />
-                <Button className="w-full" onClick={handleCreateCampaign}>
-                  <Send className="w-4 h-4 mr-2" />
-                  Create Campaign
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+        <CardContent className="flex gap-3 p-4 text-sm text-muted-foreground">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <p>
+            Marketing is for planning. It never sends email, SMS or social posts, and it shows no opens, clicks or replies,
+            because none are recorded. Your contacts stay private to you.
+          </p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Star className="w-5 h-5" />
-            Lead Scoring & Nurturing
-          </CardTitle>
+          <CardTitle className="flex items-center gap-2 text-lg"><Users className="h-5 w-5" /> Audience builder</CardTitle>
+          <CardDescription>Filter your own CRM contacts to plan who a campaign is for.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span>AI Lead Scoring</span>
-              <Badge className="bg-blue-100 text-blue-800">Active</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>Auto Nurturing Workflows</span>
-              <Badge className="bg-green-100 text-green-800">5 Active</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>ZoomInfo Enrichment</span>
-              <Badge className="bg-yellow-100 text-yellow-800">Setup Required</Badge>
-            </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Select value={f.status} onValueChange={(status) => setF({ ...f, status })}>
+              <SelectTrigger aria-label="Status"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="lead">Leads</SelectItem>
+                <SelectItem value="prospect">Prospects</SelectItem>
+                <SelectItem value="customer">Customers</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={f.source} onValueChange={(source) => setF({ ...f, source })}>
+              <SelectTrigger aria-label="Source"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All sources</SelectItem>
+                {sources.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={f.reach} onValueChange={(reach) => setF({ ...f, reach: reach as AudienceFilter['reach'] })}>
+              <SelectTrigger aria-label="Reachable by"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any contact details</SelectItem>
+                <SelectItem value="email">Has an email address</SelectItem>
+                <SelectItem value="linkedin">Has a LinkedIn profile</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <Dialog open={isLeadScoringOpen} onOpenChange={setIsLeadScoringOpen}>
-            <DialogTrigger asChild>
-              <Button className="w-full">
-                <Settings className="w-4 h-4 mr-2" />
-                Configure Scoring Rules
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Lead Scoring Configuration</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Email Activity</label>
-                    <Input placeholder="20 points" defaultValue="20" type="number" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Phone Contact</label>
-                    <Input placeholder="30 points" defaultValue="30" type="number" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Company Size</label>
-                    <Input placeholder="25 points" defaultValue="25" type="number" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Deal Value</label>
-                    <Input placeholder="40 points" defaultValue="40" type="number" />
-                  </div>
-                </div>
-                <Button className="w-full" onClick={handleConfigureScoring}>
-                  <Zap className="w-4 h-4 mr-2" />
-                  Update Scoring Rules
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <p className="text-sm"><span className="text-2xl font-semibold">{audience.length}</span> of {contacts.length} contacts match.</p>
+          <p className="text-xs text-muted-foreground">"Has an email address" means a correctly formatted address. It does not mean the address is verified or that the person has agreed to marketing.</p>
+          {audience.length > 0 && (
+            <ul className="divide-y rounded-md border text-sm">
+              {audience.slice(0, 8).map((c) => (
+                <li key={c.id} className="flex justify-between gap-2 px-3 py-2">
+                  <span className="truncate font-medium">{c.name}</span>
+                  <span className="truncate text-muted-foreground">{c.company || '—'}</span>
+                </li>
+              ))}
+              {audience.length > 8 && <li className="px-3 py-2 text-muted-foreground">+ {audience.length - 8} more</li>}
+            </ul>
+          )}
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="w-5 h-5" />
-            Chat & Engagement
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Bot className="w-4 h-4" />
-                <span className="font-medium">AI Chatbot</span>
-              </div>
-              <p className="text-sm text-gray-600">OpenAI GPT-powered</p>
-              <Badge className="mt-2 bg-green-100 text-green-800">Live</Badge>
-            </div>
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <MessageSquare className="w-4 h-4" />
-                <span className="font-medium">Live Chat</span>
-              </div>
-              <p className="text-sm text-gray-600">Intercom integration</p>
-              <Badge className="mt-2 bg-yellow-100 text-yellow-800">Setup Required</Badge>
-            </div>
-          </div>
-          <Dialog open={isChatBotOpen} onOpenChange={setIsChatBotOpen}>
-            <DialogTrigger asChild>
-              <Button className="w-full">
-                <Bot className="w-4 h-4 mr-2" />
-                Open AI Chat
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg">
-              <DialogHeader>
-                <DialogTitle>AI CRM Assistant</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="h-80 overflow-y-auto border rounded-lg p-4 bg-gray-50">
-                  {chatMessages.map((msg, index) => (
-                    <div key={index} className={`mb-4 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
-                      <div className={`inline-block px-3 py-2 rounded-lg max-w-xs ${
-                        msg.role === 'user' 
-                          ? 'bg-blue-500 text-white' 
-                          : 'bg-white border'
-                      }`}>
-                        {msg.message}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <Input 
-                    placeholder="Ask your AI assistant..." 
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  />
-                  <Button onClick={handleSendMessage}>
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Phone className="w-5 h-5" />
-            Communication Tracking
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span>Twilio SMS Integration</span>
-              <Badge className="bg-green-100 text-green-800">Connected</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>Call Tracking</span>
-              <Badge className="bg-green-100 text-green-800">Active</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>Email Logging (Gmail)</span>
-              <Badge className="bg-yellow-100 text-yellow-800">Setup Required</Badge>
-            </div>
-          </div>
-          <Button className="w-full">
-            <Phone className="w-4 h-4 mr-2" />
-            View Call Analytics
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg"><Megaphone className="h-5 w-5" /> Campaign drafts</CardTitle>
+            <CardDescription>Coming soon: name, objective, channel, content, status, dates and chosen contacts.</CardDescription>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">Saving campaign drafts isn't switched on yet. For now, plan the work as tasks.</CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg"><CalendarDays className="h-5 w-5" /> Content plan and follow-ups</CardTitle>
+            <CardDescription>Use your existing tasks and calendar to plan content and follow-ups.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline"><Link to="/project-management">Open tasks and calendar</Link></Button>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

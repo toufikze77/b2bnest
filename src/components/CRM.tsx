@@ -18,6 +18,7 @@ import ContactsView from './crm/ContactsView';
 import DealsView from './crm/DealsView';
 import MarketingTab from './crm/MarketingTab';
 import { Navigate, useSearchParams } from 'react-router-dom';
+import { crmSummary } from "@/lib/marketingAudience";
 import ReportsTab from './crm/ReportsTab';
 import AnalyticsTab from './crm/AnalyticsTab';
 import SubscriptionUpgrade from './SubscriptionUpgrade';
@@ -524,76 +525,33 @@ const CRM = () => {
   };
 
   const totalRevenue = deals.reduce((sum, deal) => sum + ((deal.value || 0) * (deal.probability || 50) / 100), 0);
+  const summary = crmSummary(contacts, deals);
+  const gbp = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 });
+  const stats = [
+    { icon: Users, label: 'Total contacts', value: String(summary.contacts), hint: 'Your own CRM contacts.' },
+    { icon: DollarSign, label: 'Weighted pipeline', value: gbp.format(summary.weightedPipeline), hint: 'Open deals: value × win probability, in GBP as entered.' },
+    { icon: Target, label: 'Open deals', value: String(summary.openDeals), hint: 'Deals not marked won or lost.' },
+    { icon: TrendingUp, label: 'Customers', value: summary.customerShare == null ? '—' : `${summary.customerShare}%`, hint: 'Share of contacts with status Customer.' },
+  ];
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Customer Relationship Management</h1>
-          <p className="text-gray-600">Manage leads, contacts, and sales pipeline</p>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <Users className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Total Contacts</p>
-                <p className="text-2xl font-bold">{contacts.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-green-100 p-3 rounded-lg">
-                <DollarSign className="w-6 h-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Pipeline Value</p>
-                <p className="text-2xl font-bold">${Math.round(totalRevenue).toLocaleString()}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-purple-100 p-3 rounded-lg">
-                <Target className="w-6 h-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Active Deals</p>
-                <p className="text-2xl font-bold">{deals.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-orange-100 p-3 rounded-lg">
-                <TrendingUp className="w-6 h-6 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Conversion Rate</p>
-                <p className="text-2xl font-bold">68%</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Stats Cards — recorded data only */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {stats.map(({ icon: Icon, label, value, hint }) => (
+          <Card key={label}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground"><Icon className="w-4 h-4" />{label}</div>
+              <p className="text-2xl font-bold mt-1">{value}</p>
+              <p className="text-xs text-muted-foreground mt-1">{hint}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="flex w-full overflow-x-auto justify-start">
           <TabsTrigger value="contacts">Contacts</TabsTrigger>
           <TabsTrigger value="deals">Sales Pipeline</TabsTrigger>
           <TabsTrigger value="marketing">Marketing</TabsTrigger>
@@ -623,7 +581,7 @@ const CRM = () => {
         </TabsContent>
         
         <TabsContent value="marketing" className="mt-6">
-          <MarketingTab />
+          <MarketingTab contacts={contacts} />
         </TabsContent>
 
 

@@ -164,3 +164,10 @@
 - toufikze@gmail.com, b2bnest@gmail.com, toufik@ngtelecom.co.uk: Enterprise came from the 29 Sep Stripe test-mode run; no live Stripe subscription verified. Access unchanged until owner decides (keep as complimentary / let lapse / link a verified live customer).
 - Open gaps (not deployed): saved-customer path checks existence, not ownership metadata; check-subscription uses first email match and would reset these accounts to free on its next run.
 - Proposed: explicit complimentary access, separate from Stripe status (needs reviewed migration).
+
+## CRM Marketing tab (2026-10-10, preview only)
+- [x] Audit: every Mailchimp/SendGrid/lead-scoring/nurturing/chatbot/Intercom/Twilio/call-analytics item was a placeholder (fake toasts, hard-coded badges); none had backend or saved data. Removed.
+- [x] CRM summary: fake 68% conversion and $ pipeline replaced with recorded metrics (contacts, open deals, weighted pipeline in GBP, customer share) with definitions.
+- [x] Marketing = planning workspace: live audience builder over own contacts; link to tasks/calendar. No sending, no engagement metrics.
+- [ ] Campaign drafts, saved audiences, content plan — blocked: owner review of docs/marketing-workspace-2026-10-10/proposal.sql (+ rollback.sql).
+- [ ] Deferred: marketing email sending (needs consent, unsubscribe/suppression, bounces, limits, duplicate-send guard), Mailchimp/SendGrid/Twilio connectors, lead scoring.
