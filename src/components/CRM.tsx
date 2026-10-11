@@ -18,6 +18,7 @@ import ContactsView from './crm/ContactsView';
 import DealsView from './crm/DealsView';
 import MarketingTab from './crm/MarketingTab';
 import { Navigate, useSearchParams } from 'react-router-dom';
+import { crmSummary } from "@/lib/marketingAudience";
 import ReportsTab from './crm/ReportsTab';
 import AnalyticsTab from './crm/AnalyticsTab';
 import SubscriptionUpgrade from './SubscriptionUpgrade';
@@ -550,7 +551,7 @@ const CRM = () => {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="flex w-full overflow-x-auto justify-start">
           <TabsTrigger value="contacts">Contacts</TabsTrigger>
           <TabsTrigger value="deals">Sales Pipeline</TabsTrigger>
           <TabsTrigger value="marketing">Marketing</TabsTrigger>
@@ -580,7 +581,7 @@ const CRM = () => {
         </TabsContent>
         
         <TabsContent value="marketing" className="mt-6">
-          <MarketingTab />
+          <MarketingTab contacts={contacts} />
         </TabsContent>
 
 
