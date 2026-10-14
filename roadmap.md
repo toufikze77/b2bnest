@@ -169,7 +169,8 @@
 - [x] Audit: every Mailchimp/SendGrid/lead-scoring/nurturing/chatbot/Intercom/Twilio/call-analytics item was a placeholder (fake toasts, hard-coded badges); none had backend or saved data. Removed.
 - [x] CRM summary: fake 68% conversion and $ pipeline replaced with recorded metrics (contacts, open deals, weighted pipeline in GBP, customer share) with definitions.
 - [x] Marketing = planning workspace: live audience builder over own contacts; link to tasks/calendar. No sending, no engagement metrics.
-- [ ] Campaign drafts, saved audiences, content plan — blocked: owner review of docs/marketing-workspace-2026-10-10/proposal.sql (+ rollback.sql).
+- [x] Campaign drafts, saved audiences, content plan — security gap closed (r2), 28/28 checks, applied live 2026-10-14 on owner approval.
+- [ ] Signed-in check of saving/refresh/archive/create-task — needs the owner (no signed-in preview session available).
 - [ ] Deferred: marketing email sending (needs consent, unsubscribe/suppression, bounces, limits, duplicate-send guard), Mailchimp/SendGrid/Twilio connectors, lead scoring.
 
 # CRM Marketing planning (2026-10-14)
