@@ -18,7 +18,7 @@ import ContactsView from './crm/ContactsView';
 import DealsView from './crm/DealsView';
 import MarketingTab from './crm/MarketingTab';
 import { Navigate, useSearchParams } from 'react-router-dom';
-import { crmSummary } from "@/lib/marketingAudience";
+import { crmSummary, formatByCurrency } from "@/lib/marketingAudience";
 import ReportsTab from './crm/ReportsTab';
 import AnalyticsTab from './crm/AnalyticsTab';
 import SubscriptionUpgrade from './SubscriptionUpgrade';
@@ -49,6 +49,7 @@ interface Deal {
   stage: string | null;
   contact_id: string | null;
   probability: number | null;
+  currency?: string | null;
   close_date: string | null;
   user_id: string;
   notes: string | null;
@@ -526,10 +527,12 @@ const CRM = () => {
 
   const totalRevenue = deals.reduce((sum, deal) => sum + ((deal.value || 0) * (deal.probability || 50) / 100), 0);
   const summary = crmSummary(contacts, deals);
-  const gbp = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 });
+  const noProb = summary.noProbabilityDeals
+    ? ` ${summary.noProbabilityDeals} open deal(s) have no probability and are left out (unweighted: ${formatByCurrency(summary.unweightedByCurrency)}).`
+    : '';
   const stats = [
     { icon: Users, label: 'Total contacts', value: String(summary.contacts), hint: 'Your own CRM contacts.' },
-    { icon: DollarSign, label: 'Weighted pipeline', value: gbp.format(summary.weightedPipeline), hint: 'Open deals: value × win probability, in GBP as entered.' },
+    { icon: DollarSign, label: 'Weighted pipeline', value: formatByCurrency(summary.weightedByCurrency), hint: `Open deals only: value × win probability, in each deal's own currency (not converted).${noProb}` },
     { icon: Target, label: 'Open deals', value: String(summary.openDeals), hint: 'Deals not marked won or lost.' },
     { icon: TrendingUp, label: 'Customers', value: summary.customerShare == null ? '—' : `${summary.customerShare}%`, hint: 'Share of contacts with status Customer.' },
   ];

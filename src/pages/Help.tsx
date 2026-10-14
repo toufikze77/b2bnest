@@ -17,7 +17,7 @@ const Help = () => {
     },
     {
       question: "What does the CRM Marketing tab do?",
-      answer: "It helps you plan. You can filter your own CRM contacts by status, source and whether they have an email address or a LinkedIn profile, then plan content and follow-ups in Tasks and Calendar. It doesn't send emails, SMS or social posts, and it doesn't show opens or clicks. Mailchimp, SendGrid and Twilio are not connected. Your contacts stay private to you."
+      answer: "It helps you plan; it never sends anything. Audiences: save a filter of your own contacts (status, source, email or LinkedIn). The count is recalculated from your current contacts, so it can change. Campaign drafts: name, objective, channel, content, dates, status and a fixed list of chosen contacts — editing an audience later won't change a campaign's contacts. \"Completed\" only means you marked the plan done. Planned content: titles with dates; \"Create task\" adds one task to the company selected in the top bar, so it appears in Tasks and Calendar and that company's members can see the task. Everything can be edited, archived and restored. Audiences, campaigns and planned content are private to you, whichever company is selected. There are no opens, clicks or replies, and Mailchimp, SendGrid and Twilio are not connected."
     },
     {
       question: "How do I connect my HMRC account?",
