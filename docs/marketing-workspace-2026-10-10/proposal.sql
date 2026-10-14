@@ -1,4 +1,4 @@
--- Marketing planning workspace — revised 2026-10-14 (r2). PROPOSAL: not applied to live.
+-- Marketing planning workspace — revised 2026-10-14 (r2). APPLIED to live 2026-10-14 (owner-approved).
 -- Saved audiences, campaign drafts, planned content. Private to the creating user
 -- (same rule as crm_contacts). Nothing here sends or tracks anything.
 -- Additive only: 3 tables + 2 functions. Touches no existing rows, policies or helpers.

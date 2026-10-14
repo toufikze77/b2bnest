@@ -1350,6 +1350,149 @@ export type Database = {
           },
         ]
       }
+      marketing_audiences: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          filter: Json
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          filter?: Json
+          id?: string
+          name: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          filter?: Json
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      marketing_campaigns: {
+        Row: {
+          archived_at: string | null
+          audience_id: string | null
+          channel: string
+          contact_ids: string[]
+          content: string | null
+          created_at: string
+          end_date: string | null
+          id: string
+          name: string
+          objective: string | null
+          start_date: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          audience_id?: string | null
+          channel?: string
+          contact_ids?: string[]
+          content?: string | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          name: string
+          objective?: string | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          archived_at?: string | null
+          audience_id?: string | null
+          channel?: string
+          contact_ids?: string[]
+          content?: string | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          name?: string
+          objective?: string | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_campaigns_audience_id_fkey"
+            columns: ["audience_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_audiences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_content_items: {
+        Row: {
+          archived_at: string | null
+          campaign_id: string | null
+          channel: string | null
+          created_at: string
+          id: string
+          planned_for: string | null
+          title: string
+          todo_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          campaign_id?: string | null
+          channel?: string | null
+          created_at?: string
+          id?: string
+          planned_for?: string | null
+          title: string
+          todo_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          archived_at?: string | null
+          campaign_id?: string | null
+          channel?: string | null
+          created_at?: string
+          id?: string
+          planned_for?: string | null
+          title?: string
+          todo_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_content_items_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_content_items_todo_id_fkey"
+            columns: ["todo_id"]
+            isOneToOne: true
+            referencedRelation: "todos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
@@ -4733,6 +4876,10 @@ export type Database = {
           p_user_agent?: string
           p_user_id: string
         }
+        Returns: string
+      }
+      marketing_create_followup_task: {
+        Args: { _item_id: string; _organization_id: string }
         Returns: string
       }
       owns_team: {

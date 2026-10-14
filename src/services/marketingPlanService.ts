@@ -67,24 +67,12 @@ export async function visibleTasks(ids: string[]): Promise<Record<string, { titl
 }
 
 /**
- * Creates ONE follow-up task in the given company for a planned-content item.
- * Retry-safe: re-reads the item first and skips if already linked; the database also allows
- * a task to be linked only once. If linking fails, the just-created task is removed.
+ * Creates ONE follow-up task for a planned-content item, in a single database transaction
+ * that locks the item: a retried or timed-out call returns the already-linked task instead
+ * of creating a second one.
  */
-export async function createFollowUpTask(item: ContentItem, userId: string, organizationId: string): Promise<void> {
-  const fresh = await db.from('marketing_content_items').select('todo_id').eq('id', item.id).maybeSingle();
-  if (fresh.error) throw friendly(fresh.error);
-  if (fresh.data?.todo_id) return;
-  const { data: todo, error } = await supabase.from('todos').insert({
-    title: `Content: ${item.title}`.slice(0, 200),
-    description: 'Follow-up from a Marketing plan. Nothing is sent automatically.',
-    status: 'todo', priority: 'medium', user_id: userId, reporter_id: userId,
-    organization_id: organizationId, due_date: item.planned_for,
-  }).select('id').single();
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function createFollowUpTask(item: ContentItem, _userId: string, organizationId: string): Promise<void> {
+  const { error } = await db.rpc('marketing_create_followup_task', { _item_id: item.id, _organization_id: organizationId });
   if (error) throw friendly(error);
-  const link = await db.from('marketing_content_items').update({ todo_id: todo.id }).eq('id', item.id).is('todo_id', null).select('id');
-  if (link.error || !link.data?.length) {
-    await supabase.from('todos').delete().eq('id', todo.id);
-    if (link.error) throw friendly(link.error);
-  }
 }
