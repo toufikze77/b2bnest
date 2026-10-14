@@ -1,7 +1,9 @@
--- Marketing planning workspace — revised 2026-10-14. PROPOSAL: not applied to live.
+-- Marketing planning workspace — revised 2026-10-14 (r2). PROPOSAL: not applied to live.
 -- Saved audiences, campaign drafts, planned content. Private to the creating user
 -- (same rule as crm_contacts). Nothing here sends or tracks anything.
--- Additive only: creates 3 tables + 1 guard function. Touches no existing rows.
+-- Additive only: 3 tables + 2 functions. Touches no existing rows, policies or helpers.
+-- Atomic: the whole file runs in one transaction; any error leaves nothing behind.
+BEGIN;
 
 CREATE TABLE public.marketing_audiences (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -48,6 +50,8 @@ CREATE INDEX marketing_audiences_user_idx ON public.marketing_audiences(user_id)
 CREATE INDEX marketing_campaigns_user_idx ON public.marketing_campaigns(user_id);
 CREATE INDEX marketing_content_user_idx ON public.marketing_content_items(user_id);
 
+-- Explicit: anonymous visitors get nothing, regardless of default privileges.
+REVOKE ALL ON public.marketing_audiences, public.marketing_campaigns, public.marketing_content_items FROM PUBLIC, anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.marketing_audiences, public.marketing_campaigns, public.marketing_content_items TO authenticated;
 GRANT ALL ON public.marketing_audiences, public.marketing_campaigns, public.marketing_content_items TO service_role;
 
@@ -62,11 +66,12 @@ CREATE POLICY "Own campaigns" ON public.marketing_campaigns FOR ALL TO authentic
 CREATE POLICY "Own content" ON public.marketing_content_items FOR ALL TO authenticated
   USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- Guard: ownership can never change; every referenced record must belong to the
--- row owner. Runs as definer so it can see referenced rows regardless of RLS.
+-- Guard. SECURITY INVOKER on purpose: every referenced record is looked up with the
+-- caller's own rights, so the existing live access rules (todos_org_select, crm_contacts
+-- "own contacts") are the single source of truth — no copied membership logic.
 CREATE OR REPLACE FUNCTION public.marketing_guard()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE bad int; t record;
+RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path = public AS $$
+DECLARE bad int;
 BEGIN
   IF TG_OP = 'UPDATE' AND NEW.user_id IS DISTINCT FROM OLD.user_id THEN
     RAISE EXCEPTION 'Record ownership cannot be changed' USING ERRCODE = '42501';
@@ -79,7 +84,6 @@ BEGIN
     END IF;
     NEW.contact_ids := ARRAY(SELECT DISTINCT unnest(NEW.contact_ids));
     IF TG_OP = 'INSERT' OR NEW.contact_ids IS DISTINCT FROM OLD.contact_ids THEN
-      -- Only newly added IDs must exist and be owned; IDs of since-deleted contacts may stay.
       SELECT count(*) INTO bad FROM unnest(NEW.contact_ids) cid
         WHERE (TG_OP = 'INSERT' OR NOT cid = ANY(OLD.contact_ids))
           AND NOT EXISTS (SELECT 1 FROM crm_contacts c WHERE c.id = cid AND c.user_id = NEW.user_id);
@@ -91,13 +95,10 @@ BEGIN
        AND NOT EXISTS (SELECT 1 FROM marketing_campaigns c WHERE c.id = NEW.campaign_id AND c.user_id = NEW.user_id) THEN
       RAISE EXCEPTION 'Campaign not found' USING ERRCODE = '42501';
     END IF;
-    IF NEW.todo_id IS NOT NULL AND (TG_OP = 'INSERT' OR NEW.todo_id IS DISTINCT FROM OLD.todo_id) THEN
-      SELECT organization_id, user_id INTO t FROM todos WHERE id = NEW.todo_id;
-      IF NOT FOUND
-         OR (t.organization_id IS NULL AND t.user_id <> NEW.user_id)
-         OR (t.organization_id IS NOT NULL AND NOT user_is_organization_member(t.organization_id, NEW.user_id)) THEN
-        RAISE EXCEPTION 'Task not found or not accessible' USING ERRCODE = '42501';
-      END IF;
+    -- Task must be visible to the caller under the live task access rule.
+    IF NEW.todo_id IS NOT NULL AND (TG_OP = 'INSERT' OR NEW.todo_id IS DISTINCT FROM OLD.todo_id)
+       AND NOT EXISTS (SELECT 1 FROM todos t WHERE t.id = NEW.todo_id) THEN
+      RAISE EXCEPTION 'Task not found or not accessible' USING ERRCODE = '42501';
     END IF;
   END IF;
   RETURN NEW;
@@ -110,3 +111,27 @@ CREATE TRIGGER t_mci_guard BEFORE INSERT OR UPDATE ON public.marketing_content_i
 CREATE TRIGGER t_ma_upd BEFORE UPDATE ON public.marketing_audiences FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 CREATE TRIGGER t_mc_upd BEFORE UPDATE ON public.marketing_campaigns FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 CREATE TRIGGER t_mci_upd BEFORE UPDATE ON public.marketing_content_items FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+-- "Create task" in ONE transaction: locks the planned-content row, returns the existing
+-- task if already linked, otherwise inserts the task and links it. A timed-out or
+-- retried call waits on the lock and then returns the same task — never a second one.
+-- SECURITY INVOKER: the live todos insert rule and the content-item ownership rule apply.
+CREATE OR REPLACE FUNCTION public.marketing_create_followup_task(_item_id uuid, _organization_id uuid)
+RETURNS uuid LANGUAGE plpgsql SECURITY INVOKER SET search_path = public AS $$
+DECLARE it record; new_id uuid;
+BEGIN
+  SELECT id, title, planned_for, todo_id INTO it
+    FROM marketing_content_items WHERE id = _item_id AND user_id = auth.uid() FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Planned content not found' USING ERRCODE = '42501'; END IF;
+  IF it.todo_id IS NOT NULL THEN RETURN it.todo_id; END IF;
+  INSERT INTO todos (title, description, status, priority, user_id, reporter_id, organization_id, due_date)
+  VALUES (left('Content: ' || it.title, 200), 'Follow-up from a Marketing plan. Nothing is sent automatically.',
+          'todo', 'medium', auth.uid(), auth.uid(), _organization_id, it.planned_for)
+  RETURNING id INTO new_id;
+  UPDATE marketing_content_items SET todo_id = new_id WHERE id = _item_id;
+  RETURN new_id;
+END $$;
+REVOKE ALL ON FUNCTION public.marketing_create_followup_task(uuid, uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.marketing_create_followup_task(uuid, uuid) TO authenticated;
+
+COMMIT;
