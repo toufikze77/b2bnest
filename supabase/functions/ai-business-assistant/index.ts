@@ -103,7 +103,7 @@ const PLATFORM_KNOWLEDGE = {
   },
   integrations: {
     accounting: "QuickBooks, Xero, FreshBooks integration for seamless financial management",
-    communication: "Email marketing, CRM sync, notification systems",
+    communication: "Workflow notification emails. CRM → Marketing is planning only: private saved audiences (filters recalculated from the user's own contacts), campaign drafts with a fixed contact selection and draft/planned/completed status (completed = marked done by the user, nothing sent), and planned content that can create one follow-up task in the selected company. It does not send email/SMS/social posts, has no open/click tracking, and Mailchimp, SendGrid and Twilio are not connected.",
     productivity: "Google Workspace, Microsoft 365, Slack integration",
     payment: "Stripe, PayPal, crypto payment processing",
     analytics: "Google Analytics, business intelligence tools, custom reporting"
