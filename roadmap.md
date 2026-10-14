@@ -171,3 +171,10 @@
 - [x] Marketing = planning workspace: live audience builder over own contacts; link to tasks/calendar. No sending, no engagement metrics.
 - [ ] Campaign drafts, saved audiences, content plan — blocked: owner review of docs/marketing-workspace-2026-10-10/proposal.sql (+ rollback.sql).
 - [ ] Deferred: marketing email sending (needs consent, unsubscribe/suppression, bounces, limits, duplicate-send guard), Mailchimp/SendGrid/Twilio connectors, lead scoring.
+
+# CRM Marketing planning (2026-10-14)
+- [x] Preview UI: audiences, campaign drafts, planned content, archive/restore, follow-up task
+- [x] Per-currency weighted pipeline; deals without probability shown separately
+- [x] Migration + rollback tested on throwaway DB (30/30) — docs/marketing-workspace-2026-10-10/README.md
+- [ ] Apply live migration — awaiting owner approval
+- [ ] Signed-in desktop/mobile check — needs owner (no preview sign-in available)
