@@ -61,7 +61,8 @@ const MarketingTab = ({ contacts }: { contacts: C[] }) => {
       if (e instanceof NotEnabledError) setEnabled(false);
       else toast({ title: 'Could not load marketing plans', description: (e as Error).message, variant: 'destructive' });
     }
-  }, [toast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Clear everything on sign-out / user change so a previous user's plans never show.
   useEffect(() => {

@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 const save = vi.fn();
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }));
 vi.mock('@/contexts/OrganizationContext', () => ({ useActiveOrganization: () => ({ organizationId: 'o1', organization: { name: 'Sample Co' } }) }));
-vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast: vi.fn() }) }));
+vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast: () => undefined }) }));
 vi.mock('@/services/marketingPlanService', () => ({
   NotEnabledError: class extends Error {},
   listAll: vi.fn(async () => ({ audiences: [], campaigns: [], content: [] })),
