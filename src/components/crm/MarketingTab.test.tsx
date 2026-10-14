@@ -19,7 +19,7 @@ const contacts = [{ id: 'c1', name: 'Sample Lead', status: 'lead', email: 'a@b.c
 const ui = () => render(<MemoryRouter><MarketingTab contacts={contacts} /></MemoryRouter>);
 
 describe('MarketingTab', () => {
-  beforeEach(() => save.mockReset());
+  beforeEach(() => { save.mockReset(); });
 
   it('saves an audience once even when clicked repeatedly', async () => {
     let resolve!: () => void;
