@@ -19,6 +19,7 @@ import DealsView from './crm/DealsView';
 import MarketingTab from './crm/MarketingTab';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { crmSummary, formatByCurrency } from "@/lib/marketingAudience";
+import { readCrmTab, writeCrmTab } from '@/lib/crmTab';
 import ReportsTab from './crm/ReportsTab';
 import AnalyticsTab from './crm/AnalyticsTab';
 import SubscriptionUpgrade from './SubscriptionUpgrade';
@@ -61,8 +62,12 @@ const CRM = () => {
   const { user } = useAuth();
   const { canAccessFeature } = useSubscription();
   const { toast } = useToast();
-  const [params] = useSearchParams();
-  const [activeTab, setActiveTab] = useState(params.get('tab') && params.get('tab') !== 'security' ? params.get('tab')! : 'contacts');
+  const [params, setParams] = useSearchParams();
+  const activeTab = readCrmTab(params);
+  const setActiveTab = (v: string) => {
+    const tab = readCrmTab(new URLSearchParams({ tab: v }));
+    if (tab !== activeTab) setParams(writeCrmTab(params, tab));
+  };
   const [loading, setLoading] = useState(true);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
