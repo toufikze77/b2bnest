@@ -77,24 +77,24 @@ SELECT chk('C links O1 task via UPDATE: rejected','C',$$WITH i AS (INSERT INTO m
 SELECT chk('  ...update to O1 task rejected','C',$$UPDATE marketing_content_items SET todo_id='d0000000-0000-0000-0000-0000000000a3'$$,'ERROR');
 SELECT chk('Same task linked twice: rejected','A',$$INSERT INTO marketing_content_items(title,todo_id) VALUES ('dup','d0000000-0000-0000-0000-00000000000a')$$,'ERROR');
 -- Revocation after linking
-SELECT chk('Pre-revoke: A links O1 task 2','A',$$INSERT INTO marketing_content_items(id,title,todo_id) VALUES ('ec000000-0000-0000-0000-0000000000r1','Rv','d0000000-0000-0000-0000-0000000000a3')$$,'ROWS=1');
+SELECT chk('Pre-revoke: A links O1 task 2','A',$$INSERT INTO marketing_content_items(id,title,todo_id) VALUES ('ec000000-0000-0000-0000-0000000000e1','Rv','d0000000-0000-0000-0000-0000000000a3')$$,'ROWS=1');
 UPDATE organization_members SET is_active=false WHERE user_id='aaaaaaaa-0000-4000-8000-000000000001';
 SELECT chk('After revoke: linked task no longer displayed (task read returns 0)','A',$$SELECT 1 FROM todos WHERE id IN ('d0000000-0000-0000-0000-0000000000a1','d0000000-0000-0000-0000-0000000000a2','d0000000-0000-0000-0000-0000000000a3')$$,'ROWS=0');
-SELECT chk('After revoke: own planned-content row still readable (title only, no task details)','A',$$SELECT 1 FROM marketing_content_items WHERE id='ec000000-0000-0000-0000-0000000000r1'$$,'ROWS=1');
-SELECT chk('After revoke: re-linking a company task rejected','A',$$UPDATE marketing_content_items SET todo_id=NULL WHERE id='ec000000-0000-0000-0000-0000000000r1'$$,'ROWS=1');
-SELECT chk('  ...relink attempt','A',$$UPDATE marketing_content_items SET todo_id='d0000000-0000-0000-0000-0000000000a3' WHERE id='ec000000-0000-0000-0000-0000000000r1'$$,'ERROR');
-SELECT chk('After revoke: create follow-up task in O1 refused','A',$$SELECT marketing_create_followup_task('ec000000-0000-0000-0000-0000000000r1','00000000-0000-0000-0000-0000000000a1')$$,'ERROR');
+SELECT chk('After revoke: own planned-content row still readable (title only, no task details)','A',$$SELECT 1 FROM marketing_content_items WHERE id='ec000000-0000-0000-0000-0000000000e1'$$,'ROWS=1');
+SELECT chk('After revoke: re-linking a company task rejected','A',$$UPDATE marketing_content_items SET todo_id=NULL WHERE id='ec000000-0000-0000-0000-0000000000e1'$$,'ROWS=1');
+SELECT chk('  ...relink attempt','A',$$UPDATE marketing_content_items SET todo_id='d0000000-0000-0000-0000-0000000000a3' WHERE id='ec000000-0000-0000-0000-0000000000e1'$$,'ERROR');
+SELECT chk('After revoke: create follow-up task in O1 refused','A',$$SELECT marketing_create_followup_task('ec000000-0000-0000-0000-0000000000e1','00000000-0000-0000-0000-0000000000a1')$$,'ERROR');
 UPDATE organization_members SET is_active=true WHERE user_id='aaaaaaaa-0000-4000-8000-000000000001';
 -- Create task: idempotent on retry
-SELECT chk('Create task first call','A',$$SELECT marketing_create_followup_task('ec000000-0000-0000-0000-0000000000r1','00000000-0000-0000-0000-0000000000a1')$$,'ROWS=1');
-SELECT chk('Create task retry (same item)','A',$$SELECT marketing_create_followup_task('ec000000-0000-0000-0000-0000000000r1','00000000-0000-0000-0000-0000000000a1')$$,'ROWS=1');
+SELECT chk('Create task first call','A',$$SELECT marketing_create_followup_task('ec000000-0000-0000-0000-0000000000e1','00000000-0000-0000-0000-0000000000a1')$$,'ROWS=1');
+SELECT chk('Create task retry (same item)','A',$$SELECT marketing_create_followup_task('ec000000-0000-0000-0000-0000000000e1','00000000-0000-0000-0000-0000000000a1')$$,'ROWS=1');
 INSERT INTO results(name, ok, detail) SELECT 'Retry created exactly 1 task', count(*)=1, count(*)::text FROM todos WHERE title='Content: Rv';
-SELECT chk('B cannot create task for A''s item','B',$$SELECT marketing_create_followup_task('ec000000-0000-0000-0000-0000000000r1','00000000-0000-0000-0000-0000000000a1')$$,'ERROR');
+SELECT chk('B cannot create task for A''s item','B',$$SELECT marketing_create_followup_task('ec000000-0000-0000-0000-0000000000e1','00000000-0000-0000-0000-0000000000a1')$$,'ERROR');
 -- Anonymous: explicit revoke beats default grants
 SELECT chk('Anon read audiences refused','anon',$$SELECT * FROM marketing_audiences$$,'ERROR');
 SELECT chk('Anon read campaigns refused','anon',$$SELECT * FROM marketing_campaigns$$,'ERROR');
 SELECT chk('Anon read content refused','anon',$$SELECT * FROM marketing_content_items$$,'ERROR');
-SELECT chk('Anon create-task function refused','anon',$$SELECT marketing_create_followup_task('ec000000-0000-0000-0000-0000000000r1','00000000-0000-0000-0000-0000000000a1')$$,'ERROR');
+SELECT chk('Anon create-task function refused','anon',$$SELECT marketing_create_followup_task('ec000000-0000-0000-0000-0000000000e1','00000000-0000-0000-0000-0000000000a1')$$,'ERROR');
 INSERT INTO results(name, ok, detail) SELECT 'anon has zero table privileges on the 3 tables', count(*)=0, count(*)::text
   FROM information_schema.role_table_grants WHERE grantee='anon' AND table_name LIKE 'marketing_%';
 -- Export then rollback
