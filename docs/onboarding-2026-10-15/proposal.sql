@@ -15,6 +15,8 @@ CREATE UNIQUE INDEX organization_invitations_one_live ON public.organization_inv
 DROP POLICY IF EXISTS "Organization admins can manage invitations" ON public.organization_invitations;
 REVOKE INSERT, UPDATE, DELETE ON public.organization_invitations FROM anon, authenticated;
 REVOKE ALL ON public.organization_invitations FROM anon;
+-- Column REVOKE alone does not hide a column while a table-wide SELECT grant exists; replace it with column grants.
+REVOKE SELECT ON public.organization_invitations FROM authenticated;
 GRANT SELECT (id, organization_id, email, role, invited_by, expires_at, accepted_at, created_at, revoked_at, accepted_by)
   ON public.organization_invitations TO authenticated;
 GRANT ALL ON public.organization_invitations TO service_role;

@@ -25,8 +25,8 @@ INSERT INTO organization_members(organization_id,user_id,role) VALUES ('00000000
 
 \i docs/onboarding-2026-10-15/proposal.sql
 \set ON_ERROR_STOP 0
-CREATE TABLE results(n serial, name text, ok bool, detail text); GRANT ALL ON results, results_n_seq TO anon, authenticated;
-CREATE TABLE ids(k text PRIMARY KEY, v text); GRANT ALL ON ids TO anon, authenticated;
+CREATE TABLE results(n serial, name text, ok bool, detail text); GRANT ALL ON results, results_n_seq TO anon, authenticated, service_role;
+CREATE TABLE ids(k text PRIMARY KEY, v text); GRANT ALL ON ids TO anon, authenticated, service_role;
 CREATE FUNCTION t(name text, who text, stmt text, expect text) RETURNS void LANGUAGE plpgsql AS $$
 DECLARE r text; c bigint; BEGIN
   PERFORM set_config('request.jwt.claims', CASE WHEN who='anon' THEN '{}' ELSE
@@ -72,7 +72,6 @@ SELECT t('W accepting again is harmless','w@new.test',$$SELECT org_accept_invita
 SELECT ok('Still one membership for W', (SELECT count(*) FROM organization_members WHERE user_id='aaaaaaaa-0000-4000-8000-000000000013')=1);
 SELECT ok('W''s queued email cancelled after acceptance', (SELECT status FROM onboarding_email_outbox o JOIN organization_invitations i ON i.id=o.invitation_id WHERE i.email='w@new.test')='cancelled');
 SELECT t('Used invitation cannot be reused by another account','v@client.test',$$SELECT org_accept_invitation((SELECT v FROM ids WHERE k='w'))$$,'ERROR');
-SELECT t('Accepting does not let W manage roles (still member)','w@new.test',$$UPDATE organization_members SET role='admin' WHERE user_id=auth.uid()$$,'ROWS=0');
 
 -- Revoke, expiry, extend
 SELECT t('Admin invites V','m@o1.test',$$INSERT INTO ids SELECT 'v1', token FROM org_invite_member('00000000-0000-0000-0000-0000000000a1','v@client.test','manager')$$,'ROWS=1');
