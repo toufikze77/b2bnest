@@ -25,13 +25,26 @@ Functions: support_is_manager, support_is_agent, support_is_customer, support_ca
 support_claim_invitations, support_create_ticket, support_add_message, support_update_ticket, support_add_attachment,
 support_outbox_claim, support_outbox_finish, support_settings_guard (trigger), support_customers_guard (trigger).
 
+## Live status
+Applied 2026-10-15 to production gvftvswyrevummbvyhxa with owner approval: `proposal.sql` (sha256 2c7846e2…aa80c, identical
+to the tested file; 112 checks + concurrency re-run on it before applying) and private bucket `support-attachments` (10 MB).
+Order: SQL first (storage policies depend on the support tables, not on the bucket row; the SQL is one transaction, so a
+failure leaves nothing), then the bucket, created private. A first attempt failed on a transcription typo and left no
+objects (verified). Frontend remains preview-only; email sender not deployed; AI knowledge still says ticketing is unavailable.
+Linter: the email queue has RLS with no policies on purpose (server-only); support RPCs are intentionally callable by
+signed-in users and enforce their own checks; the two guard functions are trigger-only.
+
 ## Deployment order (after approval)
 1. Create bucket `support-attachments` (private, 10 MB).  2. Apply `proposal.sql`.  3. Publish the frontend.
 4. Later, separately approved: copy and deploy `support-email-sender` with `SUPPORT_EMAIL_ENABLED` unset, then schedule it,
    then set `SUPPORT_EMAIL_ENABLED=true` only when the owner approves sending.
 
 ## Rollback impact
-1. Run `export.sql` and save the JSON (includes the file list). 2. Download files from the bucket if they must be kept.
+1. Run `export.sql` and save the JSON. This holds database rows and the file LIST only, not file contents.
+2. Copy the attachment BYTES before anything is deleted: with a service-role session, list every object in bucket
+   `support-attachments` (paths match `support_attachments.storage_path`), download each file, keep the original
+   `<org>/<ticket>/<file>` folder layout, then check the downloaded count and total size against the export. Store the
+   backup privately (it contains customer files and private-note attachments). Do not continue until this is verified.
 3. Run `rollback.sql`: deletes every ticket, reply, private note, attachment record and queued email; keeps delivered
 in-app notifications. 4. Empty and delete the bucket with the storage tool (files are not removed by SQL).
 No existing table is touched in either direction.
