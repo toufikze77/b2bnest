@@ -1417,27 +1417,32 @@ const ProjectManagement = () => {
   };
 
   // Handle task deletion
-  const handleTaskDelete = (taskId: string) => {
+  const handleTaskDelete = async (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
-    if (task) {
-      setTasks(prev => prev.filter(t => t.id !== taskId));
-      
-      const activity: ActivityLog = {
-        id: `activity-${Date.now()}`,
-        type: 'task_updated',
-        description: `Task "${task.title}" was deleted`,
-        user: user?.email || 'Unknown User',
-        timestamp: new Date(),
-        projectId: task.projectId || 'unassigned',
-        taskId: task.id
-      };
-      setActivityLogs(prev => [activity, ...prev]);
-      
+    if (!task) return;
+    try {
+      const tenant = await assertActiveOrganization(organizationId);
+      await deleteTaskConfirmed(taskId, tenant.organizationId);
+    } catch (error) {
       toast({
-        title: "Task Deleted",
-        description: `Task "${task.title}" has been deleted`,
+        title: 'Task not deleted',
+        description: error instanceof Error ? error.message : 'Choose a valid company and try again.',
+        variant: 'destructive',
       });
+      await loadTasks();
+      return;
     }
+    setTasks(prev => prev.filter(t => t.id !== taskId));
+    setActivityLogs(prev => [{
+      id: `activity-${Date.now()}`,
+      type: 'task_updated',
+      description: `Task "${task.title}" was deleted`,
+      user: user?.email || 'Unknown User',
+      timestamp: new Date(),
+      projectId: task.projectId || 'unassigned',
+      taskId: task.id,
+    } as ActivityLog, ...prev]);
+    toast({ title: 'Task deleted', description: `Task "${task.title}" has been deleted` });
   };
 
   const EnhancedKanbanBoard = () => (
@@ -2660,8 +2665,7 @@ const ProjectManagement = () => {
   const deleteEvent = async (ev: CalendarEventItem) => {
     try {
       const tenant = await assertActiveOrganization(organizationId);
-      const { error } = await supabase.from('todos').delete().eq('id', ev.id).eq('organization_id', tenant.organizationId);
-      if (error) throw error;
+      await deleteTaskConfirmed(ev.id, tenant.organizationId);
       setCalendarEvents(prev => prev.filter(e => e.id !== ev.id));
       setTasks(prev => prev.filter(task => task.id !== ev.id));
     } catch (error) {
