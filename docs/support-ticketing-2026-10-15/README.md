@@ -83,5 +83,5 @@ export, rollback, and atomic failure. Caveat: other tables are stand-ins, not a 
 
 ## Test results r2 (2026-10-15)
 Throwaway database now mirrors live organizations / organization_members / notifications / auth.users / storage.objects
-columns, constraints, FKs and policies. 112 checks + concurrency, 0 failures (38 new: invitations, agents, storage,
+columns, constraints, FKs and policies. 112 checks + concurrency, 0 failures (39 new: invitations, agents, storage,
 email queue). Sender: 7/7 Deno tests. App rules: 8/8 vitest.
