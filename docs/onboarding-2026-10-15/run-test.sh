@@ -9,5 +9,4 @@ sed -n '1,57p' docs/support-ticketing-2026-10-15/test.sql > /tmp/onbrun/prelude.
 sed 's/^COMMIT;$/SELECT 1\/0; -- injected failure\nCOMMIT;/' docs/onboarding-2026-10-15/proposal.sql > /tmp/onbrun/proposal_fail.sql
 cd /tmp/onbrun
 psql -h $S -p 55435 -U postgres -q -X -f docs/onboarding-2026-10-15/test.sql -P pager=off -A -t 2>&1 | grep -vE "^(SET|$)" | tail -120
-# Concurrency: two simultaneous accepts of the last free seat by two different invitees -> one membership.
 cd /; $R pg_ctl -D $D stop >/dev/null; rm -rf $D $S /tmp/onbrun
