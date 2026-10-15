@@ -13,7 +13,7 @@ const Layout = ({ children }: LayoutProps) => {
   const appPrefixes = [
     '/dashboard', '/business-overview', '/settings', '/profile-setup', '/onboarding',
     '/crm', '/project-management', '/lead-generation', '/rota',
-    '/workflow-studio', '/integrations/', '/business-tools', '/template-center', '/workspaces',
+    '/workflow-studio', '/integrations/', '/business-tools', '/template-center', '/workspaces', '/support-desk',
   ];
   const isAppRoute = appPrefixes.some((path) => pathname === path || pathname.startsWith(`${path}/`));
   const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
