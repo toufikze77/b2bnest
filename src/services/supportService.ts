@@ -23,6 +23,7 @@ export class NotEnabledError extends Error {
 }
 const friendly = (e: { code?: string; message?: string }): Error => {
   if (e.code === 'PGRST205' || e.code === 'PGRST202' || e.code === '42P01' || e.code === '42883' || /does not exist|schema cache/i.test(e.message || '')) return new NotEnabledError();
+  if (e.code === '23505') return new Error('This already exists for this company (for example, the customer is already invited). Refresh to see it.');
   return new Error(e.message || 'Something went wrong. Your text is still in the form — please try again.');
 };
 const run = async <T,>(p: PromiseLike<{ data: T; error: { code?: string; message?: string } | null }>): Promise<T> => {

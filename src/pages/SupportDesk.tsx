@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import TicketThread from '@/components/support/TicketThread';
 import NewTicketForm from '@/components/support/NewTicketForm';
 import AgentManager from '@/components/support/AgentManager';
-import { STATUS_LABEL, TICKET_STATUSES, invitationState, type TicketStatus } from '@/lib/supportTicket';
+import { STATUS_LABEL, TICKET_STATUSES, invitationState, repeatInviteMessage, type TicketStatus } from '@/lib/supportTicket';
 import * as svc from '@/services/supportService';
 import OrganizationSwitcher from '@/components/OrganizationSwitcher';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -188,7 +188,11 @@ function SupportSetup({ org, me, settings, categories, onSaved, toast }: {
         <div className="flex flex-wrap gap-2">
           <Input placeholder="customer@example.com" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="min-w-48 flex-1" aria-label="Customer email" />
           <Input placeholder="Client business (optional)" value={client} maxLength={120} onChange={(e) => setClient(e.target.value)} className="min-w-40 flex-1" aria-label="Client business" />
-          <Button disabled={busy || !settings || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())} onClick={() => act(async () => { await svc.inviteCustomer(org, email, me, undefined, client); setEmail(''); setClient(''); }, 'Invitation saved — email not sent', 'Use "Copy invitation link" and share it yourself.')}>Invite</Button>
+          <Button disabled={busy || !settings || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())} onClick={() => {
+            const dup = repeatInviteMessage(customers, email);
+            if (dup) { toast({ title: 'Already on the list', description: dup }); return; }
+            act(async () => { await svc.inviteCustomer(org, email, me, undefined, client); setEmail(''); setClient(''); }, 'Invitation saved — email not sent', 'Use "Copy invitation link" and share it yourself.');
+          }}>Invite</Button>
         </div>
         <ul className="divide-y divide-border text-sm">{customers.map((c) => (
           <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2">

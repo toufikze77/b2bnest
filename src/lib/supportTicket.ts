@@ -45,3 +45,16 @@ export function eligibleAgents<T extends { user_id: string; role: string }>(memb
 }
 export const invitationState = (c: { user_id: string | null; revoked_at: string | null; expires_at?: string | null }, now = Date.now()) =>
   c.revoked_at ? 'Access removed' : c.user_id ? 'Signed up' : c.expires_at && Date.parse(c.expires_at) <= now ? 'Invitation expired' : 'Invited, not signed in yet';
+
+/** Repeat invite check: explains the existing record instead of inserting again. Never reactivates revoked access. */
+export function repeatInviteMessage<T extends { email: string; user_id: string | null; revoked_at: string | null; expires_at?: string | null }>(
+  customers: T[], email: string, now = Date.now()): string | null {
+  const e = email.trim().toLowerCase();
+  const c = customers.find((x) => x.email.toLowerCase() === e);
+  if (!c) return null;
+  const s = invitationState(c, now);
+  if (s === 'Access removed') return `${c.email} was invited before and their access was removed. Use "Restore access" on their row if you want to let them back in.`;
+  if (s === 'Signed up') return `${c.email} already has portal access.`;
+  if (s === 'Invitation expired') return `${c.email} has an expired invitation. Use "Extend 14 days" on their row.`;
+  return `${c.email} is already invited and hasn't signed in yet. Use "Copy invitation link" on their row.`;
+}

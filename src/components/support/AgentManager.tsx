@@ -49,7 +49,7 @@ export default function AgentManager({ org, me }: { org: string; me: string }) {
         <Button disabled={busy || !pick} onClick={() => act(() => svc.addAgent(org, pick, me), 'Agent added')}>Add agent</Button>
       </div>
       {eligible.length === 0 && <p className="text-xs text-muted-foreground">{members.length <= admins.length
-        ? `This company has ${members.length} active member${members.length === 1 ? '' : 's'}, all owners or admins (who already handle tickets). Add colleagues as company members in Settings first; they will then appear here.`
+        ? <>This company has {members.length} active member{members.length === 1 ? '' : 's'}, all owners or admins (who already handle tickets). Add colleagues in <a className="underline" href="/settings?tab=members">Members &amp; roles</a> first; they will then appear here. Customers are never added as members.</>
         : 'Every other active member is already an agent.'}</p>}
       <ul className="divide-y divide-border text-sm">
         {agents.map((id) => {
