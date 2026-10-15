@@ -4,7 +4,6 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { authUrlWithNext } from '@/lib/onboarding';
-import { setActiveOrganizationId } from '@/lib/activeOrganization';
 import * as svc from '@/services/onboardingService';
 
 type Preview = Awaited<ReturnType<typeof svc.previewInvitation>>;
@@ -28,7 +27,7 @@ export default function JoinCompany() {
 
   const accept = async () => {
     setBusy(true); setErr(null);
-    try { const org = await svc.acceptInvitation(token); setActiveOrganizationId?.(org); navigate('/settings?tab=members', { replace: true }); }
+    try { const org = await svc.acceptInvitation(token); void org; navigate('/settings?tab=members', { replace: true }); }
     catch (e) { setErr((e as Error).message); }
     setBusy(false);
   };

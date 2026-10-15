@@ -41,6 +41,7 @@ const Operations = lazy(() => import('@/pages/categories/Operations'));
 const CRMPage = lazy(() => import('@/pages/CRMPage'));
 const SupportDesk = lazy(() => import('@/pages/SupportDesk'));
 const SupportPortal = lazy(() => import('@/pages/SupportPortal'));
+const JoinCompany = lazy(() => import('@/pages/JoinCompany'));
 const ProjectManagementPage = lazy(() => import('@/pages/ProjectManagementPage'));
 const BusinessOverview = lazy(() => import('@/pages/BusinessOverview'));
 const Settings = lazy(() => import('@/pages/Settings'));
@@ -112,6 +113,7 @@ function App() {
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/join" element={<JoinCompany />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

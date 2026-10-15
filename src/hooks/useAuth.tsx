@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         password,
         options: {
-          emailRedirectTo: `${redirectUrl}/`,
+          emailRedirectTo: `${redirectUrl}${new URLSearchParams(window.location.search).get('next')?.startsWith('/') && !new URLSearchParams(window.location.search).get('next')?.startsWith('//') ? new URLSearchParams(window.location.search).get('next') : '/'}`,
           data: { full_name: fullName, company_name: companyName }
         }
       });
