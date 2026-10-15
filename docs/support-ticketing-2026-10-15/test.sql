@@ -226,7 +226,7 @@ INSERT INTO results(name,ok,detail) SELECT 'anon has zero privileges on support 
 -- Export, rollback
 CREATE TEMP TABLE ex AS SELECT json_build_object('tickets',(SELECT json_agg(x) FROM support_tickets x)) j;
 \i docs/support-ticketing-2026-10-15/export.sql
-INSERT INTO results(name,ok,detail) SELECT 'Export contains both tickets', json_array_length(j->'tickets')=2, '' FROM ex;
+INSERT INTO results(name,ok,detail) SELECT 'Export contains all 3 tickets', json_array_length(j->'tickets')=3, '' FROM ex;
 \i docs/support-ticketing-2026-10-15/rollback.sql
 INSERT INTO results(name,ok,detail) SELECT 'Rollback removes all support objects, keeps companies/members/contacts/notifications',
   (SELECT count(*) FROM pg_tables WHERE tablename LIKE 'support_%')=0 AND NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname LIKE 'support_%')
