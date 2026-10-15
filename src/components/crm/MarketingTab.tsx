@@ -64,6 +64,15 @@ const MarketingTab = ({ contacts }: { contacts: C[] }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // A linked task may be deleted on another screen or tab. The database clears the
+  // link automatically (ON DELETE SET NULL), so re-read when the user comes back.
+  useEffect(() => {
+    const onBack = () => { if (document.visibilityState === 'visible') load(); };
+    window.addEventListener('focus', onBack);
+    document.addEventListener('visibilitychange', onBack);
+    return () => { window.removeEventListener('focus', onBack); document.removeEventListener('visibilitychange', onBack); };
+  }, [load]);
+
   // Clear everything on sign-out / user change so a previous user's plans never show.
   useEffect(() => {
     setAudiences([]); setCampaigns([]); setContent([]); setTasks({}); setCamp(null); setItem(null); setAudName(''); setEditAud(null);
@@ -259,7 +268,7 @@ const MarketingTab = ({ contacts }: { contacts: C[] }) => {
                     <span className="font-medium">{i.title}</span> {i.archived_at && <Badge variant="secondary">Archived</Badge>}
                     <span className="block text-xs text-muted-foreground">
                       {i.planned_for || 'No date'}{i.channel ? ` · ${i.channel}` : ''}{i.campaign_id ? ` · ${campaigns.find((c) => c.id === i.campaign_id)?.name || 'campaign'}` : ''}
-                      {' · '}{i.todo_id ? (tasks[i.todo_id] ? 'Task linked' : 'Linked task not available to you') : 'No task'}
+                      {' · '}{i.todo_id ? (tasks[i.todo_id] ? 'Task linked' : 'Linked task not available to you') : 'No linked task'}
                     </span>
                   </span>
                   <span className="flex gap-1">
