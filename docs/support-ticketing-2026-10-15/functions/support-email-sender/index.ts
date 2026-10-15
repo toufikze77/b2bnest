@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { makeHandler, BeforeDataError } from "./handler.ts";
 import { sendSmtp, SmtpStageError } from "../workflow-send-email/smtp.ts";
-import { pickSmtp } from "../workflow-send-email/handler.ts";
+import { resolveSmtp } from "../workflow-send-email/handler.ts";
 
 const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const admin = createClient(Deno.env.get("SUPABASE_URL") ?? "", key, { auth: { persistSession: false } });
@@ -25,7 +25,7 @@ serve(makeHandler({
     return data?.user?.email_confirmed_at ? data.user.email ?? null : null;
   },
   send: async (to, subject, text) => {
-    const cfg = pickSmtp((n) => Deno.env.get(n));
+    const cfg = resolveSmtp((n) => Deno.env.get(n));
     if (!cfg) throw new BeforeDataError("email is not configured");
     try {
       const r = await sendSmtp(cfg, { from: cfg.from, to: [to], subject, content: text });
