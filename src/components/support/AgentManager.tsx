@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
@@ -41,16 +42,22 @@ export default function AgentManager({ org, me }: { org: string; me: string }) {
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">Owners and admins always handle tickets: {admins.map((a) => a.name).join(', ') || '—'}.</p>
-      <div className="flex flex-wrap gap-2">
-        <Select value={pick} onValueChange={setPick}>
-          <SelectTrigger className="w-64" aria-label="Choose a team member"><SelectValue placeholder={eligible.length ? 'Choose a team member' : 'No other members to add'} /></SelectTrigger>
-          <SelectContent>{eligible.map((m) => <SelectItem key={m.user_id} value={m.user_id}>{m.name}</SelectItem>)}</SelectContent>
-        </Select>
-        <Button disabled={busy || !pick} onClick={() => act(() => svc.addAgent(org, pick, me), 'Agent added')}>Add agent</Button>
-      </div>
-      {eligible.length === 0 && <p className="text-xs text-muted-foreground">{members.length <= admins.length
-        ? <>This company has {members.length} active member{members.length === 1 ? '' : 's'}, all owners or admins (who already handle tickets). Add colleagues in <a className="underline" href="/settings?tab=members">Members &amp; roles</a> first; they will then appear here. Customers are never added as members.</>
-        : 'Every other active member is already an agent.'}</p>}
+      {eligible.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          <Select value={pick} onValueChange={setPick}>
+            <SelectTrigger className="w-64" aria-label="Choose a team member"><SelectValue placeholder={`Choose a team member (${eligible.length} available)`} /></SelectTrigger>
+            <SelectContent>{eligible.map((m) => <SelectItem key={m.user_id} value={m.user_id}>{m.name} · {m.role}</SelectItem>)}</SelectContent>
+          </Select>
+          <Button disabled={busy || !pick} onClick={() => act(() => svc.addAgent(org, pick, me), 'Agent added')}>Add agent</Button>
+        </div>
+      ) : (
+        <div className="rounded-md border border-border bg-muted p-3 text-sm">
+          {members.length <= admins.length ? <>
+            <p>This company has {members.length} active member{members.length === 1 ? '' : 's'} ({admins.length} owner/admin), so there is nobody else to appoint yet. Owners and admins already handle tickets.</p>
+            <p className="mt-2">To add a colleague as an agent: open <Link className="underline" to="/settings?tab=members">Members &amp; roles</Link>, invite them as a member, and once they have joined they will appear here. Customers are never made company members.</p>
+          </> : <p>Every other active member is already an agent.</p>}
+        </div>
+      )}
       <ul className="divide-y divide-border text-sm">
         {agents.map((id) => {
           const m = members.find((x) => x.user_id === id);

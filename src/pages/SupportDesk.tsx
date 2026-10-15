@@ -151,12 +151,21 @@ function SupportSetup({ org, me, settings, categories, onSaved, toast }: {
   const [email, setEmail] = useState('');
   const [client, setClient] = useState('');
   const [customers, setCustomers] = useState<svc.Customer[]>([]);
+  const [listError, setListError] = useState<string | null>(null);
+  const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  useEffect(() => { svc.listCustomers(org).then(setCustomers).catch(() => setCustomers([])); }, [org]);
+  const listToken = useRef(0);
+  // Never hide a failed load as "no customers"; ignore replies for a previously selected company.
+  const reloadCustomers = useCallback(async () => {
+    const t = ++listToken.current;
+    try { const rows = await svc.listCustomers(org); if (t === listToken.current) { setCustomers(rows); setListError(null); } }
+    catch (e) { if (t === listToken.current) setListError((e as Error).message); }
+  }, [org]);
+  useEffect(() => { setCustomers([]); setLastSaved(null); reloadCustomers(); }, [reloadCustomers]);
 
   const act = async (fn: () => Promise<unknown>, ok: string, description?: string) => {
     if (busy) return; setBusy(true);
-    try { await fn(); toast({ title: ok, description }); onSaved(); setCustomers(await svc.listCustomers(org)); }
+    try { await fn(); toast({ title: ok, description }); onSaved(); await reloadCustomers(); }
     catch (e) { toast({ title: 'Not saved', description: (e as Error).message, variant: 'destructive' }); }
     finally { setBusy(false); }
   };
@@ -191,19 +200,28 @@ function SupportSetup({ org, me, settings, categories, onSaved, toast }: {
           <Button disabled={busy || !settings || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())} onClick={() => {
             const dup = repeatInviteMessage(customers, email);
             if (dup) { toast({ title: 'Already on the list', description: dup }); return; }
-            act(async () => { await svc.inviteCustomer(org, email, me, undefined, client); setEmail(''); setClient(''); }, 'Invitation saved — email not sent', 'Use "Copy invitation link" and share it yourself.');
+            const invited = email.trim().toLowerCase();
+            act(async () => {
+              await svc.inviteCustomer(org, email, me, undefined, client);
+              const fresh = await svc.listCustomers(org);
+              const row = fresh.find((c) => c.email.toLowerCase() === invited);
+              if (!row) throw new Error('The invitation could not be confirmed. Refresh the page to check the list.');
+              setLastSaved(row.id); setEmail(''); setClient('');
+            }, 'Invitation saved — email not sent', `${invited} is now in the list below. Use "Copy invitation link" and send it yourself.`);
           }}>Invite</Button>
         </div>
+        <h3 className="text-sm font-medium">Invited customers ({customers.length})</h3>
+        {listError && <p className="text-sm text-destructive">The customer list could not be loaded: {listError} <Button size="sm" variant="outline" onClick={reloadCustomers}>Try again</Button></p>}
         <ul className="divide-y divide-border text-sm">{customers.map((c) => (
-          <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-            <span>{c.email}{c.client_name ? ` · ${c.client_name}` : ''} <span className="text-xs text-muted-foreground">{invitationState(c)}</span></span>
+          <li key={c.id} className={`flex flex-wrap items-center justify-between gap-2 py-2 ${c.id === lastSaved ? 'rounded-md bg-accent px-2' : ''}`}>
+            <span><span className="font-medium">{c.email}</span>{c.client_name ? ` · ${c.client_name}` : ''} <span className="text-xs text-muted-foreground">{invitationState(c)}{c.id === lastSaved ? ' · just saved' : ''}</span></span>
             <span className="flex gap-2">{!c.revoked_at && !c.user_id && <Button size="sm" variant="ghost" onClick={async () => {
               try { await navigator.clipboard.writeText(portalInviteLink(window.location.origin)); toast({ title: 'Invitation link copied', description: `Send it to ${c.email}. No email was sent.` }); }
               catch { toast({ title: 'Could not copy', description: portalInviteLink(window.location.origin), variant: 'destructive' }); }
             }}>Copy invitation link</Button>}{invitationState(c) === 'Invitation expired' && <Button size="sm" variant="ghost" onClick={() => act(() => svc.extendInvitation(c.id), 'Invitation extended 14 days')}>Extend 14 days</Button>}
             <Button size="sm" variant="outline" onClick={() => act(() => svc.setCustomerRevoked(c.id, !c.revoked_at), c.revoked_at ? 'Access restored' : 'Access removed')}>{c.revoked_at ? 'Restore access' : 'Remove access'}</Button></span>
           </li>))}
-          {customers.length === 0 && <li className="py-2 text-muted-foreground">No customers invited yet.</li>}</ul>
+          {customers.length === 0 && !listError && <li className="py-2 text-muted-foreground">No customers invited yet.</li>}</ul>
       </Card>
       <Card className="space-y-3 p-4 md:col-span-2">
         <h2 className="font-semibold">Support agents</h2>
