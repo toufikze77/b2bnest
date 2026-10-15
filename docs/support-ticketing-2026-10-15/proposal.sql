@@ -37,8 +37,10 @@ CREATE TABLE public.support_customers (
   display_name text CHECK (display_name IS NULL OR length(display_name) <= 100),
   client_name text CHECK (client_name IS NULL OR length(client_name) <= 120),
   user_id uuid, invited_by uuid NOT NULL, revoked_at timestamptz,
+  expires_at timestamptz NOT NULL DEFAULT now() + interval '14 days', -- applies only while unclaimed
+  claimed_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (organization_id, email)
+  UNIQUE (organization_id, email), UNIQUE (organization_id, user_id)
 );
 CREATE TABLE public.support_tickets (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -87,8 +89,10 @@ CREATE TABLE public.support_email_outbox (
   kind text NOT NULL CHECK (kind IN ('acknowledgement','public_reply')),
   recipient_user_id uuid NOT NULL,
   dedupe_key text NOT NULL UNIQUE,
-  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','accepted_by_provider','failed')),
-  attempts integer NOT NULL DEFAULT 0, last_error text,
+  -- pending -> sending -> accepted_by_provider | failed (retryable, max 5) | uncertain (never auto-resent)
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','sending','accepted_by_provider','failed','uncertain','cancelled')),
+  attempts integer NOT NULL DEFAULT 0 CHECK (attempts BETWEEN 0 AND 5), last_error text,
+  next_attempt_at timestamptz NOT NULL DEFAULT now(), locked_until timestamptz, provider_reply text, accepted_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX ON public.support_tickets (organization_id, status, updated_at DESC);
@@ -182,7 +186,8 @@ CREATE TRIGGER support_settings_guard BEFORE UPDATE ON public.support_settings F
 CREATE FUNCTION public.support_customers_guard() RETURNS trigger LANGUAGE plpgsql SET search_path TO '' AS $$
 BEGIN
   IF NEW.organization_id <> OLD.organization_id OR NEW.email <> OLD.email
-     OR (NEW.user_id IS DISTINCT FROM OLD.user_id AND current_setting('support.claim', true) IS DISTINCT FROM 'on') THEN
+     OR ((NEW.user_id IS DISTINCT FROM OLD.user_id OR NEW.claimed_at IS DISTINCT FROM OLD.claimed_at)
+         AND current_setting('support.claim', true) IS DISTINCT FROM 'on') THEN
     RAISE EXCEPTION 'customer company, email and linked account cannot be changed';
   END IF;
   RETURN NEW;
@@ -195,13 +200,17 @@ $$ INSERT INTO public.notifications(user_id, title, message, type, read) VALUES 
 REVOKE ALL ON FUNCTION public.support_notify(uuid,text,text) FROM PUBLIC, anon, authenticated;
 
 -- Customer claims invitations matching their signed-in (confirmed) email.
+-- Email comes from auth.users (not the token) and must be confirmed. Single use: once bound, no other account can claim it.
 CREATE FUNCTION public.support_claim_invitations() RETURNS integer LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
-DECLARE _email text := lower(auth.jwt() ->> 'email'); n integer;
+DECLARE _email text; n integer;
 BEGIN
-  IF auth.uid() IS NULL OR _email IS NULL THEN RAISE EXCEPTION 'sign in required'; END IF;
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'sign in required'; END IF;
+  SELECT lower(u.email) INTO _email FROM auth.users u WHERE u.id = auth.uid() AND u.email_confirmed_at IS NOT NULL;
+  IF _email IS NULL THEN RETURN 0; END IF; -- unverified email: nothing is bound
   PERFORM set_config('support.claim','on',true);
-  UPDATE public.support_customers SET user_id = auth.uid()
-   WHERE lower(email) = _email AND user_id IS NULL AND revoked_at IS NULL;
+  UPDATE public.support_customers c SET user_id = auth.uid(), claimed_at = now()
+   WHERE lower(c.email) = _email AND c.user_id IS NULL AND c.revoked_at IS NULL AND c.expires_at > now()
+     AND NOT EXISTS (SELECT 1 FROM public.organization_members om WHERE om.organization_id = c.organization_id AND om.user_id = auth.uid());
   GET DIAGNOSTICS n = ROW_COUNT;
   PERFORM set_config('support.claim','off',true);
   RETURN n;
@@ -327,6 +336,43 @@ REVOKE ALL ON FUNCTION public.support_claim_invitations(), public.support_create
 GRANT EXECUTE ON FUNCTION public.support_claim_invitations(), public.support_create_ticket(uuid,text,text,uuid,text,uuid),
   public.support_add_message(uuid,text,boolean,uuid), public.support_update_ticket(uuid,text,text,uuid,uuid,boolean),
   public.support_add_attachment(uuid,uuid,text,text,integer,text,boolean) TO authenticated;
+
+-- ---------- Email queue (server only; NOT scheduled or activated by this migration) ----------
+-- Claims due rows with SKIP LOCKED so two senders never take the same row. A row left in 'sending' past its
+-- lock (sender crashed mid-send) becomes 'uncertain' and is never resent automatically.
+CREATE FUNCTION public.support_outbox_claim(_limit integer DEFAULT 20)
+RETURNS TABLE(id uuid, kind text, recipient_user_id uuid, attempts integer, support_name text, reference text, subject text, reply_body text)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+BEGIN
+  UPDATE public.support_email_outbox o SET status='uncertain', last_error='sender stopped mid-send; provider outcome unknown', updated_at=now()
+   WHERE o.status='sending' AND o.locked_until < now();
+  RETURN QUERY
+  WITH due AS (
+    SELECT o.id FROM public.support_email_outbox o
+     WHERE o.status IN ('pending','failed') AND o.attempts < 5 AND o.next_attempt_at <= now()
+     ORDER BY o.created_at LIMIT least(greatest(_limit,1),50) FOR UPDATE SKIP LOCKED),
+  upd AS (
+    UPDATE public.support_email_outbox o SET status='sending', attempts=o.attempts+1, locked_until=now()+interval '5 minutes', updated_at=now()
+     FROM due WHERE o.id=due.id RETURNING o.*)
+  SELECT u.id, u.kind, u.recipient_user_id, u.attempts, s.support_name, t.reference, t.subject,
+         CASE WHEN m.is_internal THEN NULL ELSE m.body END -- private notes never leave the database
+    FROM upd u JOIN public.support_tickets t ON t.id=u.ticket_id
+    JOIN public.support_settings s ON s.organization_id=u.organization_id
+    LEFT JOIN public.support_messages m ON m.id=u.message_id;
+END $$;
+CREATE FUNCTION public.support_outbox_finish(_id uuid, _outcome text, _reply text) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+BEGIN
+  IF _outcome NOT IN ('accepted_by_provider','failed','uncertain','cancelled') THEN RAISE EXCEPTION 'invalid outcome'; END IF;
+  UPDATE public.support_email_outbox SET status=_outcome, locked_until=NULL, updated_at=now(),
+    provider_reply=CASE WHEN _outcome='accepted_by_provider' THEN left(_reply,300) ELSE provider_reply END,
+    last_error=CASE WHEN _outcome<>'accepted_by_provider' THEN left(_reply,300) ELSE last_error END,
+    accepted_at=CASE WHEN _outcome='accepted_by_provider' THEN now() ELSE accepted_at END,
+    next_attempt_at=CASE WHEN _outcome='failed' THEN now() + (interval '5 minutes' * power(3, attempts-1)) ELSE next_attempt_at END
+  WHERE id=_id AND status='sending';
+END $$;
+REVOKE ALL ON FUNCTION public.support_outbox_claim(integer), public.support_outbox_finish(uuid,text,text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.support_outbox_claim(integer), public.support_outbox_finish(uuid,text,text) TO service_role;
 
 -- ---------- Private storage: downloads only if the attachment row is visible ----------
 CREATE POLICY "Support files: read if attachment visible" ON storage.objects FOR SELECT TO authenticated

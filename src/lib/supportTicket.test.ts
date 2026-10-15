@@ -28,3 +28,16 @@ describe('support ticket rules', () => {
     expect(validateTicket('x', 'y')).toBeNull();
   });
 });
+
+import { eligibleAgents, invitationState } from './supportTicket';
+describe('agent and invitation rules', () => {
+  it('only offers non-admin members who are not already agents', () => {
+    const m = [{ user_id: 'o', role: 'owner' }, { user_id: 'a', role: 'admin' }, { user_id: 'g', role: 'member' }, { user_id: 'n', role: 'manager' }, { user_id: 's', role: 'member' }];
+    expect(eligibleAgents(m, ['g']).map((x) => x.user_id)).toEqual(['n', 's']);
+  });
+  it('labels invitations', () => {
+    expect(invitationState({ user_id: null, revoked_at: null, expires_at: '2000-01-01T00:00:00Z' })).toBe('Invitation expired');
+    expect(invitationState({ user_id: 'x', revoked_at: null, expires_at: '2000-01-01T00:00:00Z' })).toBe('Signed up');
+    expect(invitationState({ user_id: 'x', revoked_at: '2026-01-01', expires_at: null })).toBe('Access removed');
+  });
+});

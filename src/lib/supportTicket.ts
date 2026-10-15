@@ -38,3 +38,10 @@ export function validateTicket(subject: string, description: string): string | n
   if (description.length > MAX_TEXT) return 'Description must be 10,000 characters or fewer.';
   return null;
 }
+
+/** Members who can be appointed: active company members who are not owners/admins (already staff) or agents. */
+export function eligibleAgents<T extends { user_id: string; role: string }>(members: T[], agentIds: string[]): T[] {
+  return members.filter((m) => m.role !== 'owner' && m.role !== 'admin' && !agentIds.includes(m.user_id));
+}
+export const invitationState = (c: { user_id: string | null; revoked_at: string | null; expires_at?: string | null }, now = Date.now()) =>
+  c.revoked_at ? 'Access removed' : c.user_id ? 'Signed up' : c.expires_at && Date.parse(c.expires_at) <= now ? 'Invitation expired' : 'Invited, not signed in yet';

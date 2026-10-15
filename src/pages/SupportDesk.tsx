@@ -14,7 +14,8 @@ import { PriorityBadge } from '@/components/data/StatusBadge';
 import { useToast } from '@/hooks/use-toast';
 import TicketThread from '@/components/support/TicketThread';
 import NewTicketForm from '@/components/support/NewTicketForm';
-import { STATUS_LABEL, TICKET_STATUSES, type TicketStatus } from '@/lib/supportTicket';
+import AgentManager from '@/components/support/AgentManager';
+import { STATUS_LABEL, TICKET_STATUSES, invitationState, type TicketStatus } from '@/lib/supportTicket';
 import * as svc from '@/services/supportService';
 
 export default function SupportDesk() {
@@ -130,8 +131,6 @@ function SupportSetup({ org, me, settings, categories, onSaved, toast }: {
   org: string; me: string; settings: svc.SupportSettings | null; categories: svc.Category[]; onSaved: () => void;
   toast: ReturnType<typeof useToast>['toast'];
 }) {
-  const { memberships } = useActiveOrganization();
-  void memberships;
   const [name, setName] = useState(settings?.support_name ?? '');
   const [hours, setHours] = useState(settings?.support_hours ?? '');
   const [tz, setTz] = useState(settings?.time_zone ?? '');
@@ -171,7 +170,7 @@ function SupportSetup({ org, me, settings, categories, onSaved, toast }: {
       </Card>
       <Card className="space-y-3 p-4 md:col-span-2">
         <h2 className="font-semibold">Customer access</h2>
-        <p className="text-xs text-muted-foreground">Invited customers sign in with this email and see only their own tickets. They are not company members: no projects, CRM, finance or staff notes, and they don't use a staff seat. No email is sent by inviting — share the portal link yourself.</p>
+        <p className="text-xs text-muted-foreground">Invited customers sign in with this email (it must be verified; invitations expire after 14 days unless used) and see only their own tickets. They are not company members: no projects, CRM, finance or staff notes, and they don't use a staff seat. No email is sent by inviting — share the portal link yourself.</p>
         <div className="flex flex-wrap gap-2">
           <Input placeholder="customer@example.com" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="min-w-48 flex-1" aria-label="Customer email" />
           <Input placeholder="Client business (optional)" value={client} maxLength={120} onChange={(e) => setClient(e.target.value)} className="min-w-40 flex-1" aria-label="Client business" />
@@ -179,11 +178,15 @@ function SupportSetup({ org, me, settings, categories, onSaved, toast }: {
         </div>
         <ul className="divide-y divide-border text-sm">{customers.map((c) => (
           <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-            <span>{c.email}{c.client_name ? ` · ${c.client_name}` : ''} <span className="text-xs text-muted-foreground">{c.revoked_at ? 'Access removed' : c.user_id ? 'Signed up' : 'Invited, not signed in yet'}</span></span>
-            <Button size="sm" variant="outline" onClick={() => act(() => svc.setCustomerRevoked(c.id, !c.revoked_at), c.revoked_at ? 'Access restored' : 'Access removed')}>{c.revoked_at ? 'Restore access' : 'Remove access'}</Button>
+            <span>{c.email}{c.client_name ? ` · ${c.client_name}` : ''} <span className="text-xs text-muted-foreground">{invitationState(c)}</span></span>
+            <span className="flex gap-2">{invitationState(c) === 'Invitation expired' && <Button size="sm" variant="ghost" onClick={() => act(() => svc.extendInvitation(c.id), 'Invitation extended 14 days')}>Extend 14 days</Button>}
+            <Button size="sm" variant="outline" onClick={() => act(() => svc.setCustomerRevoked(c.id, !c.revoked_at), c.revoked_at ? 'Access restored' : 'Access removed')}>{c.revoked_at ? 'Restore access' : 'Remove access'}</Button></span>
           </li>))}
           {customers.length === 0 && <li className="py-2 text-muted-foreground">No customers invited yet.</li>}</ul>
-        <p className="text-xs text-muted-foreground">Staff agents: company owners and admins can always handle tickets. Adding other members as agents is part of this release package.</p>
+      </Card>
+      <Card className="space-y-3 p-4 md:col-span-2">
+        <h2 className="font-semibold">Support agents</h2>
+        {settings ? <AgentManager org={org} me={me} /> : <p className="text-sm text-muted-foreground">Save support details first.</p>}
       </Card>
     </div>
   );
