@@ -1,3 +1,4 @@
+import { safeNext } from '@/lib/onboarding';
 
 import { useState, useEffect, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
@@ -82,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         password,
         options: {
-          emailRedirectTo: `${redirectUrl}${new URLSearchParams(window.location.search).get('next')?.startsWith('/') && !new URLSearchParams(window.location.search).get('next')?.startsWith('//') ? new URLSearchParams(window.location.search).get('next') : '/'}`,
+          emailRedirectTo: `${redirectUrl}${safeNext(new URLSearchParams(window.location.search).get('next'))}`,
           data: { full_name: fullName, company_name: companyName }
         }
       });
