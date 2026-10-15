@@ -39,6 +39,8 @@ const FinancialForms = lazy(() => import('@/pages/categories/FinancialForms'));
 const MarketingMaterials = lazy(() => import('@/pages/categories/MarketingMaterials'));
 const Operations = lazy(() => import('@/pages/categories/Operations'));
 const CRMPage = lazy(() => import('@/pages/CRMPage'));
+const SupportDesk = lazy(() => import('@/pages/SupportDesk'));
+const SupportPortal = lazy(() => import('@/pages/SupportPortal'));
 const ProjectManagementPage = lazy(() => import('@/pages/ProjectManagementPage'));
 const BusinessOverview = lazy(() => import('@/pages/BusinessOverview'));
 const Settings = lazy(() => import('@/pages/Settings'));
@@ -139,6 +141,8 @@ function App() {
               <Route path="/marketing-materials" element={<MarketingMaterials />} />
               <Route path="/categories/operations" element={<Operations />} />
               <Route path="/crm" element={<ProtectedRoute><CRMPage /></ProtectedRoute>} />
+              <Route path="/support-desk" element={<ProtectedRoute><SupportDesk /></ProtectedRoute>} />
+              <Route path="/support/portal" element={<ProtectedRoute><SupportPortal /></ProtectedRoute>} />
               <Route path="/lead-generation" element={<ProtectedRoute><LeadGenOverview /></ProtectedRoute>} />
               <Route path="/lead-generation/leads" element={<ProtectedRoute><LeadsPage /></ProtectedRoute>} />
               <Route path="/lead-generation/forms" element={<ProtectedRoute><FormsList /></ProtectedRoute>} />

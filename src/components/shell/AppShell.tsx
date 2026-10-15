@@ -3,8 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   BarChart3, Bot, ChevronDown, BriefcaseBusiness, CalendarDays, CircleDollarSign,
   FileText, FolderKanban, HelpCircle, Home, LayoutGrid, LogOut, Plus, Receipt,
-  Settings, Sparkles, Target, Users, WandSparkles,
-} from 'lucide-react';
+  Settings, Sparkles, Target, Users, WandSparkles, LifeBuoy } from 'lucide-react';
 import logo from '@/assets/b2bnest-logo.png';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -40,6 +39,7 @@ const groups = [
   ] },
   { label: 'Customers', items: [
     { label: 'CRM', to: '/crm', icon: Users },
+    { label: 'Support tickets', to: '/support-desk', icon: LifeBuoy },
     { label: 'Lead generation', to: '/lead-generation', icon: BriefcaseBusiness },
   ] },
   { label: 'Money', items: [
