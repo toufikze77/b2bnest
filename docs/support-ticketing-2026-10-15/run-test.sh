@@ -7,7 +7,7 @@ $R initdb -U postgres -D $D >/dev/null && $R pg_ctl -D $D -o "-p 55434 -k $S" -l
 cp -r docs/support-ticketing-2026-10-15 /tmp/suprun/docs/
 sed 's/^COMMIT;$/SELECT 1\/0; -- injected failure\nCOMMIT;/' docs/support-ticketing-2026-10-15/proposal.sql > /tmp/suprun/proposal_fail.sql
 cd /tmp/suprun
-psql -h $S -p 55434 -U postgres -q -X -f docs/support-ticketing-2026-10-15/test.sql 2>&1 | grep -E '^[0-9]+\|'
+psql -h $S -p 55434 -U postgres -q -X -f docs/support-ticketing-2026-10-15/test.sql -P pager=off -A -t 2>&1 | grep -vE "^(SET|$)" | tail -80
 # Concurrency: two simultaneous submits of the same ticket (same request id) -> one ticket.
 P="psql -h $S -p 55434 -U postgres -q -X -At"
 $P -c "\i docs/support-ticketing-2026-10-15/proposal.sql" >/dev/null 2>&1
