@@ -15,7 +15,7 @@ export type Ticket = {
 };
 export type Message = { id: string; author_id: string; body: string; is_internal: boolean; created_at: string };
 export type Attachment = { id: string; message_id: string | null; storage_path: string; file_name: string; size_bytes: number; is_internal: boolean };
-export type Customer = { id: string; email: string; display_name: string | null; client_name: string | null; user_id: string | null; revoked_at: string | null };
+export type Customer = { id: string; email: string; display_name: string | null; client_name: string | null; user_id: string | null; revoked_at: string | null; expires_at: string | null };
 export type Agent = { user_id: string };
 
 export class NotEnabledError extends Error {
@@ -81,3 +81,18 @@ export async function downloadUrl(path: string): Promise<string> {
   if (error || !data) throw new Error('You do not have access to this file.');
   return data.signedUrl;
 }
+
+export type Member = { user_id: string; role: string; name: string };
+/** Active members of the company (agents must be chosen from these; the database re-checks). */
+export async function listCompanyMembers(org: string): Promise<Member[]> {
+  const rows = await run<{ user_id: string; role: string }[]>(
+    supabase.from('organization_members').select('user_id, role').eq('organization_id', org).eq('is_active', true) as never);
+  const names = await Promise.all(rows.map(async (r) => {
+    const { data } = await supabase.rpc('get_user_display_info', { p_user_id: r.user_id });
+    const n = Array.isArray(data) ? data[0]?.display_name : null;
+    return n || `Member ${r.user_id.slice(0, 8)}`;
+  }));
+  return rows.map((r, i) => ({ ...r, name: names[i] }));
+}
+export const extendInvitation = (id: string) =>
+  run(db.from('support_customers').update({ expires_at: new Date(Date.now() + 14 * 864e5).toISOString() }).eq('id', id).is('user_id', null).select('id'));
