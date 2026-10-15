@@ -169,6 +169,9 @@ SELECT t('Feedback cannot be inserted directly (API)','k@client.test',$$INSERT I
 SELECT ok('Rollback removed new tables; joined members kept; tickets kept',
   to_regclass('public.onboarding_email_outbox') IS NULL AND to_regclass('public.support_ticket_feedback') IS NULL
   AND EXISTS (SELECT 1 FROM organization_members WHERE user_id='aaaaaaaa-0000-4000-8000-000000000013') AND (SELECT count(*) FROM support_tickets)=1);
+-- Rolled-back invitations lose their revoked/accepted dates; clear the sample ones so re-apply tests the package itself.
+-- (Live: re-apply refuses atomically while two live invitations share an email; resolve them first.)
+DELETE FROM organization_invitations;
 \i /tmp/onbrun/proposal_fail.sql
 ROLLBACK;
 SELECT ok('Failed apply leaves nothing behind', to_regclass('public.onboarding_email_outbox') IS NULL
