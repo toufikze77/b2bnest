@@ -8,3 +8,9 @@ describe('repeat invitations', () => {
   it('expired points to extend', () => expect(repeatInviteMessage([{ ...base, expires_at: '2000-01-01' }], 'a@x.com')).toMatch(/Extend/));
   it('signed up says has access', () => expect(repeatInviteMessage([{ ...base, user_id: 'u' }], 'a@x.com')).toMatch(/already has portal access/));
 });
+import { eligibleAgents } from './supportTicket';
+describe('agent picker eligibility', () => {
+  const m = [{ user_id: 'o', role: 'owner' }, { user_id: 'a', role: 'admin' }, { user_id: 'x', role: 'member' }, { user_id: 'y', role: 'manager' }];
+  it('offers non-admin members who are not agents yet', () => expect(eligibleAgents(m, ['y']).map((r) => r.user_id)).toEqual(['x']));
+  it('owner-only company has nobody to offer', () => expect(eligibleAgents([m[0]], [])).toEqual([]));
+});
