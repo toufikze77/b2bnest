@@ -1,3 +1,4 @@
+import { deleteTaskConfirmed } from '@/lib/deleteTask';
 import { completionPatch } from '@/lib/dashboardData';
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
