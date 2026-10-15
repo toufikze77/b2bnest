@@ -98,13 +98,13 @@ CREATE INDEX ON public.support_customers (user_id);
 
 -- ---------- Grants (explicit; anon gets nothing) ----------
 REVOKE ALL ON public.support_settings, public.support_categories, public.support_agents, public.support_customers,
-  public.support_tickets, public.support_messages, public.support_attachments, public.support_email_outbox FROM anon, PUBLIC;
+  public.support_tickets, public.support_messages, public.support_attachments, public.support_email_outbox FROM anon, authenticated, PUBLIC; -- drop default grants, then grant exactly
 GRANT SELECT, INSERT, UPDATE ON public.support_settings TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.support_categories TO authenticated;
 GRANT SELECT, INSERT, DELETE ON public.support_agents TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.support_customers TO authenticated;
 GRANT SELECT ON public.support_tickets, public.support_messages, public.support_attachments TO authenticated;
-REVOKE ALL ON public.support_email_outbox FROM authenticated;
+
 GRANT ALL ON public.support_settings, public.support_categories, public.support_agents, public.support_customers,
   public.support_tickets, public.support_messages, public.support_attachments, public.support_email_outbox TO service_role;
 
