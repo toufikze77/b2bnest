@@ -13,7 +13,7 @@ ALTER TABLE public.organization_invitations ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Organization admins can manage invitations" ON public.organization_invitations FOR ALL
   USING (EXISTS (SELECT 1 FROM public.organization_members WHERE organization_members.organization_id = organization_invitations.organization_id
     AND organization_members.user_id = auth.uid() AND organization_members.role = ANY (ARRAY['owner','admin']) AND organization_members.is_active = true));
-REVOKE SELECT (token) ON public.organization_invitations FROM anon, authenticated;
+REVOKE ALL ON public.organization_invitations FROM anon, authenticated; -- live: no grants to anon/authenticated
 CREATE TABLE public.platform_plans(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), key text UNIQUE, member_limit int, is_active bool DEFAULT true);
 CREATE TABLE public.subscribers(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid, email text, subscribed bool DEFAULT false, plan_key text);
 -- Extra labelled sample accounts: OW owner of O1; W, AD, Q new colleagues (verified); Z unverified colleague.

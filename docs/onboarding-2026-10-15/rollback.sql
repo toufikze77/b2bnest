@@ -47,8 +47,8 @@ $$;
 DROP POLICY IF EXISTS "Company owners and admins can view invitations" ON public.organization_invitations;
 DROP INDEX IF EXISTS public.organization_invitations_one_live;
 ALTER TABLE public.organization_invitations DROP COLUMN IF EXISTS revoked_at, DROP COLUMN IF EXISTS accepted_by;
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.organization_invitations TO authenticated;
-REVOKE SELECT (token) ON public.organization_invitations FROM anon, authenticated;
+-- Live before the package (read 2026-10-15): no table or column grants to anon/authenticated on this table.
+REVOKE ALL ON public.organization_invitations FROM anon, authenticated;
 CREATE POLICY "Organization admins can manage invitations" ON public.organization_invitations FOR ALL
   USING (EXISTS (SELECT 1 FROM public.organization_members WHERE organization_members.organization_id = organization_invitations.organization_id
     AND organization_members.user_id = auth.uid() AND organization_members.role = ANY (ARRAY['owner','admin']) AND organization_members.is_active = true));
