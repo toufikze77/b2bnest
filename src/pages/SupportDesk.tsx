@@ -147,6 +147,8 @@ function SupportSetup({ org, me, settings, categories, onSaved, toast }: {
   const [hours, setHours] = useState(settings?.support_hours ?? '');
   const [tz, setTz] = useState(settings?.time_zone ?? '');
   const [portal, setPortal] = useState(settings?.portal_enabled ?? false);
+  const hasFeedback = !!settings && 'feedback_enabled' in settings; // column exists only after the onboarding update
+  const [feedback, setFeedback] = useState(!!(settings as { feedback_enabled?: boolean } | null)?.feedback_enabled);
   const [cat, setCat] = useState('');
   const [email, setEmail] = useState('');
   const [client, setClient] = useState('');
@@ -178,7 +180,8 @@ function SupportSetup({ org, me, settings, categories, onSaved, toast }: {
         <Input placeholder="Support hours (optional, leave blank to hide)" value={hours} maxLength={300} onChange={(e) => setHours(e.target.value)} aria-label="Support hours" />
         <TimeZonePicker value={tz} onChange={setTz} />
         <label className="flex items-center gap-2 text-sm"><Switch checked={portal} onCheckedChange={setPortal} />Customer portal on</label>
-        <Button disabled={busy || !name.trim() || (!!tz && !isValidTimeZone(tz))} onClick={() => act(() => svc.saveSettings({ organization_id: org, support_name: name.trim(), support_hours: hours.trim() || null, time_zone: isValidTimeZone(tz) ? tz : null, portal_enabled: portal }, !!settings), 'Support details saved')}>Save</Button>
+        {hasFeedback && <label className="flex items-center gap-2 text-sm"><Switch checked={feedback} onCheckedChange={setFeedback} />Ask customers for a 1–5 rating when a ticket is closed</label>}
+        <Button disabled={busy || !name.trim() || (!!tz && !isValidTimeZone(tz))} onClick={() => act(() => svc.saveSettings({ organization_id: org, support_name: name.trim(), support_hours: hours.trim() || null, time_zone: isValidTimeZone(tz) ? tz : null, portal_enabled: portal, ...(hasFeedback ? { feedback_enabled: feedback } : {}) } as Parameters<typeof svc.saveSettings>[0], !!settings), 'Support details saved')}>Save</Button>
       </Card>
       <Card className="space-y-3 p-4">
         <h2 className="font-semibold">Categories</h2>
