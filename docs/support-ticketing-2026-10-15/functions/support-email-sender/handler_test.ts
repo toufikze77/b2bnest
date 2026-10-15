@@ -1,0 +1,44 @@
+import { assertEquals, assert } from "https://deno.land/std@0.190.0/testing/asserts.ts";
+import { makeHandler, buildEmail, BeforeDataError, type Claimed, type Deps } from "./handler.ts";
+
+const row = (o: Partial<Claimed> = {}): Claimed => ({ id: "1", kind: "public_reply", recipient_user_id: "u", attempts: 1,
+  support_name: "Acme Support", reference: "T-00001", subject: "Printer", reply_body: "We fixed it", ...o });
+const req = () => new Request("http://x", { method: "POST", headers: { Authorization: "Bearer svc" } });
+function deps(rows: Claimed[], send: Deps["send"], env: Record<string, string> = { SUPPORT_EMAIL_ENABLED: "true" }) {
+  const finished: [string, string][] = []; const sent: string[] = [];
+  const d: Deps = { env: (n) => env[n], isServiceCall: (h) => h === "Bearer svc", claim: async () => rows,
+    finish: async (id, o) => { finished.push([id, o]); }, recipientEmail: async () => "k@client.test",
+    send: async (to, s, t) => { sent.push(t); return await send(to, s, t); } };
+  return { d, finished, sent };
+}
+
+Deno.test("inert unless SUPPORT_EMAIL_ENABLED=true: claims and sends nothing", async () => {
+  let claimed = false; const { d } = deps([row()], async () => "250");
+  d.env = () => undefined; d.claim = async () => { claimed = true; return []; };
+  const r = await (await makeHandler(d)(req())).json();
+  assertEquals(r.status, "disabled"); assertEquals(claimed, false);
+});
+Deno.test("rejects non-service callers", async () => {
+  const { d } = deps([], async () => "250");
+  assertEquals((await makeHandler(d)(new Request("http://x"))).status, 401);
+});
+Deno.test("accepted -> accepted_by_provider", async () => {
+  const { d, finished } = deps([row()], async () => "250 2.0.0 queued");
+  await makeHandler(d)(req()); assertEquals(finished, [["1", "accepted_by_provider"]]);
+});
+Deno.test("failure before DATA -> failed (retryable)", async () => {
+  const { d, finished } = deps([row()], async () => { throw new BeforeDataError("421"); });
+  await makeHandler(d)(req()); assertEquals(finished, [["1", "failed"]]);
+});
+Deno.test("timeout/after DATA -> uncertain (never auto-resent)", async () => {
+  const { d, finished } = deps([row()], async () => { throw new Error("timed out after DATA"); });
+  await makeHandler(d)(req()); assertEquals(finished, [["1", "uncertain"]]);
+});
+Deno.test("reply without public body is cancelled, not sent", async () => {
+  const { d, finished, sent } = deps([row({ reply_body: null })], async () => "250");
+  await makeHandler(d)(req()); assertEquals(finished, [["1", "cancelled"]]); assertEquals(sent.length, 0);
+});
+Deno.test("email is plain text, has no attachments, and points to the portal", () => {
+  const m = buildEmail(row({ subject: "Line1\r\nBcc: evil@x" }), "https://p/portal");
+  assert(!m.subject.includes("\n")); assert(m.text.includes("https://p/portal")); assert(m.text.includes("only available in the portal"));
+});
