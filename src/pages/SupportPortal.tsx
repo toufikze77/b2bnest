@@ -8,6 +8,7 @@ import TicketThread from '@/components/support/TicketThread';
 import NewTicketForm from '@/components/support/NewTicketForm';
 import { STATUS_LABEL } from '@/lib/supportTicket';
 import * as svc from '@/services/supportService';
+import { PortalFeedback, SupportEmailToggle } from '@/components/support/PortalExtras';
 
 /** Customer portal: only the signed-in customer's own tickets, for companies that invited them. */
 export default function SupportPortal() {
@@ -32,7 +33,7 @@ export default function SupportPortal() {
         const rows = await svc.myCustomerCompanies(user.id);
         const s = (await Promise.all(rows.map((r) => svc.getSettings(r.organization_id)))).filter(Boolean) as svc.SupportSettings[];
         if (token !== latest.current) return;
-        setOrgs(s); setOrg(s[0]?.organization_id ?? null); setState(s.length ? 'ready' : 'none');
+        const wanted = params.get('org'); setOrgs(s); setOrg(s.find((o) => o.organization_id === wanted)?.organization_id ?? s[0]?.organization_id ?? null); setState(s.length ? 'ready' : 'none');
       } catch (e) { if (token === latest.current) setState(e instanceof svc.NotEnabledError ? 'disabled' : 'error'); }
     })();
   }, [user]);
@@ -66,8 +67,9 @@ export default function SupportPortal() {
             <div className="flex flex-wrap gap-2">{orgs.map((o) => (
               <Button key={o.organization_id} size="sm" variant={o.organization_id === org ? 'default' : 'outline'} onClick={() => { pick(null); setOrg(o.organization_id); }}>{o.support_name}</Button>))}</div>
           )}
+          {org && user && <SupportEmailToggle org={org} uid={user.id} />}
           {selected ? (
-            <Card className="p-4"><Button size="sm" variant="ghost" onClick={() => pick(null)}>← All my tickets</Button><TicketThread ticketId={selected} staff={false} onChanged={loadTickets} /></Card>
+            <Card className="p-4"><Button size="sm" variant="ghost" onClick={() => pick(null)}>← All my tickets</Button><TicketThread ticketId={selected} staff={false} onChanged={loadTickets} />{current && <PortalFeedback ticket={tickets.find((t) => t.id === selected)} enabled={!!(current as { feedback_enabled?: boolean }).feedback_enabled} />}</Card>
           ) : creating && org ? (
             <Card className="p-4"><h2 className="mb-3 font-semibold">New ticket</h2>
               <NewTicketForm org={org} categories={categories} onCreated={(id) => { setCreating(false); loadTickets(); pick(id); }} />

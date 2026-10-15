@@ -4,6 +4,7 @@ import NotificationPreferences from '@/components/NotificationPreferences';
 import HMRCSettings from '@/components/hmrc/HMRCSettings';
 import AccountSecurity from '@/components/settings/AccountSecurity';
 import CompanyMembers from '@/components/settings/CompanyMembers';
+import InviteMembers from '@/components/settings/InviteMembers';
 import CompanySecurity from '@/components/settings/CompanySecurity';
 import BillingSettings from '@/components/billing/BillingSettings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -50,7 +51,7 @@ const Settings = () => {
 
         <TabsContent value="account"><AccountSettings /></TabsContent>
         <TabsContent value="security"><AccountSecurity /></TabsContent>
-        <TabsContent value="members"><CompanyMembers /></TabsContent>
+        <TabsContent value="members" className="space-y-4"><CompanyMembers /><InviteMembers /></TabsContent>
         <TabsContent value="company-security"><CompanySecurity /></TabsContent>
         <TabsContent value="billing"><BillingSettings /></TabsContent>
         <TabsContent value="notifications"><NotificationPreferences /></TabsContent>

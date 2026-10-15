@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
+import { authUrlWithNext } from '@/lib/onboarding';
 import { useAuth } from '@/hooks/useAuth';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -9,6 +10,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
   const isPreview = typeof window !== 'undefined' && /lovable\.app|preview|localhost/.test(window.location.host);
 
   if (loading && !isPreview) {
@@ -24,7 +26,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   if (!user && !isPreview) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to={authUrlWithNext(location.pathname + location.search)} replace />;
   }
 
   return <>{children}</>;
