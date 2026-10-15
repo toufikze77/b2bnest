@@ -7,5 +7,8 @@ SELECT json_build_object(
   'tickets',(SELECT coalesce(json_agg(x),'[]') FROM public.support_tickets x),
   'messages',(SELECT coalesce(json_agg(x),'[]') FROM public.support_messages x),
   'attachments',(SELECT coalesce(json_agg(x),'[]') FROM public.support_attachments x),
-  'email_outbox',(SELECT coalesce(json_agg(x),'[]') FROM public.support_email_outbox x)
+  'email_outbox',(SELECT coalesce(json_agg(x),'[]') FROM public.support_email_outbox x),
+  -- File list only (names, sizes). Download the files themselves with the storage tool/API before deleting the bucket.
+  'storage_objects',(SELECT coalesce(json_agg(json_build_object('name',o.name,'size',o.metadata->>'size','created_at',o.created_at)),'[]')
+                     FROM storage.objects o WHERE o.bucket_id='support-attachments')
 ) AS support_export;

@@ -8,7 +8,7 @@ DROP TABLE IF EXISTS public.support_email_outbox, public.support_attachments, pu
   public.support_customers, public.support_agents, public.support_categories, public.support_settings CASCADE;
 DROP FUNCTION IF EXISTS public.support_claim_invitations(), public.support_create_ticket(uuid,text,text,uuid,text,uuid),
   public.support_add_message(uuid,text,boolean,uuid), public.support_update_ticket(uuid,text,text,uuid,uuid,boolean),
-  public.support_add_attachment(uuid,uuid,text,text,integer,text,boolean), public.support_notify(uuid,text,text),
+  public.support_add_attachment(uuid,uuid,text,text,integer,text,boolean), public.support_outbox_claim(integer), public.support_outbox_finish(uuid,text,text), public.support_notify(uuid,text,text),
   public.support_settings_guard(), public.support_customers_guard(),
   public.support_can_view_ticket(uuid), public.support_is_customer(uuid), public.support_is_agent(uuid), public.support_is_manager(uuid);
 -- In-app notifications already delivered (type='support') are kept on purpose.
