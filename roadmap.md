@@ -184,6 +184,7 @@
 - [x] Release package: docs/support-ticketing-2026-10-15 (proposal, rollback, export, tests 74/74 on throwaway DB)
 - [x] Preview: Support tickets desk (selected company), customer portal (/support/portal), Help answer
 - [ ] Apply migration + create private bucket — awaiting owner approval after review
-- [ ] Agent picker UI, email sender (outbox), AI assistant text — after approval (AI text lives in a server function; editing it deploys live)
+- [x] Agent picker UI (preview); email sender prepared, not deployed (docs folder)
+- [ ] AI assistant text — after approval (lives in a server function; editing deploys live)
 - [ ] NG TELECOM support hours — not supplied; hours stay hidden until set
 - Deferred: email-to-ticket, AI replies, SLA automation, asset management, paid integrations; ngtelecom.co.uk link proposed separately
