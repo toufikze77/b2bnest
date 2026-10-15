@@ -81,7 +81,7 @@ SELECT ok('Revoked invitation email cancelled', (SELECT status FROM onboarding_e
 SELECT t('Re-invite after revoke creates a fresh invitation','m@o1.test',$$INSERT INTO ids SELECT 'v2', token FROM org_invite_member('00000000-0000-0000-0000-0000000000a1','v@client.test','manager') WHERE outcome='created'$$,'ROWS=1');
 UPDATE organization_invitations SET expires_at=now()-interval '1 minute' WHERE token=(SELECT v FROM ids WHERE k='v2');
 SELECT t('Expired invitation cannot be accepted','v@client.test',$$SELECT org_accept_invitation((SELECT v FROM ids WHERE k='v2'))$$,'ERROR:no longer valid');
-SELECT t('Admin extends it','m@o1.test',$$SELECT org_manage_invitation((SELECT id FROM organization_invitations WHERE token IS NOT NULL AND revoked_at IS NULL AND email='v@client.test'),'extend')$$,'ROWS=1');
+SELECT t('Admin extends it','m@o1.test',$$SELECT org_manage_invitation((SELECT id FROM organization_invitations WHERE revoked_at IS NULL AND accepted_at IS NULL AND email='v@client.test'),'extend')$$,'ROWS=1');
 SELECT t('V accepts after extension','v@client.test',$$SELECT org_accept_invitation((SELECT v FROM ids WHERE k='v2'))$$,'ROWS=1');
 
 -- Admin-role invitations belong to owners only
