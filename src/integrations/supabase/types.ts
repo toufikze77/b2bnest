@@ -3560,6 +3560,400 @@ export type Database = {
         }
         Relationships: []
       }
+      support_agents: {
+        Row: {
+          added_by: string
+          created_at: string
+          organization_id: string
+          user_id: string
+        }
+        Insert: {
+          added_by: string
+          created_at?: string
+          organization_id: string
+          user_id: string
+        }
+        Update: {
+          added_by?: string
+          created_at?: string
+          organization_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_agents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_attachments: {
+        Row: {
+          created_at: string
+          file_name: string
+          id: string
+          is_internal: boolean
+          message_id: string | null
+          mime_type: string
+          organization_id: string
+          size_bytes: number
+          storage_path: string
+          ticket_id: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          id?: string
+          is_internal?: boolean
+          message_id?: string | null
+          mime_type: string
+          organization_id: string
+          size_bytes: number
+          storage_path: string
+          ticket_id: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          is_internal?: boolean
+          message_id?: string | null
+          mime_type?: string
+          organization_id?: string
+          size_bytes?: number
+          storage_path?: string
+          ticket_id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "support_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_attachments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_categories: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          id: string
+          name: string
+          organization_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          organization_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_categories_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_customers: {
+        Row: {
+          claimed_at: string | null
+          client_name: string | null
+          created_at: string
+          display_name: string | null
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          organization_id: string
+          revoked_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          claimed_at?: string | null
+          client_name?: string | null
+          created_at?: string
+          display_name?: string | null
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          organization_id: string
+          revoked_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          claimed_at?: string | null
+          client_name?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          organization_id?: string
+          revoked_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_customers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_email_outbox: {
+        Row: {
+          accepted_at: string | null
+          attempts: number
+          created_at: string
+          dedupe_key: string
+          id: string
+          kind: string
+          last_error: string | null
+          locked_until: string | null
+          message_id: string | null
+          next_attempt_at: string
+          organization_id: string
+          provider_reply: string | null
+          recipient_user_id: string
+          status: string
+          ticket_id: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          attempts?: number
+          created_at?: string
+          dedupe_key: string
+          id?: string
+          kind: string
+          last_error?: string | null
+          locked_until?: string | null
+          message_id?: string | null
+          next_attempt_at?: string
+          organization_id: string
+          provider_reply?: string | null
+          recipient_user_id: string
+          status?: string
+          ticket_id: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          attempts?: number
+          created_at?: string
+          dedupe_key?: string
+          id?: string
+          kind?: string
+          last_error?: string | null
+          locked_until?: string | null
+          message_id?: string | null
+          next_attempt_at?: string
+          organization_id?: string
+          provider_reply?: string | null
+          recipient_user_id?: string
+          status?: string
+          ticket_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_email_outbox_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "support_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_email_outbox_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_messages: {
+        Row: {
+          author_id: string
+          body: string
+          client_request_id: string
+          created_at: string
+          id: string
+          is_internal: boolean
+          organization_id: string
+          ticket_id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          client_request_id: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          organization_id: string
+          ticket_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          client_request_id?: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          organization_id?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_settings: {
+        Row: {
+          created_at: string
+          logo_url: string | null
+          next_ticket_number: number
+          organization_id: string
+          portal_enabled: boolean
+          support_hours: string | null
+          support_name: string
+          time_zone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          logo_url?: string | null
+          next_ticket_number?: number
+          organization_id: string
+          portal_enabled?: boolean
+          support_hours?: string | null
+          support_name: string
+          time_zone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          logo_url?: string | null
+          next_ticket_number?: number
+          organization_id?: string
+          portal_enabled?: boolean
+          support_hours?: string | null
+          support_name?: string
+          time_zone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          assignee_id: string | null
+          category_id: string | null
+          client_request_id: string
+          closed_at: string | null
+          created_at: string
+          description: string
+          id: string
+          organization_id: string
+          priority: string
+          reference: string
+          requester_id: string
+          resolved_at: string | null
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          category_id?: string | null
+          client_request_id: string
+          closed_at?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          organization_id: string
+          priority?: string
+          reference: string
+          requester_id: string
+          resolved_at?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string | null
+          category_id?: string | null
+          client_request_id?: string
+          closed_at?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          organization_id?: string
+          priority?: string
+          reference?: string
+          requester_id?: string
+          resolved_at?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "support_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_members: {
         Row: {
           created_at: string | null
@@ -4935,6 +5329,75 @@ export type Database = {
           p_user_id?: string
         }
         Returns: string
+      }
+      support_add_attachment: {
+        Args: {
+          _internal: boolean
+          _message: string
+          _mime: string
+          _name: string
+          _path: string
+          _size: number
+          _ticket: string
+        }
+        Returns: string
+      }
+      support_add_message: {
+        Args: {
+          _body: string
+          _client_request_id: string
+          _internal: boolean
+          _ticket: string
+        }
+        Returns: string
+      }
+      support_can_view_ticket: { Args: { _ticket: string }; Returns: boolean }
+      support_claim_invitations: { Args: never; Returns: number }
+      support_create_ticket: {
+        Args: {
+          _category: string
+          _client_request_id: string
+          _description: string
+          _org: string
+          _priority: string
+          _subject: string
+        }
+        Returns: string
+      }
+      support_is_agent: { Args: { _org: string }; Returns: boolean }
+      support_is_customer: { Args: { _org: string }; Returns: boolean }
+      support_is_manager: { Args: { _org: string }; Returns: boolean }
+      support_notify: {
+        Args: { _msg: string; _title: string; _user: string }
+        Returns: undefined
+      }
+      support_outbox_claim: {
+        Args: { _limit?: number }
+        Returns: {
+          attempts: number
+          id: string
+          kind: string
+          recipient_user_id: string
+          reference: string
+          reply_body: string
+          subject: string
+          support_name: string
+        }[]
+      }
+      support_outbox_finish: {
+        Args: { _id: string; _outcome: string; _reply: string }
+        Returns: undefined
+      }
+      support_update_ticket: {
+        Args: {
+          _assignee: string
+          _category: string
+          _priority: string
+          _set_assignee: boolean
+          _status: string
+          _ticket: string
+        }
+        Returns: undefined
       }
       template_usage_counts: {
         Args: never
