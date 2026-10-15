@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import TicketThread from '@/components/support/TicketThread';
 import NewTicketForm from '@/components/support/NewTicketForm';
 import AgentManager from '@/components/support/AgentManager';
-import { STATUS_LABEL, TICKET_STATUSES, invitationState, type TicketStatus } from '@/lib/supportTicket';
+import { STATUS_LABEL, TICKET_STATUSES, invitationState, repeatInviteMessage, type TicketStatus } from '@/lib/supportTicket';
 import * as svc from '@/services/supportService';
 import OrganizationSwitcher from '@/components/OrganizationSwitcher';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
