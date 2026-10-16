@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Disposable local Postgres (port 55435). Never touches production. Prelude reuses the support harness fixture.
 set -u
-D=/tmp/onbpg; S=/tmp/onbsock; rm -rf $D $S /tmp/onbrun; mkdir -p $D $S /tmp/onbrun/docs; chown lovable $D $S /tmp/onbrun
-R="setpriv --reuid=1000 --regid=1000 --clear-groups"
+D=/tmp/onbpg; S=/tmp/onbsock; rm -rf $D $S /tmp/onbrun; mkdir -p $D $S /tmp/onbrun/docs; U=${PG_RUN_USER:-lovable}; chown $U $D $S /tmp/onbrun
+R="setpriv --reuid=$U --regid=$(id -gn $U) --clear-groups"
 $R initdb -U postgres -D $D >/dev/null && $R pg_ctl -D $D -o "-p 55435 -k $S" -l $S/log start >/dev/null && sleep 2
 cp -r docs/support-ticketing-2026-10-15 docs/onboarding-2026-10-15 /tmp/onbrun/docs/
 sed -n '1,57p' docs/support-ticketing-2026-10-15/test.sql > /tmp/onbrun/prelude.sql

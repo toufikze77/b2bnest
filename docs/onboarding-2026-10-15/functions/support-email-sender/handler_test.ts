@@ -42,6 +42,10 @@ Deno.test("email is plain text, has no attachments, and points to the portal", (
   const m = buildEmail(row({ subject: "Line1\r\nBcc: evil@x" }), "https://p/portal");
   assert(!m.subject.includes("\n")); assert(m.text.includes("https://p/portal")); assert(m.text.includes("only available in the portal"));
 });
+Deno.test("reply email carries no reply text, only the portal link", () => {
+  const m = buildEmail(row({ reply_body: "CONFIDENTIAL quote 1234" }), "https://p/portal");
+  assert(!m.text.includes("CONFIDENTIAL")); assert(!m.subject.includes("CONFIDENTIAL")); assert(m.text.includes("https://p/portal"));
+});
 
 Deno.test("status email: status only, no message text; feedback line only when closed and switched on", () => {
   const m = buildEmail(row({ kind: "status_change", reply_body: "SECRET", ticket_status: "closed", feedback_enabled: true }), "https://p");
