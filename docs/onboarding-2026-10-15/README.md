@@ -1,4 +1,4 @@
-# Ticketing onboarding package: revision 3, PREPARED, NOT APPLIED
+# Ticketing onboarding package: revision 4, PREPARED, NOT APPLIED
 
 Target when approved: production `gvftvswyrevummbvyhxa`. Nothing here is applied, deployed, sent or published. Email sending
 stays off until a bounded delivery test is explicitly approved. Old queued emails are never drained.
@@ -17,29 +17,39 @@ own PR; exact auth callback URLs; existing Microsoft 365 / Supabase Auth email s
 - 10 companies. 4 have no active owner (only an admin). One owner account owns 3 companies.
 - The onboarding screens are already on `main`. Until the migration is applied they show "needs an approved database update".
 
-## Seats: one allowance per paying owner (decision 1)
+## Billing owner and seats (revision 4)
 
-| Rule | Implementation (`_seat_pool`, `_org_billing_owner`, `_seat_already_counted`) |
+**What exists on live (read-only, 2026-10-16):** there is no company → subscription link. `subscribers` is keyed by user only,
+`organizations.subscription_tier` is `free` on all 10 companies, and `organizations.created_by` (never changes) records each
+company's creator. In 6 companies the creator is still the active owner. In 4 the creator is only an admin, because the sign-up
+trigger `handle_new_user` creates each new user's personal company with the creator as **admin** (unchanged here; see blockers).
+
+**New schema (in `proposal.sql`, not applied):** `organization_billing(organization_id PK, billing_user_id, source, set_by, set_at, note)`.
+Readable by that company's owners/admins; not writable through the API.
+
+| Rule | How |
 | --- | --- |
-| Who owns the subscription for a company | Its **billing owner**: the earliest-joined active member with role `owner`. Live has no company with two active owners. |
-| Which companies share the allowance | Every company whose billing owner is the same account (the "pool"). |
-| Limit | Billing owner's `subscribers` row with `subscribed = true` → that plan's `platform_plans.member_limit`. |
-| Free | Not subscribed → the `free` plan's `member_limit`. |
-| No stored limit | No cap (`basis = …:no_limit_configured`). **This is every account today**, since `platform_plans` is empty. |
-| Company with no active owner | Not attributable → no cap, reported as `no_owner` (4 live companies). Needs an owner before limits mean anything. |
-| Who uses a seat | Unique active staff accounts across the pool: one person in 3 companies uses 1 seat. Support customers never use seats. |
-| Pending invitations | Reserve one seat per unique email across the pool, only if that person isn't already counted staff. |
-| No double-counting | Accepting turns the reservation into the seat (pending −1, used +1). Inviting someone already counted, or already invited in another pooled company, needs no new seat. |
-| Concurrency | Every invitation and acceptance in a pool takes the same pool lock, so concurrent requests can't exceed the cap. |
-| Over-limit accounts | Nobody is removed. New invitations are refused while staff + pending ≥ limit, and acceptances while staff ≥ limit. Removing someone frees a seat. |
-| Complimentary accounts | No complimentary-entitlement table exists. Accounts that were given Enterprise during test-key use resolve through their current `subscribers` row like anyone else. **Decision still needed** (from the billing backlog) before limits are activated. |
-| Activation | Not part of this package. It needs plan limits stored, the complimentary decision, and one more guard: today an admin can re-activate a deactivated member (UPDATE `is_active`) without a seat check. |
+| Who pays for a company | Its row in `organization_billing`. Never inferred from roles or join dates. |
+| Initial mapping | Seeded only where `created_by` is the active owner (6 companies, `source = seeded_creator_owner`). |
+| New companies | When the company's creator is inserted as its first member (all four creation paths do this), the guard records them (`company_created`). Someone else joining first gets no billing row. |
+| Changes / repairs | Only `platform_set_billing_owner(org, user, reason)`: platform super admins, target must be an active member, reason stored with who and when (`platform_admin`). |
+| Ownership transfer | Changing roles never changes `organization_billing`, so the subscription and seat pool don't move silently. |
+| Pool | All companies with the same `billing_user_id` share one allowance. Unique staff counted once; one reservation per pending email; support customers never count. |
+| Caps | Off: `_seat_caps_enabled()` returns `false`. Turning it on needs a later approved migration, after the plan limits and complimentary-access decisions. |
+| No billing owner (4 live companies) | Current members keep access. New invitations, adds and re-activations are refused ("ask B2BNEST support to repair"), until a super admin sets the billing owner. |
+| Over limit (when caps are on later) | Nobody is removed. An invitation's own reservation lets its acceptance in, first come first served. A direct add or re-activation must fit beside all reservations. |
+
+**One enforcement point:** `organization_members_guard` (BEFORE INSERT OR UPDATE on `organization_members`) runs for every route
+that adds or re-activates staff: invitation acceptance, admins' direct API update of `is_active`, Edge Functions using the
+service role, and the definer functions `create_team_with_owner`, `ensure_user_has_org`, `create_user_organization` and
+`handle_new_user`. It takes the pool lock, then checks customer separation, billing owner and seats. Deactivations and role
+changes of active members are never blocked. Direct INSERT is also revoked from `anon`/`authenticated`.
 
 ## Review items A–E
 
 | Item | Status |
 | --- | --- |
-| A. Seats | As above. Tested: pooled counting across 2 companies, shared staff counted once, cross-company pending counted once, already-counted invitee allowed at a full pool, customers excluded, no-owner company, Free fallback, over-limit refusal with nobody removed. |
+| A. Seats | As above. Tested: pooled counting, shared staff counted once, cross-company pending counted once, re-activation via admin API and server-side blocked when full, direct server-side add blocked, ownerless company blocked but existing access kept, authorised repair, ownership transfer not switching billing, creator-only bootstrap, Free fallback, over-limit with nobody removed, and two simultaneous adds with one free seat (exactly one succeeds). |
 | B. Staff/customer | Per company. A customer of A can be staff of B. In the same company, converting requires removing customer access first. Members can only join through an invitation (direct inserts closed). |
 | C. Notifications | Customer replies notify the assignee, or all agents plus owners/admins if unassigned. Customer reopen notifies staff. Staff replies notify the customer once. Private notes and files never reach customers. |
 | C. Email content (decision 2) | Link-only: support name, ticket reference, event/status and a portal link that opens the right company and ticket. No reply text, notes or attachments. |
@@ -59,44 +69,61 @@ own PR; exact auth callback URLs; existing Microsoft 365 / Supabase Auth email s
   switch says no emails are sent yet. The staff reply box says the customer sees replies in the portal and gets no email.
   Invitation rows say "Invitation saved — email not sent".
 
-## NG TELECOM (decision 3): inventory only, nothing moved or renamed
+## NG TELECOM (decision 3: separate organisation, Dev Team preserved). Prepared only, nothing done
 
-- There is **no organisation named NG TELECOM**. "NG TELECOM" is only the support display name configured on
-  **Dev Team** (`136792c5-1268-482f-ae83-b2da315403fd`).
-- Support data owned by Dev Team: 1 ticket (`T-00001`, resolved, raised by Dev Team's own owner, so a staff test with
-  0 messages and 0 files); 3 invited customers (domains ngtelecom.co.uk, outlook.com, gmail.com; none has signed in); 0 agents.
-- Other organisations (id prefix · name · active roles · tickets): `69fd39aa` admin@example.com's Organization (owner, 0);
-  `d6f6fd55` Admin (owner, 0); `6a269cba` Toufik Zemri's Organization (owner+member, 0); `7cc67f87` Toufik Zemri's
-  Organization (owner, 0); `d2d372cd` toufik zemri's Organization (owner, 0); `ab413f58` Toufik Zemri's Organization
-  (admin only, 0); `11067c68` bayken net's Organization (suspended, admin only, 0); `06875fdf` Adam Zemri's Organization
-  (admin only, 0); `f9a9309d` CHIWA COIN's Organization (admin only, 0). Full ids are in the query output, available on request.
-- **Proposal, awaiting your choice:** either (a) create a proper "NG TELECOM" organisation and set up support there,
-  re-inviting the 3 customers (nothing to migrate except the test ticket), or (b) rename Dev Team. Nothing will be changed
-  until you pick one.
+- Today: no NG TELECOM organisation. "NG TELECOM" is only the support display name on Dev Team (`136792c5-1268-482f-ae83-b2da315403fd`),
+  which holds 1 staff test ticket (`T-00001`) and 3 invited customers who have never signed in. Nothing is moved, renamed or re-invited.
+- Normal authorised creation flow (the only one in the app): signed in as the intended NG TELECOM owner →
+  Projects & tasks → Teams → **Create team** → name "NG TELECOM". This calls `create_team_with_owner`, which makes the caller
+  owner and, with this package applied, records them as billing owner (verified on a local copy of the production schema).
+- Then, in the new company: Support desk → Setup → support name "NG TELECOM", categories, portal on.
+- Later steps, each only when you say so: invite the 3 customers in the new company. Then change Dev Team's support name back to
+  something else, or revoke its 3 unused customer invitations. The test ticket stays in Dev Team.
+- Do it after the migration, so the new company gets its billing owner the normal way (before it, the billing row would be
+  seeded only if the creator is still owner at migration time).
 
 ## Files
 
 | Item | Path |
 | --- | --- |
-| Migration (one transaction) | `proposal.sql` (sha256 `f19d7ce6f03f15fa2f656c8db778d31ae3cc097a91972f038ff843b0805db55d`) |
-| Export before rollback / Rollback | `export.sql` / `rollback.sql` (sha256 `f3b407ba4e00a9de378c6c45b74737c6b961057a8df1a2b96400aecc655c695a`) |
+| Migration (one transaction) | `proposal.sql` (sha256 `52955994f2d4bbee1bc5e28f580437c3ec146b7302a02a1ae0f5c5161e51c299`) |
+| Export before rollback / Rollback | `export.sql` / `rollback.sql` (sha256 `ce4283aaa449bce48e46842a5daf40ce318f107bf1d72cc623f4eaacb261c76d`) |
 | DB tests / runner | `test.sql`, `run-test.sh` (`PG_RUN_USER=postgres bash docs/onboarding-2026-10-15/run-test.sh`) |
 | Senders | `functions/onboarding-email-sender/`, `functions/support-email-sender/` (inert until `*_EMAIL_ENABLED=true`) |
 | Auth callbacks | `AUTH-CALLBACKS.md` |
 
-## Tests run on 2026-10-16
+## Old queued email (decision 6)
 
-| Suite | Where | Result |
-| --- | --- | --- |
-| `test.sql` (120 checks) | Throwaway local PostgreSQL 16, mirrored fixture; **not** production | 120 passed |
-| Support sender | Deno 2, mocked SMTP (the `deno.land` asserts import mapped to a `node:assert` shim; deno.land is blocked here) | 11 passed |
-| Invitation sender | Same | 6 passed |
-| App unit tests (`vitest`) | jsdom, mocked Supabase | 174 passed, 3 failed. The 3 are WorkflowStudio tests that fail on `main` too; they're fixed in the audit PR. |
+The migration cancels exactly one row, by id, and only if it is still pending: `support_email_outbox`
+`a0ff58dd-c038-49ca-a212-e58bed67923e`. It's an `acknowledgement` ("we've received your ticket") for Dev Team's `T-00001`, queued
+2026-10-15 01:32 UTC when Dev Team's owner raised a test ticket, addressed to that same owner. 0 attempts; it was never sent.
+Why: the ticket is a resolved staff test, so sending it after approval would be a stale, misleading email. Any other queued
+email, now or later, is left untouched for the sender-approval step. Rollback leaves this one cancelled.
 
-Not tested: signed-in screens in a browser, a real Supabase Auth confirmation email, and any real email send.
+## Release: PR #10 + PR #11 (decision 4)
+
+- **Dependency:** the two PRs touch no files in common and merge cleanly. #11 does not need #10's code, but it does need #10 to
+  build and test. `main` has no `vercel.json` and its lockfile is out of date: npm 10 crashes on install
+  (reproduced here), and that's why the `b2bnest` Vercel build of #11 fails. #10 also fixes the 3 failing WorkflowStudio tests.
+  **Release order: merge #10 first, then #11.**
+- Exact combined tree tested: merge `dc2c17c` (branch `claude/release-10-11`, preview only, no PR). It has #10 at `beff226` and #11 at `7ce4736`.
+
+| Check on the combined tree (2026-10-16) | Result |
+| --- | --- |
+| `npm ci` with npm 10.9.4 (Vercel's) | passes |
+| `npm run build` | passes |
+| `tsc -p tsconfig.app.json` | passes |
+| `vitest run` (all) | **187/187 passed**; the 3 known failures are resolved |
+| ESLint on changed source files | no new errors (2 files have fewer) |
+| SQL on a production-shaped schema: baseline + 14 later migrations (incl. #10's two) + `proposal.sql` | all apply; smoke: `create_team_with_owner` and #10's `ensure_user_has_org` work through the guard and record the billing owner |
+| `test.sql` (throwaway PG16, mirrored fixture) | 139/139, plus the concurrency check |
+| Senders (Deno, mocked SMTP) | 11/11 and 6/6 (unchanged since rev 3) |
+
+Not tested: real browser sessions, a real Supabase confirmation email, any real email.
 
 ## Release order (each step separately approved)
 
+0. Merge PR #10, then PR #11 (code only; nothing in the database changes).
 1. Run `export.sql`, then apply `proposal.sql` in one transaction. Check:
    `select to_regclass('public.onboarding_email_outbox'), has_table_privilege('authenticated','public.organization_members','INSERT')`
    → present, `false`.
