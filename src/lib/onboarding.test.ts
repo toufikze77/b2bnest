@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { invitableRoles, safeNext, staffInviteLink, customerPortalLink, emailStatusLabel, staffInvitationState, seatsFull, canSubmitFeedback } from './onboarding';
+import { invitableRoles, safeNext, staffInviteLink, customerPortalLink, emailStatusLabel, staffInvitationState, seatsFull, canSubmitFeedback, seatSummaryText, EMAIL_OFF_NOTICE } from './onboarding';
 
 describe('onboarding rules', () => {
   it('owners invite admin/manager/member, admins only manager/member, others nothing, never owner', () => {
@@ -45,5 +45,19 @@ describe('onboarding rules', () => {
     expect(canSubmitFeedback('resolved', true, false)).toBe(false);
     expect(canSubmitFeedback('closed', false, false)).toBe(false);
     expect(canSubmitFeedback('closed', true, true)).toBe(false);
+  });
+});
+
+describe('seat summary text (one allowance per paying owner)', () => {
+  it('mentions pooling only when the plan covers several companies', () => {
+    expect(seatSummaryText({ used: 7, pending: 1, seat_limit: 25, pooled_companies: 3, basis: 'subscription:professional' }))
+      .toBe("Seats: 7 staff + 1 pending invitation across 3 companies on the same plan of 25. Support customers don't use seats.");
+    expect(seatSummaryText({ used: 2, pending: 0, seat_limit: null, pooled_companies: 1 })).toContain('no limit set');
+  });
+  it('explains companies without an owner', () => {
+    expect(seatSummaryText({ used: 1, pending: 0, seat_limit: null, pooled_companies: 1, basis: 'no_owner' })).toContain('no active owner');
+  });
+  it('email-off notice never implies sending', () => {
+    expect(EMAIL_OFF_NOTICE).toMatch(/switched off/); expect(EMAIL_OFF_NOTICE).toMatch(/nothing is emailed/);
   });
 });

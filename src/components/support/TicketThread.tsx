@@ -6,6 +6,7 @@ import { PriorityBadge } from '@/components/data/StatusBadge';
 import { useToast } from '@/hooks/use-toast';
 import { STATUS_LABEL, customerCanReopen, customerCanReply, validateFile, MAX_TEXT, type TicketStatus } from '@/lib/supportTicket';
 import * as svc from '@/services/supportService';
+import { EMAIL_SENDING_ENABLED } from '@/services/onboardingService';
 import { Lock, Paperclip } from 'lucide-react';
 
 /** Conversation for one ticket. Staff see private notes (database decides); customers never receive them. */
@@ -116,6 +117,7 @@ export default function TicketThread({ ticketId, staff, onChanged }: { ticketId:
             <Button disabled={saving || !body.trim()} onClick={send}>{saving ? 'Saving…' : internal ? 'Save note' : 'Send reply'}</Button>
           </div>
           <p className="text-xs text-muted-foreground">Up to 10 MB: images, PDF, text, CSV, Word or Excel. Please don't include patient records or other sensitive personal data.</p>
+          {staff && !internal && !EMAIL_SENDING_ENABLED && <p className="text-xs text-muted-foreground">The customer sees replies in their portal with an in-app notice. Support emails are switched off, so no email is sent.</p>}
         </div>
       ) : <p className="text-sm text-muted-foreground">This ticket is closed.</p>}
 

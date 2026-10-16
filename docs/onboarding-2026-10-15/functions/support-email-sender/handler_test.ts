@@ -1,5 +1,5 @@
 import { assertEquals, assert } from "https://deno.land/std@0.190.0/testing/asserts.ts";
-import { makeHandler, buildEmail, BeforeDataError, type Claimed, type Deps } from "./handler.ts";
+import { makeHandler, buildEmail, BeforeDataError, smtpOnly, ticketLink, type Claimed, type Deps } from "./handler.ts";
 
 const row = (o: Partial<Claimed> = {}): Claimed => ({ id: "1", kind: "public_reply", recipient_user_id: "u", attempts: 1,
   support_name: "Acme Support", reference: "T-00001", subject: "Printer", reply_body: "We fixed it", ...o });
@@ -51,4 +51,18 @@ Deno.test("status email: status only, no message text; feedback line only when c
   const m = buildEmail(row({ kind: "status_change", reply_body: "SECRET", ticket_status: "closed", feedback_enabled: true }), "https://p");
   assert(m.subject.includes("Closed")); assert(!m.text.includes("SECRET")); assert(m.text.includes("rate"));
   assert(!buildEmail(row({ kind: "status_change", ticket_status: "open", feedback_enabled: true }), "https://p").text.includes("rate"));
+});
+
+Deno.test("link opens the right company and ticket; carries no ticket text", async () => {
+  const { d, sent } = deps([row({ organization_id: "org-1", ticket_id: "t-9", reply_body: "SECRET" })], async () => "250");
+  await makeHandler(d)(req());
+  assert(sent[0].includes("https://www.b2bnest.online/support/portal?org=org-1&ticket=t-9")); assert(!sent[0].includes("SECRET"));
+  assertEquals(ticketLink("https://p/portal", {}), "https://p/portal");
+});
+Deno.test("only SMTP_* (Microsoft 365) settings are accepted; Gmail fallback and missing settings refused before sending", () => {
+  assertEquals(smtpOnly({ provider: "smtp" }).provider, "smtp");
+  let e1: unknown, e2: unknown;
+  try { smtpOnly({ provider: "gmail" }); } catch (e) { e1 = e; }
+  try { smtpOnly(null); } catch (e) { e2 = e; }
+  assert(e1 instanceof BeforeDataError); assert(e2 instanceof BeforeDataError);
 });

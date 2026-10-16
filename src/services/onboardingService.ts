@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import type { StaffInvitation, EmailStatus } from '@/lib/onboarding';
+import type { StaffInvitation, EmailStatus, SeatSummary } from '@/lib/onboarding';
 
 // RPCs/tables come from docs/onboarding-2026-10-15/proposal.sql, which is NOT applied yet; absent from generated types.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -25,7 +25,7 @@ export const inviteMember = async (org: string, email: string, role: string) => 
 export const invitationToken = (id: string) => run<string>(db.rpc('org_invitation_token', { _invitation: id }));
 export const manageInvitation = (id: string, action: 'revoke' | 'extend') => run(db.rpc('org_manage_invitation', { _invitation: id, _action: action }));
 export const seatSummary = async (org: string) =>
-  (await run<{ used: number; pending: number; seat_limit: number | null }[]>(db.rpc('org_seat_summary', { _org: org })))[0];
+  (await run<SeatSummary[]>(db.rpc('org_seat_summary', { _org: org })))[0];
 export const emailStatuses = (org: string) => run<{ invitation_id: string; kind: string; status: EmailStatus }[]>(db.rpc('onboarding_email_status', { _org: org }));
 export const previewInvitation = async (token: string) =>
   (await run<{ company: string | null; role: string | null; masked_email: string | null; state: string; email_matches: boolean }[]>(

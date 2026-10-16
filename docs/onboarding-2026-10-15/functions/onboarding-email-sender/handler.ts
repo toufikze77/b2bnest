@@ -10,6 +10,12 @@ export type Deps = { env: (n: string) => string | undefined; isServiceCall: (h: 
   send: (to: string, subject: string, text: string) => Promise<string> };
 const clean = (s: string) => s.replace(/[\r\n]+/g, " ").slice(0, 120);
 
+/** Invitation email goes only through the SMTP_* (Microsoft 365) settings; the old Gmail fallback is refused. */
+export function smtpOnly<T extends { provider: string }>(cfg: T | null): T {
+  if (!cfg || cfg.provider !== "smtp") throw new BeforeDataError("SMTP_* (Microsoft 365) settings are required; Gmail fallback is disabled");
+  return cfg;
+}
+
 export function buildEmail(c: Claimed, origin: string): { subject: string; text: string } | null {
   const base = origin.replace(/\/$/, "");
   if (c.kind === "staff_invitation") {

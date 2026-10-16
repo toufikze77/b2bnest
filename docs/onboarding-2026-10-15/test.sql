@@ -109,6 +109,34 @@ SELECT t('AD accepts (7th seat)','ad@new.test',$$SELECT org_accept_invitation((S
 SELECT t('Q refused: no free seats','q@new.test',$$SELECT org_accept_invitation((SELECT v FROM ids WHERE k='q'))$$,'ERROR:no free seats');
 SELECT ok('Q did not become a member', NOT EXISTS (SELECT 1 FROM organization_members WHERE user_id='cccccccc-0000-4000-8000-000000000015'));
 SELECT ok('Plans and subscriptions untouched by the RPCs', (SELECT member_limit FROM platform_plans)=7 AND (SELECT count(*) FROM subscribers)=1);
+-- Revision 3: one allowance per paying owner across its companies (O3 is a second company billed by OW)
+INSERT INTO organizations(id,name) VALUES ('00000000-0000-0000-0000-0000000000a3','O3');
+INSERT INTO organization_members(organization_id,user_id,role) VALUES
+ ('00000000-0000-0000-0000-0000000000a3','88888888-0000-4000-8000-000000000012','owner'),
+ ('00000000-0000-0000-0000-0000000000a3','22222222-0000-4000-8000-00000000000a','member'); -- G works for O1 and O3
+SELECT t('Pool summary from O3: same 7 staff (G once), 1 pending, limit 7, 2 companies','ow@o1.test',$$SELECT 1 FROM org_seat_summary('00000000-0000-0000-0000-0000000000a3') WHERE used=7 AND pending=1 AND seat_limit=7 AND pooled_companies=2 AND basis='subscription:team'$$,'ROWS=1');
+SELECT t('Full pool: a brand-new person cannot be invited into O3','ow@o1.test',$$SELECT org_invite_member('00000000-0000-0000-0000-0000000000a3','n@new.test','member')$$,'ERROR:seat limit');
+SELECT t('Full pool: S (already counted via O1) can still be invited into O3','ow@o1.test',$$INSERT INTO ids SELECT 's3', token FROM org_invite_member('00000000-0000-0000-0000-0000000000a3','s@o1.test','member') WHERE outcome='created'$$,'ROWS=1');
+SELECT t('Full pool: Q (already reserved in O1) can still be invited into O3','ow@o1.test',$$SELECT 1 FROM org_invite_member('00000000-0000-0000-0000-0000000000a3','q@new.test','member') WHERE outcome='created'$$,'ROWS=1');
+SELECT t('Q invited in two pooled companies still reserves one seat','ow@o1.test',$$SELECT 1 FROM org_seat_summary('00000000-0000-0000-0000-0000000000a1') WHERE used=7 AND pending=1$$,'ROWS=1');
+SELECT t('S accepts O3 at a full pool (already holds a seat)','s@o1.test',$$SELECT org_accept_invitation((SELECT v FROM ids WHERE k='s3'))$$,'ROWS=1');
+SELECT ok('S is in O3 and still counted once', EXISTS (SELECT 1 FROM organization_members WHERE organization_id='00000000-0000-0000-0000-0000000000a3' AND user_id='33333333-0000-4000-8000-00000000000b')
+  AND (SELECT used FROM _seat_pool('00000000-0000-0000-0000-0000000000a1'))=7);
+INSERT INTO support_customers(organization_id,email,invited_by) VALUES ('00000000-0000-0000-0000-0000000000a3','c3@client.test','88888888-0000-4000-8000-000000000012');
+SELECT ok('Support customers never use seats', (SELECT used + pending FROM _seat_pool('00000000-0000-0000-0000-0000000000a3'))=8);
+UPDATE support_customers SET revoked_at=now() WHERE email='c3@client.test'; -- sample only; keeps the later sender checks unchanged
+SELECT t('O2 has no active owner: reported as no_owner, no cap','x@o2.test',$$SELECT 1 FROM org_seat_summary('00000000-0000-0000-0000-0000000000a2') WHERE seat_limit IS NULL AND basis='no_owner' AND pooled_companies=1$$,'ROWS=1');
+SELECT ok('Another owner''s company is not in OW''s pool', (SELECT pooled_companies FROM _seat_pool('00000000-0000-0000-0000-0000000000a2'))=1
+  AND '00000000-0000-0000-0000-0000000000a2' NOT IN (SELECT _seat_pool_orgs('00000000-0000-0000-0000-0000000000a1')));
+SELECT t('Q''s second invitation revoked (keeps later sender checks unchanged)','ow@o1.test',$$SELECT org_manage_invitation((SELECT id FROM organization_invitations WHERE organization_id='00000000-0000-0000-0000-0000000000a3' AND email='q@new.test'),'revoke')$$,'ROWS=1');
+UPDATE subscribers SET subscribed=false;
+INSERT INTO platform_plans(key,member_limit) VALUES ('free',1);
+SELECT ok('Unsubscribed owner falls back to the Free plan limit', (SELECT basis='free' AND seat_limit=1 FROM _seat_pool('00000000-0000-0000-0000-0000000000a1')));
+SELECT t('Over the limit: nobody is removed, new invitations are refused','ow@o1.test',$$SELECT org_invite_member('00000000-0000-0000-0000-0000000000a1','n2@new.test','member')$$,'ERROR:seat limit');
+SELECT ok('Over-limit members all still active', (SELECT used FROM _seat_pool('00000000-0000-0000-0000-0000000000a1'))=7);
+DELETE FROM platform_plans WHERE key='free';
+SELECT ok('No plan limit stored: no cap', (SELECT seat_limit IS NULL AND basis='no_plan:no_limit_configured' FROM _seat_pool('00000000-0000-0000-0000-0000000000a1')));
+SELECT t('Seat helpers are not callable by signed-in users','ow@o1.test',$$SELECT * FROM _seat_pool('00000000-0000-0000-0000-0000000000a1')$$,'ERROR');
 DELETE FROM subscribers; -- back to "no limit configured" for the rest
 
 -- CUSTOMERS stay separate

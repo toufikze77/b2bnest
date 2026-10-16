@@ -39,6 +39,19 @@ export function staffInvitationState(i: StaffInvitation, now = Date.now()): 'Joi
   return Date.parse(i.expires_at) <= now ? 'Expired' : 'Pending';
 }
 
+/** Shown wherever email would otherwise be implied, until a bounded delivery test is approved and sending is switched on. */
+export const EMAIL_OFF_NOTICE = 'Email sending is switched off: nothing is emailed. Copy the link and send it yourself; updates appear in B2BNEST.';
+
+export type SeatSummary = { used: number; pending: number; seat_limit: number | null; pooled_companies?: number | null; basis?: string | null };
+/** Seats are one allowance per paying owner, shared by every company that owner bills for (unique staff counted once). */
+export function seatSummaryText(s: SeatSummary): string {
+  const scope = (s.pooled_companies ?? 1) > 1 ? ` across ${s.pooled_companies} companies on the same plan` : '';
+  const counts = `${s.used} staff + ${s.pending} pending invitation${s.pending === 1 ? '' : 's'}${scope}`;
+  if (s.basis === 'no_owner') return `Seats: ${counts}. This company has no active owner, so no plan limit can apply.`;
+  return s.seat_limit !== null ? `Seats: ${counts} of ${s.seat_limit}. Support customers don't use seats.`
+    : `Seats: ${counts} (no limit set on your plan). Support customers don't use seats.`;
+}
+
 /** Client-side mirror of the seat check (server decides). null limit = no limit configured. */
 export const seatsFull = (used: number, pending: number, limit: number | null) => limit !== null && used + pending >= limit;
 

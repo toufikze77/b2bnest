@@ -4,6 +4,8 @@
 -- Adds: staff invitation create/revoke/extend/accept RPCs with role + seat checks; invitation email queue (server-only);
 -- customer invitation emails; ticket status notifications; per-company email opt-out; optional closure feedback.
 -- Does NOT change plans, prices, Stripe, subscriptions, existing members or existing customer invitations.
+-- Revision 3 (2026-10-16): one seat allowance per paying owner across the companies it bills (unique staff counted once);
+-- staff/customer email links carry the company and ticket. Still no limit is activated.
 -- Revision 2 (2026-10-16): staff are notified of customer replies on unassigned tickets and of customer reopens; no duplicate
 -- "status changed" notice on the first staff reply; direct member inserts closed (invitations are the only way in);
 -- ticket emails queued before sending was approved are cancelled, never sent.
@@ -57,24 +59,74 @@ REVOKE ALL ON public.onboarding_email_outbox FROM anon, authenticated;
 GRANT ALL ON public.onboarding_email_outbox TO service_role;
 ALTER TABLE public.onboarding_email_outbox ENABLE ROW LEVEL SECURITY; -- no policies on purpose: server-only
 
--- 3. Seats: counted server-side from the owner's existing plan. No limit configured = no cap (plans are not changed here).
-CREATE FUNCTION public._org_seats(_org uuid) RETURNS TABLE(used int, pending int, seat_limit int)
+-- 3. Seats: ONE allowance per paying owner, shared by every company that owner bills for (owner decision 2026-10-16).
+--    Billing owner of a company = its earliest-joined active owner. No active owner -> not attributable -> no cap ('no_owner').
+--    Limit = billing owner's active subscription plan member_limit; not subscribed -> the 'free' plan's member_limit;
+--    no limit stored -> no cap. Staff = unique active member accounts across the pool (counted once however many companies).
+--    Pending = unique emails of live invitations in the pool that are not already counted staff. Support customers never count.
+--    Nothing here activates a limit: platform_plans is empty on live (2026-10-16), so every pool reports no cap.
+CREATE FUNCTION public._org_billing_owner(_org uuid) RETURNS uuid
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $$
-  SELECT (SELECT count(*)::int FROM public.organization_members m WHERE m.organization_id=_org AND m.is_active),
-         (SELECT count(*)::int FROM public.organization_invitations i WHERE i.organization_id=_org
-            AND i.accepted_at IS NULL AND i.revoked_at IS NULL AND i.expires_at > now()),
-         (SELECT max(p.member_limit) FROM public.organization_members ow
-            JOIN public.subscribers s ON s.user_id=ow.user_id AND s.subscribed
-            JOIN public.platform_plans p ON p.key=s.plan_key AND p.is_active
-           WHERE ow.organization_id=_org AND ow.role='owner' AND ow.is_active)
-$$;
-REVOKE ALL ON FUNCTION public._org_seats(uuid) FROM PUBLIC, anon, authenticated;
+  SELECT m.user_id FROM public.organization_members m
+   WHERE m.organization_id=_org AND m.role='owner' AND m.is_active
+   ORDER BY m.joined_at NULLS LAST, m.created_at, m.user_id LIMIT 1 $$;
 
-CREATE FUNCTION public.org_seat_summary(_org uuid) RETURNS TABLE(used int, pending int, seat_limit int)
+CREATE FUNCTION public._seat_pool_orgs(_org uuid) RETURNS SETOF uuid
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $$
+  WITH b AS (SELECT public._org_billing_owner(_org) AS bo)
+  SELECT _org WHERE (SELECT bo FROM b) IS NULL
+  UNION
+  SELECT m.organization_id FROM public.organization_members m, b
+   WHERE b.bo IS NOT NULL AND m.user_id=b.bo AND m.role='owner' AND m.is_active
+     AND public._org_billing_owner(m.organization_id)=b.bo $$;
+
+CREATE FUNCTION public._seat_pool(_org uuid)
+RETURNS TABLE(billing_owner uuid, used int, pending int, seat_limit int, pooled_companies int, basis text)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE _bo uuid := public._org_billing_owner(_org); _lim int; _basis text;
+BEGIN
+  IF _bo IS NULL THEN _basis := 'no_owner';
+  ELSE
+    SELECT p.member_limit, 'subscription:' || p.key INTO _lim, _basis FROM public.subscribers s
+      JOIN public.platform_plans p ON p.key=s.plan_key AND p.is_active
+     WHERE s.user_id=_bo AND s.subscribed LIMIT 1;
+    IF _basis IS NULL THEN
+      SELECT p.member_limit, 'free' INTO _lim, _basis FROM public.platform_plans p WHERE p.key='free' AND p.is_active LIMIT 1;
+    END IF;
+    IF _lim IS NULL THEN _basis := coalesce(_basis, 'no_plan') || ':no_limit_configured'; END IF;
+  END IF;
+  RETURN QUERY
+  WITH pool AS (SELECT public._seat_pool_orgs(_org) AS id),
+  staff AS (SELECT DISTINCT m.user_id FROM public.organization_members m JOIN pool ON pool.id=m.organization_id WHERE m.is_active),
+  staff_emails AS (SELECT lower(u.email) AS e FROM auth.users u JOIN staff ON staff.user_id=u.id WHERE u.email IS NOT NULL),
+  pend AS (SELECT DISTINCT lower(i.email) AS e FROM public.organization_invitations i JOIN pool ON pool.id=i.organization_id
+            WHERE i.accepted_at IS NULL AND i.revoked_at IS NULL AND i.expires_at > now()
+              AND lower(i.email) NOT IN (SELECT e FROM staff_emails))
+  SELECT _bo, (SELECT count(*)::int FROM staff), (SELECT count(*)::int FROM pend), _lim, (SELECT count(*)::int FROM pool), _basis;
+END $$;
+
+-- Does this email already hold (or reserve) a seat in the pool? Then inviting/accepting it needs no new seat.
+CREATE FUNCTION public._seat_already_counted(_org uuid, _email text) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $$
+  SELECT EXISTS (SELECT 1 FROM public.organization_members m JOIN auth.users u ON u.id=m.user_id
+                  WHERE m.is_active AND lower(u.email)=lower(_email) AND m.organization_id IN (SELECT public._seat_pool_orgs(_org)))
+      OR EXISTS (SELECT 1 FROM public.organization_invitations i
+                  WHERE lower(i.email)=lower(_email) AND i.accepted_at IS NULL AND i.revoked_at IS NULL AND i.expires_at > now()
+                    AND i.organization_id IN (SELECT public._seat_pool_orgs(_org))) $$;
+
+-- Serialises every seat decision in one pool (invites and acceptances in any of its companies).
+CREATE FUNCTION public._seat_pool_lock(_org uuid) RETURNS void
+LANGUAGE sql SECURITY DEFINER SET search_path TO '' AS $$
+  SELECT pg_advisory_xact_lock(hashtextextended('seat_pool:' || coalesce(public._org_billing_owner(_org), _org)::text, 0)) $$;
+REVOKE ALL ON FUNCTION public._org_billing_owner(uuid), public._seat_pool_orgs(uuid), public._seat_pool(uuid),
+  public._seat_already_counted(uuid,text), public._seat_pool_lock(uuid) FROM PUBLIC, anon, authenticated;
+
+CREATE FUNCTION public.org_seat_summary(_org uuid)
+RETURNS TABLE(used int, pending int, seat_limit int, pooled_companies int, basis text)
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $$
 BEGIN
   IF NOT public.user_is_organization_admin(_org, auth.uid()) THEN RAISE EXCEPTION 'only company owners and admins can see seats'; END IF;
-  RETURN QUERY SELECT * FROM public._org_seats(_org);
+  RETURN QUERY SELECT p.used, p.pending, p.seat_limit, p.pooled_companies, p.basis FROM public._seat_pool(_org) p;
 END $$;
 REVOKE ALL ON FUNCTION public.org_seat_summary(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.org_seat_summary(uuid) TO authenticated;
@@ -104,9 +156,10 @@ BEGIN
   SELECT * INTO _inv FROM public.organization_invitations i
    WHERE i.organization_id=_org AND lower(i.email)=_e AND i.accepted_at IS NULL AND i.revoked_at IS NULL;
   IF FOUND THEN RETURN QUERY SELECT _inv.id, _inv.token, 'already_pending'; RETURN; END IF;
-  SELECT * INTO s FROM public._org_seats(_org);
-  IF s.seat_limit IS NOT NULL AND s.used + s.pending >= s.seat_limit THEN
-    RAISE EXCEPTION 'seat limit reached: % of % seats used or invited', s.used + s.pending, s.seat_limit;
+  PERFORM public._seat_pool_lock(_org);
+  SELECT * INTO s FROM public._seat_pool(_org);
+  IF s.seat_limit IS NOT NULL AND NOT public._seat_already_counted(_org, _e) AND s.used + s.pending >= s.seat_limit THEN
+    RAISE EXCEPTION 'seat limit reached: % of % seats used or invited across % companies', s.used + s.pending, s.seat_limit, s.pooled_companies;
   END IF;
   INSERT INTO public.organization_invitations(organization_id, email, role, invited_by, token, expires_at)
   VALUES (_org, _e, _role, _me, replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''), now() + interval '7 days')
@@ -186,8 +239,13 @@ BEGIN
   END IF;
   PERFORM pg_advisory_xact_lock(hashtextextended('org_invite:' || i.organization_id::text, 0));
   IF NOT EXISTS (SELECT 1 FROM public.organization_members m WHERE m.organization_id=i.organization_id AND m.user_id=_me AND m.is_active) THEN
-    SELECT * INTO s FROM public._org_seats(i.organization_id);
-    IF s.seat_limit IS NOT NULL AND s.used >= s.seat_limit THEN RAISE EXCEPTION 'this company has no free seats; ask the owner'; END IF;
+    PERFORM public._seat_pool_lock(i.organization_id);
+    SELECT * INTO s FROM public._seat_pool(i.organization_id);
+    -- A member of another company in the same pool already holds a seat; otherwise this invitation's reservation becomes the seat.
+    IF s.seat_limit IS NOT NULL AND s.used >= s.seat_limit AND NOT EXISTS (
+         SELECT 1 FROM public.organization_members m WHERE m.user_id=_me AND m.is_active
+            AND m.organization_id IN (SELECT public._seat_pool_orgs(i.organization_id))) THEN
+      RAISE EXCEPTION 'this company has no free seats; ask the owner'; END IF;
     UPDATE public.organization_members SET is_active=true, role=i.role, invited_by=i.invited_by, joined_at=now(), updated_at=now()
      WHERE organization_id=i.organization_id AND user_id=_me;
     IF NOT FOUND THEN
@@ -348,7 +406,7 @@ UPDATE public.support_email_outbox SET status='cancelled', last_error='queued be
 -- Ticket queue claim now also returns the ticket status and skips recipients who switched email off for that company.
 DROP FUNCTION public.support_outbox_claim(integer);
 CREATE FUNCTION public.support_outbox_claim(_limit integer DEFAULT 20)
-RETURNS TABLE(id uuid, kind text, recipient_user_id uuid, attempts integer, support_name text, reference text, subject text, reply_body text, ticket_status text, feedback_enabled boolean)
+RETURNS TABLE(id uuid, kind text, recipient_user_id uuid, attempts integer, support_name text, reference text, subject text, reply_body text, ticket_status text, feedback_enabled boolean, organization_id uuid, ticket_id uuid)
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
 BEGIN
   UPDATE public.support_email_outbox o SET status='uncertain', last_error='sender stopped mid-send; provider outcome unknown', updated_at=now()
@@ -366,7 +424,7 @@ BEGIN
      FROM due WHERE o.id=due.id RETURNING o.*)
   SELECT u.id, u.kind, u.recipient_user_id, u.attempts, s.support_name, t.reference, t.subject,
          CASE WHEN m.is_internal THEN NULL ELSE m.body END, -- private notes never leave the database
-         t.status, s.feedback_enabled
+         t.status, s.feedback_enabled, u.organization_id, u.ticket_id
     FROM upd u JOIN public.support_tickets t ON t.id=u.ticket_id
     JOIN public.support_settings s ON s.organization_id=u.organization_id
     LEFT JOIN public.support_messages m ON m.id=u.message_id;

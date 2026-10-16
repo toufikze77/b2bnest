@@ -13,7 +13,8 @@ DROP FUNCTION IF EXISTS public.support_ticket_status_notify(), public.support_qu
   public.support_submit_feedback(uuid,integer,text), public.support_feedback_submitted(uuid),
   public.onboarding_outbox_claim(integer), public.onboarding_outbox_finish(uuid,text,text), public.onboarding_email_status(uuid),
   public.org_invite_member(uuid,text,text), public.org_invitation_token(uuid), public.org_manage_invitation(uuid,text),
-  public.org_invitation_preview(text), public.org_accept_invitation(text), public.org_seat_summary(uuid), public._org_seats(uuid);
+  public.org_invitation_preview(text), public.org_accept_invitation(text), public.org_seat_summary(uuid),
+  public._seat_pool_lock(uuid), public._seat_already_counted(uuid,text), public._seat_pool(uuid), public._seat_pool_orgs(uuid), public._org_billing_owner(uuid);
 DROP TABLE IF EXISTS public.support_ticket_feedback, public.support_notification_prefs, public.onboarding_email_outbox;
 ALTER TABLE public.support_settings DROP COLUMN IF EXISTS feedback_enabled;
 DELETE FROM public.support_email_outbox WHERE kind = 'status_change';
