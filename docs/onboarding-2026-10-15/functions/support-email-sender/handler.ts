@@ -22,7 +22,7 @@ export class BeforeDataError extends Error {}
 
 const clean = (s: string) => s.replace(/[\r\n]+/g, " ").slice(0, 150);
 
-/** Plain text only. Never includes private notes (the database already strips them) or attachments. */
+/** Plain text only. Never includes message text, private notes or attachments: status and a portal link. */
 export function buildEmail(c: Claimed, portalUrl: string): { subject: string; text: string } {
   const head = `${clean(c.support_name)} — ${c.reference}`;
   if (c.kind === "acknowledgement") {
@@ -39,9 +39,10 @@ export function buildEmail(c: Claimed, portalUrl: string): { subject: string; te
       text: `The status of your ticket "${clean(c.subject)}" (${c.reference}) is now: ${label[c.ticket_status ?? ""] ?? "updated"}.${fb}\n\nView: ${portalUrl}`,
     };
   }
+  // Link only: the reply text stays in the portal, behind sign-in (email can be forwarded or read by others).
   return {
     subject: `${head}: new reply`,
-    text: `There is a new reply on your ticket "${clean(c.subject)}" (${c.reference}):\n\n${(c.reply_body ?? "").slice(0, 5000)}\n\nView or reply: ${portalUrl}\nAttachments, if any, are only available in the portal.`,
+    text: `There is a new reply on your ticket "${clean(c.subject)}" (${c.reference}).\n\nSign in to read and reply: ${portalUrl}\nAttachments, if any, are only available in the portal.`,
   };
 }
 

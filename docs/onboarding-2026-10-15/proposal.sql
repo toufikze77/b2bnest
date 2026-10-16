@@ -4,6 +4,9 @@
 -- Adds: staff invitation create/revoke/extend/accept RPCs with role + seat checks; invitation email queue (server-only);
 -- customer invitation emails; ticket status notifications; per-company email opt-out; optional closure feedback.
 -- Does NOT change plans, prices, Stripe, subscriptions, existing members or existing customer invitations.
+-- Revision 2 (2026-10-16): staff are notified of customer replies on unassigned tickets and of customer reopens; no duplicate
+-- "status changed" notice on the first staff reply; direct member inserts closed (invitations are the only way in);
+-- ticket emails queued before sending was approved are cancelled, never sent.
 BEGIN;
 
 -- 1. Staff invitations: revocation + accepting account, one live invitation per email per company ----------------
@@ -22,6 +25,11 @@ GRANT SELECT (id, organization_id, email, role, invited_by, expires_at, accepted
 GRANT ALL ON public.organization_invitations TO service_role;
 CREATE POLICY "Company owners and admins can view invitations" ON public.organization_invitations FOR SELECT TO authenticated
   USING (public.user_is_organization_admin(organization_id, auth.uid()));
+
+-- New members join only through org_accept_invitation (or server-side company creation). Live granted INSERT to anon and
+-- authenticated, so owners/admins could add any account id with no invitation, verification, seat or customer check.
+-- No app screen inserts members; role changes (UPDATE) and removals (DELETE) are unchanged.
+REVOKE INSERT ON public.organization_members FROM anon, authenticated;
 
 -- Revoked invitations are no longer returned by the existing token lookup.
 CREATE OR REPLACE FUNCTION public.get_invitation_by_token(p_token text)
@@ -277,21 +285,65 @@ ALTER TABLE public.support_email_outbox DROP CONSTRAINT support_email_outbox_kin
 ALTER TABLE public.support_email_outbox ADD CONSTRAINT support_email_outbox_kind_check
   CHECK (kind IN ('acknowledgement','public_reply','status_change'));
 
+-- Staff to tell about customer activity: the assignee if there is one, otherwise every support agent plus owners/admins.
+CREATE FUNCTION public._support_notify_staff(_org uuid, _assignee uuid, _title text, _msg text) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE _u uuid;
+BEGIN
+  FOR _u IN SELECT DISTINCT x.u FROM (
+      SELECT _assignee AS u WHERE _assignee IS NOT NULL
+      UNION SELECT a.user_id FROM public.support_agents a WHERE _assignee IS NULL AND a.organization_id=_org
+      UNION SELECT om.user_id FROM public.organization_members om
+       WHERE _assignee IS NULL AND om.organization_id=_org AND om.is_active AND om.role IN ('owner','admin')) x
+    WHERE x.u IS DISTINCT FROM auth.uid() LOOP
+    PERFORM public.support_notify(_u, _title, _msg);
+  END LOOP;
+END $$;
+REVOKE ALL ON FUNCTION public._support_notify_staff(uuid,uuid,text,text) FROM PUBLIC, anon, authenticated;
+
+-- Customer public reply on an UNASSIGNED ticket: support_add_message only told the assignee, so nobody heard about it.
+CREATE FUNCTION public.support_message_notify_staff() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE t public.support_tickets;
+BEGIN
+  IF NEW.is_internal OR public.support_is_agent(NEW.organization_id) THEN RETURN NEW; END IF;
+  PERFORM set_config('support.customer_reply', NEW.ticket_id::text, true); -- the reopen notice below is then redundant
+  SELECT * INTO t FROM public.support_tickets WHERE id=NEW.ticket_id;
+  IF t.assignee_id IS NULL THEN
+    PERFORM public._support_notify_staff(t.organization_id, NULL, 'Customer replied on ' || t.reference, t.subject);
+  END IF;
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION public.support_message_notify_staff() FROM PUBLIC, anon, authenticated;
+CREATE TRIGGER support_messages_notify_staff AFTER INSERT ON public.support_messages
+  FOR EACH ROW EXECUTE FUNCTION public.support_message_notify_staff();
+
+-- Status changes: staff-made changes notify the customer (status only, no message text). The automatic New -> Open on the
+-- first staff reply is skipped because the reply notice already went out. A customer reopening tells the staff.
 CREATE FUNCTION public.support_ticket_status_notify() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
 BEGIN
-  IF NEW.status IS DISTINCT FROM OLD.status AND NEW.requester_id IS DISTINCT FROM auth.uid() THEN
+  IF NEW.status IS NOT DISTINCT FROM OLD.status THEN RETURN NEW; END IF;
+  IF NEW.requester_id IS DISTINCT FROM auth.uid() THEN
+    IF OLD.status = 'new' AND NEW.status = 'open' THEN RETURN NEW; END IF;
     PERFORM public.support_notify(NEW.requester_id, 'Status update on ' || NEW.reference, NEW.subject);
     INSERT INTO public.support_email_outbox(organization_id, ticket_id, kind, recipient_user_id, dedupe_key)
     VALUES (NEW.organization_id, NEW.id, 'status_change', NEW.requester_id,
             'status:' || NEW.id || ':' || NEW.status || ':' || extract(epoch from now())::text)
     ON CONFLICT (dedupe_key) DO NOTHING;
+  ELSIF NEW.status = 'open' AND OLD.status IN ('resolved','closed')
+        AND current_setting('support.customer_reply', true) IS DISTINCT FROM NEW.id::text THEN
+    PERFORM public._support_notify_staff(NEW.organization_id, NEW.assignee_id, 'Customer reopened ' || NEW.reference, NEW.subject);
   END IF;
   RETURN NEW;
 END $$;
 REVOKE ALL ON FUNCTION public.support_ticket_status_notify() FROM PUBLIC, anon, authenticated;
 CREATE TRIGGER support_tickets_status_notify AFTER UPDATE OF status ON public.support_tickets
   FOR EACH ROW EXECUTE FUNCTION public.support_ticket_status_notify();
+
+-- Ticket emails queued before sending was approved are never sent when the sender is later switched on.
+UPDATE public.support_email_outbox SET status='cancelled', last_error='queued before email sending was approved', updated_at=now()
+ WHERE status IN ('pending','failed');
 
 -- Ticket queue claim now also returns the ticket status and skips recipients who switched email off for that company.
 DROP FUNCTION public.support_outbox_claim(integer);
