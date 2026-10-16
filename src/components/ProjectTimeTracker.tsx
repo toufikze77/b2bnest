@@ -52,7 +52,7 @@ const ProjectTimeTracker = ({ projectId, projectName }: ProjectTimeTrackerProps)
 
   // Timer effect
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     if (isTracking && currentEntry) {
       interval = setInterval(() => {
         const startTime = new Date(currentEntry.start_time!);
