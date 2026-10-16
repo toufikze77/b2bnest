@@ -188,3 +188,9 @@
 - [ ] AI assistant text — after approval (lives in a server function; editing deploys live)
 - [ ] NG TELECOM support hours — not supplied; hours stay hidden until set
 - Deferred: email-to-ticket, AI replies, SLA automation, asset management, paid integrations; ngtelecom.co.uk link proposed separately
+
+## Ticketing onboarding (2026-10-15) — package ready, awaiting owner review
+- [ ] Owner review + approval to apply docs/onboarding-2026-10-15/proposal.sql (staff invites, customer invite emails, status notifications, feedback)
+- [ ] Owner decision: set member limits on plans (none set live, so no seat cap yet)
+- [ ] Separate approval: deploy senders (off), then switch on email; needs nominated test addresses
+- [ ] Owner signed-in acceptance of the screens after apply
