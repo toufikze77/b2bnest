@@ -152,7 +152,7 @@ const SecurityGuide = () => {
               </div>
 
               <Button asChild variant="outline" className="w-full">
-                <Link to="/privacy-policy">Read Full Privacy Policy</Link>
+                <Link to="/privacy">Read Full Privacy Policy</Link>
               </Button>
             </CardContent>
           </Card>

@@ -10,7 +10,7 @@ interface Props {
   userId: string;
 }
 
-const iCloudCalendarConnectCard = ({ userId }: Props) => {
+const ICloudCalendarConnectCard = ({ userId }: Props) => {
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(false);
   const [userInfo, setUserInfo] = useState<any>(null);
@@ -138,4 +138,4 @@ const iCloudCalendarConnectCard = ({ userId }: Props) => {
   );
 };
 
-export default iCloudCalendarConnectCard;
+export default ICloudCalendarConnectCard;
