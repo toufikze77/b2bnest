@@ -1,105 +1,129 @@
-# Ticketing onboarding package: revision 2, PREPARED, NOT APPLIED
+# Ticketing onboarding package: revision 3, PREPARED, NOT APPLIED
 
-Target when approved: production `gvftvswyrevummbvyhxa`. Nothing here is applied, deployed, sent or published.
+Target when approved: production `gvftvswyrevummbvyhxa`. Nothing here is applied, deployed, sent or published. Email sending
+stays off until a bounded delivery test is explicitly approved. Old queued emails are never drained.
 
-## Verified state on 2026-10-16
+Owner decisions recorded 2026-10-16: one seat allowance per paying owner; link-only emails; NG TELECOM to use its correct
+organisation (inventory only, nothing moved); a labelled test company with three authorised test accounts; onboarding in its
+own PR; exact auth callback URLs; existing Microsoft 365 / Supabase Auth email settings left untouched.
 
-These come from read-only queries on production, not from earlier reports.
+## Verified production state (read-only queries, 2026-10-16)
 
-- Base ticketing is installed (`support_*` tables and functions). The onboarding objects are **not**: no `org_*` RPCs,
-  no `onboarding_email_outbox`, and `organization_invitations` has no `revoked_at` / `accepted_by` columns.
-- `organization_invitations` has 0 rows, `support_customers` 3, `support_tickets` 1.
-- `support_email_outbox` holds **1 pending acknowledgement** from before sending was approved. No sender is deployed.
-- `platform_plans` has **0 rows**, so no seat limit can apply. 10 companies; the largest has 2 active members;
-  one account owns 3 companies.
-- The onboarding screens are already on `main` (Lovable commit "Implemented onboarding flow"). Until this migration is
-  applied they show "needs an approved database update" instead of failing, so publishing `main` does not break them.
+- Base ticketing is installed. The onboarding objects are not (no `org_*` RPCs, no `onboarding_email_outbox`, and
+  `organization_invitations` has no `revoked_at` / `accepted_by`). 0 staff invitations.
+- `support_email_outbox`: 1 pending acknowledgement from before sending was approved. No support/invitation sender is deployed.
+- `platform_plans`: **0 rows**, so no seat limit can apply under any rule.
+- `subscribers`: 7 rows, 6 marked subscribed (enterprise / professional / starter).
+- 10 companies. 4 have no active owner (only an admin). One owner account owns 3 companies.
+- The onboarding screens are already on `main`. Until the migration is applied they show "needs an approved database update".
+
+## Seats: one allowance per paying owner (decision 1)
+
+| Rule | Implementation (`_seat_pool`, `_org_billing_owner`, `_seat_already_counted`) |
+| --- | --- |
+| Who owns the subscription for a company | Its **billing owner**: the earliest-joined active member with role `owner`. Live has no company with two active owners. |
+| Which companies share the allowance | Every company whose billing owner is the same account (the "pool"). |
+| Limit | Billing owner's `subscribers` row with `subscribed = true` → that plan's `platform_plans.member_limit`. |
+| Free | Not subscribed → the `free` plan's `member_limit`. |
+| No stored limit | No cap (`basis = …:no_limit_configured`). **This is every account today**, since `platform_plans` is empty. |
+| Company with no active owner | Not attributable → no cap, reported as `no_owner` (4 live companies). Needs an owner before limits mean anything. |
+| Who uses a seat | Unique active staff accounts across the pool: one person in 3 companies uses 1 seat. Support customers never use seats. |
+| Pending invitations | Reserve one seat per unique email across the pool, only if that person isn't already counted staff. |
+| No double-counting | Accepting turns the reservation into the seat (pending −1, used +1). Inviting someone already counted, or already invited in another pooled company, needs no new seat. |
+| Concurrency | Every invitation and acceptance in a pool takes the same pool lock, so concurrent requests can't exceed the cap. |
+| Over-limit accounts | Nobody is removed. New invitations are refused while staff + pending ≥ limit, and acceptances while staff ≥ limit. Removing someone frees a seat. |
+| Complimentary accounts | No complimentary-entitlement table exists. Accounts that were given Enterprise during test-key use resolve through their current `subscribers` row like anyone else. **Decision still needed** (from the billing backlog) before limits are activated. |
+| Activation | Not part of this package. It needs plan limits stored, the complimentary decision, and one more guard: today an admin can re-activate a deactivated member (UPDATE `is_active`) without a seat check. |
 
 ## Review items A–E
 
-| Item | Status after revision 2 |
+| Item | Status |
 | --- | --- |
-| **A. Seats** | Only live pending invitations count. Accepting does not count its own seat twice. Invite and accept take the same per-company lock, so concurrent requests can't exceed a cap. No members are ever removed. No limits are active (the plans table is empty). **Decision needed, see below**: the allowance is currently applied *per company*, so an owner with 3 companies would get the full allowance in each. Direct member inserts are now closed, so the only way in is an invitation (and its seat check). |
-| **B. Staff/customer** | Checked per company. A customer of company A can be staff of company B. In the same company, staff can't be invited as customers (the claim skips them) and customers can't be invited or accepted as staff until their customer access is removed (an explicit action). There is no platform-wide ban. |
-| **C. Notifications** | Fixed in revision 2. Staff replies notify the customer (in-app plus a queued email). Customer replies now notify the assignee, or **all agents plus owners/admins** if the ticket is unassigned (previously nobody). A customer reopening now notifies staff. The first staff reply no longer also sends an "Open" status notice. Private notes and files never reach customers: tested, and the claim strips them. Emails contain status and a portal link only; the reply text is **no longer** copied into email. |
-| **D. Auth email** | Sign-up confirmation is Supabase Auth's own email, separate from the support/invitation senders, so it works while those are off. The return page survives confirmation via `emailRedirectTo` plus an allow-list (`safeNext`). **You need to check in the Supabase dashboard** (I can't read Auth settings): Auth → URL Configuration must allow `https://www.b2bnest.online/**` and any preview host you test on, otherwise Supabase sends people to the Site URL and the join/portal page is lost. Also check Auth → SMTP: without custom SMTP, Supabase's built-in mailer is heavily rate-limited. |
-| **E. Release order** | Corrected below. The migration and owner tests come first, publishing is approved separately, and senders are deployed and switched on separately again. |
+| A. Seats | As above. Tested: pooled counting across 2 companies, shared staff counted once, cross-company pending counted once, already-counted invitee allowed at a full pool, customers excluded, no-owner company, Free fallback, over-limit refusal with nobody removed. |
+| B. Staff/customer | Per company. A customer of A can be staff of B. In the same company, converting requires removing customer access first. Members can only join through an invitation (direct inserts closed). |
+| C. Notifications | Customer replies notify the assignee, or all agents plus owners/admins if unassigned. Customer reopen notifies staff. Staff replies notify the customer once. Private notes and files never reach customers. |
+| C. Email content (decision 2) | Link-only: support name, ticket reference, event/status and a portal link that opens the right company and ticket. No reply text, notes or attachments. |
+| D. Auth email | See [`AUTH-CALLBACKS.md`](AUTH-CALLBACKS.md): exact callback URLs, how intent survives sign-up and confirmation, and the dashboard check. The allow-list itself is **unverified** (not readable from here). |
+| E. Release order | Below; each step is approved separately. |
 
-## Revision 2 changes
+## Email paths (decision 7): what exists, nothing changed
 
-1. Customer reply on an unassigned ticket notifies agents plus owners/admins (new trigger on `support_messages`).
-2. A customer reopening a ticket notifies the assignee, or all staff if it's unassigned. A reply that reopens it sends one notice, not two.
-3. The automatic New → Open on the first staff reply sends no extra status notice.
-4. `REVOKE INSERT ON organization_members FROM anon, authenticated`. Live allowed owners/admins to insert any account id
-   as a member, with no invitation, verification, seat or customer check. No app screen uses this; role changes and removals are unaffected.
-   The old `Auth.tsx ?invited=true&org=` self-join was already blocked by RLS (dead code).
-5. Ticket emails already queued (1 on live) are cancelled with reason "queued before email sending was approved", so switching
-   the sender on later can't send stale mail. Rollback leaves them cancelled on purpose.
-6. Support sender: reply emails no longer include the reply text.
+- **Supabase Auth email** (sign-up confirmation, password reset): configured in the Supabase dashboard. Not touched by this package.
+- **Workflow email** `workflow-send-email` (deployed version matches the repo): uses `SMTP_*` (Microsoft 365, default
+  `smtp.office365.com:587`) when set, otherwise falls back to `GMAIL_*`. You confirmed Microsoft 365 worked for
+  `notifications@b2bnest.online`. No sends appear in the last 24 h of function logs, so I did not re-verify it.
+- **Support and invitation senders** (this package, not deployed): reuse the same SMTP code but **only accept `SMTP_*`**.
+  The Gmail fallback is refused before anything is sent. No new secrets.
+- Older paths still hard-coded to Gmail (team invitation, task and contact-form email) are unchanged and out of scope.
+- UI while sending is off: Members & roles shows "Email sending is switched off: nothing is emailed…". The customer email
+  switch says no emails are sent yet. The staff reply box says the customer sees replies in the portal and gets no email.
+  Invitation rows say "Invitation saved — email not sent".
+
+## NG TELECOM (decision 3): inventory only, nothing moved or renamed
+
+- There is **no organisation named NG TELECOM**. "NG TELECOM" is only the support display name configured on
+  **Dev Team** (`136792c5-1268-482f-ae83-b2da315403fd`).
+- Support data owned by Dev Team: 1 ticket (`T-00001`, resolved, raised by Dev Team's own owner, so a staff test with
+  0 messages and 0 files); 3 invited customers (domains ngtelecom.co.uk, outlook.com, gmail.com; none has signed in); 0 agents.
+- Other organisations (id prefix · name · active roles · tickets): `69fd39aa` admin@example.com's Organization (owner, 0);
+  `d6f6fd55` Admin (owner, 0); `6a269cba` Toufik Zemri's Organization (owner+member, 0); `7cc67f87` Toufik Zemri's
+  Organization (owner, 0); `d2d372cd` toufik zemri's Organization (owner, 0); `ab413f58` Toufik Zemri's Organization
+  (admin only, 0); `11067c68` bayken net's Organization (suspended, admin only, 0); `06875fdf` Adam Zemri's Organization
+  (admin only, 0); `f9a9309d` CHIWA COIN's Organization (admin only, 0). Full ids are in the query output, available on request.
+- **Proposal, awaiting your choice:** either (a) create a proper "NG TELECOM" organisation and set up support there,
+  re-inviting the 3 customers (nothing to migrate except the test ticket), or (b) rename Dev Team. Nothing will be changed
+  until you pick one.
 
 ## Files
 
 | Item | Path |
 | --- | --- |
-| Migration (one transaction) | `proposal.sql` (sha256 `39e5283c7ebe28c99c4d46c05b3f77434c6afdeb7246764b1aa29b57c343b126`) |
-| Export before rollback | `export.sql` |
-| Rollback | `rollback.sql` |
-| DB tests / runner | `test.sql`, `run-test.sh` |
-| Invitation email sender | `functions/onboarding-email-sender/` (inert until `ONBOARDING_EMAIL_ENABLED=true`) |
-| Ticket email sender v2 | `functions/support-email-sender/` (inert until `SUPPORT_EMAIL_ENABLED=true`) |
+| Migration (one transaction) | `proposal.sql` (sha256 `f19d7ce6f03f15fa2f656c8db778d31ae3cc097a91972f038ff843b0805db55d`) |
+| Export before rollback / Rollback | `export.sql` / `rollback.sql` (sha256 `f3b407ba4e00a9de378c6c45b74737c6b961057a8df1a2b96400aecc655c695a`) |
+| DB tests / runner | `test.sql`, `run-test.sh` (`PG_RUN_USER=postgres bash docs/onboarding-2026-10-15/run-test.sh`) |
+| Senders | `functions/onboarding-email-sender/`, `functions/support-email-sender/` (inert until `*_EMAIL_ENABLED=true`) |
+| Auth callbacks | `AUTH-CALLBACKS.md` |
 
 ## Tests run on 2026-10-16
 
 | Suite | Where | Result |
 | --- | --- | --- |
-| `test.sql` (104 checks: original 81 + 23 revision-2) | Throwaway local PostgreSQL 16 with the mirrored fixture; **not** production | 104 passed, 0 failed |
-| Support sender `handler_test.ts` | Deno 2, mocked SMTP (`deno.land` blocked here, so the `asserts` import was mapped to a `node:assert` shim) | 9 passed |
-| Invitation sender `handler_test.ts` | Same | 5 passed |
-| App unit tests (`vitest`), includes the onboarding helpers | jsdom, mocked Supabase | 174 passed |
+| `test.sql` (120 checks) | Throwaway local PostgreSQL 16, mirrored fixture; **not** production | 120 passed |
+| Support sender | Deno 2, mocked SMTP (the `deno.land` asserts import mapped to a `node:assert` shim; deno.land is blocked here) | 11 passed |
+| Invitation sender | Same | 6 passed |
+| App unit tests (`vitest`) | jsdom, mocked Supabase | 174 passed, 3 failed. The 3 are WorkflowStudio tests that fail on `main` too; they're fixed in the audit PR. |
 
-Not tested: signed-in screens in a browser, the real Supabase Auth email, any real email send.
-
-## Decisions needed before approval
-
-1. **Seat allowance across companies (A).** Pick one:
-   (a) per company: each company the subscriber owns gets the full plan allowance (current code); or
-   (b) pooled: the allowance covers all companies the subscriber owns together. This needs a small change, so tell me before approval.
-   Nothing is enforced either way until plan limits are set.
-2. **Reply emails (C).** Link-only, as now in revision 2, or include the reply text (the earlier draft did).
+Not tested: signed-in screens in a browser, a real Supabase Auth confirmation email, and any real email send.
 
 ## Release order (each step separately approved)
 
-1. Run `export.sql` (expected near-empty), then apply `proposal.sql` to `gvftvswyrevummbvyhxa` in one transaction. Confirm with:
+1. Run `export.sql`, then apply `proposal.sql` in one transaction. Check:
    `select to_regclass('public.onboarding_email_outbox'), has_table_privilege('authenticated','public.organization_members','INSERT')`
-   → table present, `false`.
-2. Owner tests on the preview (below). **The preview uses the production database.** Use your own test companies and accounts only.
-3. Publishing approval for the frontend (it is already on `main`, so this means "allow the live site to show it").
-4. Sender approval: deploy both senders with sending off, then a bounded test to one named address you approve, then switch on.
+   → present, `false`.
+2. Owner tests (below).
+3. Approval to show the onboarding screens on the live site.
+4. Sender approval: deploy both with sending off, then one bounded test to an address you name, then switch on.
 
-## Owner test plan (preview, about 15 minutes, no emails are sent)
+## Owner test plan (decision 4; about 15 minutes; no support/invitation emails are sent)
 
-Use company **Dev Team** (owner: you). Live on 2026-10-16 its support is named **NG TELECOM**, has 3 invited customers (none
-signed in yet) and no agents. Confirm Dev Team really is the company that should provide NG TELECOM support before any real
-customer uses it.
+Use a **new, clearly labelled test company**, e.g. "ZZ TEST – Onboarding (do not use)", created by you as owner, and three
+authorised test accounts that are **not** any real customer address (in particular, not Dev Team's 3 invited customers):
+**Owner**, **Colleague**, **Customer**. Real customer access is not touched. Run the sign-up step on the production site or
+a Vercel preview, not the Lovable preview (see `AUTH-CALLBACKS.md`). Creating a Customer or Colleague account triggers one
+Supabase Auth confirmation email to that test address. That's the existing Auth path, not the support sender.
 
-You need three accounts, because one account can't be staff and customer of the same company:
-**Owner** (you), **Colleague** (an address that is *not* one of Dev Team's invited customers), and **Customer** (one of the
-3 invited customer addresses). Invitation links are copied by hand because email is off.
-
-1. As Owner: Settings → Members & roles → invite Colleague as **member**. Expected: "Invitation saved — email not sent", one row.
-   Invite the same address again. Expected: "already invited", still one row.
-2. Copy the link and open it in a private window signed in as Colleague. Expected: Dev Team and role shown; Accept works; you land in Members.
-3. As Owner: Colleague is listed as member. Invite a dummy address, then revoke it. Its link then says it's no longer valid.
-4. As Owner: Support desk → Setup → make Colleague an agent.
-5. As Customer: sign in, open the support portal (access is claimed on sign-in), create a ticket, then reply on it.
-   Expected: Owner and Colleague each get **one** "Customer replied" notice.
-6. As Colleague: reply publicly. Expected: Customer gets **one** "Reply on…" notice and no extra status notice.
-   Add a private note. Expected: Customer sees nothing.
-7. As Colleague: close the ticket. As Customer: reopen it. Expected: Owner and Colleague get "Customer reopened".
-
-Report anything that differs. Failures are diagnosed from the database, not by repeating the test.
+1. Owner: Settings → Members & roles → invite Colleague as member. Expected: the email-off notice, "Invitation saved — email
+   not sent", one row. Invite again: "already invited", still one row. The seat line counts 1 pending invitation, plus staff across every company you own (one allowance per paying owner).
+2. Colleague (signed out) opens the copied link → create account → confirm → lands on `/join?token=…` → Accept → Members.
+3. Owner: invite a dummy address, then revoke it. Its link says it's no longer valid.
+4. Owner: Support desk → set up support for the test company → make Colleague an agent → invite Customer.
+5. Customer opens the portal link signed out → create account → confirm → lands in the test company's portal →
+   creates a ticket, then replies. Expected: Owner and Colleague each get one "Customer replied" notice.
+6. Colleague replies. Expected: Customer gets one "Reply on…" notice, no extra status notice. Colleague adds a private note: the customer sees nothing.
+7. Colleague closes the ticket. Customer reopens it. Expected: staff get "Customer reopened".
+8. Afterwards: delete the test company, or keep it for regression tests.
 
 ## Rollback
 
-Run `export.sql`, save the output privately, then `rollback.sql`. Colleagues who joined stay members (remove them manually if wanted).
-The direct member INSERT grant is restored as before. Cancelled stale emails stay cancelled.
+Run `export.sql`, save the output privately, then `rollback.sql`. Colleagues who joined stay members (remove them manually if
+wanted). The direct member INSERT grant is restored as before. Cancelled stale emails stay cancelled.
