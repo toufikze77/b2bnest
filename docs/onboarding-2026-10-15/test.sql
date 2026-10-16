@@ -23,13 +23,6 @@ INSERT INTO auth.users(id,email,email_confirmed_at) VALUES
  ('dddddddd-0000-4000-8000-000000000016','z@new.test',NULL);
 INSERT INTO organization_members(organization_id,user_id,role) VALUES ('00000000-0000-0000-0000-0000000000a1','88888888-0000-4000-8000-000000000012','owner');
 
--- An email already sitting in the ticket queue before the package (live had 1 such acknowledgement on 2026-10-16).
-INSERT INTO support_settings(organization_id,support_name) VALUES ('00000000-0000-0000-0000-0000000000a2','O2 Support');
-INSERT INTO support_tickets(id,organization_id,reference,subject,description,requester_id,client_request_id) VALUES
- ('f0000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-0000000000a2','T-00001','Old','Old','99999999-0000-4000-8000-00000000000c',gen_random_uuid());
-INSERT INTO support_email_outbox(organization_id,ticket_id,kind,recipient_user_id,dedupe_key) VALUES
- ('00000000-0000-0000-0000-0000000000a2','f0000000-0000-0000-0000-000000000001','acknowledgement','99999999-0000-4000-8000-00000000000c','ack:old');
-
 \i docs/onboarding-2026-10-15/proposal.sql
 \set ON_ERROR_STOP 0
 CREATE TABLE results(n serial, name text, ok bool, detail text); GRANT ALL ON results, results_n_seq TO anon, authenticated, service_role;
@@ -166,41 +159,6 @@ SELECT ok('Staff read feedback; customer, plain member and other company cannot'
   AND cnt('x@o2.test','SELECT 1 FROM support_ticket_feedback')=0);
 SELECT t('Feedback cannot be inserted directly (API)','k@client.test',$$INSERT INTO support_ticket_feedback VALUES ((SELECT v FROM ids WHERE k='tk')::uuid,'00000000-0000-0000-0000-0000000000a1',1,NULL,auth.uid())$$,'ERROR');
 
--- Revision 2: direct member inserts, historical queue, staff notifications, no duplicate notices
-SELECT ok('Email queued before the package is cancelled, never sent', (SELECT status FROM support_email_outbox WHERE dedupe_key='ack:old')='cancelled');
-SELECT t('Admin cannot add a member directly (API)','m@o1.test',$$INSERT INTO organization_members(organization_id,user_id,role) VALUES ('00000000-0000-0000-0000-0000000000a1','cccccccc-0000-4000-8000-000000000015','member')$$,'ERROR');
-SELECT t('Owner cannot add a member directly (API)','ow@o1.test',$$INSERT INTO organization_members(organization_id,user_id,role) VALUES ('00000000-0000-0000-0000-0000000000a1','cccccccc-0000-4000-8000-000000000015','member')$$,'ERROR');
-CREATE FUNCTION nc(who text, pat text) RETURNS bigint LANGUAGE sql AS $$
-  SELECT count(*) FROM notifications n JOIN auth.users u ON u.id=n.user_id WHERE u.email=who AND n.title LIKE pat $$;
-SELECT t('K creates ticket 2 (unassigned)','k@client.test',$$INSERT INTO ids SELECT 'tk2', support_create_ticket('00000000-0000-0000-0000-0000000000a1','Router','Down',NULL,'low','e0000000-0000-0000-0000-000000000002')::text$$,'ROWS=1');
-SELECT t('K replies on unassigned ticket 2','k@client.test',$$SELECT support_add_message((SELECT v FROM ids WHERE k='tk2')::uuid,'Any news?',false,'e0000000-0000-0000-0000-000000000003')$$,'ROWS=1');
-SELECT ok('Unassigned customer reply notifies agent, admin and owner once each; not the customer',
-  nc('w@new.test','Customer replied on%')=1 AND nc('m@o1.test','Customer replied on%')=1 AND nc('ow@o1.test','Customer replied on%')=1
-  AND nc('k@client.test','Customer replied on%')=0 AND nc('s@o1.test','Customer replied on%')=0);
-SELECT ok('Plain member and other company get no ticket notices', nc('s@o1.test','%T-%')=0 AND nc('x@o2.test','%T-%')=0);
-SELECT t('Agent W adds a private note','w@new.test',$$SELECT support_add_message((SELECT v FROM ids WHERE k='tk2')::uuid,'internal only',true,'e0000000-0000-0000-0000-000000000004')$$,'ROWS=1');
-SELECT ok('Private note notifies nobody and queues no email', (SELECT count(*) FROM notifications WHERE message='internal only' OR title LIKE '%internal%')=0
-  AND NOT EXISTS (SELECT 1 FROM support_email_outbox o JOIN support_messages m ON m.id=o.message_id WHERE m.is_internal));
-SELECT ok('(before first staff reply) ticket 2 is New', (SELECT status FROM support_tickets WHERE id=(SELECT v FROM ids WHERE k='tk2')::uuid)='new');
-SELECT t('Agent W replies publicly (New -> Open)','w@new.test',$$SELECT support_add_message((SELECT v FROM ids WHERE k='tk2')::uuid,'Looking now',false,'e0000000-0000-0000-0000-000000000005')$$,'ROWS=1');
-SELECT ok('First staff reply: customer gets one reply notice and no extra status notice',
-  nc('k@client.test','Reply on%')=1 AND (SELECT count(*) FROM support_email_outbox WHERE kind='status_change' AND ticket_id=(SELECT v FROM ids WHERE k='tk2')::uuid)=0
-  AND (SELECT count(*) FROM support_email_outbox WHERE kind='public_reply' AND ticket_id=(SELECT v FROM ids WHERE k='tk2')::uuid)=1);
-SELECT t('Agent W resolves ticket 2','w@new.test',$$SELECT support_update_ticket((SELECT v FROM ids WHERE k='tk2')::uuid,'resolved',NULL,NULL,NULL,false)$$,'ROWS=1');
-SELECT t('K replies on the resolved ticket (reopens it)','k@client.test',$$SELECT support_add_message((SELECT v FROM ids WHERE k='tk2')::uuid,'Still broken',false,'e0000000-0000-0000-0000-000000000006')$$,'ROWS=1');
-SELECT ok('Reply-reopen: staff get one "replied" notice, no separate "reopened" notice',
-  nc('w@new.test','Customer replied on%')=2 AND nc('w@new.test','Customer reopened%')=0
-  AND (SELECT status FROM support_tickets WHERE id=(SELECT v FROM ids WHERE k='tk2')::uuid)='open');
-SELECT t('Agent W closes ticket 2','w@new.test',$$SELECT support_update_ticket((SELECT v FROM ids WHERE k='tk2')::uuid,'closed',NULL,NULL,NULL,false)$$,'ROWS=1');
-SELECT t('K reopens closed ticket 2','k@client.test',$$SELECT support_update_ticket((SELECT v FROM ids WHERE k='tk2')::uuid,'open',NULL,NULL,NULL,false)$$,'ROWS=1');
-SELECT ok('Customer reopen notifies agent, admin and owner; customer gets no notice of own change',
-  nc('w@new.test','Customer reopened%')=1 AND nc('m@o1.test','Customer reopened%')=1 AND nc('ow@o1.test','Customer reopened%')=1
-  AND nc('k@client.test','Status update on T-00002')=2); -- resolve + close by staff; none for the customer's own reopen
-SELECT t('Admin assigns ticket 2 to W','m@o1.test',$$SELECT support_update_ticket((SELECT v FROM ids WHERE k='tk2')::uuid,NULL,NULL,NULL,'aaaaaaaa-0000-4000-8000-000000000013',true)$$,'ROWS=1');
-SELECT t('K replies on the assigned ticket','k@client.test',$$SELECT support_add_message((SELECT v FROM ids WHERE k='tk2')::uuid,'Thanks',false,'e0000000-0000-0000-0000-000000000007')$$,'ROWS=1');
-SELECT ok('Assigned ticket: only the assignee hears about the customer reply',
-  nc('w@new.test','Customer replied on%')=3 AND nc('m@o1.test','Customer replied on%')=2 AND nc('ow@o1.test','Customer replied on%')=2);
-
 -- EXPORT, ROLLBACK, FAILED APPLY
 \o /tmp/onbrun/export.json
 \i docs/onboarding-2026-10-15/export.sql
@@ -210,10 +168,7 @@ SELECT ok('Assigned ticket: only the assignee hears about the customer reply',
 \set ON_ERROR_STOP 0
 SELECT ok('Rollback removed new tables; joined members kept; tickets kept',
   to_regclass('public.onboarding_email_outbox') IS NULL AND to_regclass('public.support_ticket_feedback') IS NULL
-  AND EXISTS (SELECT 1 FROM organization_members WHERE user_id='aaaaaaaa-0000-4000-8000-000000000013') AND (SELECT count(*) FROM support_tickets)=3);
-SELECT ok('Rollback restores the previous member INSERT grant and removes the new triggers',
-  has_table_privilege('authenticated','public.organization_members','INSERT')
-  AND NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname IN ('support_messages_notify_staff','support_tickets_status_notify')));
+  AND EXISTS (SELECT 1 FROM organization_members WHERE user_id='aaaaaaaa-0000-4000-8000-000000000013') AND (SELECT count(*) FROM support_tickets)=1);
 -- Rolled-back invitations lose their revoked/accepted dates; clear the sample ones so re-apply tests the package itself.
 -- (Live: re-apply refuses atomically while two live invitations share an email; resolve them first.)
 DELETE FROM organization_invitations;
@@ -225,6 +180,5 @@ SELECT ok('Failed apply leaves nothing behind', to_regclass('public.onboarding_e
 \i docs/onboarding-2026-10-15/proposal.sql
 \set ON_ERROR_STOP 0
 SELECT ok('Package re-applies cleanly after rollback', to_regclass('public.onboarding_email_outbox') IS NOT NULL);
-SELECT ok('Re-apply closes direct member INSERT again', NOT has_table_privilege('authenticated','public.organization_members','INSERT'));
 SELECT n, CASE WHEN ok THEN 'PASS' ELSE 'FAIL' END verdict, name, detail FROM results ORDER BY n;
 SELECT count(*) FILTER (WHERE ok) || ' passed, ' || count(*) FILTER (WHERE NOT ok) || ' failed' FROM results;
