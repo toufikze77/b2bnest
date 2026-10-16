@@ -60,14 +60,23 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
-## How can I deploy this project?
+## Deploying to Vercel
 
-Simply open [Lovable](https://lovable.dev/projects/0ab9e971-6875-4e22-8ba0-08de916edc9d) and click on Share -> Publish.
+`vercel.json` configures the build: `npm ci`, `npm run build`, output `dist/`, and an SPA
+rewrite so client-side routes load `index.html`.
 
-## Can I connect a custom domain to my Lovable project?
+Set these in the Vercel project (Settings → Environment Variables). They are bundled into the
+browser code, so they must be public values only:
 
-Yes, you can!
+| Variable | Value |
+| --- | --- |
+| `VITE_SUPABASE_URL` | `https://<project-ref>.supabase.co` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | the project's anon / publishable key |
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Never add the service-role key (or any secret) as a `VITE_*` variable; the client refuses to
+start if it is given one. Server secrets (Stripe, HMRC, OAuth, etc.) live in Supabase Edge
+Function secrets, not in Vercel.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Use npm, not bun: `bun.lock` points at Lovable's private registry and cannot install elsewhere.
+
+Add the Vercel domain(s) to Supabase Auth → URL Configuration (Site URL and Redirect URLs).

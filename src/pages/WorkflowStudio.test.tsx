@@ -10,8 +10,8 @@ const saved = [{
   workflow_steps: serializeSteps([{ id: 's1', kind: 'email', config: { to: 'me@example.com', subject: 'Hi', body: 'Hello' } }]),
 }];
 const chain: any = { select: () => chain, eq: () => chain, order: () => Promise.resolve({ data: saved, error: null }) };
-vi.mock('@/integrations/supabase/client', () => ({ supabase: { from: () => chain, functions: { invoke: (...a: unknown[]) => invoke(...a) } } }));
-vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }));
+vi.mock('@/integrations/supabase/client', () => ({ supabase: { from: () => chain, rpc: () => Promise.resolve({ data: false, error: null }), functions: { invoke: (...a: unknown[]) => invoke(...a) } } }));
+vi.mock('@/hooks/useAuth', () => { const user = { id: 'u1' }; return { useAuth: () => ({ user }) }; });
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 import WorkflowStudio from './WorkflowStudio';

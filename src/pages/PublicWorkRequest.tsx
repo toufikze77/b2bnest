@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const PublicWorkRequest: React.FC = () => {
   const { toast } = useToast();
@@ -18,16 +19,10 @@ const PublicWorkRequest: React.FC = () => {
     if (!title.trim()) return;
     setSubmitting(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/public-work-request`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({ title, description: desc, priority, requester_email: email })
+      const { data: json, error } = await supabase.functions.invoke('public-work-request', {
+        body: { title, description: desc, priority, requester_email: email },
       });
-      if (!res.ok) throw new Error('Submission failed');
-      const json = await res.json();
+      if (error) throw new Error('Submission failed');
       toast({ title: 'Submitted', description: `Request ID ${json.id}` });
       setTitle(''); setDesc(''); setPriority('medium'); setEmail('');
     } catch (e:any) {

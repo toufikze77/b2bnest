@@ -15,7 +15,6 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^3.9.0",
-    "@huggingface/transformers": "^4.2.0",
     "@paypal/paypal-js": "^8.2.0",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
@@ -53,7 +52,6 @@
     "date-fns": "^3.6.0",
     "dompurify": "^3.4.11",
     "embla-carousel-react": "^8.3.0",
-    "ethers": "^6.17.0",
     "exceljs": "^4.4.0",
     "html2canvas": "^1.4.1",
     "input-otp": "^1.4.2",
@@ -95,8 +93,8 @@
     "tailwindcss": "^3.4.11",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
-    "vite": "^5.4.19",
-    "vitest": "^4.1.8"
+    "vite": "^6.4.1",
+    "vitest": "~4.0.18"
   },
   "overrides": {
     "protobufjs": "^7.5.4",

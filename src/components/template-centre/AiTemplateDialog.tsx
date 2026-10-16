@@ -140,7 +140,7 @@ const AiTemplateDialog = ({ open, onClose, onCreate }: Props) => {
         )}
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={() => { close(); navigate('/projects?action=create-project'); }}>Start blank instead</Button>
+          <Button variant="outline" onClick={() => { close(); navigate('/project-management'); }}>Start blank instead</Button>
           {draft ? (
             <Button onClick={create} disabled={draftErrors.length > 0}>
               Create {draft.kind === 'workspace' ? 'workspace' : 'project'}
