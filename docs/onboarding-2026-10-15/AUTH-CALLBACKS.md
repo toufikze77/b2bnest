@@ -48,6 +48,26 @@ deliberately skips the sign-in redirect, so the customer-portal intent test **ca
 site or a Vercel preview for that step. A Vercel preview additionally needs
 `https://b2bnest-git-*-toufik-s-projects.vercel.app/join?token=*` and `.../support/portal?org=*`. Don't add a broad `/**`.
 
+## Preview for the first sign-up test (decision 5: not the live site)
+
+- Preview: branch `claude/release-10-11` (the exact combined release). Vercel's stable branch address for the `b2bnest` project
+  should be `https://b2bnest-git-claude-release-10-11-toufik-s-projects.vercel.app`. **Unverified**: this sandbox can't reach
+  Vercel, and with no PR I can't see its build status. Please confirm it opens. If Vercel Deployment Protection asks for a Vercel
+  login, the test accounts need a shareable link, or protection switched off for previews.
+- The preview uses the production database, so test accounts and test company only.
+- Auth path on that host: password sign-in works anywhere. `ProtectedRoute`'s preview bypass only matches `lovable.app`,
+  `preview` and `localhost`, so it does **not** apply on this Vercel host: signed-out visitors are sent to `/auth?next=…` as in production.
+- For sign-up confirmation to return there, add exactly these Redirect URLs (no `/**`):
+  `https://b2bnest-git-claude-release-10-11-toufik-s-projects.vercel.app/join?token=*`,
+  `https://b2bnest-git-claude-release-10-11-toufik-s-projects.vercel.app/support/portal?org=*`,
+  `https://b2bnest-git-claude-release-10-11-toufik-s-projects.vercel.app/settings*`,
+  `https://b2bnest-git-claude-release-10-11-toufik-s-projects.vercel.app/`.
+- What's proven by tests (`src/lib/onboarding.test.ts`): the confirmation URL is exactly the invitation or portal page
+  (token, company and ticket kept); it matches only these exact entries under Supabase's documented matching rules; unsafe
+  or foreign `next` values fall back to `/`; production entries don't cover the preview host, and other hosts and pages don't match.
+- What's **not** proven: that Supabase actually returns there after confirmation. That needs the one bounded test below on the
+  preview, after the entries are added.
+
 ## Owner check (dashboard, read-only, about 2 minutes)
 
 1. Auth → URL Configuration: copy the Site URL and the Redirect URLs list into our chat (they contain no secrets).
