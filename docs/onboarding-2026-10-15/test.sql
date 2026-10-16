@@ -27,8 +27,18 @@ INSERT INTO organization_members(organization_id,user_id,role) VALUES ('00000000
 INSERT INTO support_settings(organization_id,support_name) VALUES ('00000000-0000-0000-0000-0000000000a2','O2 Support');
 INSERT INTO support_tickets(id,organization_id,reference,subject,description,requester_id,client_request_id) VALUES
  ('f0000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-0000000000a2','T-00001','Old','Old','99999999-0000-4000-8000-00000000000c',gen_random_uuid());
-INSERT INTO support_email_outbox(organization_id,ticket_id,kind,recipient_user_id,dedupe_key) VALUES
- ('00000000-0000-0000-0000-0000000000a2','f0000000-0000-0000-0000-000000000001','acknowledgement','99999999-0000-4000-8000-00000000000c','ack:old');
+INSERT INTO support_email_outbox(id,organization_id,ticket_id,kind,recipient_user_id,dedupe_key) VALUES
+ ('a0ff58dd-c038-49ca-a212-e58bed67923e','00000000-0000-0000-0000-0000000000a2','f0000000-0000-0000-0000-000000000001','acknowledgement','99999999-0000-4000-8000-00000000000c','ack:old'),
+ (gen_random_uuid(),'00000000-0000-0000-0000-0000000000a2','f0000000-0000-0000-0000-000000000001','acknowledgement','99999999-0000-4000-8000-00000000000c','ack:other');
+-- Live shape: companies record their creator. O1 created by its owner OW (gets a billing owner); O2 created by X who is only
+-- an admin (like the 4 live ownerless companies: no billing owner). SA = platform super admin.
+UPDATE organizations SET created_by='88888888-0000-4000-8000-000000000012' WHERE id='00000000-0000-0000-0000-0000000000a1';
+UPDATE organizations SET created_by='99999999-0000-4000-8000-00000000000c' WHERE id='00000000-0000-0000-0000-0000000000a2';
+INSERT INTO auth.users(id,email,email_confirmed_at) VALUES ('eeeeeeee-0000-4000-8000-000000000017','sa@b2bnest.test',now()),
+ ('f1111111-0000-4000-8000-000000000018','p1@new.test',now()),('f2222222-0000-4000-8000-000000000019','p2@new.test',now()),
+ ('f3333333-0000-4000-8000-00000000001a','c5@o5.test',now());
+CREATE FUNCTION public.is_super_admin(_user_id uuid) RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT _user_id = 'eeeeeeee-0000-4000-8000-000000000017'::uuid $$;
+GRANT EXECUTE ON FUNCTION public.is_super_admin(uuid) TO authenticated;
 
 \i docs/onboarding-2026-10-15/proposal.sql
 \set ON_ERROR_STOP 0
@@ -101,6 +111,7 @@ SELECT t('Owner can copy it','ow@o1.test',$$SELECT org_invitation_token((SELECT 
 SELECT t('Owner invites Q','ow@o1.test',$$INSERT INTO ids SELECT 'q', token FROM org_invite_member('00000000-0000-0000-0000-0000000000a1','q@new.test','member')$$,'ROWS=1');
 UPDATE organization_invitations SET revoked_at=now() WHERE email='z@new.test';
 INSERT INTO platform_plans(key,member_limit) VALUES ('team',7);
+CREATE OR REPLACE FUNCTION public._seat_caps_enabled() RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT true $$; -- throwaway DB only: exercise caps
 INSERT INTO subscribers(user_id,email,subscribed,plan_key) VALUES ('88888888-0000-4000-8000-000000000012','ow@o1.test',true,'team');
 SELECT t('Seat summary for owner: 6 used, 2 pending, limit 7','ow@o1.test',$$SELECT 1 FROM org_seat_summary('00000000-0000-0000-0000-0000000000a1') WHERE used=6 AND pending=2 AND seat_limit=7$$,'ROWS=1');
 SELECT t('Plain member cannot read seats','s@o1.test',$$SELECT org_seat_summary('00000000-0000-0000-0000-0000000000a1')$$,'ERROR');
@@ -110,7 +121,7 @@ SELECT t('Q refused: no free seats','q@new.test',$$SELECT org_accept_invitation(
 SELECT ok('Q did not become a member', NOT EXISTS (SELECT 1 FROM organization_members WHERE user_id='cccccccc-0000-4000-8000-000000000015'));
 SELECT ok('Plans and subscriptions untouched by the RPCs', (SELECT member_limit FROM platform_plans)=7 AND (SELECT count(*) FROM subscribers)=1);
 -- Revision 3: one allowance per paying owner across its companies (O3 is a second company billed by OW)
-INSERT INTO organizations(id,name) VALUES ('00000000-0000-0000-0000-0000000000a3','O3');
+INSERT INTO organizations(id,name,created_by) VALUES ('00000000-0000-0000-0000-0000000000a3','O3','88888888-0000-4000-8000-000000000012');
 INSERT INTO organization_members(organization_id,user_id,role) VALUES
  ('00000000-0000-0000-0000-0000000000a3','88888888-0000-4000-8000-000000000012','owner'),
  ('00000000-0000-0000-0000-0000000000a3','22222222-0000-4000-8000-00000000000a','member'); -- G works for O1 and O3
@@ -125,7 +136,7 @@ SELECT ok('S is in O3 and still counted once', EXISTS (SELECT 1 FROM organizatio
 INSERT INTO support_customers(organization_id,email,invited_by) VALUES ('00000000-0000-0000-0000-0000000000a3','c3@client.test','88888888-0000-4000-8000-000000000012');
 SELECT ok('Support customers never use seats', (SELECT used + pending FROM _seat_pool('00000000-0000-0000-0000-0000000000a3'))=8);
 UPDATE support_customers SET revoked_at=now() WHERE email='c3@client.test'; -- sample only; keeps the later sender checks unchanged
-SELECT t('O2 has no active owner: reported as no_owner, no cap','x@o2.test',$$SELECT 1 FROM org_seat_summary('00000000-0000-0000-0000-0000000000a2') WHERE seat_limit IS NULL AND basis='no_owner' AND pooled_companies=1$$,'ROWS=1');
+SELECT t('O2 has no billing owner: reported as such','x@o2.test',$$SELECT 1 FROM org_seat_summary('00000000-0000-0000-0000-0000000000a2') WHERE basis='no_billing_owner' AND NOT enforced AND pooled_companies=1$$,'ROWS=1');
 SELECT ok('Another owner''s company is not in OW''s pool', (SELECT pooled_companies FROM _seat_pool('00000000-0000-0000-0000-0000000000a2'))=1
   AND '00000000-0000-0000-0000-0000000000a2' NOT IN (SELECT _seat_pool_orgs('00000000-0000-0000-0000-0000000000a1')));
 SELECT t('Q''s second invitation revoked (keeps later sender checks unchanged)','ow@o1.test',$$SELECT org_manage_invitation((SELECT id FROM organization_invitations WHERE organization_id='00000000-0000-0000-0000-0000000000a3' AND email='q@new.test'),'revoke')$$,'ROWS=1');
@@ -134,9 +145,57 @@ INSERT INTO platform_plans(key,member_limit) VALUES ('free',1);
 SELECT ok('Unsubscribed owner falls back to the Free plan limit', (SELECT basis='free' AND seat_limit=1 FROM _seat_pool('00000000-0000-0000-0000-0000000000a1')));
 SELECT t('Over the limit: nobody is removed, new invitations are refused','ow@o1.test',$$SELECT org_invite_member('00000000-0000-0000-0000-0000000000a1','n2@new.test','member')$$,'ERROR:seat limit');
 SELECT ok('Over-limit members all still active', (SELECT used FROM _seat_pool('00000000-0000-0000-0000-0000000000a1'))=7);
+-- Revision 4: re-activation bypass closed for every route while full (Free limit 1, 7 staff)
+UPDATE organization_members SET is_active=false WHERE user_id='77777777-0000-4000-8000-000000000011' AND organization_id='00000000-0000-0000-0000-0000000000a1'; -- V leaves
+SELECT t('Admin cannot re-activate V through the API when there is no free seat','m@o1.test',$$UPDATE organization_members SET is_active=true WHERE user_id='77777777-0000-4000-8000-000000000011'$$,'ERROR:no free seats');
+DO $$ BEGIN
+  BEGIN UPDATE organization_members SET is_active=true WHERE user_id='77777777-0000-4000-8000-000000000011';
+        INSERT INTO results(name,ok,detail) VALUES ('Server-side re-activation (no auth) is blocked too', false, 'was allowed');
+  EXCEPTION WHEN others THEN INSERT INTO results(name,ok,detail) VALUES ('Server-side re-activation (no auth) is blocked too', SQLERRM LIKE '%no free seats%', SQLERRM); END;
+  BEGIN INSERT INTO organization_members(organization_id,user_id,role) VALUES ('00000000-0000-0000-0000-0000000000a1','cccccccc-0000-4000-8000-000000000015','member');
+        INSERT INTO results(name,ok,detail) VALUES ('Server-side direct add (no invitation) is blocked when full', false, 'was allowed');
+  EXCEPTION WHEN others THEN INSERT INTO results(name,ok,detail) VALUES ('Server-side direct add (no invitation) is blocked when full', SQLERRM LIKE '%no free seats%', SQLERRM); END;
+END $$;
+UPDATE organization_members SET role='manager' WHERE user_id='22222222-0000-4000-8000-00000000000a' AND organization_id='00000000-0000-0000-0000-0000000000a1';
+SELECT ok('Role change of an active member still works while full', (SELECT role FROM organization_members WHERE user_id='22222222-0000-4000-8000-00000000000a' AND organization_id='00000000-0000-0000-0000-0000000000a1')='manager');
 DELETE FROM platform_plans WHERE key='free';
 SELECT ok('No plan limit stored: no cap', (SELECT seat_limit IS NULL AND basis='no_plan:no_limit_configured' FROM _seat_pool('00000000-0000-0000-0000-0000000000a1')));
+-- Revision 4: explicit billing owner, ownerless companies, authorised repair, ownership changes, company creation
+SELECT ok('Billing owner seeded only where the creator is the active owner', (SELECT billing_user_id='88888888-0000-4000-8000-000000000012' AND source='seeded_creator_owner' FROM organization_billing WHERE organization_id='00000000-0000-0000-0000-0000000000a1')
+  AND NOT EXISTS (SELECT 1 FROM organization_billing WHERE organization_id='00000000-0000-0000-0000-0000000000a2'));
+SELECT t('Billing owner table cannot be written through the API','ow@o1.test',$$UPDATE organization_billing SET billing_user_id=auth.uid()$$,'ERROR');
+SELECT t('Ownerless O2: its admin cannot invite','x@o2.test',$$SELECT org_invite_member('00000000-0000-0000-0000-0000000000a2','n3@new.test','member')$$,'ERROR:no billing owner');
+DO $$ BEGIN
+  BEGIN INSERT INTO organization_members(organization_id,user_id,role) VALUES ('00000000-0000-0000-0000-0000000000a2','cccccccc-0000-4000-8000-000000000015','member');
+        INSERT INTO results(name,ok,detail) VALUES ('Ownerless O2: server-side add blocked (missing owner is not unlimited)', false, 'was allowed');
+  EXCEPTION WHEN others THEN INSERT INTO results(name,ok,detail) VALUES ('Ownerless O2: server-side add blocked (missing owner is not unlimited)', SQLERRM LIKE '%no billing owner%', SQLERRM); END;
+END $$;
+SELECT ok('Ownerless O2: existing admin keeps access', EXISTS (SELECT 1 FROM organization_members WHERE organization_id='00000000-0000-0000-0000-0000000000a2' AND user_id='99999999-0000-4000-8000-00000000000c' AND is_active));
+SELECT t('Only a platform super admin can set a billing owner','m@o1.test',$$SELECT platform_set_billing_owner('00000000-0000-0000-0000-0000000000a2','99999999-0000-4000-8000-00000000000c','repair')$$,'ERROR:super admins only');
+SELECT t('Repair needs a reason','sa@b2bnest.test',$$SELECT platform_set_billing_owner('00000000-0000-0000-0000-0000000000a2','99999999-0000-4000-8000-00000000000c','')$$,'ERROR:reason');
+SELECT t('Repair target must be an active member','sa@b2bnest.test',$$SELECT platform_set_billing_owner('00000000-0000-0000-0000-0000000000a2','11111111-0000-4000-8000-00000000000d','repair')$$,'ERROR:active member');
+SELECT t('Super admin repairs O2 (billing owner = X), recorded','sa@b2bnest.test',$$SELECT platform_set_billing_owner('00000000-0000-0000-0000-0000000000a2','99999999-0000-4000-8000-00000000000c','owner confirmed by email ticket 1')$$,'ROWS=1');
+SELECT ok('Repair recorded with who/why', (SELECT source='platform_admin' AND set_by='eeeeeeee-0000-4000-8000-000000000017' AND note LIKE 'owner confirmed%' FROM organization_billing WHERE organization_id='00000000-0000-0000-0000-0000000000a2'));
+SELECT t('After repair O2''s admin can invite','x@o2.test',$$SELECT 1 FROM org_invite_member('00000000-0000-0000-0000-0000000000a2','n3@new.test','member') WHERE outcome='created'$$,'ROWS=1');
+SELECT t('(sample invitation revoked; keeps later sender checks unchanged)','x@o2.test',$$SELECT org_manage_invitation((SELECT id FROM organization_invitations WHERE email='n3@new.test'),'revoke')$$,'ROWS=1');
+UPDATE organization_members SET role='admin' WHERE organization_id='00000000-0000-0000-0000-0000000000a1' AND user_id='88888888-0000-4000-8000-000000000012';
+UPDATE organization_members SET role='owner' WHERE organization_id='00000000-0000-0000-0000-0000000000a1' AND user_id='11111111-0000-4000-8000-00000000000d';
+SELECT ok('Ownership transfer does not switch the billing owner or the pool', (SELECT billing_user_id FROM organization_billing WHERE organization_id='00000000-0000-0000-0000-0000000000a1')='88888888-0000-4000-8000-000000000012'
+  AND (SELECT pooled_companies FROM _seat_pool('00000000-0000-0000-0000-0000000000a1'))=2);
+UPDATE organization_members SET role='admin' WHERE organization_id='00000000-0000-0000-0000-0000000000a1' AND user_id='11111111-0000-4000-8000-00000000000d';
+UPDATE organization_members SET role='owner' WHERE organization_id='00000000-0000-0000-0000-0000000000a1' AND user_id='88888888-0000-4000-8000-000000000012';
+INSERT INTO organizations(id,name,created_by) VALUES ('00000000-0000-0000-0000-0000000000a5','O5 personal','f3333333-0000-4000-8000-00000000001a');
+INSERT INTO organization_members(organization_id,user_id,role) VALUES ('00000000-0000-0000-0000-0000000000a5','f3333333-0000-4000-8000-00000000001a','admin'); -- like sign-up
+SELECT ok('New company: its creator as first member becomes the billing owner (sign-up path, even as admin)',
+  (SELECT billing_user_id='f3333333-0000-4000-8000-00000000001a' AND source='company_created' FROM organization_billing WHERE organization_id='00000000-0000-0000-0000-0000000000a5'));
+DO $$ BEGIN
+  BEGIN INSERT INTO organizations(id,name,created_by) VALUES ('00000000-0000-0000-0000-0000000000a6','O6','f3333333-0000-4000-8000-00000000001a');
+        INSERT INTO organization_members(organization_id,user_id,role) VALUES ('00000000-0000-0000-0000-0000000000a6','f1111111-0000-4000-8000-000000000018','owner');
+        INSERT INTO results(name,ok,detail) VALUES ('A non-creator cannot claim a new company''s billing by joining first', false, 'was allowed');
+  EXCEPTION WHEN others THEN INSERT INTO results(name,ok,detail) VALUES ('A non-creator cannot claim a new company''s billing by joining first', SQLERRM LIKE '%no billing owner%', SQLERRM); END;
+END $$;
 SELECT t('Seat helpers are not callable by signed-in users','ow@o1.test',$$SELECT * FROM _seat_pool('00000000-0000-0000-0000-0000000000a1')$$,'ERROR');
+CREATE OR REPLACE FUNCTION public._seat_caps_enabled() RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT false $$; -- back to the shipped state
 DELETE FROM subscribers; -- back to "no limit configured" for the rest
 
 -- CUSTOMERS stay separate
@@ -195,7 +254,8 @@ SELECT ok('Staff read feedback; customer, plain member and other company cannot'
 SELECT t('Feedback cannot be inserted directly (API)','k@client.test',$$INSERT INTO support_ticket_feedback VALUES ((SELECT v FROM ids WHERE k='tk')::uuid,'00000000-0000-0000-0000-0000000000a1',1,NULL,auth.uid())$$,'ERROR');
 
 -- Revision 2: direct member inserts, historical queue, staff notifications, no duplicate notices
-SELECT ok('Email queued before the package is cancelled, never sent', (SELECT status FROM support_email_outbox WHERE dedupe_key='ack:old')='cancelled');
+SELECT ok('Only the known stale email (by id) is cancelled; any other queued email is left untouched',
+  (SELECT status FROM support_email_outbox WHERE dedupe_key='ack:old')='cancelled' AND (SELECT status FROM support_email_outbox WHERE dedupe_key='ack:other')<>'cancelled');
 SELECT t('Admin cannot add a member directly (API)','m@o1.test',$$INSERT INTO organization_members(organization_id,user_id,role) VALUES ('00000000-0000-0000-0000-0000000000a1','cccccccc-0000-4000-8000-000000000015','member')$$,'ERROR');
 SELECT t('Owner cannot add a member directly (API)','ow@o1.test',$$INSERT INTO organization_members(organization_id,user_id,role) VALUES ('00000000-0000-0000-0000-0000000000a1','cccccccc-0000-4000-8000-000000000015','member')$$,'ERROR');
 CREATE FUNCTION nc(who text, pat text) RETURNS bigint LANGUAGE sql AS $$

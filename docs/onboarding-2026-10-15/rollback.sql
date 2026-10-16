@@ -4,6 +4,8 @@
 -- Accepted/revoked dates on invitations are lost. Queued status-change emails are deleted (kind no longer allowed).
 -- Ticket emails cancelled by the package ('queued before email sending was approved') stay cancelled on purpose.
 BEGIN;
+DROP TRIGGER IF EXISTS organization_members_guard ON public.organization_members;
+DROP FUNCTION IF EXISTS public.organization_members_guard();
 DROP TRIGGER IF EXISTS support_tickets_status_notify ON public.support_tickets;
 DROP TRIGGER IF EXISTS support_messages_notify_staff ON public.support_messages;
 DROP FUNCTION IF EXISTS public.support_message_notify_staff(), public._support_notify_staff(uuid,uuid,text,text);
@@ -14,8 +16,9 @@ DROP FUNCTION IF EXISTS public.support_ticket_status_notify(), public.support_qu
   public.onboarding_outbox_claim(integer), public.onboarding_outbox_finish(uuid,text,text), public.onboarding_email_status(uuid),
   public.org_invite_member(uuid,text,text), public.org_invitation_token(uuid), public.org_manage_invitation(uuid,text),
   public.org_invitation_preview(text), public.org_accept_invitation(text), public.org_seat_summary(uuid),
-  public._seat_pool_lock(uuid), public._seat_already_counted(uuid,text), public._seat_pool(uuid), public._seat_pool_orgs(uuid), public._org_billing_owner(uuid);
-DROP TABLE IF EXISTS public.support_ticket_feedback, public.support_notification_prefs, public.onboarding_email_outbox;
+  public._seat_pool_lock(uuid), public._seat_needs_new(uuid,uuid,text), public._seat_pool(uuid), public._seat_pool_orgs(uuid),
+  public._org_billing_owner(uuid), public._seat_caps_enabled(), public.platform_set_billing_owner(uuid,uuid,text);
+DROP TABLE IF EXISTS public.support_ticket_feedback, public.support_notification_prefs, public.onboarding_email_outbox, public.organization_billing;
 ALTER TABLE public.support_settings DROP COLUMN IF EXISTS feedback_enabled;
 DELETE FROM public.support_email_outbox WHERE kind = 'status_change';
 ALTER TABLE public.support_email_outbox DROP CONSTRAINT support_email_outbox_kind_check;

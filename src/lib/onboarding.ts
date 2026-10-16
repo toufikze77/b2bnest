@@ -18,6 +18,27 @@ export function safeNext(raw: string | null | undefined): string {
 }
 export const authUrlWithNext = (next: string) => `/auth?next=${encodeURIComponent(safeNext(next))}`;
 
+/** Where Supabase's confirmation email returns the person: same host (https except localhost) + the vetted `next` page. */
+export function confirmationRedirect(origin: string, search: string): string {
+  const base = origin.includes('localhost') ? origin : origin.replace('http://', 'https://');
+  return `${base}${safeNext(new URLSearchParams(search).get('next'))}`;
+}
+
+/** Supabase redirect allow-list matching as documented: `*` and `?` never cross '.' or '/', `**` matches anything. */
+export function supabaseRedirectAllowed(url: string, patterns: string[]): boolean {
+  return patterns.some((p) => {
+    let re = '';
+    for (let i = 0; i < p.length; i++) {
+      const c = p[i];
+      if (c === '*' && p[i + 1] === '*') { re += '.*'; i++; }
+      else if (c === '*') re += '[^./]*';
+      else if (c === '?') re += '[^./]';
+      else re += c.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+    }
+    return new RegExp(`^${re}$`).test(url);
+  });
+}
+
 export const staffInviteLink = (origin: string, token: string) => `${origin.replace(/\/$/, '')}/join?token=${encodeURIComponent(token)}`;
 export const customerPortalLink = (origin: string, orgId: string) => `${origin.replace(/\/$/, '')}/support/portal?org=${encodeURIComponent(orgId)}`;
 
@@ -42,14 +63,14 @@ export function staffInvitationState(i: StaffInvitation, now = Date.now()): 'Joi
 /** Shown wherever email would otherwise be implied, until a bounded delivery test is approved and sending is switched on. */
 export const EMAIL_OFF_NOTICE = 'Email sending is switched off: nothing is emailed. Copy the link and send it yourself; updates appear in B2BNEST.';
 
-export type SeatSummary = { used: number; pending: number; seat_limit: number | null; pooled_companies?: number | null; basis?: string | null };
+export type SeatSummary = { used: number; pending: number; seat_limit: number | null; pooled_companies?: number | null; basis?: string | null; enforced?: boolean | null };
 /** Seats are one allowance per paying owner, shared by every company that owner bills for (unique staff counted once). */
 export function seatSummaryText(s: SeatSummary): string {
   const scope = (s.pooled_companies ?? 1) > 1 ? ` across ${s.pooled_companies} companies on the same plan` : '';
   const counts = `${s.used} staff + ${s.pending} pending invitation${s.pending === 1 ? '' : 's'}${scope}`;
-  if (s.basis === 'no_owner') return `Seats: ${counts}. This company has no active owner, so no plan limit can apply.`;
-  return s.seat_limit !== null ? `Seats: ${counts} of ${s.seat_limit}. Support customers don't use seats.`
-    : `Seats: ${counts} (no limit set on your plan). Support customers don't use seats.`;
+  if (s.basis === 'no_billing_owner') return `Seats: ${counts}. This company has no billing owner on record, so new members can't be added until B2BNEST support repairs it. Current members keep access.`;
+  if (s.enforced && s.seat_limit !== null) return `Seats: ${counts} of ${s.seat_limit}. Support customers don't use seats.`;
+  return `Seats: ${counts}. Seat limits aren't switched on yet. Support customers don't use seats.`;
 }
 
 /** Client-side mirror of the seat check (server decides). null limit = no limit configured. */

@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import TwoFactorAuth from '@/components/TwoFactorAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { safeNext } from '@/lib/onboarding';
+import { confirmationRedirect, safeNext } from '@/lib/onboarding';
 
 const Auth = () => {
   const { user, signIn, signUp, loading, verify2FA, sendVerificationCode, signInWithOAuth } = useAuth();
@@ -31,11 +31,10 @@ const Auth = () => {
     const target = (pendingEmail || email).trim();
     if (!target) return;
     setResending(true);
-    const redirectUrl = window.location.origin.replace('http://', window.location.origin.includes('localhost') ? 'http://' : 'https://');
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email: target,
-      options: { emailRedirectTo: `${redirectUrl}${safeNext(searchParams.get('next'))}` },
+      options: { emailRedirectTo: confirmationRedirect(window.location.origin, window.location.search) },
     });
     setResending(false);
     const msg = error?.message || '';
