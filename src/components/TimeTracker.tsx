@@ -26,7 +26,7 @@ const TimeTracker = () => {
 
   // Timer effect
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     
     if (currentEntry?.isRunning) {
       interval = setInterval(() => {
