@@ -8,14 +8,25 @@ import type { DocKind } from '@/lib/documentActions';
 import { isArchived } from '@/lib/archive';
 
 export const FUNCTION_NAME = 'send-document-email';
-/** The platform mailbox the email is sent from (Microsoft 365). */
-export const SENDER_ADDRESS = 'info@b2bnest.online';
 export const MESSAGE_MAX = 2000;
 export const SUBJECT_MAX = 200;
 export const PDF_MAX_BYTES = 5 * 1024 * 1024;
 
 const EMAIL = /^[A-Za-z0-9._%+'-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/;
 export const isValidEmail = (s: string | null | undefined): boolean => !!s && s.trim().length <= 254 && EMAIL.test(s.trim());
+
+/**
+ * What the server says about this user (GET send-document-email). `sender` is the address emails are sent from,
+ * as configured on the server (SMTP_FROM / SMTP_USER); it is only given to a user who may send.
+ */
+export type EmailBlock = 'not_configured' | 'not_allowed' | 'email_not_verified';
+export interface EmailAccess { configured: boolean; sender?: string; reason?: EmailBlock }
+const BLOCKS: EmailBlock[] = ['not_configured', 'not_allowed', 'email_not_verified'];
+const NOT_AVAILABLE: Record<EmailBlock, string> = {
+  not_configured: 'Emailing from B2BNEST isn’t switched on yet. Download the PDF and send it yourself.',
+  not_allowed: 'Emailing from B2BNEST isn’t switched on for your account yet. Download the PDF and send it yourself.',
+  email_not_verified: 'Verify your email address to use this.',
+};
 
 export interface EmailableDoc {
   status?: string | null; archived_at?: string | null; client_email?: string | null;
@@ -31,9 +42,9 @@ export interface EmailAvailability {
 }
 
 /** Whether "Email to customer" can be used for this document, and if not, why not. */
-export function emailAvailability(kind: DocKind, doc: EmailableDoc, configured: boolean | null): EmailAvailability {
+export function emailAvailability(kind: DocKind, doc: EmailableDoc, access: EmailAccess | null): EmailAvailability {
   const noun = kind === 'invoice' ? 'invoice' : 'quote';
-  if (!configured) return { label: 'Email to customer (not available yet)', enabled: false, again: false, reason: 'Emailing from B2BNEST isn’t switched on yet. Download the PDF and send it yourself.' };
+  if (!access?.configured) return { label: 'Email to customer (not available yet)', enabled: false, again: false, reason: NOT_AVAILABLE[access?.reason ?? 'not_configured'] };
   if (isArchived(doc)) return { label: 'Email to customer', enabled: false, again: false, reason: `Archived ${noun}s can’t be emailed. Restore it first.` };
   const status = (doc.status || 'draft').toLowerCase();
   if (kind === 'invoice' && status === 'paid') return { label: 'Email to customer', enabled: false, again: false, reason: 'This invoice is paid, so it isn’t emailed.' };
@@ -106,12 +117,17 @@ async function errorBody(error: unknown): Promise<Record<string, unknown> | null
 
 export function documentEmailApi(client: FunctionsClient) {
   return {
-    /** Lightweight check: the function answers {configured} without touching the mail server. Any problem = not available. */
-    async configured(): Promise<boolean> {
+    /**
+     * Lightweight check: may this user send, and from which address? The function answers without touching the mail
+     * server. Any problem (not deployed, offline, odd answer) = not available.
+     */
+    async access(): Promise<EmailAccess> {
       try {
         const { data, error } = await client.functions.invoke(FUNCTION_NAME, { method: 'GET' });
-        return !error && (data as { configured?: unknown } | null)?.configured === true;
-      } catch { return false; }
+        const d = (error ? null : data) as { configured?: unknown; sender?: unknown; reason?: unknown } | null;
+        if (d?.configured === true) return { configured: true, ...(typeof d.sender === 'string' && isValidEmail(d.sender) ? { sender: d.sender.trim() } : {}) };
+        return { configured: false, reason: BLOCKS.includes(d?.reason as EmailBlock) ? (d!.reason as EmailBlock) : 'not_configured' };
+      } catch { return { configured: false, reason: 'not_configured' }; }
     },
     /** Sends one document. Only kind, id, subject, message and the PDF are sent: never an address. */
     async send(input: { kind: DocKind; id: string; subject: string; message: string; pdfBase64: string }): Promise<SendResult> {

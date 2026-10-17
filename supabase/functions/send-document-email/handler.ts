@@ -27,7 +27,8 @@ export interface LogRow {
 }
 export interface Deps {
   env: (name: string) => string | undefined;
-  getUser: (token: string) => Promise<{ id: string; email: string | null } | null>;
+  /** The signed-in user. `email_confirmed_at` is null until they verified their email address. */
+  getUser: (token: string) => Promise<{ id: string; email: string | null; email_confirmed_at?: string | null } | null>;
   /** Reads the document as the signed-in user (row-level security applies). null when not visible. */
   loadDocument: (token: string, kind: Kind, id: string) => Promise<DocRow | null>;
   /** Emails accepted (or possibly sent) in the last 24 hours, for the user and for this document. */
@@ -39,7 +40,9 @@ export interface Deps {
   timeoutMs?: number;
 }
 
-export const LIMITS = { perUserPerDay: 20, perDocumentPerDay: 3, pdfBytes: 5 * 1024 * 1024, message: 2000, subject: 200 };
+export const LIMITS = { perDocumentPerDay: 3, pdfBytes: 5 * 1024 * 1024, message: 2000, subject: 200 };
+/** Per-user daily limit: DOCUMENT_EMAIL_USER_DAILY_LIMIT, default 10, never above 50. */
+export const USER_DAILY = { fallback: 10, max: 50 };
 const ALLOWED_KEYS = new Set(["kind", "id", "subject", "message", "pdf_base64", "to"]); // `to` is accepted and ignored
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** One plain address: no spaces, commas, angle brackets, quotes or line breaks. */
@@ -49,11 +52,46 @@ export const UNCERTAIN = "The connection to the email provider was lost after th
 const json = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...corsHeaders } });
 
+/**
+ * Who may send: DOCUMENT_EMAIL_ALLOWED_USERS, comma-separated user ids, or `*` for every verified user.
+ * Unset or empty means nobody (fail closed): emailing from the platform address must be switched on per account.
+ */
+export function isAllowedUser(env: Deps["env"], userId: string): boolean {
+  const list = String(env("DOCUMENT_EMAIL_ALLOWED_USERS") ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+  return list.includes("*") || list.includes(userId.trim().toLowerCase());
+}
+
+/** DOCUMENT_EMAIL_USER_DAILY_LIMIT: a positive whole number, capped at 50; anything else means the default of 10. */
+export function userDailyLimit(env: Deps["env"]): number {
+  const raw = String(env("DOCUMENT_EMAIL_USER_DAILY_LIMIT") ?? "").trim();
+  if (!/^\d+$/.test(raw)) return USER_DAILY.fallback;
+  const n = Number(raw);
+  if (!Number.isSafeInteger(n) || n < 1) return USER_DAILY.fallback;
+  return Math.min(n, USER_DAILY.max);
+}
+
+/** The address part of the effective From (SMTP_FROM, else SMTP_USER). Never the display name, host or user name. */
+export function senderAddress(cfg: SmtpConfig): string | undefined {
+  const a = addrOf(cfg.from);
+  return isEmail(a) ? a : undefined;
+}
+
+type Access = { ok: true; cfg: SmtpConfig } | { ok: false; status: number; code: string; error: string };
+/** Configured, switched on, this account allowed, and its email verified — checked the same way for GET and POST. */
+function access(env: Deps["env"], user: { id: string; email_confirmed_at?: string | null }): Access {
+  const cfg = documentEmailConfig(env);
+  if (!cfg) return { ok: false, status: 503, code: "not_configured", error: "Email sending is not configured yet. Nothing was sent. Download the PDF and send it yourself." };
+  if (!isAllowedUser(env, user.id)) return { ok: false, status: 403, code: "not_allowed", error: "Email sending isn't switched on for your account yet. Nothing was sent. Download the PDF and send it yourself." };
+  if (!user.email_confirmed_at) return { ok: false, status: 403, code: "email_not_verified", error: "Verify your email address to use this. Nothing was sent." };
+  return { ok: true, cfg };
+}
+
 /** Email sending for documents needs the Microsoft 365 SMTP_* settings and the on switch. */
 export function documentEmailConfig(env: Deps["env"]): SmtpConfig | null {
   const cfg = resolveSmtp(env);
   if (!cfg || cfg.provider !== "smtp") return null; // never the old Gmail fallback
   if (env("DOCUMENT_EMAIL_ENABLED") !== "true") return null;
+  if (!isEmail(addrOf(cfg.from))) return null; // a From without a usable address would send a broken message
   return cfg;
 }
 
@@ -153,8 +191,13 @@ export function makeHandler(deps: Deps) {
     const user = await deps.getUser(token).catch(() => null);
     if (!user) return json(401, { success: false, error: "Please sign in again." });
 
-    // Lightweight check for the browser: is sending switched on? Never connects to the mail server.
-    if (req.method === "GET") return json(200, { configured: !!documentEmailConfig(deps.env) });
+    // Lightweight check for the browser: may this user send? Never connects to the mail server. Only the sender's
+    // address is returned, and only to a user who may send (no display name, host, port, user name or secret).
+    const acc = access(deps.env, user);
+    if (req.method === "GET") {
+      return json(200, acc.ok ? { configured: true, ...(senderAddress(acc.cfg) ? { sender: senderAddress(acc.cfg) } : {}) } : { configured: false, reason: acc.code });
+    }
+    if (!acc.ok) return json(acc.status, { success: false, code: acc.code, sent: "not_sent", error: acc.error });
 
     let body: Record<string, unknown>;
     try { body = await req.json(); } catch { return json(400, { success: false, error: "Invalid request." }); }
@@ -171,8 +214,7 @@ export function makeHandler(deps: Deps) {
     const pdf = decodePdf(body.pdf_base64);
     if ("error" in pdf) return json(400, { success: false, code: "bad_attachment", error: pdf.error });
 
-    const cfg = documentEmailConfig(deps.env);
-    if (!cfg) return json(503, { success: false, code: "not_configured", sent: "not_sent", error: "Email sending is not configured yet. Nothing was sent. Download the PDF and send it yourself." });
+    const cfg = acc.cfg;
 
     const doc = await deps.loadDocument(token, kind, id).catch(() => null);
     const label = kindLabel(kind);
@@ -189,8 +231,9 @@ export function makeHandler(deps: Deps) {
     let counts: { user: number; document: number };
     try { counts = await deps.recentCounts(user.id, doc.id, new Date(now.getTime() - 864e5).toISOString()); }
     catch { return json(503, { success: false, code: "limit_check_failed", sent: "not_sent", error: "The sending limit couldn't be checked, so nothing was sent. Please try again later." }); }
-    if (counts.user >= LIMITS.perUserPerDay)
-      return json(429, { success: false, code: "user_limit", sent: "not_sent", error: `You can email up to ${LIMITS.perUserPerDay} documents in 24 hours. Nothing was sent. Try again later, or download the PDF and send it yourself.` });
+    const perUser = userDailyLimit(deps.env);
+    if (counts.user >= perUser)
+      return json(429, { success: false, code: "user_limit", sent: "not_sent", error: `You can email up to ${perUser} documents in 24 hours. Nothing was sent. Try again later, or download the PDF and send it yourself.` });
     if (counts.document >= LIMITS.perDocumentPerDay)
       return json(429, { success: false, code: "document_limit", sent: "not_sent", error: `This ${label} has already been emailed ${LIMITS.perDocumentPerDay} times in 24 hours. Nothing was sent.` });
 

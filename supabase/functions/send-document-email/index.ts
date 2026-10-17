@@ -1,5 +1,6 @@
 // NOT DEPLOYED (Phase 4b). Deploy only after the owner approves; see docs/phase4b-document-email/README.md.
-// Needs the document_email_log table (docs/phase4b-document-email/proposal.sql) and DOCUMENT_EMAIL_ENABLED=true.
+// Needs the document_email_log table (docs/phase4b-document-email/proposal.sql), DOCUMENT_EMAIL_ENABLED=true and the
+// account listed in DOCUMENT_EMAIL_ALLOWED_USERS (unset = nobody may send).
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { makeHandler, type DocRow } from "./handler.ts";
@@ -13,7 +14,7 @@ serve(makeHandler({
   env: (n) => Deno.env.get(n),
   getUser: async (token) => {
     const { data, error } = await admin.auth.getUser(token);
-    return error || !data.user ? null : { id: data.user.id, email: data.user.email ?? null };
+    return error || !data.user ? null : { id: data.user.id, email: data.user.email ?? null, email_confirmed_at: data.user.email_confirmed_at ?? null };
   },
   // The document is read with the caller's own token, so row-level security decides what is visible.
   loadDocument: async (token, kind, id) => {

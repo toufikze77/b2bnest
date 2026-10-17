@@ -25,7 +25,7 @@ vi.mock('@/lib/documentTemplates', async (orig) => ({
 /**
  * Supabase stand-in. Reads return the rows below; writes are recorded with their filters and can be
  * made to fail. Every function call is recorded. The only function the page may call is send-document-email:
- * its GET "is sending switched on?" check (answer: `emailConfigured`), and a send only in tests that set
+ * its GET "may this user send, and from which address?" check (answer: `emailAccess`), and a send only in tests that set
  * `sendReply` (a fake answer; nothing real is ever contacted).
  */
 const db = vi.hoisted(() => ({
@@ -33,7 +33,7 @@ const db = vi.hoisted(() => ({
   writes: [] as { table: string; op: string; payload: unknown; filters: unknown[][] }[],
   failWrites: false,
   functionCalls: [] as { name: string; method: string; body?: Record<string, unknown> }[],
-  emailConfigured: false,
+  emailAccess: { configured: false, reason: 'not_configured' } as Record<string, unknown>,
   sendReply: null as null | (() => Promise<{ data: unknown; error: unknown }>),
 }));
 vi.mock('@/integrations/supabase/client', () => {
@@ -68,7 +68,7 @@ vi.mock('@/integrations/supabase/client', () => {
         invoke: (name: string, opts?: { method?: string; body?: Record<string, unknown> }) => {
           const call = { name, method: opts?.method ?? 'POST', body: opts?.body };
           db.functionCalls.push(call);
-          if (call.method === 'GET') return Promise.resolve({ data: { configured: db.emailConfigured }, error: null });
+          if (call.method === 'GET') return Promise.resolve({ data: db.emailAccess, error: null });
           return db.sendReply ? db.sendReply() : Promise.resolve({ data: null, error: { message: 'unexpected call' } });
         },
       },
@@ -102,7 +102,7 @@ const fetchSpy = vi.fn();
 
 beforeEach(() => {
   db.rows = { invoices: [invoice('1001', 'draft', 600, day(20)), invoice('1002', 'sent', 950, day(10))], quotes: [] };
-  db.writes = []; db.failWrites = false; db.functionCalls = []; db.emailConfigured = false; db.sendReply = null;
+  db.writes = []; db.failWrites = false; db.functionCalls = []; db.emailAccess = { configured: false, reason: 'not_configured' }; db.sendReply = null;
   Object.values(toast).forEach((f) => f.mockClear());
   fetchSpy.mockClear();
   vi.stubGlobal('fetch', fetchSpy);
@@ -313,10 +313,11 @@ describe('Email to customer', () => {
     await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Send email' })).toBeEnabled());
     return dialog;
   };
-  beforeEach(() => { db.emailConfigured = true; db.rows = { invoices: [emailable('1001', 'draft')], quotes: [] }; pdfSave.mockClear(); });
+  const SENDER = 'notifications@b2bnest.online';
+  beforeEach(() => { db.emailAccess = { configured: true, sender: SENDER }; db.rows = { invoices: [emailable('1001', 'draft')], quotes: [] }; pdfSave.mockClear(); });
 
   it('not configured: the menu says "not available yet" with the reason, and choosing it sends nothing', async () => {
-    db.emailConfigured = false;
+    db.emailAccess = { configured: false, reason: 'not_configured' };
     renderAt('?tool=business-finance-assistant&tab=invoices');
     const item = await menuItem('INV-1001', /Email to customer \(not available yet\)/);
     expect(item).toHaveAttribute('aria-disabled', 'true');
@@ -324,6 +325,39 @@ describe('Email to customer', () => {
     fireEvent.click(item);
     expect(screen.queryByRole('dialog', { name: /Email to customer: invoice/ })).toBeNull();
     expect(db.functionCalls.map((c) => c.method)).toEqual(['GET']);
+  });
+
+  it('not on the allowlist: the same "not available yet" item, with the account reason; nothing sent', async () => {
+    db.emailAccess = { configured: false, reason: 'not_allowed' };
+    renderAt('?tool=business-finance-assistant&tab=invoices');
+    const item = await menuItem('INV-1001', /Email to customer \(not available yet\)/);
+    expect(item).toHaveAttribute('aria-disabled', 'true');
+    expect(item).toHaveTextContent('isn’t switched on for your account yet. Download the PDF and send it yourself.');
+    fireEvent.click(item);
+    expect(screen.queryByRole('dialog', { name: /Email to customer: invoice/ })).toBeNull();
+    expect(db.functionCalls.map((c) => c.method)).toEqual(['GET']);
+  });
+
+  it('email address not verified: "not available yet" with "Verify your email address to use this."', async () => {
+    db.emailAccess = { configured: false, reason: 'email_not_verified' };
+    renderAt('?tool=business-finance-assistant&tab=invoices');
+    const item = await menuItem('INV-1001', /Email to customer \(not available yet\)/);
+    expect(item).toHaveTextContent('Verify your email address to use this.');
+    fireEvent.click(item);
+    expect(db.functionCalls.map((c) => c.method)).toEqual(['GET']);
+  });
+
+  it('the sender line uses the address the server reported; with none, no address is invented', async () => {
+    db.emailAccess = { configured: true, sender: 'billing-test@b2bnest.example' };
+    const first = renderAt('?tool=business-finance-assistant&tab=invoices');
+    let dialog = await openDialog();
+    expect(dialog).toHaveTextContent('This email is sent from billing-test@b2bnest.example on your behalf.');
+    first.unmount();
+    db.emailAccess = { configured: true };
+    renderAt('?tool=business-finance-assistant&tab=invoices');
+    dialog = await openDialog();
+    expect(dialog).toHaveTextContent('This email is sent from the B2BNEST sending address on your behalf. Replies go to owner@acme.example.');
+    expect(dialog).not.toHaveTextContent(/info@/);
   });
 
   it('no customer email: disabled with the reason', async () => {
@@ -349,7 +383,7 @@ describe('Email to customer', () => {
     expect(within(dialog).getByLabelText('Subject')).toHaveValue('Invoice INV-1001 from Acme Trading Ltd');
     expect(within(dialog).getByLabelText('Message')).toHaveValue('Hello Priya Shah,\n\nPlease find invoice INV-1001 attached, total 1,250.00 GBP, due 1 Nov 2026.\n\nSent by Acme Trading Ltd using B2BNEST.');
     expect(dialog).toHaveTextContent('Attachment: INV-1001.pdf');
-    expect(dialog).toHaveTextContent('This email is sent from info@b2bnest.online on your behalf. Replies go to owner@acme.example.');
+    expect(dialog).toHaveTextContent('This email is sent from notifications@b2bnest.online on your behalf. Replies go to owner@acme.example.');
     expect(within(dialog).getByRole('button', { name: 'Edit customer' })).toBeInTheDocument();
   });
 

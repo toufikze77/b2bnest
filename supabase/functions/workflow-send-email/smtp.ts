@@ -41,7 +41,7 @@ export function buildMessage(mail: Mail, domain = "b2bnest.online"): string {
 
 /** A message with a plain-text and HTML body (multipart/alternative) plus one attachment. */
 export interface MixedMail {
-  /** Full From header value, e.g. `"B2BNEST on behalf of Acme" <info@b2bnest.online>`. */
+  /** Full From header value, e.g. `"B2BNEST on behalf of Acme" <notifications@b2bnest.online>`. */
   from: string;
   to: string;
   replyTo?: string;

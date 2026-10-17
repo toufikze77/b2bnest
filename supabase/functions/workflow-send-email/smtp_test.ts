@@ -5,8 +5,8 @@ const stable = (raw: string) => raw.replace(/^Date: .*$/m, "Date: X").replace(/^
 const b64 = (s: string) => btoa(String.fromCharCode(...new TextEncoder().encode(s)));
 
 Deno.test("buildMessage (existing senders): single plain or HTML body, unchanged", () => {
-  const plain = stable(buildMessage({ from: "B2BNEST <info@b2bnest.online>", to: ["a@x.example", "b@x.example"], subject: "Hi", content: "Hello" }));
-  assertEquals(plain, ["From: B2BNEST <info@b2bnest.online>", "To: a@x.example, b@x.example", "Subject: Hi", "Date: X", "Message-ID: X",
+  const plain = stable(buildMessage({ from: "B2BNEST <notifications@b2bnest.online>", to: ["a@x.example", "b@x.example"], subject: "Hi", content: "Hello" }));
+  assertEquals(plain, ["From: B2BNEST <notifications@b2bnest.online>", "To: a@x.example, b@x.example", "Subject: Hi", "Date: X", "Message-ID: X",
     "MIME-Version: 1.0", "Content-Type: text/plain; charset=UTF-8", "Content-Transfer-Encoding: base64", "", `${b64("Hello")}\r\n`].join("\r\n"));
   const html = stable(buildMessage({ from: "f@x.example", to: ["a@x.example"], subject: "Café", html: "<p>Hi</p>" }));
   assert(html.includes("Content-Type: text/html; charset=UTF-8"));
@@ -17,13 +17,13 @@ Deno.test("buildMessage (existing senders): single plain or HTML body, unchanged
 Deno.test("buildMixedMessage: text + HTML alternatives and one PDF attachment, one-line headers", () => {
   const bytes = new TextEncoder().encode("%PDF-1.4 test");
   const raw = buildMixedMessage({
-    from: `"B2BNEST on behalf of Acme" <info@b2bnest.online>`, to: "c@client.example", replyTo: "owner@acme.example",
+    from: `"B2BNEST on behalf of Acme" <notifications@b2bnest.online>`, to: "c@client.example", replyTo: "owner@acme.example",
     subject: "Invoice INV-1\r\nBcc: x@evil.example", text: "Hello", html: "<p>Hello</p>",
     attachment: { filename: "INV-1.pdf", contentType: "application/pdf", bytes },
   });
   const head = raw.split("\r\n\r\n")[0].split("\r\n");
   assertEquals(head.filter((l) => /^(From|To|Reply-To|Subject|Bcc):/.test(l)), [
-    `From: "B2BNEST on behalf of Acme" <info@b2bnest.online>`, "To: c@client.example", "Reply-To: owner@acme.example", "Subject: Invoice INV-1 Bcc: x@evil.example",
+    `From: "B2BNEST on behalf of Acme" <notifications@b2bnest.online>`, "To: c@client.example", "Reply-To: owner@acme.example", "Subject: Invoice INV-1 Bcc: x@evil.example",
   ]);
   const boundary = head.find((l) => l.startsWith("Content-Type: multipart/mixed"))!.match(/boundary="([^"]+)"/)![1];
   assert(raw.includes(`--${boundary}\r\nContent-Type: multipart/alternative`));
@@ -36,6 +36,6 @@ Deno.test("buildMixedMessage: text + HTML alternatives and one PDF attachment, o
 });
 
 Deno.test("buildMixedMessage omits Reply-To when none is given", () => {
-  const raw = buildMixedMessage({ from: "info@b2bnest.online", to: "c@client.example", subject: "S", text: "t", html: "h", attachment: { filename: "a.pdf", contentType: "application/pdf", bytes: new Uint8Array([37, 80, 68, 70]) } });
+  const raw = buildMixedMessage({ from: "notifications@b2bnest.online", to: "c@client.example", subject: "S", text: "t", html: "h", attachment: { filename: "a.pdf", contentType: "application/pdf", bytes: new Uint8Array([37, 80, 68, 70]) } });
   assertEquals(raw.includes("Reply-To:"), false);
 });
