@@ -3,7 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ErrorState, LoadingRows } from '@/components/ui/states';
 import { AlertTriangle, Shield } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { PayrollSubTab, payrollTabFromSearch, searchWithPayrollTab } from '@/lib/financeTabs';
 import { supabase } from '@/integrations/supabase/client';
 import EmployeeList from './EmployeeList';
 import PayRunGenerator from './PayRunGenerator';
@@ -50,7 +52,11 @@ const Payroll = () => {
   const [loading, setLoading] = useState<boolean>(false);
   // A failed load is shown as an error with Retry, never as "No employees yet".
   const [loadError, setLoadError] = useState(false);
-  const [subTab, setSubTab] = useState('employees');
+  // The sub-tab lives in the address bar (?payroll=), so a refresh stays on it; unknown values → Employees.
+  const location = useLocation();
+  const navigate = useNavigate();
+  const subTab = payrollTabFromSearch(location.search);
+  const setSubTab = (tab: string) => navigate({ search: searchWithPayrollTab(location.search, tab as PayrollSubTab) }, { replace: true });
   // Skeleton only on the first load; later refreshes (after a save) keep the list and any open form on screen.
   const [loadedOnce, setLoadedOnce] = useState(false);
 

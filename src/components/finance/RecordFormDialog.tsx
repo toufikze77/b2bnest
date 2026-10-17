@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import type { FormValues } from '@/lib/moneyOut';
@@ -16,8 +16,10 @@ export interface FieldUi {
   label: string;
   type: 'text' | 'email' | 'number' | 'date' | 'textarea' | 'select' | 'switch';
   required?: boolean;
-  options?: { value: string; label: string }[];
+  /** `group` sorts options under headings in the list. */
+  options?: { value: string; label: string; group?: string }[];
   placeholder?: string;
+  maxLength?: number;
   hint?: string;
   /** Hide the field for some values (e.g. stock for services). */
   show?: (form: FormValues) => boolean;
@@ -25,6 +27,13 @@ export interface FieldUi {
 }
 
 const NONE = '__none__';
+
+/** Options in their groups, in first-seen order; ungrouped options sit in a group with no heading. */
+function groupOptions(options: NonNullable<FieldUi['options']>) {
+  const groups = new Map<string, NonNullable<FieldUi['options']>>();
+  for (const o of options) { const g = o.group ?? ''; groups.set(g, [...(groups.get(g) ?? []), o]); }
+  return [...groups.entries()];
+}
 
 /**
  * One dialog for Add and Edit: the same fields, prefilled when editing. `onSubmit` returns an
@@ -91,7 +100,13 @@ export function RecordFormDialog({ open, onOpenChange, title, description, field
                         <SelectContent>
                           {!f.required && <SelectItem value={NONE}>None</SelectItem>}
                           {f.required && !v && <SelectItem value={NONE} disabled>Choose…</SelectItem>}
-                          {(f.options ?? []).map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                          {groupOptions(f.options ?? []).map(([group, opts], gi) => group ? (
+                            <SelectGroup key={group}>
+                              {gi > 0 && <SelectSeparator />}
+                              <SelectLabel>{group}</SelectLabel>
+                              {opts.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                            </SelectGroup>
+                          ) : opts.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>))}
                         </SelectContent>
                       </Select>
                     </>
@@ -104,7 +119,7 @@ export function RecordFormDialog({ open, onOpenChange, title, description, field
                     <>
                       {label}
                       <Input id={fid} type={f.type} inputMode={f.type === 'number' ? 'decimal' : undefined} step={f.type === 'number' ? '0.01' : undefined} min={f.type === 'number' ? 0 : undefined}
-                        className="h-11 md:h-10" value={(v as string) ?? ''} placeholder={f.placeholder} aria-required={f.required} aria-describedby={hint} onChange={(e) => set(f.key, e.target.value)} />
+                        className="h-11 md:h-10" value={(v as string) ?? ''} placeholder={f.placeholder} maxLength={f.maxLength} aria-required={f.required} aria-describedby={hint} onChange={(e) => set(f.key, e.target.value)} />
                     </>
                   )}
                   {f.hint && <p id={hint} className="text-small text-muted-foreground">{f.hint}</p>}

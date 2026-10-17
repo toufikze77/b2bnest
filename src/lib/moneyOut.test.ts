@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  CUSTOM_CATEGORY_MAX, EXPENSE_CATEGORIES, EXPENSE_CATEGORY_GROUPS, expenseCategoryOptions, expensesCsv, labelOf, resolveCustomCategory,
   buildPayload, changedFields, EXPENSE_FIELDS, filteredTotal, formFromRow, isInUseError, monthlyOutgoings, PRODUCT_FIELDS,
   SUPPLIER_FIELDS, supplierDeleteMessage,
 } from './moneyOut';
@@ -118,5 +119,54 @@ describe('moneyOutApi', () => {
     expect(calls[1]).toEqual(['insert', [{ name: 'A', user_id: 'u1' }]]);
     const broken = { from: vi.fn(() => { throw new Error('offline'); }) } as unknown as Parameters<typeof moneyOutApi>[0];
     await expect(moneyOutApi(broken, 'u1', 'suppliers').remove('x')).resolves.toEqual({ error: { message: 'offline' } });
+  });
+});
+
+describe('expense categories', () => {
+  it('are grouped business headings with unique stored values and labels', () => {
+    const values = EXPENSE_CATEGORIES.map((c) => c.value);
+    expect(new Set(values).size).toBe(values.length);
+    expect(EXPENSE_CATEGORIES.length).toBe(24);
+    expect(EXPENSE_CATEGORY_GROUPS.map((g) => g.group)).toEqual(['Premises and office', 'Travel', 'Sales and marketing', 'People', 'Stock and equipment', 'Finance and legal', 'Other']);
+    expect(EXPENSE_CATEGORIES.find((c) => c.value === 'professional_fees')).toEqual({ value: 'professional_fees', label: 'Professional fees (accountant, legal)', group: 'Finance and legal' });
+    expect(EXPENSE_CATEGORIES.at(-1)).toEqual({ value: 'other', label: 'Other', group: 'Other' });
+  });
+
+  it('the original seven stored values still get a label and stay selectable', () => {
+    const opts = expenseCategoryOptions(['food', 'transport', 'utilities', 'entertainment', 'shopping', 'health', 'other']);
+    const label = (v: string) => labelOf(opts, v);
+    expect(['food', 'transport', 'utilities', 'entertainment', 'shopping', 'health', 'other'].map(label))
+      .toEqual(['Meals and subsistence', 'Travel and transport', 'Utilities', 'Client entertainment', 'Shopping', 'Health and medical', 'Other']);
+    expect(opts.filter((o) => o.group === 'Earlier categories').map((o) => o.value)).toEqual(['health', 'shopping']);
+    // Earlier categories appear only when a record uses them.
+    expect(expenseCategoryOptions([]).some((o) => o.value === 'shopping')).toBe(false);
+  });
+
+  it('a typed category is trimmed, capped at 40 characters, and offered next time', () => {
+    expect(resolveCustomCategory('   Parking   fees ', EXPENSE_CATEGORIES)).toEqual({ value: 'Parking fees' });
+    const long = 'x'.repeat(60);
+    expect(resolveCustomCategory(long, EXPENSE_CATEGORIES).value).toHaveLength(CUSTOM_CATEGORY_MAX);
+    const next = expenseCategoryOptions(['Parking fees']);
+    expect(next.find((o) => o.value === 'Parking fees')).toEqual({ value: 'Parking fees', label: 'Parking fees', group: 'Your categories' });
+  });
+
+  it('duplicates are matched ignoring case and reuse the existing category', () => {
+    expect(resolveCustomCategory('FUEL', EXPENSE_CATEGORIES)).toEqual({ value: 'fuel' });
+    expect(resolveCustomCategory('rent and rates', EXPENSE_CATEGORIES)).toEqual({ value: 'rent_rates' });
+    expect(resolveCustomCategory('parking FEES', expenseCategoryOptions(['Parking fees']))).toEqual({ value: 'Parking fees' });
+    expect(resolveCustomCategory('   ', EXPENSE_CATEGORIES)).toEqual({ value: '', error: 'Type a name for the new category.' });
+  });
+
+  it('the CSV uses the same labels and keeps a label with a comma in one column', () => {
+    const csv = expensesCsv(
+      [{ date: '2026-10-01', description: 'Year-end accounts', category: 'professional_fees', amount: 450, supplier_id: 's1', status: 'paid' },
+        { date: '2026-10-02', description: 'Lunch', category: 'food', amount: 12.5, supplier_id: null, status: null }],
+      [{ id: 's1', name: 'Smith & Co' }],
+    );
+    expect(csv.split('\r\n')).toEqual([
+      'Date,Description,Category,Amount,Supplier,Status',
+      '2026-10-01,Year-end accounts,"Professional fees (accountant, legal)",450,Smith & Co,Paid',
+      '2026-10-02,Lunch,Meals and subsistence,12.5,,Pending',
+    ]);
   });
 });

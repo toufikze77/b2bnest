@@ -13,13 +13,17 @@ export type DeleteOutcome = null | { message: string; inUse?: boolean };
  * deleting and shows any failure inside (the row stays as it was). When the database says the
  * item is still in use and `onMakeInactive` is given, it offers "Make inactive" instead.
  */
-export function ConfirmDeleteDialog({ open, onOpenChange, noun, name, onConfirm, onMakeInactive }: {
+export function ConfirmDeleteDialog({ open, onOpenChange, noun, name, onConfirm, onMakeInactive, title, description, confirmLabel }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   noun: string;
   name: string;
   onConfirm: () => Promise<DeleteOutcome>;
   onMakeInactive?: () => Promise<string | null>;
+  /** Override the default wording (e.g. the stronger warning for sent or paid invoices). */
+  title?: string;
+  description?: string;
+  confirmLabel?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<DeleteOutcome>(null);
@@ -45,8 +49,8 @@ export function ConfirmDeleteDialog({ open, onOpenChange, noun, name, onConfirm,
     <AlertDialog open={open} onOpenChange={(o) => { if (!busy) onOpenChange(o); }}>
       <AlertDialogContent onCloseAutoFocus={(e) => restoreFocus(opener.current, e)}>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete {noun} “{name}”?</AlertDialogTitle>
-          <AlertDialogDescription>This permanently deletes the {noun}. It can’t be undone.</AlertDialogDescription>
+          <AlertDialogTitle>{title ?? `Delete ${noun} “${name}”?`}</AlertDialogTitle>
+          <AlertDialogDescription>{description ?? `This permanently deletes the ${noun}. It can’t be undone.`}</AlertDialogDescription>
         </AlertDialogHeader>
         {problem && (
           <div role="alert" className="flex items-start gap-2 rounded-control border border-destructive/40 bg-destructive/5 p-3 text-body">
@@ -59,7 +63,7 @@ export function ConfirmDeleteDialog({ open, onOpenChange, noun, name, onConfirm,
           {offerInactive ? (
             <Button className="min-h-touch md:min-h-0" disabled={busy} onClick={inactive}>{busy ? 'Saving…' : 'Make inactive'}</Button>
           ) : (
-            <Button variant="destructive" className="min-h-touch md:min-h-0" disabled={busy} onClick={del}>{busy ? 'Deleting…' : `Delete ${noun}`}</Button>
+            <Button variant="destructive" className="min-h-touch md:min-h-0" disabled={busy} onClick={del}>{busy ? 'Deleting…' : confirmLabel ?? `Delete ${noun}`}</Button>
           )}
         </AlertDialogFooter>
       </AlertDialogContent>

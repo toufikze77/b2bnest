@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Download, Send } from 'lucide-react';
+import { Plus, Download, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import QuoteInvoiceCreationSection from '@/components/QuoteInvoiceCreationSection';
@@ -23,7 +23,11 @@ import { ExpensesTab } from '@/components/finance/ExpensesTab';
 import { OutgoingsTab } from '@/components/finance/OutgoingsTab';
 import { ProductsTab } from '@/components/finance/ProductsTab';
 import { SuppliersTab } from '@/components/finance/SuppliersTab';
-import { moneyOutApi, MoneyOutTable } from '@/lib/moneyOutApi';
+import { moneyOutApi, OwnedTable } from '@/lib/moneyOutApi';
+import { expensesCsv } from '@/lib/moneyOut';
+import { deleteWording, DocKind, statusActions, statusChangeMessage, StatusTarget } from '@/lib/documentActions';
+import { ConfirmDeleteDialog, DeleteOutcome } from '@/components/finance/ConfirmDeleteDialog';
+import { FinanceTab, financeTabFromSearch, searchWithTab } from '@/lib/financeTabs';
 import DocumentTemplatePicker from '@/components/documents/DocumentTemplatePicker';
 import { useDocumentTemplates } from '@/hooks/useDocumentTemplates';
 import { renderDocumentPdf } from '@/lib/documentTemplates';
@@ -69,14 +73,22 @@ const BusinessFinanceAssistant = () => {
   const navigate = useNavigate();
   const { templateFor } = useDocumentTemplates();
   const [isLoading, setIsLoading] = useState(false);
-  type FinanceTab = 'dashboard' | 'create' | 'quotes' | 'invoices' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'banking' | 'payroll' | 'reports' | 'analytics' | 'templates';
-  const FINANCE_TABS: FinanceTab[] = ['dashboard', 'create', 'quotes', 'invoices', 'products', 'suppliers', 'expenses', 'outgoings', 'banking', 'payroll', 'reports', 'analytics', 'templates'];
   const location = useLocation();
-  const tabFromUrl = (): FinanceTab => {
-    const t = new URLSearchParams(location.search).get('tab') as FinanceTab | null;
-    return t && FINANCE_TABS.includes(t) ? t : 'dashboard';
-  };
+  // The address bar is the source of truth for the tab, so a refresh lands where the user was.
+  const tabFromUrl = (): FinanceTab => financeTabFromSearch(location.search);
   const [activeTab, setActiveTab] = useState<FinanceTab>(tabFromUrl);
+  // On load, scroll the tab bar (it scrolls sideways on phones) so the active tab is visible.
+  const tabListRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const active = tabListRef.current?.querySelector<HTMLElement>('[data-state="active"]');
+    if (active && typeof active.scrollIntoView === 'function') active.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, []);
+  /** Switch tab and write ?tab= to the address bar (replace, so Back doesn't step through every tab). */
+  const changeTab = (tab: FinanceTab) => {
+    setActiveTab(tab);
+    const search = searchWithTab(location.search, tab);
+    if (search !== location.search.replace(/^\?/, '')) navigate({ search }, { replace: true });
+  };
   // ?type=invoice|quote preselects the Create tab's document type ("New invoice" / "New quote").
   const typeFromUrl = (): 'invoice' | 'quote' | null => {
     const t = new URLSearchParams(location.search).get('type');
@@ -91,7 +103,6 @@ const BusinessFinanceAssistant = () => {
   const [documentType, setDocumentType] = useState<'invoice' | 'quote'>(() => typeFromUrl() ?? 'quote');
   const [editingDocument, setEditingDocument] = useState<Quote | Invoice | null>(null);
   const [showDocumentList, setShowDocumentList] = useState(false);
-  const [sendingDocument, setSendingDocument] = useState<string | null>(null);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -311,18 +322,16 @@ const BusinessFinanceAssistant = () => {
   };
 
   const downloadExpenses = () => {
-    const csvContent = "data:text/csv;charset=utf-8," + 
-      "Date,Description,Category,Amount,Supplier,Status\n" +
-      expenses.map(e => `${e.date},${e.description},${e.category},${e.amount},${e.supplier_id || ''},${e.status}`).join("\n");
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "expenses_report.csv");
+    // Same category labels as the Expenses tab; fields quoted so labels with commas stay in one column.
+    const blob = new Blob(['\uFEFF', expensesCsv(expenses, suppliers)], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'expenses_report.csv';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+    URL.revokeObjectURL(url);
     toast.success("Expenses report downloaded");
   };
 
@@ -386,7 +395,7 @@ const BusinessFinanceAssistant = () => {
   const handleEditDocument = (doc: Quote | Invoice) => {
     setEditingDocument(doc);
     setDocumentType('quote_number' in doc ? 'quote' : 'invoice');
-    setActiveTab('create');
+    changeTab('create');
   };
 
   // "New invoice" / "New quote": the existing Create tab with the type preselected (URL stays shareable).
@@ -404,22 +413,53 @@ const BusinessFinanceAssistant = () => {
     return ('quote_number' in d ? d.quote_number : d.invoice_number) || '—';
   };
 
-  const handleSendDocument = async (doc: Quote | Invoice, type: 'quote' | 'invoice') => {
-    setSendingDocument(doc.id);
-    try {
-      const docType = 'quote_number' in doc ? 'quote' : 'invoice';
-      const number = 'quote_number' in doc ? doc.quote_number : doc.invoice_number;
-      
-      // Simulate sending delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      toast.success(`${docType.charAt(0).toUpperCase() + docType.slice(1)} ${number} sent successfully`);
-    } catch (error) {
-      toast.error('Failed to send document');
-    } finally {
-      setSendingDocument(null);
-    }
+  // Quotes and invoices: honest status changes and delete. Writes are filtered by id and user_id
+  // (src/lib/moneyOutApi.ts). Nothing is emailed: "Mark as sent" only records the status.
+  const kindOf = (doc: Quote | Invoice): DocKind => ('quote_number' in doc ? 'quote' : 'invoice');
+  const docApi = (kind: DocKind) => moneyOut(kind === 'quote' ? 'quotes' : 'invoices');
+  const reloadDocs = (kind: DocKind) => { void (kind === 'quote' ? loadQuotes() : loadInvoices()); };
+  const [statusBusy, setStatusBusy] = useState<string | null>(null);
+  const [deletingDoc, setDeletingDoc] = useState<Quote | Invoice | null>(null);
+  const patchDoc = (kind: DocKind, id: string, status: string | null) => {
+    const apply = <T extends Quote | Invoice>(list: T[]) => list.map((d) => (d.id === id ? { ...d, status } : d));
+    if (kind === 'quote') setQuotes(apply); else setInvoices(apply);
+    setSelectedDocument((cur) => (cur && cur.id === id ? { ...cur, status } : cur));
   };
+
+  const handleStatusChange = async (doc: Quote | Invoice, to: StatusTarget) => {
+    const kind = kindOf(doc);
+    const from = doc.status;
+    setStatusBusy(doc.id);
+    patchDoc(kind, doc.id, to); // shown at once in the chip and the Overview tiles
+    const { error } = await docApi(kind).update(doc.id, { status: to });
+    setStatusBusy(null);
+    if (error) {
+      patchDoc(kind, doc.id, from); // roll back
+      toast.error(`${numberOf(doc)} wasn’t updated. Its status is unchanged. Please try again.`);
+      return;
+    }
+    toast.success(statusChangeMessage(numberOf(doc), from, to));
+    reloadDocs(kind);
+  };
+
+  const confirmDeleteDoc = async (): Promise<DeleteOutcome> => {
+    if (!deletingDoc) return null;
+    const kind = kindOf(deletingDoc);
+    const number = numberOf(deletingDoc);
+    const { error } = await docApi(kind).remove(deletingDoc.id);
+    if (error) {
+      toast.error(`${number} not deleted`);
+      return { message: `${number} couldn’t be deleted. Nothing was changed. Please try again.` };
+    }
+    const id = deletingDoc.id;
+    if (kind === 'quote') setQuotes((l) => l.filter((d) => d.id !== id)); else setInvoices((l) => l.filter((d) => d.id !== id));
+    if (selectedDocument?.id === id) setIsDocumentViewOpen(false);
+    setDeletingDoc(null);
+    toast.success(`${kind === 'quote' ? 'Quote' : 'Invoice'} ${number} deleted`);
+    reloadDocs(kind);
+    return null;
+  };
+  const deleteText = deletingDoc ? deleteWording(kindOf(deletingDoc), numberOf(deletingDoc), deletingDoc) : null;
 
   const handleDocumentSaved = () => {
     setEditingDocument(null);
@@ -468,7 +508,7 @@ const BusinessFinanceAssistant = () => {
   };
 
   // Money-out writes: every update and delete is filtered by id and the signed-in user (src/lib/moneyOutApi.ts).
-  const moneyOut = (table: MoneyOutTable) => moneyOutApi(supabase as unknown as Parameters<typeof moneyOutApi>[0], user?.id ?? '', table);
+  const moneyOut = (table: OwnedTable) => moneyOutApi(supabase as unknown as Parameters<typeof moneyOutApi>[0], user?.id ?? '', table);
   const moneyOutState = (k: keyof typeof moneyOutError, reload: () => Promise<void>) => ({ loading: isLoading, error: moneyOutError[k], onRetry: () => { void reload(); } });
 
   const TAB_GROUPS: { label: string; tabs: { value: FinanceTab; label: string }[] }[] = [
@@ -483,7 +523,7 @@ const BusinessFinanceAssistant = () => {
 
   // Tabs wraps the band, so the tab list on the band controls the panels below it.
   return (
-    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as FinanceTab)} className="min-w-0">
+    <Tabs value={activeTab} onValueChange={(value) => changeTab(value as FinanceTab)} className="min-w-0">
       <div className="bg-brand-navy text-brand-navy-foreground">
         <div className="mx-auto w-full max-w-[1440px] px-4 pt-5 sm:px-6 lg:px-8">
           <nav aria-label="Breadcrumb">
@@ -509,7 +549,7 @@ const BusinessFinanceAssistant = () => {
               </Button>
             </div>
           </div>
-          <TabsList aria-label="Invoices and quotes sections" className="mt-4 flex h-auto w-full justify-start gap-0 overflow-x-auto rounded-none bg-transparent p-0 text-brand-navy-muted">
+          <TabsList ref={tabListRef} aria-label="Invoices and quotes sections" className="mt-4 flex h-auto w-full justify-start gap-0 overflow-x-auto rounded-none bg-transparent p-0 text-brand-navy-muted">
             {TAB_GROUPS.map((g, gi) => (
               <React.Fragment key={g.label}>
                 {gi > 0 && <span aria-hidden="true" className="mx-2 h-5 w-px shrink-0 self-center bg-white/25" />}
@@ -531,7 +571,7 @@ const BusinessFinanceAssistant = () => {
 
         <TabsContent value="dashboard" className="mt-0">
           <FinanceOverview quotes={quotes} invoices={invoices} expenses={expenses} {...docState}
-            numberOf={numberOf} onOpen={handleViewDocument} onNew={startNew} onOpenTab={setActiveTab} />
+            numberOf={numberOf} onOpen={handleViewDocument} onNew={startNew} onOpenTab={changeTab} />
         </TabsContent>
 
         <TabsContent value="create" className="mt-0">
@@ -564,13 +604,13 @@ const BusinessFinanceAssistant = () => {
         <TabsContent value="quotes" className="mt-0">
           <DocumentsTable kind="quote" docs={quotes} numberOf={numberOf} {...docState} onNew={() => startNew('quote')}
             onView={handleViewDocument} onEdit={handleEditDocument} onDownload={handleDownloadDocument}
-            onSend={(d: Quote) => handleSendDocument(d, 'quote')} sendingId={sendingDocument} />
+            onStatus={(d: Quote, to) => { void handleStatusChange(d, to); }} onDelete={(d: Quote) => setDeletingDoc(d)} busyId={statusBusy} />
         </TabsContent>
 
         <TabsContent value="invoices" className="mt-0">
           <DocumentsTable kind="invoice" docs={invoices} numberOf={numberOf} {...docState} onNew={() => startNew('invoice')}
             onView={handleViewDocument} onEdit={handleEditDocument} onDownload={handleDownloadDocument}
-            onSend={(d: Invoice) => handleSendDocument(d, 'invoice')} sendingId={sendingDocument} />
+            onStatus={(d: Invoice, to) => { void handleStatusChange(d, to); }} onDelete={(d: Invoice) => setDeletingDoc(d)} busyId={statusBusy} />
         </TabsContent>
 
         <TabsContent value="products" className="mt-0">
@@ -785,7 +825,7 @@ const BusinessFinanceAssistant = () => {
                       <span>Subtotal:</span>
                       <span>{formatMoney(Number(selectedDocument.subtotal) || 0, selectedDocument.currency, { cents: true })}</span>
                     </div>
-                    {selectedDocument.tax_rate && Number(selectedDocument.tax_rate) > 0 && (
+                    {Number(selectedDocument.tax_rate) > 0 && (
                       <div className="flex justify-between">
                         <span>Tax ({selectedDocument.tax_rate}%):</span>
                         <span>{formatMoney(Number(selectedDocument.tax_amount) || 0, selectedDocument.currency, { cents: true })}</span>
@@ -808,20 +848,29 @@ const BusinessFinanceAssistant = () => {
               )}
 
               {/* Action Buttons */}
-              <div className="border-t pt-4 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => handleDownloadDocument(selectedDocument)}>
-                  <Download className="h-4 w-4 mr-2" />
+              <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
+                <Button variant="outline" className="min-h-touch md:min-h-0" onClick={() => setDeletingDoc(selectedDocument)}>
+                  <Trash2 className="mr-2 h-4 w-4 text-destructive" aria-hidden="true" />
+                  Delete
+                </Button>
+                <Button variant="outline" className="min-h-touch md:min-h-0" onClick={() => handleDownloadDocument(selectedDocument)}>
+                  <Download className="mr-2 h-4 w-4" aria-hidden="true" />
                   Download PDF
                 </Button>
-                <Button onClick={() => handleSendDocument(selectedDocument, 'quote_number' in selectedDocument ? 'quote' : 'invoice')}>
-                  <Send className="h-4 w-4 mr-2" />
-                  Send
-                </Button>
+                {statusActions(kindOf(selectedDocument), selectedDocument).map((a) => (
+                  <Button key={a.label} className="min-h-touch md:min-h-0" disabled={statusBusy === selectedDocument.id} onClick={() => { void handleStatusChange(selectedDocument, a.to); }}>
+                    {a.label}
+                  </Button>
+                ))}
               </div>
+              <p className="text-right text-small text-muted-foreground">B2BNEST doesn’t email documents. Download the PDF to send it yourself, then mark it as sent.</p>
             </div>
           )}
         </DialogContent>
       </Dialog>
+      <ConfirmDeleteDialog open={!!deletingDoc} onOpenChange={(o) => { if (!o) setDeletingDoc(null); }}
+        noun={deletingDoc ? kindOf(deletingDoc) : 'document'} name={deletingDoc ? numberOf(deletingDoc) : ''} onConfirm={confirmDeleteDoc}
+        title={deleteText?.title} description={deleteText?.description} confirmLabel={deleteText?.confirmLabel} />
     </Tabs>
   );
 };
