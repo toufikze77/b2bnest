@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserSettings } from '@/hooks/useUserSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { Shield, Key, Mail, Eye, EyeOff, Globe, Clock, DollarSign, Calendar, MessageSquare, Lightbulb } from 'lucide-react';
@@ -19,6 +20,8 @@ import { COUNTRIES, LANGUAGES, TIMEZONES, DATE_FORMATS, TIME_FORMATS, UserSettin
 
 const AccountSettings = () => {
   const { user, updatePassword } = useAuth();
+  // Saving goes through the shared settings context so every screen picks up the new currency at once.
+  const { updateSettings: saveSharedSettings } = useUserSettings();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -32,7 +35,8 @@ const AccountSettings = () => {
 
   // User Settings State
   const [userSettings, setUserSettings] = useState<UserSettings>({
-    currency_code: 'USD',
+    // Empty until the profile loads: the picker shows "Select currency" rather than pretending USD is saved.
+    currency_code: '',
     timezone: 'UTC',
     country_code: 'US',
     language_code: 'en',
@@ -119,7 +123,7 @@ const AccountSettings = () => {
 
       if (data) {
         setUserSettings({
-          currency_code: data.currency_code || 'USD',
+          currency_code: data.currency_code || '',
           timezone: data.timezone || 'UTC',
           country_code: data.country_code || 'US',
           language_code: data.language_code || 'en',
@@ -137,20 +141,8 @@ const AccountSettings = () => {
 
     setIsUpdatingSettings(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update(newSettings)
-        .eq('id', user.id);
-
-      if (error) {
-        console.error('Error updating user settings:', error);
-        toast({
-          title: "Error",
-          description: "Failed to update settings. Please try again.",
-          variant: "destructive"
-        });
-        return;
-      }
+      // Writes to profiles and updates the shared context (throws on failure).
+      await saveSharedSettings(newSettings);
 
       setUserSettings(prev => ({ ...prev, ...newSettings }));
       toast({

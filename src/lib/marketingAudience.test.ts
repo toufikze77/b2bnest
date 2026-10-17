@@ -27,6 +27,25 @@ describe('marketing audience', () => {
     expect(s.unweightedByCurrency).toEqual({ USD: 700 });
     expect(s.customerShare).toBe(33);
     expect(crmSummary([], []).customerShare).toBeNull();
+    expect(s.openByCurrency).toEqual({ USD: 1700, GBP: 400 });
+    expect(s.withProbabilityDeals).toBe(2);
+  });
+
+  it('probability: blank is not weighted, 0 stays 0, 100 counts in full; no 50% default', () => {
+    const s = crmSummary([], [
+      { value: 1000, probability: null, stage: 'lead', currency: 'GBP' },
+      { value: 1000, probability: 0, stage: 'lead', currency: 'GBP' },
+      { value: 1000, probability: 100, stage: 'proposal', currency: 'GBP' },
+      { value: 9999, probability: 100, stage: 'won', currency: 'GBP' },
+      { value: 300, probability: 50, stage: 'lead', currency: 'USD' },
+      { value: 80, probability: null, stage: 'lead', currency: null },
+    ]);
+    expect(s.openDeals).toBe(5);
+    expect(s.openByCurrency).toEqual({ GBP: 3000, USD: 300, '': 80 });
+    expect(s.weightedByCurrency).toEqual({ GBP: 1000, USD: 150 });
+    expect(s.noProbabilityDeals).toBe(2);
+    expect(s.withProbabilityDeals).toBe(3);
+    expect(formatByCurrency(s.openByCurrency)).toBe('£3,000 + US$300 + 80');
   });
 
   it('uses the shared closed-stage rule, so "closed won" with a space or "Closed Lost" are not open', () => {

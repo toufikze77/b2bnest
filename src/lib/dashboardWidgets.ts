@@ -16,14 +16,8 @@ export function sumByCurrency<T>(rows: T[], amount: (r: T) => number | string | 
   return [...m.entries()].map(([c, v]) => ({ currency: c, ...v })).sort((a, b) => b.count - a.count || a.currency.localeCompare(b.currency));
 }
 
-export const formatMoney = (amount: number, currency: string) => {
-  if (!currency) return new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 }).format(amount);
-  try {
-    return new Intl.NumberFormat('en-GB', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount);
-  } catch {
-    return `${new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 }).format(amount)} ${currency}`;
-  }
-};
+/** Shared money formatter (src/lib/money.ts): no symbol without a currency, never a guessed "$". */
+export { formatMoney } from '@/lib/money';
 
 export interface InvoiceRow { status: string | null; total_amount: number | null; currency: string | null }
 export interface BillRow { status: string | null; amount: number | null; currency: string | null }

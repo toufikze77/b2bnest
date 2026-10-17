@@ -24,6 +24,8 @@ import DealsView from './crm/DealsView';
 import MarketingTab from './crm/MarketingTab';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { crmSummary, formatByCurrency } from "@/lib/marketingAudience";
+import { dealInsertPayload, dealUpdatePayload } from '@/lib/crmDeals';
+import { useAccountCurrency } from '@/hooks/useAccountCurrency';
 import { readCrmTab, writeCrmTab } from '@/lib/crmTab';
 import ReportsTab from './crm/ReportsTab';
 import AnalyticsTab from './crm/AnalyticsTab';
@@ -72,6 +74,7 @@ const CRM = ({ band = false }: CRMProps) => {
   const { user } = useAuth();
   const { organization } = useActiveOrganization();
   const [addContactOpen, setAddContactOpen] = useState(false);
+  const accountCurrency = useAccountCurrency();
   const { canAccessFeature } = useSubscription();
   const { toast } = useToast();
   const [params, setParams] = useSearchParams();
@@ -83,6 +86,8 @@ const CRM = ({ band = false }: CRMProps) => {
   const [loading, setLoading] = useState(true);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
+  // A failed load is shown as an error in Analytics and Reports, never as "no data".
+  const [loadError, setLoadError] = useState(false);
 
   // Check if user can access CRM features
   const canAccessCRM = canAccessFeature('crm');
@@ -131,9 +136,11 @@ const CRM = ({ band = false }: CRMProps) => {
       console.log('Fetched contacts:', contactsData?.length || 0);
       console.log('Fetched deals:', dealsData?.length || 0);
 
+      setLoadError(false);
       setContacts(contactsData || []);
       setDeals(dealsData || []);
     } catch (error) {
+      setLoadError(true);
       console.error('Error fetching CRM data:', error);
       toast({
         title: "Error",
@@ -348,15 +355,7 @@ const CRM = ({ band = false }: CRMProps) => {
         return;
       }
 
-      const has = (k: keyof Deal) => Object.prototype.hasOwnProperty.call(dealData, k);
-      const updateData: { title?: string; value?: number; stage?: string; contact_id?: string | null; probability?: number; close_date?: string | null; notes?: string | null } = {};
-      if (has('title')) updateData.title = dealData.title?.trim();
-      if (has('value')) updateData.value = dealData.value || 0;
-      if (has('stage')) updateData.stage = dealData.stage || 'prospecting';
-      if (has('contact_id')) updateData.contact_id = dealData.contact_id || null;
-      if (has('probability')) updateData.probability = dealData.probability || 50;
-      if (has('close_date')) updateData.close_date = dealData.close_date || null;
-      if (has('notes')) updateData.notes = dealData.notes?.trim() || null;
+      const updateData = dealUpdatePayload(dealData);
 
       const { data, error } = await supabase
         .from('crm_deals')
@@ -464,16 +463,8 @@ const CRM = ({ band = false }: CRMProps) => {
         return;
       }
 
-      const insertData = {
-        title: dealData.title.trim(),
-        value: dealData.value || 0,
-        stage: dealData.stage || 'prospecting',
-        contact_id: dealData.contact_id || null,
-        probability: dealData.probability || 50,
-        close_date: dealData.close_date || null,
-        notes: dealData.notes?.trim() || null,
-        user_id: user.id
-      };
+      // Explicit currency (deal's own, else the account currency) and probability (blank → null, 0 stays 0).
+      const insertData = dealInsertPayload(dealData, user.id, accountCurrency);
 
       console.log('Insert deal data:', insertData);
 
@@ -520,7 +511,6 @@ const CRM = ({ band = false }: CRMProps) => {
   // Old deep link: CRM security moved to company settings.
   if (params.get('tab') === 'security') return <Navigate to="/settings?tab=company-security" replace />;
 
-  const totalRevenue = deals.reduce((sum, deal) => sum + ((deal.value || 0) * (deal.probability || 50) / 100), 0);
   const ready = canAccessCRM && !loading;
 
   const tabList = (
@@ -610,13 +600,28 @@ const CRM = ({ band = false }: CRMProps) => {
   };
 
   const summary = crmSummary(contacts, deals);
-  const noProb = summary.noProbabilityDeals
-    ? ` ${summary.noProbabilityDeals} open deal(s) have no probability and are left out (unweighted: ${formatByCurrency(summary.unweightedByCurrency)}).`
-    : '';
-  const stats = [
+  const showNoProbability = () => {
+    const next = writeCrmTab(params, 'deals');
+    next.set('prob', 'none');
+    setParams(next);
+  };
+  const stats: { icon: typeof Users; label: string; value: string; hint: React.ReactNode }[] = [
     { icon: Users, label: 'Total contacts', value: String(summary.contacts), hint: 'Your own CRM contacts.' },
-    { icon: DollarSign, label: 'Weighted pipeline', value: formatByCurrency(summary.weightedByCurrency), hint: `Open deals only: value × win probability, in each deal's own currency (not converted).${noProb}` },
-    { icon: Target, label: 'Open deals', value: String(summary.openDeals), hint: 'Deals not marked won or lost.' },
+    { icon: Target, label: 'Open pipeline', value: formatByCurrency(summary.openByCurrency), hint: `Total value of ${summary.openDeals} open ${summary.openDeals === 1 ? 'deal' : 'deals'} (not won or lost), per currency, not converted.` },
+    {
+      icon: DollarSign, label: 'Weighted forecast',
+      value: summary.withProbabilityDeals ? formatByCurrency(summary.weightedByCurrency) : '—',
+      hint: (
+        <>
+          {summary.withProbabilityDeals === 0 ? 'Value × probability. No open deal has a probability yet.' : <>Value × probability, only for the {summary.withProbabilityDeals} open {summary.withProbabilityDeals === 1 ? 'deal' : 'deals'} that {summary.withProbabilityDeals === 1 ? 'has' : 'have'} a probability.</>}
+          {summary.noProbabilityDeals > 0 && (
+            <> <button type="button" onClick={showNoProbability} className="font-semibold text-link underline underline-offset-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring rounded-sm">
+              {summary.noProbabilityDeals} open {summary.noProbabilityDeals === 1 ? 'deal has' : 'deals have'} no probability yet
+            </button></>
+          )}
+        </>
+      ),
+    },
     { icon: TrendingUp, label: 'Customers', value: summary.customerShare == null ? '—' : `${summary.customerShare}%`, hint: 'Share of contacts with status Customer.' },
   ];
 
@@ -626,7 +631,7 @@ const CRM = ({ band = false }: CRMProps) => {
         <Card key={label}>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground"><Icon className="w-4 h-4" aria-hidden="true" />{label}</div>
-            <p className="text-2xl font-bold mt-1">{value}</p>
+            <p className="text-2xl font-bold mt-1 break-words">{value}</p>
             <p className="text-xs text-muted-foreground mt-1">{hint}</p>
           </CardContent>
         </Card>
@@ -666,11 +671,11 @@ const CRM = ({ band = false }: CRMProps) => {
       </TabsContent>
 
       <TabsContent value="reports" className={band ? 'mt-0' : 'mt-6'}>
-        <ReportsTab totalRevenue={totalRevenue} />
+        <ReportsTab contacts={contacts} deals={deals} error={loadError} onRetry={fetchCRMData} />
       </TabsContent>
 
       <TabsContent value="analytics" className={band ? 'mt-0' : 'mt-6'}>
-        <AnalyticsTab totalRevenue={totalRevenue} />
+        <AnalyticsTab contacts={contacts} deals={deals} error={loadError} onRetry={fetchCRMData} onOpenTab={setActiveTab} />
       </TabsContent>
     </>
   );

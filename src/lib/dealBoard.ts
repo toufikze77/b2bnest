@@ -23,7 +23,7 @@ export const stageKey = (stage: string | null | undefined) =>
   (stage || '').toLowerCase().replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
 
 const OPEN_ORDER = ['prospecting', 'lead', 'qualified', 'proposal', 'negotiation'];
-const WON = new Set(['won', 'closed won']);
+const WON = new Set(['won', 'closed won', 'closed']); // 'closed' is how the add-deal form stores "Closed Won"
 const LOST = new Set(['lost', 'closed lost']);
 
 /** Rank for column order: known open stages, then won, then lost, then anything else (99). */

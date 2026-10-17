@@ -8,8 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { useUserSettings } from '@/hooks/useUserSettings';
-import { formatCurrency } from '@/utils/currencyUtils';
+import { useAccountCurrency } from '@/hooks/useAccountCurrency';
+import { currencySymbol, formatMoney } from '@/lib/money';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { DataTable } from '@/components/data/DataTable';
 import { StatusBadge } from '@/components/data/StatusBadge';
@@ -79,7 +79,9 @@ const PHONE_PAGE = 25;
 
 const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, onDeleteContact, onRefresh, actionsInHeader = false, addOpen, onAddOpenChange }: ContactsViewProps) => {
   const { toast } = useToast();
-  const { settings } = useUserSettings();
+  // Contacts have no currency column: values are shown in the account currency (plain number if it is not set).
+  const accountCurrency = useAccountCurrency();
+  const valueLabel = `Potential value${currencySymbol(accountCurrency) ? ` (${currencySymbol(accountCurrency)})` : ''}`;
   const phone = usePhone();
   const [phoneShown, setPhoneShown] = useState(PHONE_PAGE);
   const [localAddOpen, setLocalAddOpen] = useState(false);
@@ -241,7 +243,7 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
   );
 
   const counts = contactStatusCounts(contacts);
-  const money = (v: number | null) => (v == null ? '—' : formatCurrency(v, settings?.currency_code || 'USD'));
+  const money = (v: number | null) => (v == null ? '—' : formatMoney(v, accountCurrency));
   const lastContact = (c: Contact) => (c.last_contact ? formatDueDate(c.last_contact) : '—');
   const filtered = !!searchTerm || statusFilter !== 'all';
   const clearFilters = () => { setSearchTerm(''); setStatusFilter('all'); setPhoneShown(PHONE_PAGE); };
@@ -293,7 +295,7 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
                 onChange={(e) => setFormData({ ...formData, position: e.target.value })}
               />
               <Input 
-                placeholder="Potential Value ($)" 
+                placeholder={valueLabel} aria-label={valueLabel} 
                 type="number" 
                 value={formData.value}
                 onChange={(e) => setFormData({ ...formData, value: e.target.value })}
@@ -355,7 +357,7 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
                 onChange={(e) => setEditFormData({ ...editFormData, position: e.target.value })}
               />
               <Input 
-                placeholder="Potential Value ($)" 
+                placeholder={valueLabel} aria-label={valueLabel} 
                 type="number" 
                 value={editFormData.value}
                 onChange={(e) => setEditFormData({ ...editFormData, value: e.target.value })}
@@ -544,7 +546,7 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
                 <dt className="text-muted-foreground">LinkedIn</dt><dd>{extractLinkedIn(viewing.notes) ? <a className="text-primary hover:underline break-all" href={extractLinkedIn(viewing.notes)!} target="_blank" rel="noopener noreferrer">{extractLinkedIn(viewing.notes)}</a> : '—'}</dd>
                 <dt className="text-muted-foreground"><Phone className="inline h-4 w-4" aria-hidden /> Phone</dt><dd>{viewing.phone ? <a className="text-primary hover:underline" href={`tel:${viewing.phone}`}>{viewing.phone}</a> : '—'}</dd>
                 <dt className="text-muted-foreground"><Target className="inline h-4 w-4" aria-hidden /> Source</dt><dd>{viewing.source || '—'}</dd>
-                <dt className="text-muted-foreground">Potential value</dt><dd>{formatCurrency(viewing.value || 0, settings?.currency_code || 'USD')}</dd>
+                <dt className="text-muted-foreground">Potential value</dt><dd>{viewing.value == null ? '—' : formatMoney(viewing.value, accountCurrency)}</dd>
                 <dt className="text-muted-foreground"><Star className="inline h-4 w-4" aria-hidden /> Profile</dt><dd>{calculateEngagementScore(viewing)}% complete</dd>
                 <dt className="text-muted-foreground">Notes</dt><dd className="whitespace-pre-wrap">{viewing.notes || '—'}</dd>
               </dl>
