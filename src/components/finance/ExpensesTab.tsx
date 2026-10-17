@@ -3,7 +3,9 @@ import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/data/StatusBadge';
 import { useAccountCurrency } from '@/hooks/useAccountCurrency';
 import { formatDueDate } from '@/lib/dashboardData';
-import { EXPENSE_CATEGORIES, EXPENSE_FIELDS, EXPENSE_STATUSES, filteredTotal, labelOf, supplierOptions, withStored } from '@/lib/moneyOut';
+import {
+  CUSTOM_CATEGORY, CUSTOM_CATEGORY_MAX, EXPENSE_FIELDS, EXPENSE_STATUSES, expenseCategoryOptions, filteredTotal, labelOf, resolveCustomCategory, supplierOptions, withStored,
+} from '@/lib/moneyOut';
 import type { MoneyOutApi } from '@/lib/moneyOutApi';
 import { formatMoney } from '@/lib/money';
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
@@ -30,11 +32,16 @@ export function ExpensesTab({ rows, suppliers, loading, error, onRetry, api, onC
 }) {
   const currency = useAccountCurrency();
   const money = (n: number) => formatMoney(n, currency, { cents: true });
+  // Business headings plus any category already used on this user's expenses (legacy or typed).
+  const categories = expenseCategoryOptions(rows.map((r) => r.category));
   const ed = useRecordEditor<ExpenseRow>({
     spec: EXPENSE_FIELDS, api, noun: 'expense', nameOf: (r) => r.description, onChanged,
-    blank: () => ({ description: '', category: '', amount: '', date: today(), supplier_id: '', status: 'pending' }),
+    blank: () => ({ description: '', category: '', category_custom: '', amount: '', date: today(), supplier_id: '', status: 'pending' }),
+    // "Other (type your own)": the typed name becomes the category (an existing match is reused).
+    validate: (v) => (v.category === CUSTOM_CATEGORY ? resolveCustomCategory(v.category_custom as string, categories).error ?? null : null),
+    prepare: (v) => (v.category === CUSTOM_CATEGORY ? { ...v, category: resolveCustomCategory(v.category_custom as string, categories).value } : v),
   });
-  const categories = withStored(EXPENSE_CATEGORIES, rows.map((r) => r.category));
+  const usedCategories = categories.filter((c) => rows.some((r) => r.category === c.value));
   const statuses = withStored(EXPENSE_STATUSES, rows.map((r) => r.status));
   const supplierName = (id: string | null) => (id ? suppliers.find((s) => s.id === id)?.name ?? 'Unknown supplier' : '—');
   const status = (r: ExpenseRow) => <StatusBadge value={labelOf(statuses, r.status || 'pending')} tone={TONE[r.status || 'pending'] ?? 'neutral'} prefix="Status" />;
@@ -49,6 +56,7 @@ export function ExpensesTab({ rows, suppliers, loading, error, onRetry, api, onC
         searchLabel="Search description, category or supplier"
         searchText={(r) => `${r.description} ${labelOf(categories, r.category)} ${supplierName(r.supplier_id)}`}
         filters={[{ value: 'all', label: 'All', test: () => true }, ...statuses.map((s) => ({ value: s.value, label: s.label, test: (r: ExpenseRow) => (r.status || 'pending') === s.value }))]}
+        selectFilter={{ label: 'Category', allLabel: 'All categories', options: usedCategories.map((c) => ({ value: c.value, label: c.label, test: (r: ExpenseRow) => r.category === c.value })) }}
         rowName={(r) => r.description}
         onAdd={ed.openAdd} addLabel="Add expense" onEdit={ed.openEdit} onDelete={ed.setDeleting}
         headerActions={<Button variant="outline" className="min-h-touch md:min-h-0" onClick={onDownload}><Download className="h-4 w-4" aria-hidden="true" />Download report</Button>}
@@ -74,7 +82,9 @@ export function ExpensesTab({ rows, suppliers, loading, error, onRetry, api, onC
           { key: 'description', label: 'Description', type: 'text', required: true, wide: true },
           { key: 'amount', label: `Amount${currency ? ` (${currency})` : ''}`, type: 'number', required: true },
           { key: 'date', label: 'Date', type: 'date', required: true },
-          { key: 'category', label: 'Category', type: 'select', required: true, options: categories },
+          { key: 'category', label: 'Category', type: 'select', required: true, options: [...categories, { value: CUSTOM_CATEGORY, label: 'Other (type your own)', group: 'Other' }] },
+          { key: 'category_custom', label: 'New category name', type: 'text', required: true, maxLength: CUSTOM_CATEGORY_MAX, show: (v) => v.category === CUSTOM_CATEGORY,
+            hint: `Up to ${CUSTOM_CATEGORY_MAX} characters. It will be in the list next time.` },
           { key: 'status', label: 'Status', type: 'select', required: true, options: statuses },
           { key: 'supplier_id', label: 'Supplier', type: 'select', options: supplierOptions(suppliers, ed.editing?.supplier_id), hint: 'Inactive suppliers are hidden unless already chosen.', wide: true },
         ]}

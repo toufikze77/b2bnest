@@ -107,6 +107,21 @@ Make inactive / Pause, Delete), phone cards with 44px targets, and an empty stat
   row was deleted) via `returnFocus.ts`.
 - Red (`--destructive`) is only 3.4:1 as text on white: use it for icons, not for text labels.
 
+## Quotes and invoices: honest status (`src/lib/documentActions.ts`)
+
+- B2BNEST does not email documents. Never show "sent" unless the user pressed a button that says
+  so: "Mark as sent" records the status and its message says no email was sent.
+- Status actions: draft → Mark as sent; sent or overdue invoice → Mark as paid; paid → Mark as
+  unpaid. Apply the change on screen at once, save it filtered by `id` and `user_id`, and roll back
+  with an error if the save fails.
+- There is no paid date yet: paid figures are by invoice date. Never use `updated_at` as a paid date.
+
+## Tabs in the address bar (`src/lib/financeTabs.ts`)
+
+Page tabs write `?tab=` (and Payroll `?payroll=`) with `replace`, keeping other params, so a
+refresh lands on the same tab and Back doesn't step through tabs. Unknown values fall back to the
+first tab, never to a form.
+
 ## Next screens to bring onto these patterns (not done yet)
 
 - Settings → Account (`src/components/AccountSettings.tsx`): preferences form, currency picker, 2FA.

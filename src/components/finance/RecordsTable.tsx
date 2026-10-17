@@ -2,6 +2,7 @@ import { ReactNode, useState } from 'react';
 import { Edit, MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ErrorState, LoadingRows } from '@/components/ui/states';
 import { Column, DataTable } from '@/components/data/DataTable';
@@ -35,6 +36,8 @@ interface Props<T extends { id: string }> {
   headerActions?: ReactNode;
   /** Shown under the row count for the rows currently listed (e.g. a running total). */
   summary?: (visible: T[]) => ReactNode;
+  /** A second filter as a dropdown (e.g. expense category), for lists too long to show as chips. */
+  selectFilter?: { label: string; allLabel: string; options: RecordFilter<T>[] };
   initialSort?: { id: string; dir: 'asc' | 'desc' };
 }
 
@@ -47,10 +50,12 @@ export function RecordsTable<T extends { id: string }>(p: Props<T>) {
   const [filter, setFilter] = useState('all');
   const [shown, setShown] = useState(PHONE_PAGE);
   const q = query.trim().toLowerCase();
+  const [selectValue, setSelectValue] = useState('all');
   const active = p.filters.find((f) => f.value === filter);
-  const rows = p.rows.filter((r) => (!active || active.test(r)) && (!q || p.searchText(r).toLowerCase().includes(q)));
-  const filtered = !!q || filter !== 'all';
-  const clear = () => { setQuery(''); setFilter('all'); setShown(PHONE_PAGE); };
+  const selected = p.selectFilter?.options.find((o) => o.value === selectValue);
+  const rows = p.rows.filter((r) => (!active || active.test(r)) && (!selected || selected.test(r)) && (!q || p.searchText(r).toLowerCase().includes(q)));
+  const filtered = !!q || filter !== 'all' || !!selected;
+  const clear = () => { setQuery(''); setFilter('all'); setSelectValue('all'); setShown(PHONE_PAGE); };
 
   // Not modal: the menu opens dialogs (Edit, Delete), and a modal menu would fight them for focus.
   const actions = (r: T) => (
@@ -101,9 +106,20 @@ export function RecordsTable<T extends { id: string }>(p: Props<T>) {
             );
           })}
         </div>
+        <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto">
+        {p.selectFilter && p.selectFilter.options.length > 0 && (
+          <Select value={selectValue} onValueChange={(v) => { setSelectValue(v); setShown(PHONE_PAGE); }}>
+            <SelectTrigger aria-label={p.selectFilter.label} className="h-11 w-full sm:w-56 md:h-10"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{p.selectFilter.allLabel}</SelectItem>
+              {p.selectFilter.options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label} ({p.rows.filter(o.test).length})</SelectItem>)}
+            </SelectContent>
+          </Select>
+        )}
         <div className="relative w-full md:w-72">
           <Search aria-hidden="true" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input aria-label={p.searchLabel} placeholder={p.searchLabel} className="h-11 pl-10 md:h-10" value={query} onChange={(e) => { setQuery(e.target.value); setShown(PHONE_PAGE); }} />
+        </div>
         </div>
       </div>
 

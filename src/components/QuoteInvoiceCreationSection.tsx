@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Minus, Save, Send, Edit, X, FileText, Upload, Package } from 'lucide-react';
+import { Plus, Minus, Save, CheckCircle2, Edit, X, FileText, Upload, Package } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { CURRENCIES } from '@/utils/currencyUtils';
 import { formatMoney, normalizeCurrency } from '@/lib/money';
@@ -286,7 +286,7 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
       const status = saveAsDraft ? 'draft' : 'sent';
       toast({
         title: "Success",
-        description: `${documentType.charAt(0).toUpperCase() + documentType.slice(1)} ${action} as ${status}`
+        description: `${documentType.charAt(0).toUpperCase() + documentType.slice(1)} ${action} as ${status}.${status === 'sent' ? ' No email was sent from B2BNEST.' : ''}`
       });
       
       onDocumentSaved();
@@ -646,7 +646,7 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
             onCheckedChange={(checked) => setSaveAsDraft(checked as boolean)}
           />
           <Label htmlFor="save-as-draft" className="text-sm font-medium">
-            Save as draft (not sent to client)
+            Save as draft (not yet sent to the customer)
           </Label>
         </div>
 
@@ -675,8 +675,9 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
               </>
             ) : (
               <>
-                <Send className="h-4 w-4 mr-2" />
-                {isLoading ? 'Saving & Sending...' : isEditing ? 'Update & Send' : 'Save & Send'}
+                {/* Only records the status: B2BNEST does not email the document. */}
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                {isLoading ? 'Saving…' : isEditing ? 'Update and mark as sent' : 'Save and mark as sent'}
               </>
             )}
           </Button>

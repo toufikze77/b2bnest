@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Download, Edit, Eye, MoreHorizontal, Plus, Search, Send } from 'lucide-react';
+import { CheckCircle2, Download, Edit, Eye, MoreHorizontal, Plus, Search, Trash2, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { statusActions, StatusTarget } from '@/lib/documentActions';
 import { ErrorState, LoadingRows } from '@/components/ui/states';
 import { DataTable } from '@/components/data/DataTable';
 import { usePhone } from '@/hooks/use-media-query';
@@ -25,15 +26,18 @@ interface Props<D extends TableDoc> {
   onView: (d: D) => void;
   onEdit: (d: D) => void;
   onDownload: (d: D) => void;
-  onSend: (d: D) => void;
-  sendingId?: string | null;
+  /** Mark as sent / paid / unpaid. Only records the status: nothing is emailed. */
+  onStatus: (d: D, to: StatusTarget) => void;
+  onDelete: (d: D) => void;
+  /** Document with a status change in flight (its status items are disabled). */
+  busyId?: string | null;
 }
 
 const PHONE_PAGE = 25;
 const date = (d?: string | null) => (d ? formatDueDate(d) : '—');
 
 /** Quotes or invoices: search, status chips, row count, row actions, phone cards with 44px targets. */
-export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loading, error, onRetry, onNew, onView, onEdit, onDownload, onSend, sendingId }: Props<D>) {
+export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loading, error, onRetry, onNew, onView, onEdit, onDownload, onStatus, onDelete, busyId }: Props<D>) {
   const phone = usePhone();
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('all');
@@ -68,7 +72,8 @@ export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loadi
       <Button variant="outline" size="sm" className="hidden md:inline-flex" onClick={() => onView(d)} aria-label={`View ${noun} ${numberOf(d)}`}>
         <Eye className="h-4 w-4" aria-hidden="true" /><span className="hidden lg:inline">View</span>
       </Button>
-      <DropdownMenu>
+      {/* Not modal: Delete opens a dialog, and a modal menu would fight it for focus. */}
+      <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0 md:h-9 md:w-9" aria-label={`More actions for ${noun} ${numberOf(d)}`}>
             <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
@@ -77,7 +82,13 @@ export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loadi
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => onEdit(d)}><Edit className="mr-2 h-4 w-4" aria-hidden="true" />Edit</DropdownMenuItem>
           <DropdownMenuItem onClick={() => onDownload(d)}><Download className="mr-2 h-4 w-4" aria-hidden="true" />Download PDF</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onSend(d)} disabled={sendingId === d.id}><Send className="mr-2 h-4 w-4" aria-hidden="true" />{sendingId === d.id ? 'Sending…' : 'Send'}</DropdownMenuItem>
+          {statusActions(kind, d).map((a) => (
+            <DropdownMenuItem key={a.label} onSelect={() => onStatus(d, a.to)} disabled={busyId === d.id}>
+              {a.label === 'Mark as unpaid' ? <Undo2 className="mr-2 h-4 w-4" aria-hidden="true" /> : <CheckCircle2 className="mr-2 h-4 w-4" aria-hidden="true" />}{a.label}
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => onDelete(d)}><Trash2 className="mr-2 h-4 w-4 text-destructive" aria-hidden="true" />Delete</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

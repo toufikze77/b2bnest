@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }));
 vi.mock('sonner', () => ({ toast }));
@@ -87,11 +88,15 @@ describe('EmployeeList', () => {
   });
 });
 
+function Probe() { const l = useLocation(); return <output data-testid="search">{l.search}</output>; }
+const renderPayroll = (url = '/business-tools?tool=business-finance-assistant&tab=payroll') =>
+  render(<MemoryRouter initialEntries={[url]}><PayrollUK /><Probe /></MemoryRouter>);
+
 describe('PayrollUK', () => {
   it('a failed load shows an error with Retry, not "No employees yet"; Retry loads again', async () => {
     let fail = true;
     db.respond = (table) => (table === 'payroll_employees' && fail ? { data: null, error: { message: 'Simulated network error' } } : { data: [], error: null });
-    render(<PayrollUK />);
+    renderPayroll();
     expect(await screen.findByText("Payroll data couldn't be loaded")).toBeInTheDocument();
     expect(screen.queryByText('No employees yet')).not.toBeInTheDocument();
     fail = false;
@@ -100,7 +105,7 @@ describe('PayrollUK', () => {
   });
 
   it('shows the demo notice at the top and no second page heading', async () => {
-    render(<PayrollUK />);
+    renderPayroll();
     expect(screen.getByRole('note')).toHaveTextContent('This is a demo payroll system');
     expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: 'Payroll (UK)' })).toBeInTheDocument();
@@ -108,7 +113,7 @@ describe('PayrollUK', () => {
   });
 
   it('the four sub-tabs are reachable with the keyboard (arrow keys move and select)', async () => {
-    render(<PayrollUK />);
+    renderPayroll();
     await screen.findByText('No employees yet');
     const list = screen.getByRole('tablist', { name: 'Payroll sections' });
     const tabs = within(list).getAllByRole('tab');
@@ -117,9 +122,28 @@ describe('PayrollUK', () => {
     for (const [i, name] of [[1, 'Pay runs'], [2, 'History'], [3, 'Settings']] as const) {
       fireEvent.keyDown(document.activeElement!, { key: 'ArrowRight' });
       await waitFor(() => expect(document.activeElement).toBe(tabs[i]));
-      expect(tabs[i]).toHaveAttribute('aria-selected', 'true');
+      // Selection goes through the URL (?payroll=), so it lands one render later.
+      await waitFor(() => expect(tabs[i]).toHaveAttribute('aria-selected', 'true'));
       expect(tabs[i]).toHaveTextContent(name);
     }
     expect(screen.getByLabelText('PAYE Reference')).toBeInTheDocument();
+  });
+
+  it('the sub-tab is kept in the URL as payroll=, other params preserved, and restored on a fresh load', async () => {
+    const { unmount } = renderPayroll();
+    await screen.findByText('No employees yet');
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'History' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'History' }));
+    await waitFor(() => expect(screen.getByTestId('search')).toHaveTextContent('payroll=history'));
+    expect(screen.getByTestId('search')).toHaveTextContent('tool=business-finance-assistant&tab=payroll');
+    unmount();
+    renderPayroll('/business-tools?tool=business-finance-assistant&tab=payroll&payroll=settings');
+    expect(screen.getByRole('tab', { name: 'Settings' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('an unknown payroll= value falls back to Employees', async () => {
+    renderPayroll('/business-tools?tool=business-finance-assistant&tab=payroll&payroll=nope');
+    expect(screen.getByRole('tab', { name: 'Employees' })).toHaveAttribute('aria-selected', 'true');
+    await screen.findByText('No employees yet');
   });
 });

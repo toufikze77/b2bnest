@@ -8,7 +8,7 @@ import type { DeleteOutcome } from './ConfirmDeleteDialog';
  * Add / Edit / Delete flow shared by the money-out tabs. Edit sends only changed fields; a failed
  * save or delete leaves the record as it was and returns the message to show in the dialog.
  */
-export function useRecordEditor<T extends { id: string }>({ spec, api, noun, nameOf, blank, onChanged, deleteProblem, toForm, prepare, stateWords = ['active again', 'now inactive'] }: {
+export function useRecordEditor<T extends { id: string }>({ spec, api, noun, nameOf, blank, onChanged, deleteProblem, toForm, prepare, validate, stateWords = ['active again', 'now inactive'] }: {
   spec: FieldSpec;
   api: MoneyOutApi;
   noun: string;
@@ -23,6 +23,8 @@ export function useRecordEditor<T extends { id: string }>({ spec, api, noun, nam
   prepare?: (values: FormValues) => FormValues;
   /** Words for the toast after the Active toggle: [turned on, turned off]. */
   stateWords?: [string, string];
+  /** Extra checks on the raw form values; return the message to show, or null. */
+  validate?: (values: FormValues) => string | null;
 }) {
   const Noun = noun.charAt(0).toUpperCase() + noun.slice(1);
   const [formOpen, setFormOpen] = useState(false);
@@ -37,6 +39,8 @@ export function useRecordEditor<T extends { id: string }>({ spec, api, noun, nam
   };
 
   const submit = async (values: FormValues): Promise<string | null> => {
+    const problem = validate?.(values);
+    if (problem) return problem;
     const { payload, errors } = buildPayload(spec, prepare ? prepare(values) : values);
     if (errors.length) return errors.join(' ');
     if (editing) {

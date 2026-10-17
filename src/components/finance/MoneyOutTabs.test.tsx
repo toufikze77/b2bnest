@@ -57,6 +57,10 @@ const pick = async (item: string) => fireEvent.click(await screen.findByRole('me
 const tableRows = () => within(screen.getByRole('table', { hidden: true })).getAllByRole('row', { hidden: true }).slice(1).map((r) => r.textContent);
 
 // Radix Switch measures itself with ResizeObserver, which jsdom lacks.
+// Radix Select needs these in jsdom to open and scroll its list.
+Element.prototype.hasPointerCapture ??= () => false;
+Element.prototype.releasePointerCapture ??= () => {};
+Element.prototype.scrollIntoView ??= () => {};
 globalThis.ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} } as unknown as typeof ResizeObserver;
 
 beforeEach(() => { Object.values(toast).forEach((f) => f.mockClear()); });
@@ -148,6 +152,47 @@ describe('ExpensesTab', () => {
     fireEvent.click(within(confirm).getByRole('button', { name: 'Delete expense' }));
     expect(await within(confirm).findByRole('alert')).toHaveTextContent('couldn’t be deleted. Nothing was changed.');
     expect(tableRows()).toHaveLength(2);
+  });
+
+  it('"Other (type your own)" saves the typed category and offers it next time', async () => {
+    const db = fakeDb({ expenses: expenseRows() });
+    renderTab(db);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Printer paper' })[0]);
+    const dialog = await screen.findByRole('dialog');
+    const pickCategory = async (name: string) => {
+      fireEvent.pointerDown(within(screen.getByRole('dialog')).getByRole('combobox', { name: /Category/ }), { button: 0, pointerType: 'mouse' });
+      fireEvent.click(await screen.findByRole('option', { name }));
+    };
+    await pickCategory('Other (type your own)');
+    const custom = within(dialog).getByLabelText(/New category name/);
+    expect(custom).toHaveAttribute('maxLength', '40');
+    fireEvent.change(custom, { target: { value: '  Parking  ' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(db.calls).toHaveLength(1));
+    expect(db.calls[0]).toEqual({ table: 'expenses', op: 'update', payload: { category: 'Parking' }, filters: [['id', 'e2'], ['user_id', 'u1']] });
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    // Next time: the typed category is a normal option under "Your categories".
+    fireEvent.click(screen.getAllByRole('button', { name: 'Train to Leeds' })[0]);
+    await screen.findByRole('dialog');
+    fireEvent.pointerDown(within(screen.getByRole('dialog')).getByRole('combobox', { name: /Category/ }), { button: 0, pointerType: 'mouse' });
+    expect(await screen.findByRole('option', { name: 'Parking' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Professional fees (accountant, legal)' })).toBeInTheDocument();
+  });
+
+  it('typing an existing category name reuses it; an empty name is refused', async () => {
+    const db = fakeDb({ expenses: expenseRows() });
+    renderTab(db);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Printer paper' })[0]);
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.pointerDown(within(dialog).getByRole('combobox', { name: /Category/ }), { button: 0, pointerType: 'mouse' });
+    fireEvent.click(await screen.findByRole('option', { name: 'Other (type your own)' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }));
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Type a name for the new category.');
+    expect(db.calls).toEqual([]);
+    fireEvent.change(within(dialog).getByLabelText(/New category name/), { target: { value: 'office COSTS' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(db.calls).toHaveLength(1));
+    expect(db.calls[0].payload).toEqual({ category: 'office_costs' });
   });
 
   it('an empty list shows "No expenses yet" with an Add button', () => {

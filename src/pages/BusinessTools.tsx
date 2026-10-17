@@ -42,7 +42,8 @@ const BusinessTools = () => {
     const toolParam = urlParams.get('tool') as ToolType | null;
     const locationState = window.history.state?.usr;
     const selectedTool = locationState?.selectedTool as ToolType | undefined;
-    return selectedTool || toolParam || 'overview';
+    // The address bar wins: history state survives a refresh and could reopen a different tool.
+    return toolParam || selectedTool || 'overview';
   };
 
   const [currentTool, setCurrentToolState] = useState<ToolType>(getInitialTool);

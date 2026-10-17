@@ -6,9 +6,12 @@ const doc = (id: string, status: string, total: number, currency: string | null,
   ({ id, invoice_number: `INV-${id}`, status, total_amount: total, currency, created_at: '2026-10-01T09:00:00Z', due_date: due, client_name: client });
 const docs = [doc('1', 'sent', 100, 'GBP', '2000-01-01', 'Acme'), doc('2', 'paid', 50, 'USD', null, 'Beta'), doc('3', 'draft', 20, null, '2000-01-01', 'Gamma')];
 
-const ui = (onSend = vi.fn(), onView = vi.fn()) => render(
-  <DocumentsTable kind="invoice" docs={docs} numberOf={(d) => d.invoice_number} onNew={vi.fn()} onView={onView} onEdit={vi.fn()} onDownload={vi.fn()} onSend={onSend} />,
+type Doc = (typeof docs)[number];
+const ui = (onStatus = vi.fn(), onView = vi.fn(), onDelete = vi.fn()) => render(
+  <DocumentsTable<Doc> kind="invoice" docs={docs} numberOf={(d) => d.invoice_number} onNew={vi.fn()} onView={onView} onEdit={vi.fn()} onDownload={vi.fn()}
+    onStatus={onStatus} onDelete={onDelete} />,
 );
+const openMenu = (n: string) => fireEvent.pointerDown(screen.getAllByRole('button', { name: `More actions for invoice ${n}` })[0], { button: 0, pointerType: 'mouse' });
 
 describe('DocumentsTable', () => {
   it('shows word chips with overdue worked out in the app, amounts in each document’s own currency', () => {
@@ -34,11 +37,32 @@ describe('DocumentsTable', () => {
     expect(screen.getByText('Showing 1 of 3 invoices')).toBeInTheDocument();
   });
 
-  it('View opens the document and never sends it', () => {
-    const onSend = vi.fn(), onView = vi.fn();
-    ui(onSend, onView);
+  it('View opens the document and changes nothing', () => {
+    const onStatus = vi.fn(), onView = vi.fn();
+    ui(onStatus, onView);
     fireEvent.click(screen.getAllByRole('button', { name: 'View invoice INV-1' })[0]);
     expect(onView).toHaveBeenCalledWith(docs[0]);
-    expect(onSend).not.toHaveBeenCalled();
+    expect(onStatus).not.toHaveBeenCalled();
+  });
+
+  it('the row menu offers the honest status action for each status, and no "Send"', async () => {
+    for (const [n, label, doc, to] of [['INV-3', 'Mark as sent', docs[2], 'sent'], ['INV-1', 'Mark as paid', docs[0], 'paid'], ['INV-2', 'Mark as unpaid', docs[1], 'sent']] as const) {
+      const onStatus = vi.fn();
+      const { unmount } = ui(onStatus);
+      openMenu(n);
+      fireEvent.click(await screen.findByRole('menuitem', { name: label }));
+      expect(onStatus).toHaveBeenCalledWith(doc, to);
+      expect(screen.queryByRole('menuitem', { name: /^Send/ })).not.toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it('Delete is in the row menu and hands the document to the parent (which confirms first)', async () => {
+    const onDelete = vi.fn(), onStatus = vi.fn();
+    ui(onStatus, vi.fn(), onDelete);
+    openMenu('INV-2');
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete' }));
+    expect(onDelete).toHaveBeenCalledWith(docs[1]);
+    expect(onStatus).not.toHaveBeenCalled();
   });
 });

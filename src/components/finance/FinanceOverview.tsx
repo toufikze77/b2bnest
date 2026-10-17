@@ -41,7 +41,11 @@ export function FinanceOverview<Q extends FinDoc, I extends FinDoc>({ quotes, in
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Invoice figures">
         <StatTile loading={loading} label="Outstanding" value={totals(s.outstanding)} hint={s.outstanding.length ? `${plural(countOf(s.outstanding), 'invoice')} sent, not paid.` : 'No unpaid sent invoices.'} />
         <StatTile loading={loading} label="Overdue" value={totals(s.overdue)} hint={s.overdue.length ? `${plural(countOf(s.overdue), 'invoice')} past the due date.` : 'Nothing past its due date.'} />
-        <StatTile loading={loading} label="Paid last 30 days" value={totals(s.paidLast30)} hint={s.paidLast30.length ? `${plural(countOf(s.paidLast30), 'paid invoice')}, by invoice date.` : 'No paid invoices dated in the last 30 days.'} />
+        <StatTile loading={loading} label="Paid last 30 days" value={totals(s.paidLast30)} hint={<>
+          {s.paidLast30.length ? `${plural(countOf(s.paidLast30), 'paid invoice')}, by invoice date.` : 'No paid invoices dated in the last 30 days.'}
+          {/* There is no paid date yet; updated_at is not used as one (every save changes it). */}
+          <span className="mt-1 block">Based on invoice date. A paid date will be recorded once it is added.</span>
+        </>} />
         <StatTile loading={loading} label="Drafts" value={String(countOf(s.drafts))} hint={s.drafts.length ? `Draft invoices worth ${formatTotals(s.drafts)}.` : 'No draft invoices.'} />
       </div>
       {!loading && (s.outstanding.length > 1 || s.paidLast30.length > 1) && (
