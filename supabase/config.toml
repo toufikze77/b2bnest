@@ -45,6 +45,10 @@ verify_jwt = false
 [functions.workflow-send-email]
 verify_jwt = true
 
+# Phase 4b, not deployed: emails one invoice/quote to the client_email on that document.
+[functions.send-document-email]
+verify_jwt = true
+
 [functions.send-contact-email]
 verify_jwt = true
 

@@ -232,7 +232,7 @@ const Dashboard = () => {
         {/* Personal records — kept visibly separate from company data */}
         <section aria-labelledby="your-records" className="rounded-card border border-dashed border-border p-4">
           <h2 id="your-records" className="flex items-center gap-2 font-bold"><UserRound className="h-4 w-4" aria-hidden="true" />Your records</h2>
-          <p className="mt-0.5 text-small text-muted-foreground">Contacts, deals, invoices, bills and expenses belong to your account, not only to {companyName}.</p>
+          <p className="mt-0.5 text-small text-muted-foreground">Contacts, deals, invoices and expenses belong to your account, not only to {companyName}.</p>
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
             <Link to="/crm" className={cn(textLink, 'inline-flex min-h-touch items-center gap-1.5 sm:min-h-0')}><Users className="h-4 w-4" aria-hidden="true" />Open CRM</Link>
             <Link to="/business-tools?tool=business-finance-assistant&tab=invoices" className={cn(textLink, 'inline-flex min-h-touch items-center gap-1.5 sm:min-h-0')}><Receipt className="h-4 w-4" aria-hidden="true" />Open invoices</Link>

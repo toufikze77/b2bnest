@@ -32,7 +32,7 @@ export const WIDGETS: WidgetDef[] = [
   { id: 'customers', title: 'Customers', description: 'Your CRM contacts by status', group: 'Customers' },
   { id: 'pipeline', title: 'Sales pipeline', description: 'Your open deals by stage', group: 'Customers' },
   { id: 'support', title: 'Support tickets', description: 'Tickets for this company by status', group: 'Customers' },
-  { id: 'money', title: 'Key money numbers', description: 'Your paid and outstanding invoices and unpaid bills', group: 'Money' },
+  { id: 'money', title: 'Key money numbers', description: 'Your paid and outstanding invoices and unpaid expenses', group: 'Money' },
   { id: 'expenses', title: 'Expenses to review', description: 'Your expenses still marked pending', group: 'Money' },
   { id: 'rota', title: 'Rota today', description: "Today's shifts for this company", group: 'Team' },
 ];
@@ -48,7 +48,7 @@ export const PRESETS: { id: PresetId; label: string; description: string; widget
   { id: 'balanced', label: 'Balanced', description: 'A bit of everything, with one money widget', widgets: ['tasks', 'projects', 'comingUp', 'workspaces', 'customers', 'money', 'rota', 'recent'] },
   { id: 'projects', label: 'Projects and tasks', description: 'Delivery first', widgets: ['tasks', 'projects', 'comingUp', 'workspaces', 'recent', 'rota'] },
   { id: 'sales', label: 'Sales and customers', description: 'Pipeline, contacts and support', widgets: ['pipeline', 'customers', 'support', 'tasks', 'recent'] },
-  { id: 'money', label: 'Money', description: 'Invoices, bills and expenses', widgets: ['money', 'expenses', 'pipeline', 'tasks'] },
+  { id: 'money', label: 'Money', description: 'Invoices and expenses', widgets: ['money', 'expenses', 'pipeline', 'tasks'] },
 ];
 
 export const DEFAULT_PRESET: PresetId = 'balanced';

@@ -39,7 +39,76 @@ export function buildMessage(mail: Mail, domain = "b2bnest.online"): string {
   ].join("\r\n");
 }
 
-export async function sendSmtp(cfg: SmtpConfig, mail: Mail): Promise<{ reply: string }> {
+/** A message with a plain-text and HTML body (multipart/alternative) plus one attachment. */
+export interface MixedMail {
+  /** Full From header value, e.g. `"B2BNEST on behalf of Acme" <info@b2bnest.online>`. */
+  from: string;
+  to: string;
+  replyTo?: string;
+  subject: string;
+  text: string;
+  html: string;
+  attachment: { filename: string; contentType: string; bytes: Uint8Array };
+}
+
+const oneLine = (s: string) => s.replace(/[\r\n]+/g, " ").trim();
+const bytesB64 = (bytes: Uint8Array) => {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+};
+
+/**
+ * multipart/mixed message: text + HTML alternatives and one attachment. A new builder so
+ * `buildMessage` (single body, used by the existing senders) stays exactly as it was.
+ * Every header value is folded to one line, so a stray CR/LF can never add a header.
+ */
+export function buildMixedMessage(mail: MixedMail, domain = "b2bnest.online"): string {
+  const id = crypto.randomUUID().replace(/-/g, "");
+  const mixed = `mixed_${id}`, alt = `alt_${id}`;
+  const file = oneLine(mail.attachment.filename).replace(/["\\]/g, "");
+  return [
+    `From: ${oneLine(mail.from)}`,
+    `To: ${oneLine(mail.to)}`,
+    ...(mail.replyTo ? [`Reply-To: ${oneLine(mail.replyTo)}`] : []),
+    `Subject: ${encWord(oneLine(mail.subject))}`,
+    `Date: ${new Date().toUTCString()}`,
+    `Message-ID: <${crypto.randomUUID()}@${domain}>`,
+    "MIME-Version: 1.0",
+    `Content-Type: multipart/mixed; boundary="${mixed}"`,
+    "",
+    `--${mixed}`,
+    `Content-Type: multipart/alternative; boundary="${alt}"`,
+    "",
+    `--${alt}`,
+    "Content-Type: text/plain; charset=UTF-8",
+    "Content-Transfer-Encoding: base64",
+    "",
+    wrap76(b64utf8(mail.text)),
+    `--${alt}`,
+    "Content-Type: text/html; charset=UTF-8",
+    "Content-Transfer-Encoding: base64",
+    "",
+    wrap76(b64utf8(mail.html)),
+    `--${alt}--`,
+    "",
+    `--${mixed}`,
+    `Content-Type: ${oneLine(mail.attachment.contentType)}; name="${file}"`,
+    `Content-Disposition: attachment; filename="${file}"`,
+    "Content-Transfer-Encoding: base64",
+    "",
+    wrap76(bytesB64(mail.attachment.bytes)),
+    `--${mixed}--`,
+    "",
+  ].join("\r\n");
+}
+
+/**
+ * Sends `mail` over SMTP. `raw`, when given, is the complete message to send (e.g. from
+ * buildMixedMessage); the envelope still comes from `mail.from` / `mail.to`. Without it the
+ * message is buildMessage(mail), exactly as before.
+ */
+export async function sendSmtp(cfg: SmtpConfig, mail: Mail, raw?: string): Promise<{ reply: string }> {
   let stage = "dns_connect";
   let conn: Deno.Conn | null = null;
   let buf = "";
@@ -79,7 +148,7 @@ export async function sendSmtp(cfg: SmtpConfig, mail: Mail): Promise<{ reply: st
     stage = "rcpt_to"; for (const r of mail.to) await cmd(`RCPT TO:<${addr(r)}>`, [250, 251]);
     stage = "data"; await cmd("DATA", [354]);
     stage = "data_end";
-    const msg = buildMessage(mail).split("\r\n").map((l) => (l.startsWith(".") ? "." + l : l)).join("\r\n");
+    const msg = (raw ?? buildMessage(mail)).split("\r\n").map((l) => (l.startsWith(".") ? "." + l : l)).join("\r\n");
     const done = await cmd(`${msg}\r\n.`, [250]);
     stage = "quit"; await cmd("QUIT", [221]).catch(() => null);
     return { reply: done.text };

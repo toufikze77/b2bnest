@@ -10,6 +10,7 @@ import { statusLabel } from '@/components/data/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { ErrorState, LoadingRows } from '@/components/ui/states';
 import { formatDueDate } from '@/lib/dashboardData';
+import { useAccountCurrency } from '@/hooks/useAccountCurrency';
 import { Figure, rowLink, WidgetCard } from './WidgetCard';
 
 interface Scope { userId: string; orgId: string }
@@ -111,20 +112,29 @@ export function SupportWidget({ scope }: { scope: Scope }) {
 
 export function MoneyWidget({ scope }: { scope: Scope }) {
   const q = useScopedLoad(key(scope), true, () => loadMoney(scope.userId));
+  const account = useAccountCurrency();
   return (
-    <WidgetCard id="w-money" title="Key money numbers" description="From your invoices and bills" scope="personal" action={openLink('/business-tools?tool=business-finance-assistant&tab=dashboard', 'Finance')}>
+    <WidgetCard id="w-money" title="Key money numbers" description="From your invoices and expenses" scope="personal" action={openLink('/business-tools?tool=business-finance-assistant&tab=dashboard', 'Finance')}>
       <Body q={q} what="money numbers">
         {(d) => {
-          const m = summarizeMoney(d.invoices.rows, d.bills.rows);
+          const m = summarizeMoney(d.invoices.rows, d.expenses.rows);
           return (
             <>
               <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-3">
                 <Figure label="Paid invoices" value={<Amounts totals={m.paid} />} />
                 <Figure label="Outstanding invoices" value={<Amounts totals={m.outstanding} />} hint={`${m.outstandingCount} sent or pending`} />
-                <Figure label="Bills to pay" value={<Amounts totals={m.bills} />} hint={`${m.billsCount} not paid`} />
+                <div className="min-w-0">
+                  {/* Expenses have no currency of their own: they are in the account currency. */}
+                  <Figure label="Expenses to pay" value={formatMoney(m.expensesToPay, account)}
+                    hint={`${m.expensesToPayCount} unpaid ${m.expensesToPayCount === 1 ? 'expense' : 'expenses'}, as of today${account ? `, in ${account}` : ''}.`} />
+                  <Link to="/business-tools?tool=business-finance-assistant&tab=expenses" aria-label="Open Expenses to see expenses to pay"
+                    className="mt-1 inline-flex min-h-touch items-center gap-1 rounded-sm text-small font-semibold text-link underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring md:min-h-0">
+                    Open Expenses<ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  </Link>
+                </div>
               </div>
               <Capped shown={d.invoices.rows.length} total={d.invoices.total} />
-              <Capped shown={d.bills.rows.length} total={d.bills.total} />
+              <Capped shown={d.expenses.rows.length} total={d.expenses.total} />
             </>
           );
         }}

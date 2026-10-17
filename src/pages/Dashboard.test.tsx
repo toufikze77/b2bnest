@@ -11,7 +11,7 @@ function builder(table: string) {
   const c: Call = { table, filters: [] };
   const chain: Record<string, unknown> = {};
   const add = (n: string) => (...a: unknown[]) => { c.filters.push([n, ...a]); return chain; };
-  ['eq', 'is', 'not', 'lte', 'lt', 'gt', 'gte', 'in', 'order', 'limit', 'select'].forEach((m) => { chain[m] = add(m); });
+  ['eq', 'is', 'not', 'or', 'lte', 'lt', 'gt', 'gte', 'in', 'order', 'limit', 'select'].forEach((m) => { chain[m] = add(m); });
   chain.then = (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) => {
     calls.push(c);
     const p = new Promise((r) => { c.resolve = r; });
@@ -27,6 +27,7 @@ let org: any;
 vi.mock('@/integrations/supabase/client', () => ({ supabase: { from: (t: string) => builder(t) } }));
 vi.mock('@/contexts/OrganizationContext', () => ({ useActiveOrganization: () => org }));
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }));
+vi.mock('@/hooks/useUserSettings', () => ({ useUserSettings: () => ({ settings: { currency_code: 'GBP' } }) }));
 
 import Dashboard from './Dashboard';
 
@@ -254,6 +255,22 @@ describe('Dashboard', () => {
       expect(region('Expenses to review')).toBeNull();
       expect(region('Support tickets')).toBeNull();
       expect(region('Tasks needing attention')).toBeInTheDocument();
+    });
+
+    it('Key money numbers: "Expenses to pay" from unpaid expenses (not bills), in the account currency, linking to Expenses', async () => {
+      auto = (c) => (c.table === 'expenses'
+        ? { data: [{ amount: 30, status: 'pending' }, { amount: '45.99', status: 'approved' }, { amount: 4.01, status: null }], count: 3, error: null }
+        : c.table === 'invoices' ? { data: [], count: 0, error: null } : counts(0));
+      render(ui());
+      const money = await screen.findByRole('region', { name: 'Key money numbers' });
+      await within(money).findByText('Expenses to pay');
+      expect(money).toHaveTextContent('£80');
+      expect(money).toHaveTextContent('3 unpaid expenses, as of today, in GBP.');
+      expect(within(money).getByRole('link', { name: 'Open Expenses to see expenses to pay' })).toHaveAttribute('href', '/business-tools?tool=business-finance-assistant&tab=expenses');
+      expect(money).not.toHaveTextContent(/bills/i);
+      expect(calls.some((c) => c.table === 'bills')).toBe(false);
+      const exp = calls.find((c) => c.table === 'expenses')!;
+      expect(exp.filters).toContainEqual(['or', 'status.is.null,status.neq.paid']);
     });
 
     it('switches are labelled switches; Save stores the layout per user and company', async () => {

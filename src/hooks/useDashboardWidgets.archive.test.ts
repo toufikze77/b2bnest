@@ -24,4 +24,15 @@ describe('Dashboard money widget data', () => {
     expect(invoiceCalls).toContainEqual(['invoices', 'eq', 'user_id', 'u1']);
     expect(invoiceCalls).toContainEqual(['invoices', 'is', 'archived_at', null]);
   });
+
+  it('reads the user’s unpaid expenses (pending, approved or no status), capped, and never the bills table', async () => {
+    calls.length = 0;
+    await loadMoney('u1');
+    const exp = calls.filter((c) => c[0] === 'expenses');
+    expect(exp).toContainEqual(['expenses', 'select', 'amount,status', { count: 'exact' }]);
+    expect(exp).toContainEqual(['expenses', 'eq', 'user_id', 'u1']);
+    expect(exp).toContainEqual(['expenses', 'or', 'status.is.null,status.neq.paid']);
+    expect(exp).toContainEqual(['expenses', 'limit', 2000]);
+    expect(calls.some((c) => c[0] === 'bills')).toBe(false);
+  });
 });

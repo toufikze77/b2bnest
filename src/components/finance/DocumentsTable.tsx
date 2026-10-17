@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Archive, ArchiveRestore, CheckCircle2, Download, Edit, Eye, MoreHorizontal, Plus, Search, Trash2, Undo2 } from 'lucide-react';
+import { Archive, ArchiveRestore, CheckCircle2, Download, Edit, Eye, Mail, MoreHorizontal, Plus, Search, Trash2, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { statusActions, StatusTarget } from '@/lib/documentActions';
+import type { EmailAvailability } from '@/lib/documentEmail';
 import { activeOnly, archivedNewestFirst } from '@/lib/archive';
 import { ErrorState, LoadingRows } from '@/components/ui/states';
 import { DataTable } from '@/components/data/DataTable';
@@ -39,13 +40,16 @@ interface Props<D extends TableDoc> {
   /** Active | Archive, when the parent keeps it (in the URL). Without it the table keeps its own. */
   view?: 'active' | 'archive';
   onViewChange?: (v: 'active' | 'archive') => void;
+  /** "Email to customer": whether it can be used for this row (and why not), and what it opens. */
+  emailFor?: (d: D) => EmailAvailability;
+  onEmail?: (d: D) => void;
 }
 
 const PHONE_PAGE = 25;
 const date = (d?: string | null) => (d ? formatDueDate(d) : '—');
 
 /** Quotes or invoices: search, status chips, row count, row actions, phone cards with 44px targets. */
-export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loading, error, onRetry, onNew, onView, onEdit, onDownload, onStatus, onArchive, onRestore, onDeleteForever, busyId, view: viewProp, onViewChange }: Props<D>) {
+export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loading, error, onRetry, onNew, onView, onEdit, onDownload, onStatus, onArchive, onRestore, onDeleteForever, busyId, view: viewProp, onViewChange, emailFor, onEmail }: Props<D>) {
   const phone = usePhone();
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('all');
@@ -106,6 +110,20 @@ export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loadi
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => onEdit(d)}><Edit className="mr-2 h-4 w-4" aria-hidden="true" />Edit</DropdownMenuItem>
             <DropdownMenuItem onClick={() => onDownload(d)}><Download className="mr-2 h-4 w-4" aria-hidden="true" />Download PDF</DropdownMenuItem>
+            {emailFor && onEmail && (() => {
+              const e = emailFor(d);
+              return (
+                // aria-disabled (not Radix `disabled`) keeps it reachable by keyboard so the reason can be read.
+                <DropdownMenuItem onSelect={(ev) => { if (e.enabled) onEmail(d); else ev.preventDefault(); }} aria-disabled={!e.enabled || undefined}
+                  className={cn('items-start', !e.enabled && 'cursor-default text-muted-foreground focus:text-muted-foreground')}>
+                  <Mail className="mr-2 mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span className="flex flex-col">
+                    <span className={cn(!e.enabled && 'text-foreground')}>{e.label}</span>
+                    {e.reason && <span className="max-w-[16rem] text-small text-muted-foreground">{e.reason}</span>}
+                  </span>
+                </DropdownMenuItem>
+              );
+            })()}
             {statusActions(kind, d).map((a) => (
               <DropdownMenuItem key={a.label} onSelect={() => onStatus(d, a.to)} disabled={busyId === d.id}>
                 {a.label === 'Mark as unpaid' ? <Undo2 className="mr-2 h-4 w-4" aria-hidden="true" /> : <CheckCircle2 className="mr-2 h-4 w-4" aria-hidden="true" />}{a.label}

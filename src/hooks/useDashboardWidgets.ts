@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ACTIVE_FILTER } from '@/lib/archive';
 import { supabase } from '@/integrations/supabase/client';
 import { isoDay } from '@/lib/dashboardData';
-import { BillRow, DealRow, EmployeeRow, InvoiceRow, ShiftRow } from '@/lib/dashboardWidgets';
+import { DealRow, ExpenseDueRow, EmployeeRow, InvoiceRow, ShiftRow } from '@/lib/dashboardWidgets';
 import { listTickets, NotEnabledError, Ticket } from '@/services/supportService';
 
 export interface Loaded<T> { loading: boolean; error: string | null; notEnabled: boolean; data: T | null; reload: () => void }
@@ -66,16 +66,20 @@ export async function loadDeals(userId: string): Promise<CappedRows<DealRow>> {
   return { rows: r.data || [], total: r.count ?? null };
 }
 
-export interface MoneyData { invoices: CappedRows<InvoiceRow>; bills: CappedRows<BillRow> }
-/** Invoices and bills are owned by the signed-in user (no company column). Archived invoices are excluded. */
+export interface MoneyData { invoices: CappedRows<InvoiceRow>; expenses: CappedRows<ExpenseDueRow> }
+/**
+ * Invoices and expenses are owned by the signed-in user (no company column). Archived invoices are excluded.
+ * Expenses: only those not marked paid (pending, approved or no status), so the count is the number to pay.
+ * The `bills` table is not read: nothing in the app writes to it (Phase 4b).
+ */
 export async function loadMoney(userId: string): Promise<MoneyData> {
-  const [inv, bills] = await Promise.all([
+  const [inv, exp] = await Promise.all([
     // Archived invoices are left out of every total (Phase 4, src/lib/archive.ts).
     db.from('invoices').select('status,total_amount,currency', { count: 'exact' }).eq('user_id', userId).is(...ACTIVE_FILTER).limit(ROW_CAP),
-    db.from('bills').select('status,amount,currency', { count: 'exact' }).eq('user_id', userId).limit(ROW_CAP),
+    db.from('expenses').select('amount,status', { count: 'exact' }).eq('user_id', userId).or('status.is.null,status.neq.paid').limit(ROW_CAP),
   ]);
-  const i = must<InvoiceRow[]>(inv); const b = must<BillRow[]>(bills);
-  return { invoices: { rows: i.data || [], total: i.count ?? null }, bills: { rows: b.data || [], total: b.count ?? null } };
+  const i = must<InvoiceRow[]>(inv); const e = must<ExpenseDueRow[]>(exp);
+  return { invoices: { rows: i.data || [], total: i.count ?? null }, expenses: { rows: e.data || [], total: e.count ?? null } };
 }
 
 export interface ExpenseItem { id: string; description: string; category: string; amount: number; date: string }
