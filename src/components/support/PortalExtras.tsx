@@ -16,6 +16,7 @@ export function SupportEmailToggle({ org, uid }: { org: string; uid: string }) {
   return (
     <div className="text-sm">
       <label className="flex items-center gap-2"><Switch checked={on} onCheckedChange={change} />Email me about ticket updates (in-app updates always appear)</label>
+      {!svc.EMAIL_SENDING_ENABLED && <p className="text-xs text-muted-foreground">Support emails aren't switched on yet, so none are sent. Your choice is saved for when they are; updates always appear here.</p>}
       {err && <p role="alert" className="text-destructive">{err}</p>}
     </div>
   );

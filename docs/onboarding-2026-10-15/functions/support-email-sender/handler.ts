@@ -6,6 +6,7 @@ export type Claimed = {
   id: string; kind: "acknowledgement" | "public_reply" | "status_change"; recipient_user_id: string; attempts: number;
   support_name: string; reference: string; subject: string; reply_body: string | null;
   ticket_status?: string | null; feedback_enabled?: boolean | null;
+  organization_id?: string | null; ticket_id?: string | null;
 };
 export type Outcome = "accepted_by_provider" | "failed" | "uncertain" | "cancelled";
 export type Deps = {
@@ -22,7 +23,21 @@ export class BeforeDataError extends Error {}
 
 const clean = (s: string) => s.replace(/[\r\n]+/g, " ").slice(0, 150);
 
-/** Plain text only. Never includes private notes (the database already strips them) or attachments. */
+/** Support/invitation email goes only through the SMTP_* (Microsoft 365) settings; the old Gmail fallback is refused. */
+export function smtpOnly<T extends { provider: string }>(cfg: T | null): T {
+  if (!cfg || cfg.provider !== "smtp") throw new BeforeDataError("SMTP_* (Microsoft 365) settings are required; Gmail fallback is disabled");
+  return cfg;
+}
+
+/** Portal link that opens the right company and ticket after sign-in (the portal reads ?org and ?ticket). */
+export function ticketLink(portalUrl: string, c: Pick<Claimed, "organization_id" | "ticket_id">): string {
+  const u = new URL(portalUrl);
+  if (c.organization_id) u.searchParams.set("org", c.organization_id);
+  if (c.ticket_id) u.searchParams.set("ticket", c.ticket_id);
+  return u.toString();
+}
+
+/** Plain text only. Never includes message text, private notes or attachments: status and a portal link. */
 export function buildEmail(c: Claimed, portalUrl: string): { subject: string; text: string } {
   const head = `${clean(c.support_name)} — ${c.reference}`;
   if (c.kind === "acknowledgement") {
@@ -39,9 +54,10 @@ export function buildEmail(c: Claimed, portalUrl: string): { subject: string; te
       text: `The status of your ticket "${clean(c.subject)}" (${c.reference}) is now: ${label[c.ticket_status ?? ""] ?? "updated"}.${fb}\n\nView: ${portalUrl}`,
     };
   }
+  // Link only: the reply text stays in the portal, behind sign-in (email can be forwarded or read by others).
   return {
     subject: `${head}: new reply`,
-    text: `There is a new reply on your ticket "${clean(c.subject)}" (${c.reference}):\n\n${(c.reply_body ?? "").slice(0, 5000)}\n\nView or reply: ${portalUrl}\nAttachments, if any, are only available in the portal.`,
+    text: `There is a new reply on your ticket "${clean(c.subject)}" (${c.reference}).\n\nSign in to read and reply: ${portalUrl}\nAttachments, if any, are only available in the portal.`,
   };
 }
 
@@ -56,7 +72,7 @@ export const makeHandler = (d: Deps) => async (req: Request): Promise<Response> 
     if (c.kind === "public_reply" && !c.reply_body) { await d.finish(c.id, "cancelled", "no public reply body"); result.cancelled++; continue; }
     const to = await d.recipientEmail(c.recipient_user_id);
     if (!to) { await d.finish(c.id, "cancelled", "recipient has no email"); result.cancelled++; continue; }
-    const mail = buildEmail(c, portalUrl);
+    const mail = buildEmail(c, ticketLink(portalUrl, c));
     try {
       const reply = await d.send(to, mail.subject, mail.text);
       await d.finish(c.id, "accepted_by_provider", reply);

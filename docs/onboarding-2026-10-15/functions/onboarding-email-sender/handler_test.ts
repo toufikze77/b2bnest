@@ -1,5 +1,5 @@
 import { assertEquals, assert } from "https://deno.land/std@0.190.0/testing/asserts.ts";
-import { makeHandler, buildEmail, BeforeDataError, type Claimed, type Deps } from "./handler.ts";
+import { makeHandler, buildEmail, BeforeDataError, smtpOnly, type Claimed, type Deps } from "./handler.ts";
 const row = (o: Partial<Claimed> = {}): Claimed => ({ id: "1", kind: "staff_invitation", recipient_email: "w@new.test", company: "Acme",
   role: "member", organization_id: "org-1", token: "tok", attempts: 1, ...o });
 const req = () => new Request("http://x", { method: "POST", headers: { Authorization: "Bearer svc" } });
@@ -21,4 +21,9 @@ Deno.test("customer email returns to that company's portal and carries no token"
 Deno.test("before DATA -> failed; after -> uncertain", async () => {
   let a = deps([row()], async () => { throw new BeforeDataError("421"); }); await makeHandler(a.d)(req()); assertEquals(a.finished, [["1", "failed"]]);
   a = deps([row()], async () => { throw new Error("timeout"); }); await makeHandler(a.d)(req()); assertEquals(a.finished, [["1", "uncertain"]]);
+});
+
+Deno.test("invitations refuse the Gmail fallback", () => {
+  let e: unknown; try { smtpOnly({ provider: "gmail" }); } catch (x) { e = x; }
+  assert(e instanceof BeforeDataError);
 });
