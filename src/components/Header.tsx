@@ -3,7 +3,6 @@ import { Menu, X, User, LogOut, Settings, BarChart3, Brain, Newspaper, Sun, Moon
 
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import logo from '@/assets/b2bnest-logo.png';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,12 +44,10 @@ const Header = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-20 items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center">
-            <img 
-              src={logo} 
-              alt="B2BNEST — Connect, Collaborate, Grow. All-in-one business platform" 
-              className="h-11 w-auto max-w-[152px] object-contain dark:brightness-0 dark:invert sm:h-12 sm:max-w-[184px]"
-            />
+          <Link to="/" className="flex shrink-0 items-center rounded-control focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
+            {/* Owner's wordmark: color on white, reversed on the dark-mode header. */}
+            <img src="/brand/svg/b2bnest-wordmark-color.svg" alt="B2BNEST" width={213} height={32} className="h-7 w-auto dark:hidden sm:h-8" />
+            <img src="/brand/svg/b2bnest-wordmark-reversed.svg" alt="B2BNEST" width={213} height={32} className="hidden h-7 w-auto dark:block sm:h-8" />
           </Link>
 
           {/* Desktop Navigation */}

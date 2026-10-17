@@ -4,7 +4,6 @@ import {
   BarChart3, Bot, ChevronDown, BriefcaseBusiness, CalendarDays, CircleDollarSign,
   FileText, FolderKanban, HelpCircle, Home, LayoutGrid, LayoutTemplate, ListChecks, LogOut, NotebookPen, Plug, Plus, Receipt,
   Settings, Sparkles, Target, Users, UsersRound, WandSparkles, LifeBuoy } from 'lucide-react';
-import logo from '@/assets/b2bnest-logo.png';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useUserAvatar } from '@/hooks/useUserAvatar';
@@ -29,6 +28,8 @@ import { NotificationsPanel } from './NotificationsPanel';
 import { MobileTabBar } from './MobileTabBar';
 
 // Option B navigation. Every item points at an existing route.
+const MARK_REVERSED = '/brand/svg/b2bnest-mark-reversed.svg';
+
 const topItem = { label: 'Dashboard', to: '/dashboard', icon: Home };
 const groups = [
   { label: 'Work', items: [
@@ -111,12 +112,15 @@ export function AppShell({ children }: { children: ReactNode }) {
         Skip to content
       </a>
       <Sidebar collapsible="icon" className="border-sidebar-border bg-sidebar" aria-label="Main">
-        <SidebarHeader className="h-16 justify-center border-b border-sidebar-border px-3">
-          <Link to="/dashboard" className="flex items-center gap-2 overflow-hidden rounded-control px-1 py-1 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-sidebar-ring" aria-label="B2BNest dashboard">
-            <img src={logo} alt="" className="h-9 w-auto max-w-[180px] object-contain brightness-0 invert" />
+        <SidebarHeader className="h-[72px] justify-center border-b border-sidebar-border px-3 group-data-[collapsible=icon]:h-16">
+          {/* Owner's reversed mark, straight on navy (no tile). */}
+          <Link to="/dashboard" className="flex w-fit items-center rounded-control focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-sidebar-ring">
+            <img src={MARK_REVERSED} alt="B2BNEST" width={52} height={52} className="h-[52px] w-[52px] group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8" />
           </Link>
         </SidebarHeader>
         <SidebarContent className="gap-0 py-2">
+          {/* On phones the company switcher lives in the menu, so the navy top bar stays uncluttered. */}
+          <div className="px-3 pb-2 pt-1 text-foreground md:hidden"><OrganizationSwitcher /></div>
           <SidebarGroup className="py-1">
             <SidebarMenu>{item(topItem)}</SidebarMenu>
           </SidebarGroup>
@@ -146,10 +150,14 @@ export function AppShell({ children }: { children: ReactNode }) {
       </Sidebar>
 
       <SidebarInset className="min-w-0 bg-background">
-        <header className="sticky top-0 z-40 flex h-16 items-center gap-2 border-b border-border bg-card px-3 sm:px-5 lg:px-6">
-          <SidebarTrigger className="h-11 w-11 text-foreground" aria-label="Open menu" />
-          <div className="min-w-0 md:flex-1"><GlobalCommand /></div>
-          <div className="ml-auto flex min-w-0 items-center gap-1 sm:gap-1.5">
+        {/* Navy top bar on phones (with the reversed mark), white from md up. */}
+        <header className="sticky top-0 z-40 flex h-16 items-center gap-2 border-b border-transparent bg-brand-navy px-3 text-white sm:px-5 md:border-border md:bg-card md:text-foreground lg:px-6">
+          <SidebarTrigger className="h-11 w-11 text-current hover:bg-white/10 hover:text-white md:hover:bg-accent md:hover:text-accent-foreground" aria-label="Open menu" />
+          <Link to="/dashboard" className="shrink-0 rounded-control focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring md:hidden">
+            <img src={MARK_REVERSED} alt="B2BNEST" width={42} height={42} className="h-[42px] w-[42px]" />
+          </Link>
+          <div className="ml-auto min-w-0 md:ml-0 md:flex-1"><GlobalCommand /></div>
+          <div className="flex min-w-0 items-center gap-1 sm:gap-1.5 md:ml-auto">
             {location.pathname !== '/dashboard' && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -168,11 +176,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
             <Button variant="ghost" size="icon" className="hidden h-11 w-11 sm:inline-flex" onClick={() => setFeedbackOpen(true)} aria-label="Help and feedback" title="Help and feedback"><HelpCircle className="h-5 w-5" /></Button>
             <NotificationsPanel />
-            <div className="min-w-0"><OrganizationSwitcher /></div>
+            <div className="hidden min-w-0 md:block"><OrganizationSwitcher /></div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-11 w-11 rounded-full" aria-label="Open account menu">
-                  <Avatar className="h-8 w-8"><AvatarImage src={avatarUrl} alt="" /><AvatarFallback className="bg-brand-navy text-small font-bold text-white">{initials}</AvatarFallback></Avatar>
+                  <Avatar className="h-8 w-8 ring-1 ring-white/50 md:ring-0"><AvatarImage src={avatarUrl} alt="" /><AvatarFallback className="bg-brand-navy text-small font-bold text-white">{initials}</AvatarFallback></Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
