@@ -8,7 +8,7 @@ const now = new Date(2026, 9, 17, 12); // 17 Oct 2026
 let n = 0;
 const inv = (status: string, total: number, currency: string, created: string, extra: Record<string, unknown> = {}) =>
   ({ id: `i${++n}`, status, total_amount: total, currency, created_at: created, due_date: null as string | null, client_name: 'Acme', paid_at: null as string | null, archived_at: null as string | null, ...extra });
-const input = (over: Partial<OverviewInput> = {}): OverviewInput => ({ invoices: [], expenses: [], bills: [], deals: [], contacts: [], projects: [], tasks: [], ...over });
+const input = (over: Partial<OverviewInput> = {}): OverviewInput => ({ invoices: [], expenses: [], deals: [], contacts: [], projects: [], tasks: [], ...over });
 
 describe('periods', () => {
   it('ranges start on the right day and All time has no start', () => {
@@ -36,8 +36,7 @@ describe('overviewCards', () => {
       inv('sent', 999, 'GBP', '2026-10-01T09:00:00Z', { due_date: '2026-10-01', archived_at: '2026-10-16T09:00:00Z' }), // archived: ignored
       inv('paid', 500, 'USD', '2026-10-01T09:00:00Z', { paid_at: '2026-10-02T09:00:00Z' }), // other currency
     ],
-    expenses: [{ amount: 20, date: '2026-10-02' }, { amount: 5, date: '2026-09-02' }],
-    bills: [{ status: 'pending', amount: 80, currency: 'GBP' }, { status: 'paid', amount: 10, currency: 'GBP' }],
+    expenses: [{ amount: 20, date: '2026-10-02', status: 'paid' }, { amount: 5, date: '2026-09-02', status: 'pending' }],
     deals: [{ stage: 'proposal', value: 1000, currency: 'GBP' }, { stage: 'Closed Won', value: 5000, currency: 'GBP' }, { stage: 'lost', value: 1, currency: 'GBP' }, { stage: 'Discovery call', value: 200, currency: 'GBP' }, { stage: 'lead', value: 7, currency: 'USD' }],
     contacts: [{ status: 'lead', created_at: '2026-10-01' }, { status: 'customer', created_at: '2026-09-01' }],
     projects: [{ status: 'active' }, { status: 'completed' }, { status: 'planning' }],
@@ -63,19 +62,32 @@ describe('overviewCards', () => {
     expect(overviewCards(data, 'USD', 'GBP', 'month', now).moneyOut).toBeNull();
   });
 
-  it('pipeline uses isClosedStage (won/lost/closed out, custom stages in); bills, tasks, projects, contacts', () => {
+  it('pipeline uses isClosedStage (won/lost/closed out, custom stages in); tasks, projects, contacts', () => {
     const c = overviewCards(data, 'GBP', 'GBP', 'month', now);
     expect(c.openPipeline).toEqual({ amount: 1200, count: 2 });
     expect(c.otherCurrencyDeals).toBe(1);
-    expect(c.billsToPay).toEqual({ amount: 80, count: 1 });
     expect([c.openTasks, c.overdueTasks, c.activeProjects, c.contacts]).toEqual([2, 1, 2, 2]);
   });
 
-  it('no card goes to the Dashboard; bills has no screen so it is not a link', () => {
-    for (const [k, v] of Object.entries(CARD_LINKS)) {
-      if (k === 'billsToPay') expect(v).toBeNull();
-      else expect(v!.to).not.toBe('/dashboard');
-    }
+  it('expenses to pay: every expense not marked paid (pending, approved, no status), any date, account currency only', () => {
+    const d = input({ expenses: [
+      { amount: 40, date: '2026-10-02', status: 'pending' }, // "Mobile Bill"
+      { amount: 15.5, date: '2025-01-10', status: 'approved' }, // old but still unpaid
+      { amount: 9, date: '2026-10-01', status: null }, // database default is pending
+      { amount: 300, date: '2026-10-03', status: 'paid' },
+      { amount: 7, date: '2026-10-04', status: 'Paid' },
+    ] });
+    expect(overviewCards(d, 'GBP', 'GBP', 'month', now).expensesToPay).toEqual({ amount: 64.5, count: 3 });
+    expect(overviewCards(d, 'GBP', 'GBP', 'all', now).expensesToPay).toEqual({ amount: 64.5, count: 3 }); // not period-based
+    expect(overviewCards(d, 'USD', 'GBP', 'month', now).expensesToPay).toBeNull(); // not included in another currency
+    expect(overviewCards(input(), 'GBP', 'GBP', 'month', now).expensesToPay).toEqual({ amount: 0, count: 0 });
+    // Money out keeps its meaning: every expense dated in the period, paid or not.
+    expect(overviewCards(d, 'GBP', 'GBP', 'month', now).moneyOut).toEqual({ amount: 356, count: 4 });
+  });
+
+  it('every card is a link and none goes to the Dashboard', () => {
+    for (const v of Object.values(CARD_LINKS)) expect(v.to).not.toBe('/dashboard');
+    expect(CARD_LINKS.expensesToPay.to).toBe('/business-tools?tool=business-finance-assistant&tab=expenses');
     expect(CARD_LINKS.moneyIn.to).toBe('/business-tools?tool=business-finance-assistant&tab=invoices');
     expect(CARD_LINKS.moneyOut.to).toBe('/business-tools?tool=business-finance-assistant&tab=expenses');
     expect(CARD_LINKS.openPipeline.to).toBe('/crm?tab=deals');

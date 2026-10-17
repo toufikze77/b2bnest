@@ -36,19 +36,23 @@ interface Props<D extends TableDoc> {
   onDeleteForever: (d: D) => void;
   /** Document with a status change in flight (its status items are disabled). */
   busyId?: string | null;
+  /** Active | Archive, when the parent keeps it (in the URL). Without it the table keeps its own. */
+  view?: 'active' | 'archive';
+  onViewChange?: (v: 'active' | 'archive') => void;
 }
 
 const PHONE_PAGE = 25;
 const date = (d?: string | null) => (d ? formatDueDate(d) : '—');
 
 /** Quotes or invoices: search, status chips, row count, row actions, phone cards with 44px targets. */
-export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loading, error, onRetry, onNew, onView, onEdit, onDownload, onStatus, onArchive, onRestore, onDeleteForever, busyId }: Props<D>) {
+export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loading, error, onRetry, onNew, onView, onEdit, onDownload, onStatus, onArchive, onRestore, onDeleteForever, busyId, view: viewProp, onViewChange }: Props<D>) {
   const phone = usePhone();
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('all');
   const [shown, setShown] = useState(PHONE_PAGE);
   // Active | Archive. Archived documents are kept for the record and left out of every total.
-  const [view, setView] = useState<'active' | 'archive'>('active');
+  const [ownView, setOwnView] = useState<'active' | 'archive'>('active');
+  const view = viewProp ?? ownView;
   const archive = view === 'archive';
   const activeDocs = useMemo(() => activeOnly(docs), [docs]);
   const archivedDocs = useMemo(() => archivedNewestFirst(docs), [docs]);
@@ -71,7 +75,7 @@ export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loadi
   const rows = listed.filter((d) => (archive || status === 'all' || chipOf(d) === status)
     && (!q || numberOf(d).toLowerCase().includes(q) || (d.client_name || '').toLowerCase().includes(q)));
   const filtered = !!q || (!archive && status !== 'all');
-  const switchView = (v: 'active' | 'archive') => { setView(v); setStatus('all'); setShown(PHONE_PAGE); };
+  const switchView = (v: 'active' | 'archive') => { if (onViewChange) onViewChange(v); else setOwnView(v); setStatus('all'); setShown(PHONE_PAGE); };
   const clear = () => { setQuery(''); setStatus('all'); setShown(PHONE_PAGE); };
   const amount = (d: D) => formatMoney(Number(d.total_amount) || 0, d.currency, { cents: true });
   const chip = (d: D) => (kind === 'invoice' ? <InvoiceStatusChip doc={d} /> : <QuoteStatusChip doc={d} />);

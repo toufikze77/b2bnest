@@ -29,7 +29,7 @@ import { archivedMessage, archiveWording, deleteForeverWording, DocKind, statusA
 import { documentApi, DocWrites } from '@/lib/documentApi';
 import { activeOnly, isArchived } from '@/lib/archive';
 import { ConfirmDeleteDialog, DeleteOutcome } from '@/components/finance/ConfirmDeleteDialog';
-import { FinanceTab, financeTabFromSearch, searchWithTab } from '@/lib/financeTabs';
+import { ArchiveTab, archiveViewsFromSearch, FinanceTab, financeTabFromSearch, searchWithArchive, searchWithTab } from '@/lib/financeTabs';
 import DocumentTemplatePicker from '@/components/documents/DocumentTemplatePicker';
 import { useDocumentTemplates } from '@/hooks/useDocumentTemplates';
 import { renderDocumentPdf } from '@/lib/documentTemplates';
@@ -89,6 +89,12 @@ const BusinessFinanceAssistant = () => {
   const changeTab = (tab: FinanceTab) => {
     setActiveTab(tab);
     const search = searchWithTab(location.search, tab);
+    if (search !== location.search.replace(/^\?/, '')) navigate({ search }, { replace: true });
+  };
+  // Active | Archive per tab, from ?archive= (read on every render, so refresh and Back/Forward keep it).
+  const archiveViews = archiveViewsFromSearch(location.search);
+  const changeArchiveView = (tab: ArchiveTab, v: 'active' | 'archive') => {
+    const search = searchWithArchive(location.search, tab, v === 'archive');
     if (search !== location.search.replace(/^\?/, '')) navigate({ search }, { replace: true });
   };
   // ?type=invoice|quote preselects the Create tab's document type ("New invoice" / "New quote").
@@ -639,13 +645,15 @@ const BusinessFinanceAssistant = () => {
         <TabsContent value="quotes" className="mt-0">
           <DocumentsTable kind="quote" docs={quotes} numberOf={numberOf} {...docState} onNew={() => startNew('quote')}
             onView={handleViewDocument} onEdit={handleEditDocument} onDownload={handleDownloadDocument}
-            onStatus={(d: Quote, to) => { void handleStatusChange(d, to); }} onArchive={(d: Quote) => setArchivingDoc(d)} onRestore={(d: Quote) => { void handleRestore(d); }} onDeleteForever={(d: Quote) => setDeletingDoc(d)} busyId={statusBusy} />
+            onStatus={(d: Quote, to) => { void handleStatusChange(d, to); }} onArchive={(d: Quote) => setArchivingDoc(d)} onRestore={(d: Quote) => { void handleRestore(d); }} onDeleteForever={(d: Quote) => setDeletingDoc(d)} busyId={statusBusy}
+            view={archiveViews.quotes ? 'archive' : 'active'} onViewChange={(v) => changeArchiveView('quotes', v)} />
         </TabsContent>
 
         <TabsContent value="invoices" className="mt-0">
           <DocumentsTable kind="invoice" docs={invoices} numberOf={numberOf} {...docState} onNew={() => startNew('invoice')}
             onView={handleViewDocument} onEdit={handleEditDocument} onDownload={handleDownloadDocument}
-            onStatus={(d: Invoice, to) => { void handleStatusChange(d, to); }} onArchive={(d: Invoice) => setArchivingDoc(d)} onRestore={(d: Invoice) => { void handleRestore(d); }} onDeleteForever={(d: Invoice) => setDeletingDoc(d)} busyId={statusBusy} />
+            onStatus={(d: Invoice, to) => { void handleStatusChange(d, to); }} onArchive={(d: Invoice) => setArchivingDoc(d)} onRestore={(d: Invoice) => { void handleRestore(d); }} onDeleteForever={(d: Invoice) => setDeletingDoc(d)} busyId={statusBusy}
+            view={archiveViews.invoices ? 'archive' : 'active'} onViewChange={(v) => changeArchiveView('invoices', v)} />
         </TabsContent>
 
         <TabsContent value="products" className="mt-0">

@@ -1,11 +1,12 @@
 /**
  * Business overview (Phase 4). Pure functions over records the page loads; nothing is estimated.
  *
- * Scope: money (invoices, expenses, bills) and CRM (deals, contacts) are the signed-in user's own
+ * Scope: money (invoices, expenses) and CRM (deals, contacts) are the signed-in user's own
  * records; projects and tasks are company-wide for the active organisation. No number mixes the two.
  * Money is per currency and never converted. Revenue = paid invoices only (never quotes), dated by
  * paid date (invoice date if none was recorded). Overdue uses the shared invoice status helper.
  * Archived invoices are left out. Expenses have no currency: they are in the account currency.
+ * The `bills` table is not read: nothing in the app writes to it (Phase 4c); money to pay out is unpaid expenses.
  */
 import { activeOnly } from '@/lib/archive';
 import { CLOSED_PROJECT_STATUSES, isOpen, isoDay } from '@/lib/dashboardData';
@@ -16,8 +17,8 @@ import { FinDoc, invoiceStatus, paidDateOf, splitByCurrency, statusCounts, topCu
 import { normalizeCurrency } from '@/lib/money';
 import { statusLabel } from '@/components/data/StatusBadge';
 
-export interface OvExpense { amount: number | string | null; date: string | null }
-export interface OvBill { status: string | null; amount: number | string | null; currency: string | null }
+/** Expense status: 'pending' (database default), 'approved' or 'paid'. A missing status is treated as pending, as on the Expenses tab. */
+export interface OvExpense { amount: number | string | null; date: string | null; status?: string | null }
 export interface OvDeal { stage: string | null; value: number | string | null; currency: string | null }
 export interface OvContact { status: string | null; created_at: string | null }
 export interface OvProject { status: string | null }
@@ -61,7 +62,7 @@ const num = (v: number | string | null | undefined) => Number(v) || 0;
 const sum = <T>(rows: T[], f: (r: T) => number | string | null | undefined) => Math.round(rows.reduce((n, r) => n + num(f(r)), 0) * 100) / 100;
 
 export interface OverviewInput {
-  invoices: FinDoc[]; expenses: OvExpense[]; bills: OvBill[]; deals: OvDeal[];
+  invoices: FinDoc[]; expenses: OvExpense[]; deals: OvDeal[];
   contacts: OvContact[]; projects: OvProject[]; tasks: OvTask[];
 }
 
@@ -70,7 +71,9 @@ export interface OverviewInput {
  * - moneyIn: paid invoices whose paid date (or invoice date) falls in the period.
  * - moneyOut: expenses dated in the period, only when the chosen currency is the account currency
  *   (expenses have no currency of their own); null otherwise.
- * - outstanding / overdue / openPipeline / billsToPay / tasks / projects / contacts: as of today.
+ * - expensesToPay: every expense not marked paid (pending or approved), as of today, not period-based;
+ *   account currency only, like moneyOut; null otherwise.
+ * - outstanding / overdue / openPipeline / tasks / projects / contacts: as of today.
  */
 export function overviewCards(input: OverviewInput, currency: string, account: string, period: Period, now = new Date()) {
   const today = isoDay(now);
@@ -82,9 +85,10 @@ export function overviewCards(input: OverviewInput, currency: string, account: s
   const paid = included.filter((d) => chip(d) === 'paid' && inRange(paidDateOf(d), range));
   const open = included.filter((d) => chip(d) === 'sent' || chip(d) === 'overdue');
   const overdue = included.filter((d) => chip(d) === 'overdue');
-  const expensesHere = cur && cur === normalizeCurrency(account) ? input.expenses.filter((e) => inRange(e.date, range)) : null;
+  const inAccount = !!cur && cur === normalizeCurrency(account);
+  const expensesHere = inAccount ? input.expenses.filter((e) => inRange(e.date, range)) : null;
+  const unpaidExpenses = inAccount ? input.expenses.filter((e) => (e.status || 'pending').toLowerCase() !== 'paid') : null;
   const deals = input.deals.filter((d) => !isClosedStage(d.stage) && normalizeCurrency(d.currency) === cur);
-  const bills = input.bills.filter((b) => (b.status || '').toLowerCase() !== 'paid' && normalizeCurrency(b.currency) === cur);
   const openTasks = input.tasks.filter((t) => isOpen(t.status || ''));
   return {
     moneyIn: { amount: sum(paid, (d) => d.total_amount), count: paid.length },
@@ -92,7 +96,7 @@ export function overviewCards(input: OverviewInput, currency: string, account: s
     outstanding: { amount: sum(open, (d) => d.total_amount), count: open.length },
     overdue: { amount: sum(overdue, (d) => d.total_amount), count: overdue.length },
     openPipeline: { amount: sum(deals, (d) => d.value), count: deals.length },
-    billsToPay: { amount: sum(bills, (b) => b.amount), count: bills.length },
+    expensesToPay: unpaidExpenses ? { amount: sum(unpaidExpenses, (e) => e.amount), count: unpaidExpenses.length } : null,
     openTasks: openTasks.length,
     overdueTasks: openTasks.filter((t) => { const d = dayOf(t.due_date); return !!d && d < today; }).length,
     activeProjects: input.projects.filter((p) => !CLOSED_PROJECT_STATUSES.includes((p.status || '').toLowerCase())).length,
@@ -103,7 +107,7 @@ export function overviewCards(input: OverviewInput, currency: string, account: s
   };
 }
 
-/** Where each card goes. Bills have no screen in the app, so that card is not a link. */
+/** Where each card goes. Every card opens the screen that manages its records. */
 export const CARD_LINKS = {
   moneyIn: { to: '/business-tools?tool=business-finance-assistant&tab=invoices', place: 'Invoices' },
   outstanding: { to: '/business-tools?tool=business-finance-assistant&tab=invoices', place: 'Invoices' },
@@ -113,7 +117,7 @@ export const CARD_LINKS = {
   contacts: { to: '/crm', place: 'CRM contacts' },
   activeProjects: { to: '/project-management', place: 'Projects' },
   openTasks: { to: '/project-management?view=list', place: 'Tasks' },
-  billsToPay: null,
+  expensesToPay: { to: '/business-tools?tool=business-finance-assistant&tab=expenses', place: 'Expenses' },
 } as const;
 
 /* ---------- Sections ---------- */

@@ -37,3 +37,25 @@ export function searchWithPayrollTab(search: string, tab: PayrollSubTab): string
   p.set('payroll', tab);
   return p.toString();
 }
+
+/**
+ * Active | Archive on the Quotes and Invoices tabs lives in `?archive=` so a refresh keeps it.
+ * Each tab is independent: `archive=quotes`, `archive=invoices`, or `archive=quotes,invoices`.
+ * Missing or unknown values mean Active. Switching tabs keeps the param, so each tab remembers its view.
+ */
+export type ArchiveTab = 'quotes' | 'invoices';
+const ARCHIVE_TABS: ArchiveTab[] = ['quotes', 'invoices'];
+
+export function archiveViewsFromSearch(search: string): Record<ArchiveTab, boolean> {
+  const on = (new URLSearchParams(search).get('archive') || '').split(',').map((s) => s.trim());
+  return { quotes: on.includes('quotes'), invoices: on.includes('invoices') };
+}
+
+/** The query string after switching `tab` to Archive (`on`) or Active; every other param is kept. */
+export function searchWithArchive(search: string, tab: ArchiveTab, on: boolean): string {
+  const p = new URLSearchParams(search);
+  const views = { ...archiveViewsFromSearch(search), [tab]: on };
+  const value = ARCHIVE_TABS.filter((t) => views[t]).join(',');
+  if (value) p.set('archive', value); else p.delete('archive');
+  return p.toString();
+}
