@@ -35,11 +35,13 @@ vi.mock('@/integrations/supabase/client', () => {
           return (res: (v: unknown) => void) => {
             const w = calls.find((c) => ['insert', 'update', 'delete'].includes(c[0] as string));
             if (!w) return res({ data: db.rows[table] ?? [], error: null });
-            db.writes.push({ table, op: w[0] as string, payload: w[1], filters: calls.filter((c) => c[0] === 'eq').map((c) => c.slice(1)) });
+            db.writes.push({ table, op: w[0] as string, payload: w[1], filters: calls.filter((c) => c[0] === 'eq' || c[0] === 'not').map((c) => (c[0] === 'not' ? ['not', ...c.slice(1)] : c.slice(1))) });
             if (db.failWrites) return res({ data: null, error: { message: 'Simulated network error' } });
             const id = calls.find((c) => c[0] === 'eq' && c[1] === 'id')?.[2];
+            // Like the database: a delete with `not archived_at is null` only removes archived rows.
+            const onlyArchived = calls.some((c) => c[0] === 'not' && c[1] === 'archived_at');
             if (w[0] === 'update') db.rows[table] = (db.rows[table] ?? []).map((r) => (r.id === id ? { ...r, ...(w[1] as object) } : r));
-            if (w[0] === 'delete') db.rows[table] = (db.rows[table] ?? []).filter((r) => r.id !== id);
+            if (w[0] === 'delete') db.rows[table] = (db.rows[table] ?? []).filter((r) => r.id !== id || (onlyArchived && !r.archived_at));
             return res({ data: null, error: null });
           };
         }
@@ -117,12 +119,14 @@ describe('Honest Sent and Paid', () => {
     openMenu('More actions for invoice INV-1002');
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Mark as paid' }));
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith('INV-1002 marked as paid.'));
-    expect(db.writes).toEqual([{ table: 'invoices', op: 'update', payload: { status: 'paid' }, filters: [['id', '1002'], ['user_id', 'u1']] }]);
+    // Mark as paid records the paid date in the same update.
+    expect(db.writes).toEqual([{ table: 'invoices', op: 'update', payload: { status: 'paid', paid_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/) }, filters: [['id', '1002'], ['user_id', 'u1']] }]);
     fireEvent.mouseDown(screen.getByRole('tab', { name: 'Overview' }));
     fireEvent.click(screen.getByRole('tab', { name: 'Overview' }));
     const tiles = await screen.findByLabelText('Invoice figures');
     await waitFor(() => expect(tiles).toHaveTextContent(/Paid last 30 days£950/));
-    expect(tiles).toHaveTextContent('Based on invoice date. A paid date will be recorded once it is added.');
+    // Marked paid now, so it has a paid date: no "no paid date recorded" note.
+    expect(tiles).not.toHaveTextContent('no paid date recorded');
   });
 
   it('a failed status change rolls back and shows an error', async () => {
@@ -138,46 +142,138 @@ describe('Honest Sent and Paid', () => {
     expect(toast.success).not.toHaveBeenCalled();
   });
 
-  it('the document view has Mark as sent and Delete, and no Send button', async () => {
+  it('the document view has Mark as sent and Move to archive, and no Send or Delete button', async () => {
     renderAt('?tool=business-finance-assistant&tab=invoices');
     await screen.findAllByText('INV-1001');
     fireEvent.click(screen.getAllByRole('button', { name: 'View invoice INV-1001' })[0]);
     const view = await screen.findByRole('dialog');
     expect(within(view).getByRole('button', { name: 'Mark as sent' })).toBeInTheDocument();
-    expect(within(view).getByRole('button', { name: 'Delete' })).toBeInTheDocument();
+    expect(within(view).getByRole('button', { name: 'Move to archive' })).toBeInTheDocument();
+    expect(within(view).queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
     expect(within(view).queryByRole('button', { name: /^Send$/ })).not.toBeInTheDocument();
     expect(view).toHaveTextContent('B2BNEST doesn’t email documents.');
   });
 });
 
-describe('Delete quotes and invoices', () => {
-  it('a sent invoice gets the stronger warning; delete happens only after confirming, for this user only', async () => {
+describe('Archive, restore, delete forever', () => {
+  const archivedPaid = { ...invoice('1003', 'paid', 400, day(-30)), paid_at: iso(3), archived_at: iso(1) };
+
+  it('Move to archive: light confirmation, sets archived_at for this user only, toast with Undo, row moves to Archive', async () => {
     renderAt('?tool=business-finance-assistant&tab=invoices');
     await screen.findAllByText('INV-1002');
     openMenu('More actions for invoice INV-1002');
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Move to archive' }));
     const confirm = await screen.findByRole('alertdialog');
-    expect(confirm).toHaveTextContent('Delete invoice INV-1002?');
-    expect(confirm).toHaveTextContent('UK businesses normally keep invoices for several years for their records. Delete anyway?');
+    expect(confirm).toHaveTextContent('Move invoice INV-1002 to the archive?');
+    expect(confirm).toHaveTextContent('You can restore it from the Archive.');
     expect(db.writes).toEqual([]);
-    fireEvent.click(within(confirm).getByRole('button', { name: 'Delete invoice' }));
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Move to archive' }));
     await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
-    expect(db.writes).toEqual([{ table: 'invoices', op: 'delete', payload: undefined, filters: [['id', '1002'], ['user_id', 'u1']] }]);
-    await waitFor(() => expect(screen.queryAllByText('INV-1002')).toHaveLength(0));
-    expect(toast.success).toHaveBeenCalledWith('Invoice INV-1002 deleted');
+    expect(db.writes).toEqual([{ table: 'invoices', op: 'update', payload: { archived_at: expect.stringMatching(/^\d{4}-/) }, filters: [['id', '1002'], ['user_id', 'u1']] }]);
+    expect(db.rows.invoices.find((r) => r.id === '1002')?.status).toBe('sent'); // status kept
+    const [msg, opts] = toast.success.mock.calls.at(-1) as [string, { action: { label: string; onClick: () => void } }];
+    expect(msg).toBe('Invoice INV-1002 archived. It is no longer included in totals.');
+    expect(opts.action.label).toBe('Undo');
+    expect(screen.getByRole('button', { name: 'Archive (1)' })).toBeInTheDocument();
+    expect(within(screen.getByRole('table')).queryByText('INV-1002')).not.toBeInTheDocument();
+    // Undo restores it.
+    await act(async () => { opts.action.onClick(); });
+    await waitFor(() => expect(db.writes.at(-1)).toEqual({ table: 'invoices', op: 'update', payload: { archived_at: null }, filters: [['id', '1002'], ['user_id', 'u1']] }));
+    await waitFor(() => expect(within(screen.getByRole('table')).getByText('INV-1002')).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Archive (0)' })).toBeInTheDocument();
   });
 
-  it('a failed delete keeps the row and shows the error in the dialog', async () => {
+  it('a failed archive rolls back: the row stays active and the dialog explains', async () => {
     db.failWrites = true;
     renderAt('?tool=business-finance-assistant&tab=invoices');
     await screen.findAllByText('INV-1001');
     openMenu('More actions for invoice INV-1001');
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Move to archive' }));
     const confirm = await screen.findByRole('alertdialog');
-    expect(confirm).toHaveTextContent('This permanently deletes the invoice. It can’t be undone.');
-    fireEvent.click(within(confirm).getByRole('button', { name: 'Delete invoice' }));
-    expect(await within(confirm).findByRole('alert')).toHaveTextContent('INV-1001 couldn’t be deleted. Nothing was changed.');
-    expect(screen.getAllByText('INV-1001', { exact: true }).length).toBeGreaterThan(0);
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Move to archive' }));
+    expect(await within(confirm).findByRole('alert')).toHaveTextContent('INV-1001 wasn’t moved to the archive. Nothing was changed.');
+    // The open dialog marks the page aria-hidden, hence `hidden: true`.
+    expect(screen.getByRole('button', { name: 'Archive (0)', hidden: true })).toBeInTheDocument();
+    expect(within(screen.getByRole('table', { hidden: true })).getByText('INV-1001')).toBeInTheDocument();
+  });
+
+  it('Delete forever is only in the Archive view, names the document, and deletes only archived rows for this user', async () => {
+    db.rows.invoices.push(archivedPaid);
+    renderAt('?tool=business-finance-assistant&tab=invoices');
+    await screen.findAllByText('INV-1001');
+    expect(screen.queryAllByText('INV-1003')).toHaveLength(0); // not in the Active list
+    fireEvent.click(screen.getByRole('button', { name: 'Archive (1)' }));
+    openMenu('More actions for invoice INV-1003');
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete forever' }));
+    const confirm = await screen.findByRole('alertdialog');
+    expect(confirm).toHaveTextContent('Delete invoice INV-1003 forever?');
+    expect(confirm).toHaveTextContent('It can’t be undone. UK businesses normally keep invoices for several years for their records.');
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Delete forever' }));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    expect(db.writes).toEqual([{ table: 'invoices', op: 'delete', payload: undefined, filters: [['id', '1003'], ['user_id', 'u1'], ['not', 'archived_at', 'is', null]] }]);
+    expect(toast.success).toHaveBeenCalledWith('Invoice INV-1003 deleted forever');
+    expect(screen.getByRole('button', { name: 'Archive (0)' })).toBeInTheDocument();
+  });
+
+  it('a failed delete forever keeps the archived row and explains', async () => {
+    db.rows.invoices.push(archivedPaid);
+    db.failWrites = true;
+    renderAt('?tool=business-finance-assistant&tab=invoices');
+    await screen.findAllByText('INV-1001');
+    fireEvent.click(screen.getByRole('button', { name: 'Archive (1)' }));
+    openMenu('More actions for invoice INV-1003');
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete forever' }));
+    const confirm = await screen.findByRole('alertdialog');
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Delete forever' }));
+    expect(await within(confirm).findByRole('alert')).toHaveTextContent('INV-1003 couldn’t be deleted. Nothing was changed.');
+    expect(screen.getByRole('button', { name: 'Archive (1)', hidden: true })).toBeInTheDocument();
+  });
+
+  it('Restore from the Archive view clears archived_at; a failed restore rolls back with an error', async () => {
+    db.rows.invoices.push(archivedPaid);
+    renderAt('?tool=business-finance-assistant&tab=invoices');
+    await screen.findAllByText('INV-1001');
+    fireEvent.click(screen.getByRole('button', { name: 'Archive (1)' }));
+    openMenu('More actions for invoice INV-1003');
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Restore' }));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('INV-1003 restored.'));
+    expect(db.writes).toEqual([{ table: 'invoices', op: 'update', payload: { archived_at: null }, filters: [['id', '1003'], ['user_id', 'u1']] }]);
+    expect(screen.getByRole('button', { name: 'Archive (0)' })).toBeInTheDocument();
+  });
+
+  it('a failed restore keeps it in the archive', async () => {
+    db.rows.invoices.push(archivedPaid);
+    db.failWrites = true;
+    renderAt('?tool=business-finance-assistant&tab=invoices');
+    await screen.findAllByText('INV-1001');
+    fireEvent.click(screen.getByRole('button', { name: 'Archive (1)' }));
+    openMenu('More actions for invoice INV-1003');
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Restore' }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('INV-1003 wasn’t restored. It is still in the archive. Please try again.'));
+    expect(screen.getByRole('button', { name: 'Archive (1)' })).toBeInTheDocument();
+  });
+
+  it('an archived invoice opened from the Archive offers Restore only (no edit or status changes)', async () => {
+    db.rows.invoices.push(archivedPaid);
+    renderAt('?tool=business-finance-assistant&tab=invoices');
+    await screen.findAllByText('INV-1001');
+    fireEvent.click(screen.getByRole('button', { name: 'Archive (1)' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'View invoice INV-1003' })[0]);
+    const view = await screen.findByRole('dialog');
+    const names = within(view).getAllByRole('button').map((b) => b.textContent?.trim()).filter(Boolean);
+    expect(names).toContain('Restore');
+    expect(names).not.toContain('Mark as unpaid');
+    expect(names).not.toContain('Move to archive');
+    expect(view).toHaveTextContent('Archived documents are left out of all totals.');
+  });
+
+  it('archived invoices are left out of the Overview tiles', async () => {
+    db.rows.invoices.push(archivedPaid);
+    renderAt('?tool=business-finance-assistant&tab=dashboard');
+    const tiles = await screen.findByLabelText('Invoice figures');
+    await waitFor(() => expect(tiles).toHaveTextContent('Outstanding£950'));
+    expect(tiles).toHaveTextContent('Paid last 30 days—');
+    expect(tiles).not.toHaveTextContent('£400');
   });
 });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deleteWording, statusActions, statusChangeMessage } from './documentActions';
+import { archivedMessage, archiveWording, deleteForeverWording, statusActions, statusChangeMessage, statusPayload } from './documentActions';
 
 const today = '2026-10-17';
 
@@ -30,21 +30,34 @@ describe('statusChangeMessage', () => {
   });
 });
 
-describe('deleteWording', () => {
-  it('drafts get the simple confirmation', () => {
-    expect(deleteWording('quote', 'Q-501', { status: 'draft' })).toEqual({
-      title: 'Delete quote Q-501?', description: 'This permanently deletes the quote. It can’t be undone.', confirmLabel: 'Delete quote', strong: false,
-    });
-    expect(deleteWording('invoice', 'INV-1', { status: 'draft' }).strong).toBe(false);
-    expect(deleteWording('quote', 'Q-502', { status: 'sent' }).strong).toBe(false);
+describe('statusPayload', () => {
+  const now = new Date('2026-10-17T12:00:00Z');
+  it('Mark as paid writes status and paid_at together; Mark as unpaid clears paid_at', () => {
+    expect(statusPayload('invoice', 'sent', 'paid', now)).toEqual({ status: 'paid', paid_at: '2026-10-17T12:00:00.000Z' });
+    expect(statusPayload('invoice', 'paid', 'sent', now)).toEqual({ status: 'sent', paid_at: null });
+    expect(statusPayload('invoice', 'draft', 'sent', now)).toEqual({ status: 'sent' });
   });
+  it('quotes have no paid_at, so only the status is written', () => {
+    expect(statusPayload('quote', 'draft', 'sent', now)).toEqual({ status: 'sent' });
+  });
+});
 
-  it('sent, overdue or paid invoices get the stronger record-keeping warning, still deletable', () => {
-    for (const doc of [{ status: 'sent' }, { status: 'paid' }, { status: 'sent', due_date: '2020-01-01' }]) {
-      const w = deleteWording('invoice', 'INV-2', doc);
-      expect(w.strong).toBe(true);
-      expect(w.confirmLabel).toBe('Delete invoice');
-      expect(w.description).toBe('This invoice has been marked as sent or paid. UK businesses normally keep invoices for several years for their records. Delete anyway? It can’t be undone.');
-    }
+describe('archive wording', () => {
+  it('archiving is a light, one-sentence confirmation', () => {
+    expect(archiveWording('invoice', 'INV-1')).toEqual({ title: 'Move invoice INV-1 to the archive?', description: 'You can restore it from the Archive.', confirmLabel: 'Move to archive' });
+  });
+  it('archiving a sent or paid invoice says it leaves the totals; drafts and quotes do not', () => {
+    expect(archivedMessage('invoice', 'INV-2', { status: 'paid' })).toBe('Invoice INV-2 archived. It is no longer included in totals.');
+    expect(archivedMessage('invoice', 'INV-3', { status: 'sent', due_date: '2020-01-01' })).toBe('Invoice INV-3 archived. It is no longer included in totals.');
+    expect(archivedMessage('invoice', 'INV-4', { status: 'draft' })).toBe('Invoice INV-4 archived.');
+    expect(archivedMessage('quote', 'Q-1', { status: 'sent' })).toBe('Quote Q-1 archived.');
+  });
+  it('delete forever names the document, cannot be undone, and invoices mention record keeping', () => {
+    expect(deleteForeverWording('invoice', 'INV-1')).toEqual({
+      title: 'Delete invoice INV-1 forever?',
+      description: 'This permanently deletes the invoice. It can’t be undone. UK businesses normally keep invoices for several years for their records.',
+      confirmLabel: 'Delete forever', strong: true,
+    });
+    expect(deleteForeverWording('quote', 'Q-1').description).toBe('This permanently deletes the quote. It can’t be undone.');
   });
 });

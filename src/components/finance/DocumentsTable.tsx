@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
-import { CheckCircle2, Download, Edit, Eye, MoreHorizontal, Plus, Search, Trash2, Undo2 } from 'lucide-react';
+import { Archive, ArchiveRestore, CheckCircle2, Download, Edit, Eye, MoreHorizontal, Plus, Search, Trash2, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { statusActions, StatusTarget } from '@/lib/documentActions';
+import { activeOnly, archivedNewestFirst } from '@/lib/archive';
 import { ErrorState, LoadingRows } from '@/components/ui/states';
 import { DataTable } from '@/components/data/DataTable';
 import { usePhone } from '@/hooks/use-media-query';
@@ -13,7 +14,7 @@ import { formatMoney } from '@/lib/money';
 import { cn } from '@/lib/utils';
 import { InvoiceStatusChip, QuoteStatusChip } from './DocStatusChip';
 
-export interface TableDoc extends FinDoc { valid_until?: string | null }
+export interface TableDoc extends FinDoc { valid_until?: string | null; archived_at?: string | null }
 
 interface Props<D extends TableDoc> {
   kind: 'quote' | 'invoice';
@@ -28,7 +29,11 @@ interface Props<D extends TableDoc> {
   onDownload: (d: D) => void;
   /** Mark as sent / paid / unpaid. Only records the status: nothing is emailed. */
   onStatus: (d: D, to: StatusTarget) => void;
-  onDelete: (d: D) => void;
+  /** Active view: Move to archive (the parent confirms). */
+  onArchive: (d: D) => void;
+  /** Archive view: Restore, and Delete forever (the parent confirms). */
+  onRestore: (d: D) => void;
+  onDeleteForever: (d: D) => void;
   /** Document with a status change in flight (its status items are disabled). */
   busyId?: string | null;
 }
@@ -37,29 +42,36 @@ const PHONE_PAGE = 25;
 const date = (d?: string | null) => (d ? formatDueDate(d) : '—');
 
 /** Quotes or invoices: search, status chips, row count, row actions, phone cards with 44px targets. */
-export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loading, error, onRetry, onNew, onView, onEdit, onDownload, onStatus, onDelete, busyId }: Props<D>) {
+export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loading, error, onRetry, onNew, onView, onEdit, onDownload, onStatus, onArchive, onRestore, onDeleteForever, busyId }: Props<D>) {
   const phone = usePhone();
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('all');
   const [shown, setShown] = useState(PHONE_PAGE);
+  // Active | Archive. Archived documents are kept for the record and left out of every total.
+  const [view, setView] = useState<'active' | 'archive'>('active');
+  const archive = view === 'archive';
+  const activeDocs = useMemo(() => activeOnly(docs), [docs]);
+  const archivedDocs = useMemo(() => archivedNewestFirst(docs), [docs]);
+  const listed = archive ? archivedDocs : activeDocs;
   const noun = kind === 'quote' ? 'quote' : 'invoice';
   const Noun = kind === 'quote' ? 'Quote' : 'Invoice';
   const chipOf = (d: D) => (kind === 'invoice' ? invoiceStatus(d) : quoteStatus(d));
 
   const counts = useMemo(() => {
     const m = new Map<string, number>();
-    for (const d of docs) { const c = kind === 'invoice' ? invoiceStatus(d) : quoteStatus(d); m.set(c, (m.get(c) ?? 0) + 1); }
+    for (const d of activeDocs) { const c = kind === 'invoice' ? invoiceStatus(d) : quoteStatus(d); m.set(c, (m.get(c) ?? 0) + 1); }
     return m;
-  }, [docs, kind]);
+  }, [activeDocs, kind]);
   const base = kind === 'invoice' ? ['draft', 'sent', 'overdue', 'paid'] : ['draft', 'sent'];
   const extra = kind === 'invoice' ? ['cancelled'] : ['other'];
-  const filters = [{ value: 'all', label: 'All', n: docs.length },
+  const filters = [{ value: 'all', label: 'All', n: activeDocs.length },
     ...[...base, ...extra.filter((c) => counts.get(c))].map((c) => ({ value: c, label: CHIP_LABEL[c as keyof typeof CHIP_LABEL], n: counts.get(c) ?? 0 }))];
 
   const q = query.trim().toLowerCase();
-  const rows = docs.filter((d) => (status === 'all' || chipOf(d) === status)
+  const rows = listed.filter((d) => (archive || status === 'all' || chipOf(d) === status)
     && (!q || numberOf(d).toLowerCase().includes(q) || (d.client_name || '').toLowerCase().includes(q)));
-  const filtered = !!q || status !== 'all';
+  const filtered = !!q || (!archive && status !== 'all');
+  const switchView = (v: 'active' | 'archive') => { setView(v); setStatus('all'); setShown(PHONE_PAGE); };
   const clear = () => { setQuery(''); setStatus('all'); setShown(PHONE_PAGE); };
   const amount = (d: D) => formatMoney(Number(d.total_amount) || 0, d.currency, { cents: true });
   const chip = (d: D) => (kind === 'invoice' ? <InvoiceStatusChip doc={d} /> : <QuoteStatusChip doc={d} />);
@@ -79,23 +91,35 @@ export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loadi
             <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => onEdit(d)}><Edit className="mr-2 h-4 w-4" aria-hidden="true" />Edit</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onDownload(d)}><Download className="mr-2 h-4 w-4" aria-hidden="true" />Download PDF</DropdownMenuItem>
-          {statusActions(kind, d).map((a) => (
-            <DropdownMenuItem key={a.label} onSelect={() => onStatus(d, a.to)} disabled={busyId === d.id}>
-              {a.label === 'Mark as unpaid' ? <Undo2 className="mr-2 h-4 w-4" aria-hidden="true" /> : <CheckCircle2 className="mr-2 h-4 w-4" aria-hidden="true" />}{a.label}
-            </DropdownMenuItem>
-          ))}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => onDelete(d)}><Trash2 className="mr-2 h-4 w-4 text-destructive" aria-hidden="true" />Delete</DropdownMenuItem>
-        </DropdownMenuContent>
+        {archive ? (
+          // Archived: view, restore, or delete forever. No editing or status changes.
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => onRestore(d)} disabled={busyId === d.id}><ArchiveRestore className="mr-2 h-4 w-4" aria-hidden="true" />Restore</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => onDeleteForever(d)}><Trash2 className="mr-2 h-4 w-4 text-destructive" aria-hidden="true" />Delete forever</DropdownMenuItem>
+          </DropdownMenuContent>
+        ) : (
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onEdit(d)}><Edit className="mr-2 h-4 w-4" aria-hidden="true" />Edit</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onDownload(d)}><Download className="mr-2 h-4 w-4" aria-hidden="true" />Download PDF</DropdownMenuItem>
+            {statusActions(kind, d).map((a) => (
+              <DropdownMenuItem key={a.label} onSelect={() => onStatus(d, a.to)} disabled={busyId === d.id}>
+                {a.label === 'Mark as unpaid' ? <Undo2 className="mr-2 h-4 w-4" aria-hidden="true" /> : <CheckCircle2 className="mr-2 h-4 w-4" aria-hidden="true" />}{a.label}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => onArchive(d)} disabled={busyId === d.id}><Archive className="mr-2 h-4 w-4" aria-hidden="true" />Move to archive</DropdownMenuItem>
+          </DropdownMenuContent>
+        )}
       </DropdownMenu>
     </div>
   );
 
-  const emptyText = `No ${noun}s yet. Use “New ${noun}” to create your first one.`;
-  const newButton = <Button onClick={onNew} className="min-h-touch md:min-h-0"><Plus className="h-4 w-4" aria-hidden="true" />New {noun}</Button>;
+  const emptyText = archive
+    ? `Nothing in the archive. ${Noun}s you move to the archive appear here and can be restored.`
+    : `No ${noun}s yet. Use “New ${noun}” to create your first one.`;
+  const newButton = archive ? null : <Button onClick={onNew} className="min-h-touch md:min-h-0"><Plus className="h-4 w-4" aria-hidden="true" />New {noun}</Button>;
+  const archivedOn = (d: D) => (d.archived_at ? formatDueDate(d.archived_at) : '—');
 
   return (
     <section aria-labelledby={`${kind}s-heading`} className="overflow-hidden rounded-card border border-border bg-card">
@@ -111,7 +135,19 @@ export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loadi
         </div>
       </div>
 
-      <div role="group" aria-label="Filter by status" className="flex gap-2 overflow-x-auto border-b border-border px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
+        <div role="group" aria-label={`Show active or archived ${noun}s`} className="flex rounded-control border border-border bg-muted p-1">
+          {(['active', 'archive'] as const).map((v) => (
+            <button key={v} type="button" aria-pressed={view === v} onClick={() => switchView(v)}
+              className={cn('min-h-touch rounded-[6px] px-3 text-body font-semibold focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring md:min-h-9',
+                view === v ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground')}>
+              {v === 'active' ? 'Active' : <>Archive <span className="tabular-nums">({archivedDocs.length})</span></>}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {!archive && <div role="group" aria-label="Filter by status" className="flex gap-2 overflow-x-auto border-b border-border px-4 py-3">
         {filters.map((f) => {
           const on = status === f.value;
           return (
@@ -122,14 +158,15 @@ export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loadi
             </button>
           );
         })}
-      </div>
+      </div>}
 
       {loading ? <div className="p-4"><LoadingRows label={`Loading ${noun}s`} /></div>
         : error ? <div className="p-4"><ErrorState title={`${Noun}s couldn't be loaded`} description="This is a loading problem, not missing data." onRetry={onRetry} /></div>
         : (
           <>
             <p className="px-4 pt-3 text-small text-muted-foreground" aria-live="polite">
-              {filtered ? `Showing ${rows.length} of ${docs.length} ${noun}s` : `${docs.length} ${docs.length === 1 ? noun : `${noun}s`}`}
+              {(() => { const all = listed.length; const what = archive ? `archived ${noun}` : noun;
+                return filtered ? `Showing ${rows.length} of ${all} ${what}s` : `${all} ${all === 1 ? what : `${what}s`}`; })()}
             </p>
             {phone ? (
               rows.length === 0 ? (
@@ -147,7 +184,7 @@ export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loadi
                           <span className="min-w-0 flex-1">
                             <span className="block truncate font-semibold text-foreground">{Noun} {numberOf(d)}</span>
                             <span className="block truncate text-small text-muted-foreground">{d.client_name || 'No client name'}</span>
-                            <span className="block text-small text-muted-foreground">{secondLabel}: {date(secondDate(d))}</span>
+                            <span className="block text-small text-muted-foreground">{archive ? `Archived ${archivedOn(d)}` : `${secondLabel}: ${date(secondDate(d))}`}</span>
                           </span>
                           <span className="flex shrink-0 flex-col items-end gap-1">
                             {chip(d)}
@@ -166,13 +203,14 @@ export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loadi
             ) : (
               <div className="p-4 pt-3">
                 <DataTable
-                  caption={`Your ${noun}s`}
+                  key={view}
+                  caption={archive ? `Archived ${noun}s` : `Your ${noun}s`}
                   rows={rows}
                   rowKey={(d) => d.id}
                   filtered={filtered}
                   onClearFilters={clear}
                   empty={<div className="flex flex-col items-center gap-3 rounded-control border border-dashed p-8 text-center text-sm text-muted-foreground"><p>{emptyText}</p>{newButton}</div>}
-                  initialSort={{ id: 'date', dir: 'desc' }}
+                  initialSort={archive ? { id: 'archived', dir: 'desc' } : { id: 'date', dir: 'desc' }}
                   rowActions={actions}
                   columns={[
                     { id: 'number', header: Noun, sortValue: (d) => numberOf(d), cell: (d) => (
@@ -182,7 +220,9 @@ export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loadi
                     { id: 'status', header: 'Status', sortValue: (d) => chipOf(d), cell: chip },
                     { id: 'amount', header: 'Amount', className: 'text-right', sortValue: (d) => Number(d.total_amount) || 0, cell: (d) => <span className="whitespace-nowrap tabular-nums">{amount(d)}</span> },
                     { id: 'date', header: 'Date', sortValue: (d) => d.created_at, cell: (d) => <span className="whitespace-nowrap">{date(d.created_at)}</span> },
-                    { id: 'second', header: secondLabel, sortValue: (d) => secondDate(d), cell: (d) => <span className="whitespace-nowrap">{date(secondDate(d))}</span> },
+                    archive
+                      ? { id: 'archived', header: 'Archived', sortValue: (d) => d.archived_at, cell: (d) => <span className="whitespace-nowrap">{archivedOn(d)}</span> }
+                      : { id: 'second', header: secondLabel, sortValue: (d) => secondDate(d), cell: (d) => <span className="whitespace-nowrap">{date(secondDate(d))}</span> },
                   ]}
                 />
               </div>

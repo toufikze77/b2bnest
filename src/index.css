@@ -21,7 +21,8 @@
     --muted-foreground: 220 22% 37%;      /* #4A5873 muted text */
     --accent: 216 60% 95%;
     --accent-foreground: 222 37% 19%;
-    --destructive: 0 84.2% 60.2%;
+    /* #B91C1C: 6.41:1 as text on white, 6.12:1 for this foreground on it (was 3.76:1). */
+    --destructive: 0 74% 42%;
     --destructive-foreground: 210 40% 98%;
     --border: 218 39% 90%;                /* #DDE4F0 card border */
     --input: 218 30% 80%;
@@ -89,8 +90,10 @@
     --muted-foreground: 215 20% 70%;
     --accent: 217 33% 20%;
     --accent-foreground: 210 40% 96%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 96%;
+    /* #F87171 with navy text: one red can't carry white text and also read on the dark card,
+       so dark mode uses a light red with dark text (6.5:1 text on card, 6.88:1 navy on it). */
+    --destructive: 0 91% 71%;
+    --destructive-foreground: 222 47% 8%;
     --border: 217 33% 22%;
     --input: 217 33% 22%;
     --surface: 222 45% 11%;

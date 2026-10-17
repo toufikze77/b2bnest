@@ -1,9 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import {
-  BarChart3, Bot, ChevronDown, BriefcaseBusiness, CalendarDays, CircleDollarSign,
-  FileText, FolderKanban, HelpCircle, Home, LayoutGrid, LayoutTemplate, ListChecks, LogOut, NotebookPen, Plug, Plus, Receipt,
-  Settings, Sparkles, Target, Users, UsersRound, WandSparkles, LifeBuoy } from 'lucide-react';
+import { ChevronDown, CalendarDays, FileText, FolderKanban, HelpCircle, Home, LogOut, Plus, Receipt, Settings, Sparkles, Users } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useUserAvatar } from '@/hooks/useUserAvatar';
@@ -26,41 +23,10 @@ import { activeNavTarget, matchesLocation, NavAlias } from '@/lib/navMatch';
 import { GlobalCommand } from './GlobalCommand';
 import { NotificationsPanel } from './NotificationsPanel';
 import { MobileTabBar } from './MobileTabBar';
+import { bottomItems, groups, topItems } from './navItems';
 
 // Option B navigation. Every item points at an existing route.
 const MARK_REVERSED = '/brand/svg/b2bnest-mark-reversed.svg';
-
-const topItem = { label: 'Dashboard', to: '/dashboard', icon: Home };
-const groups = [
-  { label: 'Work', items: [
-    { label: 'Workspaces', to: '/workspaces', icon: LayoutGrid },
-    { label: 'Projects', to: '/project-management', icon: FolderKanban },
-    { label: 'Tasks', to: '/project-management?view=list', icon: ListChecks },
-    { label: 'Calendar', to: '/project-management?view=calendar', icon: CalendarDays },
-    { label: 'Goals', to: '/project-management?tab=goals', icon: Target },
-    { label: 'Notes', to: '/business-tools/notepro', icon: NotebookPen },
-    { label: 'Workflows', to: '/workflow-studio', icon: WandSparkles },
-    { label: 'Templates', to: '/template-center', icon: LayoutTemplate },
-    { label: 'All business tools', to: '/business-tools', icon: Sparkles },
-  ] },
-  { label: 'Customers', items: [
-    { label: 'CRM', to: '/crm', icon: Users },
-    { label: 'Support tickets', to: '/support-desk', icon: LifeBuoy },
-    { label: 'Lead generation', to: '/lead-generation', icon: BriefcaseBusiness },
-  ] },
-  { label: 'Money', items: [
-    { label: 'Invoices & quotes', to: '/business-tools?tool=business-finance-assistant&tab=invoices', icon: FileText },
-    { label: 'Expenses', to: '/business-tools?tool=business-finance-assistant&tab=expenses', icon: Receipt },
-    { label: 'Finance', to: '/business-tools?tool=business-finance-assistant&tab=dashboard', icon: CircleDollarSign },
-    { label: 'Business overview', to: '/business-overview', icon: BarChart3 },
-  ] },
-  { label: 'Team', items: [{ label: 'Employee rota', to: '/rota', icon: UsersRound }] },
-];
-const bottomItems = [
-  { label: 'AI Studio', to: '/ai-studio', icon: Bot },
-  { label: 'Integrations', to: '/business-tools?tool=integrations', icon: Plug },
-  { label: 'Settings', to: '/settings', icon: Settings },
-];
 
 /** Navy menu item: white text; active = rgba(255,255,255,.12) with a 4px #3D8BFF marker. */
 const navItem = cn(
@@ -72,7 +38,7 @@ const navItem = cn(
 // Any tab of the finance tool highlights "Invoices & quotes", unless another item links to that exact tab.
 const navAliases: NavAlias[] = [{ to: '/business-tools?tool=business-finance-assistant&tab=invoices', alsoMatches: '/business-tools?tool=business-finance-assistant' }];
 
-const allTargets = [topItem.to, ...groups.flatMap((g) => g.items.map((i) => i.to)), ...bottomItems.map((i) => i.to)];
+const allTargets = [...topItems.map((i) => i.to), ...groups.flatMap((g) => g.items.map((i) => i.to)), ...bottomItems.map((i) => i.to)];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
@@ -125,7 +91,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* On phones the company switcher lives in the menu, so the navy top bar stays uncluttered. */}
           <div className="px-3 pb-2 pt-1 text-foreground md:hidden"><OrganizationSwitcher /></div>
           <SidebarGroup className="py-1">
-            <SidebarMenu>{item(topItem)}</SidebarMenu>
+            <SidebarMenu>{topItems.map(item)}</SidebarMenu>
           </SidebarGroup>
           {groups.map((group) => {
             const hasActive = group.items.some((i) => active(i.to));

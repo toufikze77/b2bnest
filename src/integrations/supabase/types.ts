@@ -1224,6 +1224,8 @@ export type Database = {
       }
       invoices: {
         Row: {
+          archived_at: string | null
+          paid_at: string | null
           client_address: string | null
           client_email: string | null
           client_name: string | null
@@ -1246,6 +1248,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          archived_at?: string | null
+          paid_at?: string | null
           client_address?: string | null
           client_email?: string | null
           client_name?: string | null
@@ -1268,6 +1272,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          archived_at?: string | null
+          paid_at?: string | null
           client_address?: string | null
           client_email?: string | null
           client_name?: string | null
@@ -2822,6 +2828,7 @@ export type Database = {
       }
       quotes: {
         Row: {
+          archived_at: string | null
           client_address: string | null
           client_email: string | null
           client_name: string | null
@@ -2844,6 +2851,7 @@ export type Database = {
           valid_until: string | null
         }
         Insert: {
+          archived_at?: string | null
           client_address?: string | null
           client_email?: string | null
           client_name?: string | null
@@ -2866,6 +2874,7 @@ export type Database = {
           valid_until?: string | null
         }
         Update: {
+          archived_at?: string | null
           client_address?: string | null
           client_email?: string | null
           client_name?: string | null

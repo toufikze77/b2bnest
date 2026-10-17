@@ -6,7 +6,7 @@ import { ErrorState, LoadingRows } from '@/components/ui/states';
 import { useAccountCurrency } from '@/hooks/useAccountCurrency';
 import { CurrencyTotals } from '@/lib/dashboardWidgets';
 import { isoDay } from '@/lib/dashboardData';
-import { excludedDocsNote, FinDoc, FinExpense, financeReportCsvFor, financeSummary, moneyInMinusOut, quoteStatus, statusCounts } from '@/lib/financeSummary';
+import { excludedDocsNote, FinDoc, FinExpense, financeReportCsvFor, financeSummary, moneyInMinusOut, paidWithoutDateNote, quoteStatus, statusCounts } from '@/lib/financeSummary';
 import { formatMoney, normalizeCurrency } from '@/lib/money';
 
 interface Props {
@@ -22,7 +22,7 @@ const METRICS: { key: 'outstanding' | 'overdue' | 'revenue' | 'paidLast30' | 'dr
   { key: 'outstanding', label: 'Outstanding', note: 'Sent and overdue invoices' },
   { key: 'overdue', label: 'Overdue', note: 'Due date before today, not paid' },
   { key: 'revenue', label: 'Paid, all time', note: 'Revenue = paid invoices only' },
-  { key: 'paidLast30', label: 'Paid, last 30 days', note: 'By invoice date' },
+  { key: 'paidLast30', label: 'Paid, last 30 days', note: 'By the date marked paid' },
   { key: 'drafts', label: 'Draft invoices' },
   { key: 'quotesOpen', label: 'Open quotes', note: 'Draft or sent. Quotes are not revenue' },
 ];
@@ -122,6 +122,7 @@ export function FinanceReports({ quotes, invoices, expenses, loading, error, onR
           </div>
           </>
         )}
+      {paidWithoutDateNote(s.paidWithoutDate) && <p className="mt-3 text-small text-muted-foreground">{paidWithoutDateNote(s.paidWithoutDate)}</p>}
       </section>
 
       <div className="grid gap-6 md:grid-cols-2">

@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Download, Trash2 } from 'lucide-react';
+import { Plus, Download, Archive, ArchiveRestore } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import QuoteInvoiceCreationSection from '@/components/QuoteInvoiceCreationSection';
@@ -25,7 +25,9 @@ import { ProductsTab } from '@/components/finance/ProductsTab';
 import { SuppliersTab } from '@/components/finance/SuppliersTab';
 import { moneyOutApi, OwnedTable } from '@/lib/moneyOutApi';
 import { expensesCsv } from '@/lib/moneyOut';
-import { deleteWording, DocKind, statusActions, statusChangeMessage, StatusTarget } from '@/lib/documentActions';
+import { archivedMessage, archiveWording, deleteForeverWording, DocKind, statusActions, statusChangeMessage, statusPayload, StatusTarget } from '@/lib/documentActions';
+import { documentApi, DocWrites } from '@/lib/documentApi';
+import { activeOnly, isArchived } from '@/lib/archive';
 import { ConfirmDeleteDialog, DeleteOutcome } from '@/components/finance/ConfirmDeleteDialog';
 import { FinanceTab, financeTabFromSearch, searchWithTab } from '@/lib/financeTabs';
 import DocumentTemplatePicker from '@/components/documents/DocumentTemplatePicker';
@@ -413,40 +415,69 @@ const BusinessFinanceAssistant = () => {
     return ('quote_number' in d ? d.quote_number : d.invoice_number) || '—';
   };
 
-  // Quotes and invoices: honest status changes and delete. Writes are filtered by id and user_id
-  // (src/lib/moneyOutApi.ts). Nothing is emailed: "Mark as sent" only records the status.
+  // Quotes and invoices: honest status changes, archive, restore and delete forever. Every write is
+  // filtered by id and user_id (src/lib/documentApi.ts). Nothing is emailed.
   const kindOf = (doc: Quote | Invoice): DocKind => ('quote_number' in doc ? 'quote' : 'invoice');
-  const docApi = (kind: DocKind) => moneyOut(kind === 'quote' ? 'quotes' : 'invoices');
+  const docApi = (kind: DocKind) => documentApi(supabase as unknown as DocWrites, user?.id ?? '', kind === 'quote' ? 'quotes' : 'invoices');
   const reloadDocs = (kind: DocKind) => { void (kind === 'quote' ? loadQuotes() : loadInvoices()); };
   const [statusBusy, setStatusBusy] = useState<string | null>(null);
-  const [deletingDoc, setDeletingDoc] = useState<Quote | Invoice | null>(null);
-  const patchDoc = (kind: DocKind, id: string, status: string | null) => {
-    const apply = <T extends Quote | Invoice>(list: T[]) => list.map((d) => (d.id === id ? { ...d, status } : d));
+  type DocPatch = { status?: string | null; paid_at?: string | null; archived_at?: string | null };
+  /** Change one document on screen at once (table chip, Overview tiles, open document view). */
+  const patchDoc = (kind: DocKind, id: string, patch: DocPatch) => {
+    const apply = <T extends Quote | Invoice>(list: T[]) => list.map((d) => (d.id === id ? { ...d, ...patch } : d));
     if (kind === 'quote') setQuotes(apply); else setInvoices(apply);
-    setSelectedDocument((cur) => (cur && cur.id === id ? { ...cur, status } : cur));
+    setSelectedDocument((cur) => (cur && cur.id === id ? { ...cur, ...patch } : cur));
+  };
+  /** Apply on screen, save, and roll back with an error if the save fails. */
+  const optimistic = async (doc: Quote | Invoice, patch: DocPatch, failMessage: string) => {
+    const kind = kindOf(doc);
+    const before: DocPatch = Object.fromEntries(Object.keys(patch).map((k) => [k, (doc as Record<string, unknown>)[k] ?? null]));
+    setStatusBusy(doc.id);
+    patchDoc(kind, doc.id, patch);
+    const { error } = await docApi(kind).update(doc.id, patch);
+    setStatusBusy(null);
+    if (error) { patchDoc(kind, doc.id, before); toast.error(failMessage); return false; }
+    reloadDocs(kind);
+    return true;
   };
 
   const handleStatusChange = async (doc: Quote | Invoice, to: StatusTarget) => {
-    const kind = kindOf(doc);
-    const from = doc.status;
-    setStatusBusy(doc.id);
-    patchDoc(kind, doc.id, to); // shown at once in the chip and the Overview tiles
-    const { error } = await docApi(kind).update(doc.id, { status: to });
-    setStatusBusy(null);
-    if (error) {
-      patchDoc(kind, doc.id, from); // roll back
-      toast.error(`${numberOf(doc)} wasn’t updated. Its status is unchanged. Please try again.`);
-      return;
+    // Mark as paid also records paid_at; Mark as unpaid clears it (one update).
+    const payload = statusPayload(kindOf(doc), doc.status, to);
+    if (await optimistic(doc, payload, `${numberOf(doc)} wasn’t updated. Its status is unchanged. Please try again.`)) {
+      toast.success(statusChangeMessage(numberOf(doc), doc.status, to));
     }
-    toast.success(statusChangeMessage(numberOf(doc), from, to));
-    reloadDocs(kind);
   };
 
-  const confirmDeleteDoc = async (): Promise<DeleteOutcome> => {
+  const handleRestore = async (doc: Quote | Invoice) => {
+    if (await optimistic(doc, { archived_at: null }, `${numberOf(doc)} wasn’t restored. It is still in the archive. Please try again.`)) {
+      toast.success(`${numberOf(doc)} restored.`);
+    }
+  };
+
+  // Move to archive: a light confirmation (nothing is lost), then a toast with Undo.
+  const [archivingDoc, setArchivingDoc] = useState<Quote | Invoice | null>(null);
+  const confirmArchive = async (): Promise<DeleteOutcome> => {
+    if (!archivingDoc) return null;
+    const doc = archivingDoc;
+    const at = new Date().toISOString();
+    if (selectedDocument?.id === doc.id) setIsDocumentViewOpen(false);
+    const ok = await optimistic(doc, { archived_at: at }, `${numberOf(doc)} wasn’t moved to the archive. Nothing was changed. Please try again.`);
+    if (!ok) return { message: `${numberOf(doc)} wasn’t moved to the archive. Nothing was changed. Please try again.` };
+    setArchivingDoc(null);
+    toast.success(archivedMessage(kindOf(doc), numberOf(doc), doc), {
+      action: { label: 'Undo', onClick: () => { void handleRestore({ ...doc, archived_at: at }); } },
+    });
+    return null;
+  };
+
+  // Delete forever: Archive view only; the write also requires archived_at to be set.
+  const [deletingDoc, setDeletingDoc] = useState<Quote | Invoice | null>(null);
+  const confirmDeleteForever = async (): Promise<DeleteOutcome> => {
     if (!deletingDoc) return null;
     const kind = kindOf(deletingDoc);
     const number = numberOf(deletingDoc);
-    const { error } = await docApi(kind).remove(deletingDoc.id);
+    const { error } = await docApi(kind).deleteForever(deletingDoc.id);
     if (error) {
       toast.error(`${number} not deleted`);
       return { message: `${number} couldn’t be deleted. Nothing was changed. Please try again.` };
@@ -455,11 +486,15 @@ const BusinessFinanceAssistant = () => {
     if (kind === 'quote') setQuotes((l) => l.filter((d) => d.id !== id)); else setInvoices((l) => l.filter((d) => d.id !== id));
     if (selectedDocument?.id === id) setIsDocumentViewOpen(false);
     setDeletingDoc(null);
-    toast.success(`${kind === 'quote' ? 'Quote' : 'Invoice'} ${number} deleted`);
+    toast.success(`${kind === 'quote' ? 'Quote' : 'Invoice'} ${number} deleted forever`);
     reloadDocs(kind);
     return null;
   };
-  const deleteText = deletingDoc ? deleteWording(kindOf(deletingDoc), numberOf(deletingDoc), deletingDoc) : null;
+  const archiveText = archivingDoc ? archiveWording(kindOf(archivingDoc), numberOf(archivingDoc)) : null;
+  const deleteText = deletingDoc ? deleteForeverWording(kindOf(deletingDoc), numberOf(deletingDoc)) : null;
+  // Every figure on the page is worked out from documents that are not archived.
+  const activeQuotes = activeOnly(quotes);
+  const activeInvoices = activeOnly(invoices);
 
   const handleDocumentSaved = () => {
     setEditingDocument(null);
@@ -570,7 +605,7 @@ const BusinessFinanceAssistant = () => {
         ) : (<>
 
         <TabsContent value="dashboard" className="mt-0">
-          <FinanceOverview quotes={quotes} invoices={invoices} expenses={expenses} {...docState}
+          <FinanceOverview quotes={activeQuotes} invoices={activeInvoices} expenses={expenses} {...docState}
             numberOf={numberOf} onOpen={handleViewDocument} onNew={startNew} onOpenTab={changeTab} />
         </TabsContent>
 
@@ -604,13 +639,13 @@ const BusinessFinanceAssistant = () => {
         <TabsContent value="quotes" className="mt-0">
           <DocumentsTable kind="quote" docs={quotes} numberOf={numberOf} {...docState} onNew={() => startNew('quote')}
             onView={handleViewDocument} onEdit={handleEditDocument} onDownload={handleDownloadDocument}
-            onStatus={(d: Quote, to) => { void handleStatusChange(d, to); }} onDelete={(d: Quote) => setDeletingDoc(d)} busyId={statusBusy} />
+            onStatus={(d: Quote, to) => { void handleStatusChange(d, to); }} onArchive={(d: Quote) => setArchivingDoc(d)} onRestore={(d: Quote) => { void handleRestore(d); }} onDeleteForever={(d: Quote) => setDeletingDoc(d)} busyId={statusBusy} />
         </TabsContent>
 
         <TabsContent value="invoices" className="mt-0">
           <DocumentsTable kind="invoice" docs={invoices} numberOf={numberOf} {...docState} onNew={() => startNew('invoice')}
             onView={handleViewDocument} onEdit={handleEditDocument} onDownload={handleDownloadDocument}
-            onStatus={(d: Invoice, to) => { void handleStatusChange(d, to); }} onDelete={(d: Invoice) => setDeletingDoc(d)} busyId={statusBusy} />
+            onStatus={(d: Invoice, to) => { void handleStatusChange(d, to); }} onArchive={(d: Invoice) => setArchivingDoc(d)} onRestore={(d: Invoice) => { void handleRestore(d); }} onDeleteForever={(d: Invoice) => setDeletingDoc(d)} busyId={statusBusy} />
         </TabsContent>
 
         <TabsContent value="products" className="mt-0">
@@ -698,7 +733,7 @@ const BusinessFinanceAssistant = () => {
         </TabsContent>
 
         <TabsContent value="reports" className="mt-0">
-          <FinanceReports quotes={quotes} invoices={invoices} expenses={expenses} {...docState} />
+          <FinanceReports quotes={activeQuotes} invoices={activeInvoices} expenses={expenses} {...docState} />
         </TabsContent>
 
         <TabsContent value="templates" className="mt-0">
@@ -710,7 +745,7 @@ const BusinessFinanceAssistant = () => {
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-0">
-          <FinanceAnalytics invoices={invoices} {...docState} onNewInvoice={() => startNew('invoice')} />
+          <FinanceAnalytics invoices={activeInvoices} {...docState} onNewInvoice={() => startNew('invoice')} />
         </TabsContent>
         </>)}
       </div>
@@ -848,28 +883,46 @@ const BusinessFinanceAssistant = () => {
               )}
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
-                <Button variant="outline" className="min-h-touch md:min-h-0" onClick={() => setDeletingDoc(selectedDocument)}>
-                  <Trash2 className="mr-2 h-4 w-4 text-destructive" aria-hidden="true" />
-                  Delete
-                </Button>
-                <Button variant="outline" className="min-h-touch md:min-h-0" onClick={() => handleDownloadDocument(selectedDocument)}>
-                  <Download className="mr-2 h-4 w-4" aria-hidden="true" />
-                  Download PDF
-                </Button>
-                {statusActions(kindOf(selectedDocument), selectedDocument).map((a) => (
-                  <Button key={a.label} className="min-h-touch md:min-h-0" disabled={statusBusy === selectedDocument.id} onClick={() => { void handleStatusChange(selectedDocument, a.to); }}>
-                    {a.label}
-                  </Button>
-                ))}
-              </div>
-              <p className="text-right text-small text-muted-foreground">B2BNEST doesn’t email documents. Download the PDF to send it yourself, then mark it as sent.</p>
+              {isArchived(selectedDocument) ? (
+                // Archived: view and restore only (no editing or status changes).
+                <>
+                  <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
+                    <Button className="min-h-touch md:min-h-0" disabled={statusBusy === selectedDocument.id} onClick={() => { void handleRestore(selectedDocument); }}>
+                      <ArchiveRestore className="mr-2 h-4 w-4" aria-hidden="true" />
+                      Restore
+                    </Button>
+                  </div>
+                  <p className="text-right text-small text-muted-foreground">In the archive since {new Date(selectedDocument.archived_at as string).toLocaleDateString('en-GB')}. Archived documents are left out of all totals.</p>
+                </>
+              ) : (
+                <>
+                  <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
+                    <Button variant="outline" className="min-h-touch md:min-h-0" onClick={() => setArchivingDoc(selectedDocument)}>
+                      <Archive className="mr-2 h-4 w-4" aria-hidden="true" />
+                      Move to archive
+                    </Button>
+                    <Button variant="outline" className="min-h-touch md:min-h-0" onClick={() => handleDownloadDocument(selectedDocument)}>
+                      <Download className="mr-2 h-4 w-4" aria-hidden="true" />
+                      Download PDF
+                    </Button>
+                    {statusActions(kindOf(selectedDocument), selectedDocument).map((a) => (
+                      <Button key={a.label} className="min-h-touch md:min-h-0" disabled={statusBusy === selectedDocument.id} onClick={() => { void handleStatusChange(selectedDocument, a.to); }}>
+                        {a.label}
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="text-right text-small text-muted-foreground">B2BNEST doesn’t email documents. Download the PDF to send it yourself, then mark it as sent.</p>
+                </>
+              )}
             </div>
           )}
         </DialogContent>
       </Dialog>
+      <ConfirmDeleteDialog open={!!archivingDoc} onOpenChange={(o) => { if (!o) setArchivingDoc(null); }}
+        noun={archivingDoc ? kindOf(archivingDoc) : 'document'} name={archivingDoc ? numberOf(archivingDoc) : ''} onConfirm={confirmArchive}
+        title={archiveText?.title} description={archiveText?.description} confirmLabel={archiveText?.confirmLabel} confirmVariant="default" busyLabel="Moving…" />
       <ConfirmDeleteDialog open={!!deletingDoc} onOpenChange={(o) => { if (!o) setDeletingDoc(null); }}
-        noun={deletingDoc ? kindOf(deletingDoc) : 'document'} name={deletingDoc ? numberOf(deletingDoc) : ''} onConfirm={confirmDeleteDoc}
+        noun={deletingDoc ? kindOf(deletingDoc) : 'document'} name={deletingDoc ? numberOf(deletingDoc) : ''} onConfirm={confirmDeleteForever}
         title={deleteText?.title} description={deleteText?.description} confirmLabel={deleteText?.confirmLabel} />
     </Tabs>
   );

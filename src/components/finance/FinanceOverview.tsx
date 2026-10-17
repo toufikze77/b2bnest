@@ -5,7 +5,7 @@ import { ErrorState } from '@/components/ui/states';
 import { StatTile } from '@/components/charts';
 import { CurrencyTotals } from '@/lib/dashboardWidgets';
 import { formatDueDate, isoDay } from '@/lib/dashboardData';
-import { countOf, FinDoc, FinExpense, financeSummary, needsAttention, recentDocuments } from '@/lib/financeSummary';
+import { countOf, FinDoc, FinExpense, financeSummary, needsAttention, paidWithoutDateNote, recentDocuments } from '@/lib/financeSummary';
 import { formatMoney, formatTotals } from '@/lib/money';
 import { InvoiceStatusChip, QuoteStatusChip } from './DocStatusChip';
 
@@ -42,9 +42,9 @@ export function FinanceOverview<Q extends FinDoc, I extends FinDoc>({ quotes, in
         <StatTile loading={loading} label="Outstanding" value={totals(s.outstanding)} hint={s.outstanding.length ? `${plural(countOf(s.outstanding), 'invoice')} sent, not paid.` : 'No unpaid sent invoices.'} />
         <StatTile loading={loading} label="Overdue" value={totals(s.overdue)} hint={s.overdue.length ? `${plural(countOf(s.overdue), 'invoice')} past the due date.` : 'Nothing past its due date.'} />
         <StatTile loading={loading} label="Paid last 30 days" value={totals(s.paidLast30)} hint={<>
-          {s.paidLast30.length ? `${plural(countOf(s.paidLast30), 'paid invoice')}, by invoice date.` : 'No paid invoices dated in the last 30 days.'}
-          {/* There is no paid date yet; updated_at is not used as one (every save changes it). */}
-          <span className="mt-1 block">Based on invoice date. A paid date will be recorded once it is added.</span>
+          {s.paidLast30.length ? `${plural(countOf(s.paidLast30), 'paid invoice')}, by the date marked paid.` : 'No invoices marked paid in the last 30 days.'}
+          {/* Paid date = paid_at; invoices marked paid before it was recorded fall back to invoice date. */}
+          {paidWithoutDateNote(s.paidWithoutDate) && <span className="mt-1 block">{paidWithoutDateNote(s.paidWithoutDate)}</span>}
         </>} />
         <StatTile loading={loading} label="Drafts" value={String(countOf(s.drafts))} hint={s.drafts.length ? `Draft invoices worth ${formatTotals(s.drafts)}.` : 'No draft invoices.'} />
       </div>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ACTIVE_FILTER } from '@/lib/archive';
 import { supabase } from '@/integrations/supabase/client';
 import { isoDay } from '@/lib/dashboardData';
 import { BillRow, DealRow, EmployeeRow, InvoiceRow, ShiftRow } from '@/lib/dashboardWidgets';
@@ -66,10 +67,11 @@ export async function loadDeals(userId: string): Promise<CappedRows<DealRow>> {
 }
 
 export interface MoneyData { invoices: CappedRows<InvoiceRow>; bills: CappedRows<BillRow> }
-/** Invoices and bills are owned by the signed-in user (no company column). */
+/** Invoices and bills are owned by the signed-in user (no company column). Archived invoices are excluded. */
 export async function loadMoney(userId: string): Promise<MoneyData> {
   const [inv, bills] = await Promise.all([
-    db.from('invoices').select('status,total_amount,currency', { count: 'exact' }).eq('user_id', userId).limit(ROW_CAP),
+    // Archived invoices are left out of every total (Phase 4, src/lib/archive.ts).
+    db.from('invoices').select('status,total_amount,currency', { count: 'exact' }).eq('user_id', userId).is(...ACTIVE_FILTER).limit(ROW_CAP),
     db.from('bills').select('status,amount,currency', { count: 'exact' }).eq('user_id', userId).limit(ROW_CAP),
   ]);
   const i = must<InvoiceRow[]>(inv); const b = must<BillRow[]>(bills);
