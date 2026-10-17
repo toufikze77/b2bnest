@@ -25,7 +25,7 @@ export function ErrorState({ title = 'Something went wrong', description, onRetr
           {description && <p className="mt-0.5 text-muted-foreground">{description}</p>}
         </div>
       </div>
-      {onRetry && <Button size="sm" variant="outline" onClick={onRetry}>Try again</Button>}
+      {onRetry && <Button size="sm" variant="outline" className="min-h-touch md:min-h-9" onClick={onRetry}>Try again</Button>}
     </div>
   );
 }

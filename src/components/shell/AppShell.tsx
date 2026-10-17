@@ -22,7 +22,7 @@ import {
   SidebarMenuItem, SidebarProvider, SidebarRail, SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
-import { matchesLocation } from '@/lib/navMatch';
+import { activeNavTarget, matchesLocation, NavAlias } from '@/lib/navMatch';
 import { GlobalCommand } from './GlobalCommand';
 import { NotificationsPanel } from './NotificationsPanel';
 import { MobileTabBar } from './MobileTabBar';
@@ -69,6 +69,9 @@ const navItem = cn(
   "data-[active=true]:before:absolute data-[active=true]:before:inset-y-1.5 data-[active=true]:before:left-0 data-[active=true]:before:w-1 data-[active=true]:before:rounded-r-full data-[active=true]:before:bg-nav-marker data-[active=true]:before:content-['']",
 );
 
+// Any tab of the finance tool highlights "Invoices & quotes", unless another item links to that exact tab.
+const navAliases: NavAlias[] = [{ to: '/business-tools?tool=business-finance-assistant&tab=invoices', alsoMatches: '/business-tools?tool=business-finance-assistant' }];
+
 const allTargets = [topItem.to, ...groups.flatMap((g) => g.items.map((i) => i.to)), ...bottomItems.map((i) => i.to)];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -82,7 +85,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const initials = (displayName || user?.email || '?').slice(0, 2).toUpperCase();
 
   // Only the most specific matching item is active (e.g. Calendar, not also Projects).
-  const activeTo = allTargets.filter((to) => matchesLocation(to, location.pathname, location.search)).sort((x, y) => y.length - x.length)[0]
+  const activeTo = activeNavTarget(allTargets, location.pathname, location.search, navAliases)
     ?? (location.pathname.startsWith('/settings/') ? '/settings' : undefined);
   const active = (to: string) => to === activeTo;
 

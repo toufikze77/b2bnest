@@ -226,6 +226,24 @@ const PayRunHistory: React.FC<PayRunHistoryProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Phones: one card per run, so View and Download stay on screen. Same totals as the table. */}
+          <ul aria-label="Pay runs" className="divide-y divide-border rounded-md border md:hidden">
+            {payRuns.map((payRun) => {
+              const sum = (k: 'grossPay' | 'netPay') => payRun.items.reduce((n, item) => n + item[k], 0);
+              return (
+                <li key={payRun.id} className="flex items-center gap-3 p-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold">{payRun.period}</p>
+                    <p className="text-sm text-muted-foreground">Paid {new Date(payRun.payDate).toLocaleDateString('en-GB')} · {payRun.items.length} {payRun.items.length === 1 ? 'employee' : 'employees'}</p>
+                    <p className="text-sm text-muted-foreground">Gross £{sum('grossPay').toFixed(2)} · Net £{sum('netPay').toFixed(2)}</p>
+                  </div>
+                  <Button size="icon" variant="outline" className="h-11 w-11" onClick={() => viewPayRunDetails(payRun)} aria-label={`View pay run ${payRun.period}`}><Eye className="h-4 w-4" aria-hidden="true" /></Button>
+                  <Button size="icon" variant="outline" className="h-11 w-11" onClick={() => downloadPayRunSummary(payRun)} aria-label={`Download pay run ${payRun.period}`}><Download className="h-4 w-4" aria-hidden="true" /></Button>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -275,6 +293,7 @@ const PayRunHistory: React.FC<PayRunHistoryProps> = ({
                           size="sm"
                           variant="outline"
                           onClick={() => viewPayRunDetails(payRun)}
+                          aria-label={`View pay run ${payRun.period}`}
                         >
                           <Eye className="h-3 w-3" />
                         </Button>
@@ -282,6 +301,7 @@ const PayRunHistory: React.FC<PayRunHistoryProps> = ({
                           size="sm"
                           variant="outline"
                           onClick={() => downloadPayRunSummary(payRun)}
+                          aria-label={`Download pay run ${payRun.period}`}
                         >
                           <Download className="h-3 w-3" />
                         </Button>
@@ -292,6 +312,7 @@ const PayRunHistory: React.FC<PayRunHistoryProps> = ({
               })}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 

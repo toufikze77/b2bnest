@@ -93,6 +93,20 @@ back; a draft is never overdue. Quotes: `draft`/empty → Draft, `sent` → Sent
 its stored word. Revenue = paid invoices only; quotes never count. Render chips through
 `InvoiceStatusChip` / `QuoteStatusChip` (`src/components/finance/DocStatusChip.tsx`).
 
+## Records you can edit (`src/components/finance/RecordsTable.tsx`)
+
+Lists of the user's own records (expenses, recurring payments, suppliers, products) use one
+pattern: search, filter chips with counts, a row count, a "⋯" menu per row (Edit, any
+Make inactive / Pause, Delete), phone cards with 44px targets, and an empty state with Add.
+- Add and Edit share one dialog (`RecordFormDialog`); Edit sends only changed fields, filtered by
+  `id` and `user_id` (`src/lib/moneyOutApi.ts`). Emptied optional fields are sent as null.
+- Delete always goes through `ConfirmDeleteDialog`, which names the item and says it can't be
+  undone. A failed save or delete shows the reason inside the dialog and leaves the record as it was.
+  Never use `window.confirm`.
+- When a dialog closes, focus returns to the row's menu button (or to the list heading if the
+  row was deleted) via `returnFocus.ts`.
+- Red (`--destructive`) is only 3.4:1 as text on white: use it for icons, not for text labels.
+
 ## Next screens to bring onto these patterns (not done yet)
 
 - Settings → Account (`src/components/AccountSettings.tsx`): preferences form, currency picker, 2FA.

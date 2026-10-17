@@ -7,14 +7,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Download, Send, DollarSign, Calendar, Repeat } from 'lucide-react';
+import { Plus, Download, Send } from 'lucide-react';
 import { toast } from 'sonner';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import QuoteInvoiceCreationSection from '@/components/QuoteInvoiceCreationSection';
 import PayrollUK from '@/components/payroll/PayrollUK';
 import { formatCurrency } from '@/utils/currencyUtils';
@@ -24,6 +19,11 @@ import { FinanceOverview } from '@/components/finance/FinanceOverview';
 import { FinanceAnalytics } from '@/components/finance/FinanceAnalytics';
 import { FinanceReports } from '@/components/finance/FinanceReports';
 import { InvoiceStatusChip, QuoteStatusChip } from '@/components/finance/DocStatusChip';
+import { ExpensesTab } from '@/components/finance/ExpensesTab';
+import { OutgoingsTab } from '@/components/finance/OutgoingsTab';
+import { ProductsTab } from '@/components/finance/ProductsTab';
+import { SuppliersTab } from '@/components/finance/SuppliersTab';
+import { moneyOutApi, MoneyOutTable } from '@/lib/moneyOutApi';
 import DocumentTemplatePicker from '@/components/documents/DocumentTemplatePicker';
 import { useDocumentTemplates } from '@/hooks/useDocumentTemplates';
 import { renderDocumentPdf } from '@/lib/documentTemplates';
@@ -104,51 +104,9 @@ const BusinessFinanceAssistant = () => {
   const [isDocumentViewOpen, setIsDocumentViewOpen] = useState(false);
   const [docsError, setDocsError] = useState(false);
   
-  // Add form states
-  const [showAddProduct, setShowAddProduct] = useState(false);
-  const [showAddSupplier, setShowAddSupplier] = useState(false);
-  const [showAddExpense, setShowAddExpense] = useState(false);
-  const [showAddOutgoing, setShowAddOutgoing] = useState(false);
-  
-  // Form data states
-  const [productForm, setProductForm] = useState({
-    name: '',
-    description: '',
-    category: '',
-    price: '',
-    cost: '',
-    stock_quantity: '',
-    is_active: true,
-    is_service: false
-  });
-  
-  const [supplierForm, setSupplierForm] = useState({
-    name: '',
-    contact_person: '',
-    email: '',
-    phone: '',
-    address: '',
-    website: '',
-    payment_terms: 'Net 30'
-  });
-  
-  const [expenseForm, setExpenseForm] = useState({
-    description: '',
-    category: '',
-    amount: '',
-    date: new Date().toISOString().split('T')[0],
-    supplier_id: '',
-    status: 'pending'
-  });
-  
-  const [outgoingForm, setOutgoingForm] = useState({
-    name: '',
-    category: '',
-    amount: '',
-    frequency: 'monthly',
-    next_payment_date: new Date().toISOString().split('T')[0],
-    supplier_id: ''
-  });
+  // Load failures per money-out table, shown as an error card with Retry (not an empty list).
+  const [moneyOutError, setMoneyOutError] = useState<Record<'products' | 'suppliers' | 'expenses' | 'outgoings', boolean>>({ products: false, suppliers: false, expenses: false, outgoings: false });
+  const setLoadError = (k: keyof typeof moneyOutError, failed: boolean) => setMoneyOutError((e) => (e[k] === failed ? e : { ...e, [k]: failed }));
 
   // Sample import formats for banking
   const importFormats = [
@@ -261,7 +219,9 @@ const BusinessFinanceAssistant = () => {
     
     if (error) {
       console.error('Error loading products:', error);
+      setLoadError('products', true);
     } else {
+      setLoadError('products', false);
       setProducts(data || []);
     }
   };
@@ -276,7 +236,9 @@ const BusinessFinanceAssistant = () => {
     
     if (error) {
       console.error('Error loading suppliers:', error);
+      setLoadError('suppliers', true);
     } else {
+      setLoadError('suppliers', false);
       setSuppliers(data || []);
     }
   };
@@ -291,7 +253,9 @@ const BusinessFinanceAssistant = () => {
     
     if (error) {
       console.error('Error loading expenses:', error);
+      setLoadError('expenses', true);
     } else {
+      setLoadError('expenses', false);
       setExpenses(data || []);
     }
   };
@@ -306,7 +270,9 @@ const BusinessFinanceAssistant = () => {
     
     if (error) {
       console.error('Error loading outgoings:', error);
+      setLoadError('outgoings', true);
     } else {
+      setLoadError('outgoings', false);
       setOutgoings(data || []);
     }
   };
@@ -501,162 +467,9 @@ const BusinessFinanceAssistant = () => {
     toast.success(`${filename} exported successfully`);
   };
 
-  // Add Product/Service
-  const handleAddProduct = async () => {
-    if (!user) return;
-    
-    try {
-      const { error } = await supabase
-        .from('products_services')
-        .insert([{
-          user_id: user.id,
-          name: productForm.name,
-          description: productForm.description,
-          category: productForm.category,
-          price: parseFloat(productForm.price) || 0,
-          cost: parseFloat(productForm.cost) || 0,
-          stock_quantity: productForm.is_service ? null : parseInt(productForm.stock_quantity) || 0,
-          is_active: productForm.is_active
-        }]);
-
-      if (error) throw error;
-
-      toast.success(`${productForm.is_service ? 'Service' : 'Product'} added successfully`);
-      setShowAddProduct(false);
-      setProductForm({
-        name: '',
-        description: '',
-        category: '',
-        price: '',
-        cost: '',
-        stock_quantity: '',
-        is_active: true,
-        is_service: false
-      });
-      loadProducts();
-    } catch (error) {
-      console.error('Error adding product:', error);
-      toast.error('Failed to add product');
-    }
-  };
-
-  // Add Supplier
-  const handleAddSupplier = async () => {
-    if (!user) return;
-    
-    try {
-      const { error } = await supabase
-        .from('suppliers')
-        .insert([{
-          user_id: user.id,
-          name: supplierForm.name,
-          contact_person: supplierForm.contact_person,
-          email: supplierForm.email,
-          phone: supplierForm.phone,
-          address: supplierForm.address,
-          website: supplierForm.website,
-          payment_terms: supplierForm.payment_terms
-        }]);
-
-      if (error) throw error;
-
-      toast.success('Supplier added successfully');
-      setShowAddSupplier(false);
-      setSupplierForm({
-        name: '',
-        contact_person: '',
-        email: '',
-        phone: '',
-        address: '',
-        website: '',
-        payment_terms: 'Net 30'
-      });
-      loadSuppliers();
-    } catch (error) {
-      console.error('Error adding supplier:', error);
-      toast.error('Failed to add supplier');
-    }
-  };
-
-  // Add Expense
-  const handleAddExpense = async () => {
-    if (!user) return;
-    
-    try {
-      console.log('Adding expense:', expenseForm);
-      const { error } = await supabase
-        .from('expenses')
-        .insert([{
-          user_id: user.id,
-          description: expenseForm.description,
-          category: expenseForm.category,
-          amount: parseFloat(expenseForm.amount) || 0,
-          date: expenseForm.date,
-          supplier_id: expenseForm.supplier_id || null,
-          status: expenseForm.status
-        }]);
-
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
-
-      toast.success('Expense added successfully');
-      setShowAddExpense(false);
-      setExpenseForm({
-        description: '',
-        category: '',
-        amount: '',
-        date: new Date().toISOString().split('T')[0],
-        supplier_id: '',
-        status: 'pending'
-      });
-      loadExpenses();
-    } catch (error) {
-      console.error('Error adding expense:', error);
-      toast.error('Failed to add expense');
-    }
-  };
-
-  // Add Outgoing
-  const handleAddOutgoing = async () => {
-    if (!user) return;
-    
-    try {
-      console.log('Adding outgoing:', outgoingForm);
-      const { error } = await supabase
-        .from('outgoings')
-        .insert([{
-          user_id: user.id,
-          name: outgoingForm.name,
-          category: outgoingForm.category,
-          amount: parseFloat(outgoingForm.amount) || 0,
-          frequency: outgoingForm.frequency,
-          next_payment_date: outgoingForm.next_payment_date,
-          supplier_id: outgoingForm.supplier_id || null
-        }]);
-
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
-
-      toast.success('Recurring payment added successfully');
-      setShowAddOutgoing(false);
-      setOutgoingForm({
-        name: '',
-        category: '',
-        amount: '',
-        frequency: 'monthly',
-        next_payment_date: new Date().toISOString().split('T')[0],
-        supplier_id: ''
-      });
-      loadOutgoings();
-    } catch (error) {
-      console.error('Error adding outgoing:', error);
-      toast.error('Failed to add recurring payment');
-    }
-  };
+  // Money-out writes: every update and delete is filtered by id and the signed-in user (src/lib/moneyOutApi.ts).
+  const moneyOut = (table: MoneyOutTable) => moneyOutApi(supabase as unknown as Parameters<typeof moneyOutApi>[0], user?.id ?? '', table);
+  const moneyOutState = (k: keyof typeof moneyOutError, reload: () => Promise<void>) => ({ loading: isLoading, error: moneyOutError[k], onRetry: () => { void reload(); } });
 
   const TAB_GROUPS: { label: string; tabs: { value: FinanceTab; label: string }[] }[] = [
     { label: 'Overview', tabs: [{ value: 'dashboard', label: 'Overview' }, { value: 'create', label: 'Create' }] },
@@ -710,7 +523,7 @@ const BusinessFinanceAssistant = () => {
       </div>
 
       <div className="mx-auto w-full max-w-[1440px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-        {isLoading && activeTab !== 'dashboard' && activeTab !== 'quotes' && activeTab !== 'invoices' && activeTab !== 'analytics' && activeTab !== 'reports' ? (
+        {isLoading && !['dashboard', 'quotes', 'invoices', 'analytics', 'reports', 'products', 'suppliers', 'expenses', 'outgoings'].includes(activeTab) ? (
           <div className="flex min-h-[300px] items-center justify-center" role="status" aria-label="Loading">
             <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" aria-hidden="true" />
           </div>
@@ -761,575 +574,19 @@ const BusinessFinanceAssistant = () => {
         </TabsContent>
 
         <TabsContent value="products" className="mt-0">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Products & Services</CardTitle>
-                <CardDescription>Manage your product catalog and service offerings</CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Dialog open={showAddProduct} onOpenChange={setShowAddProduct}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Product/Service
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle>Add New {productForm.is_service ? 'Service' : 'Product'}</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="product-type">Type</Label>
-                          <Select 
-                            value={productForm.is_service ? 'service' : 'product'} 
-                            onValueChange={(value) => setProductForm({...productForm, is_service: value === 'service'})}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="product">Product</SelectItem>
-                              <SelectItem value="service">Service</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="product-name">Name *</Label>
-                          <Input
-                            id="product-name"
-                            value={productForm.name}
-                            onChange={(e) => setProductForm({...productForm, name: e.target.value})}
-                            placeholder="Product/Service name"
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="product-category">Category *</Label>
-                          <Input
-                            id="product-category"
-                            value={productForm.category}
-                            onChange={(e) => setProductForm({...productForm, category: e.target.value})}
-                            placeholder="e.g., Software, Consulting, Hardware"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="product-price">Price *</Label>
-                          <Input
-                            id="product-price"
-                            type="number"
-                            step="0.01"
-                            value={productForm.price}
-                            onChange={(e) => setProductForm({...productForm, price: e.target.value})}
-                            placeholder="0.00"
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="product-cost">Cost</Label>
-                          <Input
-                            id="product-cost"
-                            type="number"
-                            step="0.01"
-                            value={productForm.cost}
-                            onChange={(e) => setProductForm({...productForm, cost: e.target.value})}
-                            placeholder="0.00"
-                          />
-                        </div>
-                        {!productForm.is_service && (
-                          <div className="space-y-2">
-                            <Label htmlFor="product-stock">Stock Quantity</Label>
-                            <Input
-                              id="product-stock"
-                              type="number"
-                              value={productForm.stock_quantity}
-                              onChange={(e) => setProductForm({...productForm, stock_quantity: e.target.value})}
-                              placeholder="0"
-                            />
-                          </div>
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="product-description">Description</Label>
-                        <Textarea
-                          id="product-description"
-                          value={productForm.description}
-                          onChange={(e) => setProductForm({...productForm, description: e.target.value})}
-                          placeholder="Description of the product/service"
-                          rows={3}
-                        />
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setShowAddProduct(false)}>Cancel</Button>
-                        <Button onClick={handleAddProduct} disabled={!productForm.name || !productForm.category || !productForm.price}>
-                          Add {productForm.is_service ? 'Service' : 'Product'}
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-                <Button onClick={downloadCatalog} variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Catalog
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {products.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No products found. Add your first product to get started.</p>
-                ) : (
-                  products.map((product) => (
-                    <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <h3 className="font-medium">{product.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {product.category} • {formatMoney(Number(product.price), accountCurrency, { cents: true })} • 
-                          {product.stock_quantity !== null ? ` Stock: ${product.stock_quantity}` : ' Service'}
-                        </p>
-                        {product.description && (
-                          <p className="text-xs text-muted-foreground mt-1">{product.description}</p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={product.is_active ? "default" : "secondary"}>
-                          {product.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <ProductsTab rows={products} {...moneyOutState('products', loadProducts)} api={moneyOut('products_services')} onChanged={() => { void loadProducts(); }} onDownload={downloadCatalog} />
         </TabsContent>
 
         <TabsContent value="suppliers" className="mt-0">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Suppliers</CardTitle>
-                <CardDescription>Manage your supplier relationships and contacts</CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Dialog open={showAddSupplier} onOpenChange={setShowAddSupplier}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Supplier
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle>Add New Supplier</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="supplier-name">Company Name *</Label>
-                          <Input
-                            id="supplier-name"
-                            value={supplierForm.name}
-                            onChange={(e) => setSupplierForm({...supplierForm, name: e.target.value})}
-                            placeholder="Company name"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="supplier-contact">Contact Person</Label>
-                          <Input
-                            id="supplier-contact"
-                            value={supplierForm.contact_person}
-                            onChange={(e) => setSupplierForm({...supplierForm, contact_person: e.target.value})}
-                            placeholder="Contact person name"
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="supplier-email">Email</Label>
-                          <Input
-                            id="supplier-email"
-                            type="email"
-                            value={supplierForm.email}
-                            onChange={(e) => setSupplierForm({...supplierForm, email: e.target.value})}
-                            placeholder="email@company.com"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="supplier-phone">Phone</Label>
-                          <Input
-                            id="supplier-phone"
-                            value={supplierForm.phone}
-                            onChange={(e) => setSupplierForm({...supplierForm, phone: e.target.value})}
-                            placeholder="Phone number"
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="supplier-website">Website</Label>
-                          <Input
-                            id="supplier-website"
-                            value={supplierForm.website}
-                            onChange={(e) => setSupplierForm({...supplierForm, website: e.target.value})}
-                            placeholder="https://website.com"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="supplier-terms">Payment Terms</Label>
-                          <Select 
-                            value={supplierForm.payment_terms} 
-                            onValueChange={(value) => setSupplierForm({...supplierForm, payment_terms: value})}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Net 15">Net 15</SelectItem>
-                              <SelectItem value="Net 30">Net 30</SelectItem>
-                              <SelectItem value="Net 60">Net 60</SelectItem>
-                              <SelectItem value="Due on Receipt">Due on Receipt</SelectItem>
-                              <SelectItem value="COD">Cash on Delivery</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="supplier-address">Address</Label>
-                        <Textarea
-                          id="supplier-address"
-                          value={supplierForm.address}
-                          onChange={(e) => setSupplierForm({...supplierForm, address: e.target.value})}
-                          placeholder="Full address"
-                          rows={3}
-                        />
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setShowAddSupplier(false)}>Cancel</Button>
-                        <Button onClick={handleAddSupplier} disabled={!supplierForm.name}>
-                          Add Supplier
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-                <Button onClick={downloadSuppliers} variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Download List
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {suppliers.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No suppliers found. Add your first supplier to get started.</p>
-                ) : (
-                  suppliers.map((supplier) => (
-                    <div key={supplier.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <h3 className="font-medium">{supplier.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {supplier.contact_person && `${supplier.contact_person} • `}
-                          {supplier.email && `${supplier.email} • `}
-                          {supplier.payment_terms}
-                        </p>
-                        {supplier.phone && (
-                          <p className="text-xs text-muted-foreground">Phone: {supplier.phone}</p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={supplier.is_active ? "default" : "secondary"}>
-                          {supplier.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <SuppliersTab rows={suppliers} {...moneyOutState('suppliers', loadSuppliers)} api={moneyOut('suppliers')} onChanged={() => { void loadSuppliers(); }} onDownload={downloadSuppliers} />
         </TabsContent>
 
         <TabsContent value="expenses" className="mt-0">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Expenses</CardTitle>
-                <CardDescription>Track and categorize your business expenses • Total: {formatMoney(expenses.reduce((total, expense) => total + Number(expense.amount), 0), accountCurrency, { cents: true })}</CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Button onClick={() => setShowAddExpense(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Expense
-                </Button>
-                <Button onClick={downloadExpenses} variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Report
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {showAddExpense && (
-                <div className="bg-muted p-6 rounded-lg mb-6">
-                  <h3 className="text-lg font-semibold mb-4">Add New Expense</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="block text-sm font-medium mb-2">Description</Label>
-                      <Input
-                        type="text"
-                        value={expenseForm.description}
-                        onChange={(e) => setExpenseForm({...expenseForm, description: e.target.value})}
-                        placeholder="Enter expense description"
-                      />
-                    </div>
-                    <div>
-                      <Label className="block text-sm font-medium mb-2">Amount</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={expenseForm.amount}
-                        onChange={(e) => setExpenseForm({...expenseForm, amount: e.target.value})}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <Label className="block text-sm font-medium mb-2">Category</Label>
-                      <Select 
-                        value={expenseForm.category} 
-                        onValueChange={(value) => setExpenseForm({...expenseForm, category: value})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="food">Food & Dining</SelectItem>
-                          <SelectItem value="transport">Transportation</SelectItem>
-                          <SelectItem value="utilities">Utilities</SelectItem>
-                          <SelectItem value="entertainment">Entertainment</SelectItem>
-                          <SelectItem value="shopping">Shopping</SelectItem>
-                          <SelectItem value="health">Health & Medical</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="block text-sm font-medium mb-2">Date</Label>
-                      <Input
-                        type="date"
-                        value={expenseForm.date}
-                        onChange={(e) => setExpenseForm({...expenseForm, date: e.target.value})}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex space-x-3 mt-4">
-                    <Button onClick={handleAddExpense} disabled={!expenseForm.description || !expenseForm.amount}>
-                      Add Expense
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        setShowAddExpense(false);
-                        setExpenseForm({
-                          description: '',
-                          category: '',
-                          amount: '',
-                          date: new Date().toISOString().split('T')[0],
-                          supplier_id: '',
-                          status: 'pending'
-                        });
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-4">
-                {expenses.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <DollarSign size={48} className="mx-auto mb-4 text-muted" />
-                    <p>No expenses recorded yet.</p>
-                    <p className="text-sm">Click "Add Expense" to get started.</p>
-                  </div>
-                ) : (
-                  expenses.map((expense) => (
-                    <div key={expense.id} className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow">
-                      <div className="flex-1">
-                        <h3 className="font-medium">{expense.description}</h3>
-                        <div className="flex space-x-4 mt-1 text-sm text-muted-foreground">
-                          <span className="flex items-center">
-                            <Calendar size={16} className="mr-1" />
-                            {new Date(expense.date).toLocaleDateString()}
-                          </span>
-                          <span>{expense.category}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <span className="text-lg font-semibold text-red-600">
-                          -{formatMoney(Number(expense.amount), accountCurrency, { cents: true })}
-                        </span>
-                        <Badge variant="outline">{expense.status}</Badge>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <ExpensesTab rows={expenses} suppliers={suppliers} {...moneyOutState('expenses', loadExpenses)} api={moneyOut('expenses')} onChanged={() => { void loadExpenses(); }} onDownload={downloadExpenses} />
         </TabsContent>
 
         <TabsContent value="outgoings" className="mt-0">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Recurring Outgoings</CardTitle>
-                <CardDescription>Manage your scheduled payments and subscriptions • Listed amounts, any frequency: {formatMoney(outgoings.reduce((total, payment) => total + Number(payment.amount), 0), accountCurrency, { cents: true })}</CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Button onClick={() => setShowAddOutgoing(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Recurring Payment
-                </Button>
-                <Button onClick={downloadOutgoings} variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Schedule
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {showAddOutgoing && (
-                <div className="bg-muted p-6 rounded-lg mb-6">
-                  <h3 className="text-lg font-semibold mb-4">Add New Recurring Payment</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="block text-sm font-medium mb-2">Description</Label>
-                      <Input
-                        type="text"
-                        value={outgoingForm.name}
-                        onChange={(e) => setOutgoingForm({...outgoingForm, name: e.target.value})}
-                        placeholder="Enter payment description"
-                      />
-                    </div>
-                    <div>
-                      <Label className="block text-sm font-medium mb-2">Amount</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={outgoingForm.amount}
-                        onChange={(e) => setOutgoingForm({...outgoingForm, amount: e.target.value})}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <Label className="block text-sm font-medium mb-2">Category</Label>
-                      <Select 
-                        value={outgoingForm.category} 
-                        onValueChange={(value) => setOutgoingForm({...outgoingForm, category: value})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="food">Food & Dining</SelectItem>
-                          <SelectItem value="transport">Transportation</SelectItem>
-                          <SelectItem value="utilities">Utilities</SelectItem>
-                          <SelectItem value="entertainment">Entertainment</SelectItem>
-                          <SelectItem value="shopping">Shopping</SelectItem>
-                          <SelectItem value="health">Health & Medical</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="block text-sm font-medium mb-2">Frequency</Label>
-                      <Select 
-                        value={outgoingForm.frequency} 
-                        onValueChange={(value) => setOutgoingForm({...outgoingForm, frequency: value})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="weekly">Weekly</SelectItem>
-                          <SelectItem value="monthly">Monthly</SelectItem>
-                          <SelectItem value="quarterly">Quarterly</SelectItem>
-                          <SelectItem value="yearly">Yearly</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label className="block text-sm font-medium mb-2">Next Payment Date</Label>
-                      <Input
-                        type="date"
-                        value={outgoingForm.next_payment_date}
-                        onChange={(e) => setOutgoingForm({...outgoingForm, next_payment_date: e.target.value})}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex space-x-3 mt-4">
-                    <Button onClick={handleAddOutgoing} disabled={!outgoingForm.name || !outgoingForm.amount}>
-                      Add Payment
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        setShowAddOutgoing(false);
-                        setOutgoingForm({
-                          name: '',
-                          category: '',
-                          amount: '',
-                          frequency: 'monthly',
-                          next_payment_date: new Date().toISOString().split('T')[0],
-                          supplier_id: ''
-                        });
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-4">
-                {outgoings.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Repeat size={48} className="mx-auto mb-4 text-muted" />
-                    <p>No recurring payments set up yet.</p>
-                    <p className="text-sm">Click "Add Recurring Payment" to get started.</p>
-                  </div>
-                ) : (
-                  outgoings.map((payment) => (
-                    <div key={payment.id} className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow">
-                      <div className="flex-1">
-                        <h3 className="font-medium">{payment.name}</h3>
-                        <div className="flex space-x-4 mt-1 text-sm text-muted-foreground">
-                          <span className="flex items-center">
-                            <Calendar size={16} className="mr-1" />
-                            Next: {new Date(payment.next_payment_date).toLocaleDateString()}
-                          </span>
-                          <span>{payment.category}</span>
-                          <span className="capitalize">{payment.frequency}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <span className="text-lg font-semibold text-purple-600">
-                          {formatMoney(Number(payment.amount), accountCurrency, { cents: true })}
-                        </span>
-                        <Badge variant={payment.is_active ? "default" : "secondary"}>
-                          {payment.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <OutgoingsTab rows={outgoings} suppliers={suppliers} {...moneyOutState('outgoings', loadOutgoings)} api={moneyOut('outgoings')} onChanged={() => { void loadOutgoings(); }} onDownload={downloadOutgoings} />
         </TabsContent>
 
         <TabsContent value="banking" className="mt-0">
