@@ -5,7 +5,7 @@ import { FINANCE_TABS } from '@/lib/financeTabs';
 
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }));
 vi.mock('sonner', () => ({ toast, Toaster: () => null }));
-const authUser = vi.hoisted(() => ({ id: 'u1' }));
+const authUser = vi.hoisted(() => ({ id: 'u1', email: 'owner@acme.example' }));
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: authUser }) }));
 vi.mock('@/hooks/useUserSettings', () => ({ useUserSettings: () => ({ settings: { currency_code: 'GBP' } }) }));
 vi.mock('@/contexts/OrganizationContext', () => ({ useActiveOrganization: () => ({ organization: { name: 'Acme Trading Ltd' } }) }));
@@ -15,16 +15,26 @@ vi.mock('@/components/QuoteInvoiceCreationSection', () => ({ default: (p: { docu
 vi.mock('@/components/payroll/PayrollUK', () => ({ default: () => <div>Payroll stand-in</div> }));
 vi.mock('@/components/documents/DocumentTemplatePicker', () => ({ default: () => <div>Templates stand-in</div> }));
 vi.mock('@/components/finance/FinanceAnalytics', () => ({ FinanceAnalytics: () => <div>Analytics stand-in</div> }));
+// The real PDF layout is not under test: a tiny stand-in PDF with the same output()/save() calls.
+const pdfSave = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/documentTemplates', async (orig) => ({
+  ...(await orig<object>()),
+  renderDocumentPdf: () => ({ output: () => new TextEncoder().encode('%PDF-1.4 stand-in').buffer, save: pdfSave }),
+}));
 
 /**
  * Supabase stand-in. Reads return the rows below; writes are recorded with their filters and can be
- * made to fail. Any call to functions (e.g. an email sender) is recorded so the test can prove none happen.
+ * made to fail. Every function call is recorded. The only function the page may call is send-document-email:
+ * its GET "is sending switched on?" check (answer: `emailConfigured`), and a send only in tests that set
+ * `sendReply` (a fake answer; nothing real is ever contacted).
  */
 const db = vi.hoisted(() => ({
   rows: {} as Record<string, Record<string, unknown>[]>,
   writes: [] as { table: string; op: string; payload: unknown; filters: unknown[][] }[],
   failWrites: false,
-  functionCalls: [] as unknown[],
+  functionCalls: [] as { name: string; method: string; body?: Record<string, unknown> }[],
+  emailConfigured: false,
+  sendReply: null as null | (() => Promise<{ data: unknown; error: unknown }>),
 }));
 vi.mock('@/integrations/supabase/client', () => {
   const from = (table: string) => {
@@ -54,7 +64,14 @@ vi.mock('@/integrations/supabase/client', () => {
     supabase: {
       from,
       rpc: () => Promise.resolve({ data: [], error: null }),
-      functions: { invoke: (...a: unknown[]) => { db.functionCalls.push(a); return Promise.resolve({ data: null, error: null }); } },
+      functions: {
+        invoke: (name: string, opts?: { method?: string; body?: Record<string, unknown> }) => {
+          const call = { name, method: opts?.method ?? 'POST', body: opts?.body };
+          db.functionCalls.push(call);
+          if (call.method === 'GET') return Promise.resolve({ data: { configured: db.emailConfigured }, error: null });
+          return db.sendReply ? db.sendReply() : Promise.resolve({ data: null, error: { message: 'unexpected call' } });
+        },
+      },
     },
   };
 });
@@ -85,15 +102,16 @@ const fetchSpy = vi.fn();
 
 beforeEach(() => {
   db.rows = { invoices: [invoice('1001', 'draft', 600, day(20)), invoice('1002', 'sent', 950, day(10))], quotes: [] };
-  db.writes = []; db.failWrites = false; db.functionCalls = [];
+  db.writes = []; db.failWrites = false; db.functionCalls = []; db.emailConfigured = false; db.sendReply = null;
   Object.values(toast).forEach((f) => f.mockClear());
   fetchSpy.mockClear();
   vi.stubGlobal('fetch', fetchSpy);
 });
 afterEach(() => {
   vi.unstubAllGlobals();
-  // Nothing in these flows may email or call any server function.
-  expect(db.functionCalls).toEqual([]);
+  // Only send-document-email is ever called, never with a recipient address; nothing is sent unless the test fakes a send.
+  for (const c of db.functionCalls) { expect(c.name).toBe('send-document-email'); expect(c.body ?? {}).not.toHaveProperty('to'); }
+  if (!db.sendReply) expect(db.functionCalls.filter((c) => c.method !== 'GET')).toEqual([]);
   expect(fetchSpy).not.toHaveBeenCalled();
 });
 
@@ -151,7 +169,7 @@ describe('Honest Sent and Paid', () => {
     expect(within(view).getByRole('button', { name: 'Move to archive' })).toBeInTheDocument();
     expect(within(view).queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
     expect(within(view).queryByRole('button', { name: /^Send$/ })).not.toBeInTheDocument();
-    expect(view).toHaveTextContent('B2BNEST doesn’t email documents.');
+    expect(view).toHaveTextContent('B2BNEST doesn’t email documents yet.');
   });
 });
 
@@ -274,6 +292,153 @@ describe('Archive, restore, delete forever', () => {
     await waitFor(() => expect(tiles).toHaveTextContent('Outstanding£950'));
     expect(tiles).toHaveTextContent('Paid last 30 days—');
     expect(tiles).not.toHaveTextContent('£400');
+  });
+});
+
+describe('Email to customer', () => {
+  const emailable = (id: string, status: string, extra: Record<string, unknown> = {}) => ({
+    ...invoice(id, status, 1250, '2026-11-01'), client_email: 'accounts@client.example', client_name: 'Priya Shah', company_name: 'Acme Trading Ltd', ...extra,
+  });
+  const ok = () => Promise.resolve({ data: { success: true, status: 'accepted_by_provider', sent: 'accepted', recipient: 'accounts@client.example' }, error: null });
+  const fails = (body: Record<string, unknown>) => () => Promise.resolve({ data: null, error: { context: { json: async () => body } } });
+  const menuItem = async (number: string, name: RegExp) => {
+    await screen.findAllByText(number);
+    await waitFor(() => expect(db.functionCalls.some((c) => c.method === 'GET')).toBe(true));
+    openMenu(`More actions for invoice ${number}`);
+    return screen.findByRole('menuitem', { name });
+  };
+  const openDialog = async (number = 'INV-1001', label = /^Email to customer/) => {
+    fireEvent.click(await menuItem(number, label));
+    const dialog = await screen.findByRole('dialog', { name: new RegExp(`invoice ${number}$`) });
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Send email' })).toBeEnabled());
+    return dialog;
+  };
+  beforeEach(() => { db.emailConfigured = true; db.rows = { invoices: [emailable('1001', 'draft')], quotes: [] }; pdfSave.mockClear(); });
+
+  it('not configured: the menu says "not available yet" with the reason, and choosing it sends nothing', async () => {
+    db.emailConfigured = false;
+    renderAt('?tool=business-finance-assistant&tab=invoices');
+    const item = await menuItem('INV-1001', /Email to customer \(not available yet\)/);
+    expect(item).toHaveAttribute('aria-disabled', 'true');
+    expect(item).toHaveTextContent('isn’t switched on yet. Download the PDF and send it yourself.');
+    fireEvent.click(item);
+    expect(screen.queryByRole('dialog', { name: /Email to customer: invoice/ })).toBeNull();
+    expect(db.functionCalls.map((c) => c.method)).toEqual(['GET']);
+  });
+
+  it('no customer email: disabled with the reason', async () => {
+    db.rows.invoices = [emailable('1001', 'draft', { client_email: null })];
+    renderAt('?tool=business-finance-assistant&tab=invoices');
+    const item = await menuItem('INV-1001', /^Email to customer/);
+    expect(item).toHaveAttribute('aria-disabled', 'true');
+    expect(item).toHaveTextContent('Add the customer’s email address first (Edit the invoice).');
+  });
+
+  it('paid invoice: disabled with the reason', async () => {
+    db.rows.invoices = [emailable('1001', 'paid', { paid_at: iso(1) })];
+    renderAt('?tool=business-finance-assistant&tab=invoices');
+    const item = await menuItem('INV-1001', /^Email to customer/);
+    expect(item).toHaveTextContent('This invoice is paid, so it isn’t emailed.');
+  });
+
+  it('the preview shows To (read-only), subject, message, attachment and who it is from', async () => {
+    renderAt('?tool=business-finance-assistant&tab=invoices');
+    const dialog = await openDialog();
+    expect(within(dialog).getByLabelText('To')).toHaveValue('accounts@client.example');
+    expect(within(dialog).getByLabelText('To')).toHaveAttribute('readonly');
+    expect(within(dialog).getByLabelText('Subject')).toHaveValue('Invoice INV-1001 from Acme Trading Ltd');
+    expect(within(dialog).getByLabelText('Message')).toHaveValue('Hello Priya Shah,\n\nPlease find invoice INV-1001 attached, total 1,250.00 GBP, due 1 Nov 2026.\n\nSent by Acme Trading Ltd using B2BNEST.');
+    expect(dialog).toHaveTextContent('Attachment: INV-1001.pdf');
+    expect(dialog).toHaveTextContent('This email is sent from info@b2bnest.online on your behalf. Replies go to owner@acme.example.');
+    expect(within(dialog).getByRole('button', { name: 'Edit customer' })).toBeInTheDocument();
+  });
+
+  it('success: status becomes Sent only after the server says the provider accepted it; no address is sent', async () => {
+    let answer!: (v: { data: unknown; error: unknown }) => void;
+    db.sendReply = () => new Promise((r) => { answer = r; });
+    renderAt('?tool=business-finance-assistant&tab=invoices');
+    const dialog = await openDialog();
+    fireEvent.change(within(dialog).getByLabelText('Message'), { target: { value: 'Hi Priya, invoice attached.' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send email' }));
+    expect(await within(dialog).findByRole('button', { name: 'Sending…' })).toBeDisabled();
+    expect(db.writes).toEqual([]);
+    const post = db.functionCalls.find((c) => c.method === 'POST')!;
+    expect(Object.keys(post.body!).sort()).toEqual(['id', 'kind', 'message', 'pdf_base64', 'subject']);
+    expect(post.body).toMatchObject({ kind: 'invoice', id: '1001', subject: 'Invoice INV-1001 from Acme Trading Ltd', message: 'Hi Priya, invoice attached.' });
+    expect(atob(post.body!.pdf_base64 as string)).toBe('%PDF-1.4 stand-in');
+    await act(async () => { answer((await ok())); });
+    await waitFor(() => expect(db.writes).toEqual([{ table: 'invoices', op: 'update', payload: { status: 'sent' }, filters: [['id', '1001'], ['user_id', 'u1']] }]));
+    expect(toast.success).toHaveBeenCalledWith('Email sent to accounts@client.example. Your mail provider accepted it.');
+    expect(JSON.stringify(toast.success.mock.calls)).not.toMatch(/deliver/i);
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /invoice INV-1001$/ })).toBeNull());
+  });
+
+  it('failure: the plain reason, the dialog stays open, the invoice is unchanged, and the PDF can be downloaded instead', async () => {
+    db.sendReply = fails({ success: false, code: 'provider_auth_rejected', sent: 'not_sent', error: 'The B2BNEST sending account couldn’t sign in to the mail server (wrong password or sign-in blocked). Nothing was sent.' });
+    renderAt('?tool=business-finance-assistant&tab=invoices');
+    const dialog = await openDialog();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send email' }));
+    const alert = await within(dialog).findByRole('alert');
+    expect(alert).toHaveTextContent('The email wasn’t sent');
+    expect(alert).toHaveTextContent('couldn’t sign in to the mail server (wrong password or sign-in blocked). Nothing was sent.');
+    expect(alert).toHaveTextContent('The invoice is unchanged.');
+    expect(db.writes).toEqual([]);
+    expect(toast.success).not.toHaveBeenCalled();
+    fireEvent.click(within(alert).getByRole('button', { name: 'Download PDF and send it yourself' }));
+    await waitFor(() => expect(pdfSave).toHaveBeenCalledWith('invoice_INV-1001.pdf'));
+    expect(within(dialog).getByRole('button', { name: 'Send email' })).toBeEnabled(); // can retry
+  });
+
+  it('uncertain outcome: told to check before retrying, nothing recorded', async () => {
+    db.sendReply = fails({ success: false, code: 'uncertain', sent: 'unknown', error: 'The connection to the email provider was lost after the message was handed over, so it may or may not have been sent.' });
+    renderAt('?tool=business-finance-assistant&tab=invoices');
+    const dialog = await openDialog();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send email' }));
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Not sure the email was sent');
+    expect(db.writes).toEqual([]);
+  });
+
+  it('sent, but the status could not be saved: says exactly that', async () => {
+    db.sendReply = ok; db.failWrites = true;
+    renderAt('?tool=business-finance-assistant&tab=invoices');
+    const dialog = await openDialog();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send email' }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('The email was sent, but the status could not be saved. Mark it as sent manually.'));
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it('already sent: "Email again" with the extra line, and the status is not written again', async () => {
+    db.rows.invoices = [emailable('1002', 'sent')];
+    db.sendReply = ok;
+    renderAt('?tool=business-finance-assistant&tab=invoices');
+    const dialog = await openDialog('INV-1002', /^Email again/);
+    expect(dialog).toHaveTextContent('This invoice was already sent. Your customer will receive it again.');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send email' }));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Email sent to accounts@client.example. Your mail provider accepted it.'));
+    expect(db.writes).toEqual([]);
+  });
+
+  it('"Edit customer" opens the edit form for this invoice', async () => {
+    renderAt('?tool=business-finance-assistant&tab=invoices');
+    const dialog = await openDialog();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Edit customer' }));
+    expect(await screen.findByTestId('create-form')).toHaveTextContent('Create form: invoice');
+    expect(screen.queryByRole('dialog', { name: /invoice INV-1001$/ })).toBeNull();
+  });
+
+  it('the document view offers Email to customer; an archived invoice offers no email', async () => {
+    const first = renderAt('?tool=business-finance-assistant&tab=invoices');
+    await screen.findAllByText('INV-1001');
+    fireEvent.click(screen.getAllByRole('button', { name: 'View invoice INV-1001' })[0]);
+    const view = await screen.findByRole('dialog');
+    await waitFor(() => expect(within(view).getByRole('button', { name: 'Email to customer' })).toBeEnabled());
+    first.unmount();
+    db.rows.invoices = [emailable('1003', 'draft', { archived_at: iso(1) })];
+    renderAt('?tool=business-finance-assistant&tab=invoices&archive=invoices');
+    await screen.findAllByText('INV-1003');
+    fireEvent.click(screen.getAllByRole('button', { name: 'View invoice INV-1003' })[0]);
+    const archivedView = await screen.findByRole('dialog');
+    expect(within(archivedView).queryByRole('button', { name: /Email/ })).toBeNull();
   });
 });
 

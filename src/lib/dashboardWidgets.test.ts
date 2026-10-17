@@ -16,14 +16,15 @@ describe('dashboard widget aggregation', () => {
     expect(formatMoney(1200, 'GBP')).toBe('£1,200');
   });
 
-  it('splits paid and outstanding invoices and leaves drafts out', () => {
+  it('splits paid and outstanding invoices and leaves drafts out; expenses to pay = every expense not marked paid', () => {
     const m = summarizeMoney(
       [{ status: 'paid', total_amount: 100, currency: 'GBP' }, { status: 'sent', total_amount: 40, currency: 'GBP' }, { status: 'draft', total_amount: 999, currency: 'GBP' }, { status: 'cancelled', total_amount: 7, currency: 'GBP' }],
-      [{ status: 'pending', amount: 30, currency: 'GBP' }, { status: 'paid', amount: 20, currency: 'GBP' }],
+      [{ status: 'pending', amount: 30 }, { status: 'approved', amount: '45.99' }, { status: null, amount: 4.01 }, { status: 'paid', amount: 20 }, { status: 'Paid', amount: 5 }],
     );
     expect(m.paid).toEqual([{ currency: 'GBP', amount: 100, count: 1 }]);
     expect(m.outstanding).toEqual([{ currency: 'GBP', amount: 40, count: 1 }]);
-    expect(m.bills).toEqual([{ currency: 'GBP', amount: 30, count: 1 }]);
+    expect([m.expensesToPay, m.expensesToPayCount]).toEqual([80, 3]);
+    expect(summarizeMoney([], [])).toMatchObject({ expensesToPay: 0, expensesToPayCount: 0 });
   });
 
   it('counts only open deals in the pipeline', () => {

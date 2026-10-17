@@ -20,21 +20,27 @@ export function sumByCurrency<T>(rows: T[], amount: (r: T) => number | string | 
 export { formatMoney } from '@/lib/money';
 
 export interface InvoiceRow { status: string | null; total_amount: number | null; currency: string | null }
-export interface BillRow { status: string | null; amount: number | null; currency: string | null }
+/** Expenses have no currency column: they are in the account currency. 'pending' is the database default. */
+export interface ExpenseDueRow { amount: number | string | null; status: string | null }
 
 const lc = (s: string | null | undefined) => (s || '').toLowerCase();
 
-/** Invoices: paid vs outstanding (sent, pending or overdue; drafts and cancelled are left out). Bills: anything not paid or cancelled. */
-export function summarizeMoney(invoices: InvoiceRow[], bills: BillRow[]) {
+/**
+ * Invoices: paid vs outstanding (sent, pending or overdue; drafts and cancelled are left out).
+ * Expenses to pay: every expense not marked paid (pending, approved, or no status), as of today, in the
+ * account currency. The `bills` table is not used: nothing in the app writes to it.
+ */
+export function summarizeMoney(invoices: InvoiceRow[], expenses: ExpenseDueRow[]) {
   const paid = invoices.filter((i) => lc(i.status) === 'paid');
   const outstanding = invoices.filter((i) => ['sent', 'pending', 'overdue'].includes(lc(i.status)));
-  const unpaidBills = bills.filter((b) => !['paid', 'cancelled'].includes(lc(b.status)));
+  const unpaid = expenses.filter((e) => lc(e.status || 'pending') !== 'paid');
+  const toPay = unpaid.reduce((n, e) => n + (Number(e.amount) || 0), 0);
   return {
     paid: sumByCurrency(paid, (i) => i.total_amount, (i) => i.currency),
     outstanding: sumByCurrency(outstanding, (i) => i.total_amount, (i) => i.currency),
-    bills: sumByCurrency(unpaidBills, (b) => b.amount, (b) => b.currency),
     outstandingCount: outstanding.length,
-    billsCount: unpaidBills.length,
+    expensesToPay: Math.round(toPay * 100) / 100,
+    expensesToPayCount: unpaid.length,
   };
 }
 
