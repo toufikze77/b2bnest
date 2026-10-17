@@ -34,7 +34,7 @@ import DocumentTemplatePicker from '@/components/documents/DocumentTemplatePicke
 import { useDocumentTemplates } from '@/hooks/useDocumentTemplates';
 import { renderDocumentPdf } from '@/lib/documentTemplates';
 import { EmailDocumentDialog } from '@/components/finance/EmailDocumentDialog';
-import { documentEmailApi, emailAvailability, SendResult, SENDER_ADDRESS, SENT_NOT_SAVED, SENT_TOAST } from '@/lib/documentEmail';
+import { documentEmailApi, EmailAccess, emailAvailability, SendResult, SENT_NOT_SAVED, SENT_TOAST } from '@/lib/documentEmail';
 import { Tables } from '@/integrations/supabase/types';
 // Type definitions
 type Quote = Tables<'quotes'>;
@@ -503,15 +503,16 @@ const BusinessFinanceAssistant = () => {
   // Email to customer (send-document-email). Available only when the server says sending is switched on;
   // until then the action explains it isn't available yet and nothing is called beyond that check.
   const emailApi = documentEmailApi(supabase as unknown as Parameters<typeof documentEmailApi>[0]);
-  const [emailConfigured, setEmailConfigured] = useState<boolean | null>(null);
+  // Not available until the server says this user may send (configured, allowed, verified).
+  const [emailAccess, setEmailAccess] = useState<EmailAccess | null>(null);
   useEffect(() => {
     if (!user?.id) return;
     let live = true;
-    void emailApi.configured().then((c) => { if (live) setEmailConfigured(c); });
+    void emailApi.access().then((a) => { if (live) setEmailAccess(a); });
     return () => { live = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
-  const emailFor = (doc: Quote | Invoice) => emailAvailability(kindOf(doc), doc, emailConfigured);
+  const emailFor = (doc: Quote | Invoice) => emailAvailability(kindOf(doc), doc, emailAccess);
   const [emailingDoc, setEmailingDoc] = useState<Quote | Invoice | null>(null);
   const openEmail = (doc: Quote | Invoice) => { if (emailFor(doc).enabled) setEmailingDoc(doc); };
   const pdfBytes = async (doc: Quote | Invoice) => new Uint8Array((await generatePDF(doc)).output('arraybuffer') as ArrayBuffer);
@@ -963,8 +964,8 @@ const BusinessFinanceAssistant = () => {
                   </div>
                   {emailFor(selectedDocument).reason && <p id="document-email-reason" className="text-right text-small text-muted-foreground">{emailFor(selectedDocument).reason}</p>}
                   <p className="text-right text-small text-muted-foreground">
-                    {emailConfigured
-                      ? `Email to customer sends the PDF from ${SENDER_ADDRESS} on your behalf. You can also download the PDF, send it yourself, then mark it as sent.`
+                    {emailAccess?.configured
+                      ? `Email to customer sends the PDF from ${emailAccess.sender || 'the B2BNEST sending address'} on your behalf. You can also download the PDF, send it yourself, then mark it as sent.`
                       : 'B2BNEST doesn’t email documents yet. Download the PDF to send it yourself, then mark it as sent.'}
                   </p>
                 </>
@@ -978,7 +979,7 @@ const BusinessFinanceAssistant = () => {
           info={{ kind: kindOf(emailingDoc), number: numberOf(emailingDoc), clientName: emailingDoc.client_name, business: emailingDoc.company_name,
             total: emailingDoc.total_amount, currency: emailingDoc.currency, clientEmail: emailingDoc.client_email || '',
             date: 'due_date' in emailingDoc ? (emailingDoc as Invoice).due_date : (emailingDoc as Quote).valid_until }}
-          again={emailFor(emailingDoc).again} ownerEmail={user?.email ?? null}
+          again={emailFor(emailingDoc).again} ownerEmail={user?.email ?? null} sender={emailAccess?.sender}
           preparePdf={() => pdfBytes(emailingDoc)} onSend={(input) => sendEmail(emailingDoc, input)}
           onEditCustomer={() => editCustomerFor(emailingDoc)} onDownload={() => { void handleDownloadDocument(emailingDoc); }} />
       )}

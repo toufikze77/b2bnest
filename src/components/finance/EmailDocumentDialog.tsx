@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
   attachmentName, bytesToBase64, defaultEmailMessage, defaultEmailSubject, EmailDocInfo, formatBytes, MESSAGE_MAX, PDF_MAX_BYTES,
-  SENDER_ADDRESS, SendResult, SUBJECT_MAX,
+  SendResult, SUBJECT_MAX,
 } from '@/lib/documentEmail';
 
 interface Props {
@@ -18,6 +18,8 @@ interface Props {
   again: boolean;
   /** Where customer replies go (the signed-in owner's email). */
   ownerEmail: string | null;
+  /** The address the server sends from (its SMTP_FROM / SMTP_USER), as the server reported it. */
+  sender?: string;
   /** Builds the same PDF as "Download PDF". */
   preparePdf: () => Promise<Uint8Array>;
   /** Sends; the parent records the status only after a success reply. The dialog closes on success. */
@@ -30,7 +32,7 @@ interface Props {
  * Preview and send. Nothing is sent until "Send email"; a failure keeps the dialog open with the reason
  * and the manual option. Radix Dialog traps focus and closes on Escape (not while sending).
  */
-export function EmailDocumentDialog({ open, onOpenChange, info, again, ownerEmail, preparePdf, onSend, onEditCustomer, onDownload }: Props) {
+export function EmailDocumentDialog({ open, onOpenChange, info, again, ownerEmail, sender, preparePdf, onSend, onEditCustomer, onDownload }: Props) {
   const ids = { to: useId(), subject: useId(), message: useId(), count: useId(), note: useId() };
   const noun = info.kind === 'invoice' ? 'invoice' : 'quote';
   const [subject, setSubject] = useState('');
@@ -75,7 +77,7 @@ export function EmailDocumentDialog({ open, onOpenChange, info, again, ownerEmai
         <DialogHeader className="pr-10 text-left">
           <DialogTitle>{again ? 'Email again' : 'Email to customer'}: {noun} {info.number}</DialogTitle>
           <DialogDescription id={ids.note}>
-            This email is sent from {SENDER_ADDRESS} on your behalf. Replies go to {ownerEmail || 'your account email'}.
+            This email is sent from {sender || 'the B2BNEST sending address'} on your behalf. Replies go to {ownerEmail || 'your account email'}.
           </DialogDescription>
         </DialogHeader>
 

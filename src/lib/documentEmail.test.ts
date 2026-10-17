@@ -3,26 +3,36 @@ import { attachmentName, bytesToBase64, defaultEmailMessage, defaultEmailSubject
 
 describe('emailAvailability', () => {
   const draft = { status: 'draft', client_email: 'accounts@client.example', archived_at: null };
-  it('not configured: "not available yet" with an honest reason, whatever the document', () => {
-    for (const c of [false, null]) {
+  const ON = { configured: true, sender: 'notifications@b2bnest.online' };
+  it('not configured (or not known yet): "not available yet" with an honest reason, whatever the document', () => {
+    for (const c of [{ configured: false }, { configured: false, reason: 'not_configured' as const }, null]) {
       const a = emailAvailability('invoice', draft, c);
       expect(a).toMatchObject({ label: 'Email to customer (not available yet)', enabled: false });
-      expect(a.reason).toMatch(/isn’t switched on yet\. Download the PDF and send it yourself/);
+      expect(a.reason).toBe('Emailing from B2BNEST isn’t switched on yet. Download the PDF and send it yourself.');
     }
   });
+  it('not on the allowlist, or email not verified: the same "not available yet" item with the right reason', () => {
+    expect(emailAvailability('invoice', draft, { configured: false, reason: 'not_allowed' })).toEqual({
+      label: 'Email to customer (not available yet)', enabled: false, again: false,
+      reason: 'Emailing from B2BNEST isn’t switched on for your account yet. Download the PDF and send it yourself.',
+    });
+    expect(emailAvailability('quote', draft, { configured: false, reason: 'email_not_verified' })).toEqual({
+      label: 'Email to customer (not available yet)', enabled: false, again: false, reason: 'Verify your email address to use this.',
+    });
+  });
   it('disabled with a reason: archived, paid invoice, no email, invalid email', () => {
-    expect(emailAvailability('invoice', { ...draft, archived_at: '2026-10-16T00:00:00Z' }, true)).toMatchObject({ enabled: false, reason: 'Archived invoices can’t be emailed. Restore it first.' });
-    expect(emailAvailability('invoice', { ...draft, status: 'paid' }, true)).toMatchObject({ enabled: false, reason: 'This invoice is paid, so it isn’t emailed.' });
-    expect(emailAvailability('quote', { ...draft, client_email: '  ' }, true)).toMatchObject({ enabled: false, reason: 'Add the customer’s email address first (Edit the quote).' });
+    expect(emailAvailability('invoice', { ...draft, archived_at: '2026-10-16T00:00:00Z' }, ON)).toMatchObject({ enabled: false, reason: 'Archived invoices can’t be emailed. Restore it first.' });
+    expect(emailAvailability('invoice', { ...draft, status: 'paid' }, ON)).toMatchObject({ enabled: false, reason: 'This invoice is paid, so it isn’t emailed.' });
+    expect(emailAvailability('quote', { ...draft, client_email: '  ' }, ON)).toMatchObject({ enabled: false, reason: 'Add the customer’s email address first (Edit the quote).' });
     for (const bad of ['nope', 'a@b', 'a@b.com, c@d.com', 'Name <a@b.com>', 'a@b.com\nBcc: x@y.com']) {
-      expect(emailAvailability('invoice', { ...draft, client_email: bad }, true)).toMatchObject({ enabled: false, reason: 'The customer email address isn’t valid. Edit the invoice to fix it.' });
+      expect(emailAvailability('invoice', { ...draft, client_email: bad }, ON)).toMatchObject({ enabled: false, reason: 'The customer email address isn’t valid. Edit the invoice to fix it.' });
     }
   });
   it('drafts: Email to customer; already sent (or overdue): Email again with the extra line', () => {
-    expect(emailAvailability('invoice', draft, true)).toEqual({ label: 'Email to customer', enabled: true, again: false });
-    expect(emailAvailability('invoice', { ...draft, status: null }, true)).toEqual({ label: 'Email to customer', enabled: true, again: false });
-    expect(emailAvailability('invoice', { ...draft, status: 'sent' }, true)).toEqual({ label: 'Email again', enabled: true, again: true });
-    expect(emailAvailability('quote', { ...draft, status: 'sent' }, true)).toEqual({ label: 'Email again', enabled: true, again: true });
+    expect(emailAvailability('invoice', draft, ON)).toEqual({ label: 'Email to customer', enabled: true, again: false });
+    expect(emailAvailability('invoice', { ...draft, status: null }, ON)).toEqual({ label: 'Email to customer', enabled: true, again: false });
+    expect(emailAvailability('invoice', { ...draft, status: 'sent' }, ON)).toEqual({ label: 'Email again', enabled: true, again: true });
+    expect(emailAvailability('quote', { ...draft, status: 'sent' }, ON)).toEqual({ label: 'Email again', enabled: true, again: true });
   });
 });
 
@@ -47,13 +57,18 @@ describe('default wording (same as the server)', () => {
 
 describe('documentEmailApi', () => {
   const client = (invoke: (name: string, opts?: { method?: string; body?: unknown }) => Promise<{ data: unknown; error: unknown }>) => ({ functions: { invoke: vi.fn(invoke) } });
-  it('configured(): a GET to send-document-email; anything but {configured:true} means not available', async () => {
-    const c = client(async () => ({ data: { configured: true }, error: null }));
-    expect(await documentEmailApi(c).configured()).toBe(true);
+  it('access(): a GET to send-document-email; the sender comes from the server; anything odd means not available', async () => {
+    const c = client(async () => ({ data: { configured: true, sender: 'notifications@b2bnest.online' }, error: null }));
+    expect(await documentEmailApi(c).access()).toEqual({ configured: true, sender: 'notifications@b2bnest.online' });
     expect(c.functions.invoke).toHaveBeenCalledWith('send-document-email', { method: 'GET' });
-    expect(await documentEmailApi(client(async () => ({ data: { configured: false }, error: null }))).configured()).toBe(false);
-    expect(await documentEmailApi(client(async () => ({ data: null, error: { message: 'Function not found' } }))).configured()).toBe(false); // not deployed
-    expect(await documentEmailApi(client(async () => { throw new Error('offline'); })).configured()).toBe(false);
+    const get = (data: unknown, error: unknown = null) => documentEmailApi(client(async () => ({ data, error }))).access();
+    expect(await get({ configured: true })).toEqual({ configured: true }); // no sender reported: none invented
+    expect(await get({ configured: true, sender: 'Display <x@y.example>' })).toEqual({ configured: true }); // only a plain address is used
+    expect(await get({ configured: false, reason: 'not_allowed' })).toEqual({ configured: false, reason: 'not_allowed' });
+    expect(await get({ configured: false, reason: 'email_not_verified' })).toEqual({ configured: false, reason: 'email_not_verified' });
+    expect(await get({ configured: false, reason: 'something-else' })).toEqual({ configured: false, reason: 'not_configured' });
+    expect(await get(null, { message: 'Function not found' })).toEqual({ configured: false, reason: 'not_configured' }); // not deployed
+    expect(await documentEmailApi(client(async () => { throw new Error('offline'); })).access()).toEqual({ configured: false, reason: 'not_configured' });
   });
   it('send(): only kind, id, subject, message and the PDF are sent, never an address', async () => {
     const c = client(async () => ({ data: { success: true, status: 'accepted_by_provider', recipient: 'accounts@client.example' }, error: null }));

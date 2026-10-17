@@ -1,9 +1,14 @@
 import { assert, assertEquals } from "https://deno.land/std@0.190.0/testing/asserts.ts";
-import { defaultMessage, defaultSubject, type Deps, type DocRow, LIMITS, type LogRow, makeHandler, UNCERTAIN } from "./handler.ts";
+import { defaultMessage, defaultSubject, type Deps, type DocRow, LIMITS, type LogRow, makeHandler, UNCERTAIN, userDailyLimit } from "./handler.ts";
 import { SmtpStageError } from "../workflow-send-email/smtp.ts";
 
 // Every dependency is a fake: no mail server, no database, no network.
-const ENV: Record<string, string> = { SMTP_USER: "info@b2bnest.online", SMTP_PASSWORD: "pw-not-real", SMTP_FROM: "B2BNEST <info@b2bnest.online>", DOCUMENT_EMAIL_ENABLED: "true" };
+// The sending mailbox is whatever SMTP_FROM / SMTP_USER say (the owner's: notifications@b2bnest.online).
+const ENV: Record<string, string> = {
+  SMTP_USER: "notifications@b2bnest.online", SMTP_PASSWORD: "pw-not-real", SMTP_FROM: "B2BNEST Notifications <notifications@b2bnest.online>",
+  SMTP_HOST: "smtp.office365.com", DOCUMENT_EMAIL_ENABLED: "true", DOCUMENT_EMAIL_ALLOWED_USERS: "u1",
+};
+const VERIFIED = "2026-10-01T09:00:00Z";
 const ID = "0f0e0d0c-0b0a-4908-8706-050403020100";
 const PDF = btoa("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF");
 const doc = (o: Partial<DocRow> = {}): DocRow => ({
@@ -20,7 +25,7 @@ const deps = (over: Partial<Omit<Deps, "env">> & { row?: DocRow | null; vars?: R
   const d: Fake = {
     sent: [], logs: [], loads: 0,
     env: (n) => (over.vars ?? ENV)[n],
-    getUser: async (t) => (t === "good" ? { id: "u1", email: "owner@acme.example" } : null),
+    getUser: async (t) => (t === "good" ? { id: "u1", email: "owner@acme.example", email_confirmed_at: VERIFIED } : null),
     loadDocument: async () => { d.loads++; return over.row === undefined ? doc() : over.row; },
     recentCounts: async () => ({ user: 0, document: 0 }),
     log: async (r) => { d.logs.push(r); },
@@ -42,12 +47,12 @@ Deno.test("no auth or bad token → 401, nothing loaded, sent or logged", async 
   assertEquals([d.loads, d.sent.length, d.logs.length], [0, 0, 0]);
 });
 
-Deno.test("GET says whether sending is configured, without connecting to the mail server", async () => {
-  const on = deps(); assertEquals((await call(on, req(null, "Bearer good", "GET"))).body, { configured: true });
-  const off = deps({ vars: { ...ENV, DOCUMENT_EMAIL_ENABLED: "" } }); assertEquals((await call(off, req(null, "Bearer good", "GET"))).body, { configured: false });
-  const none = deps({ vars: {} }); assertEquals((await call(none, req(null, "Bearer good", "GET"))).body, { configured: false });
-  const gmail = deps({ vars: { GMAIL_USER: "x@gmail.com", GMAIL_APP_PASSWORD: "p", DOCUMENT_EMAIL_ENABLED: "true" } });
-  assertEquals((await call(gmail, req(null, "Bearer good", "GET"))).body, { configured: false });
+Deno.test("GET says whether this user may send, without connecting to the mail server", async () => {
+  const on = deps(); assertEquals((await call(on, req(null, "Bearer good", "GET"))).body, { configured: true, sender: "notifications@b2bnest.online" });
+  const off = deps({ vars: { ...ENV, DOCUMENT_EMAIL_ENABLED: "" } }); assertEquals((await call(off, req(null, "Bearer good", "GET"))).body, { configured: false, reason: "not_configured" });
+  const none = deps({ vars: {} }); assertEquals((await call(none, req(null, "Bearer good", "GET"))).body, { configured: false, reason: "not_configured" });
+  const gmail = deps({ vars: { GMAIL_USER: "x@gmail.com", GMAIL_APP_PASSWORD: "p", DOCUMENT_EMAIL_ENABLED: "true", DOCUMENT_EMAIL_ALLOWED_USERS: "*" } });
+  assertEquals((await call(gmail, req(null, "Bearer good", "GET"))).body, { configured: false, reason: "not_configured" });
   assertEquals((await call(on, req(null, "", "GET"))).status, 401);
   assertEquals([on.sent.length, on.loads], [0, 0]);
 });
@@ -110,19 +115,19 @@ Deno.test("header injection in business name, subject and client name cannot add
   const h = headers(d.sent[0].raw);
   assertEquals(h.filter((l) => /^(Bcc|Cc|X-Evil):/i.test(l)).length, 0);
   const from = h.find((l) => l.startsWith("From: "))!;
-  assertEquals(from, `From: "B2BNEST on behalf of Acme Bcc: evil@evil.example x" <info@b2bnest.online>`);
+  assertEquals(from, `From: "B2BNEST on behalf of Acme Bcc: evil@evil.example x" <notifications@b2bnest.online>`);
   assertEquals((from.match(/</g) || []).length, 1);
   assert(h.includes("Subject: Hello Bcc: evil@evil.example Cc: evil2@evil.example"));
   assertEquals(h.filter((l) => l.startsWith("To: ")), ["To: accounts@client.example"]);
 });
 
-Deno.test("Reply-To is the signed-in owner's email; From is the platform address", async () => {
+Deno.test("Reply-To is the signed-in owner's email; From is the SMTP_FROM address with the business as display name", async () => {
   const d = deps(); await call(d, req(ok()));
   const h = headers(d.sent[0].raw);
   assert(h.includes("Reply-To: owner@acme.example"));
-  assert(h.includes(`From: "B2BNEST on behalf of Acme Trading Ltd" <info@b2bnest.online>`));
-  assertEquals(d.sent[0].from, "info@b2bnest.online");
-  const noMail = deps({ getUser: async () => ({ id: "u1", email: "bad\r\naddress" }) }); await call(noMail, req(ok()));
+  assert(h.includes(`From: "B2BNEST on behalf of Acme Trading Ltd" <notifications@b2bnest.online>`));
+  assertEquals(d.sent[0].from, "notifications@b2bnest.online");
+  const noMail = deps({ getUser: async () => ({ id: "u1", email: "bad\r\naddress", email_confirmed_at: VERIFIED }) }); await call(noMail, req(ok()));
   assertEquals(headers(noMail.sent[0].raw).some((l) => l.startsWith("Reply-To:")), false);
 });
 
@@ -162,13 +167,14 @@ Deno.test("default subject and message are plain and say who sent it", () => {
   assertEquals(defaultSubject(doc({ kind: "quote", number: "Q-501", company_name: null })), "Quote Q-501");
 });
 
-Deno.test("limits: 20 per user and 3 per document in 24 hours; a failed check sends nothing", async () => {
-  let d = deps({ recentCounts: async () => ({ user: 20, document: 0 }) }); let r = await call(d, req(ok()));
+Deno.test("limits: 10 per user by default and 3 per document in 24 hours; a failed check sends nothing", async () => {
+  let d = deps({ recentCounts: async () => ({ user: 10, document: 0 }) }); let r = await call(d, req(ok()));
   assertEquals([r.status, r.body.code, d.sent.length], [429, "user_limit", 0]);
+  assert(r.body.error.startsWith("You can email up to 10 documents in 24 hours."));
   d = deps({ recentCounts: async () => ({ user: 5, document: 3 }) }); r = await call(d, req(ok()));
   assertEquals([r.status, r.body.code, d.sent.length], [429, "document_limit", 0]);
   let since = "";
-  d = deps({ recentCounts: async (_u, _d, s) => { since = s; return { user: 19, document: 2 }; }, now: () => new Date("2026-10-17T12:00:00Z") });
+  d = deps({ recentCounts: async (_u, _d, s) => { since = s; return { user: 9, document: 2 }; }, now: () => new Date("2026-10-17T12:00:00Z") });
   r = await call(d, req(ok())); assertEquals([r.status, d.sent.length, since], [200, 1, "2026-10-16T12:00:00.000Z"]);
   d = deps({ recentCounts: async () => { throw new Error("relation does not exist"); } }); r = await call(d, req(ok()));
   assertEquals([r.status, r.body.code, d.sent.length], [503, "limit_check_failed", 0]);
@@ -215,4 +221,85 @@ Deno.test("connection lost after DATA, or a timeout → uncertain: logged, user 
   assertEquals([r.status, r.body.code, r.body.stage], [504, "uncertain", "timeout"]);
   assertEquals(d.logs.map((l) => l.status), ["uncertain"]);
   await new Promise((res) => setTimeout(res, 150));
+});
+
+// ---------- Phase 4b-2: allowlist (fail closed), verified accounts, daily limit setting ----------
+const user = (id: string, confirmed: string | null = VERIFIED) => async (t: string) => (t === "good" ? { id, email: "owner@acme.example", email_confirmed_at: confirmed } : null);
+const get = async (d: Deps) => (await call(d, req(null, "Bearer good", "GET"))).body;
+
+Deno.test("allowlist unset or empty: nobody may send (GET not configured, POST 403 not_allowed, nothing loaded)", async () => {
+  for (const list of [undefined, "", " , ,  "]) {
+    const vars: Record<string, string> = { ...ENV }; if (list === undefined) delete vars.DOCUMENT_EMAIL_ALLOWED_USERS; else vars.DOCUMENT_EMAIL_ALLOWED_USERS = list;
+    const d = deps({ vars });
+    assertEquals(await get(d), { configured: false, reason: "not_allowed" });
+    const r = await call(d, req(ok()));
+    assertEquals([r.status, r.body.code, r.body.sent], [403, "not_allowed", "not_sent"]);
+    assertEquals(r.body.error, "Email sending isn't switched on for your account yet. Nothing was sent. Download the PDF and send it yourself.");
+    assertEquals([d.loads, d.sent.length, d.logs.length], [0, 0, 0]);
+  }
+});
+
+Deno.test("allowlist `*` lets every verified user send", async () => {
+  const d = deps({ vars: { ...ENV, DOCUMENT_EMAIL_ALLOWED_USERS: "*" }, getUser: user("someone-else-entirely") , row: doc({ user_id: "someone-else-entirely" }) });
+  assertEquals((await get(d)).configured, true);
+  assertEquals((await call(d, req(ok()))).status, 200);
+  const unverified = deps({ vars: { ...ENV, DOCUMENT_EMAIL_ALLOWED_USERS: "*" }, getUser: user("u9", null) });
+  assertEquals(await get(unverified), { configured: false, reason: "email_not_verified" });
+});
+
+Deno.test("listed ids may send (spaces trimmed, blanks ignored, case-insensitive); unlisted ids are blocked on GET and POST", async () => {
+  const vars = { ...ENV, DOCUMENT_EMAIL_ALLOWED_USERS: " , AAAA-1111 ,, u1 , " };
+  const listed = deps({ vars, getUser: user("aaaa-1111"), row: doc({ user_id: "aaaa-1111" }) });
+  assertEquals((await get(listed)).configured, true);
+  assertEquals((await call(listed, req(ok()))).status, 200);
+  const other = deps({ vars, getUser: user("bbbb-2222"), row: doc({ user_id: "bbbb-2222" }) });
+  assertEquals(await get(other), { configured: false, reason: "not_allowed" });
+  const r = await call(other, req(ok()));
+  assertEquals([r.status, r.body.code, other.sent.length, other.loads], [403, "not_allowed", 0, 0]);
+});
+
+Deno.test("unverified email address: 403 email_not_verified on POST, not available on GET, nothing sent", async () => {
+  for (const confirmed of [null, undefined, ""]) {
+    const d = deps({ getUser: async (t) => (t === "good" ? { id: "u1", email: "owner@acme.example", email_confirmed_at: confirmed as string | null } : null) });
+    assertEquals(await get(d), { configured: false, reason: "email_not_verified" });
+    const r = await call(d, req(ok()));
+    assertEquals([r.status, r.body.code, d.sent.length, d.loads], [403, "email_not_verified", 0, 0]);
+    assert(r.body.error.startsWith("Verify your email address to use this."));
+  }
+});
+
+Deno.test("DOCUMENT_EMAIL_USER_DAILY_LIMIT: default 10, override, invalid falls back, capped at 50", () => {
+  const lim = (v?: string) => userDailyLimit((n) => (n === "DOCUMENT_EMAIL_USER_DAILY_LIMIT" ? v : undefined));
+  assertEquals([lim(), lim(""), lim("  ")], [10, 10, 10]);
+  assertEquals([lim("1"), lim("25"), lim(" 7 ")], [1, 25, 7]);
+  assertEquals([lim("0"), lim("-5"), lim("2.5"), lim("ten"), lim("1e3"), lim("12abc")], [10, 10, 10, 10, 10, 10]);
+  assertEquals([lim("50"), lim("51"), lim("9999999999999999999")], [50, 50, 10]);
+});
+
+Deno.test("the per-user limit setting is used in the check and in the message", async () => {
+  const vars = { ...ENV, DOCUMENT_EMAIL_USER_DAILY_LIMIT: "3" };
+  let d = deps({ vars, recentCounts: async () => ({ user: 3, document: 0 }) }); let r = await call(d, req(ok()));
+  assertEquals([r.status, r.body.code, d.sent.length], [429, "user_limit", 0]);
+  assert(r.body.error.startsWith("You can email up to 3 documents in 24 hours."));
+  d = deps({ vars, recentCounts: async () => ({ user: 2, document: 0 }) }); r = await call(d, req(ok()));
+  assertEquals(r.status, 200);
+  d = deps({ vars: { ...ENV, DOCUMENT_EMAIL_USER_DAILY_LIMIT: "500" }, recentCounts: async () => ({ user: 50, document: 0 }) }); r = await call(d, req(ok()));
+  assert(r.body.error.startsWith("You can email up to 50 documents in 24 hours."));
+});
+
+Deno.test("GET reveals only the sender address: no display name, host, port, user name or secret", async () => {
+  const vars = { ...ENV, SMTP_USER: "smtp-login-name@b2bnest.online", SMTP_PASSWORD: "S3cr3t-pass-123", SMTP_FROM: "Platform Display Name <notifications@b2bnest.online>", SMTP_PORT: "587" };
+  const body = await get(deps({ vars }));
+  assertEquals(body, { configured: true, sender: "notifications@b2bnest.online" });
+  const text = JSON.stringify(body);
+  for (const leak of ["Platform Display Name", "smtp.office365.com", "587", "smtp-login-name", "S3cr3t", "pw-not-real"]) assertEquals(text.includes(leak), false, leak);
+  // SMTP_FROM unset: the address falls back to SMTP_USER.
+  const fallback = { ...ENV, SMTP_FROM: "" }; delete (fallback as Record<string, string>).SMTP_FROM;
+  assertEquals(await get(deps({ vars: fallback })), { configured: true, sender: "notifications@b2bnest.online" });
+  // A From without a usable address counts as not configured: nothing echoed, nothing sent.
+  const broken = deps({ vars: { ...ENV, SMTP_FROM: "Just a name" } });
+  assertEquals(await get(broken), { configured: false, reason: "not_configured" });
+  assertEquals([(await call(broken, req(ok()))).status, broken.sent.length], [503, 0]);
+  // Not allowed: no sender at all.
+  assertEquals(await get(deps({ vars: { ...ENV, DOCUMENT_EMAIL_ALLOWED_USERS: "" } })), { configured: false, reason: "not_allowed" });
 });
