@@ -1,18 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useUserSettings } from '@/hooks/useUserSettings';
+import { useAccountCurrency } from '@/hooks/useAccountCurrency';
+import { useActiveOrganization } from '@/contexts/OrganizationContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Download, Eye, Send, FileText, DollarSign, TrendingUp, Users, Package, Truck, Receipt, CreditCard, BarChart3, Home, Building, Calendar, ShoppingCart, Banknote, Edit, Trash2, Repeat, Shield, Palette } from 'lucide-react';
+import { Plus, Download, Send, DollarSign, Calendar, Repeat } from 'lucide-react';
 import { toast } from 'sonner';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,28 +17,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import QuoteInvoiceCreationSection from '@/components/QuoteInvoiceCreationSection';
 import PayrollUK from '@/components/payroll/PayrollUK';
-import DocumentList from '@/components/DocumentList';
 import { formatCurrency } from '@/utils/currencyUtils';
+import { formatMoney } from '@/lib/money';
+import { DocumentsTable } from '@/components/finance/DocumentsTable';
+import { FinanceOverview } from '@/components/finance/FinanceOverview';
+import { FinanceAnalytics } from '@/components/finance/FinanceAnalytics';
+import { FinanceReports } from '@/components/finance/FinanceReports';
+import { InvoiceStatusChip, QuoteStatusChip } from '@/components/finance/DocStatusChip';
 import DocumentTemplatePicker from '@/components/documents/DocumentTemplatePicker';
 import { useDocumentTemplates } from '@/hooks/useDocumentTemplates';
 import { renderDocumentPdf } from '@/lib/documentTemplates';
 import { Tables } from '@/integrations/supabase/types';
-import { 
-  LineChart, 
-  Line, 
-  BarChart, 
-  Bar, 
-  PieChart, 
-  Pie, 
-  Cell, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
-} from 'recharts';
-
 // Type definitions
 type Quote = Tables<'quotes'>;
 type Invoice = Tables<'invoices'>;
@@ -75,328 +61,12 @@ interface FinanceItem {
   amount: number;
 }
 
-// BusinessAnalytics Component with Working Charts
-interface BusinessAnalyticsProps {
-  quotes: Quote[];
-  invoices: Invoice[];
-  userCurrency: string;
-}
-
-const BusinessAnalytics: React.FC<BusinessAnalyticsProps> = ({ quotes, invoices, userCurrency }) => {
-  // Combine all documents for analysis
-  const allDocuments = [...quotes, ...invoices];
-
-  // Calculate key metrics
-  const totalRevenue = allDocuments
-    .filter(doc => doc.status === 'paid')
-    .reduce((sum, doc) => sum + (Number(doc.total_amount) || 0), 0);
-
-  const pendingRevenue = allDocuments
-    .filter(doc => doc.status === 'sent')
-    .reduce((sum, doc) => sum + (Number(doc.total_amount) || 0), 0);
-
-  const draftCount = allDocuments.filter(doc => doc.status === 'draft').length;
-  const totalClients = new Set(allDocuments.map(doc => doc.client_name)).size;
-
-  // Prepare monthly revenue data
-  const getMonthlyData = () => {
-    const monthlyStats: any = {};
-    const last6Months = [];
-    
-    // Generate last 6 months
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date();
-      date.setMonth(date.getMonth() - i);
-      const monthKey = date.toISOString().slice(0, 7); // YYYY-MM format
-      const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-      
-      last6Months.push(monthKey);
-      monthlyStats[monthKey] = {
-        month: monthName,
-        revenue: 0,
-        quotes: 0,
-        invoices: 0,
-        deals: 0
-      };
-    }
-
-    // Populate with actual data
-    allDocuments.forEach(doc => {
-      const docMonth = doc.created_at?.slice(0, 7);
-      if (docMonth && monthlyStats[docMonth]) {
-        if (doc.status === 'paid') {
-          monthlyStats[docMonth].revenue += Number(doc.total_amount) || 0;
-          monthlyStats[docMonth].deals += 1;
-        }
-        if ('quote_number' in doc) {
-          monthlyStats[docMonth].quotes += 1;
-        } else {
-          monthlyStats[docMonth].invoices += 1;
-        }
-      }
-    });
-
-    return last6Months.map(month => monthlyStats[month]);
-  };
-
-  // Prepare status distribution data
-  const getStatusData = () => {
-    const statusCounts = allDocuments.reduce((acc: any, doc) => {
-      acc[doc.status] = (acc[doc.status] || 0) + 1;
-      return acc;
-    }, {});
-
-    const colors: any = {
-      draft: '#8884d8',
-      sent: '#82ca9d',
-      paid: '#00C49F',
-      overdue: '#FF8042'
-    };
-
-    return Object.entries(statusCounts).map(([status, count]) => ({
-      name: status.charAt(0).toUpperCase() + status.slice(1),
-      value: count,
-      fill: colors[status] || '#8884d8'
-    }));
-  };
-
-  // Prepare conversion trends data
-  const getConversionData = () => {
-    const last6Months = [];
-    
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date();
-      date.setMonth(date.getMonth() - i);
-      const monthKey = date.toISOString().slice(0, 7);
-      const monthName = date.toLocaleDateString('en-US', { month: 'short' });
-      
-      const monthDocs = allDocuments.filter(doc => 
-        doc.created_at?.slice(0, 7) === monthKey
-      );
-      
-      const sent = monthDocs.filter(doc => doc.status === 'sent' || doc.status === 'paid').length;
-      const paid = monthDocs.filter(doc => doc.status === 'paid').length;
-      const conversionRate = sent > 0 ? (paid / sent) * 100 : 0;
-      
-      last6Months.push({
-        month: monthName,
-        sent,
-        paid,
-        conversionRate: Math.round(conversionRate)
-      });
-    }
-    
-    return last6Months;
-  };
-
-  const monthlyData = getMonthlyData();
-  const statusData = getStatusData();
-  const conversionData = getConversionData();
-
-  return (
-    <div className="space-y-6">
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold text-green-600">
-                  {formatCurrency(totalRevenue, userCurrency)}
-                </p>
-                <p className="text-sm text-muted-foreground">Total Revenue</p>
-              </div>
-              <DollarSign className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold text-orange-600">
-                  {formatCurrency(pendingRevenue, userCurrency)}
-                </p>
-                <p className="text-sm text-muted-foreground">Pending Revenue</p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-orange-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold text-blue-600">{totalClients}</p>
-                <p className="text-sm text-muted-foreground">Total Clients</p>
-              </div>
-              <Users className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold text-purple-600">{draftCount}</p>
-                <p className="text-sm text-muted-foreground">Draft Documents</p>
-              </div>
-              <Calendar className="h-8 w-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Monthly Revenue Bar Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Monthly Performance</CardTitle>
-            <CardDescription>Revenue and deals closed over the last 6 months</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip 
-                  formatter={(value, name) => [
-                    name === 'revenue' ? formatCurrency(Number(value), userCurrency) : value,
-                    name === 'revenue' ? 'Revenue' : 'Deals Closed'
-                  ]}
-                />
-                <Legend />
-                <Bar dataKey="revenue" fill="#8884d8" name="Revenue" />
-                <Bar dataKey="deals" fill="#82ca9d" name="Deals Closed" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Document Status Pie Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Document Status Distribution</CardTitle>
-            <CardDescription>Breakdown of all quotes and invoices by status</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={statusData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {statusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 gap-6">
-        {/* Conversion Trends Line Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Conversion Trends</CardTitle>
-            <CardDescription>Track your quote-to-payment conversion rates over time</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={350}>
-              <LineChart data={conversionData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis yAxisId="left" orientation="left" />
-                <YAxis yAxisId="right" orientation="right" />
-                <Tooltip 
-                  formatter={(value, name) => [
-                    name === 'conversionRate' ? `${value}%` : value,
-                    name === 'conversionRate' ? 'Conversion Rate' : 
-                    name === 'sent' ? 'Documents Sent' : 'Documents Paid'
-                  ]}
-                />
-                <Legend />
-                <Bar yAxisId="left" dataKey="sent" fill="#8884d8" name="Sent" />
-                <Bar yAxisId="left" dataKey="paid" fill="#82ca9d" name="Paid" />
-                <Line 
-                  yAxisId="right" 
-                  type="monotone" 
-                  dataKey="conversionRate" 
-                  stroke="#ff7300" 
-                  strokeWidth={3}
-                  name="Conversion Rate (%)"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Summary Insights */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Business Insights</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="p-4 bg-muted rounded-lg">
-              <h4 className="font-semibold text-green-600">Revenue Growth</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                {monthlyData.length >= 2 && monthlyData[monthlyData.length - 1].revenue > monthlyData[monthlyData.length - 2].revenue
-                  ? "📈 Revenue is trending upward this month"
-                  : monthlyData.length >= 2 && monthlyData[monthlyData.length - 1].revenue < monthlyData[monthlyData.length - 2].revenue
-                  ? "📉 Revenue declined from last month"
-                  : "📊 Revenue remains steady"}
-              </p>
-            </div>
-            
-            <div className="p-4 bg-muted rounded-lg">
-              <h4 className="font-semibold text-blue-600">Document Health</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                {draftCount > 5 
-                  ? "⚠️ You have many drafts - consider sending them"
-                  : draftCount > 0
-                  ? "✏️ You have some drafts ready to send"
-                  : "✅ All documents have been sent"}
-              </p>
-            </div>
-            
-            <div className="p-4 bg-muted rounded-lg">
-              <h4 className="font-semibold text-purple-600">Client Base</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                {totalClients === 0
-                  ? "🚀 Start by adding your first client"
-                  : totalClients < 5
-                  ? "🌱 Growing client base - keep it up!"
-                  : "🎯 Strong client portfolio established"}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
 const BusinessFinanceAssistant = () => {
   const { user } = useAuth();
-  const { settings } = useUserSettings();
+  // Account currency: '' when not set, and then amounts print as plain numbers (never "$").
+  const accountCurrency = useAccountCurrency();
+  const { organization } = useActiveOrganization();
+  const navigate = useNavigate();
   const { templateFor } = useDocumentTemplates();
   const [isLoading, setIsLoading] = useState(false);
   type FinanceTab = 'dashboard' | 'create' | 'quotes' | 'invoices' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'banking' | 'payroll' | 'reports' | 'analytics' | 'templates';
@@ -407,11 +77,18 @@ const BusinessFinanceAssistant = () => {
     return t && FINANCE_TABS.includes(t) ? t : 'dashboard';
   };
   const [activeTab, setActiveTab] = useState<FinanceTab>(tabFromUrl);
+  // ?type=invoice|quote preselects the Create tab's document type ("New invoice" / "New quote").
+  const typeFromUrl = (): 'invoice' | 'quote' | null => {
+    const t = new URLSearchParams(location.search).get('type');
+    return t === 'invoice' || t === 'quote' ? t : null;
+  };
   useEffect(() => {
     setActiveTab(tabFromUrl());
+    const t = typeFromUrl();
+    if (t) { setDocumentType(t); setEditingDocument(null); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search, location.key]);
-  const [documentType, setDocumentType] = useState<'invoice' | 'quote'>('quote');
+  const [documentType, setDocumentType] = useState<'invoice' | 'quote'>(() => typeFromUrl() ?? 'quote');
   const [editingDocument, setEditingDocument] = useState<Quote | Invoice | null>(null);
   const [showDocumentList, setShowDocumentList] = useState(false);
   const [sendingDocument, setSendingDocument] = useState<string | null>(null);
@@ -425,7 +102,7 @@ const BusinessFinanceAssistant = () => {
   const [bankTransactions, setBankTransactions] = useState<BankTransaction[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<Quote | Invoice | null>(null);
   const [isDocumentViewOpen, setIsDocumentViewOpen] = useState(false);
-  const [userCurrency, setUserCurrency] = useState('USD');
+  const [docsError, setDocsError] = useState(false);
   
   // Add form states
   const [showAddProduct, setShowAddProduct] = useState(false);
@@ -517,36 +194,13 @@ const BusinessFinanceAssistant = () => {
   useEffect(() => {
     if (user) {
       fetchData();
-      fetchUserCurrency();
     }
   }, [user]);
-
-  const fetchUserCurrency = async () => {
-    if (!user) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('currency_code')
-        .eq('id', user.id)
-        .maybeSingle();
-        
-      if (error) {
-        console.error('Error fetching user currency:', error);
-        return;
-      }
-      
-      if (data?.currency_code) {
-        setUserCurrency(data.currency_code);
-      }
-    } catch (error) {
-      console.error('Error fetching user currency:', error);
-    }
-  };
 
   const fetchData = async () => {
     try {
       setIsLoading(true);
+      setDocsError(false);
       await Promise.all([
         loadQuotes(),
         loadInvoices(),
@@ -575,6 +229,7 @@ const BusinessFinanceAssistant = () => {
     
     if (error) {
       console.error('Error loading quotes:', error);
+      setDocsError(true);
     } else {
       setQuotes(data || []);
     }
@@ -590,6 +245,7 @@ const BusinessFinanceAssistant = () => {
     
     if (error) {
       console.error('Error loading invoices:', error);
+      setDocsError(true);
     } else {
       setInvoices(data || []);
     }
@@ -654,25 +310,6 @@ const BusinessFinanceAssistant = () => {
       setOutgoings(data || []);
     }
   };
-
-  // Calculate dashboard stats
-  const getStats = () => {
-    const activeQuotes = quotes.filter(q => q.status === 'draft' || q.status === 'sent');
-    const pendingInvoices = invoices.filter(i => i.status === 'pending');
-    const totalRevenue = invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + Number(i.total_amount), 0);
-    const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
-    
-    return {
-      activeQuotes: activeQuotes.length,
-      pendingInvoices: pendingInvoices.length,
-      totalRevenue,
-      totalExpenses,
-      totalProducts: products.length,
-      totalSuppliers: suppliers.length
-    };
-  };
-
-  const stats = getStats();
 
   // Download functions
   const downloadCatalog = () => {
@@ -765,12 +402,16 @@ const BusinessFinanceAssistant = () => {
         notes: doc.notes,
       },
       templateFor(docType),
-      settings?.currency_code || 'GBP',
+      // The document's own currency; the PDF code is unchanged and treats a missing one as before.
+      doc.currency || accountCurrency || undefined,
     );
   };
 
   // Handle document view
+  // The preview opens from rows, cards and lists (no DialogTrigger), so focus is handed back by hand on close.
+  const viewOpener = useRef<HTMLElement | null>(null);
   const handleViewDocument = (doc: Quote | Invoice) => {
+    viewOpener.current = document.activeElement as HTMLElement | null;
     setSelectedDocument(doc);
     setIsDocumentViewOpen(true);
   };
@@ -780,6 +421,21 @@ const BusinessFinanceAssistant = () => {
     setEditingDocument(doc);
     setDocumentType('quote_number' in doc ? 'quote' : 'invoice');
     setActiveTab('create');
+  };
+
+  // "New invoice" / "New quote": the existing Create tab with the type preselected (URL stays shareable).
+  const startNew = (type: 'invoice' | 'quote') => {
+    setEditingDocument(null);
+    setDocumentType(type);
+    setActiveTab('create');
+    const params = new URLSearchParams(location.search);
+    params.set('tab', 'create');
+    params.set('type', type);
+    navigate({ search: params.toString() });
+  };
+  const numberOf = (doc: { id: string }) => {
+    const d = doc as Quote | Invoice;
+    return ('quote_number' in d ? d.quote_number : d.invoice_number) || '—';
   };
 
   const handleSendDocument = async (doc: Quote | Invoice, type: 'quote' | 'invoice') => {
@@ -1002,230 +658,79 @@ const BusinessFinanceAssistant = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  const TAB_GROUPS: { label: string; tabs: { value: FinanceTab; label: string }[] }[] = [
+    { label: 'Overview', tabs: [{ value: 'dashboard', label: 'Overview' }, { value: 'create', label: 'Create' }] },
+    { label: 'Sales', tabs: [{ value: 'quotes', label: 'Quotes' }, { value: 'invoices', label: 'Invoices' }, { value: 'templates', label: 'Templates' }] },
+    { label: 'Money out', tabs: [{ value: 'expenses', label: 'Expenses' }, { value: 'outgoings', label: 'Outgoings' }, { value: 'suppliers', label: 'Suppliers' }, { value: 'products', label: 'Products' }] },
+    { label: 'Banking and payroll', tabs: [{ value: 'banking', label: 'Banking' }, { value: 'payroll', label: 'Payroll (UK)' }] },
+    { label: 'Insight', tabs: [{ value: 'reports', label: 'Reports' }, { value: 'analytics', label: 'Analytics' }] },
+  ];
+  const tabClass = 'min-h-touch shrink-0 rounded-none border-b-[3px] border-transparent px-3 pb-2 pt-2 text-body font-semibold text-brand-navy-muted shadow-none hover:text-white focus-visible:ring-[3px] focus-visible:ring-offset-0 data-[state=active]:border-nav-marker data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none';
+  const docState = { loading: isLoading, error: docsError, onRetry: fetchData };
 
+  // Tabs wraps the band, so the tab list on the band controls the panels below it.
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Business Finance Assistant</h1>
-          <p className="text-muted-foreground">Manage your quotes, invoices, and financial data</p>
+    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as FinanceTab)} className="min-w-0">
+      <div className="bg-brand-navy text-brand-navy-foreground">
+        <div className="mx-auto w-full max-w-[1440px] px-4 pt-5 sm:px-6 lg:px-8">
+          <nav aria-label="Breadcrumb">
+            <ol className="flex flex-wrap items-center gap-1.5 text-small text-brand-navy-muted">
+              <li><Link to="/dashboard" className="inline-flex min-h-touch items-center rounded-sm underline-offset-2 md:min-h-0 hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring">{organization?.name || 'Company'}</Link></li>
+              <li aria-hidden="true">/</li>
+              <li><Link to="/business-tools" className="inline-flex min-h-touch items-center rounded-sm underline-offset-2 md:min-h-0 hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring">Business tools</Link></li>
+              <li aria-hidden="true">/</li>
+              <li aria-current="page" className="font-semibold text-white">Invoices &amp; quotes</li>
+            </ol>
+          </nav>
+          <div className="mt-2 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-page-title text-white">Invoices &amp; quotes</h1>
+              <p className="mt-1 text-body text-brand-navy-muted">Create quotes and invoices, see what is owed, and track money in and out.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button className="min-h-touch focus-visible:ring-offset-brand-navy" onClick={() => startNew('invoice')}>
+                <Plus className="h-4 w-4" aria-hidden="true" />New invoice
+              </Button>
+              <Button variant="outline" className="min-h-touch border-white/50 bg-transparent text-white hover:bg-white/10 hover:text-white focus-visible:ring-offset-brand-navy" onClick={() => startNew('quote')}>
+                <Plus className="h-4 w-4" aria-hidden="true" />New quote
+              </Button>
+            </div>
+          </div>
+          <TabsList aria-label="Invoices and quotes sections" className="mt-4 flex h-auto w-full justify-start gap-0 overflow-x-auto rounded-none bg-transparent p-0 text-brand-navy-muted">
+            {TAB_GROUPS.map((g, gi) => (
+              <React.Fragment key={g.label}>
+                {gi > 0 && <span aria-hidden="true" className="mx-2 h-5 w-px shrink-0 self-center bg-white/25" />}
+                {g.tabs.map((t) => (
+                  <TabsTrigger key={t.value} value={t.value} className={tabClass}>{t.label}</TabsTrigger>
+                ))}
+              </React.Fragment>
+            ))}
+          </TabsList>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(value) => {
-        console.log('Tab changed to:', value);
-        setActiveTab(value as "expenses" | "suppliers" | "invoices" | "outgoings" | "quotes" | "dashboard" | "create" | "products" | "banking" | "payroll" | "reports" | "analytics" | "templates");
-      }} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-13">
-          <TabsTrigger value="dashboard" className="flex items-center gap-2">
-            <Home className="h-4 w-4" />
-            Dashboard
-          </TabsTrigger>
-          <TabsTrigger value="create" className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Create
-          </TabsTrigger>
-          <TabsTrigger value="quotes" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Quotes
-          </TabsTrigger>
-          <TabsTrigger value="invoices" className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            Invoices
-          </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center gap-2">
-            <Palette className="h-4 w-4" />
-            Templates
-          </TabsTrigger>
-          <TabsTrigger value="products" className="flex items-center gap-2">
-            <Package className="h-4 w-4" />
-            Products
-          </TabsTrigger>
-          <TabsTrigger value="suppliers" className="flex items-center gap-2">
-            <Truck className="h-4 w-4" />
-            Suppliers
-          </TabsTrigger>
-          <TabsTrigger value="expenses" className="flex items-center gap-2">
-            <Receipt className="h-4 w-4" />
-            Expenses
-          </TabsTrigger>
-          <TabsTrigger value="outgoings" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Outgoings
-          </TabsTrigger>
-          <TabsTrigger value="banking" className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
-            Banking
-          </TabsTrigger>
-          <TabsTrigger value="reports" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Reports
-          </TabsTrigger>
-          <TabsTrigger value="payroll" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Payroll (UK)
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <PieChart className="h-4 w-4" />
-            Analytics
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="dashboard" className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            <Card 
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => setActiveTab('quotes')}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Quotes</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.activeQuotes}</div>
-                <p className="text-xs text-muted-foreground">Pending responses</p>
-              </CardContent>
-            </Card>
-
-            <Card 
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => setActiveTab('invoices')}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending Invoices</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.pendingInvoices}</div>
-                <p className="text-xs text-muted-foreground">Awaiting payment</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue, settings?.currency_code || 'USD')}</div>
-                <p className="text-xs text-muted-foreground">From paid invoices</p>
-              </CardContent>
-            </Card>
-
-            <Card 
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => setActiveTab('expenses')}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-                <Receipt className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(stats.totalExpenses, settings?.currency_code || 'USD')}</div>
-                <p className="text-xs text-muted-foreground">This period</p>
-              </CardContent>
-            </Card>
-
-            <Card 
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => setActiveTab('outgoings')}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Monthly Outgoings</CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{outgoings.filter(o => o.is_active).length}</div>
-                <p className="text-xs text-muted-foreground">Active payments</p>
-              </CardContent>
-            </Card>
+      <div className="mx-auto w-full max-w-[1440px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+        {isLoading && activeTab !== 'dashboard' && activeTab !== 'quotes' && activeTab !== 'invoices' && activeTab !== 'analytics' && activeTab !== 'reports' ? (
+          <div className="flex min-h-[300px] items-center justify-center" role="status" aria-label="Loading">
+            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" aria-hidden="true" />
           </div>
+        ) : (<>
 
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>Your latest financial activities</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {quotes.slice(0, 3).map((quote) => (
-                    <div key={quote.id} className="flex items-center space-x-4">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Quote {quote.quote_number}</p>
-                        <p className="text-xs text-muted-foreground">Created {new Date(quote.created_at).toLocaleDateString()}</p>
-                      </div>
-                      <Badge variant="outline">{quote.status}</Badge>
-                    </div>
-                  ))}
-                  {invoices.slice(0, 2).map((invoice) => (
-                    <div key={invoice.id} className="flex items-center space-x-4">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Invoice {invoice.invoice_number}</p>
-                        <p className="text-xs text-muted-foreground">Created {new Date(invoice.created_at).toLocaleDateString()}</p>
-                      </div>
-                      <Badge variant="outline">{invoice.status}</Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Stats</CardTitle>
-                <CardDescription>Overview of your business data</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Products/Services</span>
-                  <span className="font-medium">{stats.totalProducts}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Suppliers</span>
-                  <span className="font-medium">{stats.totalSuppliers}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Profit Margin</span>
-                  <span className="font-medium">
-                    {stats.totalRevenue > 0 
-                      ? `${(((stats.totalRevenue - stats.totalExpenses) / stats.totalRevenue) * 100).toFixed(1)}%`
-                      : '0%'
-                    }
-                  </span>
-                </div>
-                <Separator />
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Revenue vs Expenses</span>
-                    <span>{stats.totalRevenue > stats.totalExpenses ? 'Profit' : 'Loss'}</span>
-                  </div>
-                  <Progress value={stats.totalRevenue > 0 ? (stats.totalExpenses / stats.totalRevenue) * 100 : 0} />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        <TabsContent value="dashboard" className="mt-0">
+          <FinanceOverview quotes={quotes} invoices={invoices} expenses={expenses} {...docState}
+            numberOf={numberOf} onOpen={handleViewDocument} onNew={startNew} onOpenTab={setActiveTab} />
         </TabsContent>
 
-        <TabsContent value="create">
+        <TabsContent value="create" className="mt-0">
           {!editingDocument && (
-            <div className="flex gap-4 mb-6">
-              <Button
+            <div role="group" aria-label="Document type" className="mb-6 flex flex-wrap gap-2">
+              <Button className="min-h-touch md:min-h-0" aria-pressed={documentType === 'quote'}
                 variant={documentType === 'quote' ? 'default' : 'outline'}
                 onClick={() => setDocumentType('quote')}
               >
                 Create Quote
               </Button>
-              <Button
+              <Button className="min-h-touch md:min-h-0" aria-pressed={documentType === 'invoice'}
                 variant={documentType === 'invoice' ? 'default' : 'outline'}
                 onClick={() => setDocumentType('invoice')}
               >
@@ -1243,91 +748,19 @@ const BusinessFinanceAssistant = () => {
           />
         </TabsContent>
 
-        <TabsContent value="quotes" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Quotes</CardTitle>
-              <CardDescription>Manage your quotes and proposals</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {quotes.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No quotes found. Create your first quote to get started.</p>
-                ) : (
-                  quotes.map((quote) => (
-                    <div key={quote.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <h3 className="font-medium">Quote {quote.quote_number}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {quote.client_name} • {formatCurrency(Number(quote.total_amount), settings?.currency_code || 'USD')} • {new Date(quote.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                       <div className="flex items-center gap-2">
-                         <Badge variant="outline">{quote.status}</Badge>
-                         <Button size="sm" variant="outline" onClick={() => handleEditDocument(quote)}>
-                           <Edit className="h-4 w-4" />
-                         </Button>
-                         <Button size="sm" variant="outline" onClick={() => handleViewDocument(quote)}>
-                           <Eye className="h-4 w-4" />
-                         </Button>
-                         <Button size="sm" variant="outline" onClick={() => handleDownloadDocument(quote)}>
-                           <Download className="h-4 w-4" />
-                         </Button>
-                         <Button size="sm" onClick={() => handleSendDocument(quote, 'quote')}>
-                           <Send className="h-4 w-4" />
-                         </Button>
-                       </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="quotes" className="mt-0">
+          <DocumentsTable kind="quote" docs={quotes} numberOf={numberOf} {...docState} onNew={() => startNew('quote')}
+            onView={handleViewDocument} onEdit={handleEditDocument} onDownload={handleDownloadDocument}
+            onSend={(d: Quote) => handleSendDocument(d, 'quote')} sendingId={sendingDocument} />
         </TabsContent>
 
-        <TabsContent value="invoices" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Invoices</CardTitle>
-              <CardDescription>Track and manage your invoices</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {invoices.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No invoices found. Create your first invoice to get started.</p>
-                ) : (
-                  invoices.map((invoice) => (
-                    <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <h3 className="font-medium">Invoice {invoice.invoice_number}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {invoice.client_name} • {formatCurrency(Number(invoice.total_amount), settings?.currency_code || 'USD')} • {new Date(invoice.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                       <div className="flex items-center gap-2">
-                         <Badge variant="outline">{invoice.status}</Badge>
-                         <Button size="sm" variant="outline" onClick={() => handleEditDocument(invoice)}>
-                           <Edit className="h-4 w-4" />
-                         </Button>
-                         <Button size="sm" variant="outline" onClick={() => handleViewDocument(invoice)}>
-                           <Eye className="h-4 w-4" />
-                         </Button>
-                         <Button size="sm" variant="outline" onClick={() => handleDownloadDocument(invoice)}>
-                           <Download className="h-4 w-4" />
-                         </Button>
-                         <Button size="sm" onClick={() => handleSendDocument(invoice, 'invoice')}>
-                           <Send className="h-4 w-4" />
-                         </Button>
-                       </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="invoices" className="mt-0">
+          <DocumentsTable kind="invoice" docs={invoices} numberOf={numberOf} {...docState} onNew={() => startNew('invoice')}
+            onView={handleViewDocument} onEdit={handleEditDocument} onDownload={handleDownloadDocument}
+            onSend={(d: Invoice) => handleSendDocument(d, 'invoice')} sendingId={sendingDocument} />
         </TabsContent>
 
-        <TabsContent value="products">
+        <TabsContent value="products" className="mt-0">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
@@ -1455,7 +888,7 @@ const BusinessFinanceAssistant = () => {
                       <div className="flex-1">
                         <h3 className="font-medium">{product.name}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {product.category} • {formatCurrency(Number(product.price), settings?.currency_code || 'USD')} • 
+                          {product.category} • {formatMoney(Number(product.price), accountCurrency, { cents: true })} • 
                           {product.stock_quantity !== null ? ` Stock: ${product.stock_quantity}` : ' Service'}
                         </p>
                         {product.description && (
@@ -1475,7 +908,7 @@ const BusinessFinanceAssistant = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="suppliers">
+        <TabsContent value="suppliers" className="mt-0">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
@@ -1621,12 +1054,12 @@ const BusinessFinanceAssistant = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="expenses">
+        <TabsContent value="expenses" className="mt-0">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Expenses</CardTitle>
-                <CardDescription>Track and categorize your business expenses • Total: {formatCurrency(expenses.reduce((total, expense) => total + Number(expense.amount), 0), settings?.currency_code || 'USD')}</CardDescription>
+                <CardDescription>Track and categorize your business expenses • Total: {formatMoney(expenses.reduce((total, expense) => total + Number(expense.amount), 0), accountCurrency, { cents: true })}</CardDescription>
               </div>
               <div className="flex gap-2">
                 <Button onClick={() => setShowAddExpense(true)}>
@@ -1738,7 +1171,7 @@ const BusinessFinanceAssistant = () => {
                       </div>
                       <div className="flex items-center space-x-3">
                         <span className="text-lg font-semibold text-red-600">
-                          -{formatCurrency(Number(expense.amount), settings?.currency_code || 'USD')}
+                          -{formatMoney(Number(expense.amount), accountCurrency, { cents: true })}
                         </span>
                         <Badge variant="outline">{expense.status}</Badge>
                       </div>
@@ -1750,12 +1183,12 @@ const BusinessFinanceAssistant = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="outgoings">
+        <TabsContent value="outgoings" className="mt-0">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Recurring Outgoings</CardTitle>
-                <CardDescription>Manage your scheduled payments and subscriptions • Total Monthly: {formatCurrency(outgoings.reduce((total, payment) => total + Number(payment.amount), 0), settings?.currency_code || 'USD')}</CardDescription>
+                <CardDescription>Manage your scheduled payments and subscriptions • Listed amounts, any frequency: {formatMoney(outgoings.reduce((total, payment) => total + Number(payment.amount), 0), accountCurrency, { cents: true })}</CardDescription>
               </div>
               <div className="flex gap-2">
                 <Button onClick={() => setShowAddOutgoing(true)}>
@@ -1885,7 +1318,7 @@ const BusinessFinanceAssistant = () => {
                       </div>
                       <div className="flex items-center space-x-3">
                         <span className="text-lg font-semibold text-purple-600">
-                          {formatCurrency(Number(payment.amount), settings?.currency_code || 'USD')}
+                          {formatMoney(Number(payment.amount), accountCurrency, { cents: true })}
                         </span>
                         <Badge variant={payment.is_active ? "default" : "secondary"}>
                           {payment.is_active ? 'Active' : 'Inactive'}
@@ -1899,7 +1332,7 @@ const BusinessFinanceAssistant = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="banking">
+        <TabsContent value="banking" className="mt-0">
           <div className="space-y-6">
             <Card>
               <CardHeader>
@@ -1967,75 +1400,28 @@ const BusinessFinanceAssistant = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="reports">
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Financial Summary</CardTitle>
-                <CardDescription>Overview of your financial performance</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between">
-                  <span>Total Revenue</span>
-                  <span className="font-medium text-green-600">{formatCurrency(stats.totalRevenue, settings?.currency_code || 'USD')}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Total Expenses</span>
-                  <span className="font-medium text-red-600">{formatCurrency(stats.totalExpenses, settings?.currency_code || 'USD')}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between">
-                  <span className="font-medium">Net Profit</span>
-                  <span className={`font-bold ${stats.totalRevenue - stats.totalExpenses >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {formatCurrency(stats.totalRevenue - stats.totalExpenses, settings?.currency_code || 'USD')}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Document Status</CardTitle>
-                <CardDescription>Status breakdown of your documents</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between">
-                  <span>Draft Quotes</span>
-                  <span className="font-medium">{quotes.filter(q => q.status === 'draft').length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Sent Quotes</span>
-                  <span className="font-medium">{quotes.filter(q => q.status === 'sent').length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Pending Invoices</span>
-                  <span className="font-medium">{invoices.filter(i => i.status === 'pending').length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Paid Invoices</span>
-                  <span className="font-medium text-green-600">{invoices.filter(i => i.status === 'paid').length}</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        <TabsContent value="reports" className="mt-0">
+          <FinanceReports quotes={quotes} invoices={invoices} expenses={expenses} {...docState} />
         </TabsContent>
 
-        <TabsContent value="templates">
-          <DocumentTemplatePicker currency={settings?.currency_code || 'GBP'} />
+        <TabsContent value="templates" className="mt-0">
+          <DocumentTemplatePicker currency={accountCurrency || undefined} />
         </TabsContent>
 
-        <TabsContent value="payroll">
+        <TabsContent value="payroll" className="mt-0">
           <PayrollUK />
         </TabsContent>
 
-        <TabsContent value="analytics">
-          <BusinessAnalytics quotes={quotes} invoices={invoices} userCurrency={settings?.currency_code || 'USD'} />
+        <TabsContent value="analytics" className="mt-0">
+          <FinanceAnalytics invoices={invoices} {...docState} onNewInvoice={() => startNew('invoice')} />
         </TabsContent>
-      </Tabs>
+        </>)}
+      </div>
 
       {/* Document Preview Modal */}
       <Dialog open={isDocumentViewOpen} onOpenChange={setIsDocumentViewOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto"
+          onCloseAutoFocus={(e) => { if (viewOpener.current?.isConnected) { e.preventDefault(); viewOpener.current.focus(); } }}>
           <DialogHeader>
             <DialogTitle>
               {selectedDocument && 'quote_number' in selectedDocument 
@@ -2083,7 +1469,7 @@ const BusinessFinanceAssistant = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Status</p>
-                  <Badge variant="outline">{selectedDocument.status}</Badge>
+                  {'quote_number' in selectedDocument ? <QuoteStatusChip doc={selectedDocument} /> : <InvoiceStatusChip doc={selectedDocument} />}
                 </div>
               </div>
 
@@ -2120,8 +1506,8 @@ const BusinessFinanceAssistant = () => {
                           <tr key={index} className="border-b">
                             <td className="p-2">{item.description || 'N/A'}</td>
                             <td className="text-right p-2">{item.quantity || 0}</td>
-                            <td className="text-right p-2">{formatCurrency(item.rate || 0, settings?.currency_code || 'USD')}</td>
-                            <td className="text-right p-2">{formatCurrency(item.amount || 0, settings?.currency_code || 'USD')}</td>
+                            <td className="text-right p-2">{formatMoney(Number(item.rate) || 0, selectedDocument.currency, { cents: true })}</td>
+                            <td className="text-right p-2">{formatMoney(Number(item.amount) || 0, selectedDocument.currency, { cents: true })}</td>
                           </tr>
                         ))
                       ) : (
@@ -2140,17 +1526,17 @@ const BusinessFinanceAssistant = () => {
                   <div className="w-64 space-y-2">
                     <div className="flex justify-between">
                       <span>Subtotal:</span>
-                      <span>{formatCurrency(Number(selectedDocument.subtotal) || 0, settings?.currency_code || 'USD')}</span>
+                      <span>{formatMoney(Number(selectedDocument.subtotal) || 0, selectedDocument.currency, { cents: true })}</span>
                     </div>
                     {selectedDocument.tax_rate && Number(selectedDocument.tax_rate) > 0 && (
                       <div className="flex justify-between">
                         <span>Tax ({selectedDocument.tax_rate}%):</span>
-                        <span>{formatCurrency(Number(selectedDocument.tax_amount) || 0, settings?.currency_code || 'USD')}</span>
+                        <span>{formatMoney(Number(selectedDocument.tax_amount) || 0, selectedDocument.currency, { cents: true })}</span>
                       </div>
                     )}
                     <div className="flex justify-between font-semibold text-lg border-t pt-2">
                       <span>Total:</span>
-                      <span>{formatCurrency(Number(selectedDocument.total_amount) || 0, settings?.currency_code || 'USD')}</span>
+                      <span>{formatMoney(Number(selectedDocument.total_amount) || 0, selectedDocument.currency, { cents: true })}</span>
                     </div>
                   </div>
                 </div>
@@ -2179,7 +1565,7 @@ const BusinessFinanceAssistant = () => {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </Tabs>
   );
 };
 

@@ -19,7 +19,7 @@ interface AnalyticsTabProps {
 }
 
 /** 6 or 12 months, as a segmented control. */
-function RangeControl({ value, onChange, label }: { value: number; onChange: (n: number) => void; label: string }) {
+export function RangeControl({ value, onChange, label }: { value: number; onChange: (n: number) => void; label: string }) {
   return (
     <div role="group" aria-label={label} className="flex gap-1 rounded-control border bg-muted p-1">
       {[6, 12].map((n) => (
@@ -30,7 +30,7 @@ function RangeControl({ value, onChange, label }: { value: number; onChange: (n:
 }
 
 /** Currency picker for Reports and Analytics. The tab owns the state (one useReportCurrency per tab) and passes it in. */
-export function ReportCurrencyControl({ deals, rc }: { deals: AnalyticsDeal[]; rc: ReturnType<typeof useReportCurrency> }) {
+export function ReportCurrencyControl({ deals, rc }: { deals: { currency?: string | null }[]; rc: ReturnType<typeof useReportCurrency> }) {
   const { currency, setCurrency, reset, isCustom, account } = rc;
   const stored = Array.from(new Set(deals.map((d) => normalizeCurrency(d.currency)).filter(Boolean)));
   return (

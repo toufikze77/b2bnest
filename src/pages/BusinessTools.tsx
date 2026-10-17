@@ -761,10 +761,14 @@ const BusinessTools = () => {
     }
   };
 
+  // Invoices & quotes draws its own navy band with a breadcrumb back to Business tools,
+  // so the sticky back bar and page padding are left off when it renders.
+  const ownFrame = currentTool === 'business-finance-assistant' && !!user && isPremium;
+
   return (
     <div className="min-h-full">
       <BusinessToolsSEO />
-      {currentTool !== 'overview' && (
+      {currentTool !== 'overview' && !ownFrame && (
         <div className="sticky top-16 z-10 bg-surface/95 backdrop-blur border-b border-border">
           <div className="max-w-6xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
@@ -789,7 +793,7 @@ const BusinessTools = () => {
         </div>
       )}
       
-      <div className="py-8">
+      <div className={ownFrame ? undefined : 'py-8'}>
         {renderTool()}
       </div>
     </div>
