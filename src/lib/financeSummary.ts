@@ -5,14 +5,17 @@
  * - Every money total is per stored currency and never converted (CurrencyTotals from dashboardWidgets).
  * - Revenue = paid invoices only. Quotes never count as revenue.
  * - "Overdue" is worked out here (due date before today, not paid/cancelled/draft) and never written back.
- * - Invoices have no paid date and the app does not treat updated_at as one (every save stamps it),
- *   so "paid" periods use the invoice date (created_at) and are labelled "by invoice date".
+ * - Paid periods use `paid_at` (set by "Mark as paid", Phase 4). Invoices marked paid before that
+ *   have no paid_at: they still count as paid revenue but are dated by invoice date (created_at),
+ *   and pages say how many (`paidWithoutDate`). updated_at is never used as a paid date.
+ * - Archived documents (archived_at set) are left out of everything (`activeOnly`).
  * - Expenses have no currency column: they are in the account currency.
  */
 import { CurrencyTotals, sumByCurrency } from '@/lib/dashboardWidgets';
 import { lastMonths, monthOf, toCsv } from '@/lib/crmAnalytics';
 import { normalizeCurrency } from '@/lib/money';
 import { addDaysIso, isoDay } from '@/lib/dashboardData';
+import { activeOnly } from '@/lib/archive';
 
 export interface FinDoc {
   id: string;
@@ -22,6 +25,9 @@ export interface FinDoc {
   created_at: string;
   client_name?: string | null;
   due_date?: string | null;
+  /** When the invoice was marked paid; null for invoices marked paid before Phase 4. */
+  paid_at?: string | null;
+  archived_at?: string | null;
 }
 export interface FinExpense { amount: number | null; date: string | null }
 
@@ -63,21 +69,37 @@ const inMonth = (iso: string | null | undefined, key: string) => monthOf(iso) ==
 const dayOf = (iso: string | null | undefined) => (iso ? (/^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso : isoDay(new Date(iso))) : null);
 const money = (docs: FinDoc[]) => sumByCurrency(docs, (d) => d.total_amount, (d) => d.currency);
 
-export function financeSummary(invoices: FinDoc[], quotes: FinDoc[], expenses: FinExpense[], now = new Date()) {
+/** The date a paid invoice counts on: its paid date, or its invoice date if none was recorded. */
+export const paidDateOf = (d: Pick<FinDoc, 'paid_at' | 'created_at'>) => d.paid_at || d.created_at;
+
+/** Paid invoices with no paid date recorded (dated by invoice date). Archived ones are not counted. */
+export function paidWithoutDate(invoices: FinDoc[], today: string = isoDay(new Date())) {
+  return activeOnly(invoices).filter((d) => invoiceStatus(d, today) === 'paid' && !d.paid_at).length;
+}
+/** "2 paid invoices have no paid date recorded (dated by invoice date)", or null. */
+export function paidWithoutDateNote(n: number): string | null {
+  if (!n) return null;
+  return `${n} paid ${n === 1 ? 'invoice has' : 'invoices have'} no paid date recorded (dated by invoice date).`;
+}
+
+export function financeSummary(allInvoices: FinDoc[], allQuotes: FinDoc[], expenses: FinExpense[], now = new Date()) {
+  const invoices = activeOnly(allInvoices);
+  const quotes = activeOnly(allQuotes);
   const today = isoDay(now);
   const thisMonth = today.slice(0, 7);
   const from30 = addDaysIso(today, -29);
   const withChip = invoices.map((d) => ({ d, chip: invoiceStatus(d, today) }));
   const pick = (...chips: InvoiceChip[]) => withChip.filter((x) => chips.includes(x.chip)).map((x) => x.d);
   const paid = pick('paid');
-  const paid30 = paid.filter((d) => { const day = dayOf(d.created_at); return !!day && day >= from30 && day <= today; });
+  const paid30 = paid.filter((d) => { const day = dayOf(paidDateOf(d)); return !!day && day >= from30 && day <= today; });
   const openQuotes = quotes.filter((q) => quoteStatus(q) !== 'other');
   const outThisMonth = expenses.filter((e) => inMonth(e.date, thisMonth));
   return {
     outstanding: money(pick('sent', 'overdue')),
     overdue: money(pick('overdue')),
     paidLast30: money(paid30),
-    paidThisMonth: money(paid.filter((d) => inMonth(d.created_at, thisMonth))),
+    paidThisMonth: money(paid.filter((d) => inMonth(paidDateOf(d), thisMonth))),
+    paidWithoutDate: paid.filter((d) => !d.paid_at).length,
     revenue: money(paid),
     drafts: money(pick('draft')),
     quotesOpen: money(openQuotes),
@@ -90,13 +112,13 @@ export const countOf = (t: CurrencyTotals) => t.reduce((n, x) => n + x.count, 0)
 
 /** Overdue invoices, oldest due date first. */
 export function needsAttention<D extends FinDoc>(invoices: D[], today: string = isoDay(new Date())) {
-  return invoices.filter((d) => invoiceStatus(d, today) === 'overdue')
+  return activeOnly(invoices).filter((d) => invoiceStatus(d, today) === 'overdue')
     .sort((a, b) => (a.due_date || '').localeCompare(b.due_date || ''));
 }
 
 /** Newest quotes and invoices together, newest first. */
 export function recentDocuments<Q extends FinDoc, I extends FinDoc>(quotes: Q[], invoices: I[], limit = 6) {
-  return [...quotes.map((d) => ({ kind: 'quote' as const, doc: d })), ...invoices.map((d) => ({ kind: 'invoice' as const, doc: d }))]
+  return [...activeOnly(quotes).map((d) => ({ kind: 'quote' as const, doc: d })), ...activeOnly(invoices).map((d) => ({ kind: 'invoice' as const, doc: d }))]
     .sort((a, b) => b.doc.created_at.localeCompare(a.doc.created_at))
     .slice(0, limit);
 }
@@ -124,26 +146,30 @@ export function excludedDocsNote(excluded: { currency: string; count: number }[]
   return `${text} ${total === 1 ? 'is' : 'are'} not included, because there is no exchange-rate data and nothing is converted.`;
 }
 
-/** Invoiced (sent, overdue or paid) and paid value per month, by invoice date, in one currency. */
+/**
+ * Per month in one currency: invoiced (sent, overdue or paid) by invoice date, and paid by paid date
+ * (invoice date when no paid date was recorded).
+ */
 export function monthlyInvoicedPaid(invoices: FinDoc[], currency: string, months: number, now = new Date()) {
   const today = isoDay(now);
-  const { included, excluded } = splitByCurrency(invoices, currency);
+  const { included, excluded } = splitByCurrency(activeOnly(invoices), currency);
   const rows = lastMonths(months, now).map((m) => ({ ...m, invoiced: 0, paid: 0, invoicedCount: 0, paidCount: 0 }));
   const byKey = new Map(rows.map((r) => [r.key, r]));
   for (const d of included) {
     const chip = invoiceStatus(d, today);
     if (chip === 'draft' || chip === 'cancelled') continue;
-    const r = byKey.get(monthOf(d.created_at) || '');
-    if (!r) continue;
     const v = Number(d.total_amount) || 0;
-    r.invoiced += v; r.invoicedCount++;
-    if (chip === 'paid') { r.paid += v; r.paidCount++; }
+    const r = byKey.get(monthOf(d.created_at) || '');
+    if (r) { r.invoiced += v; r.invoicedCount++; }
+    const p = chip === 'paid' ? byKey.get(monthOf(paidDateOf(d)) || '') : undefined;
+    if (p) { p.paid += v; p.paidCount++; }
   }
   return { rows, excluded };
 }
 
 /** Count of invoices per chip, for the status donut (largest first, empty chips left out). */
-export function statusCounts(invoices: FinDoc[], today: string = isoDay(new Date())) {
+export function statusCounts(allInvoices: FinDoc[], today: string = isoDay(new Date())) {
+  const invoices = activeOnly(allInvoices);
   const order: InvoiceChip[] = ['draft', 'sent', 'overdue', 'paid', 'cancelled'];
   const counts = new Map<InvoiceChip, number>();
   for (const d of invoices) { const c = invoiceStatus(d, today); counts.set(c, (counts.get(c) ?? 0) + 1); }
@@ -153,7 +179,7 @@ export function statusCounts(invoices: FinDoc[], today: string = isoDay(new Date
 
 /** Customers ranked by invoiced amount (sent, overdue or paid) in one currency. Names grouped ignoring case and spaces. */
 export function topCustomers(invoices: FinDoc[], currency: string, limit = 5, today: string = isoDay(new Date())) {
-  const { included } = splitByCurrency(invoices, currency);
+  const { included } = splitByCurrency(activeOnly(invoices), currency);
   const m = new Map<string, { name: string; amount: number; count: number }>();
   for (const d of included) {
     const chip = invoiceStatus(d, today);
@@ -174,7 +200,7 @@ export function topCustomers(invoices: FinDoc[], currency: string, limit = 5, to
 export function moneyInMinusOut(invoices: FinDoc[], expenses: FinExpense[], account: string, today: string = isoDay(new Date())) {
   const cur = normalizeCurrency(account);
   if (!cur) return null;
-  const paid = invoices.filter((d) => invoiceStatus(d, today) === 'paid');
+  const paid = activeOnly(invoices).filter((d) => invoiceStatus(d, today) === 'paid');
   const { included, excluded } = splitByCurrency(paid, cur);
   const moneyIn = included.reduce((n, d) => n + (Number(d.total_amount) || 0), 0);
   const moneyOut = expenses.reduce((n, e) => n + (Number(e.amount) || 0), 0);
@@ -201,7 +227,7 @@ export function financeReportCsv(invoices: FinDoc[], quotes: FinDoc[], expenses:
   add('Outstanding (sent and overdue invoices)', s.outstanding);
   add('Overdue invoices', s.overdue, 'Due date before today, not paid');
   add('Paid invoices, all time', s.revenue, 'Revenue = paid invoices only');
-  add('Paid invoices, last 30 days', s.paidLast30, 'By invoice date');
+  add('Paid invoices, last 30 days', s.paidLast30, 'By paid date (invoice date if none recorded)');
   add('Draft invoices', s.drafts);
   add('Open quotes (draft or sent)', s.quotesOpen, 'Quotes are not revenue');
   if (opts.expenses !== false) {
@@ -209,6 +235,7 @@ export function financeReportCsv(invoices: FinDoc[], quotes: FinDoc[], expenses:
     const mm = moneyInMinusOut(invoices, expenses, account, isoDay(now));
     if (mm) rows.push(['Money in minus money out (rough)', mm.currency, Math.round(mm.net * 100) / 100, '', `Paid ${mm.currency} invoices minus all expenses; not an accounting profit${mm.excluded.length ? '; other currencies excluded' : ''}`]);
   }
+  if (s.paidWithoutDate) rows.push(['Paid invoices with no paid date recorded', '', '', s.paidWithoutDate, 'Dated by invoice date']);
   for (const c of statusCounts(invoices, isoDay(now))) rows.push([`Invoices: ${c.label}`, '', '', c.count, '']);
   return toCsv(rows);
 }

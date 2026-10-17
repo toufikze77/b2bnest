@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  excludedDocsNote, financeReportCsv, financeReportCsvFor, financeSummary, invoiceStatus, moneyInMinusOut, monthlyInvoicedPaid, needsAttention,
+  excludedDocsNote, financeReportCsv, financeReportCsvFor, financeSummary, paidWithoutDate, paidWithoutDateNote, invoiceStatus, moneyInMinusOut, monthlyInvoicedPaid, needsAttention,
   quoteStatus, recentDocuments, statusCounts, topCustomers,
 } from './financeSummary';
 
@@ -126,3 +126,70 @@ describe('analytics', () => {
     expect(gbp).not.toContain('USD');
   });
 });
+
+describe('paid date (Phase 4)', () => {
+  const paid = (total: number, created: string, paid_at: string | null, currency = 'GBP') => ({ ...inv('paid', total, currency, created), paid_at });
+
+  it('paid last 30 days and this month use paid_at when present', () => {
+    const s = financeSummary([
+      paid(100, '2026-06-01T09:00:00Z', '2026-10-10T09:00:00Z'), // old invoice, paid this month → counts
+      paid(200, '2026-10-12T09:00:00Z', '2026-08-01T09:00:00Z'), // new invoice, paid long ago → does not
+    ], [], [], now);
+    expect(s.paidLast30).toEqual([{ currency: 'GBP', amount: 100, count: 1 }]);
+    expect(s.paidThisMonth).toEqual([{ currency: 'GBP', amount: 100, count: 1 }]);
+    expect(s.revenue).toEqual([{ currency: 'GBP', amount: 300, count: 2 }]); // all-time revenue counts both
+    expect(s.paidWithoutDate).toBe(0);
+  });
+
+  it('a paid invoice with no paid_at is still revenue, dated by invoice date, and counted for the note', () => {
+    const docs = [paid(50, '2026-10-05T09:00:00Z', null), paid(70, '2026-01-05T09:00:00Z', null), paid(10, '2026-10-02T09:00:00Z', '2026-10-03T09:00:00Z')];
+    const s = financeSummary(docs, [], [], now);
+    expect(s.paidLast30).toEqual([{ currency: 'GBP', amount: 60, count: 2 }]);
+    expect(s.revenue).toEqual([{ currency: 'GBP', amount: 130, count: 3 }]);
+    expect(s.paidWithoutDate).toBe(2);
+    expect(paidWithoutDate(docs, today)).toBe(2);
+    expect(paidWithoutDateNote(2)).toBe('2 paid invoices have no paid date recorded (dated by invoice date).');
+    expect(paidWithoutDateNote(1)).toBe('1 paid invoice has no paid date recorded (dated by invoice date).');
+    expect(paidWithoutDateNote(0)).toBeNull();
+  });
+
+  it('monthly paid amounts go in the month of the paid date; invoiced stays on the invoice month', () => {
+    const r = monthlyInvoicedPaid([paid(100, '2026-08-20T09:00:00Z', '2026-10-02T09:00:00Z')], 'GBP', 6, now);
+    const aug = r.rows.find((x) => x.key === '2026-08')!, oct = r.rows.find((x) => x.key === '2026-10')!;
+    expect([aug.invoiced, aug.paid, oct.invoiced, oct.paid]).toEqual([100, 0, 0, 100]);
+  });
+
+  it('quotes are unaffected by paid dates', () => {
+    const s = financeSummary([], [{ ...quote('sent', 500, 'GBP'), paid_at: '2026-10-10T09:00:00Z' } as never], [], now);
+    expect(s.revenue).toEqual([]);
+    expect(s.paidLast30).toEqual([]);
+    expect(s.quotesOpen).toEqual([{ currency: 'GBP', amount: 500, count: 1 }]);
+  });
+});
+
+describe('archived documents are left out (Phase 4)', () => {
+  const archived = <T extends object>(d: T) => ({ ...d, archived_at: '2026-10-16T09:00:00Z' });
+  const docs = [inv('sent', 100, 'GBP', undefined, '2026-01-01', 'Acme'), archived(inv('sent', 999, 'GBP', undefined, '2026-01-01', 'Ghost')), archived(inv('paid', 500, 'GBP'))];
+
+  it('summary, needs attention, recent, monthly, status counts, top customers, money in minus out', () => {
+    const s = financeSummary(docs, [archived(quote('sent', 777, 'GBP'))], [], now);
+    expect(s.outstanding).toEqual([{ currency: 'GBP', amount: 100, count: 1 }]);
+    expect(s.overdue).toEqual([{ currency: 'GBP', amount: 100, count: 1 }]);
+    expect(s.revenue).toEqual([]);
+    expect(s.quotesOpen).toEqual([]);
+    expect(needsAttention(docs, today).map((d) => d.client_name)).toEqual(['Acme']);
+    expect(recentDocuments([archived(quote('draft', 1, 'GBP'))], docs, 5)).toHaveLength(1);
+    expect(monthlyInvoicedPaid(docs, 'GBP', 6, now).rows.reduce((n, r) => n + r.invoiced, 0)).toBe(100);
+    expect(statusCounts(docs, today)).toEqual([{ chip: 'overdue', label: 'Overdue', count: 1 }]);
+    expect(topCustomers(docs, 'GBP', 5, today).map((t) => t.name)).toEqual(['Acme']);
+    expect(moneyInMinusOut(docs, [], 'GBP', today)!.moneyIn).toBe(0);
+  });
+
+  it('CSV exports leave archived documents out', () => {
+    const csv = financeReportCsv(docs, [], [], 'GBP', now);
+    expect(csv).toContain('Outstanding (sent and overdue invoices),GBP,100,1');
+    expect(csv).not.toMatch(/999|500/);
+    expect(financeReportCsvFor(docs, [], [], 'GBP', 'GBP', now)).not.toMatch(/999/);
+  });
+});
+

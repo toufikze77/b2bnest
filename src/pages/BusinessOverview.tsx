@@ -1,251 +1,310 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, TrendingDown, Wallet, FileText, Receipt, FolderKanban, CheckSquare, Users, DollarSign, AlertCircle } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { AlertTriangle, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ErrorState } from '@/components/ui/states';
+import { ChartCard, ColumnChart, Donut, TrendChart } from '@/components/charts';
+import { pct } from '@/components/charts/chartTheme';
+import { StatusBadge } from '@/components/data/StatusBadge';
+import CurrencySelector from '@/components/crm/CurrencySelector';
+import { CustomiseSections } from '@/components/overview/CustomiseSections';
+import SEOHead from '@/components/SEOHead';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
-import Footer from '@/components/Footer';
-import SEOHead from '@/components/SEOHead';
+import { useReportCurrency } from '@/hooks/useReportCurrency';
+import { ACTIVE_FILTER } from '@/lib/archive';
+import {
+  CARD_LINKS, chartMonths, invoiceStatusInPeriod, loadSections, moneyInOutByMonth, OverviewInput, overviewCards, Period, PERIODS,
+  pipelineByStage, projectsByStatus, saveSections, SectionPrefs, tasksByStatus, topCustomersInPeriod,
+} from '@/lib/businessOverview';
+import { contactsAdded } from '@/lib/crmAnalytics';
+import { excludedDocsNote } from '@/lib/financeSummary';
+import { currencySymbol, formatMoney, normalizeCurrency } from '@/lib/money';
+import { cn } from '@/lib/utils';
 
-interface OrgInfo {
-  id: string;
-  name: string;
-  memberIds: string[];
+const EMPTY: OverviewInput = { invoices: [], expenses: [], bills: [], deals: [], contacts: [], projects: [], tasks: [] };
+type Errors = Partial<Record<keyof OverviewInput, boolean>>;
+const onNavyFocus = 'focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-offset-0';
+
+/** One summary card. A real link with a visible focus ring and an "opens …" name, or a plain card when nothing manages it. */
+function OverviewCard({ label, value, hint, link, loading, alert }: {
+  label: string; value: string | null; hint: string; link: { to: string; place: string } | null; loading?: boolean; alert?: string | null;
+}) {
+  const body = (
+    <>
+      <p className="flex items-center justify-between gap-2 text-small font-semibold text-muted-foreground">
+        {label}{link && <ChevronRight className="h-4 w-4 shrink-0" aria-hidden="true" />}
+      </p>
+      {loading ? <Skeleton className="mt-2 h-8 w-24" /> : <p className="mt-1 break-words text-2xl font-bold tabular-nums text-foreground">{value ?? '—'}</p>}
+      {!loading && <p className="mt-0.5 text-small text-muted-foreground">{hint}</p>}
+      {!loading && alert && <p className="mt-1"><StatusBadge value={alert} tone="danger" /></p>}
+    </>
+  );
+  return link ? (
+    <Link to={link.to} aria-label={`${label}: ${loading ? 'loading' : value ?? 'no data'}. ${hint} Opens ${link.place}.`}
+      className="block min-w-0 rounded-card border border-border bg-card p-4 transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
+      {body}
+    </Link>
+  ) : (
+    <div className="min-w-0 rounded-card border border-dashed border-border bg-card p-4">{body}</div>
+  );
 }
 
-interface Overview {
-  revenue: number;
-  pendingInvoices: number;
-  pendingInvoicesCount: number;
-  expensesTotal: number;
-  billsDue: number;
-  billsDueCount: number;
-  activeProjects: number;
-  openTasks: number;
-  overdueTasks: number;
-  crmContacts: number;
-  pipelineValue: number;
-  dealsCount: number;
-  currency: string;
-}
-
-const fmt = (n: number, c = 'GBP') =>
-  new Intl.NumberFormat('en-GB', { style: 'currency', currency: c, maximumFractionDigits: 0 }).format(n || 0);
-
-const BusinessOverview: React.FC = () => {
+const BusinessOverview = () => {
   const { user } = useAuth();
   const { organizationId, organization } = useActiveOrganization();
-  const navigate = useNavigate();
+  const rc = useReportCurrency('overview');
+  const { currency, account } = rc;
+  const [period, setPeriod] = useState<Period>('month');
+  const [data, setData] = useState<OverviewInput>(EMPTY);
+  const [errors, setErrors] = useState<Errors>({});
   const [loading, setLoading] = useState(true);
-  const [org, setOrg] = useState<OrgInfo | null>(null);
-  const [data, setData] = useState<Overview | null>(null);
+  const [sections, setSections] = useState<SectionPrefs>(() => loadSections(user?.id, organizationId));
+  const [customiseOpen, setCustomiseOpen] = useState(false);
+  const customiseBtn = useRef<HTMLButtonElement>(null);
+  useEffect(() => { setSections(loadSections(user?.id, organizationId)); }, [user?.id, organizationId]);
 
-  useEffect(() => {
-    if (!user || !organizationId) {
-      setOrg(null);
-      setData(null);
-      setLoading(false);
-      return;
-    }
-    setOrg(null);
-    setData(null);
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, organizationId]);
-
-  const load = async () => {
+  const userId = user?.id;
+  const load = useCallback(async () => {
+    if (!userId || !organizationId) { setData(EMPTY); setLoading(false); return; }
     setLoading(true);
-    try {
-      if (!organizationId) return;
-      const { data: members } = await supabase
-        .from('organization_members')
-        .select('user_id')
-        .eq('organization_id', organizationId)
-        .eq('is_active', true);
-
-      const memberIds = (members || []).map((m: any) => m.user_id);
-      const orgInfo: OrgInfo = { id: organizationId, name: organization?.name || 'Your Organization', memberIds };
-      setOrg(orgInfo);
-
-      // Per-user finance data (RLS scopes to current user only)
-      const [invRes, expRes, billRes, dealRes, contRes, projRes, taskRes] = await Promise.all([
-        supabase.from('invoices').select('status,total_amount,currency'),
-        supabase.from('expenses').select('amount,status'),
-        supabase.from('bills').select('status,amount,due_date,currency'),
-        supabase.from('crm_deals').select('value,stage,currency'),
-        supabase.from('crm_contacts').select('id', { count: 'exact', head: true }),
-        supabase
-          .from('projects')
-          .select('id,status,archived_at,deleted_at')
-          .eq('organization_id', orgInfo.id)
-          .is('archived_at', null)
-          .is('deleted_at', null),
-        supabase
-          .from('todos')
-          .select('id,status,due_date,archived_at')
-          .eq('organization_id', orgInfo.id)
-          .is('archived_at', null),
-      ]);
-
-      const invoices = invRes.data || [];
-      const expenses = expRes.data || [];
-      const bills = billRes.data || [];
-      const deals = dealRes.data || [];
-      const projects = projRes.data || [];
-      const tasks = taskRes.data || [];
-
-      const revenue = invoices
-        .filter((i: any) => i.status === 'paid')
-        .reduce((s: number, i: any) => s + Number(i.total_amount || 0), 0);
-      const pendingInvoicesArr = invoices.filter((i: any) => i.status !== 'paid' && i.status !== 'cancelled');
-      const pendingInvoices = pendingInvoicesArr.reduce((s: number, i: any) => s + Number(i.total_amount || 0), 0);
-
-      const expensesTotal = expenses.reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
-
-      const dueBills = bills.filter((b: any) => b.status !== 'paid');
-      const billsDue = dueBills.reduce((s: number, b: any) => s + Number(b.amount || 0), 0);
-
-      const openPipelineStages = ['lead', 'qualified', 'proposal', 'negotiation'];
-      const pipelineValue = deals
-        .filter((d: any) => openPipelineStages.includes((d.stage || '').toLowerCase()))
-        .reduce((s: number, d: any) => s + Number(d.value || 0), 0);
-
-      const now = new Date();
-      const openTasks = tasks.filter((t: any) => t.status !== 'done' && t.status !== 'completed').length;
-      const overdueTasks = tasks.filter(
-        (t: any) =>
-          t.status !== 'done' &&
-          t.status !== 'completed' &&
-          t.due_date &&
-          new Date(t.due_date) < now
-      ).length;
-
-      const currency = (invoices[0] as any)?.currency || 'GBP';
-
-      setData({
-        revenue,
-        pendingInvoices,
-        pendingInvoicesCount: pendingInvoicesArr.length,
-        expensesTotal,
-        billsDue,
-        billsDueCount: dueBills.length,
-        activeProjects: projects.length,
-        openTasks,
-        overdueTasks,
-        crmContacts: contRes.count || 0,
-        pipelineValue,
-        dealsCount: deals.length,
-        currency,
-      });
-    } catch (e) {
-      console.error('Overview load error', e);
-    } finally {
-      setLoading(false);
+    // Money and CRM: the signed-in user's own records. Projects and tasks: the active company.
+    // Archived invoices never leave the database here (archived_at is null).
+    const [inv, exp, bills, deals, contacts, projects, tasks] = await Promise.all([
+      supabase.from('invoices').select('id,status,total_amount,currency,created_at,due_date,paid_at,archived_at,client_name').eq('user_id', userId).is(...ACTIVE_FILTER),
+      supabase.from('expenses').select('amount,date').eq('user_id', userId),
+      supabase.from('bills').select('status,amount,currency').eq('user_id', userId),
+      supabase.from('crm_deals').select('stage,value,currency').eq('user_id', userId),
+      supabase.from('crm_contacts').select('status,created_at').eq('user_id', userId),
+      supabase.from('projects').select('status').eq('organization_id', organizationId).is('archived_at', null).is('deleted_at', null),
+      supabase.from('todos').select('status,due_date').eq('organization_id', organizationId).is('archived_at', null),
+    ]);
+    const res = { invoices: inv, expenses: exp, bills, deals, contacts, projects, tasks } as const;
+    const next = { ...EMPTY } as OverviewInput;
+    const errs: Errors = {};
+    for (const [k, r] of Object.entries(res) as [keyof OverviewInput, { data: unknown; error: unknown }][]) {
+      if (r.error) errs[k] = true; else (next as unknown as Record<string, unknown>)[k] = r.data ?? [];
     }
-  };
+    setData(next); setErrors(errs); setLoading(false);
+  }, [userId, organizationId]);
+  useEffect(() => { void load(); }, [load]);
 
-  const stats = data
-    ? [
-        { label: 'Revenue (paid)', value: fmt(data.revenue, data.currency), icon: TrendingUp, tone: 'text-green-600', to: '/dashboard' },
-        { label: 'Pending invoices', value: fmt(data.pendingInvoices, data.currency), sub: `${data.pendingInvoicesCount} open`, icon: FileText, tone: 'text-blue-600', to: '/dashboard' },
-        { label: 'Expenses', value: fmt(data.expensesTotal, data.currency), icon: TrendingDown, tone: 'text-rose-600', to: '/dashboard' },
-        { label: 'Bills to pay', value: fmt(data.billsDue, data.currency), sub: `${data.billsDueCount} open`, icon: Receipt, tone: 'text-amber-600', to: '/dashboard' },
-        { label: 'Pipeline value', value: fmt(data.pipelineValue, data.currency), sub: `${data.dealsCount} deals`, icon: DollarSign, tone: 'text-purple-600', to: '/crm' },
-        { label: 'CRM contacts', value: String(data.crmContacts), icon: Users, tone: 'text-indigo-600', to: '/crm' },
-        { label: 'Active projects', value: String(data.activeProjects), icon: FolderKanban, tone: 'text-cyan-600', to: '/business-tools/project-management' },
-        { label: 'Open tasks', value: String(data.openTasks), sub: data.overdueTasks ? `${data.overdueTasks} overdue` : 'on track', icon: CheckSquare, tone: data.overdueTasks ? 'text-red-600' : 'text-slate-700', to: '/business-tools/project-management' },
-      ]
-    : [];
+  const cards = overviewCards(data, currency, account, period);
+  const money = (n: number) => formatMoney(n, currency);
+  const sym = currencySymbol(currency);
+  const periodLabel = PERIODS.find((p) => p.value === period)?.label ?? '';
+  const months = chartMonths(period);
+  const inOut = moneyInOutByMonth(data, currency, account, months);
+  const statuses = invoiceStatusInPeriod(data.invoices, period);
+  const pipeline = pipelineByStage(data.deals, currency);
+  const taskStats = tasksByStatus(data.tasks);
+  const projectStats = projectsByStatus(data.projects);
+  const added = contactsAdded(data.contacts.map((c) => ({ ...c, source: null })), months);
+  const top = topCustomersInPeriod(data.invoices, currency, period, 5);
+  const excludedNote = excludedDocsNote(cards.excludedInvoices);
+  const stored = Array.from(new Set([...data.invoices, ...data.deals].map((d) => normalizeCurrency(d.currency)).filter(Boolean)));
+  const state = (k: (keyof OverviewInput)[], empty: boolean) => (loading ? 'loading' : k.some((x) => errors[x]) ? 'error' : empty ? 'empty' : 'ready') as 'loading' | 'error' | 'empty' | 'ready';
+  const anyError = Object.values(errors).some(Boolean);
+  const cardHint = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-  const netCash = data ? data.revenue - data.expensesTotal - data.billsDue : 0;
+  const saveCustomise = (next: SectionPrefs) => { setSections(next); saveSections(user?.id, organizationId, next); setCustomiseOpen(false); };
 
   return (
-    <div className="min-h-full">
+    <div className="min-w-0">
       <SEOHead title="Business Overview | B2BNest" description="Unified overview of revenue, expenses, projects, tasks and CRM across your organization." canonicalUrl="https://www.b2bnest.online/business-overview" />
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="outline" onClick={() => navigate(-1)} className="flex items-center gap-2">
-            <ArrowLeft className="w-4 h-4" /> Back
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[28px]">Business Overview</h1>
-            <p className="text-gray-600">
-              Unified view across {org?.name || 'your organization'} · {org?.memberIds.length || 1} member(s)
-            </p>
-          </div>
-          <Badge variant="secondary" className="hidden sm:inline-flex">
-            Multi-tenant · private to your org
-          </Badge>
-        </div>
 
-        {/* Net cash banner */}
-        <Card className="mb-6 border-l-4 border-l-primary">
-          <CardContent className="py-5 flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-3">
-              <Wallet className="w-8 h-8 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">Net position (revenue − expenses − bills due)</p>
-                {loading ? (
-                  <Skeleton className="h-8 w-40 mt-1" />
-                ) : (
-                  <p className={`text-3xl font-bold ${netCash >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                    {fmt(netCash, data?.currency)}
-                  </p>
-                )}
-              </div>
+      <div className="bg-brand-navy text-brand-navy-foreground">
+        <div className="mx-auto w-full max-w-[1440px] px-4 pb-5 pt-5 sm:px-6 lg:px-8">
+          <nav aria-label="Breadcrumb">
+            <ol className="flex flex-wrap items-center gap-1.5 text-small text-brand-navy-muted">
+              <li><Link to="/dashboard" className="inline-flex min-h-touch items-center rounded-sm underline-offset-2 hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring md:min-h-0">{organization?.name || 'Company'}</Link></li>
+              <li aria-hidden="true">/</li>
+              <li aria-current="page" className="font-semibold text-white">Business overview</li>
+            </ol>
+          </nav>
+          <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-page-title text-white">Business overview</h1>
+              <p className="mt-1 text-body text-brand-navy-muted">Money, sales and work for {organization?.name || 'your company'} in one place, from your own records.</p>
             </div>
-            {data && data.overdueTasks > 0 && (
-              <div className="flex items-center gap-2 text-amber-700 bg-amber-50 px-3 py-2 rounded-md">
-                <AlertCircle className="w-4 h-4" />
-                <span className="text-sm font-medium">{data.overdueTasks} overdue task{data.overdueTasks > 1 ? 's' : ''} need attention</span>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="flex flex-col gap-1">
+                <label htmlFor="overview-period" className="text-small font-semibold text-white">Period</label>
+                <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
+                  <SelectTrigger id="overview-period" className={cn('h-11 w-44 border-white/50 bg-transparent text-white md:h-10', onNavyFocus)}><SelectValue /></SelectTrigger>
+                  <SelectContent>{PERIODS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
+                </Select>
               </div>
-            )}
-          </CardContent>
-        </Card>
+              <div className="flex flex-col gap-1">
+                <label htmlFor="overview-currency" className="text-small font-semibold text-white">Currency</label>
+                <CurrencySelector id="overview-currency" value={currency} onValueChange={rc.setCurrency} extraCodes={stored}
+                  className={cn('h-11 w-52 border-white/50 bg-transparent text-white md:h-10', onNavyFocus)} />
+              </div>
+              <Button ref={customiseBtn} variant="outline" className={cn('min-h-touch border-white/50 bg-transparent text-white hover:bg-white/10 hover:text-white md:min-h-10', onNavyFocus)} onClick={() => setCustomiseOpen(true)}>
+                <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />Customise
+              </Button>
+            </div>
+          </div>
+          {rc.isCustom && (
+            <button type="button" onClick={rc.reset} className="mt-3 min-h-touch rounded-sm text-small font-semibold text-white underline underline-offset-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring md:min-h-0">
+              Reset to account currency ({account})
+            </button>
+          )}
+        </div>
+      </div>
 
-        {/* KPI grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {loading
-            ? Array.from({ length: 8 }).map((_, i) => (
-                <Card key={i}><CardContent className="p-5"><Skeleton className="h-20" /></CardContent></Card>
-              ))
-            : stats.map((s) => {
-                const Icon = s.icon;
-                return (
-                  <Card
-                    key={s.label}
-                    className="cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => navigate(s.to)}
-                  >
-                    <CardContent className="p-5">
-                      <div className="flex items-start justify-between mb-2">
-                        <span className="text-sm text-muted-foreground">{s.label}</span>
-                        <Icon className={`w-5 h-5 ${s.tone}`} />
-                      </div>
-                      <div className="text-2xl font-bold">{s.value}</div>
-                      {s.sub && <div className="text-xs text-muted-foreground mt-1">{s.sub}</div>}
-                    </CardContent>
-                  </Card>
-                );
-              })}
+      <div className="mx-auto w-full max-w-[1440px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+        <p className="text-small text-muted-foreground">
+          Money, CRM, expenses and bills: your own records. Projects and tasks: everyone in {organization?.name || 'this company'}. {currency ? `Money in ${currency} only, never converted.` : 'Choose a currency to see money figures.'} {periodLabel} unless a card says “as of today”.
+        </p>
+        {anyError && !loading && <ErrorState title="Some figures couldn't be loaded" description="Sections that failed say so below. This is a loading problem, not missing data." onRetry={() => { void load(); }} className="rounded-card" />}
+        {excludedNote && <p role="note" className="text-small text-muted-foreground">{excludedNote}</p>}
+
+        {sections.cards && (
+          <section aria-label="Summary" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <OverviewCard loading={loading} link={CARD_LINKS.moneyIn} label="Money in" value={errors.invoices ? null : money(cards.moneyIn.amount)}
+              hint={`${cardHint(cards.moneyIn.count, 'paid invoice')}, ${periodLabel.toLowerCase()}, by the date marked paid.`} />
+            <OverviewCard loading={loading} link={CARD_LINKS.moneyOut} label="Money out" value={errors.expenses || !cards.moneyOut ? null : money(cards.moneyOut.amount)}
+              hint={cards.moneyOut ? `${cardHint(cards.moneyOut.count, 'expense')}, ${periodLabel.toLowerCase()}.` : `Expenses are in your account currency${account ? ` (${account})` : ''}; choose it to see them.`} />
+            <OverviewCard loading={loading} link={CARD_LINKS.outstanding} label="Outstanding invoices" value={errors.invoices ? null : money(cards.outstanding.amount)}
+              hint={`${cardHint(cards.outstanding.count, 'invoice')} sent, not paid, as of today.`} />
+            <OverviewCard loading={loading} link={CARD_LINKS.overdue} label="Overdue invoices" value={errors.invoices ? null : money(cards.overdue.amount)}
+              hint={`${cardHint(cards.overdue.count, 'invoice')} past the due date, as of today.`} alert={cards.overdue.count ? `${cards.overdue.count} overdue` : null} />
+            <OverviewCard loading={loading} link={CARD_LINKS.openPipeline} label="Open pipeline" value={errors.deals ? null : money(cards.openPipeline.amount)}
+              hint={`${cardHint(cards.openPipeline.count, 'open deal')} in ${currency || 'this currency'}, as of today.`} />
+            <OverviewCard loading={loading} link={CARD_LINKS.openTasks} label="Open tasks" value={errors.tasks ? null : String(cards.openTasks)}
+              hint="Company-wide, as of today." alert={cards.overdueTasks ? `${cards.overdueTasks} overdue` : null} />
+            <OverviewCard loading={loading} link={CARD_LINKS.activeProjects} label="Active projects" value={errors.projects ? null : String(cards.activeProjects)}
+              hint="Company-wide, not completed or cancelled." />
+            <OverviewCard loading={loading} link={CARD_LINKS.contacts} label="CRM contacts" value={errors.contacts ? null : String(cards.contacts)}
+              hint="Your own contacts." />
+            <OverviewCard loading={loading} link={CARD_LINKS.billsToPay} label="Bills to pay" value={errors.bills ? null : money(cards.billsToPay.amount)}
+              hint={`${cardHint(cards.billsToPay.count, 'unpaid bill')}, as of today. There is no screen to manage bills yet.`} />
+          </section>
+        )}
+
+        {sections.moneyInOut && (
+          <ChartCard
+            title="Money in and money out"
+            subtitle={`Last ${months} months, ${currency || 'no currency chosen'}. Money in = paid invoices by the date marked paid; money out = expenses by date.`}
+            state={!currency ? 'empty' : state(['invoices', 'expenses'], !inOut.rows.some((r) => r.moneyIn || r.moneyOut))}
+            onRetry={() => { void load(); }}
+            empty={{ message: !currency ? 'Choose a currency to see money in and out.' : 'No data yet. Mark invoices as paid or add expenses to see this.', action: <Button asChild size="sm" variant="outline" className="min-h-touch md:min-h-0"><Link to={CARD_LINKS.moneyIn.to}>Open Invoices</Link></Button> }}
+            summary={`Money in and out per month in ${currency}: ${inOut.rows.filter((r) => r.moneyIn || r.moneyOut).map((r) => `${r.label} in ${money(r.moneyIn)}${r.moneyOut != null ? `, out ${money(r.moneyOut)}` : ''}`).join('; ')}.`}
+            table={{ caption: `Money in and out per month in ${currency}`, columns: inOut.expensesIncluded ? ['Month', `Money in (${currency})`, `Money out (${currency})`] : ['Month', `Money in (${currency})`], rows: inOut.rows.map((r) => (inOut.expensesIncluded ? [r.label, money(r.moneyIn), money(r.moneyOut ?? 0)] : [r.label, money(r.moneyIn)])) }}
+            footer={!inOut.expensesIncluded ? <p>Money out is not shown: expenses are in your account currency{account ? ` (${account})` : ''}.</p> : undefined}
+          >
+            <TrendChart data={inOut.rows.map((r) => ({ label: r.label, moneyIn: r.moneyIn, ...(inOut.expensesIncluded ? { moneyOut: r.moneyOut ?? 0 } : {}) }))}
+              series={inOut.expensesIncluded ? [{ key: 'moneyIn', label: 'Money in' }, { key: 'moneyOut', label: 'Money out' }] : [{ key: 'moneyIn', label: 'Money in' }]}
+              format={money} axisTitle={`Amount${sym ? ` (${sym})` : ''}`} integer={false} />
+          </ChartCard>
+        )}
+
+        <div className="grid gap-6 xl:grid-cols-2">
+          {sections.invoiceStatus && (
+            <ChartCard
+              title="Invoices by status"
+              subtitle={`Invoices dated ${periodLabel.toLowerCase()}, every currency. Counts, not amounts.`}
+              state={state(['invoices'], statuses.length === 0)} onRetry={() => { void load(); }}
+              empty={{ message: 'No data yet. No invoices dated in this period.', action: <Button asChild size="sm" variant="outline" className="min-h-touch md:min-h-0"><Link to="/business-tools?tool=business-finance-assistant&tab=create&type=invoice">New invoice</Link></Button> }}
+              summary={`Invoices by status: ${statuses.map((s) => `${s.label} ${s.count}`).join(', ')}.`}
+              table={{ caption: 'Invoices by status', columns: ['Status', 'Invoices', 'Share'], rows: statuses.map((s) => [s.label, s.count, pct(s.count / statuses.reduce((n, x) => n + x.count, 0))]) }}
+            >
+              <Donut data={statuses.map((s) => ({ label: s.label, value: s.count }))} totalLabel="invoices" />
+            </ChartCard>
+          )}
+
+          {sections.pipeline && (
+            <ChartCard
+              title="Sales pipeline by stage"
+              subtitle={`Open deals only (won, lost and closed left out), ${currency || 'no currency chosen'}, as of today.`}
+              state={!currency ? 'empty' : state(['deals'], pipeline.rows.length === 0)} onRetry={() => { void load(); }}
+              empty={{ message: !currency ? 'Choose a currency to see the pipeline.' : 'No data yet. No open deals in this currency.', action: <Button asChild size="sm" variant="outline" className="min-h-touch md:min-h-0"><Link to="/crm?tab=deals">Open the pipeline</Link></Button> }}
+              summary={`Open pipeline by stage in ${currency}: ${pipeline.rows.map((r) => `${r.stage} ${money(r.value)} (${r.count})`).join('; ')}.`}
+              table={{ caption: `Open pipeline by stage in ${currency}`, columns: ['Stage', `Value (${currency})`, 'Deals'], rows: pipeline.rows.map((r) => [r.stage, money(r.value), r.count]) }}
+              footer={pipeline.otherCurrency ? <p>{pipeline.otherCurrency} open {pipeline.otherCurrency === 1 ? 'deal' : 'deals'} in other currencies {pipeline.otherCurrency === 1 ? 'is' : 'are'} not included.</p> : undefined}
+            >
+              <ColumnChart data={pipeline.rows.map((r) => ({ label: r.stage, value: r.value }))} seriesLabel="Value" format={money} axisTitle={`Value${sym ? ` (${sym})` : ''}`} />
+            </ChartCard>
+          )}
+
+          {sections.tasks && (
+            <ChartCard
+              title="Tasks by status"
+              subtitle={`Company-wide, as of today.${taskStats.overdue ? '' : ' Nothing is overdue.'}`}
+              controls={taskStats.overdue ? <StatusBadge value={`${taskStats.overdue} overdue`} tone="danger" /> : undefined}
+              state={state(['tasks'], data.tasks.length === 0)} onRetry={() => { void load(); }}
+              empty={{ message: 'No data yet. No tasks in this company.', action: <Button asChild size="sm" variant="outline" className="min-h-touch md:min-h-0"><Link to="/project-management?view=list">Open tasks</Link></Button> }}
+              summary={`Tasks by status: ${taskStats.rows.map((r) => `${r.status} ${r.count}`).join(', ')}. ${taskStats.overdue} overdue.`}
+              table={{ caption: 'Tasks by status', columns: ['Status', 'Tasks'], rows: [...taskStats.rows.map((r) => [r.status, r.count]), ['Overdue (open, past due date)', taskStats.overdue]] }}
+            >
+              <ColumnChart data={taskStats.rows.map((r) => ({ label: r.status, value: r.count }))} seriesLabel="Tasks" format={(n) => String(n)} axisTitle="Tasks" integer />
+            </ChartCard>
+          )}
+
+          {sections.projects && (
+            <ChartCard
+              title="Projects by status"
+              subtitle="Company-wide, not archived, as of today."
+              state={state(['projects'], projectStats.length === 0)} onRetry={() => { void load(); }}
+              empty={{ message: 'No data yet. No projects in this company.', action: <Button asChild size="sm" variant="outline" className="min-h-touch md:min-h-0"><Link to="/project-management">Open projects</Link></Button> }}
+              summary={`Projects by status: ${projectStats.map((p) => `${p.status} ${p.count}`).join(', ')}.`}
+              table={{ caption: 'Projects by status', columns: ['Status', 'Projects'], rows: projectStats.map((p) => [p.status, p.count]) }}
+            >
+              <Donut data={projectStats.map((p) => ({ label: p.status, value: p.count }))} totalLabel="projects" />
+            </ChartCard>
+          )}
+
+          {sections.contacts && (
+            <ChartCard
+              title="Contacts added and how many are customers now"
+              subtitle={`By the month each contact was added, last ${months} months. “Customers now” is today’s status: there is no record of when a contact converted.`}
+              state={state(['contacts'], data.contacts.length === 0)} onRetry={() => { void load(); }}
+              empty={{ message: 'No data yet. No CRM contacts.', action: <Button asChild size="sm" variant="outline" className="min-h-touch md:min-h-0"><Link to="/crm">Open CRM</Link></Button> }}
+              summary={`Contacts added per month over the last ${months} months, and how many of them are customers now.`}
+              table={{ caption: 'Contacts added per month', columns: ['Month', 'Added', 'Customers now'], rows: added.rows.map((r) => [r.label, r.added, r.customersNow]) }}
+            >
+              <TrendChart data={added.rows.map((r) => ({ label: r.label, added: r.added, customers: r.customersNow }))} series={[{ key: 'added', label: 'Contacts added' }, { key: 'customers', label: 'Of those, customers now' }]} axisTitle="Contacts" />
+            </ChartCard>
+          )}
+
+          {sections.topCustomers && (
+            <ChartCard
+              title="Top customers by invoiced amount"
+              subtitle={`Sent, overdue and paid invoices dated ${periodLabel.toLowerCase()}, ${currency || 'no currency chosen'}.`}
+              state={!currency ? 'empty' : state(['invoices'], top.length === 0)} onRetry={() => { void load(); }}
+              empty={{ message: !currency ? 'Choose a currency to see top customers.' : 'No data yet. No sent or paid invoices in this period.', action: <Button asChild size="sm" variant="outline" className="min-h-touch md:min-h-0"><Link to={CARD_LINKS.moneyIn.to}>Open Invoices</Link></Button> }}
+              summary={`Top customers in ${currency}: ${top.map((t) => `${t.name} ${money(t.amount)}`).join('; ')}.`}
+              table={{ caption: `Top customers in ${currency}`, columns: ['Customer', `Invoiced (${currency})`, 'Invoices'], rows: top.map((t) => [t.name, money(t.amount), t.count]) }}
+              footer={<p>Customers are grouped by the client name on the invoice.</p>}
+            >
+              <ol className="space-y-3">
+                {top.map((t, i) => (
+                  <li key={t.name} className="space-y-1">
+                    <div className="flex items-baseline justify-between gap-3 text-body">
+                      <span className="min-w-0 truncate"><span className="mr-2 tabular-nums text-muted-foreground">{i + 1}.</span><span className="font-semibold">{t.name}</span></span>
+                      <span className="shrink-0 tabular-nums">{money(t.amount)} <span className="text-small text-muted-foreground">· {t.count} {t.count === 1 ? 'invoice' : 'invoices'}</span></span>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted" aria-hidden="true"><div className="h-2 rounded-full" style={{ width: `${Math.max(2, (t.amount / (top[0]?.amount || 1)) * 100)}%`, background: 'var(--chart-1)' }} /></div>
+                  </li>
+                ))}
+              </ol>
+            </ChartCard>
+          )}
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Data scoping</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground space-y-1">
-            <p>• <strong>Shared org-wide:</strong> Projects, Tasks (visible to all members of {org?.name || 'your organization'}).</p>
-            <p>• <strong>Per user:</strong> Invoices, Quotes, Bills, Expenses, CRM contacts &amp; deals are private to each member by design (RLS).</p>
-            <p>• Tenants are isolated at the database layer — no other organization can access your data.</p>
-          </CardContent>
-        </Card>
+        {!Object.values(sections).some(Boolean) && (
+          <div className="flex flex-col items-center gap-3 rounded-card border border-dashed border-border p-8 text-center text-body text-muted-foreground">
+            <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+            <p>Every section is hidden. Use Customise to show them again.</p>
+          </div>
+        )}
       </div>
-      <Footer />
+
+      <CustomiseSections open={customiseOpen} onOpenChange={setCustomiseOpen} prefs={sections} onSave={saveCustomise} returnFocusRef={customiseBtn} />
     </div>
   );
 };

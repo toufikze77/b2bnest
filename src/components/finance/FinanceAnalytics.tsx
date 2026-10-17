@@ -5,7 +5,7 @@ import { pct } from '@/components/charts/chartTheme';
 import { RangeControl, ReportCurrencyControl } from '@/components/crm/AnalyticsTab';
 import { useReportCurrency } from '@/hooks/useReportCurrency';
 import { isoDay } from '@/lib/dashboardData';
-import { excludedDocsNote, FinDoc, monthlyInvoicedPaid, splitByCurrency, statusCounts, topCustomers } from '@/lib/financeSummary';
+import { excludedDocsNote, FinDoc, paidWithoutDate, paidWithoutDateNote, monthlyInvoicedPaid, splitByCurrency, statusCounts, topCustomers } from '@/lib/financeSummary';
 import { currencySymbol, formatMoney } from '@/lib/money';
 
 interface Props {
@@ -54,14 +54,14 @@ export function FinanceAnalytics({ invoices, loading, error, onRetry, onNewInvoi
 
       <ChartCard
         title="Invoiced and paid per month"
-        subtitle={`By invoice date, ${currency || 'no currency chosen'} only. Invoiced = sent, overdue or paid; drafts are left out.`}
+        subtitle={`${currency || 'No currency chosen'} only. Invoiced by invoice date (sent, overdue or paid; drafts left out); paid by the date marked paid.`}
         controls={<RangeControl value={range} onChange={setRange} label="Months shown for invoiced and paid" />}
         state={base(!currency || !anyInRange ? 'empty' : 'ready')}
         onRetry={onRetry}
         empty={{ message: invoices.length === 0 ? 'No data yet. Invoices you send show up here.' : `No sent or paid invoices in ${currency || 'this currency'} dated in the last ${range} months.`, action: newAction }}
         summary={`Invoiced and paid per month in ${currency}: ${monthly.rows.filter((r) => r.invoicedCount).map((r) => `${r.label} invoiced ${money(r.invoiced)}, paid ${money(r.paid)}`).join('; ')}.`}
         table={{ caption: `Invoiced and paid per month in ${currency}`, columns: ['Month', `Invoiced (${currency})`, 'Invoices', `Paid (${currency})`, 'Paid invoices'], rows: monthly.rows.map((r) => [r.label, money(r.invoiced), r.invoicedCount, money(r.paid), r.paidCount]) }}
-        footer={<p>Invoices have no paid date, so paid amounts sit in the month the invoice is dated.</p>}
+        footer={<p>{paidWithoutDateNote(paidWithoutDate(invoices, today)) ?? 'Paid amounts sit in the month each invoice was marked paid.'}</p>}
       >
         <TrendChart data={monthly.rows.map((r) => ({ label: r.label, invoiced: r.invoiced, paid: r.paid }))} series={[{ key: 'invoiced', label: 'Invoiced' }, { key: 'paid', label: 'Paid' }]}
           format={money} axisTitle={`Amount${sym ? ` (${sym})` : ''}`} integer={false} />

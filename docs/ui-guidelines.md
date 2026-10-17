@@ -5,6 +5,17 @@ These rules apply to every new screen. They build on the Phase 0 design tokens
 (`src/components/charts/`). **All new setup and configuration screens use the same card,
 form, switch and chart patterns described here.**
 
+## Colour: red (`--destructive`, Phase 4)
+
+| Mode | Value | Text on page/card | Button text on it | On its 10% tint |
+|---|---|---|---|---|
+| Light | `#B91C1C` (`0 74% 42%`) | 6.41:1 on white | 6.12:1 (`--destructive-foreground`, near white) | 5.41:1 |
+| Dark | `#F87171` (`0 91% 71%`) | 6.5:1 on card | 6.88:1 (`--destructive-foreground` is navy in dark mode) | 5.72:1 |
+
+The old value (`0 84.2% 60.2%`) was 3.76:1 on white. Hover backgrounds stay at `/90` or darker
+(`/80` drops white text below 4.5:1). A `border-destructive/40` outline is decorative (the text
+inside carries the meaning). The "Urgent" priority chip has its own token (white on it 4.8:1).
+
 ## Tokens (use these, never raw colours)
 
 | Token | Value | Use |
@@ -105,7 +116,7 @@ Make inactive / Pause, Delete), phone cards with 44px targets, and an empty stat
   Never use `window.confirm`.
 - When a dialog closes, focus returns to the row's menu button (or to the list heading if the
   row was deleted) via `returnFocus.ts`.
-- Red (`--destructive`) is only 3.4:1 as text on white: use it for icons, not for text labels.
+- Red (`--destructive`) is safe for text, icons, outlines and button backgrounds (see Colour: red).
 
 ## Quotes and invoices: honest status (`src/lib/documentActions.ts`)
 

@@ -13,7 +13,7 @@ export type DeleteOutcome = null | { message: string; inUse?: boolean };
  * deleting and shows any failure inside (the row stays as it was). When the database says the
  * item is still in use and `onMakeInactive` is given, it offers "Make inactive" instead.
  */
-export function ConfirmDeleteDialog({ open, onOpenChange, noun, name, onConfirm, onMakeInactive, title, description, confirmLabel }: {
+export function ConfirmDeleteDialog({ open, onOpenChange, noun, name, onConfirm, onMakeInactive, title, description, confirmLabel, confirmVariant = 'destructive', busyLabel = 'Deleting…' }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   noun: string;
@@ -24,6 +24,9 @@ export function ConfirmDeleteDialog({ open, onOpenChange, noun, name, onConfirm,
   title?: string;
   description?: string;
   confirmLabel?: string;
+  /** "default" for a non-destructive confirmation such as Move to archive. */
+  confirmVariant?: 'destructive' | 'default';
+  busyLabel?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<DeleteOutcome>(null);
@@ -63,7 +66,7 @@ export function ConfirmDeleteDialog({ open, onOpenChange, noun, name, onConfirm,
           {offerInactive ? (
             <Button className="min-h-touch md:min-h-0" disabled={busy} onClick={inactive}>{busy ? 'Saving…' : 'Make inactive'}</Button>
           ) : (
-            <Button variant="destructive" className="min-h-touch md:min-h-0" disabled={busy} onClick={del}>{busy ? 'Deleting…' : confirmLabel ?? `Delete ${noun}`}</Button>
+            <Button variant={confirmVariant} className="min-h-touch md:min-h-0" disabled={busy} onClick={del}>{busy ? busyLabel : confirmLabel ?? `Delete ${noun}`}</Button>
           )}
         </AlertDialogFooter>
       </AlertDialogContent>
