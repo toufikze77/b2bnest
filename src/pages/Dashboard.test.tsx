@@ -97,13 +97,17 @@ describe('Dashboard', () => {
     expect(screen.queryByText('Get started')).toBeNull();
   });
 
-  it('shows rota quick action only to owner/admin/manager', async () => {
+  it('shows rota quick add only to owner/admin/manager', async () => {
     const { unmount } = render(ui());
     await screen.findByText('Nothing needs attention');
+    fireEvent.click(screen.getByRole('button', { name: 'Quick add' }));
+    expect(await screen.findByRole('link', { name: 'New task' })).toHaveAttribute('href', '/project-management?create=task');
     expect(screen.queryByRole('link', { name: 'Plan the rota' })).toBeNull();
     unmount();
     org = { ...org, organization: { name: 'Acme', role: 'manager' } };
     render(ui());
+    await screen.findByText('Nothing needs attention');
+    fireEvent.click(screen.getByRole('button', { name: 'Quick add' }));
     expect(await screen.findByRole('link', { name: 'Plan the rota' })).toBeInTheDocument();
   });
 
@@ -183,7 +187,7 @@ describe('Dashboard', () => {
     expect(summary.queryByText('Completed this week')).toBeNull();
     expect(await screen.findByLabelText('1 of 2 tasks done')).toBeInTheDocument();
     for (const l of screen.getAllByRole('link', { name: /Website/ })) expect(l).toHaveAttribute('href', '/project-management?view=list&project=p1');
-    expect(within(screen.getByRole('region', { name: 'Project deadlines' })).getByRole('link', { name: /Website/ })).toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: 'Coming up' })).getByRole('link', { name: /Website/ })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Sales CRM/ })).toHaveAttribute('href', '/workspaces/w1');
     for (const c of calls.filter((x) => x.table === 'projects' || x.table === 'todos')) expect(eqVal(c, 'organization_id')).toBe('org-1');
   });
@@ -195,12 +199,12 @@ describe('Dashboard', () => {
     await waitFor(() => expect(summary.getByRole('link', { name: /Open tasks\s*—\s*Unavailable/ })).toBeInTheDocument());
   });
 
-  describe('Project deadlines panel', () => {
+  describe('Coming up (project deadlines) widget', () => {
     const withProjects = (rows: object[]) => (c: Call) =>
       c.table === 'projects' && c.filters.some((f) => f[0] === 'order') ? { data: rows, count: rows.length, error: null }
         : c.table === 'todos' ? { data: [], count: 0, error: null } : counts(0);
     const proj = (id: string, name: string, deadline: string | null = null) => ({ id, name, color: null, status: 'active', deadline, custom_fields: null, updated_at: today });
-    const panel = async () => within(await screen.findByRole('region', { name: 'Project deadlines' }));
+    const panel = async () => within(await screen.findByRole('region', { name: 'Coming up' }));
 
     it('rows link to the project and are keyboard-focusable', async () => {
       auto = withProjects([proj('p9', 'Launch', addDaysIso(today, 3))]);
@@ -237,6 +241,88 @@ describe('Dashboard', () => {
       expect(await p.findByText(/Ask a company owner, admin or manager/)).toBeInTheDocument();
       expect(p.queryByRole('button')).toBeNull();
       expect(p.queryByRole('link')).toBeNull();
+    });
+  });
+  describe('customisable layout', () => {
+    const key = 'b2bnest.dashboard.layout.v1.u1.org-1';
+    const region = (name: string) => screen.queryByRole('region', { name });
+
+    it('starts on Balanced: one money widget, no support or expenses', async () => {
+      render(ui());
+      await screen.findByText('Nothing needs attention');
+      expect(region('Key money numbers')).toBeInTheDocument();
+      expect(region('Expenses to review')).toBeNull();
+      expect(region('Support tickets')).toBeNull();
+      expect(region('Tasks needing attention')).toBeInTheDocument();
+    });
+
+    it('switches are labelled switches; Save stores the layout per user and company', async () => {
+      render(ui());
+      await screen.findByText('Nothing needs attention');
+      fireEvent.click(screen.getByRole('button', { name: 'Customise dashboard' }));
+      const sw = await screen.findByRole('switch', { name: 'Support tickets' });
+      expect(sw).toHaveAttribute('aria-checked', 'false');
+      expect(screen.getByRole('switch', { name: 'Key money numbers' })).toHaveAttribute('aria-checked', 'true');
+      fireEvent.click(sw);
+      fireEvent.click(screen.getByRole('switch', { name: 'Key money numbers' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+      await waitFor(() => expect(region('Support tickets')).toBeInTheDocument());
+      expect(region('Key money numbers')).toBeNull();
+      const saved = JSON.parse(localStorage.getItem(key)!);
+      expect(saved.preset).toBe('custom');
+      expect(saved.widgets).toContain('support');
+      expect(saved.widgets).not.toContain('money');
+    });
+
+    it('Cancel discards changes', async () => {
+      render(ui());
+      await screen.findByText('Nothing needs attention');
+      fireEvent.click(screen.getByRole('button', { name: 'Customise dashboard' }));
+      fireEvent.click(await screen.findByRole('switch', { name: 'Tasks needing attention' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(region('Tasks needing attention')).toBeInTheDocument();
+      expect(localStorage.getItem(key)).toBeNull();
+    });
+
+    it('a starting layout replaces the widgets; Reset returns to Balanced', async () => {
+      render(ui());
+      await screen.findByText('Nothing needs attention');
+      fireEvent.click(screen.getByRole('button', { name: 'Customise dashboard' }));
+      fireEvent.click(await screen.findByRole('radio', { name: /^Money/ }));
+      expect(screen.getByRole('switch', { name: 'Expenses to review' })).toHaveAttribute('aria-checked', 'true');
+      fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+      expect(screen.getByRole('radio', { name: /^Balanced/ })).toBeChecked();
+      expect(screen.getByRole('switch', { name: 'Expenses to review' })).toHaveAttribute('aria-checked', 'false');
+    });
+
+    it('loads the saved layout for this user and company only', async () => {
+      localStorage.setItem(key, JSON.stringify({ v: 1, preset: 'money', widgets: ['expenses'] }));
+      localStorage.setItem('b2bnest.dashboard.layout.v1.u1.org-2', JSON.stringify({ v: 1, preset: 'custom', widgets: ['support'] }));
+      render(ui());
+      expect(await screen.findByRole('region', { name: 'Expenses to review' })).toBeInTheDocument();
+      expect(region('Tasks needing attention')).toBeNull();
+      expect(region('Support tickets')).toBeNull();
+      const expenseCall = calls.find((c) => c.table === 'expenses')!;
+      expect(eqVal(expenseCall, 'user_id')).toBe('u1');
+      expect(eqVal(expenseCall, 'status')).toBe('pending');
+    });
+
+    it('widgets that are switched off load nothing', async () => {
+      localStorage.setItem(key, JSON.stringify({ v: 1, preset: 'custom', widgets: ['tasks'] }));
+      render(ui());
+      await screen.findByText('Nothing needs attention');
+      // invoices and crm_contacts are still counted for the Get started checklist.
+      for (const t of ['bills', 'crm_deals', 'expenses', 'rota_shifts', 'support_tickets']) expect(calls.some((c) => c.table === t)).toBe(false);
+    });
+
+    it('rota today is scoped to the selected company', async () => {
+      render(ui());
+      await screen.findByText('Nothing needs attention');
+      await waitFor(() => expect(calls.some((c) => c.table === 'rota_shifts')).toBe(true));
+      const c = calls.find((x) => x.table === 'rota_shifts')!;
+      expect(eqVal(c, 'organization_id')).toBe('org-1');
+      expect(eqVal(c, 'shift_date')).toBe(today);
     });
   });
 });

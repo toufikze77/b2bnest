@@ -105,7 +105,7 @@ export function NotificationsPanel() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-10 w-10" aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}>
+        <Button variant="ghost" size="icon" className="relative h-11 w-11 sm:h-10 sm:w-10" aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}>
           <Bell className="h-4 w-4" />
           {unread > 0 && (
             <span aria-hidden className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground">
