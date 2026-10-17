@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
-import { invitableRoles, staffInviteLink, staffInvitationState, emailStatusLabel, type StaffInvitation, type EmailStatus } from '@/lib/onboarding';
+import { invitableRoles, staffInviteLink, staffInvitationState, emailStatusLabel, seatSummaryText, EMAIL_OFF_NOTICE, type StaffInvitation, type EmailStatus, type SeatSummary } from '@/lib/onboarding';
 import * as svc from '@/services/onboardingService';
 
 /** Owner/admin invitation of colleagues (company members, paid seats). All rules are enforced by the database RPCs. */
@@ -18,7 +18,7 @@ export default function InviteMembers() {
   const [role, setRole] = useState<string>('member');
   const [rows, setRows] = useState<StaffInvitation[]>([]);
   const [mail, setMail] = useState<Record<string, EmailStatus>>({});
-  const [seats, setSeats] = useState<{ used: number; pending: number; seat_limit: number | null } | null>(null);
+  const [seats, setSeats] = useState<SeatSummary | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'not_installed' | 'error'>('loading');
   const [busy, setBusy] = useState(false);
 
@@ -63,7 +63,8 @@ export default function InviteMembers() {
         {state === 'error' && <p role="alert" className="text-sm text-destructive">Could not load invitations. <Button size="sm" variant="outline" onClick={load}>Try again</Button></p>}
         {state === 'ready' && (
           <>
-            {seats && <p className="text-sm text-muted-foreground">Seats: {seats.used} members + {seats.pending} pending invitations{seats.seat_limit !== null ? ` of ${seats.seat_limit}` : ' (no limit set on your plan)'}.</p>}
+            {!svc.EMAIL_SENDING_ENABLED && <p role="note" className="rounded-md border border-border bg-muted/40 p-2 text-sm">{EMAIL_OFF_NOTICE}</p>}
+            {seats && <p className="text-sm text-muted-foreground">{seatSummaryText(seats)}</p>}
             <div className="flex flex-wrap gap-2">
               <Input type="email" placeholder="colleague@company.com" value={email} onChange={(e) => setEmail(e.target.value)} className="max-w-xs" aria-label="Colleague email" />
               <Select value={role} onValueChange={setRole}><SelectTrigger className="w-36" aria-label="Role"><SelectValue /></SelectTrigger>

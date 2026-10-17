@@ -102,7 +102,7 @@ import { format, parseISO } from 'date-fns';
 import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { EnhancedTodoView } from './enhanced-todos/EnhancedTodoView';
 import { ProjectCalendarView } from './project-management/ProjectCalendarView';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { ViewSwitcher } from '@/components/work/ViewSwitcher';
 import { WorkFilterBar, useWorkFilters } from '@/components/work/WorkFilterBar';
 import { TaskListView } from '@/components/work/TaskListView';
@@ -707,53 +707,6 @@ const ProjectManagement = () => {
 
   // Note: localStorage saving is handled in individual create/update functions to avoid infinite loops
 
-  const addPersonToTeam = async (teamId: string) => {
-    const email = window.prompt('Member email to invite');
-    if (!email) return;
-    const role = window.prompt('Role (owner, admin, member)') || 'member';
-    
-    try {
-      console.log('Sending invitation...', { email, teamId, role, invitedBy: user?.email });
-      
-      // Send invitation email
-      const { data, error: emailError } = await supabase.functions.invoke('send-invitation-email', {
-        body: {
-          email: email,
-          organization_id: teamId,
-          role: role,
-          invited_by: user?.email || user?.user_metadata?.full_name || 'Someone'
-        }
-      });
-
-      console.log('Function response:', { data, emailError });
-
-      if (emailError) {
-        console.error('Email error:', emailError);
-        toast({
-          title: "Error",
-          description: "Failed to send invitation: " + emailError.message,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      toast({
-        title: "Invitation Sent",
-        description: `Invitation sent to ${email}`,
-      });
-
-      // Refresh teams to show updated members
-      fetchTeams();
-
-    } catch (error: any) {
-      console.error('Catch error:', error);
-      toast({
-        title: "Error", 
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
 
   const createCalendarEvent = async () => {
     const title = window.prompt('Event title');
@@ -3158,9 +3111,9 @@ const ProjectManagement = () => {
             <CardContent>
               <div className="flex flex-wrap gap-2 mb-4">
                 <Button variant="outline" size="sm" onClick={createTeam}>Create team</Button>
-                {(teams || []).map(team => (
-                  <Button key={team.id} variant="outline" size="sm" onClick={() => addPersonToTeam(team.id)}>Add people to {team.name}</Button>
-                ))}
+                {/* Colleagues are invited from Settings → Members & roles (verified, seat-checked, no email while sending is off).
+                    The old "Add people" path emailed a join link that cannot work. */}
+                <Button variant="outline" size="sm" asChild><Link to="/settings?tab=members">Invite colleagues (Settings → Members &amp; roles)</Link></Button>
               </div>
               <div className="space-y-4">
                 {(teams || []).map(team => (

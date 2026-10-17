@@ -1,4 +1,4 @@
-import { safeNext } from '@/lib/onboarding';
+import { confirmationRedirect } from '@/lib/onboarding';
 
 import { useState, useEffect, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
@@ -73,17 +73,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Email + password sign-up
   const signUp = async (email: string, password: string, fullName?: string, companyName?: string) => {
     try {
-      // Only force HTTPS for production, keep localhost as HTTP for development
-      const redirectUrl = window.location.origin.includes('localhost') 
-        ? window.location.origin 
-        : window.location.origin.replace('http://', 'https://');
-      
       // Wait for the real result: abandoning early made created accounts look failed.
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${redirectUrl}${safeNext(new URLSearchParams(window.location.search).get('next'))}`,
+          emailRedirectTo: confirmationRedirect(window.location.origin, window.location.search),
           data: { full_name: fullName, company_name: companyName }
         }
       });
