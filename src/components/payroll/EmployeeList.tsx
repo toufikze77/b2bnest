@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Users, Plus, Edit, Trash2 } from 'lucide-react';
+import { ConfirmDeleteDialog, DeleteOutcome } from '@/components/finance/ConfirmDeleteDialog';
+import { isInUseError } from '@/lib/moneyOut';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -32,7 +31,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
   const { user } = useAuth();
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<Employee | null>(null);
 
   const handleAddEmployee = () => {
     setSelectedEmployee(null);
@@ -44,29 +43,29 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
     setShowEmployeeForm(true);
   };
 
-  const handleDeleteEmployee = async (employeeId: string) => {
-    if (!user || !window.confirm('Are you sure you want to delete this employee?')) {
-      return;
-    }
-
-    setIsDeleting(employeeId);
-    
+  // Same delete as before (owner-filtered); the confirmation is now a dialog instead of window.confirm.
+  const handleDeleteEmployee = async (): Promise<DeleteOutcome> => {
+    if (!user || !deleting) return null;
+    const name = `${deleting.firstName} ${deleting.lastName}`;
     try {
       const { error } = await supabase
         .from('payroll_employees')
         .delete()
-        .eq('id', employeeId)
+        .eq('id', deleting.id)
         .eq('user_id', user.id);
 
       if (error) throw error;
       
-      toast.success('Employee deleted successfully!');
+      toast.success(`Employee ${name} deleted`);
+      setDeleting(null);
       onEmployeesUpdated();
+      return null;
     } catch (error) {
       console.error('Delete employee error:', error);
       toast.error('Failed to delete employee');
-    } finally {
-      setIsDeleting(null);
+      return isInUseError(error as { code?: string; message?: string })
+        ? { message: `${name} can’t be deleted because saved pay runs still include them. Nothing was changed.` }
+        : { message: `${name} couldn’t be deleted. Nothing was changed. Please try again.` };
     }
   };
 
@@ -77,108 +76,90 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
     return `£${(salary / 12).toFixed(0)}/month (£${salary.toLocaleString()}/year)`;
   };
 
+  const name = (e: Employee) => `${e.firstName} ${e.lastName}`;
+  const actions = (e: Employee) => (
+    <div className="flex shrink-0 gap-2">
+      <Button size="sm" variant="outline" className="min-h-touch md:min-h-9" onClick={() => handleEditEmployee(e)} aria-label={`Edit ${name(e)}`}>
+        <Edit className="h-4 w-4" aria-hidden="true" /><span className="hidden lg:inline">Edit</span>
+      </Button>
+      <Button size="sm" variant="outline" className="min-h-touch md:min-h-9" onClick={() => setDeleting(e)} aria-label={`Delete ${name(e)}`}>
+        {/* Red icon only: the red token is 3.4:1 as text on white, below the 4.5:1 text minimum. */}
+        <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" /><span className="hidden lg:inline">Delete</span>
+      </Button>
+    </div>
+  );
+
   return (
     <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Employees ({employees.length})
-            </CardTitle>
-            <Button onClick={handleAddEmployee}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Employee
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="flex items-center gap-2 text-card-title">
+            <Users className="h-5 w-5" aria-hidden="true" />
+            Employees ({employees.length})
+          </h3>
+          <Button onClick={handleAddEmployee} className="min-h-touch md:min-h-0">
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            Add employee
+          </Button>
+        </div>
+        {employees.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 rounded-control border border-dashed p-8 text-center">
+            <Users className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
+            <p className="text-body font-semibold">No employees yet</p>
+            <p className="text-body text-muted-foreground">Add your first employee to start managing payroll.</p>
+            <Button onClick={handleAddEmployee} className="min-h-touch md:min-h-0">
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Add employee
             </Button>
           </div>
-        </CardHeader>
-        <CardContent>
-          {employees.length === 0 ? (
-            <div className="text-center py-8">
-              <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No employees yet</h3>
-              <p className="text-muted-foreground mb-4">
-                Add your first employee to start managing payroll
-              </p>
-              <Button onClick={handleAddEmployee}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add First Employee
-              </Button>
+        ) : (
+          <>
+            {/* Phones: cards, so Edit and Delete are always on screen (the old wide table hid them off to the right). */}
+            <ul aria-label="Employees" className="divide-y divide-border rounded-control border border-border md:hidden">
+              {employees.map((e) => (
+                <li key={e.id} className="flex items-center gap-3 p-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold">{name(e)}</p>
+                    <p className="text-small text-muted-foreground">Tax code {e.taxCode} · NI category {e.niCategory} · {e.payFrequency === 'MTH' ? 'Monthly' : 'Weekly'} pay</p>
+                    <p className="text-small text-muted-foreground">{formatSalary(e.annualSalary, e.payFrequency)}</p>
+                  </div>
+                  {actions(e)}
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto rounded-control border border-border md:block">
+              <table className="w-full text-sm">
+                <caption className="sr-only">Employees</caption>
+                <thead className="border-b bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th scope="col" className="px-3 py-2.5 font-medium">Employee</th>
+                    <th scope="col" className="px-3 py-2.5 font-medium">NI number</th>
+                    <th scope="col" className="px-3 py-2.5 font-medium">Tax code</th>
+                    <th scope="col" className="px-3 py-2.5 font-medium">NI category</th>
+                    <th scope="col" className="px-3 py-2.5 font-medium">Salary</th>
+                    <th scope="col" className="px-3 py-2.5"><span className="sr-only">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {employees.map((employee) => (
+                    <tr key={employee.id} className="border-b last:border-0">
+                      <td className="px-3 py-2.5">
+                        <div className="font-medium">{name(employee)}</div>
+                        <div className="text-small text-muted-foreground">{employee.payFrequency === 'MTH' ? 'Monthly' : 'Weekly'} pay</div>
+                      </td>
+                      <td className="px-3 py-2.5"><code className="rounded bg-muted px-2 py-1 text-xs">{employee.niNumber || 'Not provided'}</code></td>
+                      <td className="px-3 py-2.5">{employee.taxCode}</td>
+                      <td className="px-3 py-2.5">{employee.niCategory}</td>
+                      <td className="px-3 py-2.5">{formatSalary(employee.annualSalary, employee.payFrequency)}</td>
+                      <td className="px-3 py-2.5 text-right">{actions(employee)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Employee</TableHead>
-                  <TableHead>NI Number</TableHead>
-                  <TableHead>Tax Code</TableHead>
-                  <TableHead>NI Category</TableHead>
-                  <TableHead>Salary</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {employees.map((employee) => (
-                  <TableRow key={employee.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">
-                          {employee.firstName} {employee.lastName}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {employee.payFrequency === 'MTH' ? 'Monthly' : 'Weekly'} pay
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <code className="text-xs bg-muted px-2 py-1 rounded">
-                        {employee.niNumber || 'Not provided'}
-                      </code>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{employee.taxCode}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{employee.niCategory}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {formatSalary(employee.annualSalary, employee.payFrequency)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="default" className="bg-green-100 text-green-800">
-                        Active
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEditEmployee(employee)}
-                        >
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDeleteEmployee(employee.id)}
-                          disabled={isDeleting === employee.id}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+          </>
+        )}
+      </div>
 
       <EmployeeForm
         isOpen={showEmployeeForm}
@@ -186,6 +167,8 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
         employee={selectedEmployee}
         onEmployeeUpdated={onEmployeesUpdated}
       />
+      <ConfirmDeleteDialog open={!!deleting} onOpenChange={(o) => { if (!o) setDeleting(null); }}
+        noun="employee" name={deleting ? name(deleting) : ''} onConfirm={handleDeleteEmployee} />
     </>
   );
 };

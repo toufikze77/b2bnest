@@ -253,6 +253,7 @@ const PayRunGenerator: React.FC<PayRunGeneratorProps> = ({
                 value={period}
                 onChange={(e) => setPeriod(e.target.value)}
                 placeholder="2024-01"
+                className="h-11 md:h-10"
               />
             </div>
             <div>
@@ -262,17 +263,18 @@ const PayRunGenerator: React.FC<PayRunGeneratorProps> = ({
                 type="date"
                 value={payDate}
                 onChange={(e) => setPayDate(e.target.value)}
+                className="h-11 md:h-10"
               />
             </div>
             <div>
               <Label htmlFor="taxYear">Tax Year</Label>
               <Select value={taxYear} onValueChange={(value: TaxYear) => setTaxYear(value)}>
-                <SelectTrigger>
+                <SelectTrigger id="taxYear" className="h-11 md:h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  {/* Only years with rates in payrollUKRates. "2023-2024" had none, so Preview threw and stuck on "Calculating…". */}
                   <SelectItem value="2024-2025">2024-2025</SelectItem>
-                  <SelectItem value="2023-2024">2023-2024</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -284,6 +286,7 @@ const PayRunGenerator: React.FC<PayRunGeneratorProps> = ({
               <Button
                 variant="outline"
                 size="sm"
+                className="min-h-touch md:min-h-9"
                 onClick={selectAllEmployees}
               >
                 {selectedEmployees.size === employees.length ? 'Deselect All' : 'Select All'}
@@ -304,12 +307,16 @@ const PayRunGenerator: React.FC<PayRunGeneratorProps> = ({
                 {employees.map((employee) => (
                   <TableRow key={employee.id}>
                     <TableCell>
-                      <Checkbox
-                        checked={selectedEmployees.has(employee.id)}
-                        onCheckedChange={(checked) => 
-                          handleEmployeeSelection(employee.id, checked as boolean)
-                        }
-                      />
+                      {/* 44px hit area around the checkbox; the label names the employee for screen readers. */}
+                      <label className="flex h-11 w-11 cursor-pointer items-center justify-center">
+                        <Checkbox
+                          aria-label={`Include ${employee.firstName} ${employee.lastName}`}
+                          checked={selectedEmployees.has(employee.id)}
+                          onCheckedChange={(checked) => 
+                            handleEmployeeSelection(employee.id, checked as boolean)
+                          }
+                        />
+                      </label>
                     </TableCell>
                     <TableCell>
                       <div>
@@ -339,6 +346,7 @@ const PayRunGenerator: React.FC<PayRunGeneratorProps> = ({
 
             <div className="flex gap-2">
               <Button
+                className="min-h-touch md:min-h-0"
                 onClick={calculatePayItems}
                 disabled={selectedEmployees.size === 0 || isCalculating}
               >

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { FocusReturn, restoreFocus, returnFocusTarget } from '@/components/finance/returnFocus';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,6 +45,10 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({
     payFrequency: 'MTH'
   });
   const [isLoading, setIsLoading] = useState(false);
+
+  // Opened from Edit / Add buttons without a DialogTrigger: hand focus back to that button on close.
+  const opener = useRef<FocusReturn | null>(null);
+  useEffect(() => { if (isOpen) opener.current = returnFocusTarget(); }, [isOpen]);
 
   useEffect(() => {
     if (employee) {
@@ -119,7 +124,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl" onCloseAutoFocus={(e) => restoreFocus(opener.current, e)}>
         <DialogHeader>
           <DialogTitle>
             {employee?.id ? 'Edit Employee' : 'Add New Employee'}
