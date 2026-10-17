@@ -25,7 +25,7 @@ import { excludedDocsNote } from '@/lib/financeSummary';
 import { currencySymbol, formatMoney, normalizeCurrency } from '@/lib/money';
 import { cn } from '@/lib/utils';
 
-const EMPTY: OverviewInput = { invoices: [], expenses: [], bills: [], deals: [], contacts: [], projects: [], tasks: [] };
+const EMPTY: OverviewInput = { invoices: [], expenses: [], deals: [], contacts: [], projects: [], tasks: [] };
 type Errors = Partial<Record<keyof OverviewInput, boolean>>;
 const onNavyFocus = 'focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-offset-0';
 
@@ -73,16 +73,15 @@ const BusinessOverview = () => {
     setLoading(true);
     // Money and CRM: the signed-in user's own records. Projects and tasks: the active company.
     // Archived invoices never leave the database here (archived_at is null).
-    const [inv, exp, bills, deals, contacts, projects, tasks] = await Promise.all([
+    const [inv, exp, deals, contacts, projects, tasks] = await Promise.all([
       supabase.from('invoices').select('id,status,total_amount,currency,created_at,due_date,paid_at,archived_at,client_name').eq('user_id', userId).is(...ACTIVE_FILTER),
-      supabase.from('expenses').select('amount,date').eq('user_id', userId),
-      supabase.from('bills').select('status,amount,currency').eq('user_id', userId),
+      supabase.from('expenses').select('amount,date,status').eq('user_id', userId),
       supabase.from('crm_deals').select('stage,value,currency').eq('user_id', userId),
       supabase.from('crm_contacts').select('status,created_at').eq('user_id', userId),
       supabase.from('projects').select('status').eq('organization_id', organizationId).is('archived_at', null).is('deleted_at', null),
       supabase.from('todos').select('status,due_date').eq('organization_id', organizationId).is('archived_at', null),
     ]);
-    const res = { invoices: inv, expenses: exp, bills, deals, contacts, projects, tasks } as const;
+    const res = { invoices: inv, expenses: exp, deals, contacts, projects, tasks } as const;
     const next = { ...EMPTY } as OverviewInput;
     const errs: Errors = {};
     for (const [k, r] of Object.entries(res) as [keyof OverviewInput, { data: unknown; error: unknown }][]) {
@@ -158,7 +157,7 @@ const BusinessOverview = () => {
 
       <div className="mx-auto w-full max-w-[1440px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
         <p className="text-small text-muted-foreground">
-          Money, CRM, expenses and bills: your own records. Projects and tasks: everyone in {organization?.name || 'this company'}. {currency ? `Money in ${currency} only, never converted.` : 'Choose a currency to see money figures.'} {periodLabel} unless a card says “as of today”.
+          Money, CRM and expenses: your own records. Projects and tasks: everyone in {organization?.name || 'this company'}. {currency ? `Money in ${currency} only, never converted.` : 'Choose a currency to see money figures.'} Expenses have no currency of their own: they count in your account currency{account ? ` (${account})` : ''}. {periodLabel} unless a card says “as of today”.
         </p>
         {anyError && !loading && <ErrorState title="Some figures couldn't be loaded" description="Sections that failed say so below. This is a loading problem, not missing data." onRetry={() => { void load(); }} className="rounded-card" />}
         {excludedNote && <p role="note" className="text-small text-muted-foreground">{excludedNote}</p>}
@@ -168,7 +167,7 @@ const BusinessOverview = () => {
             <OverviewCard loading={loading} link={CARD_LINKS.moneyIn} label="Money in" value={errors.invoices ? null : money(cards.moneyIn.amount)}
               hint={`${cardHint(cards.moneyIn.count, 'paid invoice')}, ${periodLabel.toLowerCase()}, by the date marked paid.`} />
             <OverviewCard loading={loading} link={CARD_LINKS.moneyOut} label="Money out" value={errors.expenses || !cards.moneyOut ? null : money(cards.moneyOut.amount)}
-              hint={cards.moneyOut ? `${cardHint(cards.moneyOut.count, 'expense')}, ${periodLabel.toLowerCase()}.` : `Expenses are in your account currency${account ? ` (${account})` : ''}; choose it to see them.`} />
+              hint={cards.moneyOut ? `${cardHint(cards.moneyOut.count, 'expense')} dated ${periodLabel.toLowerCase()}, paid or not.` : `Expenses are in your account currency${account ? ` (${account})` : ''}; choose it to see them.`} />
             <OverviewCard loading={loading} link={CARD_LINKS.outstanding} label="Outstanding invoices" value={errors.invoices ? null : money(cards.outstanding.amount)}
               hint={`${cardHint(cards.outstanding.count, 'invoice')} sent, not paid, as of today.`} />
             <OverviewCard loading={loading} link={CARD_LINKS.overdue} label="Overdue invoices" value={errors.invoices ? null : money(cards.overdue.amount)}
@@ -181,8 +180,8 @@ const BusinessOverview = () => {
               hint="Company-wide, not completed or cancelled." />
             <OverviewCard loading={loading} link={CARD_LINKS.contacts} label="CRM contacts" value={errors.contacts ? null : String(cards.contacts)}
               hint="Your own contacts." />
-            <OverviewCard loading={loading} link={CARD_LINKS.billsToPay} label="Bills to pay" value={errors.bills ? null : money(cards.billsToPay.amount)}
-              hint={`${cardHint(cards.billsToPay.count, 'unpaid bill')}, as of today. There is no screen to manage bills yet.`} />
+            <OverviewCard loading={loading} link={CARD_LINKS.expensesToPay} label="Expenses to pay" value={errors.expenses || !cards.expensesToPay ? null : money(cards.expensesToPay.amount)}
+              hint={cards.expensesToPay ? `${cardHint(cards.expensesToPay.count, 'unpaid expense')}, as of today. Pending or approved, any date.` : `Not included: expenses are in your account currency${account ? ` (${account})` : ''}; choose it to see them.`} />
           </section>
         )}
 

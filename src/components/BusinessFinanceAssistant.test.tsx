@@ -277,6 +277,61 @@ describe('Archive, restore, delete forever', () => {
   });
 });
 
+describe('The Archive view stays on refresh', () => {
+  const quote = (id: string, extra: Record<string, unknown> = {}) => ({ ...invoice(id, 'sent', 300, day(10)), invoice_number: undefined, quote_number: `Q-${id}`, valid_until: day(10), ...extra });
+  const BASE = '?tool=business-finance-assistant';
+  const pressed = (name: RegExp) => screen.getByRole('button', { name }).getAttribute('aria-pressed');
+  beforeEach(() => {
+    db.rows = {
+      invoices: [invoice('1001', 'draft', 600, day(20)), { ...invoice('1009', 'sent', 70, day(5)), archived_at: iso(1) }],
+      quotes: [quote('501'), quote('509', { archived_at: iso(2) })],
+    };
+  });
+
+  it('switching to Archive writes ?archive=invoices, keeps tool and tab, and replaces history', async () => {
+    renderAt(`${BASE}&tab=invoices`);
+    fireEvent.click(await screen.findByRole('button', { name: /^Archive \(1\)$/ }));
+    await waitFor(() => expect(screen.getByTestId('url').textContent).toBe('?tool=business-finance-assistant&tab=invoices&archive=invoices'));
+    expect(pressed(/^Archive \(1\)$/)).toBe('true');
+    expect(await screen.findAllByText('INV-1009')).not.toHaveLength(0);
+    fireEvent.click(screen.getByRole('button', { name: 'Active' }));
+    await waitFor(() => expect(screen.getByTestId('url').textContent).toBe('?tool=business-finance-assistant&tab=invoices'));
+  });
+
+  it('a fresh load at ?archive=invoices opens the invoices Archive; quotes stay Active', async () => {
+    renderAt(`${BASE}&tab=invoices&archive=invoices`);
+    expect(await screen.findAllByText('INV-1009')).not.toHaveLength(0);
+    expect(pressed(/^Archive \(1\)$/)).toBe('true');
+    expect(screen.queryByText('INV-1001')).toBeNull();
+  });
+
+  it('a fresh load at ?archive=quotes opens the quotes Archive, and the invoices tab is not forced into Archive', async () => {
+    const first = renderAt(`${BASE}&tab=quotes&archive=quotes`);
+    expect(await screen.findAllByText('Q-509')).not.toHaveLength(0);
+    expect(pressed(/^Archive \(1\)$/)).toBe('true');
+    first.unmount();
+    renderAt(`${BASE}&tab=invoices&archive=quotes`);
+    expect(await screen.findAllByText('INV-1001')).not.toHaveLength(0);
+    expect(pressed(/^Active$/)).toBe('true');
+  });
+
+  it('both tabs can be in Archive at once; moving between tabs keeps each view', async () => {
+    renderAt(`${BASE}&tab=quotes&archive=quotes%2Cinvoices`);
+    expect(await screen.findAllByText('Q-509')).not.toHaveLength(0);
+    fireEvent.mouseDown(screen.getByRole('tab', { name: /^Invoices$/ }));
+    fireEvent.click(screen.getByRole('tab', { name: /^Invoices$/ }));
+    expect(await screen.findAllByText('INV-1009')).not.toHaveLength(0);
+    expect(screen.getByTestId('url').textContent).toBe('?tool=business-finance-assistant&tab=invoices&archive=quotes%2Cinvoices');
+  });
+
+  it('an invalid ?archive= value falls back to Active', async () => {
+    renderAt(`${BASE}&tab=invoices&archive=1`);
+    expect(await screen.findAllByText('INV-1001')).not.toHaveLength(0);
+    expect(pressed(/^Active$/)).toBe('true');
+    expect(screen.queryByText('INV-1009')).toBeNull();
+  });
+});
+
 describe('The tab stays on refresh', () => {
   it('switching tab writes ?tab= (other params kept, type= dropped)', async () => {
     renderAt('?tool=business-finance-assistant&tab=dashboard&payroll=history');

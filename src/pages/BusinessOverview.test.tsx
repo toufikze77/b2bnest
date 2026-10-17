@@ -13,14 +13,16 @@ vi.mock('@/components/SEOHead', () => ({ default: () => null }));
 // Charts draw with Recharts (needs layout); the cards and drawer are what is under test.
 vi.mock('@/components/charts', async (orig) => ({ ...(await orig<object>()), TrendChart: () => null, Donut: () => null, ColumnChart: () => null }));
 const functionsInvoke = vi.hoisted(() => vi.fn());
+// Rows per table; every table not listed reads as empty. `tables` records which tables were read.
+const db = vi.hoisted(() => ({ rows: {} as Record<string, unknown[]>, tables: [] as string[] }));
 vi.mock('@/integrations/supabase/client', () => {
-  const chain = (): Record<string, unknown> => new Proxy({}, {
+  const chain = (table: string): Record<string, unknown> => new Proxy({}, {
     get(_t, k: string) {
-      if (k === 'then') return (res: (v: unknown) => void) => res({ data: [], error: null });
-      return () => chain();
+      if (k === 'then') return (res: (v: unknown) => void) => res({ data: db.rows[table] ?? [], error: null });
+      return () => chain(table);
     },
   });
-  return { supabase: { from: () => chain(), functions: { invoke: functionsInvoke } } };
+  return { supabase: { from: (t: string) => { db.tables.push(t); return chain(t); }, functions: { invoke: functionsInvoke } } };
 });
 
 beforeAll(() => {
@@ -29,13 +31,13 @@ beforeAll(() => {
   Element.prototype.releasePointerCapture ??= () => {};
   Element.prototype.scrollIntoView ??= () => {};
 });
-beforeEach(() => localStorage.clear());
+beforeEach(() => { localStorage.clear(); db.rows = {}; db.tables = []; });
 
 const renderPage = () => render(<MemoryRouter><BusinessOverview /></MemoryRouter>);
 const summary = () => screen.getByRole('region', { name: 'Summary' });
 
 describe('Business overview page', () => {
-  it('every card opens the screen that manages it; none goes to the Dashboard; Bills is not a link', async () => {
+  it('every card opens the screen that manages it; none goes to the Dashboard', async () => {
     renderPage();
     await waitFor(() => expect(within(summary()).getAllByRole('link')[0]).toHaveAccessibleName(/^Money in: £0\. 0 paid invoices/));
     const href = (name: RegExp) => within(summary()).getByRole('link', { name }).getAttribute('href');
@@ -44,19 +46,39 @@ describe('Business overview page', () => {
     expect(href(/^Outstanding invoices/)).toBe(invoices);
     expect(href(/^Overdue invoices/)).toBe(invoices);
     expect(href(/^Money out/)).toBe('/business-tools?tool=business-finance-assistant&tab=expenses');
+    expect(href(/^Expenses to pay/)).toBe('/business-tools?tool=business-finance-assistant&tab=expenses');
     expect(href(/^Open pipeline/)).toBe('/crm?tab=deals');
     expect(href(/^CRM contacts/)).toBe('/crm');
     expect(href(/^Active projects/)).toBe('/project-management');
     expect(href(/^Open tasks/)).toBe('/project-management?view=list');
     const links = within(summary()).getAllByRole('link');
-    expect(links).toHaveLength(8);
+    expect(links).toHaveLength(9);
     for (const l of links) {
       expect(l.getAttribute('href')).not.toBe('/dashboard');
       expect(l.getAttribute('aria-label')).toMatch(/Opens .+\.$/);
     }
-    expect(within(summary()).queryByRole('link', { name: /^Bills/ })).toBeNull();
-    expect(within(summary()).getByText(/There is no screen to manage bills yet\./)).toBeInTheDocument();
+    expect(screen.queryByText(/bills/i)).toBeNull();
+    expect(db.tables).not.toContain('bills');
     expect(functionsInvoke).not.toHaveBeenCalled();
+  });
+
+  it('Expenses to pay: pending and approved expenses count, paid ones do not', async () => {
+    db.rows.expenses = [
+      { amount: 45.99, date: '2026-09-28', status: 'pending', description: 'Mobile Bill' },
+      { amount: 120, date: '2025-12-01', status: 'approved' },
+      { amount: 500, date: '2026-10-01', status: 'paid' },
+    ];
+    renderPage();
+    const card = await waitFor(() => within(summary()).getByRole('link', { name: /^Expenses to pay: £166\./ }));
+    expect(card).toHaveAccessibleName('Expenses to pay: £166. 2 unpaid expenses, as of today. Pending or approved, any date. Opens Expenses.');
+    expect(card.className).toMatch(/focus-visible:ring/);
+    expect(within(summary()).getByRole('link', { name: /^Money out/ }).getAttribute('aria-label')).toMatch(/dated this month, paid or not\./);
+  });
+
+  it('Expenses to pay with no unpaid expenses shows £0 and 0 unpaid expenses', async () => {
+    db.rows.expenses = [{ amount: 500, date: '2026-10-01', status: 'paid' }];
+    renderPage();
+    await waitFor(() => expect(within(summary()).getByRole('link', { name: /^Expenses to pay/ })).toHaveAccessibleName(/^Expenses to pay: £0\. 0 unpaid expenses, as of today\./));
   });
 
   it('shows the navy frame: breadcrumb, title, period, currency and Customise', () => {
