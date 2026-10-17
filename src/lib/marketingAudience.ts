@@ -1,3 +1,4 @@
+import { isClosedStage } from './dashboardWidgets';
 import { isUsableEmail, extractLinkedIn } from './crmContactsExcel';
 
 export type AudienceContact = { status?: string | null; source?: string | null; email?: string | null; notes?: string | null };
@@ -28,7 +29,8 @@ type DealLike = { value?: number | null; probability?: number | null; stage?: st
  * - Deals without a probability are not weighted; their raw value is reported separately.
  */
 export function crmSummary(contacts: AudienceContact[], deals: DealLike[]) {
-  const open = deals.filter((d) => !['closed-won', 'closed-lost', 'won', 'lost'].includes((d.stage || '').toLowerCase()));
+  // Same open/closed rule as the Dashboard and the pipeline board.
+  const open = deals.filter((d) => !isClosedStage(d.stage));
   const weighted: Record<string, number> = {};
   const unweighted: Record<string, number> = {};
   let noProbability = 0;
