@@ -84,6 +84,15 @@ Rules:
   `accessibilityLayer`), and colour is never the only signal.
 - **Responsive:** grids collapse to one column at phone width; the donut legend moves under the ring.
 
+## Invoices & quotes status chips (`src/lib/financeSummary.ts`)
+
+Stored invoice status → chip: `paid` → Paid · `cancelled` / `canceled` / `void` → Cancelled ·
+`draft` or empty → Draft · `sent`, `pending`, `overdue` and anything else → Sent, shown as
+**Overdue** when the due date is before today. Overdue is worked out in the app and never written
+back; a draft is never overdue. Quotes: `draft`/empty → Draft, `sent` → Sent, anything else keeps
+its stored word. Revenue = paid invoices only; quotes never count. Render chips through
+`InvoiceStatusChip` / `QuoteStatusChip` (`src/components/finance/DocStatusChip.tsx`).
+
 ## Next screens to bring onto these patterns (not done yet)
 
 - Settings → Account (`src/components/AccountSettings.tsx`): preferences form, currency picker, 2FA.
@@ -91,5 +100,5 @@ Rules:
   data (`src/pages/Settings.tsx`, `src/components/settings/*`).
 - Business overview (`src/pages/BusinessOverview.tsx`): hard-coded colour classes and its own
   money formatter.
-- Finance assistant charts (`src/components/BusinessFinanceAssistant.tsx`): default recharts
-  colours, "$" fallbacks.
+- Banking and Payroll (UK) tabs inside Invoices & quotes: only the page frame is new; their
+  insides still use the old `formatCurrency` (prints "$" for an unknown or empty code).

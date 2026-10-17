@@ -20,20 +20,21 @@ export const isLost = (stage: string | null | undefined) => LOST.has(stageKey(st
 
 type KV = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 const store = (): KV | null => { try { return window.localStorage; } catch { return null; } };
-export const reportCurrencyKey = (userId: string) => `b2bnest.crm.reportCurrency.${userId}`;
+/** Remembered per user and per area ('crm' keeps the Phase 1b key; 'finance' is Invoices & quotes). */
+export const reportCurrencyKey = (userId: string, scope = 'crm') => `b2bnest.${scope}.reportCurrency.${userId}`;
 
-export function loadReportCurrency(userId: string | null | undefined, account: string, s: KV | null = store()): string {
+export function loadReportCurrency(userId: string | null | undefined, account: string, s: KV | null = store(), scope = 'crm'): string {
   const fallback = normalizeCurrency(account);
   if (!userId || !s) return fallback;
-  try { return normalizeCurrency(s.getItem(reportCurrencyKey(userId))) || fallback; } catch { return fallback; }
+  try { return normalizeCurrency(s.getItem(reportCurrencyKey(userId, scope))) || fallback; } catch { return fallback; }
 }
-export function saveReportCurrency(userId: string | null | undefined, currency: string, s: KV | null = store()) {
+export function saveReportCurrency(userId: string | null | undefined, currency: string, s: KV | null = store(), scope = 'crm') {
   if (!userId || !s) return false;
-  try { s.setItem(reportCurrencyKey(userId), normalizeCurrency(currency)); return true; } catch { return false; }
+  try { s.setItem(reportCurrencyKey(userId, scope), normalizeCurrency(currency)); return true; } catch { return false; }
 }
-export function clearReportCurrency(userId: string | null | undefined, s: KV | null = store()) {
+export function clearReportCurrency(userId: string | null | undefined, s: KV | null = store(), scope = 'crm') {
   if (!userId || !s) return false;
-  try { s.removeItem(reportCurrencyKey(userId)); return true; } catch { return false; }
+  try { s.removeItem(reportCurrencyKey(userId, scope)); return true; } catch { return false; }
 }
 
 /** Splits deals into those stored in `currency` and a count of the rest per stored currency ('' = not set). */
@@ -89,7 +90,7 @@ export function lastMonths(count: number, today = new Date()) {
 }
 
 /** YYYY-MM of a stored date or timestamp, or null when missing/invalid. Date-only strings are taken as written. */
-function monthOf(value: string | null | undefined): string | null {
+export function monthOf(value: string | null | undefined): string | null {
   if (!value) return null;
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value.slice(0, 7);
   const d = new Date(value);

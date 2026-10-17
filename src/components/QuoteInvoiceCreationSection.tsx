@@ -12,7 +12,9 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Minus, Save, Send, Edit, X, FileText, Upload, Package } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { formatCurrency } from '@/utils/currencyUtils';
+import { CURRENCIES } from '@/utils/currencyUtils';
+import { formatMoney, normalizeCurrency } from '@/lib/money';
+import { useAccountCurrency } from '@/hooks/useAccountCurrency';
 import ImageUpload from '@/components/ImageUpload';
 
 interface QuoteInvoiceCreationSectionProps {
@@ -39,6 +41,8 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
   onCancelEdit
 }) => {
   const { user } = useAuth();
+  // New documents use the account currency (sent explicitly, never the database default of USD).
+  const accountCurrency = useAccountCurrency();
   const [isLoading, setIsLoading] = useState(false);
   const [saveAsDraft, setSaveAsDraft] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
@@ -56,7 +60,8 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
     valid_until: '',
     due_date: '',
     status: 'draft',
-    logo_url: ''
+    logo_url: '',
+    currency: ''
   });
 
   const [items, setItems] = useState([
@@ -100,7 +105,9 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
         valid_until: editingDocument.valid_until || '',
         due_date: editingDocument.due_date || '',
         status: editingDocument.status || 'draft',
-        logo_url: editingDocument.logo_url || ''
+        logo_url: editingDocument.logo_url || '',
+        // An existing document keeps its stored currency.
+        currency: normalizeCurrency(editingDocument.currency)
       });
       
       setLogoUrl(editingDocument.logo_url || '');
@@ -135,7 +142,8 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
       valid_until: '',
       due_date: '',
       status: 'draft',
-      logo_url: ''
+      logo_url: '',
+      currency: ''
     });
     setItems([{ id: '1', description: '', quantity: 1, rate: 0, amount: 0 }]);
     setSaveAsDraft(true);
@@ -196,6 +204,9 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
   };
 
   const { subtotal, taxAmount, total } = calculateTotals();
+  const currency = formData.currency || (editingDocument ? normalizeCurrency(editingDocument.currency) : accountCurrency);
+  const fmt = (n: number) => formatMoney(n, currency, { cents: true });
+  const currencyOptions = Array.from(new Set([...(accountCurrency ? [accountCurrency] : []), ...Object.keys(CURRENCIES), ...(currency ? [currency] : [])]));
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -237,6 +248,7 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
         notes: formData.notes,
         status: saveAsDraft ? 'draft' : 'sent',
         logo_url: logoUrl,
+        currency: currency || null,
         updated_at: new Date().toISOString(),
         ...(documentType === 'quote' && {
           valid_until: formData.valid_until || null,
@@ -456,6 +468,18 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
               />
             </div>
           )}
+          <div>
+            <Label htmlFor="doc_currency">Currency</Label>
+            <Select value={currency || undefined} onValueChange={(v) => setFormData(prev => ({ ...prev, currency: v }))}>
+              <SelectTrigger id="doc_currency" aria-describedby="doc_currency_help"><SelectValue placeholder="Choose a currency" /></SelectTrigger>
+              <SelectContent>
+                {currencyOptions.map((c) => <SelectItem key={c} value={c}>{c}{c === accountCurrency ? ' (account currency)' : ''}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <p id="doc_currency_help" className="mt-1 text-small text-muted-foreground">
+              {editingDocument ? 'This document keeps the currency it was saved in unless you change it.' : 'Defaults to your account currency. Change it for this document only.'}
+            </p>
+          </div>
           {documentType === 'invoice' && (
             <div>
               <Label htmlFor="due_date">Due Date</Label>
@@ -511,7 +535,7 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
                       <SelectItem key={product.id} value={product.id}>
                         <div className="flex items-center gap-2">
                           <Package className="h-4 w-4" />
-                          <span>{product.name} - {formatCurrency(product.price)}</span>
+                          <span>{product.name} - {fmt(product.price)}</span>
                         </div>
                       </SelectItem>
                     ))}
@@ -563,7 +587,7 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
                   <Label htmlFor={`amount-${item.id}`}>Amount</Label>
                   <Input
                     id={`amount-${item.id}`}
-                    value={formatCurrency(item.amount)}
+                    value={fmt(item.amount)}
                     readOnly
                     className="bg-muted"
                   />
@@ -587,18 +611,18 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
         <div className="space-y-2 pt-4 border-t">
           <div className="flex justify-between text-sm">
             <span>Subtotal:</span>
-            <span>{formatCurrency(subtotal)}</span>
+            <span>{fmt(subtotal)}</span>
           </div>
           {Number(formData.tax_rate) > 0 && (
             <div className="flex justify-between text-sm">
               <span>Tax ({formData.tax_rate}%):</span>
-              <span>{formatCurrency(taxAmount)}</span>
+              <span>{fmt(taxAmount)}</span>
             </div>
           )}
           <Separator />
           <div className="flex justify-between font-semibold">
             <span>Total:</span>
-            <span>{formatCurrency(total)}</span>
+            <span>{fmt(total)}</span>
           </div>
         </div>
 
