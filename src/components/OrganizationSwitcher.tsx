@@ -20,7 +20,7 @@ const OrganizationSwitcher = () => {
 
   if (memberships.length === 1 && organization) {
     return (
-      <div className="flex h-10 min-w-0 max-w-56 items-center gap-2 rounded-md border border-border bg-surface px-3 text-sm font-medium text-foreground shadow-xs">
+      <div className="flex h-11 min-w-0 max-w-56 sm:h-10 items-center gap-2 rounded-md border border-border bg-surface px-3 text-sm font-medium text-foreground shadow-xs">
         <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         <span className="truncate">{organization.name}</span>
       </div>
@@ -31,7 +31,7 @@ const OrganizationSwitcher = () => {
     <div className="flex min-w-0 items-center gap-2">
       <Building2 className="hidden h-4 w-4 shrink-0 text-muted-foreground sm:block" aria-hidden="true" />
       <Select value={organizationId ?? undefined} onValueChange={setActiveOrganization}>
-        <SelectTrigger className="h-10 w-[190px] max-w-[42vw] bg-surface shadow-xs" aria-label="Active company">
+        <SelectTrigger className="h-11 w-[190px] sm:h-10 max-w-[42vw] bg-surface shadow-xs" aria-label="Active company">
           <SelectValue placeholder="Choose a company" />
         </SelectTrigger>
         <SelectContent>

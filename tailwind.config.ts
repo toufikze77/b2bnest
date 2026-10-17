@@ -18,7 +18,36 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				sans: ['Figtree', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
+			},
+			// Option B type scale: page title 30 bold, card heading 18 bold, body 14.5, small 12.5.
+			fontSize: {
+				'page-title': ['30px', { lineHeight: '38px', fontWeight: '700', letterSpacing: '-0.01em' }],
+				'card-title': ['18px', { lineHeight: '26px', fontWeight: '700' }],
+				body: ['14.5px', { lineHeight: '22px' }],
+				small: ['12.5px', { lineHeight: '18px' }],
+			},
+			spacing: {
+				sidebar: '248px',
+				touch: '44px',
+			},
+			minHeight: { touch: '44px' },
+			minWidth: { touch: '44px' },
 			colors: {
+				brand: {
+					blue: 'hsl(var(--brand-blue))',
+					navy: 'hsl(var(--brand-navy))',
+					'navy-foreground': 'hsl(var(--brand-navy-foreground))',
+					'navy-muted': 'hsl(var(--brand-navy-muted))',
+				},
+				link: 'hsl(var(--link))',
+				nav: {
+					active: 'hsl(var(--nav-active))',
+					hover: 'hsl(var(--nav-hover))',
+					marker: 'hsl(var(--nav-marker))',
+				},
+				focus: 'hsl(var(--focus-ring))',
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
@@ -85,6 +114,8 @@ export default {
 				}
 			},
 			borderRadius: {
+				card: 'var(--radius-card)',
+				control: 'var(--radius)',
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'

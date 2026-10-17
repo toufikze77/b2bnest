@@ -48,7 +48,7 @@ export function GlobalCommand() {
 
   return (
     <>
-      <Button variant="outline" className="h-10 w-10 justify-center bg-surface px-0 text-muted-foreground shadow-xs lg:w-56 lg:justify-start lg:px-3 xl:w-72" onClick={() => setOpen(true)} aria-label="Search B2BNest">
+      <Button variant="outline" className="h-11 w-11 justify-center sm:h-10 sm:w-10 bg-surface px-0 text-muted-foreground shadow-xs lg:w-56 lg:justify-start lg:px-3 xl:w-72" onClick={() => setOpen(true)} aria-label="Search B2BNest">
         <Search className="h-4 w-4" />
         <span className="hidden lg:ml-1 lg:inline">Search pages and actions</span>
         <kbd className="ml-auto hidden rounded border border-border bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground lg:inline">⌘K</kbd>
