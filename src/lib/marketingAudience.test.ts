@@ -28,6 +28,17 @@ describe('marketing audience', () => {
     expect(s.customerShare).toBe(33);
     expect(crmSummary([], []).customerShare).toBeNull();
   });
+
+  it('uses the shared closed-stage rule, so "closed won" with a space or "Closed Lost" are not open', () => {
+    const s = crmSummary([], [
+      { value: 1, probability: 50, stage: 'closed won', currency: 'GBP' },
+      { value: 1, probability: 50, stage: 'Closed Lost', currency: 'GBP' },
+      { value: 1, probability: 50, stage: 'closed_won', currency: 'GBP' },
+      { value: 100, probability: 50, stage: 'negotiation', currency: 'GBP' },
+    ]);
+    expect(s.openDeals).toBe(1);
+    expect(s.weightedByCurrency).toEqual({ GBP: 50 });
+  });
   it('never shows a £ total for USD deals', () => {
     expect(formatByCurrency({ USD: 500 })).toBe('US$500');
   });

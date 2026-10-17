@@ -1,4 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useActiveOrganization } from '@/contexts/OrganizationContext';
+import ContactsImportExport from './crm/ContactsImportExport';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
@@ -58,8 +63,15 @@ interface Deal {
   updated_at: string;
 }
 
-const CRM = () => {
+interface CRMProps {
+  /** Full-page mode (/crm): navy header band with breadcrumb, actions and tabs. Embedded uses (Business Tools) leave it off. */
+  band?: boolean;
+}
+
+const CRM = ({ band = false }: CRMProps) => {
   const { user } = useAuth();
+  const { organization } = useActiveOrganization();
+  const [addContactOpen, setAddContactOpen] = useState(false);
   const { canAccessFeature } = useSubscription();
   const { toast } = useToast();
   const [params, setParams] = useSearchParams();
@@ -319,13 +331,16 @@ const CRM = () => {
     }
   };
 
-  const updateDeal = async (dealId: string, dealData: Partial<Deal>) => {
+  /**
+   * Saves only the fields passed in (same defaults as before for each field that is passed),
+   * so a stage-only move never rewrites a missing value or probability.
+   * Returns the saved deal, or undefined on failure. `quiet` leaves the messages to the caller.
+   */
+  const updateDeal = async (dealId: string, dealData: Partial<Deal>, opts: { quiet?: boolean } = {}) => {
+    const say = (t: Parameters<typeof toast>[0]) => { if (!opts.quiet) toast(t); };
     try {
-      console.log('Updating deal with ID:', dealId, 'data:', dealData);
-      
       if (!user?.id) {
-        console.error('No user ID available');
-        toast({
+        say({
           title: "Error",
           description: "You must be logged in to update deals",
           variant: "destructive"
@@ -333,15 +348,15 @@ const CRM = () => {
         return;
       }
 
-      const updateData = {
-        title: dealData.title?.trim(),
-        value: dealData.value || 0,
-        stage: dealData.stage || 'prospecting',
-        contact_id: dealData.contact_id || null,
-        probability: dealData.probability || 50,
-        close_date: dealData.close_date || null,
-        notes: dealData.notes?.trim() || null
-      };
+      const has = (k: keyof Deal) => Object.prototype.hasOwnProperty.call(dealData, k);
+      const updateData: { title?: string; value?: number; stage?: string; contact_id?: string | null; probability?: number; close_date?: string | null; notes?: string | null } = {};
+      if (has('title')) updateData.title = dealData.title?.trim();
+      if (has('value')) updateData.value = dealData.value || 0;
+      if (has('stage')) updateData.stage = dealData.stage || 'prospecting';
+      if (has('contact_id')) updateData.contact_id = dealData.contact_id || null;
+      if (has('probability')) updateData.probability = dealData.probability || 50;
+      if (has('close_date')) updateData.close_date = dealData.close_date || null;
+      if (has('notes')) updateData.notes = dealData.notes?.trim() || null;
 
       const { data, error } = await supabase
         .from('crm_deals')
@@ -353,7 +368,7 @@ const CRM = () => {
 
       if (error) {
         console.error('Supabase deal update error:', error);
-        toast({
+        say({
           title: "Database Error",
           description: error.message || "Failed to update deal",
           variant: "destructive"
@@ -366,7 +381,7 @@ const CRM = () => {
         deal.id === dealId ? data : deal
       ));
       
-      toast({
+      say({
         title: "Success",
         description: "Deal updated successfully!"
       });
@@ -374,7 +389,7 @@ const CRM = () => {
       return data;
     } catch (error) {
       console.error('Error updating deal:', error);
-      toast({
+      say({
         title: "Error",
         description: `Failed to update deal: ${error.message}`,
         variant: "destructive"
@@ -505,8 +520,71 @@ const CRM = () => {
   // Old deep link: CRM security moved to company settings.
   if (params.get('tab') === 'security') return <Navigate to="/settings?tab=company-security" replace />;
 
+  const totalRevenue = deals.reduce((sum, deal) => sum + ((deal.value || 0) * (deal.probability || 50) / 100), 0);
+  const ready = canAccessCRM && !loading;
+
+  const tabList = (
+    <TabsList className={band
+      ? 'flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-none bg-transparent p-0 text-brand-navy-muted'
+      : 'flex w-full overflow-x-auto justify-start'}>
+      {[['contacts', 'Contacts'], ['deals', 'Sales Pipeline'], ['marketing', 'Marketing'], ['reports', 'Reports'], ['analytics', 'Analytics']].map(([v, label]) => (
+        <TabsTrigger key={v} value={v} className={band
+          ? 'min-h-touch rounded-none border-b-[3px] border-transparent px-4 pb-2 pt-2 text-body font-semibold text-brand-navy-muted shadow-none hover:text-white focus-visible:ring-[3px] focus-visible:ring-offset-0 data-[state=active]:border-nav-marker data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none'
+          : undefined}>
+          {label}
+        </TabsTrigger>
+      ))}
+    </TabsList>
+  );
+
+  /** Navy header band for the full CRM page; tabs sit on the band. */
+  const bandHeader = band && (
+    <div className="bg-brand-navy text-brand-navy-foreground">
+      <div className="mx-auto w-full max-w-[1440px] px-4 pt-5 sm:px-6 lg:px-8">
+        <nav aria-label="Breadcrumb">
+          <ol className="flex flex-wrap items-center gap-1.5 text-small text-brand-navy-muted">
+            <li><Link to="/dashboard" className="inline-flex min-h-touch items-center rounded-sm underline-offset-2 md:min-h-0 hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring">{organization?.name || 'Company'}</Link></li>
+            <li aria-hidden="true">/</li>
+            <li>Customers</li>
+            <li aria-hidden="true">/</li>
+            <li aria-current="page" className="font-semibold text-white">CRM</li>
+          </ol>
+        </nav>
+        <div className="mt-2 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-page-title text-white">CRM</h1>
+            <p className="mt-1 text-body text-brand-navy-muted">Manage contacts, opportunities and the next action for each relationship.</p>
+          </div>
+          {ready && (
+            <div className="flex flex-wrap gap-2 [&_button]:min-h-touch [&_button]:focus-visible:ring-offset-brand-navy">
+              {/* Outline button on navy: white text and border, like "Customise dashboard". */}
+              <div className="contents [&>button]:border-white/50 [&>button]:bg-transparent [&>button]:text-white [&>button:hover]:bg-white/10 [&>button:hover]:text-white">
+                <ContactsImportExport contacts={contacts} onImported={fetchCRMData} />
+              </div>
+              <Button onClick={() => { setActiveTab('contacts'); setAddContactOpen(true); }}>
+                <Plus className="h-4 w-4" aria-hidden="true" />Add contact
+              </Button>
+            </div>
+          )}
+        </div>
+        {ready ? <div className="mt-4">{tabList}</div> : <div className="h-5" />}
+      </div>
+    </div>
+  );
+
+  const shell = (body: React.ReactNode) => band ? (
+    <div className="min-w-0">
+      {bandHeader}
+      <div className="mx-auto w-full max-w-[1440px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">{body}</div>
+    </div>
+  ) : <div className="max-w-7xl mx-auto p-6 space-y-6">{body}</div>;
+
   if (!canAccessCRM) {
-    return (
+    return band ? shell(
+      <div className="max-w-4xl">
+        <SubscriptionUpgrade featureName="CRM" onUpgrade={() => window.location.reload()} />
+      </div>
+    ) : (
       <div className="max-w-4xl mx-auto p-6">
         <SubscriptionUpgrade 
           featureName="CRM" 
@@ -517,11 +595,12 @@ const CRM = () => {
   }
 
   if (loading) {
-    return (
-      <div className="max-w-7xl mx-auto p-6 flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin" />
+    const spinner = (
+      <div className="flex items-center justify-center min-h-[400px]" role="status" aria-label="Loading CRM">
+        <Loader2 className="w-8 h-8 animate-spin" aria-hidden="true" />
       </div>
     );
+    return band ? shell(spinner) : <div className="max-w-7xl mx-auto p-6">{spinner}</div>;
   }
 
   const statusColors = {
@@ -530,7 +609,6 @@ const CRM = () => {
     customer: 'bg-green-500'
   };
 
-  const totalRevenue = deals.reduce((sum, deal) => sum + ((deal.value || 0) * (deal.probability || 50) / 100), 0);
   const summary = crmSummary(contacts, deals);
   const noProb = summary.noProbabilityDeals
     ? ` ${summary.noProbabilityDeals} open deal(s) have no probability and are left out (unweighted: ${formatByCurrency(summary.unweightedByCurrency)}).`
@@ -542,66 +620,75 @@ const CRM = () => {
     { icon: TrendingUp, label: 'Customers', value: summary.customerShare == null ? '—' : `${summary.customerShare}%`, hint: 'Share of contacts with status Customer.' },
   ];
 
-  return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* Stats Cards — recorded data only */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {stats.map(({ icon: Icon, label, value, hint }) => (
-          <Card key={label}>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground"><Icon className="w-4 h-4" />{label}</div>
-              <p className="text-2xl font-bold mt-1">{value}</p>
-              <p className="text-xs text-muted-foreground mt-1">{hint}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="flex w-full overflow-x-auto justify-start">
-          <TabsTrigger value="contacts">Contacts</TabsTrigger>
-          <TabsTrigger value="deals">Sales Pipeline</TabsTrigger>
-          <TabsTrigger value="marketing">Marketing</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="contacts" className="mt-6">
-          <ContactsView 
-            contacts={contacts} 
-            statusColors={statusColors}
-            onAddContact={addContact}
-            onUpdateContact={updateContact}
-            onDeleteContact={deleteContact}
-            onRefresh={fetchCRMData}
-          />
-        </TabsContent>
-        
-        <TabsContent value="deals" className="mt-6">
-          <DealsView 
-            deals={deals}
-            onAddDeal={addDeal}
-            onUpdateDeal={updateDeal}
-            onDeleteDeal={deleteDeal}
-            onRefresh={fetchCRMData}
-          />
-        </TabsContent>
-        
-        <TabsContent value="marketing" className="mt-6">
-          <MarketingTab contacts={contacts} />
-        </TabsContent>
-
-
-        <TabsContent value="reports" className="mt-6">
-          <ReportsTab totalRevenue={totalRevenue} />
-        </TabsContent>
-
-        <TabsContent value="analytics" className="mt-6">
-          <AnalyticsTab totalRevenue={totalRevenue} />
-        </TabsContent>
-      </Tabs>
+  const statsRow = (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {stats.map(({ icon: Icon, label, value, hint }) => (
+        <Card key={label}>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground"><Icon className="w-4 h-4" aria-hidden="true" />{label}</div>
+            <p className="text-2xl font-bold mt-1">{value}</p>
+            <p className="text-xs text-muted-foreground mt-1">{hint}</p>
+          </CardContent>
+        </Card>
+      ))}
     </div>
+  );
+
+  const panels = (
+    <>
+      <TabsContent value="contacts" className={band ? 'mt-0' : 'mt-6'}>
+        <ContactsView 
+          contacts={contacts} 
+          statusColors={statusColors}
+          onAddContact={addContact}
+          onUpdateContact={updateContact}
+          onDeleteContact={deleteContact}
+          onRefresh={fetchCRMData}
+          actionsInHeader={band}
+          addOpen={addContactOpen}
+          onAddOpenChange={setAddContactOpen}
+        />
+      </TabsContent>
+      
+      <TabsContent value="deals" className={band ? 'mt-0' : 'mt-6'}>
+        <DealsView 
+          deals={deals}
+          contacts={contacts}
+          onAddDeal={addDeal}
+          onUpdateDeal={updateDeal}
+          onDeleteDeal={deleteDeal}
+          onRefresh={fetchCRMData}
+        />
+      </TabsContent>
+      
+      <TabsContent value="marketing" className={band ? 'mt-0' : 'mt-6'}>
+        <MarketingTab contacts={contacts} />
+      </TabsContent>
+
+      <TabsContent value="reports" className={band ? 'mt-0' : 'mt-6'}>
+        <ReportsTab totalRevenue={totalRevenue} />
+      </TabsContent>
+
+      <TabsContent value="analytics" className={band ? 'mt-0' : 'mt-6'}>
+        <AnalyticsTab totalRevenue={totalRevenue} />
+      </TabsContent>
+    </>
+  );
+
+  // Tabs wraps the band too, so the tab list on the band controls the panels below it.
+  return (
+    <Tabs value={activeTab} onValueChange={setActiveTab}>
+      {band ? shell(<>{statsRow}{panels}</>) : (
+        <div className="max-w-7xl mx-auto p-6 space-y-6">
+          {/* Stats Cards — recorded data only */}
+          {statsRow}
+
+          {/* Main Content */}
+          {tabList}
+          {panels}
+        </div>
+      )}
+    </Tabs>
   );
 };
 
