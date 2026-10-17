@@ -1,384 +1,142 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
-import { 
-  TrendingUp, 
-  Users, 
-  Mail, 
-  Phone, 
-  MessageSquare, 
-  BarChart3,
-  Eye,
-  Calendar,
-  Target,
-  DollarSign
-} from 'lucide-react';
+import { ChartCard, ColumnChart, Donut, StatTile, TrendChart } from '@/components/charts';
+import { pct } from '@/components/charts/chartTheme';
+import {
+  AnalyticsContact, AnalyticsDeal, averageWonDeal, contactsAdded, dealsInCurrency, excludedNote, isWon, leadSources, monthlyWon, winRate,
+} from '@/lib/crmAnalytics';
+import { currencySymbol, formatMoney, normalizeCurrency } from '@/lib/money';
+import { useReportCurrency } from '@/hooks/useReportCurrency';
 import CurrencySelector from './CurrencySelector';
 
 interface AnalyticsTabProps {
-  totalRevenue: number;
+  contacts: AnalyticsContact[];
+  deals: AnalyticsDeal[];
+  error?: boolean;
+  onRetry?: () => void;
+  /** Switch CRM tab (for "Add your first contact / deal"). */
+  onOpenTab?: (tab: string) => void;
 }
 
-const AnalyticsTab = ({ totalRevenue }: AnalyticsTabProps) => {
-  const [timeRange, setTimeRange] = useState('30d');
-  const [currency, setCurrency] = useState('USD');
+/** 6 or 12 months, as a segmented control. */
+function RangeControl({ value, onChange, label }: { value: number; onChange: (n: number) => void; label: string }) {
+  return (
+    <div role="group" aria-label={label} className="flex gap-1 rounded-control border bg-muted p-1">
+      {[6, 12].map((n) => (
+        <Button key={n} size="sm" variant={value === n ? 'default' : 'ghost'} aria-pressed={value === n} className="min-h-touch md:min-h-0" onClick={() => onChange(n)}>{n} months</Button>
+      ))}
+    </div>
+  );
+}
 
-  // Pie chart data for lead sources
-  const pieData = [
-    { name: 'Website', value: 45, color: '#3B82F6' },
-    { name: 'Referrals', value: 30, color: '#10B981' },
-    { name: 'Social Media', value: 15, color: '#F59E0B' },
-    { name: 'Email Campaign', value: 10, color: '#EF4444' },
-  ];
-  
-  // Sample analytics data (in a real app, this would come from API)
-  const analyticsData = {
-    communicationStats: {
-      totalEmails: 1247,
-      emailOpenRate: 68,
-      emailClickRate: 24,
-      totalCalls: 156,
-      callConnectRate: 84,
-      avgCallDuration: '4:32',
-      totalSMS: 89,
-      smsResponseRate: 42
-    },
-    leadConversion: {
-      totalLeads: 342,
-      qualifiedLeads: 156,
-      conversionRate: 23,
-      avgTimeToConvert: '12 days'
-    },
-    salesMetrics: {
-      closedDeals: 28,
-      avgDealSize: 15600,
-      salesCycle: '45 days',
-      winRate: 31
-    }
-  };
+/** Currency picker for Reports and Analytics. The tab owns the state (one useReportCurrency per tab) and passes it in. */
+export function ReportCurrencyControl({ deals, rc }: { deals: AnalyticsDeal[]; rc: ReturnType<typeof useReportCurrency> }) {
+  const { currency, setCurrency, reset, isCustom, account } = rc;
+  const stored = Array.from(new Set(deals.map((d) => normalizeCurrency(d.currency)).filter(Boolean)));
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <label htmlFor="report-currency" className="text-small font-semibold text-foreground">Currency</label>
+      <CurrencySelector id="report-currency" value={currency} onValueChange={setCurrency} extraCodes={stored} className="h-11 w-56 md:h-10" />
+      {isCustom && (
+        <button type="button" onClick={reset} className="min-h-touch rounded-sm text-small font-semibold text-link underline underline-offset-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring md:min-h-0">
+          Reset to account currency ({account})
+        </button>
+      )}
+    </div>
+  );
+}
 
-  // Bar chart data for monthly performance
-  const monthlyData = [
-    { name: 'Jan', deals: 12, revenue: 45000 },
-    { name: 'Feb', deals: 19, revenue: 52000 },
-    { name: 'Mar', deals: 15, revenue: 48000 },
-    { name: 'Apr', deals: 28, revenue: 65000 },
-    { name: 'May', deals: 22, revenue: 58000 },
-    { name: 'Jun', deals: 25, revenue: 72000 },
-  ];
+const AnalyticsTab = ({ contacts, deals, error, onRetry, onOpenTab }: AnalyticsTabProps) => {
+  const rc = useReportCurrency();
+  const { currency } = rc;
+  const [wonRange, setWonRange] = useState(6);
+  const [addedRange, setAddedRange] = useState(6);
+  const money = (n: number) => formatMoney(n, currency);
+  const state = error ? 'error' as const : 'ready' as const;
 
-  // Line chart data for conversion trends
-  const conversionTrends = [
-    { month: 'Jan', leads: 120, conversions: 28 },
-    { month: 'Feb', leads: 135, conversions: 32 },
-    { month: 'Mar', leads: 148, conversions: 35 },
-    { month: 'Apr', leads: 162, conversions: 42 },
-    { month: 'May', leads: 171, conversions: 45 },
-    { month: 'Jun', leads: 185, conversions: 48 },
-  ];
+  const sources = useMemo(() => leadSources(contacts), [contacts]);
+  const won = useMemo(() => monthlyWon(deals, currency, wonRange), [deals, currency, wonRange]);
+  const added = useMemo(() => contactsAdded(contacts, addedRange), [contacts, addedRange]);
+  const rate = useMemo(() => winRate(deals), [deals]);
+  const avg = useMemo(() => averageWonDeal(deals), [deals]);
+  const avgHere = avg.find((a) => a.currency === currency);
+  const wonInCurrency = dealsInCurrency(deals.filter((d) => isWon(d.stage)), currency);
+  const note = excludedNote(wonInCurrency.excluded);
+  const sym = currencySymbol(currency);
+  const addAction = (tab: 'contacts' | 'deals', text: string) => onOpenTab && <Button size="sm" variant="outline" onClick={() => onOpenTab(tab)}>{text}</Button>;
+  const anyWonInRange = won.rows.some((r) => r.count > 0);
 
   return (
     <div className="space-y-6">
-      {/* Header with Controls */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Analytics & Insights</h2>
-        <div className="flex flex-wrap gap-4">
-          <CurrencySelector value={currency} onValueChange={setCurrency} className="w-40" />
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7d">Last 7 days</SelectItem>
-              <SelectItem value="30d">Last 30 days</SelectItem>
-              <SelectItem value="90d">Last 90 days</SelectItem>
-              <SelectItem value="1y">Last year</SelectItem>
-            </SelectContent>
-          </Select>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-card-title text-foreground">Analytics</h2>
+          <p className="text-small text-muted-foreground">Worked out from your own contacts and deals. Money figures use one currency and are never converted.</p>
         </div>
+        <ReportCurrencyControl deals={deals} rc={rc} />
+      </div>
+      {!currency && <p role="note" className="rounded-control border border-border bg-muted p-3 text-small text-foreground">Your account has no currency set yet, so money charts are empty. Choose a currency above, or set one in Settings.</p>}
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Key figures">
+        <StatTile label="Win rate" value={rate.rate == null ? null : pct(rate.rate)} hint={rate.rate == null ? 'Needs at least one won or lost deal.' : `${rate.won} won of ${rate.won + rate.lost} won or lost deals.`} />
+        <StatTile label={`Average won deal${currency ? ` (${currency})` : ''}`} value={avgHere ? money(avgHere.average) : null} hint={avgHere ? `Across ${avgHere.count} won ${avgHere.count === 1 ? 'deal' : 'deals'} in ${currency}.` : `No won deals in ${currency || 'this currency'} yet.`} />
+        <StatTile label="Won deals" value={String(wonInCurrency.included.length)} hint={`Stored in ${currency || 'the chosen currency'}.`} />
+        <StatTile label="Contacts" value={String(contacts.length)} hint="Your own CRM contacts." />
+      </div>
+      {note && <p className="text-small text-muted-foreground">{note}</p>}
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <ChartCard
+          title="Lead sources"
+          subtitle="Where your contacts came from, by the Source field."
+          state={error ? 'error' : contacts.length === 0 ? 'empty' : 'ready'}
+          onRetry={onRetry}
+          empty={{ message: 'No contacts yet, so there are no lead sources to show.', action: addAction('contacts', 'Add your first contact') }}
+          summary={`Lead sources for ${contacts.length} contacts. ${sources.slice(0, 3).map((s) => `${s.label}: ${s.count}`).join('; ')}.`}
+          table={{ caption: 'Lead sources', columns: ['Source', 'Contacts', 'Share'], rows: sources.map((s) => [s.label, s.count, pct(s.share)]) }}
+        >
+          <Donut data={sources.map((s) => ({ label: s.label, value: s.count }))} totalLabel="contacts" />
+        </ChartCard>
+
+        <ChartCard
+          title="Won deals per month"
+          subtitle={`By close date, ${currency || 'no currency chosen'} only.`}
+          controls={<RangeControl value={wonRange} onChange={setWonRange} label="Months shown for won deals" />}
+          state={error ? 'error' : !currency || !anyWonInRange ? 'empty' : state}
+          onRetry={onRetry}
+          empty={{ message: deals.length === 0 ? 'No deals yet.' : `No won deals in ${currency || 'this currency'} with a close date in the last ${wonRange} months.`, action: addAction('deals', deals.length === 0 ? 'Add your first deal' : 'Open the pipeline') }}
+          summary={`Won deals by close month in ${currency}: ${won.rows.filter((r) => r.count).map((r) => `${r.label} ${r.count} worth ${money(r.value)}`).join('; ')}.`}
+          table={{ caption: `Won deals per month in ${currency}`, columns: ['Month', `Value (${currency})`, 'Deals'], rows: won.rows.map((r) => [r.label, money(r.value), r.count]) }}
+          footer={<>
+            {won.noCloseDate > 0 && <p>{won.noCloseDate} won {won.noCloseDate === 1 ? 'deal has' : 'deals have'} no close date, so {won.noCloseDate === 1 ? 'it is' : 'they are'} not placed in a month.</p>}
+            {won.outsideRange > 0 && <p>{won.outsideRange} won {won.outsideRange === 1 ? 'deal closed' : 'deals closed'} before this range.</p>}
+          </>}
+        >
+          <div className="space-y-4">
+            <ColumnChart data={won.rows.map((r) => ({ label: r.label, value: r.value }))} seriesLabel="Value" format={money} axisTitle={`Value${sym ? ` (${sym})` : ''}`} height={180} />
+            <TrendChart data={won.rows.map((r) => ({ label: r.label, deals: r.count }))} series={[{ key: 'deals', label: 'Won deals' }]} axisTitle="Number of won deals" height={130} />
+          </div>
+        </ChartCard>
       </div>
 
-      {/* Communication Analytics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="w-5 h-5" />
-              Email Analytics
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <span>Total Emails Sent</span>
-                <span className="font-semibold">{analyticsData.communicationStats.totalEmails.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Open Rate</span>
-                <Badge className="bg-green-100 text-green-800">{analyticsData.communicationStats.emailOpenRate}%</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span>Click Rate</span>
-                <Badge className="bg-blue-100 text-blue-800">{analyticsData.communicationStats.emailClickRate}%</Badge>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-green-500 h-2 rounded-full" 
-                  style={{ width: `${analyticsData.communicationStats.emailOpenRate}%` }}
-                ></div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Phone className="w-5 h-5" />
-              Call Analytics
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <span>Total Calls</span>
-                <span className="font-semibold">{analyticsData.communicationStats.totalCalls}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Connect Rate</span>
-                <Badge className="bg-green-100 text-green-800">{analyticsData.communicationStats.callConnectRate}%</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span>Avg Duration</span>
-                <span className="font-semibold">{analyticsData.communicationStats.avgCallDuration}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="w-5 h-5" />
-              SMS Analytics
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <span>Total SMS Sent</span>
-                <span className="font-semibold">{analyticsData.communicationStats.totalSMS}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Response Rate</span>
-                <Badge className="bg-purple-100 text-purple-800">{analyticsData.communicationStats.smsResponseRate}%</Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Lead Conversion & Sales Performance */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="w-5 h-5" />
-              Lead Conversion
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <span>Total Leads</span>
-                <span className="font-semibold">{analyticsData.leadConversion.totalLeads}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Qualified Leads</span>
-                <span className="font-semibold">{analyticsData.leadConversion.qualifiedLeads}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Conversion Rate</span>
-                <Badge className="bg-green-100 text-green-800">{analyticsData.leadConversion.conversionRate}%</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span>Avg Time to Convert</span>
-                <span className="font-semibold">{analyticsData.leadConversion.avgTimeToConvert}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5" />
-              Sales Performance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <span>Monthly Target</span>
-                <span className="font-semibold">$100,000</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Current Pipeline</span>
-                <span className="font-semibold">${Math.round(totalRevenue).toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Closed Deals</span>
-                <span className="font-semibold">{analyticsData.salesMetrics.closedDeals}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Win Rate</span>
-                <Badge className="bg-green-100 text-green-800">{analyticsData.salesMetrics.winRate}%</Badge>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
-                <div 
-                  className="bg-green-500 h-3 rounded-full" 
-                  style={{ width: `${Math.min((totalRevenue / 100000) * 100, 100)}%` }}
-                ></div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Lead Sources & Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5" />
-              Lead Sources Distribution
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={40}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => [`${value}%`, 'Percentage']} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Key Metrics
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span>Avg Deal Size</span>
-                <span className="font-semibold">${analyticsData.salesMetrics.avgDealSize.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Sales Cycle</span>
-                <span className="font-semibold">{analyticsData.salesMetrics.salesCycle}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Customer Lifetime Value</span>
-                <span className="font-semibold">$47,200</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Customer Acquisition Cost</span>
-                <span className="font-semibold">$1,840</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Monthly Performance & Conversion Trends */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5" />
-              Monthly Performance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip 
-                    formatter={(value, name) => [
-                      name === 'deals' ? value : `$${Number(value).toLocaleString()}`,
-                      name === 'deals' ? 'Deals Closed' : 'Revenue'
-                    ]}
-                  />
-                  <Legend />
-                  <Bar dataKey="deals" fill="#3B82F6" name="deals" />
-                  <Bar dataKey="revenue" fill="#10B981" name="revenue" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Conversion Trends
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={conversionTrends}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="leads" 
-                    stroke="#F59E0B" 
-                    strokeWidth={2}
-                    name="Total Leads"
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="conversions" 
-                    stroke="#EF4444" 
-                    strokeWidth={2}
-                    name="Conversions"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <ChartCard
+        title="Contacts added and how many became customers"
+        subtitle="By the month each contact was added. “Customers now” is today’s status: there is no record of when a contact converted."
+        controls={<RangeControl value={addedRange} onChange={setAddedRange} label="Months shown for contacts added" />}
+        state={error ? 'error' : contacts.length === 0 ? 'empty' : 'ready'}
+        onRetry={onRetry}
+        empty={{ message: 'No contacts yet.', action: addAction('contacts', 'Add your first contact') }}
+        summary={`Contacts added per month over the last ${addedRange} months, and how many of them are customers now.`}
+        table={{ caption: 'Contacts added per month', columns: ['Month', 'Added', 'Customers now', 'Share now'], rows: added.rows.map((r) => [r.label, r.added, r.customersNow, r.rate == null ? '—' : pct(r.rate)]) }}
+        footer={<>
+          {added.rows.some((r) => r.rate != null)
+            ? <p>Share that are customers now: {added.rows.filter((r) => r.rate != null).map((r) => `${r.label} ${pct(r.rate!)}`).join(' · ')}. Shown only for months with at least 5 new contacts.</p>
+            : <p>A customer share is shown for months with at least 5 new contacts; none has that many yet.</p>}
+          {added.noDate > 0 && <p>{added.noDate} {added.noDate === 1 ? 'contact has' : 'contacts have'} no created date and {added.noDate === 1 ? 'is' : 'are'} not counted.</p>}
+        </>}
+      >
+        <TrendChart data={added.rows.map((r) => ({ label: r.label, added: r.added, customers: r.customersNow }))} series={[{ key: 'added', label: 'Contacts added' }, { key: 'customers', label: 'Of those, customers now' }]} axisTitle="Contacts" />
+      </ChartCard>
     </div>
   );
 };

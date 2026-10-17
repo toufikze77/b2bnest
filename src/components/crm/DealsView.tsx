@@ -24,22 +24,26 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowRightLeft, Plus } from "lucide-react";
+import { MoreHorizontal, Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DataTable } from "@/components/data/DataTable";
 import { FilterBar } from "@/components/data/FilterBar";
 import { StatusBadge, statusLabel } from "@/components/data/StatusBadge";
 import { formatDueDate, isoDay } from "@/lib/dashboardData";
-import { formatMoney } from "@/lib/dashboardWidgets";
+import { formatMoney, isClosedStage } from "@/lib/dashboardWidgets";
 import {
   BoardColumn, boardSummary, buildBoard, DealsViewMode, loadDealsView, moveDealStage, rememberStages, saveDealsView, StageSeen,
 } from "@/lib/dealBoard";
-import { formatCurrency } from "@/utils/currencyUtils";
-import { useUserSettings } from "@/hooks/useUserSettings";
+import { CURRENCIES } from "@/utils/currencyUtils";
+import { useAccountCurrency } from "@/hooks/useAccountCurrency";
+import { crmSummary, formatByCurrency } from "@/lib/marketingAudience";
+import { formatMoney as fmtMoney } from "@/lib/money";
+import { useSearchParams } from "react-router-dom";
+import { Label } from "@/components/ui/label";
 import { usePhone } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 
@@ -82,7 +86,9 @@ const FORM_STAGES = [
   { value: "negotiation", label: "Negotiation" },
   { value: "closed", label: "Closed Won" },
 ];
-const emptyForm = (stage = "prospecting") => ({ title: "", value: "", stage, probability: "50", close_date: "", notes: "" });
+const NO_CURRENCY = "__none";
+// Probability starts empty: it is optional and never defaulted (Phase 1b).
+const emptyForm = (stage = "prospecting", currency = "") => ({ title: "", value: "", stage, probability: "", close_date: "", notes: "", currency: currency || NO_CURRENCY });
 
 /** Deal card content. Missing values are left out, not guessed. */
 function DealCardBody({ deal, contact }: { deal: Deal; contact?: ContactRef }) {
@@ -148,7 +154,8 @@ function BoardColumnView({ col, children, onAdd, phone }: { col: BoardColumn<Dea
 const DealsView = ({ deals, contacts = [], onRefresh, onAddDeal, onUpdateDeal }: DealsViewProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { settings } = useUserSettings();
+  const accountCurrency = useAccountCurrency();
+  const [params, setParams] = useSearchParams();
   const phone = usePhone();
   const [localDeals, setLocalDeals] = useState<Deal[]>([]);
 
@@ -188,35 +195,59 @@ const DealsView = ({ deals, contacts = [], onRefresh, onAddDeal, onUpdateDeal }:
   useEffect(() => { setModeState(loadDealsView(user?.id)); }, [user?.id]);
   const setMode = (m: DealsViewMode) => { setModeState(m); saveDealsView(user?.id, m); };
 
-  // Add deal form (restored; uses the existing add handler).
-  const [addOpen, setAddOpen] = useState(false);
+  // Add / edit deal form (add form restored in Phase 1; currency + optional probability in Phase 1b).
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState(emptyForm());
   const [extraStage, setExtraStage] = useState<string | null>(null);
-  const openAdd = (stage?: string | null) => {
-    const s = stage || "prospecting";
-    setExtraStage(FORM_STAGES.some((f) => f.value === s) ? null : s);
-    setFormData(emptyForm(s));
-    setAddOpen(true);
+  const openForm = (data: ReturnType<typeof emptyForm>, id: string | null) => {
+    setExtraStage(FORM_STAGES.some((f) => f.value === data.stage) ? null : data.stage);
+    setFormData(data);
+    setEditingId(id);
+    setFormOpen(true);
   };
-  const handleAddDeal = async () => {
+  const openAdd = (stage?: string | null) => openForm(emptyForm(stage || "prospecting", accountCurrency), null);
+  const openEdit = (d: Deal) => openForm({
+    title: d.title, value: d.value == null ? "" : String(d.value), stage: d.stage || "prospecting",
+    probability: d.probability == null ? "" : String(d.probability), close_date: (d.close_date || "").slice(0, 10),
+    notes: d.notes || "", currency: (d.currency || "").toUpperCase() || NO_CURRENCY,
+  }, d.id);
+  const handleSaveDeal = async () => {
     if (!formData.title.trim()) {
       toast({ title: "Error", description: "Deal title is required", variant: "destructive" });
       return;
     }
-    const dealData = { ...formData, value: formData.value ? parseFloat(formData.value) : 0, probability: parseInt(formData.probability) };
-    const result = await onAddDeal?.(dealData);
+    const prob = formData.probability.trim();
+    if (prob !== "" && (!Number.isFinite(Number(prob)) || Number(prob) < 0 || Number(prob) > 100)) {
+      toast({ title: "Error", description: "Probability must be between 0 and 100, or left blank.", variant: "destructive" });
+      return;
+    }
+    const dealData: Partial<Deal> = {
+      title: formData.title, stage: formData.stage, close_date: formData.close_date, notes: formData.notes,
+      value: formData.value ? parseFloat(formData.value) : 0,
+      probability: prob === "" ? null : Number(prob),
+      currency: formData.currency === NO_CURRENCY ? null : formData.currency,
+    };
+    const result = editingId ? await onUpdateDeal?.(editingId, dealData) : await onAddDeal?.(dealData);
     if (result) {
-      setAddOpen(false);
+      setFormOpen(false);
       setFormData(emptyForm());
-      await onRefresh?.();
+      if (!editingId) await onRefresh?.();
     }
   };
+  const currencyOptions = Array.from(new Set([...(accountCurrency ? [accountCurrency] : []), ...Object.keys(CURRENCIES), ...(formData.currency !== NO_CURRENCY ? [formData.currency] : [])]));
 
   const [q, setQ] = useState("");
   const [stage, setStage] = useState("all");
   const stages = Array.from(new Set(localDeals.map((d) => d.stage).filter(Boolean))) as string[];
-  const shown = localDeals.filter((d) => (!q.trim() || d.title.toLowerCase().includes(q.trim().toLowerCase())) && (stage === "all" || d.stage === stage));
-  const filterCount = (q.trim() ? 1 : 0) + (stage !== "all" ? 1 : 0);
+  const probFilter = params.get("prob") === "none" ? "none" : "all";
+  const setProbFilter = (v: string) => { const next = new URLSearchParams(params); if (v === "none") next.set("prob", "none"); else next.delete("prob"); setParams(next); };
+  const shown = localDeals.filter((d) => (!q.trim() || d.title.toLowerCase().includes(q.trim().toLowerCase())) && (stage === "all" || d.stage === stage)
+    && (probFilter === "all" || (d.probability == null && !isClosedStage(d.stage))));
+  const filterCount = (q.trim() ? 1 : 0) + (stage !== "all" ? 1 : 0) + (probFilter !== "all" ? 1 : 0);
+  const clearFilters = () => { setQ(""); setStage("all"); setProbFilter("all"); };
+  // Arriving with ?prob=none (from the "no probability yet" link) shows the table.
+  useEffect(() => { if (probFilter === "none" && mode !== "table") setModeState("table"); }, [probFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Board columns: stages seen on loaded deals, kept for this visit even when a move empties one.
   const seen = useRef<StageSeen>([]);
@@ -224,6 +255,7 @@ const DealsView = ({ deals, contacts = [], onRefresh, onAddDeal, onUpdateDeal }:
   const columns = buildBoard(localDeals, seen.current);
   const contactById = useMemo(() => new Map(contacts.map((c) => [c.id, c])), [contacts]);
   const summary = boardSummary(localDeals, isoDay(new Date()));
+  const totals = crmSummary([], localDeals);
   const [phoneCol, setPhoneCol] = useState<string | null>(null);
   const shownCol = columns.find((c) => c.key === phoneCol) ?? columns[0];
 
@@ -278,19 +310,51 @@ const DealsView = ({ deals, contacts = [], onRefresh, onAddDeal, onUpdateDeal }:
 
   const moveMenu = (deal: Deal, current: string) => {
     const targets = columns.filter((c) => c.key !== current && c.stage != null);
-    if (!targets.length) return null;
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-11 w-11 md:h-8 md:w-8" aria-label={`Move ${deal.title} to another stage`}><ArrowRightLeft className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" className="h-11 w-11 md:h-8 md:w-8" aria-label={`Actions for ${deal.title}`}><MoreHorizontal className="h-4 w-4" /></Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Move to stage</DropdownMenuLabel>
+          {onUpdateDeal && <DropdownMenuItem onSelect={() => openEdit(deal)}><Pencil className="mr-2 h-4 w-4" aria-hidden="true" />Edit deal</DropdownMenuItem>}
+          {targets.length > 0 && <><DropdownMenuSeparator /><DropdownMenuLabel>Move to stage</DropdownMenuLabel></>}
           {targets.map((c) => <DropdownMenuItem key={c.key} onSelect={() => void move(deal, c)}>{colLabel(c)}</DropdownMenuItem>)}
         </DropdownMenuContent>
       </DropdownMenu>
     );
   };
+
+  const showNoProbability = () => { setMode("table"); setProbFilter("none"); };
+  // Pipeline summary (Table and Board): per currency, never converted; open/closed = isClosedStage.
+  const pipelineSummary = localDeals.length > 0 && (
+    <section aria-label="Pipeline summary" className="space-y-2">
+      <div className="grid gap-3 md:grid-cols-3">
+        <div className="rounded-card border border-border bg-card p-4">
+          <p className="text-small font-semibold text-muted-foreground">Open pipeline</p>
+          <p className="mt-1 break-words text-2xl font-bold tabular-nums text-foreground">{formatByCurrency(totals.openByCurrency)}</p>
+          <p className="mt-0.5 text-small text-muted-foreground">Sum of the values of {totals.openDeals} open {totals.openDeals === 1 ? "deal" : "deals"} (not won or lost).</p>
+        </div>
+        <div className="rounded-card border border-border bg-card p-4">
+          <p className="text-small font-semibold text-muted-foreground">Weighted forecast</p>
+          <p className="mt-1 break-words text-2xl font-bold tabular-nums text-foreground">{totals.withProbabilityDeals ? formatByCurrency(totals.weightedByCurrency) : "—"}</p>
+          <p className="mt-0.5 text-small text-muted-foreground">{totals.withProbabilityDeals === 0
+            ? "Each open deal's value × its probability. No open deal has a probability yet."
+            : <>Each open deal's value × its probability, only for the {totals.withProbabilityDeals} {totals.withProbabilityDeals === 1 ? "deal" : "deals"} that {totals.withProbabilityDeals === 1 ? "has" : "have"} one.</>}</p>
+        </div>
+        <div className="rounded-card border border-border bg-card p-4">
+          <p className="text-small font-semibold text-muted-foreground">Expected to close in the next 30 days</p>
+          <p className="mt-1 break-words text-2xl font-bold tabular-nums text-foreground">{money(summary.closingTotals)}</p>
+          <p className="mt-0.5 text-small text-muted-foreground">{summary.closingCount} open {summary.closingCount === 1 ? "deal" : "deals"} with a close date in that window.</p>
+        </div>
+      </div>
+      {totals.noProbabilityDeals > 0 && (
+        <p className="text-small text-muted-foreground">
+          {totals.noProbabilityDeals} open {totals.noProbabilityDeals === 1 ? "deal has" : "deals have"} no probability yet, so {totals.noProbabilityDeals === 1 ? "it is" : "they are"} not in the weighted forecast.{" "}
+          <button type="button" onClick={showNoProbability} className="min-h-touch rounded-sm font-semibold text-link underline underline-offset-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring md:min-h-0">Show {totals.noProbabilityDeals === 1 ? "it" : "them"}</button>
+        </p>
+      )}
+    </section>
+  );
 
   const header = (
     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -305,24 +369,42 @@ const DealsView = ({ deals, contacts = [], onRefresh, onAddDeal, onUpdateDeal }:
     </div>
   );
 
+  const field = "space-y-1.5";
   const addDialog = (
-    <Dialog open={addOpen} onOpenChange={setAddOpen}>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Add New Deal</DialogTitle></DialogHeader>
+    <Dialog open={formOpen} onOpenChange={setFormOpen}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>{editingId ? "Edit deal" : "Add New Deal"}</DialogTitle></DialogHeader>
         <div className="space-y-4">
-          <Input aria-label="Deal title" placeholder="Deal Title *" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
-          <Input aria-label="Deal value" placeholder="Deal Value" type="number" value={formData.value} onChange={(e) => setFormData({ ...formData, value: e.target.value })} />
-          <Select value={formData.stage} onValueChange={(value) => setFormData({ ...formData, stage: value })}>
-            <SelectTrigger aria-label="Stage"><SelectValue placeholder="Select Stage" /></SelectTrigger>
-            <SelectContent>
-              {extraStage && <SelectItem value={extraStage}>{statusLabel(extraStage)}</SelectItem>}
-              {FORM_STAGES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Input aria-label="Probability (%)" placeholder="Probability (%)" type="number" min="0" max="100" value={formData.probability} onChange={(e) => setFormData({ ...formData, probability: e.target.value })} />
-          <Input aria-label="Expected close date" placeholder="Expected Close Date" type="date" value={formData.close_date} onChange={(e) => setFormData({ ...formData, close_date: e.target.value })} />
-          <Input aria-label="Notes" placeholder="Notes (optional)" value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} />
-          <Button className="w-full" onClick={handleAddDeal}>Add Deal</Button>
+          <div className={field}><Label htmlFor="deal-title">Deal title *</Label>
+            <Input id="deal-title" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} /></div>
+          <div className="grid grid-cols-[1fr_9rem] gap-3">
+            <div className={field}><Label htmlFor="deal-value">Value</Label>
+              <Input id="deal-value" type="number" inputMode="decimal" value={formData.value} onChange={(e) => setFormData({ ...formData, value: e.target.value })} /></div>
+            <div className={field}><Label htmlFor="deal-currency">Currency</Label>
+              <Select value={formData.currency} onValueChange={(v) => setFormData({ ...formData, currency: v })}>
+                <SelectTrigger id="deal-currency"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {currencyOptions.map((c) => <SelectItem key={c} value={c}>{c}{c === accountCurrency ? " (account)" : ""}</SelectItem>)}
+                  <SelectItem value={NO_CURRENCY}>Not set</SelectItem>
+                </SelectContent>
+              </Select></div>
+          </div>
+          <div className={field}><Label htmlFor="deal-stage">Stage</Label>
+            <Select value={formData.stage} onValueChange={(value) => setFormData({ ...formData, stage: value })}>
+              <SelectTrigger id="deal-stage"><SelectValue placeholder="Select Stage" /></SelectTrigger>
+              <SelectContent>
+                {extraStage && <SelectItem value={extraStage}>{statusLabel(extraStage)}</SelectItem>}
+                {FORM_STAGES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+              </SelectContent>
+            </Select></div>
+          <div className={field}><Label htmlFor="deal-probability">Probability (%)</Label>
+            <Input id="deal-probability" type="number" min="0" max="100" inputMode="numeric" aria-describedby="deal-probability-help" value={formData.probability} onChange={(e) => setFormData({ ...formData, probability: e.target.value })} />
+            <p id="deal-probability-help" className="text-small text-muted-foreground">Optional. Leave blank if you have not estimated it.</p></div>
+          <div className={field}><Label htmlFor="deal-close">Expected close date</Label>
+            <Input id="deal-close" type="date" value={formData.close_date} onChange={(e) => setFormData({ ...formData, close_date: e.target.value })} /></div>
+          <div className={field}><Label htmlFor="deal-notes">Notes (optional)</Label>
+            <Input id="deal-notes" value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} /></div>
+          <Button className="w-full" onClick={handleSaveDeal}>{editingId ? "Save deal" : "Add Deal"}</Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -332,23 +414,28 @@ const DealsView = ({ deals, contacts = [], onRefresh, onAddDeal, onUpdateDeal }:
     return (
       <div className="space-y-3">
         {header}
+        {pipelineSummary}
         <section aria-label="Deals table" className="space-y-3 rounded-card border border-border bg-card p-4">
-          <FilterBar search={q} onSearch={setQ} searchLabel="Search deals" activeCount={filterCount} onClear={() => { setQ(""); setStage("all"); }}
-            selects={[{ id: "stage", label: "Stage", value: stage, onChange: setStage, options: [{ value: "all", label: "All stages" }, ...stages.map((s) => ({ value: s, label: statusLabel(s) }))] }]} />
+          <FilterBar search={q} onSearch={setQ} searchLabel="Search deals" activeCount={filterCount} onClear={clearFilters}
+            selects={[
+              { id: "stage", label: "Stage", value: stage, onChange: setStage, options: [{ value: "all", label: "All stages" }, ...stages.map((s) => ({ value: s, label: statusLabel(s) }))] },
+              { id: "prob", label: "Probability", value: probFilter, onChange: setProbFilter, options: [{ value: "all", label: "Any probability" }, { value: "none", label: "Open, no probability yet" }] },
+            ]} />
           <DataTable
             caption="Your deals"
             rows={shown}
             rowKey={(d) => d.id}
             filtered={filterCount > 0}
-            onClearFilters={() => { setQ(""); setStage("all"); }}
+            onClearFilters={clearFilters}
             empty={<div className="flex flex-col items-center gap-3 rounded-control border border-dashed p-8 text-center text-sm text-muted-foreground"><p>No deals yet.</p>{onAddDeal && <Button size="sm" variant="outline" onClick={() => openAdd()}><Plus className="h-4 w-4" aria-hidden="true" />Add deal</Button>}</div>}
             columns={[
               { id: "title", header: "Deal", sortValue: (d) => d.title, cell: (d) => <span className="font-medium">{d.title}</span> },
               { id: "stage", header: "Stage", sortValue: (d) => d.stage, cell: (d) => <StatusBadge value={d.stage} prefix="Stage" /> },
-              { id: "value", header: "Value", className: "text-right", sortValue: (d) => d.value ?? 0, cell: (d) => formatCurrency(d.value || 0, settings?.currency_code || "USD") },
+              { id: "value", header: "Value", className: "text-right", sortValue: (d) => d.value ?? 0, cell: (d) => (d.value == null ? "—" : fmtMoney(Number(d.value), d.currency)) },
               { id: "probability", header: "Probability", className: "text-right", sortValue: (d) => d.probability ?? 0, cell: (d) => (d.probability != null ? `${d.probability}%` : "—") },
               { id: "close", header: "Close date", sortValue: (d) => d.close_date, cell: (d) => <span className="whitespace-nowrap text-muted-foreground">{d.close_date ? formatDueDate(d.close_date) : "—"}</span> },
             ]}
+            rowActions={onUpdateDeal ? (d) => <Button variant="ghost" size="sm" className="min-h-touch md:min-h-0" onClick={() => openEdit(d)} aria-label={`Edit ${d.title}`}><Pencil className="h-4 w-4" aria-hidden="true" />Edit</Button> : undefined}
           />
         </section>
         {addDialog}
@@ -367,19 +454,7 @@ const DealsView = ({ deals, contacts = [], onRefresh, onAddDeal, onUpdateDeal }:
         </div>
       ) : (
         <>
-          {/* Summary — loaded deals only; open/closed uses the Dashboard rule (isClosedStage). */}
-          <div className="grid gap-3 sm:grid-cols-2" aria-label="Pipeline summary">
-            <div className="rounded-card border border-border bg-card p-4">
-              <p className="text-small font-semibold text-muted-foreground">Open pipeline</p>
-              <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">{money(summary.openTotals)}</p>
-              <p className="mt-0.5 text-small text-muted-foreground">{summary.openCount} open {summary.openCount === 1 ? "deal" : "deals"} (not won or lost)</p>
-            </div>
-            <div className="rounded-card border border-border bg-card p-4">
-              <p className="text-small font-semibold text-muted-foreground">Expected to close in the next 30 days</p>
-              <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">{money(summary.closingTotals)}</p>
-              <p className="mt-0.5 text-small text-muted-foreground">{summary.closingCount} open {summary.closingCount === 1 ? "deal" : "deals"} with a close date in that window</p>
-            </div>
-          </div>
+          {pipelineSummary}
 
           {phone && shownCol && (
             <div>

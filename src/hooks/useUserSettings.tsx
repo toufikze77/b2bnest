@@ -4,13 +4,21 @@ import { useAuth } from '@/hooks/useAuth';
 import { UserSettings } from '@/utils/userSettingsUtils';
 
 interface UserSettingsContextType {
+  /** null while loading, signed out, or never loaded. */
   settings: UserSettings | null;
   updateSettings: (newSettings: Partial<UserSettings>) => Promise<void>;
+  /** Re-reads the profile. A failed re-read keeps the settings already loaded. */
+  refresh: () => Promise<void>;
   loading: boolean;
 }
 
 const UserSettingsContext = createContext<UserSettingsContextType | undefined>(undefined);
 
+/**
+ * Account settings from `profiles`. The currency is never invented: an empty profile value
+ * stays '' (screens then show plain numbers), and a failed load or re-load never replaces
+ * a stored currency with 'USD'.
+ */
 export const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const [settings, setSettings] = useState<UserSettings | null>(null);
@@ -31,22 +39,14 @@ export const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
         .maybeSingle();
 
       if (error) {
+        // Keep whatever was loaded before; never fall back to a made-up currency.
         console.error('Error fetching user settings:', error);
-        setSettings({
-          currency_code: 'USD',
-          timezone: 'UTC',
-          country_code: 'US',
-          language_code: 'en',
-          date_format: 'MM/DD/YYYY',
-          time_format: '12h',
-          theme: 'light'
-        });
         return;
       }
 
       if (data) {
         setSettings({
-          currency_code: data.currency_code || 'USD',
+          currency_code: (data.currency_code || '').trim().toUpperCase(),
           timezone: data.timezone || 'UTC',
           country_code: data.country_code || 'US',
           language_code: data.language_code || 'en',
@@ -76,7 +76,7 @@ export const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
 
-      setSettings(prev => prev ? { ...prev, ...newSettings } : null);
+      setSettings(prev => prev ? { ...prev, ...newSettings } : (newSettings as UserSettings));
     } catch (error) {
       console.error('Error updating user settings:', error);
       throw error;
@@ -88,7 +88,7 @@ export const UserSettingsProvider = ({ children }: { children: ReactNode }) => {
   }, [user]);
 
   return (
-    <UserSettingsContext.Provider value={{ settings, updateSettings, loading }}>
+    <UserSettingsContext.Provider value={{ settings, updateSettings, refresh: fetchSettings, loading }}>
       {children}
     </UserSettingsContext.Provider>
   );

@@ -1,4 +1,5 @@
 import { isClosedStage } from './dashboardWidgets';
+import { formatMoney, normalizeCurrency } from './money';
 import { isUsableEmail, extractLinkedIn } from './crmContactsExcel';
 
 export type AudienceContact = { status?: string | null; source?: string | null; email?: string | null; notes?: string | null };
@@ -24,41 +25,42 @@ type DealLike = { value?: number | null; probability?: number | null; stage?: st
 
 /**
  * CRM summary metrics from recorded data only.
- * - Open deals only (won/lost excluded).
- * - Totals kept per stored currency; never converted.
- * - Deals without a probability are not weighted; their raw value is reported separately.
+ * - Open deals only (won/lost excluded, shared isClosedStage rule).
+ * - Totals kept per stored currency; never converted. A deal with no currency is keyed ''.
+ * - Weighted forecast = value × probability, only for deals that have a probability (0 counts; blank does not).
  */
 export function crmSummary(contacts: AudienceContact[], deals: DealLike[]) {
   // Same open/closed rule as the Dashboard and the pipeline board.
   const open = deals.filter((d) => !isClosedStage(d.stage));
+  const openTotal: Record<string, number> = {};
   const weighted: Record<string, number> = {};
   const unweighted: Record<string, number> = {};
   let noProbability = 0;
   for (const d of open) {
-    const cur = (d.currency || 'UNKNOWN').toUpperCase();
+    const cur = normalizeCurrency(d.currency);
     const v = Number(d.value) || 0;
+    openTotal[cur] = (openTotal[cur] || 0) + v;
     if (d.probability == null) { noProbability++; unweighted[cur] = (unweighted[cur] || 0) + v; }
-    else weighted[cur] = (weighted[cur] || 0) + Math.round((v * d.probability) / 100);
+    else weighted[cur] = (weighted[cur] || 0) + Math.round((v * Number(d.probability)) / 100);
   }
   const customers = contacts.filter((c) => c.status === 'customer').length;
   return {
     contacts: contacts.length,
     openDeals: open.length,
+    openByCurrency: openTotal,
     weightedByCurrency: weighted,
+    withProbabilityDeals: open.length - noProbability,
     noProbabilityDeals: noProbability,
     unweightedByCurrency: unweighted,
     customerShare: contacts.length ? Math.round((customers / contacts.length) * 100) : null,
   };
 }
 
-/** Formats per-currency totals without converting between currencies. */
+/** Formats per-currency totals without converting between currencies ('' = no currency: plain number). */
 export function formatByCurrency(totals: Record<string, number>): string {
   const entries = Object.entries(totals);
   if (!entries.length) return '0';
-  return entries.map(([cur, v]) => {
-    try { return new Intl.NumberFormat('en-GB', { style: 'currency', currency: cur, maximumFractionDigits: 0 }).format(v); }
-    catch { return `${v.toLocaleString('en-GB')} (currency not set)`; }
-  }).join(' + ');
+  return entries.map(([cur, v]) => formatMoney(v, cur)).join(' + ');
 }
 
 /** Contacts a campaign can still show: drops IDs of deleted or inaccessible contacts. */

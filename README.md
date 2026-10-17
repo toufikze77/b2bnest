@@ -1,5 +1,7 @@
 # Welcome to your Lovable project
 
+> UI rules for new screens (tokens, cards, forms, switches, money formatting and the chart kit) are in [docs/ui-guidelines.md](docs/ui-guidelines.md).
+
 ## Project info
 
 **URL**: https://lovable.dev/projects/0ab9e971-6875-4e22-8ba0-08de916edc9d
