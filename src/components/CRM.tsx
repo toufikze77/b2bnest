@@ -671,7 +671,7 @@ const CRM = ({ band = false }: CRMProps) => {
       </TabsContent>
 
       <TabsContent value="reports" className={band ? 'mt-0' : 'mt-6'}>
-        <ReportsTab contacts={contacts} deals={deals} error={loadError} onRetry={fetchCRMData} />
+        <ReportsTab contacts={contacts} deals={deals} loading={loading} error={loadError} onRetry={fetchCRMData} onOpenTab={setActiveTab} />
       </TabsContent>
 
       <TabsContent value="analytics" className={band ? 'mt-0' : 'mt-6'}>

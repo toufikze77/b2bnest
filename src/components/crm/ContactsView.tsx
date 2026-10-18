@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -92,6 +93,19 @@ const ContactsView = ({ contacts, statusColors, onAddContact, onUpdateContact, o
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewing, setViewing] = useState<Contact | null>(null);
+  // ?contact=<id> (links from Reports, "Needs attention"): open that contact once, then drop the param.
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    const id = params.get('contact');
+    if (!id) return;
+    const next = new URLSearchParams(params);
+    next.delete('contact');
+    setParams(next, { replace: true });
+    const c = contacts.find((x) => x.id === id);
+    if (c) setViewing(c);
+    else toast({ title: "That contact couldn't be found", description: 'It may have been deleted.', variant: 'destructive' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params, contacts]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
