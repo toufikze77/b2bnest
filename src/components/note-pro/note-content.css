@@ -1,0 +1,23 @@
+/* A saved note shown outside the editor (note cards). Lists arrive as real nested <ul>/<ol> from
+   renderNoteHtml(); markers change per nesting level. Tailwind's reset removes list markers, so they are set here. */
+.note-content ul,
+.note-content ol {
+  margin: 0.25em 0;
+  padding-left: 1.5em;
+}
+.note-content ul { list-style-type: disc; }
+.note-content ol { list-style-type: decimal; }
+/* Nested lists: the list's own type decides the family (dots or numbers), its depth decides the shape. */
+.note-content :is(ul, ol) ul { list-style-type: circle; }
+.note-content :is(ul, ol) :is(ul, ol) ul { list-style-type: square; }
+.note-content :is(ul, ol) ol { list-style-type: lower-alpha; }
+.note-content :is(ul, ol) :is(ul, ol) ol { list-style-type: lower-roman; }
+.note-content li[data-empty] { list-style-type: none; }
+.note-content ul[data-checklist] > li[data-list="checked"] { list-style-type: "\2611  "; }
+.note-content ul[data-checklist] > li[data-list="unchecked"] { list-style-type: "\2610  "; }
+.note-content p { margin: 0; }
+.note-content a { text-decoration: underline; }
+.note-content pre { white-space: pre-wrap; font-family: ui-monospace, monospace; }
+.note-content .ql-align-center { text-align: center; }
+.note-content .ql-align-right { text-align: right; }
+.note-content .ql-align-justify { text-align: justify; }

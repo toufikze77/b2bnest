@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RichTextEditor } from "@/components/note-pro/RichTextEditor";
+import { NoteContentPreview } from "@/components/note-pro/NoteContentPreview";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -603,9 +604,7 @@ export default function NotePro() {
                     </div>
                   </div>
                   
-                  <p className="text-muted-foreground text-sm line-clamp-3 mb-3">
-                    {note.content?.substring(0, 150)}...
-                  </p>
+                  <NoteContentPreview content={note.content} format={note.format} className="text-muted-foreground text-sm mb-3" />
 
                   {note.checklist && note.checklist.length > 0 && (
                     <div className="mb-3 flex items-center gap-2 text-sm">
