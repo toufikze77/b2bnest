@@ -41,9 +41,10 @@ export function ProductsTab({ rows, loading, error, onRetry, api, onChanged, onD
   const state = (r: ProductRow) => <StatusBadge value={isActive(r) ? 'Active' : 'Inactive'} tone={isActive(r) ? 'success' : 'neutral'} prefix="Status" />;
   const priceNote = currency ? `Prices are in your account currency (${currency}).` : 'No account currency set, so prices are shown as plain numbers.';
 
+  const ProductsTable = RecordsTable<ProductRow>;
   return (
     <>
-      <RecordsTable<ProductRow>
+      <ProductsTable
         id="products" title="Products & services" noun="item" nounPlural="items"
         description={`What you sell. ${priceNote}`}
         rows={rows} loading={loading} error={error} onRetry={onRetry}

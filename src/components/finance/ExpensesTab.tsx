@@ -47,9 +47,10 @@ export function ExpensesTab({ rows, suppliers, loading, error, onRetry, api, onC
   const status = (r: ExpenseRow) => <StatusBadge value={labelOf(statuses, r.status || 'pending')} tone={TONE[r.status || 'pending'] ?? 'neutral'} prefix="Status" />;
   const currencyNote = currency ? `in your account currency (${currency})` : 'no account currency set, so shown as plain numbers';
 
+  const ExpensesTable = RecordsTable<ExpenseRow>;
   return (
     <>
-      <RecordsTable<ExpenseRow>
+      <ExpensesTable
         id="expenses" title="Expenses" noun="expense" nounPlural="expenses"
         description={`Track and categorise what your business spends. Amounts are ${currencyNote}.`}
         rows={rows} loading={loading} error={error} onRetry={onRetry}
