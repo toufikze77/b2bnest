@@ -45,6 +45,20 @@ describe('TabbedPageHeader', () => {
     }
   });
 
+  it('the strip sits inside the content container (same box as the title), not full-bleed, rounded like a card', () => {
+    render(<Page onTab={() => {}} />);
+    const strip = document.querySelector('[data-tab-strip]') as HTMLElement;
+    const container = strip.parentElement as HTMLElement;
+    // One container holds the title area and the strip: same max width and gutters as the page body.
+    expect(container).toContainElement(screen.getByRole('heading', { level: 1 }));
+    for (const c of ['mx-auto', 'max-w-[1440px]', 'px-4', 'sm:px-6', 'lg:px-8']) expect(container).toHaveClass(c);
+    // The strip itself adds no width tricks and no own centring box.
+    for (const c of ['w-screen', '-mx-4', '-mx-6', '-mx-8', 'max-w-[1440px]']) expect(strip).not.toHaveClass(c);
+    expect(strip.querySelector('.max-w-\\[1440px\\]')).toBeNull();
+    expect(strip).toHaveClass('rounded-card', 'overflow-hidden', 'bg-brand-navy');
+    expect(strip).toContainElement(screen.getByRole('tablist'));
+  });
+
   it('owns no tab state: the page’s own Tabs handler gets the change', () => {
     const onTab = vi.fn();
     render(<Page onTab={onTab} />);

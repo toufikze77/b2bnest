@@ -45,13 +45,15 @@ export function PageBreadcrumbs({ items }: { items: Crumb[] }) {
 
 export function PageHeader({ title, description, eyebrow, breadcrumbs, actions, className }: PageHeaderProps) {
   return (
-    <header className={cn('mb-6 flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-start sm:justify-between', className)}>
-      <div className="min-w-0">
+    // The actions sit beside the title when there is room and wrap under it when there isn't, so a page with many
+    // controls never squeezes its title column (the title keeps at least 20rem, or the full width on phones).
+    <header className={cn('mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-4 border-b border-border pb-5', className)}>
+      <div className="min-w-0 flex-[1_1_20rem]">
         {breadcrumbs?.length ? <PageBreadcrumbs items={breadcrumbs} /> : eyebrow && <div className="mb-1.5 text-xs font-medium text-muted-foreground">{eyebrow}</div>}
         <h1 className="break-words text-page-title text-foreground">{title}</h1>
         {description && <p className="mt-1.5 max-w-3xl text-sm leading-5 text-muted-foreground">{description}</p>}
       </div>
-      {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
+      {actions && <div className="flex max-w-full shrink-0 flex-wrap items-center gap-2">{actions}</div>}
     </header>
   );
 }

@@ -37,16 +37,20 @@ Text contrast is at least 4.5:1. Spacing is in steps of 8px (Tailwind 2, 4, 6, 8
 Every page title area is light and uses `PageHeader` (`src/components/ui/page-header.tsx`):
 breadcrumb (`PageBreadcrumbs`, a nav labelled "Breadcrumb", links 44px tall on phones), one `h1` in
 `text-page-title`, a one-line description in `text-muted-foreground`, and the actions on the right
-(normal light-theme buttons: primary blue for the main action, outline for the rest). On phones
-the actions wrap under the title.
+(normal light-theme buttons: primary blue for the main action, outline for the rest). The actions
+sit beside the title when there is room and wrap under it when there isn't (the title column keeps
+at least 20rem; on phones it is full width), so a page with many controls never squeezes its title.
 
 Pages with a tab row use `TabbedPageHeader` (`src/components/ui/tabbed-page-header.tsx`): the
-same light `PageHeader`, then a full-width navy strip that holds **only the tabs**. The page keeps
+same light `PageHeader`, then a navy strip that holds **only the tabs**. The strip sits in the same
+centred container as the title and the cards (`max-w-[1440px]`, `px-4 sm:px-6 lg:px-8`), so its left
+and right edges match theirs exactly; it is rounded like a card (`rounded-card`, `overflow-hidden`
+so the sideways tab scroll stays inside it) with `px-1` inner padding. 24px above and below it. The page keeps
 its own controlled `<Tabs>` and passes its `TabsList` in `tabs`, styled with `tabStripListClass`,
 `tabStripTriggerClass` (and `tabStripDividerClass` between groups). Active tab: white text plus
 the `nav-marker` underline (never colour alone). Tabs are 44px tall on phones and the strip
-scrolls sideways inside itself. In dark mode the strip keeps navy and gets a faint top and bottom
-border so it still reads as a bar on the dark page. Used by CRM (`/crm`) and Invoices & quotes.
+scrolls sideways inside itself. In dark mode the strip keeps navy and gets a faint border so it
+still reads as a bar on the dark page. Used by CRM (`/crm`) and Invoices & quotes.
 
 Do not build a navy hero band behind a page title. Dashboard and Business overview use plain
 `PageHeader`.
