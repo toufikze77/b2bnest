@@ -51,9 +51,10 @@ export function OutgoingsTab({ rows, suppliers, loading, error, onRetry, api, on
     );
   };
 
+  const OutgoingsTable = RecordsTable<OutgoingRow>;
   return (
     <>
-      <RecordsTable<OutgoingRow>
+      <OutgoingsTable
         id="outgoings" title="Recurring outgoings" noun="recurring payment" nounPlural="recurring payments"
         description={`Scheduled payments and subscriptions. Amounts are ${currencyNote}.`}
         rows={rows} loading={loading} error={error} onRetry={onRetry}

@@ -36,9 +36,10 @@ export function SuppliersTab({ rows, loading, error, onRetry, api, onChanged, on
   const state = (r: SupplierRow) => <StatusBadge value={isActive(r) ? 'Active' : 'Inactive'} tone={isActive(r) ? 'success' : 'neutral'} prefix="Status" />;
   const contact = (r: SupplierRow) => [r.contact_person, r.email, r.phone].filter(Boolean).join(' · ') || '—';
 
+  const SuppliersTable = RecordsTable<SupplierRow>;
   return (
     <>
-      <RecordsTable<SupplierRow>
+      <SuppliersTable
         id="suppliers" title="Suppliers" noun="supplier" nounPlural="suppliers"
         description="The companies you buy from. Inactive suppliers stay on old records but aren’t offered for new ones."
         rows={rows} loading={loading} error={error} onRetry={onRetry}
