@@ -40,9 +40,7 @@ const SmartPersonalization = () => {
     { id: 'cost_forecasting', label: 'Cost Forecasting', icon: '📊' },
     { id: 'workflow_automation', label: 'Workflow Automation', icon: '⚙️' },
     { id: 'industry_insights', label: 'Industry Insights', icon: '🔍' },
-    { id: 'compliance_monitoring', label: 'Compliance Monitoring', icon: '✅' },
-    { id: 'template_customization', label: 'Smart Template Customization', icon: '🎨' },
-    { id: 'voice_assistance', label: 'Voice Assistant', icon: '🎤' }
+    { id: 'template_customization', label: 'Smart Template Customization', icon: '🎨' }
   ];
 
   useEffect(() => {
@@ -115,15 +113,16 @@ const SmartPersonalization = () => {
         'Implement agile project management workflows',
         'Use automated code documentation tools'
       ],
+      // General advice only: B2BNEST does not monitor or certify compliance with any law or standard.
       'healthcare': [
-        'Prioritize HIPAA compliance monitoring',
-        'Implement patient data protection workflows',
-        'Use medical forms and consent templates'
+        'Get specialist advice on the data-protection rules that apply to patient information',
+        'Keep patient records in systems built for them, not in general business tools',
+        'Start consent forms from a template and have them checked before use'
       ],
       'finance': [
-        'Enable regulatory compliance tracking',
-        'Automate financial reporting workflows',
-        'Use audit trail documentation'
+        'Check which regulator\'s rules apply to you and keep your own record of how you meet them',
+        'Keep invoices and expenses up to date so reports are easy to produce',
+        'Note who changed key financial records and when'
       ],
       'retail': [
         'Focus on customer data management',
@@ -138,21 +137,21 @@ const SmartPersonalization = () => {
         'Focus on basic legal protections',
         'Use simple workflow automation'
       ],
-      'growth stage': [
+      'growth_stage': [
         'Scale your document processes',
-        'Implement advanced analytics',
-        'Add compliance monitoring'
+        'Review your reports regularly as the business grows',
+        'Write down the checks your sector requires and who owns them'
       ],
       'established': [
-        'Optimize existing workflows',
-        'Add predictive analytics',
-        'Implement enterprise features'
+        'Review and simplify existing workflows',
+        'Use reports to spot trends early',
+        'Give each team member the access they need, and no more'
       ]
     };
 
     const newRecommendations = [
       ...(industryRecommendations[preferences.industry?.toLowerCase() || ''] || []),
-      ...(stageRecommendations[preferences.business_stage?.toLowerCase().replace(' ', '_') || ''] || [])
+      ...(stageRecommendations[preferences.business_stage?.toLowerCase().replace(/\s+/g, '_') || ''] || [])
     ];
 
     setRecommendations(newRecommendations);

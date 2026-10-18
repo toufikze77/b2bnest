@@ -19,7 +19,7 @@ interface ShareButtonProps {
 
 const ShareButton = ({ 
   title = 'B2BNEST - AI-Powered Business Automation Platform',
-  description = 'Join the future of business automation with B2BNEST. 25+ integrated tools, AI-powered workflows, and blockchain-enabled payments.',
+  description = 'B2BNEST: a CRM, projects and tasks, invoices and quotes, notes and business templates in one place.',
   variant = 'outline',
   size = 'default'
 }: ShareButtonProps) => {

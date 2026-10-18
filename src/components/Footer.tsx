@@ -78,14 +78,6 @@ const Footer = () => {
                   Knowledge Base
                 </button>
               </li>
-              <li>
-                <button 
-                  onClick={() => window.open('https://tawk.to/chat/b2bnest', '_blank')}
-                  className="hover:text-white transition-colors"
-                >
-                  Live Chat
-                </button>
-              </li>
             </ul>
           </div>
           <div>
@@ -144,7 +136,7 @@ const Footer = () => {
             </div>
           </div>
           <div className="text-center text-gray-400">
-            <p>&copy; 2024 Edeals Master Ltd (Company No. 15242148) trading as B2BNEST. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} Edeals Master Ltd (Company No. 15242148) trading as B2BNEST. All rights reserved.</p>
             <p className="text-sm mt-2">Incorporated in England & Wales on 27 October 2023</p>
           </div>
         </div>
