@@ -1,6 +1,7 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import AccountSettings from '@/components/AccountSettings';
 import NotificationPreferences from '@/components/NotificationPreferences';
+import InAppNotificationPreferences from '@/components/InAppNotificationPreferences';
 import HMRCSettings from '@/components/hmrc/HMRCSettings';
 import AccountSecurity from '@/components/settings/AccountSecurity';
 import CompanyMembers from '@/components/settings/CompanyMembers';
@@ -54,7 +55,7 @@ const Settings = () => {
         <TabsContent value="members" className="space-y-4"><CompanyMembers /><InviteMembers /></TabsContent>
         <TabsContent value="company-security"><CompanySecurity /></TabsContent>
         <TabsContent value="billing"><BillingSettings /></TabsContent>
-        <TabsContent value="notifications"><NotificationPreferences /></TabsContent>
+        <TabsContent value="notifications" className="space-y-4"><InAppNotificationPreferences /><NotificationPreferences /></TabsContent>
         <TabsContent value="hmrc"><HMRCSettings onDisconnect={() => {}} /></TabsContent>
         <TabsContent value="companies">
           <Card>
