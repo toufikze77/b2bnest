@@ -211,7 +211,7 @@ const BusinessTools = () => {
     {
       id: 'privacy-policy-generator' as ToolType,
       title: 'Privacy Policy Generator',
-      description: 'Create GDPR-compliant privacy policies',
+      description: 'Draft a privacy policy to adapt and check',
       icon: Shield,
       color: 'bg-green-700',
       benefits: ['Covers GDPR topics', 'Customizable sections', 'Legal protection'],
@@ -561,15 +561,15 @@ const BusinessTools = () => {
                         <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
                         <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
                         <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
-                        <span className="ml-3 text-xs text-slate-500 font-medium">Leads · This week</span>
+                        <span className="ml-3 text-xs text-slate-500 font-medium">Leads · Example data</span>
                       </div>
                       <div className="p-4 space-y-2">
                         {[
-                          { name: 'Sarah Johnson', email: 'sarah@techstartup.io', score: 85, tag: 'Hot', tagColor: 'bg-red-100 text-red-700' },
-                          { name: 'David Chen', email: 'david@growthco.com', score: 72, tag: 'Hot', tagColor: 'bg-red-100 text-red-700' },
-                          { name: 'Priya Patel', email: 'priya@agency.co.uk', score: 55, tag: 'Warm', tagColor: 'bg-amber-100 text-amber-700' },
-                          { name: 'Marcus Webb', email: 'm.webb@consulting.com', score: 40, tag: 'Warm', tagColor: 'bg-amber-100 text-amber-700' },
-                          { name: 'Emma Collins', email: 'emma@retailbrand.co', score: 25, tag: 'Cold', tagColor: 'bg-sky-100 text-sky-700' },
+                          { name: 'Alex Example', email: 'alex@example.com', score: 85, tag: 'Hot', tagColor: 'bg-red-100 text-red-700' },
+                          { name: 'Sam Sample', email: 'sam@example.com', score: 72, tag: 'Hot', tagColor: 'bg-red-100 text-red-700' },
+                          { name: 'Jo Demo', email: 'jo@example.co.uk', score: 55, tag: 'Warm', tagColor: 'bg-amber-100 text-amber-700' },
+                          { name: 'Chris Test', email: 'chris@example.org', score: 40, tag: 'Warm', tagColor: 'bg-amber-100 text-amber-700' },
+                          { name: 'Pat Placeholder', email: 'pat@example.net', score: 25, tag: 'Cold', tagColor: 'bg-sky-100 text-sky-700' },
                         ].map((l) => (
                           <div key={l.email} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors">
                             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white text-xs font-semibold flex items-center justify-center shrink-0">

@@ -171,7 +171,7 @@ This privacy policy template is for general guidance only and should be reviewed
     <div className="max-w-6xl mx-auto p-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Privacy Policy Generator</h1>
-        <p className="text-gray-600">Generate GDPR-compliant privacy policies for your website</p>
+        <p className="text-gray-600">Generate a privacy policy draft for your website. Adapt it to your business and have it checked before you publish it.</p>
         <Badge variant="secondary" className="mt-2">
           Free Plan: 2 policies maximum
         </Badge>
