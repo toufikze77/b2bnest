@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 
 const toast = vi.fn();
 vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast }) }));
@@ -150,5 +150,24 @@ describe('DealsView board', () => {
     expect(screen.getByLabelText('Currency')).toHaveTextContent('USD');
     fireEvent.click(screen.getByRole('button', { name: 'Save deal' }));
     await waitFor(() => expect(onUpdateDeal).toHaveBeenCalledWith('c', expect.objectContaining({ currency: 'USD', probability: null, title: 'Old deal' })));
+  });
+});
+
+describe('DealsView deep link from Reports', () => {
+  function Where() { const l = useLocation(); return <output data-testid="where">{l.search}</output>; }
+  const at = (search: string) => render(
+    <MemoryRouter initialEntries={[`/crm${search}`]}><DealsView deals={deals} contacts={contacts} onRefresh={() => {}} onAddDeal={vi.fn()} onUpdateDeal={vi.fn()} /><Where /></MemoryRouter>,
+  );
+  it('?deal=<id> opens that deal once and drops the param (other params kept)', async () => {
+    at('?tool=crm&tab=deals&deal=b');
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByDisplayValue('Audit')).toBeInTheDocument();
+    expect(screen.getByTestId('where').textContent).toBe('?tool=crm&tab=deals');
+  });
+  it('an unknown id says so and opens nothing', async () => {
+    at('?tab=deals&deal=nope');
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.objectContaining({ title: "That deal couldn't be found" })));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByTestId('where').textContent).toBe('?tab=deals');
   });
 });

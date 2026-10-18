@@ -430,3 +430,13 @@ input[type="text"]:focus:not(:focus-visible) {
   outline: none;
   box-shadow: none;
 }
+
+/* CRM Reports "Print this page" (Phase 5): print only the report, without navigation, buttons or app chrome. */
+@media print {
+  body.print-crm-report * { visibility: hidden; }
+  body.print-crm-report #crm-reports, body.print-crm-report #crm-reports * { visibility: visible; }
+  body.print-crm-report #crm-reports { position: absolute; inset: 0 auto auto 0; width: 100%; padding: 0; }
+  body.print-crm-report #crm-reports .report-section { break-inside: avoid; box-shadow: none; }
+  body.print-crm-report #crm-reports .overflow-x-auto { overflow: visible; }
+  body.print-crm-report #crm-reports button { display: none !important; }
+}

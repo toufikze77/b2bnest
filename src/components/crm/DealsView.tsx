@@ -212,6 +212,18 @@ const DealsView = ({ deals, contacts = [], onRefresh, onAddDeal, onUpdateDeal }:
     probability: d.probability == null ? "" : String(d.probability), close_date: (d.close_date || "").slice(0, 10),
     notes: d.notes || "", currency: (d.currency || "").toUpperCase() || NO_CURRENCY,
   }, d.id);
+  // ?deal=<id> (links from Reports, "Needs attention"): open that deal once, then drop the param.
+  useEffect(() => {
+    const id = params.get("deal");
+    if (!id) return;
+    const next = new URLSearchParams(params);
+    next.delete("deal");
+    setParams(next, { replace: true });
+    const d = deals.find((x) => x.id === id);
+    if (d) openEdit(d);
+    else toast({ title: "That deal couldn't be found", description: "It may have been deleted.", variant: "destructive" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params, deals]);
   const handleSaveDeal = async () => {
     if (!formData.title.trim()) {
       toast({ title: "Error", description: "Deal title is required", variant: "destructive" });
