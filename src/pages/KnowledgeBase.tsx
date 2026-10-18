@@ -91,7 +91,7 @@ const KnowledgeBase = () => {
       color: 'bg-indigo-500',
       articles: [
         { title: 'Creating Your First Workflow', description: 'Set up "When I click Run now → Do this" steps', readTime: '4 min' },
-        { title: 'Workflow Steps', description: 'Send an email, a WhatsApp message, or post on X or LinkedIn', readTime: '4 min' }
+        { title: 'Workflow Steps', description: 'Send an email (WhatsApp, X and LinkedIn steps are switched off for now)', readTime: '4 min' }
       ]
     },
     {
@@ -109,13 +109,13 @@ const KnowledgeBase = () => {
   ];
 
   const popularArticles = [
-    { title: 'Lead Generation: Step-by-Step Guide', category: 'Lead Generation', views: '18.4k', link: '/knowledge-base/lead-generation' },
-    { title: 'How to Connect Google Calendar', category: 'Integrations', views: '15.2k', link: '/knowledge-base/integrations' },
-    { title: 'Creating Professional Invoices', category: 'Business Tools', views: '12.8k', link: '/knowledge-base/business-tools' },
-    { title: 'HMRC Integration Setup Guide', category: 'Integrations', views: '10.5k', link: '/knowledge-base/integrations' },
-    { title: 'How to Get HMRC Client ID & Secret', category: 'Financial', views: '9.8k', link: '/knowledge-base/financial-tools' },
-    { title: 'Workflow Automation Basics', category: 'Workflows', views: '9.3k', link: '/knowledge-base/workflows' },
-    { title: 'Notification Preferences Setup', category: 'Getting Started', views: '8.7k', link: '/knowledge-base/getting-started' }
+    { title: 'Lead Generation: Step-by-Step Guide', category: 'Lead Generation', link: '/knowledge-base/lead-generation' },
+    { title: 'How to Connect Google Calendar', category: 'Integrations', link: '/knowledge-base/integrations' },
+    { title: 'Creating Professional Invoices', category: 'Business Tools', link: '/knowledge-base/business-tools' },
+    { title: 'HMRC Integration Setup Guide', category: 'Integrations', link: '/knowledge-base/integrations' },
+    { title: 'How to Get HMRC Client ID & Secret', category: 'Financial', link: '/knowledge-base/financial-tools' },
+    { title: 'Workflow Automation Basics', category: 'Workflows', link: '/knowledge-base/workflows' },
+    { title: 'Notification Preferences Setup', category: 'Getting Started', link: '/knowledge-base/getting-started' }
   ];
 
   const filteredCategories = categories.map(category => ({
@@ -185,9 +185,9 @@ const KnowledgeBase = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5" />
-                  Popular Articles
+                  Suggested Articles
                 </CardTitle>
-                <CardDescription>Most viewed guides this month</CardDescription>
+                <CardDescription>Good places to start</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">

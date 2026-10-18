@@ -186,7 +186,7 @@ const CustomerSurveyBuilder = () => {
               <Label htmlFor="title">Survey Title *</Label>
               <Input
                 id="title"
-                placeholder="Customer Satisfaction Survey"
+                placeholder="e.g. After-purchase feedback"
                 value={surveyData.title}
                 onChange={(e) => setSurveyData(prev => ({ ...prev, title: e.target.value }))}
               />

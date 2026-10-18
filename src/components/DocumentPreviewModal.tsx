@@ -101,8 +101,6 @@ const DocumentPreviewModal = ({
                 <p><span className="font-medium">File Type:</span> {template.fileType}</p>
                 <p><span className="font-medium">File Size:</span> {template.fileSize}</p>
                 <p><span className="font-medium">Version:</span> {template.version}</p>
-                <p><span className="font-medium">Downloads:</span> {template.downloads.toLocaleString()}</p>
-                <p><span className="font-medium">Rating:</span> {template.rating.toFixed(1)} ({template.reviewCount} reviews)</p>
               </div>
             </div>
           </div>

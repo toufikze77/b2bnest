@@ -143,7 +143,7 @@ export const workflowTemplates: WorkflowTemplate[] = [
   { id: 'marketing-abandoned', name: 'Abandoned Cart Recovery', description: 'Multi-step email + WhatsApp nudges for cart recovery', category: 'marketing', icon: 'Mail' },
   { id: 'marketing-webinar', name: 'Webinar Reminders', description: 'Confirmations, day-of reminders, and post-event follow-up', category: 'marketing', icon: 'Megaphone' },
   { id: 'marketing-launch', name: 'Product Launch Sequence', description: 'Coordinated multi-channel announcement workflow', category: 'marketing', icon: 'Rocket' },
-  { id: 'marketing-review', name: 'Review Request', description: 'Ask happy customers for reviews after a purchase', category: 'marketing', icon: 'Star' },
+  { id: 'marketing-review', name: 'Review Request', description: 'Ask customers for a review after a purchase', category: 'marketing', icon: 'Star' },
 
   // --- Finance ---
   { id: 'finance-payroll', name: 'Payroll Run Reminder', description: 'Monthly payroll preparation and approval reminders', category: 'finance', icon: 'DollarSign' },

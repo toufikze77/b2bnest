@@ -116,15 +116,8 @@ const TemplateCardContent = ({
         )}
       </div>
 
-      {/* Stats */}
-      <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1">
-            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-            {rating.toFixed(1)} ({reviewCount})
-          </span>
-          <span>{downloads.toLocaleString()} downloads</span>
-        </div>
+      {/* No rating, review or download figures: the sample catalogue has none that are real. */}
+      <div className="flex items-center justify-end text-sm text-gray-500 mb-4">
         <span className="text-xs">{difficulty}</span>
       </div>
     </CardContent>

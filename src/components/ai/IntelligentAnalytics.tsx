@@ -384,7 +384,7 @@ const IntelligentAnalytics = () => {
             <div>
               <CardTitle>Intelligent Analytics</CardTitle>
               <CardDescription>
-                AI-powered business insights and predictive analytics
+                AI analysis of example business figures. Your own data is not connected yet, so results are a demonstration, not your forecast.
               </CardDescription>
             </div>
           </div>

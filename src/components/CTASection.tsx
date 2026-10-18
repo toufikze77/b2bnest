@@ -26,7 +26,7 @@ const CTASection = () => {
             size="lg" 
             variant="outline" 
             className="text-lg px-8 py-3 text-white border-white bg-transparent hover:bg-white hover:text-blue-600 transition-colors duration-200"
-            onClick={() => window.location.href = '/auth'}
+            onClick={() => window.location.href = '/pricing'}
           >
             Start 14-Day Free Trial
           </Button>

@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Mail, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -22,6 +23,8 @@ type ContactFormData = z.infer<typeof contactSchema>;
 
 const ContactForm = () => {
   const { toast } = useToast();
+  // The send-contact-email function only accepts signed-in callers (it refuses anonymous requests).
+  const { user } = useAuth();
   const {
     register,
     handleSubmit,
@@ -65,8 +68,14 @@ const ContactForm = () => {
         </div>
         <CardTitle className="text-2xl">Get in Touch</CardTitle>
         <CardDescription>
-          We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+          We'd love to hear from you. Send us a message and we'll reply as soon as we can.
         </CardDescription>
+        {!user && (
+          <p role="note" className="mt-3 rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground">
+            You need to be signed in to send a message from this form. If you can't sign in, email{' '}
+            <a href="mailto:support@b2bnest.online" className="font-medium text-primary underline underline-offset-2">support@b2bnest.online</a>.
+          </p>
+        )}
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -128,7 +137,7 @@ const ContactForm = () => {
           <Button 
             type="submit" 
             className="w-full" 
-            disabled={isSubmitting}
+            disabled={isSubmitting || !user}
           >
             {isSubmitting ? (
               <>Sending...</>

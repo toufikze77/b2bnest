@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { PLANS, type Plan } from '@/lib/plans';
 
 const PricingPlans = () => {
   const [isAnnual, setIsAnnual] = useState(false);
@@ -17,87 +18,12 @@ const PricingPlans = () => {
   const currentPlanId = subscribed ? String(subscription_tier || '').toLowerCase() : null;
   const isCurrent = (planId: string) => currentPlanId === planId;
 
-  const plans = [
-    {
-      id: 'starter',
-      name: 'Starter',
-      description: 'Perfect for solopreneurs and small teams',
-      icon: Zap,
-      color: 'from-blue-500 to-cyan-500',
-      monthly: 19,
-      annual: 190,
-      userLimit: '1 user',
-      features: [
-        '250 AI credits/month (~250 conversations)',
-        'AI Business Advisor',
-        'Basic document templates',
-        'AI Studio (Basic features)',
-        'Invoice & Quote generator',
-        'Priority support',
-        'Advanced AI analytics & workflows',
-        'QR Code Generator',
-        'Time Tracker',
-        'Cash Flow Tracker',
-        'ROI Calculator',
-        'Email support',
-        'Mobile app access',
-      ],
-      cta: 'Subscribe',
-      popular: false,
-    },
-    {
-      id: 'professional',
-      name: 'Professional',
-      description: 'For growing teams and serious entrepreneurs',
-      icon: Crown,
-      color: 'from-purple-500 to-pink-500',
-      monthly: 35,
-      annual: 350,
-      userLimit: '5 users',
-      features: [
-        '1,000 AI credits/month (~1,000 conversations)',
-        'Everything in Starter',
-        'AI Studio (Full access)',
-        'Advanced AI analytics & workflows',
-        'Intelligent automation builder',
-        'Smart personalization engine',
-        'Premium document templates',
-        'CRM & Project Management',
-        'Invoice & Quote generator',
-        'Priority support',
-        'Team collaboration tools',
-        'Custom integrations',
-      ],
-      cta: 'Subscribe',
-      popular: true,
-    },
-    {
-      id: 'enterprise',
-      name: 'Enterprise',
-      description: 'For scaling businesses and larger teams',
-      icon: Building2,
-      color: 'from-emerald-500 to-teal-500',
-      monthly: 85,
-      annual: 850,
-      userLimit: '25 users',
-      features: [
-        '5,000 AI credits/month (~5,000 conversations)',
-        'Everything in Professional',
-        'AI Studio (Enterprise features)',
-        'Custom AI model training',
-        'Advanced workflow automation',
-        'Advanced analytics',
-        'Custom AI integrations',
-        'White-label AI solutions',
-        'Dedicated account manager',
-        'Custom integrations & API',
-        'Training & onboarding',
-        'SLA guarantee',
-      ],
-      cta: 'Subscribe',
-      popular: false,
-    },
-  ];
+  const PLAN_STYLE: Record<Plan['id'], { icon: typeof Zap; color: string }> = {
+    starter: { icon: Zap, color: 'from-blue-500 to-cyan-500' },
+    professional: { icon: Crown, color: 'from-purple-500 to-pink-500' },
+    enterprise: { icon: Building2, color: 'from-emerald-500 to-teal-500' },
+  };
+  const plans = PLANS.map((plan) => ({ ...plan, ...PLAN_STYLE[plan.id] }));
 
   const changeLock = useRef(false);
   const readError = async (error: unknown) => {

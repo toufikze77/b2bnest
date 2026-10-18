@@ -594,7 +594,7 @@ export const sampleTemplates: Template[] = [
     difficulty: 'Advanced',
     
     softwareRequired: ['PDF Reader'],
-    instructions: 'Professional cloud infrastructure & security service includes: Cloud migration and server setup, security audits and compliance implementation (GDPR, ISO 27001), backup solutions and disaster recovery planning, performance optimization and monitoring, SSL certificates and security hardening, and 24/7 monitoring support. Contact for consultation and implementation.'
+    instructions: 'Professional cloud infrastructure & security service includes: Cloud migration and server setup, security reviews, backup and disaster recovery planning, performance optimisation and monitoring, and SSL certificates and security hardening. Contact for consultation and implementation.'
   },
   {
     id: '18',
