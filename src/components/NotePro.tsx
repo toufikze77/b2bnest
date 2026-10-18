@@ -32,7 +32,8 @@ import {
   Home,
   ArrowLeft
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { ReminderBadge, ReminderField } from "@/components/note-pro/Reminder";
 
 interface Note {
   id: string;
@@ -48,7 +49,7 @@ interface Note {
   is_template: boolean;
   template_name?: string;
   checklist: Array<{ id: string; text: string; completed: boolean }>;
-  reminder_date?: string;
+  reminder_date?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -63,6 +64,7 @@ interface Category {
 
 export default function NotePro() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -113,6 +115,19 @@ export default function NotePro() {
       fetchCategories();
     }
   }, [user]);
+
+  // A reminder notification links to /business-tools/notepro?note=<id>: open that note once the list has loaded.
+  const linkedNoteId = searchParams.get("note");
+  useEffect(() => {
+    if (!linkedNoteId || notes.length === 0) return;
+    const note = notes.find((n) => n.id === linkedNoteId);
+    const next = new URLSearchParams(searchParams);
+    next.delete("note");
+    setSearchParams(next, { replace: true });
+    if (note) handleEditNote(note);
+    else toast.error("That note is no longer available.");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkedNoteId, notes]);
 
   const fetchNotes = async () => {
     const { data, error } = await supabase
@@ -608,6 +623,7 @@ export default function NotePro() {
                     {note.is_template && (
                       <Badge variant="default" className="text-xs">Template</Badge>
                     )}
+                    {!note.is_archived && !note.is_template && <ReminderBadge value={note.reminder_date} />}
                   </div>
                 </div>
               </Card>
@@ -795,14 +811,10 @@ export default function NotePro() {
               </div>
             </div>
 
-            <div>
-              <label className="block font-semibold mb-2">Reminder</label>
-              <Input
-                type="datetime-local"
-                value={formData.reminder_date || ""}
-                onChange={(e) => setFormData({ ...formData, reminder_date: e.target.value })}
-              />
-            </div>
+            <ReminderField
+              value={formData.reminder_date}
+              onChange={(iso) => setFormData({ ...formData, reminder_date: iso })}
+            />
 
             <div className="flex gap-4 flex-wrap">
               <label className="flex items-center gap-2 cursor-pointer">
