@@ -1,21 +1,24 @@
 import { ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
+import { Crumb, PageHeader } from '@/components/ui/page-header';
 
+/**
+ * Admin page header: the app's shared PageHeader (same title size, breadcrumb, description, action placement and
+ * spacing as every other page), with an "Admin" breadcrumb. Pages can pass their own breadcrumbs (e.g. a detail page).
+ */
 export default function AdminPageHeader({
   title,
   description,
   actions,
+  breadcrumbs,
 }: {
   title: string;
   description?: string;
   actions?: ReactNode;
+  breadcrumbs?: Crumb[];
 }) {
-  return (
-    <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
-      </div>
-      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
-    </div>
-  );
+  const { pathname } = useLocation();
+  const onAdminHome = pathname === '/admin' || pathname === '/admin/';
+  const crumbs = breadcrumbs ?? (onAdminHome ? [{ label: 'Admin' }] : [{ label: 'Admin', to: '/admin' }, { label: title }]);
+  return <PageHeader breadcrumbs={crumbs} title={title} description={description} actions={actions} />;
 }

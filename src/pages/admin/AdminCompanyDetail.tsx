@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import { TabStrip, tabStripListClass, tabStripTriggerClass } from '@/components/ui/tabbed-page-header';
 import { adminRpc, formatBytes, formatMoney } from '@/lib/adminApi';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -90,6 +91,7 @@ export default function AdminCompanyDetail() {
     <>
       <AdminPageHeader
         title={c.name || 'Company'}
+        breadcrumbs={[{ label: 'Admin', to: '/admin' }, { label: 'Companies', to: '/admin/companies' }, { label: c.name || 'Company' }]}
         description={`Company ID ${c.id ?? '—'} · Owner ${c.owner_name || c.owner_email || '—'}`}
         actions={
           <div className="flex flex-wrap gap-2">
@@ -118,11 +120,13 @@ export default function AdminCompanyDetail() {
       </div>
 
       <Tabs defaultValue="overview">
-        <TabsList className="flex flex-wrap">
-          {['overview', 'users', 'subscription', 'usage', 'activity', 'security'].map((t) => (
-            <TabsTrigger key={t} value={t} className="capitalize">{t}</TabsTrigger>
-          ))}
-        </TabsList>
+        <TabStrip className="mb-4">
+          <TabsList className={tabStripListClass}>
+            {['overview', 'users', 'subscription', 'usage', 'activity', 'security'].map((t) => (
+              <TabsTrigger key={t} value={t} className={`capitalize ${tabStripTriggerClass}`}>{t}</TabsTrigger>
+            ))}
+          </TabsList>
+        </TabStrip>
 
         <TabsContent value="overview">
           <Card><CardContent className="pt-6">

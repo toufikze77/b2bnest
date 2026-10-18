@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,10 +55,10 @@ const AdminAITemplates = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">AI template drafts</h1>
-        <p className="text-sm text-muted-foreground">Admin-generated drafts and customer submissions awaiting catalogue review. Admin generation uses the platform budget, never customer credits.</p>
-      </div>
+      <AdminPageHeader
+        title="AI template drafts"
+        description="Admin-generated drafts and customer submissions awaiting catalogue review. Admin generation uses the platform budget, never customer credits."
+      />
 
       <Card>
         <CardHeader>
