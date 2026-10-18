@@ -68,3 +68,21 @@
 .rich-text-editor-wrapper .ql-picker-item:hover {
   color: hsl(var(--primary));
 }
+
+/* Bullet marker per nesting level (Quill 2 draws markers on .ql-ui). Numbers keep Quill's own
+   decimal / lower-alpha / lower-roman cycle. Same shapes as the rendered note (.note-content). */
+.rich-text-editor-wrapper .ql-editor li[data-list="bullet"].ql-indent-1 > .ql-ui::before,
+.rich-text-editor-wrapper .ql-editor li[data-list="bullet"].ql-indent-4 > .ql-ui::before,
+.rich-text-editor-wrapper .ql-editor li[data-list="bullet"].ql-indent-7 > .ql-ui::before {
+  content: "\25E6";
+}
+
+.rich-text-editor-wrapper .ql-editor li[data-list="bullet"].ql-indent-2 > .ql-ui::before,
+.rich-text-editor-wrapper .ql-editor li[data-list="bullet"].ql-indent-5 > .ql-ui::before,
+.rich-text-editor-wrapper .ql-editor li[data-list="bullet"].ql-indent-8 > .ql-ui::before {
+  content: "\25AA";
+}
+
+.rich-text-editor-wrapper .ql-editor li > .ql-ui::before {
+  color: hsl(var(--foreground));
+}
