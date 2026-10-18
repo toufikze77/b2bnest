@@ -29,17 +29,22 @@ const ui = (band: boolean, url = '/crm') => (
 beforeEach(() => { access = true; });
 
 describe('CRM page frame', () => {
-  it('full page: navy band with breadcrumb, title, actions and the tabs on it', async () => {
+  it('full page: light header (breadcrumb, title, actions) and the tabs on the navy strip only', async () => {
     render(ui(true));
     await screen.findAllByText('Priya Shah');
-    const band = screen.getByRole('heading', { level: 1, name: 'CRM' }).closest('.bg-brand-navy') as HTMLElement;
-    const b = within(band);
-    expect(b.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent('Acme/Customers/CRM');
-    expect(b.getByRole('button', { name: 'Import / Export' })).toBeInTheDocument();
-    expect(b.getByRole('tab', { name: 'Contacts' })).toHaveAttribute('data-state', 'active');
-    expect(b.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Contacts', 'Sales Pipeline', 'Marketing', 'Reports', 'Analytics']);
-    // Add contact in the band opens the existing form.
-    fireEvent.click(b.getByRole('button', { name: 'Add contact' }));
+    const h1 = screen.getByRole('heading', { level: 1, name: 'CRM' });
+    expect(h1.closest('.bg-brand-navy')).toBeNull(); // the title area is light
+    const header = h1.closest('header') as HTMLElement;
+    const h = within(header);
+    expect(h.getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Acme', 'Customers', 'CRM']);
+    expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toBeInTheDocument();
+    expect(h.getByRole('button', { name: 'Import / Export' })).toBeInTheDocument();
+    const tabs = screen.getByRole('tablist', { name: 'CRM sections' });
+    expect(tabs.closest('.bg-brand-navy')).not.toBeNull(); // navy holds only the tabs
+    expect(within(tabs).getByRole('tab', { name: 'Contacts' })).toHaveAttribute('data-state', 'active');
+    expect(within(tabs).getAllByRole('tab').map((t) => t.textContent)).toEqual(['Contacts', 'Sales Pipeline', 'Marketing', 'Reports', 'Analytics']);
+    // Add contact in the header opens the existing form.
+    fireEvent.click(h.getByRole('button', { name: 'Add contact' }));
     expect(await screen.findByRole('dialog')).toHaveTextContent('Add New Contact');
   });
 

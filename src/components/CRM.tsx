@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
@@ -30,6 +29,7 @@ import { readCrmTab, writeCrmTab } from '@/lib/crmTab';
 import ReportsTab from './crm/ReportsTab';
 import AnalyticsTab from './crm/AnalyticsTab';
 import SubscriptionUpgrade from './SubscriptionUpgrade';
+import { TabbedPageHeader, tabStripListClass, tabStripTriggerClass } from '@/components/ui/tabbed-page-header';
 
 // Updated interfaces to match database schema
 interface Contact {
@@ -514,52 +514,31 @@ const CRM = ({ band = false }: CRMProps) => {
   const ready = canAccessCRM && !loading;
 
   const tabList = (
-    <TabsList className={band
-      ? 'flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-none bg-transparent p-0 text-brand-navy-muted'
-      : 'flex w-full overflow-x-auto justify-start'}>
+    <TabsList aria-label="CRM sections" className={band ? tabStripListClass : 'flex w-full overflow-x-auto justify-start'}>
       {[['contacts', 'Contacts'], ['deals', 'Sales Pipeline'], ['marketing', 'Marketing'], ['reports', 'Reports'], ['analytics', 'Analytics']].map(([v, label]) => (
-        <TabsTrigger key={v} value={v} className={band
-          ? 'min-h-touch rounded-none border-b-[3px] border-transparent px-4 pb-2 pt-2 text-body font-semibold text-brand-navy-muted shadow-none hover:text-white focus-visible:ring-[3px] focus-visible:ring-offset-0 data-[state=active]:border-nav-marker data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none'
-          : undefined}>
+        <TabsTrigger key={v} value={v} className={band ? tabStripTriggerClass : undefined}>
           {label}
         </TabsTrigger>
       ))}
     </TabsList>
   );
 
-  /** Navy header band for the full CRM page; tabs sit on the band. */
+  /** Full CRM page: the shared light header with the tabs on the navy strip under it. */
   const bandHeader = band && (
-    <div className="bg-brand-navy text-brand-navy-foreground">
-      <div className="mx-auto w-full max-w-[1440px] px-4 pt-5 sm:px-6 lg:px-8">
-        <nav aria-label="Breadcrumb">
-          <ol className="flex flex-wrap items-center gap-1.5 text-small text-brand-navy-muted">
-            <li><Link to="/dashboard" className="inline-flex min-h-touch items-center rounded-sm underline-offset-2 md:min-h-0 hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring">{organization?.name || 'Company'}</Link></li>
-            <li aria-hidden="true">/</li>
-            <li>Customers</li>
-            <li aria-hidden="true">/</li>
-            <li aria-current="page" className="font-semibold text-white">CRM</li>
-          </ol>
-        </nav>
-        <div className="mt-2 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="min-w-0">
-            <h1 className="text-page-title text-white">CRM</h1>
-            <p className="mt-1 text-body text-brand-navy-muted">Manage contacts, opportunities and the next action for each relationship.</p>
-          </div>
-          {ready && (
-            <div className="flex flex-wrap gap-2 [&_button]:min-h-touch [&_button]:focus-visible:ring-offset-brand-navy">
-              {/* Outline button on navy: white text and border, like "Customise dashboard". */}
-              <div className="contents [&>button]:border-white/50 [&>button]:bg-transparent [&>button]:text-white [&>button:hover]:bg-white/10 [&>button:hover]:text-white">
-                <ContactsImportExport contacts={contacts} onImported={fetchCRMData} />
-              </div>
-              <Button onClick={() => { setActiveTab('contacts'); setAddContactOpen(true); }}>
-                <Plus className="h-4 w-4" aria-hidden="true" />Add contact
-              </Button>
-            </div>
-          )}
-        </div>
-        {ready ? <div className="mt-4">{tabList}</div> : <div className="h-5" />}
-      </div>
-    </div>
+    <TabbedPageHeader
+      breadcrumbs={[{ label: organization?.name || 'Company', to: '/dashboard' }, { label: 'Customers' }, { label: 'CRM' }]}
+      title="CRM"
+      description="Manage contacts, opportunities and the next action for each relationship."
+      actions={ready ? (
+        <>
+          <div className="contents [&_button]:min-h-touch"><ContactsImportExport contacts={contacts} onImported={fetchCRMData} /></div>
+          <Button className="min-h-touch" onClick={() => { setActiveTab('contacts'); setAddContactOpen(true); }}>
+            <Plus className="h-4 w-4" aria-hidden="true" />Add contact
+          </Button>
+        </>
+      ) : undefined}
+      tabs={ready ? tabList : undefined}
+    />
   );
 
   const shell = (body: React.ReactNode) => band ? (

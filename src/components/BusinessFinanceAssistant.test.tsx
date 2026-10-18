@@ -531,6 +531,21 @@ describe('The Archive view stays on refresh', () => {
   });
 });
 
+describe('Page header', () => {
+  it('light header (breadcrumb, title, New invoice / New quote); navy only on the tab strip', async () => {
+    renderAt('?tool=business-finance-assistant&tab=invoices');
+    const h1 = screen.getByRole('heading', { level: 1, name: 'Invoices & quotes' });
+    expect(h1.closest('.bg-brand-navy')).toBeNull();
+    expect(within(screen.getByRole('navigation', { name: 'Breadcrumb' })).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Acme Trading Ltd', 'Business tools', 'Invoices & quotes']);
+    const tabs = screen.getByRole('tablist', { name: 'Invoices and quotes sections' });
+    expect(tabs.closest('.bg-brand-navy')).not.toBeNull();
+    expect(document.querySelectorAll('.bg-brand-navy')).toHaveLength(1);
+    expect(activeTab()).toBe('Invoices');
+    fireEvent.click(screen.getByRole('button', { name: 'New invoice' }));
+    await waitFor(() => expect(screen.getByTestId('url').textContent).toBe('?tool=business-finance-assistant&tab=create&type=invoice'));
+  });
+});
+
 describe('The tab stays on refresh', () => {
   it('switching tab writes ?tab= (other params kept, type= dropped)', async () => {
     renderAt('?tool=business-finance-assistant&tab=dashboard&payroll=history');

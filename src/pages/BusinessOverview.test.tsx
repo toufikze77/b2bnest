@@ -81,10 +81,12 @@ describe('Business overview page', () => {
     await waitFor(() => expect(within(summary()).getByRole('link', { name: /^Expenses to pay/ })).toHaveAccessibleName(/^Expenses to pay: £0\. 0 unpaid expenses, as of today\./));
   });
 
-  it('shows the navy frame: breadcrumb, title, period, currency and Customise', () => {
+  it('shows the standard light header: breadcrumb, title, period, currency and Customise (no navy)', () => {
     renderPage();
-    expect(screen.getByRole('heading', { level: 1, name: 'Business overview' })).toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent('Acme Trading Ltd/Business overview');
+    const h1 = screen.getByRole('heading', { level: 1, name: 'Business overview' });
+    expect(h1.closest('.bg-brand-navy')).toBeNull();
+    expect(document.querySelector('.bg-brand-navy')).toBeNull();
+    expect(within(screen.getByRole('navigation', { name: 'Breadcrumb' })).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Acme Trading Ltd', 'Business overview']);
     expect(screen.getByLabelText('Period')).toBeInTheDocument();
     expect(screen.getByLabelText('Currency')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Customise' })).toBeInTheDocument();
