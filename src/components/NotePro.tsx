@@ -408,23 +408,25 @@ export default function NotePro() {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary via-primary/90 to-primary/80 text-primary-foreground rounded-2xl p-8 mb-6 shadow-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="bg-gradient-to-r from-primary via-primary/90 to-primary/80 text-primary-foreground rounded-2xl p-5 sm:p-8 mb-6 shadow-lg">
+          {/* Wraps: on narrow screens the actions move under the title instead of pushing the page wider. */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex min-w-0 flex-[1_1_20rem] items-center gap-4">
               <Button
                 variant="secondary"
                 size="icon"
                 onClick={() => navigate(-1)}
-                className="shrink-0"
+                className="h-11 w-11 shrink-0"
+                aria-label="Back"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <div>
-                <h1 className="text-3xl font-bold mb-2">NotePro - Professional Note Taking</h1>
+              <div className="min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-bold mb-2 break-words">NotePro - Professional Note Taking</h1>
                 <p className="opacity-90">Organize your thoughts, ideas, and tasks in one place</p>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex max-w-full flex-wrap gap-2">
               <Button onClick={() => setShowCategoryDialog(true)} variant="secondary" size="lg">
                 <FolderPlus className="w-5 h-5 mr-2" />
                 Category
@@ -488,19 +490,19 @@ export default function NotePro() {
             </TabsList>
           </Tabs>
 
-          <div className="flex gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+          <div className="flex flex-wrap gap-4">
+            <div className="relative min-w-[12rem] flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Search notes..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="h-11 pl-10"
               />
             </div>
             <Select value={selectedCategory || "all"} onValueChange={(val) => setSelectedCategory(val === "all" ? null : val)}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="h-11 w-[200px]">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
@@ -512,10 +514,13 @@ export default function NotePro() {
                 ))}
               </SelectContent>
             </Select>
-            <div className="flex gap-2 border rounded-md p-1">
+            <div className="flex gap-1 border rounded-md">
               <Button
                 variant={viewMode === "grid" ? "default" : "ghost"}
                 size="icon"
+                className="h-11 w-11"
+                aria-label="Grid view"
+                aria-pressed={viewMode === "grid"}
                 onClick={() => setViewMode("grid")}
               >
                 <Grid3x3 className="w-4 h-4" />
@@ -523,6 +528,9 @@ export default function NotePro() {
               <Button
                 variant={viewMode === "list" ? "default" : "ghost"}
                 size="icon"
+                className="h-11 w-11"
+                aria-label="List view"
+                aria-pressed={viewMode === "list"}
                 onClick={() => setViewMode("list")}
               >
                 <List className="w-4 h-4" />

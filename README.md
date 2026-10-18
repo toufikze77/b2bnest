@@ -73,7 +73,11 @@ browser code, so they must be public values only:
 | Variable | Value |
 | --- | --- |
 | `VITE_SUPABASE_URL` | `https://<project-ref>.supabase.co` |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | the project's anon / publishable key |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | the project's anon / publishable key (`VITE_SUPABASE_ANON_KEY` is accepted as an alias) |
+| `VITE_SUPABASE_PROJECT_ID` | optional; the project ref (not read by the app) |
+
+For local development, copy `.env.example` to `.env` and fill in the values. `.env` is git-ignored and
+not committed; the build does not need it when these variables are set in the environment (as on Vercel).
 
 Never add the service-role key (or any secret) as a `VITE_*` variable; the client refuses to
 start if it is given one. Server secrets (Stripe, HMRC, OAuth, etc.) live in Supabase Edge

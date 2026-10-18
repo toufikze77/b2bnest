@@ -98,7 +98,10 @@
 ## Crypto content retirement (2026-09-30) — preview done, not published
 - [x] Remove crypto pages, footer Invest section, price sidebars, crypto checkout, converter tool, crypto images, crypto SEO/sitemap/llms.txt
 - [ ] Real 410/404 for retired URLs — blocked: Lovable static hosting serves the app with HTTP 200 on every path; mitigated with noindex on not-found
-- [ ] Delete news_articles rows + fetch-news cron, retire fetch-news and create-coinbase-charge functions — needs owner authorization (database/backend change)
+- [x] fetch-news 5-minute cron removed in production by the owner; fetch-news function code and its config.toml entry removed from the repo (Phase 8)
+- [ ] Delete the deployed fetch-news Edge Function in Supabase (still deployed; owner action)
+- [ ] Decide on news_articles (about 7,388 rows, nothing reads them): export and drop, or keep — needs owner authorization
+- [ ] Retire create-coinbase-charge function — needs owner authorization
 - [ ] Post-publish HTTP/asset verification on www.b2bnest.online
 
 ## Workspace templates (preview)

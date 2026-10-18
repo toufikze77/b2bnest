@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Loader2, Plus, Copy, Save, Trash2, RotateCcw, Search } from 'lucide-react';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -183,17 +184,15 @@ export default function AdminTemplates() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Template Centre</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage the business template library, publishing and real usage analytics.
-          </p>
-        </div>
-        <Button onClick={() => setEditing(emptyTemplate())}>
-          <Plus className="mr-2 h-4 w-4" /> New template
-        </Button>
-      </div>
+      <AdminPageHeader
+        title="Template Centre"
+        description="Manage the business template library, publishing and real usage analytics."
+        actions={
+          <Button onClick={() => setEditing(emptyTemplate())}>
+            <Plus className="mr-2 h-4 w-4" /> New template
+          </Button>
+        }
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {[

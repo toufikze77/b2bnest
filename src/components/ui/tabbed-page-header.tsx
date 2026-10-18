@@ -22,13 +22,20 @@ export function TabbedPageHeader({ breadcrumbs, title, description, actions, tab
     // the strip and the cards below share the same left and right edges at every breakpoint.
     <div className={cn('mx-auto w-full min-w-0 max-w-[1440px] px-4 pt-6 sm:px-6 lg:px-8', className)}>
       <PageHeader breadcrumbs={breadcrumbs} title={title} description={description} actions={actions} className="mb-0 border-b-0 pb-6" />
-      {tabs && (
-        // A navy tab bar sitting on the page, rounded like the cards; overflow-hidden keeps the sideways
-        // scroll of the tab list inside the rounded shape. px-1 keeps the first tab's focus ring off the corner.
-        <div data-tab-strip className="overflow-hidden rounded-card bg-brand-navy px-1 text-brand-navy-foreground dark:border dark:border-white/10">
-          {tabs}
-        </div>
-      )}
+      {tabs && <TabStrip>{tabs}</TabStrip>}
+    </div>
+  );
+}
+
+/**
+ * The navy tab bar on its own, for a page whose tabs sit further down (e.g. under summary cards).
+ * Rounded like the cards; overflow-hidden keeps the sideways scroll of the tab list inside the rounded shape.
+ * px-1 keeps the first tab's focus ring off the corner.
+ */
+export function TabStrip({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div data-tab-strip className={cn('overflow-hidden rounded-card bg-brand-navy px-1 text-brand-navy-foreground dark:border dark:border-white/10', className)}>
+      {children}
     </div>
   );
 }
