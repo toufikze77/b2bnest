@@ -4,7 +4,8 @@ import { Crumb, PageHeader } from '@/components/ui/page-header';
 
 /**
  * Page header for pages with a tab row (CRM, Invoices & quotes): the standard light PageHeader
- * (breadcrumb, title, description, actions) with a full-width navy strip under it that holds only the tabs.
+ * (breadcrumb, title, description, actions) with a navy tab strip under it that holds only the tabs.
+ * The strip stays within the content width (same edges as the title and the cards) and is rounded like a card.
  * The page keeps its own controlled <Tabs> and passes its <TabsList> in `tabs`; this component owns no tab state.
  */
 export function TabbedPageHeader({ breadcrumbs, title, description, actions, tabs, className }: {
@@ -17,14 +18,15 @@ export function TabbedPageHeader({ breadcrumbs, title, description, actions, tab
   className?: string;
 }) {
   return (
-    <div className={cn('min-w-0', className)}>
-      {/* Same gutters and width as PageContainer (wide) so the title lines up with the content below. */}
-      <div className="mx-auto w-full max-w-[1440px] px-4 pt-6 sm:px-6 lg:px-8">
-        <PageHeader breadcrumbs={breadcrumbs} title={title} description={description} actions={actions} className="mb-0 border-b-0 pb-5" />
-      </div>
+    // One container (same max width and gutters as the page body / PageContainer "wide"), so the title,
+    // the strip and the cards below share the same left and right edges at every breakpoint.
+    <div className={cn('mx-auto w-full min-w-0 max-w-[1440px] px-4 pt-6 sm:px-6 lg:px-8', className)}>
+      <PageHeader breadcrumbs={breadcrumbs} title={title} description={description} actions={actions} className="mb-0 border-b-0 pb-6" />
       {tabs && (
-        <div data-tab-strip className="bg-brand-navy text-brand-navy-foreground dark:border-y dark:border-white/10">
-          <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8">{tabs}</div>
+        // A navy tab bar sitting on the page, rounded like the cards; overflow-hidden keeps the sideways
+        // scroll of the tab list inside the rounded shape. px-1 keeps the first tab's focus ring off the corner.
+        <div data-tab-strip className="overflow-hidden rounded-card bg-brand-navy px-1 text-brand-navy-foreground dark:border dark:border-white/10">
+          {tabs}
         </div>
       )}
     </div>
