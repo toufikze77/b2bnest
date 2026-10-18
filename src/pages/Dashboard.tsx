@@ -13,6 +13,7 @@ import {
 } from '@/lib/dashboardData';
 import { DashboardLayout, loadLayout, saveLayout, WidgetId, widgetById } from '@/lib/dashboardLayout';
 import { PageContainer } from '@/components/ui/page-container';
+import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/states';
@@ -62,7 +63,6 @@ function StepList({ heading, note, steps }: { heading: string; note?: string; st
 }
 
 /** Buttons on the navy band: white text, focus ring offset against navy. */
-const onNavy = 'min-h-touch focus-visible:ring-offset-brand-navy';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -117,7 +117,7 @@ const Dashboard = () => {
   if (!orgLoading && !organizationId) {
     return (
       <PageContainer width="full" className="space-y-6">
-        <h1 className="text-page-title">Dashboard</h1>
+        <PageHeader title="Dashboard" className="mb-0" />
         <EmptyState icon={Building2} title="Choose a company" description="Pick a company from the drop-down at the top of the page to see its work." />
       </PageContainer>
     );
@@ -149,22 +149,19 @@ const Dashboard = () => {
 
   return (
     <div className="min-w-0">
-      {/* Navy header band */}
-      <div className="bg-brand-navy text-brand-navy-foreground">
-        <div className="mx-auto w-full max-w-[1760px] px-4 pb-20 pt-6 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div className="min-w-0">
-              <p className="inline-flex items-center gap-1.5 text-small font-semibold text-brand-navy-muted"><Building2 className="h-4 w-4" aria-hidden="true" />{organization?.name || 'Company'}</p>
-              <h1 className="mt-1 text-page-title text-white">Dashboard</h1>
-              <p className="mt-1 text-body text-brand-navy-muted">{todayLabel} · today at a glance for {companyName}</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button ref={customiseBtn} variant="outline" className={cn(onNavy, 'border-white/50 bg-transparent text-white hover:bg-white/10 hover:text-white')} onClick={() => setCustomiseOpen(true)}>
+      <PageContainer width="full" className="space-y-6">
+        <PageHeader
+          eyebrow={<span className="inline-flex items-center gap-1.5"><Building2 className="h-4 w-4" aria-hidden="true" />{organization?.name || 'Company'}</span>}
+          title="Dashboard"
+          description={`${todayLabel} · today at a glance for ${companyName}`}
+          actions={(
+            <>
+              <Button ref={customiseBtn} variant="outline" className="min-h-touch" onClick={() => setCustomiseOpen(true)}>
                 <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />Customise dashboard
               </Button>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button className={onNavy}><Plus className="h-4 w-4" aria-hidden="true" />Quick add</Button>
+                  <Button className="min-h-touch"><Plus className="h-4 w-4" aria-hidden="true" />Quick add</Button>
                 </PopoverTrigger>
                 <PopoverContent align="end" className="w-60 rounded-card p-1">
                   <nav aria-label="Quick add">
@@ -180,12 +177,11 @@ const Dashboard = () => {
                   </nav>
                 </PopoverContent>
               </Popover>
-            </div>
-          </div>
-        </div>
-      </div>
+            </>
+          )}
+          className="mb-0"
+        />
 
-      <PageContainer width="full" className="-mt-16 space-y-6 pt-0">
         {/* Summary row — selected company only */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4" aria-label="Company summary">
           <Stat label="Active projects" value={data.loading ? null : data.summary.activeProjects} icon={FolderKanban} tone="primary" href="/project-management" hint="Not completed or cancelled" />

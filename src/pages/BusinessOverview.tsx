@@ -11,6 +11,7 @@ import { StatusBadge } from '@/components/data/StatusBadge';
 import CurrencySelector from '@/components/crm/CurrencySelector';
 import { CustomiseSections } from '@/components/overview/CustomiseSections';
 import SEOHead from '@/components/SEOHead';
+import { PageHeader } from '@/components/ui/page-header';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
@@ -23,11 +24,9 @@ import {
 import { contactsAdded } from '@/lib/crmAnalytics';
 import { excludedDocsNote } from '@/lib/financeSummary';
 import { currencySymbol, formatMoney, normalizeCurrency } from '@/lib/money';
-import { cn } from '@/lib/utils';
 
 const EMPTY: OverviewInput = { invoices: [], expenses: [], deals: [], contacts: [], projects: [], tasks: [] };
 type Errors = Partial<Record<keyof OverviewInput, boolean>>;
-const onNavyFocus = 'focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-offset-0';
 
 /** One summary card. A real link with a visible focus ring and an "opens …" name, or a plain card when nothing manages it. */
 function OverviewCard({ label, value, hint, link, loading, alert }: {
@@ -115,47 +114,36 @@ const BusinessOverview = () => {
     <div className="min-w-0">
       <SEOHead title="Business Overview | B2BNest" description="Unified overview of revenue, expenses, projects, tasks and CRM across your organization." canonicalUrl="https://www.b2bnest.online/business-overview" />
 
-      <div className="bg-brand-navy text-brand-navy-foreground">
-        <div className="mx-auto w-full max-w-[1440px] px-4 pb-5 pt-5 sm:px-6 lg:px-8">
-          <nav aria-label="Breadcrumb">
-            <ol className="flex flex-wrap items-center gap-1.5 text-small text-brand-navy-muted">
-              <li><Link to="/dashboard" className="inline-flex min-h-touch items-center rounded-sm underline-offset-2 hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring md:min-h-0">{organization?.name || 'Company'}</Link></li>
-              <li aria-hidden="true">/</li>
-              <li aria-current="page" className="font-semibold text-white">Business overview</li>
-            </ol>
-          </nav>
-          <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="min-w-0">
-              <h1 className="text-page-title text-white">Business overview</h1>
-              <p className="mt-1 text-body text-brand-navy-muted">Money, sales and work for {organization?.name || 'your company'} in one place, from your own records.</p>
-            </div>
+      <div className="mx-auto w-full max-w-[1440px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+        <PageHeader
+          breadcrumbs={[{ label: organization?.name || 'Company', to: '/dashboard' }, { label: 'Business overview' }]}
+          title="Business overview"
+          description={`Money, sales and work for ${organization?.name || 'your company'} in one place, from your own records.`}
+          actions={(
             <div className="flex flex-wrap items-end gap-3">
               <div className="flex flex-col gap-1">
-                <label htmlFor="overview-period" className="text-small font-semibold text-white">Period</label>
+                <label htmlFor="overview-period" className="text-small font-semibold text-foreground">Period</label>
                 <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
-                  <SelectTrigger id="overview-period" className={cn('h-11 w-44 border-white/50 bg-transparent text-white md:h-10', onNavyFocus)}><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="overview-period" className="h-11 w-44 md:h-10"><SelectValue /></SelectTrigger>
                   <SelectContent>{PERIODS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="flex flex-col gap-1">
-                <label htmlFor="overview-currency" className="text-small font-semibold text-white">Currency</label>
-                <CurrencySelector id="overview-currency" value={currency} onValueChange={rc.setCurrency} extraCodes={stored}
-                  className={cn('h-11 w-52 border-white/50 bg-transparent text-white md:h-10', onNavyFocus)} />
+                <label htmlFor="overview-currency" className="text-small font-semibold text-foreground">Currency</label>
+                <CurrencySelector id="overview-currency" value={currency} onValueChange={rc.setCurrency} extraCodes={stored} className="h-11 w-52 md:h-10" />
               </div>
-              <Button ref={customiseBtn} variant="outline" className={cn('min-h-touch border-white/50 bg-transparent text-white hover:bg-white/10 hover:text-white md:min-h-10', onNavyFocus)} onClick={() => setCustomiseOpen(true)}>
+              <Button ref={customiseBtn} variant="outline" className="min-h-touch md:min-h-10" onClick={() => setCustomiseOpen(true)}>
                 <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />Customise
               </Button>
             </div>
-          </div>
-          {rc.isCustom && (
-            <button type="button" onClick={rc.reset} className="mt-3 min-h-touch rounded-sm text-small font-semibold text-white underline underline-offset-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring md:min-h-0">
-              Reset to account currency ({account})
-            </button>
           )}
-        </div>
-      </div>
-
-      <div className="mx-auto w-full max-w-[1440px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+          className="mb-0"
+        />
+        {rc.isCustom && (
+          <button type="button" onClick={rc.reset} className="-mt-3 min-h-touch rounded-sm text-small font-semibold text-link underline underline-offset-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring md:min-h-0">
+            Reset to account currency ({account})
+          </button>
+        )}
         <p className="text-small text-muted-foreground">
           Money, CRM and expenses: your own records. Projects and tasks: everyone in {organization?.name || 'this company'}. {currency ? `Money in ${currency} only, never converted.` : 'Choose a currency to see money figures.'} Expenses have no currency of their own: they count in your account currency{account ? ` (${account})` : ''}. {periodLabel} unless a card says “as of today”.
         </p>

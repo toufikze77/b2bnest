@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccountCurrency } from '@/hooks/useAccountCurrency';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
@@ -34,6 +34,7 @@ import DocumentTemplatePicker from '@/components/documents/DocumentTemplatePicke
 import { useDocumentTemplates } from '@/hooks/useDocumentTemplates';
 import { renderDocumentPdf } from '@/lib/documentTemplates';
 import { EmailDocumentDialog } from '@/components/finance/EmailDocumentDialog';
+import { TabbedPageHeader, tabStripDividerClass, tabStripListClass, tabStripTriggerClass } from '@/components/ui/tabbed-page-header';
 import { documentEmailApi, EmailAccess, emailAvailability, SendResult, SENT_NOT_SAVED, SENT_TOAST } from '@/lib/documentEmail';
 import { Tables } from '@/integrations/supabase/types';
 // Type definitions
@@ -595,49 +596,38 @@ const BusinessFinanceAssistant = () => {
     { label: 'Banking and payroll', tabs: [{ value: 'banking', label: 'Banking' }, { value: 'payroll', label: 'Payroll (UK)' }] },
     { label: 'Insight', tabs: [{ value: 'reports', label: 'Reports' }, { value: 'analytics', label: 'Analytics' }] },
   ];
-  const tabClass = 'min-h-touch shrink-0 rounded-none border-b-[3px] border-transparent px-3 pb-2 pt-2 text-body font-semibold text-brand-navy-muted shadow-none hover:text-white focus-visible:ring-[3px] focus-visible:ring-offset-0 data-[state=active]:border-nav-marker data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none';
   const docState = { loading: isLoading, error: docsError, onRetry: fetchData };
 
-  // Tabs wraps the band, so the tab list on the band controls the panels below it.
+  // Tabs wraps the header, so the tab list on the navy strip controls the panels below it.
   return (
     <Tabs value={activeTab} onValueChange={(value) => changeTab(value as FinanceTab)} className="min-w-0">
-      <div className="bg-brand-navy text-brand-navy-foreground">
-        <div className="mx-auto w-full max-w-[1440px] px-4 pt-5 sm:px-6 lg:px-8">
-          <nav aria-label="Breadcrumb">
-            <ol className="flex flex-wrap items-center gap-1.5 text-small text-brand-navy-muted">
-              <li><Link to="/dashboard" className="inline-flex min-h-touch items-center rounded-sm underline-offset-2 md:min-h-0 hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring">{organization?.name || 'Company'}</Link></li>
-              <li aria-hidden="true">/</li>
-              <li><Link to="/business-tools" className="inline-flex min-h-touch items-center rounded-sm underline-offset-2 md:min-h-0 hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring">Business tools</Link></li>
-              <li aria-hidden="true">/</li>
-              <li aria-current="page" className="font-semibold text-white">Invoices &amp; quotes</li>
-            </ol>
-          </nav>
-          <div className="mt-2 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div className="min-w-0">
-              <h1 className="text-page-title text-white">Invoices &amp; quotes</h1>
-              <p className="mt-1 text-body text-brand-navy-muted">Create quotes and invoices, see what is owed, and track money in and out.</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button className="min-h-touch focus-visible:ring-offset-brand-navy" onClick={() => startNew('invoice')}>
-                <Plus className="h-4 w-4" aria-hidden="true" />New invoice
-              </Button>
-              <Button variant="outline" className="min-h-touch border-white/50 bg-transparent text-white hover:bg-white/10 hover:text-white focus-visible:ring-offset-brand-navy" onClick={() => startNew('quote')}>
-                <Plus className="h-4 w-4" aria-hidden="true" />New quote
-              </Button>
-            </div>
-          </div>
-          <TabsList ref={tabListRef} aria-label="Invoices and quotes sections" className="mt-4 flex h-auto w-full justify-start gap-0 overflow-x-auto rounded-none bg-transparent p-0 text-brand-navy-muted">
+      <TabbedPageHeader
+        breadcrumbs={[{ label: organization?.name || 'Company', to: '/dashboard' }, { label: 'Business tools', to: '/business-tools' }, { label: 'Invoices & quotes' }]}
+        title="Invoices & quotes"
+        description="Create quotes and invoices, see what is owed, and track money in and out."
+        actions={(
+          <>
+            <Button className="min-h-touch" onClick={() => startNew('invoice')}>
+              <Plus className="h-4 w-4" aria-hidden="true" />New invoice
+            </Button>
+            <Button variant="outline" className="min-h-touch" onClick={() => startNew('quote')}>
+              <Plus className="h-4 w-4" aria-hidden="true" />New quote
+            </Button>
+          </>
+        )}
+        tabs={(
+          <TabsList ref={tabListRef} aria-label="Invoices and quotes sections" className={tabStripListClass}>
             {TAB_GROUPS.map((g, gi) => (
               <React.Fragment key={g.label}>
-                {gi > 0 && <span aria-hidden="true" className="mx-2 h-5 w-px shrink-0 self-center bg-white/25" />}
+                {gi > 0 && <span aria-hidden="true" className={tabStripDividerClass} />}
                 {g.tabs.map((t) => (
-                  <TabsTrigger key={t.value} value={t.value} className={tabClass}>{t.label}</TabsTrigger>
+                  <TabsTrigger key={t.value} value={t.value} className={tabStripTriggerClass}>{t.label}</TabsTrigger>
                 ))}
               </React.Fragment>
             ))}
           </TabsList>
-        </div>
-      </div>
+        )}
+      />
 
       <div className="mx-auto w-full max-w-[1440px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
         {isLoading && !['dashboard', 'quotes', 'invoices', 'analytics', 'reports', 'products', 'suppliers', 'expenses', 'outgoings'].includes(activeTab) ? (

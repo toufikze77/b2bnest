@@ -20,7 +20,7 @@ inside carries the meaning). The "Urgent" priority chip has its own token (white
 
 | Token | Value | Use |
 |---|---|---|
-| `bg-brand-navy` | #001A4C | Header bands, sidebar |
+| `bg-brand-navy` | #001A4C | Sidebar, top bar, and the tab strip under a page header (never the title area) |
 | `bg-primary` / `text-link` | #0069FF / #0050C8 | Primary buttons / links on white |
 | `bg-background` | #F2F5FA | Page |
 | `border-border` | #DDE4F0 | Card and field borders |
@@ -31,6 +31,25 @@ inside carries the meaning). The "Urgent" priority chip has its own token (white
 | `min-h-touch` | 44px | Every tap target on phones |
 
 Text contrast is at least 4.5:1. Spacing is in steps of 8px (Tailwind 2, 4, 6, 8…).
+
+## Page header (Phase 6: one look on every page)
+
+Every page title area is light and uses `PageHeader` (`src/components/ui/page-header.tsx`):
+breadcrumb (`PageBreadcrumbs`, a nav labelled "Breadcrumb", links 44px tall on phones), one `h1` in
+`text-page-title`, a one-line description in `text-muted-foreground`, and the actions on the right
+(normal light-theme buttons: primary blue for the main action, outline for the rest). On phones
+the actions wrap under the title.
+
+Pages with a tab row use `TabbedPageHeader` (`src/components/ui/tabbed-page-header.tsx`): the
+same light `PageHeader`, then a full-width navy strip that holds **only the tabs**. The page keeps
+its own controlled `<Tabs>` and passes its `TabsList` in `tabs`, styled with `tabStripListClass`,
+`tabStripTriggerClass` (and `tabStripDividerClass` between groups). Active tab: white text plus
+the `nav-marker` underline (never colour alone). Tabs are 44px tall on phones and the strip
+scrolls sideways inside itself. In dark mode the strip keeps navy and gets a faint top and bottom
+border so it still reads as a bar on the dark page. Used by CRM (`/crm`) and Invoices & quotes.
+
+Do not build a navy hero band behind a page title. Dashboard and Business overview use plain
+`PageHeader`.
 
 ## Cards
 
