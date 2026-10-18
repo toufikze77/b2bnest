@@ -96,8 +96,8 @@ const IntegrationHub = () => {
       <Alert className="mb-6">
         <Info className="h-4 w-4" />
         <AlertDescription>
-          All connections are secure and encrypted. Your credentials are stored safely and only accessible by you.
-          Click on any integration to see step-by-step instructions.
+          Connecting takes you to the service's own sign-in page, where you approve access; B2BNEST never sees your
+          password for that service. You can disconnect at any time.
         </AlertDescription>
       </Alert>
 
