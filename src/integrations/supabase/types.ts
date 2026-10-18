@@ -759,6 +759,42 @@ export type Database = {
           },
         ]
       }
+      document_email_log: {
+        Row: {
+          created_at: string
+          document_id: string
+          document_kind: string
+          error_stage: string | null
+          id: string
+          provider_reply: string | null
+          recipient_domain: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          document_kind: string
+          error_stage?: string | null
+          id?: string
+          provider_reply?: string | null
+          recipient_domain?: string | null
+          status: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          document_kind?: string
+          error_stage?: string | null
+          id?: string
+          provider_reply?: string | null
+          recipient_domain?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           category: string
@@ -1225,7 +1261,6 @@ export type Database = {
       invoices: {
         Row: {
           archived_at: string | null
-          paid_at: string | null
           client_address: string | null
           client_email: string | null
           client_name: string | null
@@ -1239,6 +1274,7 @@ export type Database = {
           items: Json | null
           logo_url: string | null
           notes: string | null
+          paid_at: string | null
           status: string | null
           subtotal: number | null
           tax_amount: number | null
@@ -1249,7 +1285,6 @@ export type Database = {
         }
         Insert: {
           archived_at?: string | null
-          paid_at?: string | null
           client_address?: string | null
           client_email?: string | null
           client_name?: string | null
@@ -1263,6 +1298,7 @@ export type Database = {
           items?: Json | null
           logo_url?: string | null
           notes?: string | null
+          paid_at?: string | null
           status?: string | null
           subtotal?: number | null
           tax_amount?: number | null
@@ -1273,7 +1309,6 @@ export type Database = {
         }
         Update: {
           archived_at?: string | null
-          paid_at?: string | null
           client_address?: string | null
           client_email?: string | null
           client_name?: string | null
@@ -1287,6 +1322,7 @@ export type Database = {
           items?: Json | null
           logo_url?: string | null
           notes?: string | null
+          paid_at?: string | null
           status?: string | null
           subtotal?: number | null
           tax_amount?: number | null
@@ -1755,37 +1791,140 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_email_outbox: {
+        Row: {
+          accepted_at: string | null
+          attempts: number
+          created_at: string
+          dedupe_key: string
+          id: string
+          invitation_id: string
+          kind: string
+          last_error: string | null
+          locked_until: string | null
+          next_attempt_at: string
+          organization_id: string
+          provider_reply: string | null
+          recipient_email: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          attempts?: number
+          created_at?: string
+          dedupe_key: string
+          id?: string
+          invitation_id: string
+          kind: string
+          last_error?: string | null
+          locked_until?: string | null
+          next_attempt_at?: string
+          organization_id: string
+          provider_reply?: string | null
+          recipient_email: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          attempts?: number
+          created_at?: string
+          dedupe_key?: string
+          id?: string
+          invitation_id?: string
+          kind?: string
+          last_error?: string | null
+          locked_until?: string | null
+          next_attempt_at?: string
+          organization_id?: string
+          provider_reply?: string | null
+          recipient_email?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_email_outbox_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_billing: {
+        Row: {
+          billing_user_id: string
+          note: string | null
+          organization_id: string
+          set_at: string
+          set_by: string | null
+          source: string
+        }
+        Insert: {
+          billing_user_id: string
+          note?: string | null
+          organization_id: string
+          set_at?: string
+          set_by?: string | null
+          source: string
+        }
+        Update: {
+          billing_user_id?: string
+          note?: string | null
+          organization_id?: string
+          set_at?: string
+          set_by?: string | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_billing_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_invitations: {
         Row: {
           accepted_at: string | null
+          accepted_by: string | null
           created_at: string
           email: string
           expires_at: string | null
           id: string
           invited_by: string | null
           organization_id: string | null
+          revoked_at: string | null
           role: string | null
           token: string
         }
         Insert: {
           accepted_at?: string | null
+          accepted_by?: string | null
           created_at?: string
           email: string
           expires_at?: string | null
           id?: string
           invited_by?: string | null
           organization_id?: string | null
+          revoked_at?: string | null
           role?: string | null
           token: string
         }
         Update: {
           accepted_at?: string | null
+          accepted_by?: string | null
           created_at?: string
           email?: string
           expires_at?: string | null
           id?: string
           invited_by?: string | null
           organization_id?: string | null
+          revoked_at?: string | null
           role?: string | null
           token?: string
         }
@@ -3850,9 +3989,39 @@ export type Database = {
           },
         ]
       }
+      support_notification_prefs: {
+        Row: {
+          email_enabled: boolean
+          organization_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          email_enabled?: boolean
+          organization_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          email_enabled?: boolean
+          organization_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_notification_prefs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_settings: {
         Row: {
           created_at: string
+          feedback_enabled: boolean
           logo_url: string | null
           next_ticket_number: number
           organization_id: string
@@ -3864,6 +4033,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          feedback_enabled?: boolean
           logo_url?: string | null
           next_ticket_number?: number
           organization_id: string
@@ -3875,6 +4045,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          feedback_enabled?: boolean
           logo_url?: string | null
           next_ticket_number?: number
           organization_id?: string
@@ -3890,6 +4061,48 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: true
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_ticket_feedback: {
+        Row: {
+          comment: string | null
+          created_at: string
+          organization_id: string
+          rating: number
+          submitted_by: string
+          ticket_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          organization_id: string
+          rating: number
+          submitted_by: string
+          ticket_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          organization_id?: string
+          rating?: number
+          submitted_by?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_feedback_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_ticket_feedback_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: true
+            referencedRelation: "support_tickets"
             referencedColumns: ["id"]
           },
         ]
@@ -4916,6 +5129,30 @@ export type Database = {
       }
     }
     Functions: {
+      _org_billing_owner: { Args: { _org: string }; Returns: string }
+      _seat_caps_enabled: { Args: never; Returns: boolean }
+      _seat_needs_new: {
+        Args: { _email: string; _org: string; _user: string }
+        Returns: boolean
+      }
+      _seat_pool: {
+        Args: { _org: string }
+        Returns: {
+          basis: string
+          billing_owner: string
+          enforced: boolean
+          pending: number
+          pooled_companies: number
+          seat_limit: number
+          used: number
+        }[]
+      }
+      _seat_pool_lock: { Args: { _org: string }; Returns: undefined }
+      _seat_pool_orgs: { Args: { _org: string }; Returns: string[] }
+      _support_notify_staff: {
+        Args: { _assignee: string; _msg: string; _org: string; _title: string }
+        Returns: undefined
+      }
       add_project_member: {
         Args: { p_project_id: string; p_role?: string; p_user_id: string }
         Returns: Json
@@ -5099,6 +5336,13 @@ export type Database = {
       decrypt_payment_data: {
         Args: { encrypted_data: string }
         Returns: string
+      }
+      document_email_recent_counts: {
+        Args: { _document_id: string; _since: string; _user_id: string }
+        Returns: {
+          document_count: number
+          user_count: number
+        }[]
       }
       encrypt_banking_data: { Args: { data: string }; Returns: string }
       encrypt_hmrc_token: { Args: { token: string }; Returns: string }
@@ -5285,9 +5529,74 @@ export type Database = {
         Args: { _item_id: string; _organization_id: string }
         Returns: string
       }
+      onboarding_email_status: {
+        Args: { _org: string }
+        Returns: {
+          invitation_id: string
+          kind: string
+          status: string
+          updated_at: string
+        }[]
+      }
+      onboarding_outbox_claim: {
+        Args: { _limit?: number }
+        Returns: {
+          attempts: number
+          company: string
+          id: string
+          kind: string
+          organization_id: string
+          recipient_email: string
+          role: string
+          token: string
+        }[]
+      }
+      onboarding_outbox_finish: {
+        Args: { _id: string; _outcome: string; _reply: string }
+        Returns: undefined
+      }
+      org_accept_invitation: { Args: { _token: string }; Returns: string }
+      org_invitation_preview: {
+        Args: { _token: string }
+        Returns: {
+          company: string
+          email_matches: boolean
+          masked_email: string
+          role: string
+          state: string
+        }[]
+      }
+      org_invitation_token: { Args: { _invitation: string }; Returns: string }
+      org_invite_member: {
+        Args: { _email: string; _org: string; _role: string }
+        Returns: {
+          invitation_id: string
+          outcome: string
+          token: string
+        }[]
+      }
+      org_manage_invitation: {
+        Args: { _action: string; _invitation: string }
+        Returns: undefined
+      }
+      org_seat_summary: {
+        Args: { _org: string }
+        Returns: {
+          basis: string
+          enforced: boolean
+          pending: number
+          pooled_companies: number
+          seat_limit: number
+          used: number
+        }[]
+      }
       owns_team: {
         Args: { _team_id: string; _user_id: string }
         Returns: boolean
+      }
+      platform_set_billing_owner: {
+        Args: { _note: string; _org: string; _user: string }
+        Returns: undefined
       }
       preview_user_emissions: {
         Args: { _user_id: string }
@@ -5373,6 +5682,10 @@ export type Database = {
         }
         Returns: string
       }
+      support_feedback_submitted: {
+        Args: { _ticket: string }
+        Returns: boolean
+      }
       support_is_agent: { Args: { _org: string }; Returns: boolean }
       support_is_customer: { Args: { _org: string }; Returns: boolean }
       support_is_manager: { Args: { _org: string }; Returns: boolean }
@@ -5384,17 +5697,25 @@ export type Database = {
         Args: { _limit?: number }
         Returns: {
           attempts: number
+          feedback_enabled: boolean
           id: string
           kind: string
+          organization_id: string
           recipient_user_id: string
           reference: string
           reply_body: string
           subject: string
           support_name: string
+          ticket_id: string
+          ticket_status: string
         }[]
       }
       support_outbox_finish: {
         Args: { _id: string; _outcome: string; _reply: string }
+        Returns: undefined
+      }
+      support_submit_feedback: {
+        Args: { _comment: string; _rating: number; _ticket: string }
         Returns: undefined
       }
       support_update_ticket: {
