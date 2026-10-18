@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { Mail, MessageCircle, Book, HelpCircle, ExternalLink } from 'lucide-react';
+import { Mail, Book, HelpCircle, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SEOHead from '@/components/SEOHead';
 
@@ -13,7 +13,7 @@ const Help = () => {
     },
     {
       question: "What integrations do you support?",
-      answer: "We support Google Calendar, iCloud Calendar, Outlook 365, OneDrive, Twitter, LinkedIn, Facebook, HMRC, and Firecrawl for web scraping. More integrations are being added regularly."
+      answer: "The Integration Hub lists the services you can connect today: Google Calendar, iCloud Calendar, Outlook 365, OneDrive, X (Twitter), LinkedIn, Facebook and Firecrawl for web scraping, plus HMRC from its own page. Connecting takes you to the service's own sign-in page. Other services are not available yet."
     },
     {
       question: "What does the CRM Marketing tab do?",
@@ -53,19 +53,19 @@ const Help = () => {
     },
     {
       question: "Is my data secure?",
-      answer: "Each company's records are kept separate, and only its members can see them. Passwords and sign-in are handled by our authentication provider, card payments by Stripe (we never see card numbers), and connected-account tokens are stored encrypted. We don't sell your data."
+      answer: "Each company's records are kept separate, and only its members can see them. Passwords and sign-in are handled by our authentication provider, and card payments by Stripe (we never see card numbers). We don't sell your data."
     },
     {
       question: "How do I export my data?",
       answer: "You can export your data from the Dashboard or individual tool sections. We support CSV, JSON, and PDF formats for most data types."
     },
     {
-      question: "What is the AI Assistant?",
-      answer: "Our AI Assistant helps you with platform navigation, feature explanations, and business advice. It's powered by advanced AI and has knowledge of all B2BNEST features."
+      question: "What is the AI Business Advisor?",
+      answer: "The AI Business Advisor in AI Studio answers business questions using an AI model and uses your monthly AI credits. Like any AI, it can be wrong, so check anything important. The help assistant on the homepage is different: it gives fixed answers to common questions and is not an AI."
     },
     {
       question: "How do workflows work?",
-      answer: "In Workflows you list steps under 'Do this' — send an email, send a WhatsApp message, post on X or post on LinkedIn — and run them all when you click 'Run now'. Automatic starts (schedules, form submissions, new records) aren't available yet. WhatsApp, X and LinkedIn need your accounts connected first."
+      answer: "In Workflows you list steps under 'Do this' and run them all when you click 'Run now'. Only email steps are switched on right now; WhatsApp, X and LinkedIn steps are switched off until their delivery has been checked. Automatic starts (schedules, form submissions, new records) aren't available yet."
     },
   ];
 
@@ -81,12 +81,6 @@ const Help = () => {
       description: "Learn through step-by-step videos",
       icon: ExternalLink,
       link: "https://www.youtube.com/@B2BNEST"
-    },
-    {
-      title: "API Documentation",
-      description: "Developer resources and API docs",
-      icon: ExternalLink,
-      link: "https://docs.b2bnest.online"
     }
   ];
 
@@ -110,36 +104,17 @@ const Help = () => {
           </div>
 
           {/* Contact Options */}
-          <div className="grid md:grid-cols-2 gap-6 mb-12 max-w-3xl mx-auto">
-            <Card className="text-center hover:shadow-lg transition-shadow cursor-pointer">
-              <CardHeader>
-                <MessageCircle className="h-12 w-12 mx-auto mb-2 text-primary" />
-                <CardTitle>Live Chat</CardTitle>
-                <CardDescription>Get instant help from our team</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full" onClick={() => {
-                  // Integrate with your live chat service
-                  window.open('https://tawk.to/chat/b2bnest', '_blank');
-                }}>
-                  Start Chat
-                </Button>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Available Mon-Fri, 9am-6pm GMT
-                </p>
-              </CardContent>
-            </Card>
-
+          <div className="grid gap-6 mb-12 max-w-md mx-auto">
             <Card className="text-center hover:shadow-lg transition-shadow">
               <CardHeader>
                 <Mail className="h-12 w-12 mx-auto mb-2 text-primary" />
                 <CardTitle>Email Support</CardTitle>
-                <CardDescription>We'll respond within 24 hours</CardDescription>
+                <CardDescription>Send the team a message from the contact page</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button className="w-full" asChild>
                   <Link to="/contact">
-                    Send Email
+                    Contact the team
                   </Link>
                 </Button>
                 <p className="text-sm text-muted-foreground mt-2">
@@ -152,7 +127,7 @@ const Help = () => {
           {/* Quick Resources */}
           <div className="mb-12">
             <h2 className="text-2xl font-bold mb-6 text-center">Quick Resources</h2>
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 gap-6">
               {resources.map((resource, index) => (
                 <Card key={index} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
@@ -206,7 +181,7 @@ const Help = () => {
             <CardContent className="text-center py-8">
               <h3 className="text-2xl font-bold mb-4">Still Need Help?</h3>
               <p className="text-muted-foreground mb-6">
-                Can't find what you're looking for? Our support team is here to help.
+                Can't find what you're looking for? Send the team a message from the contact page.
               </p>
               <div className="flex gap-4 justify-center flex-wrap">
                 <Button asChild size="lg">

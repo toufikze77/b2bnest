@@ -5,13 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calculator, Share2, Printer, TrendingDown, Check, Link2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { PLANS } from '@/lib/plans';
 
 interface ToolOption {
   id: string;
   name: string;
   category: string;
   competitor: string;
-  competitorCost: number; // monthly USD
+  competitorCost: number; // approximate monthly list price, shown in £ (not verified)
   b2bnestIncluded: boolean;
   description: string;
 }
@@ -26,10 +27,12 @@ const TOOLS: ToolOption[] = [
   { id: 'payroll', name: 'UK Payroll', category: 'Finance', competitor: 'Xero Payroll', competitorCost: 35, b2bnestIncluded: true, description: 'HMRC-ready payroll' },
   { id: 'hmrc', name: 'HMRC Integration', category: 'Compliance', competitor: 'FreeAgent', competitorCost: 29, b2bnestIncluded: true, description: 'MTD VAT submissions' },
   { id: 'workflows', name: 'Workflow Automation', category: 'Automation', competitor: 'Zapier', competitorCost: 49, b2bnestIncluded: true, description: 'Automate repetitive tasks' },
-  { id: 'integrations', name: 'Integration Hub', category: 'Automation', competitor: 'Make.com', competitorCost: 29, b2bnestIncluded: true, description: 'Gmail, Slack, Calendar+' },
+  { id: 'integrations', name: 'Integration Hub', category: 'Automation', competitor: 'Make.com', competitorCost: 29, b2bnestIncluded: true, description: 'Calendars, OneDrive, social accounts' },
 ];
 
-const B2BNEST_PRICE = 56; // Professional plan original £/month (discounts shown at checkout)
+// The Professional plan's monthly price, from the same data as the Pricing page.
+const PROFESSIONAL = PLANS.find((p) => p.id === 'professional')!;
+const B2BNEST_PRICE = PROFESSIONAL.monthly;
 const CURRENCY = '£';
 
 const parseInitial = (): string[] => {
@@ -187,7 +190,7 @@ const LiveCostSavingsCalculator: React.FC = () => {
                       <td className="py-1.5 text-right font-medium">£{competitorTotal}</td>
                     </tr>
                     <tr className="border-t">
-                      <td className="py-1.5">B2BNest all-in-one</td>
+                      <td className="py-1.5">B2BNest {PROFESSIONAL.name} plan</td>
                       <td className="py-1.5 text-right font-medium text-emerald-600">£{B2BNEST_PRICE}</td>
                     </tr>
                     <tr className="border-t bg-emerald-50">
@@ -199,7 +202,7 @@ const LiveCostSavingsCalculator: React.FC = () => {
 
                 <ul className="mt-4 space-y-1.5 text-xs text-slate-600">
                   <li className="flex items-start gap-2"><Check className="h-3.5 w-3.5 text-emerald-600 mt-0.5" /> One login, one bill, one platform</li>
-                  <li className="flex items-start gap-2"><Check className="h-3.5 w-3.5 text-emerald-600 mt-0.5" /> No per-seat surprises</li>
+                  <li className="flex items-start gap-2"><Check className="h-3.5 w-3.5 text-emerald-600 mt-0.5" /> Up to {PROFESSIONAL.userLimit} on {PROFESSIONAL.name}</li>
                   <li className="flex items-start gap-2"><Check className="h-3.5 w-3.5 text-emerald-600 mt-0.5" /> Cancel anytime</li>
                 </ul>
               </CardContent>

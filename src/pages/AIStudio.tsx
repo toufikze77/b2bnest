@@ -30,14 +30,14 @@ const AIStudio = () => {
     {
       id: "analytics",
       title: "Intelligent Analytics",
-      description: "AI-powered cost forecasting and business intelligence",
+      description: "Try AI cost forecasting on example figures (your own data is not connected yet)",
       icon: TrendingUp,
       color: "from-green-500 to-teal-600"
     },
     {
       id: "workflows",
       title: "Workflow Builder",
-      description: "Send emails, WhatsApp messages and posts in one click",
+      description: "Run a list of steps with one click (email steps only for now)",
       icon: Workflow,
       color: "from-orange-500 to-red-600"
     },
@@ -142,7 +142,7 @@ const AIStudio = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Workflows have moved</CardTitle>
-                <CardDescription>Set up "When this happens → Do this" workflows that send emails, WhatsApp messages and social posts in Workflows.</CardDescription>
+                <CardDescription>Workflows are in their own section. You list steps and run them with one click; only email steps are switched on for now.</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button onClick={() => navigate('/workflow-studio')}>Open Workflows</Button>

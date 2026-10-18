@@ -24,7 +24,6 @@ interface ForumPost {
   user_id: string;
   profiles?: {
     full_name: string | null;
-    email: string | null;
   } | null;
 }
 
@@ -35,7 +34,6 @@ interface ForumReply {
   user_id: string;
   profiles?: {
     full_name: string | null;
-    email: string | null;
   } | null;
 }
 
@@ -95,8 +93,7 @@ const Forum = () => {
         .select(`
           *,
           profiles (
-            full_name,
-            email
+            full_name
           )
         `)
         .order('is_pinned', { ascending: false })
@@ -134,8 +131,7 @@ const Forum = () => {
         .select(`
           *,
           profiles (
-            full_name,
-            email
+            full_name
           )
         `)
         .eq('post_id', postId)
@@ -277,7 +273,8 @@ const Forum = () => {
   };
 
   const getUserDisplayName = (post: ForumPost | ForumReply) => {
-    return post.profiles?.full_name || post.profiles?.email || 'Anonymous User';
+    // Never show a member's email address to other members.
+    return post.profiles?.full_name || 'Member';
   };
 
   return (
