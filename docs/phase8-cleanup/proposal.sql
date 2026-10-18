@@ -1,0 +1,12 @@
+-- Phase 8: fix the Supabase security advisor warning "function_search_path_mutable" on public._seat_caps_enabled().
+-- PROPOSAL ONLY, NOT APPLIED. Target when approved: gvftvswyrevummbvyhxa.
+--
+-- Current definition (read from production on 2026-10-18, same as docs/onboarding-2026-10-15/proposal.sql line 91):
+--   CREATE FUNCTION public._seat_caps_enabled() RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT false $$;
+-- Owner postgres, proconfig NULL (no fixed search_path). The body refers to no table, view or function, so there is
+-- nothing to schema-qualify: an empty search_path cannot change what it returns.
+--
+-- Safe to re-run: ALTER ... SET is idempotent. It changes no data, no grants and no behaviour.
+-- Note for later: CREATE OR REPLACE of this function without a SET clause would drop this setting again, so any
+-- future redefinition (e.g. switching seat caps on) must include `SET search_path = ''`.
+ALTER FUNCTION public._seat_caps_enabled() SET search_path = '';
