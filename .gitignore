@@ -23,6 +23,9 @@ pnpm-debug.log*
 .env
 .env.local
 .env.*.local
+# Committed on purpose: public browser settings only (see README, "Environment variables").
+!.env.production
+!.env.example
 
 # Misc
 *.local

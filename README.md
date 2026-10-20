@@ -67,19 +67,23 @@ This project is built with:
 `vercel.json` configures the build: `npm ci`, `npm run build`, output `dist/`, and an SPA
 rewrite so client-side routes load `index.html`.
 
-Set these in the Vercel project (Settings → Environment Variables). They are bundled into the
-browser code, so they must be public values only:
+## Environment variables
 
-| Variable | Value |
+The app needs two settings to reach Supabase. Both are **public**: they are built into the JavaScript that every visitor
+downloads, and data is protected by row-level security, not by keeping these values hidden.
+
+| Variable | What it is |
 | --- | --- |
-| `VITE_SUPABASE_URL` | `https://<project-ref>.supabase.co` |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | the project's anon / publishable key (`VITE_SUPABASE_ANON_KEY` is accepted as an alias) |
-| `VITE_SUPABASE_PROJECT_ID` | optional; the project ref (not read by the app) |
+| `VITE_SUPABASE_URL` | The Supabase project URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | The project's publishable key (`sb_publishable_…`); `VITE_SUPABASE_ANON_KEY` is accepted as an older name |
 
-For local development, copy `.env.example` to `.env` and fill in the values. `.env` is git-ignored and
-not committed; the build does not need it when these variables are set in the environment (as on Vercel).
+- **Production builds** (`npm run build`, including Vercel) read them from the committed `.env.production`, so a build
+  works without any dashboard setup. If the Vercel project's Environment Variables also set them, Vercel's values win.
+- **Locally**, `npm run dev` reads `.env`: copy `.env.example` to `.env` (same public values). `.env` is not committed.
+- **Tests** never read either file: `vitest.config.ts` sets fixed fake values.
+- If a build is missing either value, the site shows a plain "B2BNEST can't start" message instead of a blank page.
 
-Never add the service-role key (or any secret) as a `VITE_*` variable; the client refuses to
+Only public browser settings may go in these files. Never add the service-role key (or any secret) as a `VITE_*` variable; the client refuses to
 start if it is given one. Server secrets (Stripe, HMRC, OAuth, etc.) live in Supabase Edge
 Function secrets, not in Vercel.
 
