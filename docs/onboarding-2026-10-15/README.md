@@ -1,13 +1,17 @@
-# Ticketing onboarding package: revision 4, PREPARED, NOT APPLIED
+# Ticketing onboarding package: revision 4, applied
 
-Target when approved: production `gvftvswyrevummbvyhxa`. Nothing here is applied, deployed, sent or published. Email sending
-stays off until a bounded delivery test is explicitly approved. Old queued emails are never drained.
+**Status:** applied; verified present in production by read-only queries on 2026-10-18 (production `gvftvswyrevummbvyhxa`).
+The exact date it was applied is not recorded here. The email senders are **not deployed** and sending stays off; they now
+live in `supabase/functions/` and their rollout is in [`docs/phase10-email-senders/README.md`](../phase10-email-senders/README.md).
+Old queued emails are never drained.
+
+The sections below are the original preparation notes and describe production as it was **before** the migration.
 
 Owner decisions recorded 2026-10-16: one seat allowance per paying owner; link-only emails; NG TELECOM to use its correct
 organisation (inventory only, nothing moved); a labelled test company with three authorised test accounts; onboarding in its
 own PR; exact auth callback URLs; existing Microsoft 365 / Supabase Auth email settings left untouched.
 
-## Verified production state (read-only queries, 2026-10-16)
+## Production state before the migration (read-only queries, 2026-10-16)
 
 - Base ticketing is installed. The onboarding objects are not (no `org_*` RPCs, no `onboarding_email_outbox`, and
   `organization_invitations` has no `revoked_at` / `accepted_by`). 0 staff invitations.
@@ -89,7 +93,7 @@ changes of active members are never blocked. Direct INSERT is also revoked from 
 | Migration (one transaction) | `proposal.sql` (sha256 `52955994f2d4bbee1bc5e28f580437c3ec146b7302a02a1ae0f5c5161e51c299`) |
 | Export before rollback / Rollback | `export.sql` / `rollback.sql` (sha256 `ce4283aaa449bce48e46842a5daf40ce318f107bf1d72cc623f4eaacb261c76d`) |
 | DB tests / runner | `test.sql`, `run-test.sh` (`PG_RUN_USER=postgres bash docs/onboarding-2026-10-15/run-test.sh`) |
-| Senders | `functions/onboarding-email-sender/`, `functions/support-email-sender/` (inert until `*_EMAIL_ENABLED=true`) |
+| Senders | `supabase/functions/onboarding-email-sender/`, `supabase/functions/support-email-sender/` — in supabase/functions, not deployed (inert until `*_EMAIL_ENABLED=true`; see `docs/phase10-email-senders/README.md`) |
 | Auth callbacks | `AUTH-CALLBACKS.md` |
 
 ## Old queued email (decision 6)

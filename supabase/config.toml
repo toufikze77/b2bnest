@@ -70,3 +70,11 @@ verify_jwt = true
 
 [functions.check-subscription]
 verify_jwt = true
+
+# Phase 10: in supabase/functions, NOT deployed. Service-role callers only (the handler also checks the key);
+# both stay off until ONBOARDING_EMAIL_ENABLED / SUPPORT_EMAIL_ENABLED is exactly "true".
+[functions.onboarding-email-sender]
+verify_jwt = true
+
+[functions.support-email-sender]
+verify_jwt = true

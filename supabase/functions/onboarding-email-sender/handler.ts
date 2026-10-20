@@ -1,4 +1,4 @@
-// Invitation email sender — PREPARED, NOT DEPLOYED. Copy to supabase/functions/onboarding-email-sender/ only after approval.
+// Invitation email sender — in supabase/functions, not deployed. Deploy only after approval (docs/phase10-email-senders/README.md).
 // Reuses the existing Microsoft 365 SMTP settings (SMTP_* -> smtp.office365.com, notifications@b2bnest.online). No Gmail, no new secrets.
 // Inert until ONBOARDING_EMAIL_ENABLED=true. Service-role callers only.
 export type Claimed = { id: string; kind: "staff_invitation" | "customer_invitation"; recipient_email: string; company: string;

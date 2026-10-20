@@ -66,3 +66,36 @@ Deno.test("only SMTP_* (Microsoft 365) settings are accepted; Gmail fallback and
   try { smtpOnly(null); } catch (e) { e2 = e; }
   assert(e1 instanceof BeforeDataError); assert(e2 instanceof BeforeDataError);
 });
+
+// Phase 10: off by default, service role only, links only.
+Deno.test("disabled unless SUPPORT_EMAIL_ENABLED is exactly 'true': no claim, no SMTP", async () => {
+  for (const v of [undefined, "", "TRUE", "1", "yes", " true"]) {
+    let claimed = 0; let sends = 0;
+    const { d } = deps([row()], async () => { sends++; return "250"; }, v === undefined ? {} : { SUPPORT_EMAIL_ENABLED: v });
+    d.claim = async () => { claimed++; return [row()]; };
+    const res = await makeHandler(d)(req());
+    assertEquals(await res.json(), { status: "disabled", sent: 0 });
+    assertEquals([claimed, sends], [0, 0]);
+  }
+});
+Deno.test("non-service callers get 401 and nothing is claimed, even when switched on", async () => {
+  for (const h of [null, "Bearer anon-key", "svc"]) {
+    let claimed = 0;
+    const { d } = deps([row()], async () => "250");
+    d.claim = async () => { claimed++; return []; };
+    const r = new Request("http://x", { method: "POST", headers: h === null ? {} : { Authorization: h } });
+    assertEquals((await makeHandler(d)(r)).status, 401); assertEquals(claimed, 0);
+  }
+});
+Deno.test("each email body carries exactly one link, the portal link", () => {
+  const urls = (t: string) => t.match(/https?:\/\/\S+/g) ?? [];
+  for (const kind of ["acknowledgement", "public_reply", "status_change"] as const) {
+    const m = buildEmail(row({ kind, ticket_status: "open", reply_body: "visit https://evil.test now" }), "https://www.b2bnest.online/support/portal?org=o&ticket=t");
+    assertEquals(urls(m.text), ["https://www.b2bnest.online/support/portal?org=o&ticket=t"]);
+  }
+});
+Deno.test("an SMTP failure after DATA is never resent in the same run", async () => {
+  let sends = 0;
+  const { d, finished } = deps([row()], async () => { sends++; throw new Error("reset after DATA"); });
+  await makeHandler(d)(req()); assertEquals(finished, [["1", "uncertain"]]); assertEquals(sends, 1);
+});
