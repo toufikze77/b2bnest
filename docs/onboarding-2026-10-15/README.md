@@ -1,13 +1,17 @@
-# Ticketing onboarding package: revision 4, PREPARED, NOT APPLIED
+# Ticketing onboarding package: revision 4, applied
 
-Target when approved: production `gvftvswyrevummbvyhxa`. Nothing here is applied, deployed, sent or published. Email sending
-stays off until a bounded delivery test is explicitly approved. Old queued emails are never drained.
+**Status:** applied; verified present in production by read-only queries on 2026-10-18 (production `gvftvswyrevummbvyhxa`).
+The exact date it was applied is not recorded here. The email senders are **not deployed** and sending stays off; they now
+live in `supabase/functions/` and their rollout is in [`docs/phase10-email-senders/README.md`](../phase10-email-senders/README.md).
+Old queued emails are never drained.
+
+The sections below are the original preparation notes and describe production as it was **before** the migration.
 
 Owner decisions recorded 2026-10-16: one seat allowance per paying owner; link-only emails; NG TELECOM to use its correct
 organisation (inventory only, nothing moved); a labelled test company with three authorised test accounts; onboarding in its
 own PR; exact auth callback URLs; existing Microsoft 365 / Supabase Auth email settings left untouched.
 
-## Verified production state (read-only queries, 2026-10-16)
+## Production state before the migration (read-only queries, 2026-10-16)
 
 - Base ticketing is installed. The onboarding objects are not (no `org_*` RPCs, no `onboarding_email_outbox`, and
   `organization_invitations` has no `revoked_at` / `accepted_by`). 0 staff invitations.

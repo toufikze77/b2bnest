@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { StaffInvitation, EmailStatus, SeatSummary } from '@/lib/onboarding';
 
-// RPCs/tables come from docs/onboarding-2026-10-15/proposal.sql, which is NOT applied yet; absent from generated types.
+// RPCs/tables come from docs/onboarding-2026-10-15/proposal.sql, applied in production (verified 2026-10-18); not yet in generated types.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
 
