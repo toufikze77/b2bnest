@@ -11,7 +11,7 @@ Target when approved: gvftvswyrevummbvyhxa. Status: preview code only; no live c
 | Rollback | `docs/support-ticketing-2026-10-15/rollback.sql` |
 | DB tests / runner | `docs/support-ticketing-2026-10-15/test.sql`, `run-test.sh` |
 | Storage bucket | `support-attachments`, private, 10 MB (created with the storage tool, not SQL) |
-| Email sender (not deployed) | `docs/support-ticketing-2026-10-15/functions/support-email-sender/{index.ts,handler.ts,handler_test.ts}` -> copy to `supabase/functions/support-email-sender/` |
+| Email sender | Superseded by v2 in `supabase/functions/support-email-sender/` — in supabase/functions, not deployed (see `docs/phase10-email-senders/README.md`) |
 | Sample-data screens | `docs/screenshots/support-sample/*.png`, script `sample-screens.py` (mocked backend) |
 
 ## Objects created

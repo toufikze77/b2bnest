@@ -89,7 +89,7 @@ changes of active members are never blocked. Direct INSERT is also revoked from 
 | Migration (one transaction) | `proposal.sql` (sha256 `52955994f2d4bbee1bc5e28f580437c3ec146b7302a02a1ae0f5c5161e51c299`) |
 | Export before rollback / Rollback | `export.sql` / `rollback.sql` (sha256 `ce4283aaa449bce48e46842a5daf40ce318f107bf1d72cc623f4eaacb261c76d`) |
 | DB tests / runner | `test.sql`, `run-test.sh` (`PG_RUN_USER=postgres bash docs/onboarding-2026-10-15/run-test.sh`) |
-| Senders | `functions/onboarding-email-sender/`, `functions/support-email-sender/` (inert until `*_EMAIL_ENABLED=true`) |
+| Senders | `supabase/functions/onboarding-email-sender/`, `supabase/functions/support-email-sender/` — in supabase/functions, not deployed (inert until `*_EMAIL_ENABLED=true`; see `docs/phase10-email-senders/README.md`) |
 | Auth callbacks | `AUTH-CALLBACKS.md` |
 
 ## Old queued email (decision 6)
