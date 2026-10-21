@@ -2,15 +2,15 @@
 export const MISSING_CONFIG_MESSAGE =
   "B2BNEST can't start: the app's connection settings are missing in this build. If you own this site, check the VITE_SUPABASE_* variables.";
 
-export function MissingConfigScreen() {
+export function MissingConfigScreen({ title = "B2BNEST can't start", message = MISSING_CONFIG_MESSAGE }: { title?: string; message?: string } = {}) {
   return (
     <main
       role="alert"
       className="flex min-h-screen items-center justify-center bg-background px-4 py-12 text-foreground"
     >
       <div className="w-full max-w-lg rounded-lg border border-border bg-card p-6 text-card-foreground shadow-sm">
-        <h1 className="text-xl font-semibold">B2BNEST can't start</h1>
-        <p className="mt-3 text-base leading-relaxed">{MISSING_CONFIG_MESSAGE}</p>
+        <h1 className="text-xl font-semibold">{title}</h1>
+        <p className="mt-3 text-base leading-relaxed">{message}</p>
       </div>
     </main>
   );

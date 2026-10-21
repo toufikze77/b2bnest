@@ -1,4 +1,6 @@
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
+import { lazyPage } from "@/lib/lazyPage";
+import RouteErrorBoundary from "@/components/RouteErrorBoundary";
 import RouteFallback from "@/components/shell/RouteFallback";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -11,88 +13,88 @@ import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import Layout from "@/components/Layout";
 
 import Index from "@/pages/Index";
-const About = lazy(() => import('@/pages/About'));
-const Contact = lazy(() => import('@/pages/Contact'));
+const About = lazyPage(() => import('@/pages/About'));
+const Contact = lazyPage(() => import('@/pages/Contact'));
 import Auth from "@/pages/Auth";
-const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'));
-const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
-const Dashboard = lazy(() => import('@/pages/Dashboard'));
-const WorkspacesIndex = lazy(() => import('@/pages/workspaces/WorkspacesIndex'));
-const WorkspaceView = lazy(() => import('@/pages/workspaces/WorkspaceView'));
+const ForgotPassword = lazyPage(() => import('@/pages/ForgotPassword'));
+const ResetPassword = lazyPage(() => import('@/pages/ResetPassword'));
+const Dashboard = lazyPage(() => import('@/pages/Dashboard'));
+const WorkspacesIndex = lazyPage(() => import('@/pages/workspaces/WorkspacesIndex'));
+const WorkspaceView = lazyPage(() => import('@/pages/workspaces/WorkspaceView'));
 
-const BusinessTools = lazy(() => import('@/pages/BusinessTools'));
-const TemplateCenter = lazy(() => import('@/pages/TemplateCenter'));
-const Onboarding = lazy(() => import('@/pages/Onboarding'));
-const PLR = lazy(() => import('@/pages/PLR'));
-const NotePro = lazy(() => import('@/components/NotePro'));
+const BusinessTools = lazyPage(() => import('@/pages/BusinessTools'));
+const TemplateCenter = lazyPage(() => import('@/pages/TemplateCenter'));
+const Onboarding = lazyPage(() => import('@/pages/Onboarding'));
+const PLR = lazyPage(() => import('@/pages/PLR'));
+const NotePro = lazyPage(() => import('@/components/NotePro'));
 import NotFound from "@/pages/NotFound";
-const PrivacyPolicy = lazy(() => import('@/pages/PrivacyPolicy'));
-const TermsOfService = lazy(() => import('@/pages/TermsOfService'));
-const ProfileSetup = lazy(() => import('@/pages/ProfileSetup'));
-const Forum = lazy(() => import('@/pages/Forum'));
-const AIStudio = lazy(() => import('@/pages/AIStudio'));
-const WorkflowStudio = lazy(() => import('@/pages/WorkflowStudio'));
-const Pricing = lazy(() => import('@/pages/Pricing'));
-const HumanResources = lazy(() => import('@/pages/categories/HumanResources'));
-const LegalDocuments = lazy(() => import('@/pages/categories/LegalDocuments'));
-const FinancialForms = lazy(() => import('@/pages/categories/FinancialForms'));
-const MarketingMaterials = lazy(() => import('@/pages/categories/MarketingMaterials'));
-const Operations = lazy(() => import('@/pages/categories/Operations'));
-const CRMPage = lazy(() => import('@/pages/CRMPage'));
-const SupportDesk = lazy(() => import('@/pages/SupportDesk'));
-const SupportPortal = lazy(() => import('@/pages/SupportPortal'));
-const JoinCompany = lazy(() => import('@/pages/JoinCompany'));
-const ProjectManagementPage = lazy(() => import('@/pages/ProjectManagementPage'));
-const BusinessOverview = lazy(() => import('@/pages/BusinessOverview'));
-const Settings = lazy(() => import('@/pages/Settings'));
-const CompanyReconciliation = lazy(() => import('@/pages/CompanyReconciliation'));
-const PaymentSuccess = lazy(() => import('@/pages/PaymentSuccess'));
+const PrivacyPolicy = lazyPage(() => import('@/pages/PrivacyPolicy'));
+const TermsOfService = lazyPage(() => import('@/pages/TermsOfService'));
+const ProfileSetup = lazyPage(() => import('@/pages/ProfileSetup'));
+const Forum = lazyPage(() => import('@/pages/Forum'));
+const AIStudio = lazyPage(() => import('@/pages/AIStudio'));
+const WorkflowStudio = lazyPage(() => import('@/pages/WorkflowStudio'));
+const Pricing = lazyPage(() => import('@/pages/Pricing'));
+const HumanResources = lazyPage(() => import('@/pages/categories/HumanResources'));
+const LegalDocuments = lazyPage(() => import('@/pages/categories/LegalDocuments'));
+const FinancialForms = lazyPage(() => import('@/pages/categories/FinancialForms'));
+const MarketingMaterials = lazyPage(() => import('@/pages/categories/MarketingMaterials'));
+const Operations = lazyPage(() => import('@/pages/categories/Operations'));
+const CRMPage = lazyPage(() => import('@/pages/CRMPage'));
+const SupportDesk = lazyPage(() => import('@/pages/SupportDesk'));
+const SupportPortal = lazyPage(() => import('@/pages/SupportPortal'));
+const JoinCompany = lazyPage(() => import('@/pages/JoinCompany'));
+const ProjectManagementPage = lazyPage(() => import('@/pages/ProjectManagementPage'));
+const BusinessOverview = lazyPage(() => import('@/pages/BusinessOverview'));
+const Settings = lazyPage(() => import('@/pages/Settings'));
+const CompanyReconciliation = lazyPage(() => import('@/pages/CompanyReconciliation'));
+const PaymentSuccess = lazyPage(() => import('@/pages/PaymentSuccess'));
 import ProtectedRoute from "@/components/ProtectedRoute";
-const PublicWorkRequest = lazy(() => import('@/pages/PublicWorkRequest'));
-const B2BForm = lazy(() => import('@/pages/B2BForm'));
-const Help = lazy(() => import('@/pages/Help'));
-const KnowledgeBase = lazy(() => import('@/pages/KnowledgeBase'));
-const Blog = lazy(() => import('@/pages/Blog'));
-const GettingStarted = lazy(() => import('@/pages/articles/GettingStarted'));
-const BusinessToolsGuide = lazy(() => import('@/pages/articles/BusinessToolsGuide'));
-const IntegrationsGuide = lazy(() => import('@/pages/articles/IntegrationsGuide'));
-const FinancialToolsGuide = lazy(() => import('@/pages/articles/FinancialToolsGuide'));
-const WorkflowGuide = lazy(() => import('@/pages/articles/WorkflowGuide'));
-const SecurityGuide = lazy(() => import('@/pages/articles/SecurityGuide'));
-const LeadGenerationGuide = lazy(() => import('@/pages/articles/LeadGenerationGuide'));
-const WhatsAppSettings = lazy(() => import('@/pages/integrations/WhatsAppSettings'));
-const LeadGenOverview = lazy(() => import('@/pages/lead-generation/Overview'));
-const LeadsPage = lazy(() => import('@/pages/lead-generation/Leads'));
-const FormsList = lazy(() => import('@/pages/lead-generation/Forms'));
-const FormBuilder = lazy(() => import('@/pages/lead-generation/FormBuilder'));
-const PagesList = lazy(() => import('@/pages/lead-generation/Pages'));
-const PageBuilder = lazy(() => import('@/pages/lead-generation/PageBuilder'));
-const ImportPage = lazy(() => import('@/pages/lead-generation/Import'));
-const PublicForm = lazy(() => import('@/pages/lead-generation/PublicForm'));
-const PublicPage = lazy(() => import('@/pages/lead-generation/PublicPage'));
-const RotaIndex = lazy(() => import('@/pages/rota/Index'));
-const RotaEmployees = lazy(() => import('@/pages/rota/Employees'));
-const RotaSchedule = lazy(() => import('@/pages/rota/Schedule'));
-const AdminLayout = lazy(() => import('@/pages/admin/AdminLayout'));
-const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard'));
-const AdminUsers = lazy(() => import('@/pages/admin/AdminUsers'));
-const AdminCompanies = lazy(() => import('@/pages/admin/AdminCompanies'));
-const AdminCompanyDetail = lazy(() => import('@/pages/admin/AdminCompanyDetail'));
-const AdminSubscriptions = lazy(() => import('@/pages/admin/AdminSubscriptions'));
-const AdminPlans = lazy(() => import('@/pages/admin/AdminPlans'));
-const AdminAI = lazy(() => import('@/pages/admin/AdminAI'));
-const AdminTools = lazy(() => import('@/pages/admin/AdminTools'));
-const AdminProjects = lazy(() => import('@/pages/admin/AdminProjects'));
-const AdminDocuments = lazy(() => import('@/pages/admin/AdminDocuments'));
-const AdminSocial = lazy(() => import('@/pages/admin/AdminSocial'));
-const AdminSupport = lazy(() => import('@/pages/admin/AdminSupport'));
-const AdminAnalytics = lazy(() => import('@/pages/admin/AdminAnalytics'));
-const AdminAuditLogs = lazy(() => import('@/pages/admin/AdminAuditLogs'));
-const AdminExport = lazy(() => import('@/pages/admin/AdminExport'));
-const AdminSystemHealth = lazy(() => import('@/pages/admin/AdminSystemHealth'));
-const AdminSettings = lazy(() => import('@/pages/admin/AdminSettings'));
-const AdminTemplates = lazy(() => import('@/pages/admin/AdminTemplates'));
-const AdminAITemplates = lazy(() => import('@/pages/admin/AdminAITemplates'));
+const PublicWorkRequest = lazyPage(() => import('@/pages/PublicWorkRequest'));
+const B2BForm = lazyPage(() => import('@/pages/B2BForm'));
+const Help = lazyPage(() => import('@/pages/Help'));
+const KnowledgeBase = lazyPage(() => import('@/pages/KnowledgeBase'));
+const Blog = lazyPage(() => import('@/pages/Blog'));
+const GettingStarted = lazyPage(() => import('@/pages/articles/GettingStarted'));
+const BusinessToolsGuide = lazyPage(() => import('@/pages/articles/BusinessToolsGuide'));
+const IntegrationsGuide = lazyPage(() => import('@/pages/articles/IntegrationsGuide'));
+const FinancialToolsGuide = lazyPage(() => import('@/pages/articles/FinancialToolsGuide'));
+const WorkflowGuide = lazyPage(() => import('@/pages/articles/WorkflowGuide'));
+const SecurityGuide = lazyPage(() => import('@/pages/articles/SecurityGuide'));
+const LeadGenerationGuide = lazyPage(() => import('@/pages/articles/LeadGenerationGuide'));
+const WhatsAppSettings = lazyPage(() => import('@/pages/integrations/WhatsAppSettings'));
+const LeadGenOverview = lazyPage(() => import('@/pages/lead-generation/Overview'));
+const LeadsPage = lazyPage(() => import('@/pages/lead-generation/Leads'));
+const FormsList = lazyPage(() => import('@/pages/lead-generation/Forms'));
+const FormBuilder = lazyPage(() => import('@/pages/lead-generation/FormBuilder'));
+const PagesList = lazyPage(() => import('@/pages/lead-generation/Pages'));
+const PageBuilder = lazyPage(() => import('@/pages/lead-generation/PageBuilder'));
+const ImportPage = lazyPage(() => import('@/pages/lead-generation/Import'));
+const PublicForm = lazyPage(() => import('@/pages/lead-generation/PublicForm'));
+const PublicPage = lazyPage(() => import('@/pages/lead-generation/PublicPage'));
+const RotaIndex = lazyPage(() => import('@/pages/rota/Index'));
+const RotaEmployees = lazyPage(() => import('@/pages/rota/Employees'));
+const RotaSchedule = lazyPage(() => import('@/pages/rota/Schedule'));
+const AdminLayout = lazyPage(() => import('@/pages/admin/AdminLayout'));
+const AdminDashboard = lazyPage(() => import('@/pages/admin/AdminDashboard'));
+const AdminUsers = lazyPage(() => import('@/pages/admin/AdminUsers'));
+const AdminCompanies = lazyPage(() => import('@/pages/admin/AdminCompanies'));
+const AdminCompanyDetail = lazyPage(() => import('@/pages/admin/AdminCompanyDetail'));
+const AdminSubscriptions = lazyPage(() => import('@/pages/admin/AdminSubscriptions'));
+const AdminPlans = lazyPage(() => import('@/pages/admin/AdminPlans'));
+const AdminAI = lazyPage(() => import('@/pages/admin/AdminAI'));
+const AdminTools = lazyPage(() => import('@/pages/admin/AdminTools'));
+const AdminProjects = lazyPage(() => import('@/pages/admin/AdminProjects'));
+const AdminDocuments = lazyPage(() => import('@/pages/admin/AdminDocuments'));
+const AdminSocial = lazyPage(() => import('@/pages/admin/AdminSocial'));
+const AdminSupport = lazyPage(() => import('@/pages/admin/AdminSupport'));
+const AdminAnalytics = lazyPage(() => import('@/pages/admin/AdminAnalytics'));
+const AdminAuditLogs = lazyPage(() => import('@/pages/admin/AdminAuditLogs'));
+const AdminExport = lazyPage(() => import('@/pages/admin/AdminExport'));
+const AdminSystemHealth = lazyPage(() => import('@/pages/admin/AdminSystemHealth'));
+const AdminSettings = lazyPage(() => import('@/pages/admin/AdminSettings'));
+const AdminTemplates = lazyPage(() => import('@/pages/admin/AdminTemplates'));
+const AdminAITemplates = lazyPage(() => import('@/pages/admin/AdminAITemplates'));
 import RouteMeta from '@/components/RouteMeta';
 
 const queryClient = new QueryClient();
@@ -107,6 +109,7 @@ function App() {
           <Router>
           <Layout>
             <RouteMeta />
+            <RouteErrorBoundary>
             <Suspense fallback={<RouteFallback />}>
             <Routes>
               <Route path="/" element={<Index />} />
@@ -207,6 +210,7 @@ function App() {
                <Route path="*" element={<NotFound />} />
             </Routes>
             </Suspense>
+            </RouteErrorBoundary>
             <Toaster />
             <SonnerToaster />
           </Layout>
