@@ -1,5 +1,6 @@
 // The two PUBLIC browser settings the app needs to reach Supabase. Both are shipped to every visitor in the built
-// JavaScript; they are not secrets. Production values live in .env.production; Vercel dashboard values, if set, win.
+// JavaScript; they are not secrets. Committed in .env.production and .env.development (same values, so Lovable's dev-mode preview works too);
+// Vercel dashboard values, if set, win.
 export const SUPABASE_ENV_NAMES = ['VITE_SUPABASE_URL', 'VITE_SUPABASE_PUBLISHABLE_KEY'] as const;
 
 export type SupabaseConfig =

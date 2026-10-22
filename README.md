@@ -79,7 +79,9 @@ downloads, and data is protected by row-level security, not by keeping these val
 
 - **Production builds** (`npm run build`, including Vercel) read them from the committed `.env.production`, so a build
   works without any dashboard setup. If the Vercel project's Environment Variables also set them, Vercel's values win.
-- **Locally**, `npm run dev` reads `.env`: copy `.env.example` to `.env` (same public values). `.env` is not committed.
+- **Development mode** (`npm run dev`, `npm run build:dev`, and Lovable's preview) reads the committed `.env.development`,
+  which holds the same two public values. Without it, Lovable's preview showed "B2BNEST can't start". To point your own
+  machine at a different Supabase project, put the values in `.env.development.local` (not committed; it wins).
 - **Tests** never read either file: `vitest.config.ts` sets fixed fake values.
 - If a build is missing either value, the site shows a plain "B2BNEST can't start" message instead of a blank page.
 
