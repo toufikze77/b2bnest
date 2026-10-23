@@ -50,9 +50,12 @@ vi.mock('@/integrations/supabase/client', () => {
             const id = calls.find((c) => c[0] === 'eq' && c[1] === 'id')?.[2];
             // Like the database: a delete with `not archived_at is null` only removes archived rows.
             const onlyArchived = calls.some((c) => c[0] === 'not' && c[1] === 'archived_at');
-            if (w[0] === 'update') db.rows[table] = (db.rows[table] ?? []).map((r) => (r.id === id ? { ...r, ...(w[1] as object) } : r));
-            if (w[0] === 'delete') db.rows[table] = (db.rows[table] ?? []).filter((r) => r.id !== id || (onlyArchived && !r.archived_at));
-            return res({ data: null, error: null });
+            // Like the database with .select('id'): the answer lists the rows the write actually changed.
+            const rows = db.rows[table] ?? [];
+            const matched = w[0] === 'insert' ? [] : rows.filter((r) => r.id === id && (w[0] !== 'delete' || !onlyArchived || r.archived_at));
+            if (w[0] === 'update') db.rows[table] = rows.map((r) => (r.id === id ? { ...r, ...(w[1] as object) } : r));
+            if (w[0] === 'delete') db.rows[table] = rows.filter((r) => !matched.includes(r));
+            return res({ data: matched.map((r) => ({ id: r.id })), error: null });
           };
         }
         return (...a: unknown[]) => { calls.push([k, ...a]); return chain; };
@@ -145,6 +148,17 @@ describe('Honest Sent and Paid', () => {
     await waitFor(() => expect(tiles).toHaveTextContent(/Paid last 30 days£950/));
     // Marked paid now, so it has a paid date: no "no paid date recorded" note.
     expect(tiles).not.toHaveTextContent('no paid date recorded');
+  });
+
+  it('a status change that matches no row (deleted elsewhere) is a failure, not "marked as paid"', async () => {
+    renderAt('?tool=business-finance-assistant&tab=invoices');
+    await screen.findAllByText('INV-1002');
+    // The invoice disappears from the database after the page loaded (another tab, or no longer permitted).
+    db.rows.invoices = db.rows.invoices.filter((r) => r.id !== '1002');
+    openMenu('More actions for invoice INV-1002');
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Mark as paid' }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('INV-1002 wasn’t updated. Its status is unchanged. Please try again.'));
+    expect(toast.success).not.toHaveBeenCalled();
   });
 
   it('a failed status change rolls back and shows an error', async () => {

@@ -142,7 +142,7 @@ const HMRCIntegration = () => {
           HMRC Integration Suite
         </h1>
         <p className="text-gray-600 mb-4">
-          Complete UK tax and compliance management
+          Save your HMRC details and preview returns. Filing is not available yet.
         </p>
         <div className="flex gap-2 flex-wrap">
           <Badge variant={isConnected ? 'default' : 'secondary'}>
