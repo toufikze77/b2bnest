@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ReminderBadge, ReminderField } from "@/components/note-pro/Reminder";
+import { notesApi, type NotesWrites } from "@/lib/notesApi";
 
 interface Note {
   id: string;
@@ -159,6 +160,9 @@ export default function NotePro() {
     }
   };
 
+  // Note update/delete confirm exactly one row changed (scoped to this user); zero rows is reported, not "saved".
+  const noteWrites = notesApi(supabase as unknown as NotesWrites, user?.id ?? '');
+
   const handleSaveNote = async (e?: React.FormEvent) => {
     e?.preventDefault();
 
@@ -173,13 +177,10 @@ export default function NotePro() {
     };
 
     if (selectedNote) {
-      const { error } = await supabase
-        .from("notes")
-        .update(noteData)
-        .eq("id", selectedNote.id);
+      const { error } = await noteWrites.update(selectedNote.id, noteData);
 
       if (error) {
-        toast.error("Failed to update note");
+        toast.error(`Note not saved. ${error.message ?? ''}`.trim());
       } else {
         toast.success("Note updated successfully");
         fetchNotes();
@@ -203,10 +204,10 @@ export default function NotePro() {
   const handleDeleteNote = async (id: string) => {
     if (!confirm("Are you sure you want to delete this note?")) return;
 
-    const { error } = await supabase.from("notes").delete().eq("id", id);
+    const { error } = await noteWrites.remove(id);
 
     if (error) {
-      toast.error("Failed to delete note");
+      toast.error(`Note not deleted. ${error.message ?? ''}`.trim());
     } else {
       toast.success("Note deleted successfully");
       fetchNotes();
@@ -234,33 +235,22 @@ export default function NotePro() {
   };
 
   const handleToggleFavorite = async (note: Note) => {
-    const { error } = await supabase
-      .from("notes")
-      .update({ is_favorite: !note.is_favorite })
-      .eq("id", note.id);
+    const { error } = await noteWrites.update(note.id, { is_favorite: !note.is_favorite });
 
-    if (!error) {
-      fetchNotes();
-    }
+    if (error) toast.error(`Favourite not changed. ${error.message ?? ''}`.trim());
+    else fetchNotes();
   };
 
   const handleTogglePinned = async (note: Note) => {
-    const { error } = await supabase
-      .from("notes")
-      .update({ is_pinned: !note.is_pinned })
-      .eq("id", note.id);
+    const { error } = await noteWrites.update(note.id, { is_pinned: !note.is_pinned });
 
-    if (!error) {
-      fetchNotes();
-    }
+    if (error) toast.error(`Pin not changed. ${error.message ?? ''}`.trim());
+    else fetchNotes();
   };
 
   const handleArchiveNote = async (note: Note) => {
     const newVal = !note.is_archived;
-    const { error } = await supabase
-      .from("notes")
-      .update({ is_archived: newVal })
-      .eq("id", note.id);
+    const { error } = await noteWrites.update(note.id, { is_archived: newVal });
 
     if (error) {
       toast.error(`Failed to ${newVal ? "archive" : "unarchive"} note: ${error.message}`);

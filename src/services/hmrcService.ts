@@ -74,7 +74,8 @@ export const hmrcService = {
   },
 
   async startOAuth(clientId: string, redirectUri: string, sandboxMode: boolean): Promise<{ authUrl: string; state: string }> {
-    const state = Math.random().toString(36).slice(2);
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    const state = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
     sessionStorage.setItem('hmrc_oauth_state', state);
     const authUrl = this.getAuthorizeUrl(clientId, redirectUri, state, sandboxMode);
     return { authUrl, state };
@@ -122,76 +123,8 @@ export const hmrcService = {
     return !!token;
   },
 
-  async submitFPS(payload: FPSSumbission): Promise<{ submissionId: string }> {
-    const token = await this.getToken();
-    if (!token) throw new Error('Not authenticated with HMRC');
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
-
-    // Simulate submission (in production, call real HMRC API)
-    await new Promise((r) => setTimeout(r, 800));
-    const submissionId = `FPS-${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
-
-    // Log submission
-    await this.logSubmission({
-      submission_type: 'FPS',
-      submission_id: submissionId,
-      period: payload.period,
-      status: 'submitted',
-      request_payload: payload,
-    });
-
-    return { submissionId };
-  },
-
-  async submitEPS(period: string, employer: EmployerDetails, adjustments: Record<string, number>): Promise<{ submissionId: string }> {
-    const token = await this.getToken();
-    if (!token) throw new Error('Not authenticated with HMRC');
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
-
-    await new Promise((r) => setTimeout(r, 800));
-    const submissionId = `EPS-${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
-
-    // Log submission
-    await this.logSubmission({
-      submission_type: 'EPS',
-      submission_id: submissionId,
-      period,
-      status: 'submitted',
-      request_payload: { employer, adjustments },
-    });
-
-    return { submissionId };
-  },
-
-  async logSubmission(log: {
-    submission_type: string;
-    submission_id: string | null;
-    period: string | null;
-    status: string;
-    request_payload?: any;
-    response_data?: any;
-    error_message?: string | null;
-  }): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data: orgMember } = await supabase
-      .from('organization_members')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .single();
-
-    await supabase.from('hmrc_submission_logs').insert({
-      user_id: user.id,
-      organization_id: orgMember?.organization_id || null,
-      ...log,
-    });
-  },
+  // HMRC filing is not built: no submission API is called anywhere. The old FPS/EPS "submit" functions simulated a
+  // filing with a random reference and logged it as submitted; they were removed and nothing writes hmrc_submission_logs.
 
   async getSubmissionLogs(): Promise<SubmissionLog[]> {
     const { data: { user } } = await supabase.auth.getUser();

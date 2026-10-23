@@ -112,10 +112,10 @@ const BusinessTools = () => {
     {
       id: 'hmrc-integration' as ToolType,
       title: 'HMRC Integration Suite',
-      description: 'Complete UK tax compliance - VAT returns, payroll submissions, corporation tax (Free Agent/Sage inspired)',
+      description: 'Save your HMRC details and preview VAT, payroll and tax returns. HMRC filing is not available yet.',
       icon: Building2,
       color: 'bg-gradient-to-r from-green-600 to-blue-600',
-      benefits: ['VAT Returns (MTD)', 'Payroll RTI Submissions', 'Corporation Tax', 'Income Tax', 'HMRC Obligations', 'Government Gateway'],
+      benefits: ['VAT return previews', 'Payroll (FPS/EPS) previews', 'Corporation Tax previews', 'HMRC connection settings', 'Filing: not available yet'],
       isPremium: true
     },
     {

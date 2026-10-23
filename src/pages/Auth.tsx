@@ -96,12 +96,6 @@ const Auth = () => {
               description: isInvited ? "Welcome to the organization! You can now access the team." : "You can now sign in to your account."
             });
             setIsLogin(true);
-          } else {
-            // For login 2FA, user should be authenticated now
-            if (isInvited && invitationOrgId) {
-              setTimeout(() => handleInvitationAcceptance(invitationOrgId), 1000);
-            }
-            window.location.href = '/';
           }
         }}
         onBack={() => {
@@ -120,7 +114,7 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        const { error, needs2FA, email: userEmail } = await signIn(email, password);
+        const { error } = await signIn(email, password);
         if (error) {
           const notConfirmed = (error.message || '').toLowerCase().includes('not confirmed');
           if (notConfirmed) setPendingEmail(email);
@@ -128,15 +122,6 @@ const Auth = () => {
             title: notConfirmed ? "Account not activated" : "Sign In Failed",
             description: notConfirmed ? "Please activate your account using the link we emailed you, or resend it from the red banner." : (error.message || "An unexpected error occurred"),
             variant: "destructive"
-          });
-        } else if (needs2FA) {
-          const emailToUse = userEmail || email;
-          setTwoFactorEmail(emailToUse);
-          setIsVerification(false);
-          setShowTwoFactor(true);
-          toast({
-            title: "2FA Required",
-            description: "Please check your email for the verification code."
           });
         } else {
           // Handle invitation acceptance for login

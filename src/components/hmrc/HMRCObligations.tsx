@@ -17,6 +17,7 @@ import {
   Filter
 } from 'lucide-react';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
+import { HMRCFilingBanner, SubmitUnavailableButton, PREVIEW_ONLY } from '@/components/hmrc/filingStatus';
 
 type Obligation = {
   id: string;
@@ -39,16 +40,6 @@ const HMRCObligations = () => {
       status: 'outstanding',
       periodStart: '2024-10-01',
       periodEnd: '2024-12-31'
-    },
-    {
-      id: '2',
-      type: 'PAYE',
-      description: 'Real Time Information (RTI) submission',
-      dueDate: '2024-10-19',
-      status: 'fulfilled',
-      periodStart: '2024-09-01',
-      periodEnd: '2024-09-30',
-      received: '2024-10-15'
     },
     {
       id: '3',
@@ -142,13 +133,11 @@ const HMRCObligations = () => {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">HMRC Obligations</h2>
-          <p className="text-gray-600">Track all your tax and compliance deadlines</p>
+          <p className="text-gray-600">Example deadlines to show the layout ({PREVIEW_ONLY.toLowerCase()}). These are not read from HMRC.</p>
         </div>
-        <Button variant="outline">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh from HMRC
-        </Button>
       </div>
+
+      <HMRCFilingBanner />
 
       {/* Summary Cards */}
       <div className="grid md:grid-cols-4 gap-4">
@@ -208,7 +197,7 @@ const HMRCObligations = () => {
           <AlertTitle>Overdue Obligations</AlertTitle>
           <AlertDescription>
             You have {overdueCount} overdue obligation{overdueCount !== 1 ? 's' : ''}. 
-            Late submissions may result in penalties. Please submit immediately.
+            Late returns may lead to penalties. File with HMRC directly or through your accountant.
           </AlertDescription>
         </Alert>
       )}
@@ -317,20 +306,7 @@ const HMRCObligations = () => {
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    {obligation.status === 'outstanding' && (
-                      <Button size="sm">
-                        Submit Return
-                      </Button>
-                    )}
-                    {obligation.status === 'overdue' && (
-                      <Button size="sm" variant="destructive">
-                        <AlertTriangle className="h-4 w-4 mr-2" />
-                        Submit Now
-                      </Button>
-                    )}
-                    <Button variant="outline" size="sm">
-                      View Details
-                    </Button>
+                    {obligation.status !== 'fulfilled' && <SubmitUnavailableButton />}
                   </div>
                 </div>
               </CardContent>

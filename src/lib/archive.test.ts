@@ -20,7 +20,7 @@ describe('archive helpers', () => {
 describe('documentApi', () => {
   const fake = (error: unknown = null) => {
     const calls: unknown[][] = [];
-    const done = () => Promise.resolve({ error });
+    const done = () => ({ select: (c: string) => { calls.push(['select', c]); return Promise.resolve({ data: error ? null : [{ id: 'x' }], error }); } });
     const client = {
       from: (t: string) => {
         calls.push(['from', t]);
@@ -39,15 +39,15 @@ describe('documentApi', () => {
     await api.archive('i1', '2026-10-17T12:00:00Z');
     await api.restore('i1');
     expect(calls).toEqual([
-      ['from', 'invoices'], ['update', { archived_at: '2026-10-17T12:00:00Z' }], ['eq', 'id', 'i1'], ['eq', 'user_id', 'u1'],
-      ['from', 'invoices'], ['update', { archived_at: null }], ['eq', 'id', 'i1'], ['eq', 'user_id', 'u1'],
+      ['from', 'invoices'], ['update', { archived_at: '2026-10-17T12:00:00Z' }], ['eq', 'id', 'i1'], ['eq', 'user_id', 'u1'], ['select', 'id'],
+      ['from', 'invoices'], ['update', { archived_at: null }], ['eq', 'id', 'i1'], ['eq', 'user_id', 'u1'], ['select', 'id'],
     ]);
   });
 
   it('delete forever also requires archived_at to be set, so an active document can never be hard-deleted', async () => {
     const { client, calls } = fake();
     await documentApi(client, 'u1', 'quotes').deleteForever('q1');
-    expect(calls).toEqual([['from', 'quotes'], ['delete'], ['eq', 'id', 'q1'], ['eq', 'user_id', 'u1'], ['not', 'archived_at', 'is', null]]);
+    expect(calls).toEqual([['from', 'quotes'], ['delete'], ['eq', 'id', 'q1'], ['eq', 'user_id', 'u1'], ['not', 'archived_at', 'is', null], ['select', 'id']]);
   });
 
   it('errors come back as results, thrown errors too', async () => {

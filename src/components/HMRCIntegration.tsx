@@ -34,6 +34,7 @@ import HMRCTaxReturns from '@/components/hmrc/HMRCTaxReturns';
 import HMRCObligations from '@/components/hmrc/HMRCObligations';
 import HMRCSettings from '@/components/hmrc/HMRCSettings';
 import HMRCSubmissionLogs from '@/components/hmrc/HMRCSubmissionLogs';
+import { HMRCFilingBanner, PREVIEW_ONLY } from '@/components/hmrc/filingStatus';
 
 const HMRCIntegration = () => {
   const { user } = useAuth();
@@ -141,7 +142,7 @@ const HMRCIntegration = () => {
           HMRC Integration Suite
         </h1>
         <p className="text-gray-600 mb-4">
-          Complete UK tax and compliance management
+          Save your HMRC details and preview returns. Filing is not available yet.
         </p>
         <div className="flex gap-2 flex-wrap">
           <Badge variant={isConnected ? 'default' : 'secondary'}>
@@ -166,25 +167,16 @@ const HMRCIntegration = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <Alert>
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>{'Sandbox Mode'}</AlertTitle>
-                  <AlertDescription>
-                    This is a demonstration of HMRC integration capabilities.
-                    In production, this would connect to the actual HMRC Government Gateway.
-                  </AlertDescription>
-                </Alert>
+                <HMRCFilingBanner />
                 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <h3 className="font-semibold mb-2">What you'll get:</h3>
+                    <h3 className="font-semibold mb-2">Planned (not available yet):</h3>
                     <ul className="text-sm text-gray-600 space-y-1">
-                      <li>• Automated VAT return submissions</li>
-                      <li>• Payroll RTI submissions (FPS/EPS)</li>
-                      <li>• Corporation tax submissions</li>
-                      <li>• Income tax self-assessment</li>
-                      <li>• Automatic deadline tracking</li>
-                      <li>• HMRC obligation monitoring</li>
+                      <li>• VAT return filing</li>
+                      <li>• Payroll RTI filing (FPS/EPS)</li>
+                      <li>• Corporation Tax and Self Assessment filing</li>
+                      <li>• Obligations and deadlines read from HMRC</li>
                     </ul>
                   </div>
                   <div>
@@ -244,115 +236,28 @@ const HMRCIntegration = () => {
 
           <TabsContent value="dashboard">
             <div className="grid gap-6">
-              {/* Status Overview */}
-              <div className="grid md:grid-cols-3 gap-4">
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                      <div>
-                        <p className="font-semibold">HMRC Connected</p>
-                        <p className="text-sm text-gray-600">Government Gateway</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-5 w-5 text-amber-500" />
-                      <div>
-                        <p className="font-semibold">2 Upcoming</p>
-                        <p className="text-sm text-gray-600">Obligations due</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5 text-blue-500" />
-                      <div>
-                        <p className="font-semibold">MTD Compliant</p>
-                        <p className="text-sm text-gray-600">Making Tax Digital</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Recent Activity */}
+              <HMRCFilingBanner />
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    Recent HMRC Activity
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                        <div>
-                          <p className="font-medium">VAT Return Q3 2024</p>
-                          <p className="text-sm text-gray-600">Submitted successfully</p>
-                        </div>
-                      </div>
-                      <Badge variant="secondary">2 days ago</Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Upload className="h-5 w-5 text-blue-500" />
-                        <div>
-                          <p className="font-medium">Payroll FPS Submission</p>
-                          <p className="text-sm text-gray-600">September 2024</p>
-                        </div>
-                      </div>
-                      <Badge variant="secondary">5 days ago</Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <AlertTriangle className="h-5 w-5 text-amber-500" />
-                        <div>
-                          <p className="font-medium">Corporation Tax Due</p>
-                          <p className="text-sm text-gray-600">Filing deadline: 31 Dec 2024</p>
-                        </div>
-                      </div>
-                      <Badge variant="outline">Upcoming</Badge>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <div>
+                      <p className="font-semibold">HMRC sign-in saved</p>
+                      <p className="text-sm text-muted-foreground">
+                        Your HMRC connection details are stored for when filing becomes available. Nothing has been filed.
+                      </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Quick Actions */}
               <Card>
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
-                </CardHeader>
+                <CardHeader><CardTitle>What works today</CardTitle></CardHeader>
                 <CardContent>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Button variant="outline" className="h-20 flex-col gap-2">
-                      <FileText className="h-5 w-5" />
-                      Submit VAT Return
-                    </Button>
-                    <Button variant="outline" className="h-20 flex-col gap-2">
-                      <Calculator className="h-5 w-5" />
-                      Generate Payroll FPS
-                    </Button>
-                    <Button variant="outline" className="h-20 flex-col gap-2">
-                      <Eye className="h-5 w-5" />
-                      View Obligations
-                    </Button>
-                    <Button variant="outline" className="h-20 flex-col gap-2">
-                      <Download className="h-5 w-5" />
-                      Download Reports
-                    </Button>
-                  </div>
+                  <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                    <li>Save your company and HMRC details (Settings tab)</li>
+                    <li>Preview VAT, payroll and tax return layouts with example figures ({PREVIEW_ONLY.toLowerCase()})</li>
+                    <li>Filing VAT, payroll (FPS/EPS) and tax returns with HMRC: not available yet</li>
+                  </ul>
                 </CardContent>
               </Card>
             </div>

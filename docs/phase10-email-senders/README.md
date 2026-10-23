@@ -1,5 +1,10 @@
 # Phase 10: invitation and support email senders — rollout (each step needs separate approval)
 
+**Update 2026-10-23 (read-only checks):** step (a) is done — both senders appear in the deployed function list (version 1).
+No sender cron jobs exist, there is no `email_senders_service_role_key` Vault secret, the onboarding queue is empty and the
+support queue holds 1 cancelled row, so they have had nothing to send. Whether the `*_EMAIL_ENABLED` secrets are set is
+not verified (secrets are not readable).
+
 **Status (Phase 10 PR): in `supabase/functions`, not deployed, not scheduled, switched off.** Nothing was deployed, no
 secret set, no job scheduled and no email sent.
 

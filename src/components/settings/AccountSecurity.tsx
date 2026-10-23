@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Loader2, LogOut, ShieldCheck, ShieldAlert, Activity } from 'lucide-react';
+import { Loader2, LogOut, ShieldAlert, Activity } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { TWO_STEP_STATUS, TWO_STEP_NOT_ACTIVE, TWO_STEP_COMING_SOON, TWO_STEP_OLD_SETTING } from '@/lib/twoStep';
 
 type Load<T> = { state: 'loading' } | { state: 'error'; message: string } | { state: 'ready'; data: T };
 
@@ -51,17 +51,12 @@ const AccountSecurity = () => {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Two-step sign-in</CardTitle>
-          <CardDescription>An emailed code is required when you sign in, in addition to your password.</CardDescription>
+          <CardDescription>{TWO_STEP_NOT_ACTIVE}</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-wrap items-center justify-between gap-3">
-          {mfa.state === 'loading' && <span className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Checking…</span>}
-          {mfa.state === 'error' && <span role="alert" className="text-sm text-destructive">Could not load your two-step status: {mfa.message}</span>}
-          {mfa.state === 'ready' && (
-            mfa.data
-              ? <Badge variant="secondary" className="gap-1"><ShieldCheck className="h-3.5 w-3.5" />On for your account</Badge>
-              : <Badge variant="outline" className="gap-1"><ShieldAlert className="h-3.5 w-3.5" />Off for your account</Badge>
-          )}
-          <Button asChild variant="outline" size="sm"><Link to="/settings">Change in Account</Link></Button>
+        <CardContent className="space-y-2">
+          <Badge variant="outline" className="gap-1"><ShieldAlert className="h-3.5 w-3.5" />{TWO_STEP_STATUS}</Badge>
+          <p className="text-sm text-muted-foreground">{TWO_STEP_COMING_SOON}</p>
+          {mfa.state === 'ready' && mfa.data && <p className="text-sm text-muted-foreground">{TWO_STEP_OLD_SETTING}</p>}
         </CardContent>
       </Card>
 

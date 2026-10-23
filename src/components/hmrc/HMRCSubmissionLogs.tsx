@@ -71,7 +71,7 @@ const HMRCSubmissionLogs = () => {
           <div className="text-center py-8 text-muted-foreground">Loading logs...</div>
         ) : logs.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            No submissions yet. Submit your first return to see logs here.
+            Nothing has been sent to HMRC. HMRC filing is not available yet.
           </div>
         ) : (
           <ScrollArea className="h-[500px] pr-4">

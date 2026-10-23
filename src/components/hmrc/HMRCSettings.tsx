@@ -20,6 +20,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { HMRC_FILING_UNAVAILABLE } from '@/components/hmrc/filingStatus';
 import { hmrcService } from '@/services/hmrcService';
 
 interface HMRCSettingsProps {
@@ -85,21 +86,6 @@ const HMRCSettings = ({ onDisconnect }: HMRCSettingsProps) => {
     }
   };
 
-  const handleTestConnection = async () => {
-    toast({
-      title: "Testing Connection...",
-      description: "Checking connection to HMRC services.",
-    });
-
-    // Simulate connection test
-    setTimeout(() => {
-      toast({
-        title: "Connection Successful",
-        description: "Successfully connected to HMRC Government Gateway (Demo Mode).",
-      });
-    }, 2000);
-  };
-
   return (
     <div className="space-y-6">
       <div>
@@ -132,10 +118,6 @@ const HMRCSettings = ({ onDisconnect }: HMRCSettingsProps) => {
           </div>
           
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleTestConnection}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Test Connection
-            </Button>
             {isConnected && (
               <Button variant="destructive" onClick={onDisconnect}>
                 <Unlink className="h-4 w-4 mr-2" />
@@ -281,13 +263,14 @@ const HMRCSettings = ({ onDisconnect }: HMRCSettingsProps) => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">Auto-submit VAT Returns</p>
-                <p className="text-sm text-gray-600">Automatically submit VAT returns when ready</p>
+                <p className="font-medium">Automatic VAT filing (not available yet)</p>
+                <p className="text-sm text-gray-600">Not available: {HMRC_FILING_UNAVAILABLE}</p>
               </div>
               <input
                 type="checkbox"
-                checked={settings.autoSubmitVAT}
-                onChange={(e) => setSettings(prev => ({ ...prev, autoSubmitVAT: e.target.checked }))}
+                checked={false}
+                disabled
+                aria-label="Auto-submit VAT returns (not available)"
                 className="w-4 h-4 text-blue-600"
               />
             </div>

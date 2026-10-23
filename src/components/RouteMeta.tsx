@@ -86,7 +86,7 @@ const ROUTE_META: Record<string, Meta> = {
   },
   '/knowledge-base/security': {
     title: 'Security Guide | How B2BNest Keeps Your Data Safe',
-    description: 'Understand B2BNest security: encryption, multi-tenant data isolation, access controls, 2FA and audit logging.',
+    description: 'Understand B2BNest security: encryption, multi-tenant data isolation, access controls, sessions and audit logging.',
   },
   '/knowledge-base/lead-generation': {
     title: 'Lead Generation Guide | Forms, Landing Pages & Scoring',

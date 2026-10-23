@@ -79,8 +79,8 @@ const KnowledgeBase = () => {
         { title: 'Cash Flow Tracking', description: 'Monitor income and expenses in real-time', readTime: '7 min' },
         { title: 'ROI Calculator', description: 'Calculate return on investment for projects', readTime: '5 min' },
         { title: 'Expense Management', description: 'Track and categorize business expenses', readTime: '6 min' },
-        { title: 'HMRC VAT Returns', description: 'Submit VAT returns directly to HMRC via Making Tax Digital', readTime: '10 min' },
-        { title: 'Payroll Management', description: 'UK payroll processing with PAYE/NIC calculations and RTI submissions', readTime: '15 min' },
+        { title: 'HMRC VAT Returns', description: 'Preview VAT returns (HMRC filing is not available yet)', readTime: '10 min' },
+        { title: 'Payroll Management', description: 'UK payroll with PAYE/NIC calculations (RTI filing not available yet)', readTime: '15 min' },
         { title: 'HMRC Troubleshooting', description: 'Fix common HMRC errors: "missing Client ID", OAuth failures, and connection issues. Ensure credentials are saved in Settings → HMRC before connecting.', readTime: '8 min' }
       ]
     },
@@ -100,7 +100,7 @@ const KnowledgeBase = () => {
       icon: Lock,
       color: 'bg-red-500',
       articles: [
-        { title: 'Account Security', description: 'Enable 2FA and secure your account', readTime: '4 min' },
+        { title: 'Account Security', description: 'Passwords, sessions and keeping your account safe', readTime: '4 min' },
         { title: 'Data Privacy', description: 'How we protect your information', readTime: '6 min' },
         { title: 'GDPR Compliance', description: 'Understanding data protection rights', readTime: '8 min' },
         { title: 'OAuth Security', description: 'Secure third-party integrations', readTime: '5 min' }

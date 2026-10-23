@@ -25,7 +25,7 @@ const TOOLS: ToolOption[] = [
   { id: 'time', name: 'Time Tracking', category: 'Productivity', competitor: 'Toggl / Harvest', competitorCost: 20, b2bnestIncluded: true, description: 'Track billable hours' },
   { id: 'ai', name: 'AI Business Advisor', category: 'AI', competitor: 'ChatGPT Team', competitorCost: 30, b2bnestIncluded: true, description: 'Insights & recommendations' },
   { id: 'payroll', name: 'UK Payroll', category: 'Finance', competitor: 'Xero Payroll', competitorCost: 35, b2bnestIncluded: true, description: 'HMRC-ready payroll' },
-  { id: 'hmrc', name: 'HMRC Integration', category: 'Compliance', competitor: 'FreeAgent', competitorCost: 29, b2bnestIncluded: true, description: 'MTD VAT submissions' },
+  { id: 'hmrc', name: 'HMRC Integration', category: 'Compliance', competitor: 'FreeAgent', competitorCost: 29, b2bnestIncluded: true, description: 'HMRC details and return previews (filing not available yet)' },
   { id: 'workflows', name: 'Workflow Automation', category: 'Automation', competitor: 'Zapier', competitorCost: 49, b2bnestIncluded: true, description: 'Automate repetitive tasks' },
   { id: 'integrations', name: 'Integration Hub', category: 'Automation', competitor: 'Make.com', competitorCost: 29, b2bnestIncluded: true, description: 'Calendars, OneDrive, social accounts' },
 ];
