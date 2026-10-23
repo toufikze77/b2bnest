@@ -43,17 +43,11 @@ const SecurityGuide = () => {
               </p>
 
               <div>
-                <h3 className="font-semibold mb-2">Two-Factor Authentication (2FA)</h3>
+                <h3 className="font-semibold mb-2">Two-step sign-in</h3>
                 <p className="text-muted-foreground mb-2">
-                  Add an extra layer of security by requiring a verification code in addition to your password.
+                  Two-step sign-in is not active yet. Signing in needs only your password. Coming soon: we'll tell you
+                  when it's available. Until then, a strong, unique password is your main protection.
                 </p>
-                <ol className="list-decimal list-inside text-muted-foreground space-y-2 ml-4">
-                  <li>Go to Settings → Security</li>
-                  <li>Click "Enable Two-Factor Authentication"</li>
-                  <li>Scan QR code with authenticator app (Google Authenticator, Authy, etc.)</li>
-                  <li>Enter verification code to confirm</li>
-                  <li>Save backup codes in a secure location</li>
-                </ol>
               </div>
 
               <div>
@@ -71,10 +65,9 @@ const SecurityGuide = () => {
               <div>
                 <h3 className="font-semibold mb-2">Session Management</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li>Automatic logout after 30 days of inactivity</li>
-                  <li>View active sessions in Settings</li>
-                  <li>Revoke access from specific devices</li>
-                  <li>Receive email alerts for new logins</li>
+                  <li>Settings → Security → "Sign out other devices" signs you out everywhere except this device</li>
+                  <li>Settings → Security lists your last 20 recorded account actions</li>
+                  <li>Individual devices can't be listed or signed out one by one</li>
                 </ul>
               </div>
 
@@ -84,7 +77,7 @@ const SecurityGuide = () => {
                   <div>
                     <p className="font-semibold text-sm mb-1">Security Alert</p>
                     <p className="text-sm text-muted-foreground">
-                      Enable 2FA immediately if you handle sensitive financial data or client information.
+                      If you handle sensitive financial or client data, use a password manager and a password you use nowhere else.
                     </p>
                   </div>
                 </div>
@@ -334,7 +327,7 @@ const SecurityGuide = () => {
               <div className="space-y-3">
                 <div className="flex gap-3">
                   <input type="checkbox" className="mt-1" />
-                  <span className="text-muted-foreground">Enable two-factor authentication (2FA)</span>
+                  <span className="text-muted-foreground">Use a unique password stored in a password manager</span>
                 </div>
                 <div className="flex gap-3">
                   <input type="checkbox" className="mt-1" />

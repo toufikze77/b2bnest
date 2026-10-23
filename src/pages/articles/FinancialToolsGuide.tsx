@@ -184,7 +184,7 @@ const FinancialToolsGuide = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                Submit VAT returns directly to HMRC and stay compliant with Making Tax Digital regulations.
+                Preview VAT return figures. HMRC filing is not available yet. Nothing has been sent to HMRC. File with HMRC directly or through your accountant.
               </p>
 
               <div>
@@ -198,16 +198,14 @@ const FinancialToolsGuide = () => {
               </div>
 
               <div>
-                <h3 className="font-semibold mb-2">Submitting VAT Returns</h3>
+                <h3 className="font-semibold mb-2">Previewing a VAT return</h3>
                 <ol className="list-decimal list-inside text-muted-foreground space-y-2 ml-4">
                   <li>Navigate to HMRC Integration Suite</li>
                   <li>Click "VAT Returns" tab</li>
                   <li>Select the return period</li>
                   <li>Review auto-calculated figures</li>
-                  <li>Make adjustments if needed</li>
-                  <li>Preview submission</li>
-                  <li>Submit directly to HMRC</li>
-                  <li>Receive confirmation receipt</li>
+                  <li>Check the preview figures</li>
+                  <li>File the return with HMRC yourself (filing from B2BNEST is not available yet)</li>
                 </ol>
               </div>
 
@@ -244,7 +242,7 @@ const FinancialToolsGuide = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                Complete UK payroll processing with automatic RTI submissions to HMRC.
+                UK payroll calculations. RTI filing (FPS/EPS) with HMRC is not available yet.
               </p>
 
               <div>
@@ -254,7 +252,6 @@ const FinancialToolsGuide = () => {
                   <li>Configure pay frequencies</li>
                   <li>Set up salary and deductions</li>
                   <li>Enter PAYE reference number</li>
-                  <li>Connect HMRC for RTI submissions</li>
                 </ol>
               </div>
 
@@ -267,7 +264,7 @@ const FinancialToolsGuide = () => {
                   <li>Review deductions and net pay</li>
                   <li>Approve payroll</li>
                   <li>Generate payslips (PDF or email)</li>
-                  <li>Submit RTI to HMRC</li>
+                  <li>File RTI with HMRC yourself or through your accountant (not available from B2BNEST yet)</li>
                   <li>Process payments to employees</li>
                 </ol>
               </div>
@@ -281,7 +278,7 @@ const FinancialToolsGuide = () => {
                   <li>Student loan deductions</li>
                   <li>Statutory payments (SSP, SMP, SPP)</li>
                   <li>P45 and P60 generation</li>
-                  <li>RTI submissions (FPS/EPS)</li>
+                  <li>RTI previews (FPS/EPS); filing not available yet</li>
                 </ul>
               </div>
 

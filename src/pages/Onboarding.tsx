@@ -256,7 +256,7 @@ const Onboarding = () => {
     { icon: Bell, title: 'Notifications', text: 'Choose which task, project and billing alerts reach your inbox.', to: '/settings' },
     { icon: Plug, title: 'Integrations', text: 'Connect Gmail, Google Calendar, Outlook, WhatsApp and more.', to: '/business-tools' },
     { icon: CreditCard, title: 'Plan & billing', text: 'Compare plans, AI credits and team seats.', to: '/pricing' },
-    { icon: ShieldCheck, title: 'Security & HMRC', text: 'Two-factor authentication and HMRC credentials for MTD submissions.', to: '/settings' },
+    { icon: ShieldCheck, title: 'Security & HMRC', text: 'Password, sessions and your HMRC connection settings.', to: '/settings' },
     { icon: Users, title: 'Team & permissions', text: 'Invite colleagues and set their access level.', to: '/dashboard' },
   ];
 

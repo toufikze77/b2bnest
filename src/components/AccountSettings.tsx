@@ -7,12 +7,12 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { useAuth } from '@/hooks/useAuth';
+import { TWO_STEP_STATUS, TWO_STEP_NOT_ACTIVE, TWO_STEP_COMING_SOON } from '@/lib/twoStep';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-import { Shield, Key, Mail, Eye, EyeOff, Globe, Clock, DollarSign, Calendar, MessageSquare, Lightbulb } from 'lucide-react';
+import { Shield, Key, Eye, EyeOff, Globe, Clock, DollarSign, Calendar, MessageSquare, Lightbulb } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
 import FeedbackForm from '@/components/FeedbackForm';
 import { CURRENCIES } from '@/utils/currencyUtils';
@@ -28,10 +28,6 @@ const AccountSettings = () => {
   const [showPasswords, setShowPasswords] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   
-  const [is2FAEnabled, setIs2FAEnabled] = useState(false);
-  const [isVerifying2FA, setIsVerifying2FA] = useState(false);
-  const [verificationCode, setVerificationCode] = useState('');
-  const [isLoading2FA, setIsLoading2FA] = useState(false);
 
   // User Settings State
   const [userSettings, setUserSettings] = useState<UserSettings>({
@@ -47,7 +43,6 @@ const AccountSettings = () => {
   const [avatarUrl, setAvatarUrl] = useState<string>('');
 
   useEffect(() => {
-    fetchUser2FASettings();
     fetchUserSettings();
     fetchAvatar();
   }, [user]);
@@ -60,50 +55,6 @@ const AccountSettings = () => {
       .eq('id', user.id)
       .maybeSingle();
     if (data?.avatar_url) setAvatarUrl(data.avatar_url);
-  };
-
-  const fetchUser2FASettings = async () => {
-    if (!user) {
-      console.log('No user found for 2FA settings fetch');
-      return;
-    }
-    
-    console.log('Fetching 2FA settings for user:', user.id);
-    
-    try {
-      const { data, error } = await supabase
-        .from('user_2fa_settings')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      console.log('2FA settings fetch result:', { data, error });
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching 2FA settings:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load 2FA settings. Please refresh the page.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (data) {
-        console.log('Setting 2FA enabled to:', data.is_enabled);
-        setIs2FAEnabled(data.is_enabled);
-      } else {
-        console.log('No 2FA settings found, defaulting to disabled');
-        setIs2FAEnabled(false);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load 2FA settings. Please refresh the page.",
-        variant: "destructive"
-      });
-    }
   };
 
   const fetchUserSettings = async () => {
@@ -210,161 +161,6 @@ const AccountSettings = () => {
       });
     } finally {
       setIsChangingPassword(false);
-    }
-  };
-
-  const handleSend2FACode = async () => {
-    if (!user) {
-      console.log('No user found for 2FA code generation');
-      return;
-    }
-    
-    console.log('Generating 2FA code for user:', user.id);
-    setIsLoading2FA(true);
-    
-    try {
-      // Generate a simple 6-digit code and store it locally for verification
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-      console.log('Inserting 2FA code:', { code, user_id: user.id, expires_at: expiresAt.toISOString() });
-
-      // Store code in database
-      const { data: insertData, error: codeError } = await supabase
-        .from('user_2fa_codes')
-        .insert({
-          user_id: user.id,
-          code,
-          code_type: 'setup_2fa',
-          expires_at: expiresAt.toISOString()
-        })
-        .select();
-
-      console.log('2FA code insert result:', { insertData, codeError });
-
-      if (codeError) {
-        console.error('Database error inserting 2FA code:', codeError);
-        throw codeError;
-      }
-
-      // Send code via browser notification or store for demo purposes
-      // For a production app, you'd integrate with a free email service
-      setIsVerifying2FA(true);
-      toast({
-        title: "Verification Code Generated",
-        description: `Your verification code is: ${code} (This is for demo - in production this would be sent via email)`,
-        duration: 10000
-      });
-    } catch (error) {
-      console.error('Error generating 2FA code:', error);
-      toast({
-        title: "Error", 
-        description: `Failed to generate verification code: ${error.message}`,
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading2FA(false);
-    }
-  };
-
-  const handleVerify2FA = async () => {
-    if (!user || verificationCode.length !== 6) {
-      console.log('Invalid verification attempt:', { user: !!user, codeLength: verificationCode.length });
-      return;
-    }
-    
-    console.log('Verifying 2FA code:', verificationCode, 'for user:', user.id);
-    setIsLoading2FA(true);
-    
-    try {
-      // Verify code via secure edge function (table is no longer client-readable)
-      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-2fa-code', {
-        body: {
-          user_id: user.id,
-          code: verificationCode,
-          code_type: 'setup_2fa',
-        },
-      });
-
-      console.log('Code verification result:', { verifyData, verifyError });
-
-      if (verifyError || !verifyData?.success) {
-        toast({
-          title: "Error",
-          description: verifyData?.error || "Invalid or expired verification code.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-
-      // Enable 2FA
-      const { data: settingsData, error: settingsError } = await supabase
-        .from('user_2fa_settings')
-        .upsert({
-          user_id: user.id,
-          is_enabled: true,
-          email_verified: true
-        })
-        .select();
-
-      console.log('Settings upsert result:', { settingsData, settingsError });
-
-      if (settingsError) {
-        console.error('Settings update failed:', settingsError);
-        throw settingsError;
-      }
-
-      setIs2FAEnabled(true);
-      setIsVerifying2FA(false);
-      setVerificationCode('');
-      
-      toast({
-        title: "2FA Enabled",
-        description: "Two-factor authentication has been successfully enabled."
-      });
-
-      // Refresh the settings
-      fetchUser2FASettings();
-    } catch (error) {
-      console.error('Error verifying 2FA:', error);
-      toast({
-        title: "Error",
-        description: `Failed to enable 2FA: ${error.message}`,
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading2FA(false);
-    }
-  };
-
-  const handleDisable2FA = async () => {
-    if (!user) return;
-    
-    setIsLoading2FA(true);
-    
-    try {
-      const { error } = await supabase
-        .from('user_2fa_settings')
-        .update({ is_enabled: false })
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
-      setIs2FAEnabled(false);
-      toast({
-        title: "2FA Disabled",
-        description: "Two-factor authentication has been disabled."
-      });
-    } catch (error) {
-      console.error('Error disabling 2FA:', error);
-      toast({
-        title: "Error",
-        description: "Failed to disable 2FA. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading2FA(false);
     }
   };
 
@@ -509,87 +305,24 @@ const AccountSettings = () => {
           </CardContent>
         </Card>
 
-        {/* 2FA Section */}
+        {/* Two-step sign-in: not enforced at sign-in yet, so it cannot be switched on here (src/lib/twoStep.ts). */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              Two-Factor Authentication
+              Two-step sign-in
             </CardTitle>
-            <CardDescription>
-              Add an extra layer of security to your account using email verification
-            </CardDescription>
+            <CardDescription>{TWO_STEP_NOT_ACTIVE}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Enable 2FA</Label>
-                <p className="text-sm text-muted-foreground">
-                  {is2FAEnabled 
-                    ? "Two-factor authentication is currently enabled" 
-                    : "Secure your account with email verification codes"
-                  }
-                </p>
+                <Label htmlFor="two-step-switch">Turn on two-step sign-in</Label>
+                <p className="text-sm text-muted-foreground">{TWO_STEP_COMING_SOON}</p>
               </div>
-              <Switch
-                checked={is2FAEnabled}
-                onCheckedChange={is2FAEnabled ? handleDisable2FA : handleSend2FACode}
-                disabled={isLoading2FA}
-              />
+              <Switch id="two-step-switch" checked={false} disabled aria-describedby="two-step-note" />
             </div>
-
-            {isVerifying2FA && (
-              <div className="space-y-4 p-4 bg-muted rounded-lg">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Mail className="h-4 w-4" />
-                  Verification code generated (check the notification above)
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Enter 6-digit verification code</Label>
-                  <InputOTP
-                    maxLength={6}
-                    value={verificationCode}
-                    onChange={setVerificationCode}
-                  >
-                    <InputOTPGroup>
-                      <InputOTPSlot index={0} />
-                      <InputOTPSlot index={1} />
-                      <InputOTPSlot index={2} />
-                      <InputOTPSlot index={3} />
-                      <InputOTPSlot index={4} />
-                      <InputOTPSlot index={5} />
-                    </InputOTPGroup>
-                  </InputOTP>
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={handleVerify2FA}
-                    disabled={verificationCode.length !== 6 || isLoading2FA}
-                  >
-                    {isLoading2FA ? "Verifying..." : "Verify & Enable 2FA"}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      setIsVerifying2FA(false);
-                      setVerificationCode('');
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {is2FAEnabled && (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-sm text-green-800">
-                  ✓ Two-factor authentication is active. You'll receive verification codes via email when signing in.
-                </p>
-              </div>
-            )}
+            <p id="two-step-note" className="text-sm text-muted-foreground">{TWO_STEP_STATUS}.</p>
           </CardContent>
         </Card>
       </TabsContent>

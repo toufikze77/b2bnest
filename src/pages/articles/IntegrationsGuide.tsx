@@ -230,18 +230,15 @@ const IntegrationsGuide = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                Connect directly to HMRC for seamless UK tax submissions and compliance.
+                Save your HMRC connection details and preview returns. HMRC filing is not available yet. Nothing has been sent to HMRC.
               </p>
 
               <div>
                 <h3 className="font-semibold mb-2">What You Can Do</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li>Submit VAT returns electronically</li>
-                  <li>File payroll RTI submissions</li>
-                  <li>View tax obligations and deadlines</li>
-                  <li>Check payment status</li>
-                  <li>Download historical submissions</li>
-                  <li>Automatic Making Tax Digital compliance</li>
+                  <li>Save your HMRC connection and company details</li>
+                  <li>Preview VAT, payroll (FPS/EPS) and tax return layouts</li>
+                  <li>Filing with HMRC: not available yet</li>
                 </ul>
               </div>
 
