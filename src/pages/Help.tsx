@@ -108,7 +108,7 @@ const Help = () => {
             <Card className="text-center hover:shadow-lg transition-shadow">
               <CardHeader>
                 <Mail className="h-12 w-12 mx-auto mb-2 text-primary" />
-                <CardTitle>Email Support</CardTitle>
+                <CardTitle>Contact the team</CardTitle>
                 <CardDescription>Send the team a message from the contact page</CardDescription>
               </CardHeader>
               <CardContent>

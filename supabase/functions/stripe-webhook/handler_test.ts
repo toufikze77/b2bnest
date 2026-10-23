@@ -166,3 +166,32 @@ Deno.test("9. live endpoint rejects a test-mode event before any database write"
   const ok = await post(h, { ...ev("evt_9b", "invoice.paid", { subscription: "sub_1" }), livemode: true }); await ok.body?.cancel();
   assertEquals(ok.status, 200);
 });
+
+// ---- Phase 11b: legacy and new prices both keep the right plan (never the "Starter" fallback) ----
+function setupPrice(p: { lookup_key: string | null; unit_amount: number; interval: string }) {
+  const store = memStore();
+  const stripe = {
+    subscriptions: {
+      retrieve: async (id: string) => ({ id, status: "active", customer: "cus_1", metadata: {}, items: { data: [{ price: { id: "price_x", lookup_key: p.lookup_key, unit_amount: p.unit_amount, recurring: { interval: p.interval } } }] } }),
+      list: async () => ({ data: [] }),
+    },
+    customers: { retrieve: async () => ({ email: "owner@example.com", metadata: {} }) },
+  };
+  return { store, h: makeHandler({ store: store as unknown as Store, stripe, verify: async (b) => JSON.parse(b) }) };
+}
+
+for (const [label, p, key, tier, credits] of [
+  ["legacy Professional £35 by lookup key", { lookup_key: "b2bnest_professional_monthly_gbp", unit_amount: 3500, interval: "month" }, "professional", "Professional", 1000],
+  ["legacy Professional £350/yr with NO lookup key (amount fallback)", { lookup_key: null, unit_amount: 35000, interval: "year" }, "professional", "Professional", 1000],
+  ["legacy Enterprise £85 with NO lookup key (amount fallback)", { lookup_key: null, unit_amount: 8500, interval: "month" }, "enterprise", "Enterprise", 5000],
+  ["new Business £59", { lookup_key: "b2bnest_business_monthly_gbp", unit_amount: 5900, interval: "month" }, "professional", "Professional", 1000],
+  ["new Scale £890/yr with NO lookup key", { lookup_key: null, unit_amount: 89000, interval: "year" }, "enterprise", "Enterprise", 5000],
+] as const) {
+  Deno.test(`11b: ${label} → ${key}`, async () => {
+    const { store, h } = setupPrice(p);
+    const r = await post(h, ev(`evt_${label}`, "customer.subscription.updated", { id: "sub_1" })); await r.body?.cancel();
+    assertEquals(r.status, 200);
+    const row = store.subs.get("owner@example.com")!;
+    assertEquals([row.plan_key, row.subscription_tier, row.ai_credits_limit], [key, tier, credits]);
+  });
+}

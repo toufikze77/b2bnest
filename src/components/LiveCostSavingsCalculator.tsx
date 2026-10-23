@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calculator, Share2, Printer, TrendingDown, Check, Link2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { PLANS } from '@/lib/plans';
+import { PLANS, limitText } from '@/lib/plans';
 
 interface ToolOption {
   id: string;
@@ -24,13 +24,13 @@ const TOOLS: ToolOption[] = [
   { id: 'projects', name: 'Project Management', category: 'Productivity', competitor: 'Asana / Monday', competitorCost: 45, b2bnestIncluded: true, description: 'Tasks, timelines, teams' },
   { id: 'time', name: 'Time Tracking', category: 'Productivity', competitor: 'Toggl / Harvest', competitorCost: 20, b2bnestIncluded: true, description: 'Track billable hours' },
   { id: 'ai', name: 'AI Business Advisor', category: 'AI', competitor: 'ChatGPT Team', competitorCost: 30, b2bnestIncluded: true, description: 'Insights & recommendations' },
-  { id: 'payroll', name: 'UK Payroll', category: 'Finance', competitor: 'Xero Payroll', competitorCost: 35, b2bnestIncluded: true, description: 'HMRC-ready payroll' },
+  { id: 'payroll', name: 'UK Payroll', category: 'Finance', competitor: 'Xero Payroll', competitorCost: 35, b2bnestIncluded: true, description: 'Payroll calculations (RTI filing not available yet)' },
   { id: 'hmrc', name: 'HMRC Integration', category: 'Compliance', competitor: 'FreeAgent', competitorCost: 29, b2bnestIncluded: true, description: 'HMRC details and return previews (filing not available yet)' },
-  { id: 'workflows', name: 'Workflow Automation', category: 'Automation', competitor: 'Zapier', competitorCost: 49, b2bnestIncluded: true, description: 'Automate repetitive tasks' },
+  { id: 'workflows', name: 'Workflow Automation', category: 'Automation', competitor: 'Zapier', competitorCost: 49, b2bnestIncluded: true, description: 'Email and in-app steps' },
   { id: 'integrations', name: 'Integration Hub', category: 'Automation', competitor: 'Make.com', competitorCost: 29, b2bnestIncluded: true, description: 'Calendars, OneDrive, social accounts' },
 ];
 
-// The Professional plan's monthly price, from the same data as the Pricing page.
+// No team-size input here, so the comparison uses the Business plan (from the same data as the Pricing page).
 const PROFESSIONAL = PLANS.find((p) => p.id === 'professional')!;
 const B2BNEST_PRICE = PROFESSIONAL.monthly;
 const CURRENCY = '£';
@@ -202,7 +202,7 @@ const LiveCostSavingsCalculator: React.FC = () => {
 
                 <ul className="mt-4 space-y-1.5 text-xs text-slate-600">
                   <li className="flex items-start gap-2"><Check className="h-3.5 w-3.5 text-emerald-600 mt-0.5" /> One login, one bill, one platform</li>
-                  <li className="flex items-start gap-2"><Check className="h-3.5 w-3.5 text-emerald-600 mt-0.5" /> Up to {PROFESSIONAL.userLimit} on {PROFESSIONAL.name}</li>
+                  <li className="flex items-start gap-2"><Check className="h-3.5 w-3.5 text-emerald-600 mt-0.5" /> {limitText(PROFESSIONAL)} on {PROFESSIONAL.name}</li>
                   <li className="flex items-start gap-2"><Check className="h-3.5 w-3.5 text-emerald-600 mt-0.5" /> Cancel anytime</li>
                 </ul>
               </CardContent>

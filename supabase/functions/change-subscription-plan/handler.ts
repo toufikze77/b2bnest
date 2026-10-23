@@ -9,14 +9,19 @@
 //   (the webhook syncs from the subscription's live price).
 // - Stripe allows one schedule per subscription, so repeated requests can never create a second schedule.
 // - A pending downgrade can be cancelled (schedule released; subscription continues on the current plan).
-import { BillingInterval, isPlanKey, PLAN_CATALOG, PlanKey, planFromLookupKey } from "../_shared/plans.ts";
+// - Legacy prices (Business £35/£350, Scale £85/£850, kept for existing subscribers): any change of plan or interval
+//   moves the subscription to TODAY's price for the target plan, and the reply says so (legacyPriceEnds). The legacy
+//   price is never offered again: it is not in the catalogue's prices for new subscriptions. Staying on the same plan
+//   and interval is "already on plan" and keeps the legacy price.
+import { BillingInterval, isPlanKey, PLAN_CATALOG, PLAN_NOT_AVAILABLE_MESSAGE, PlanKey, planFromLookupKey } from "../_shared/plans.ts";
 
 export interface Deps {
   // deno-lint-ignore no-explicit-any
   stripe: any;
   getUser: (token: string) => Promise<{ id: string; email: string } | null>;
   getStoredCustomerId: (userId: string) => Promise<string | null>;
-  resolvePrice: (planKey: PlanKey, interval: BillingInterval) => Promise<string>;
+  /** Today's Stripe price for the plan, or null if the owner hasn't created it in Stripe yet. */
+  resolvePrice: (planKey: PlanKey, interval: BillingInterval) => Promise<string | null>;
 }
 
 export interface Result { status: number; body: Record<string, unknown> }
@@ -70,7 +75,7 @@ export async function changePlan(token: string, payload: Record<string, unknown>
     ? (() => {
       const plan = schedule.metadata.b2bnest_plan as PlanKey;
       const interval = (schedule.metadata.b2bnest_interval === "year" ? "year" : "month") as BillingInterval;
-      return { plan: PLAN_CATALOG[plan].tier, planKey: plan, interval, price: PLAN_CATALOG[plan].prices[interval].amount, effectiveDate: iso(sub.current_period_end) };
+      return { plan: PLAN_CATALOG[plan].name, planKey: plan, interval, price: PLAN_CATALOG[plan].prices[interval].amount, effectiveDate: iso(sub.current_period_end) };
     })()
     : null;
 
@@ -79,8 +84,13 @@ export async function changePlan(token: string, payload: Record<string, unknown>
       status: 200,
       body: {
         ok: true,
-        currentPlan: current?.plan.tier ?? null,
+        currentPlan: current?.plan.name ?? null,
+        currentPlanKey: current?.plan.key ?? null,
         currentInterval: current?.interval ?? item.price?.recurring?.interval ?? null,
+        // What the customer actually pays (pence), straight from Stripe, and whether it is an older price.
+        currentPrice: item.price?.unit_amount ?? null,
+        currentLegacy: current?.legacy ?? false,
+        currentLimits: current?.limits ?? null,
         currentPeriodEnd: iso(sub.current_period_end),
         pendingDowngrade: pending,
       },
@@ -91,18 +101,23 @@ export async function changePlan(token: string, payload: Record<string, unknown>
     if (!schedule) return { status: 200, body: { ok: true, cancelled: false, message: "No pending plan change." } };
     if (!ours) return { status: 409, body: { error: "unsupported_schedule", message: "This subscription has a schedule that wasn't set up here. Please contact support." } };
     await stripe.subscriptionSchedules.release(schedule.id, {}, { idempotencyKey: `downgrade-release:${schedule.id}:${requestId}` });
-    return { status: 200, body: { ok: true, cancelled: true, plan: current?.plan.tier ?? null } };
+    return { status: 200, body: { ok: true, cancelled: true, plan: current?.plan.name ?? null } };
   }
 
   const planId = payload.planId as PlanKey;
   const interval: BillingInterval = payload?.isAnnual === true ? "year" : "month";
   const target = PLAN_CATALOG[planId];
   const price = target.prices[interval];
-  const priceId = await deps.resolvePrice(planId, interval);
-  if (item.price?.id === priceId || (current && current.plan.key === planId && current.interval === interval)) {
-    return { status: 409, body: { error: "already_on_plan", message: pending ? "This is already your current plan. To keep it, cancel the pending change." : "This is already your current plan." } };
+  if (current && current.plan.key === planId && current.interval === interval) {
+    const keep = current.legacy ? " You keep your current price." : "";
+    return { status: 409, body: { error: "already_on_plan", message: (pending ? "This is already your current plan. To keep it, cancel the pending change." : "This is already your current plan.") + keep } };
   }
+  const priceId = await deps.resolvePrice(planId, interval);
+  if (!priceId) return { status: 503, body: { error: "plan_not_available", message: PLAN_NOT_AVAILABLE_MESSAGE } };
+  if (item.price?.id === priceId) return { status: 409, body: { error: "already_on_plan", message: "This is already your current plan." } };
   if (!current) return { status: 409, body: { error: "unsupported_subscription", message: "Your current plan couldn't be identified. Please contact support." } };
+  // Moving off an older price: say plainly that it ends and can't be restored.
+  const legacy = current.legacy ? { legacyPriceEnds: true, currentPrice: item.price?.unit_amount ?? current.price.amount } : {};
   const intervalChanges = (item.price?.recurring?.interval ?? current.interval) !== interval;
   const downgrade = isDowngrade({ plan: current.plan.key, interval: current.interval }, { plan: planId, interval });
 
@@ -110,8 +125,8 @@ export async function changePlan(token: string, payload: Record<string, unknown>
     const effectiveDate = iso(sub.current_period_end);
     if (sub.cancel_at_period_end) return { status: 409, body: { error: "subscription_ending", message: "Your subscription is set to end. Resume it before changing plan." } };
     if (schedule && !ours) return { status: 409, body: { error: "unsupported_schedule", message: "This subscription has a schedule that wasn't set up here. Please contact support." } };
-    const body = { newPlan: target.tier, newInterval: interval, newPrice: price.amount, currency: "gbp", amountDueNow: 0, effectiveDate, scheduled: true, intervalChanges };
-    if (mode === "preview") return { status: 200, body: { ok: true, currentPlan: current.plan.tier, currentInterval: current.interval, ...body } };
+    const body = { newPlan: target.name, newInterval: interval, newPrice: price.amount, currency: "gbp", amountDueNow: 0, effectiveDate, scheduled: true, intervalChanges, ...legacy };
+    if (mode === "preview") return { status: 200, body: { ok: true, currentPlan: current.plan.name, currentInterval: current.interval, ...body } };
     if (pending && pending.planKey === planId && pending.interval === interval) {
       return { status: 200, body: { ok: true, alreadyScheduled: true, ...body } };
     }
@@ -161,9 +176,9 @@ export async function changePlan(token: string, payload: Record<string, unknown>
       status: 200,
       body: {
         ok: true,
-        currentPlan: current.plan.tier,
+        currentPlan: current.plan.name,
         currentInterval: current.interval,
-        newPlan: target.tier,
+        newPlan: target.name,
         newInterval: interval,
         newPrice: price.amount,
         currency: upcoming.currency ?? "gbp",
@@ -171,6 +186,7 @@ export async function changePlan(token: string, payload: Record<string, unknown>
         intervalChanges,
         scheduled: false,
         cancelsPendingDowngrade: !!pending,
+        ...legacy,
       },
     };
   }
@@ -196,5 +212,5 @@ export async function changePlan(token: string, payload: Record<string, unknown>
   if (!applied) {
     return { status: 402, body: { error: "payment_failed", message: "The payment for the change didn't go through, so your plan hasn't changed." } };
   }
-  return { status: 200, body: { ok: true, plan: target.tier, interval, subscriptionId: updated.id, scheduled: false } };
+  return { status: 200, body: { ok: true, plan: target.name, interval, subscriptionId: updated.id, scheduled: false } };
 }

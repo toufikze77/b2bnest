@@ -5,7 +5,7 @@ import {
   BillingInterval,
   isPlanKey,
   PLAN_CATALOG,
-  resolveStripePrice,
+  priceForNewSubscription,
 } from "../_shared/plans.ts";
 
 const corsHeaders = {
@@ -84,7 +84,14 @@ serve(async (req) => {
       }, 409);
     }
 
-    const { priceId } = await resolveStripePrice(stripe, planId, interval);
+    // New sign-ups always get today's price for the plan (never a legacy price). If the owner hasn't created that
+    // price in Stripe yet, stop here: no session is created and nothing is charged.
+    const resolvedPrice = await priceForNewSubscription(stripe, planId, interval);
+    if (!resolvedPrice.ok) {
+      logStep("Price not configured", { planId, interval });
+      return json(resolvedPrice.body, resolvedPrice.status);
+    }
+    const { priceId } = resolvedPrice;
     logStep("Resolved stable price", { planId, interval, priceId });
 
     const origin = req.headers.get("origin") || "https://www.b2bnest.online";

@@ -28,6 +28,9 @@ To report a security problem, email the owner at the address on the site's conta
 - **HMRC filing is not built.** Nothing is sent to HMRC. HMRC access/refresh tokens and the HMRC client secret are read
   into the browser through RPCs (`get_hmrc_tokens`, `get_hmrc_client_secret`), see `src/services/hmrcService.ts`. This
   should move server-side before any filing is built.
+- **Plan user and admin limits are listed but not applied yet.** The plans and limits come from one catalogue
+  (`src/lib/plans.ts`, matched by `supabase/functions/_shared/plans.ts`); enforcing the limits is a separate, approved
+  database step prepared in [`docs/phase11b/`](docs/phase11b/README.md).
 - Public browser settings (`VITE_SUPABASE_URL`, the publishable key) are committed on purpose; they are not secrets.
   Server secrets live in Supabase Edge Function secrets. `src/test/envProduction.test.ts` fails if anything else is added.
 
