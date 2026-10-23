@@ -44,8 +44,8 @@ Deno.test("amount fallback: legacy 3500/35000 and 8500/85000 keep resolving to B
   assertEquals(r(4200, "month"), null);
 });
 
-// deno-lint-ignore no-explicit-any
-function fakeStripe(prices: any[]) {
+type FakePrice = { id: string; lookup_key: string; unit_amount: number; currency: string; recurring: { interval: string } };
+function fakeStripe(prices: FakePrice[]) {
   const calls: string[] = [];
   return {
     calls,

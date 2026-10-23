@@ -128,6 +128,15 @@ export class PlanPriceNotConfigured extends Error {
     super(`plan_price_not_configured:${lookupKey}`);
   }
 }
+/** The one Stripe call price resolution needs (kept narrow so tests can pass a fake). */
+export interface StripePriceLister {
+  prices: {
+    list: (params: { lookup_keys: string[]; active: boolean; limit: number }) => Promise<{
+      data: { id: string; unit_amount: number | null; currency?: string | null; recurring?: { interval?: string | null } | null }[];
+    }>;
+  };
+}
+
 export const PLAN_NOT_AVAILABLE_MESSAGE = "This plan can't be bought yet. Nothing has been charged. Please try again later.";
 
 /**
@@ -136,8 +145,7 @@ export const PLAN_NOT_AVAILABLE_MESSAGE = "This plan can't be bought yet. Nothin
  * PlanPriceNotConfigured, and a price whose amount or interval differs from the catalogue is refused.
  */
 export async function resolveStripePrice(
-  // deno-lint-ignore no-explicit-any
-  stripe: any,
+  stripe: StripePriceLister,
   planKey: PlanKey,
   interval: BillingInterval,
 ): Promise<{ priceId: string; definition: PlanPriceDefinition; plan: PlanDefinition }> {
@@ -159,8 +167,7 @@ export async function resolveStripePrice(
 
 /** The price a NEW checkout or a plan change uses: always today's price, never a legacy one. */
 export async function priceForNewSubscription(
-  // deno-lint-ignore no-explicit-any
-  stripe: any,
+  stripe: StripePriceLister,
   planKey: PlanKey,
   interval: BillingInterval,
 ): Promise<{ ok: true; priceId: string } | { ok: false; status: 503; body: { error: "plan_not_available"; message: string } }> {
