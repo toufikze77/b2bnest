@@ -1,0 +1,25 @@
+User-agent: *
+Allow: /
+
+# Important pages
+Allow: /templates
+Allow: /categories
+Allow: /pricing
+Allow: /business-tools
+Allow: /crm
+Allow: /fundraising
+Allow: /about
+Allow: /contact
+Allow: /auth
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /settings/
+Disallow: /dashboard/
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://b2bnest.com/sitemap.xml
+
+# Crawl delay
+Crawl-delay: 1
