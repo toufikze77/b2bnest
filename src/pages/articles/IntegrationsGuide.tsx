@@ -185,36 +185,31 @@ const IntegrationsGuide = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                Connect Twitter, LinkedIn, and Facebook to automate your social media presence.
+                You can connect X (Twitter), LinkedIn and Facebook accounts. Posting from B2BNEST is switched off for customers
+                until it has been verified, and there is no post scheduling yet.
               </p>
 
               <div>
                 <h3 className="font-semibold mb-2">Twitter/X Integration</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li>Schedule tweets in advance</li>
-                  <li>Auto-post project updates</li>
-                  <li>Share business milestones</li>
-                  <li>Analytics and engagement tracking</li>
+                  <li>Connect your X account</li>
+                  <li>Posting from workflows: switched off until verified</li>
                 </ul>
               </div>
 
               <div>
                 <h3 className="font-semibold mb-2">LinkedIn Integration</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li>Publish to your company page</li>
-                  <li>Share articles and updates</li>
-                  <li>Import LinkedIn connections to CRM</li>
-                  <li>Track post performance</li>
+                  <li>Connect your LinkedIn account</li>
+                  <li>Posting from workflows: switched off until verified</li>
                 </ul>
               </div>
 
               <div>
                 <h3 className="font-semibold mb-2">Facebook Pages</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li>Schedule posts to business page</li>
-                  <li>Respond to messages from B2BNEST</li>
-                  <li>Share promotional content</li>
-                  <li>View page insights</li>
+                  <li>Connect your Facebook account</li>
+                  <li>Posting: not available yet</li>
                 </ul>
               </div>
             </CardContent>
@@ -247,7 +242,7 @@ const IntegrationsGuide = () => {
                 <ol className="list-decimal list-inside text-muted-foreground space-y-2 ml-4">
                   <li>Valid HMRC Government Gateway credentials</li>
                   <li>MTD-enabled business account</li>
-                  <li>VAT registration number (for VAT submissions)</li>
+                  <li>VAT registration number</li>
                   <li>PAYE reference (for payroll submissions)</li>
                 </ol>
               </div>

@@ -312,7 +312,7 @@ const FinancialToolsGuide = () => {
                 </li>
                 <li className="flex gap-2">
                   <span className="text-primary font-bold">→</span>
-                  <span>Submit VAT returns on time to avoid penalties</span>
+                  <span>File VAT returns with HMRC on time to avoid penalties</span>
                 </li>
                 <li className="flex gap-2">
                   <span className="text-primary font-bold">→</span>

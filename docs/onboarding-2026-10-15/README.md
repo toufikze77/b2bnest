@@ -1,8 +1,9 @@
 # Ticketing onboarding package: revision 4, applied
 
 **Status:** applied; verified present in production by read-only queries on 2026-10-18 (production `gvftvswyrevummbvyhxa`).
-The exact date it was applied is not recorded here. The email senders are **not deployed** and sending stays off; they now
-live in `supabase/functions/` and their rollout is in [`docs/phase10-email-senders/README.md`](../phase10-email-senders/README.md).
+The exact date it was applied is not recorded here. The email senders live in `supabase/functions/` and appear in the
+deployed function list (read-only check, 2026-10-23); whether sending is switched on is **not verified** (secrets are not
+readable). Their rollout is in [`docs/phase10-email-senders/README.md`](../phase10-email-senders/README.md).
 Old queued emails are never drained.
 
 The sections below are the original preparation notes and describe production as it was **before** the migration.
@@ -28,7 +29,7 @@ own PR; exact auth callback URLs; existing Microsoft 365 / Supabase Auth email s
 company's creator. In 6 companies the creator is still the active owner. In 4 the creator is only an admin, because the sign-up
 trigger `handle_new_user` creates each new user's personal company with the creator as **admin** (unchanged here; see blockers).
 
-**New schema (in `proposal.sql`, not applied):** `organization_billing(organization_id PK, billing_user_id, source, set_by, set_at, note)`.
+**New schema (in `proposal.sql`, applied; see Status):** `organization_billing(organization_id PK, billing_user_id, source, set_by, set_at, note)`.
 Readable by that company's owners/admins; not writable through the API.
 
 | Rule | How |
@@ -66,7 +67,7 @@ changes of active members are never blocked. Direct INSERT is also revoked from 
 - **Workflow email** `workflow-send-email` (deployed version matches the repo): uses `SMTP_*` (Microsoft 365, default
   `smtp.office365.com:587`) when set, otherwise falls back to `GMAIL_*`. You confirmed Microsoft 365 worked for
   `notifications@b2bnest.online`. No sends appear in the last 24 h of function logs, so I did not re-verify it.
-- **Support and invitation senders** (this package, not deployed): reuse the same SMTP code but **only accept `SMTP_*`**.
+- **Support and invitation senders** (this package; deployed, sending state not verified, see Status): reuse the same SMTP code but **only accept `SMTP_*`**.
   The Gmail fallback is refused before anything is sent. No new secrets.
 - Older paths still hard-coded to Gmail (team invitation, task and contact-form email) are unchanged and out of scope.
 - UI while sending is off: Members & roles shows "Email sending is switched off: nothing is emailed…". The customer email
@@ -93,7 +94,7 @@ changes of active members are never blocked. Direct INSERT is also revoked from 
 | Migration (one transaction) | `proposal.sql` (sha256 `52955994f2d4bbee1bc5e28f580437c3ec146b7302a02a1ae0f5c5161e51c299`) |
 | Export before rollback / Rollback | `export.sql` / `rollback.sql` (sha256 `ce4283aaa449bce48e46842a5daf40ce318f107bf1d72cc623f4eaacb261c76d`) |
 | DB tests / runner | `test.sql`, `run-test.sh` (`PG_RUN_USER=postgres bash docs/onboarding-2026-10-15/run-test.sh`) |
-| Senders | `supabase/functions/onboarding-email-sender/`, `supabase/functions/support-email-sender/` — in supabase/functions, not deployed (inert until `*_EMAIL_ENABLED=true`; see `docs/phase10-email-senders/README.md`) |
+| Senders | `supabase/functions/onboarding-email-sender/`, `supabase/functions/support-email-sender/` — in supabase/functions; deployed (seen 2026-10-23), inert until `*_EMAIL_ENABLED=true` (current value not verified; see `docs/phase10-email-senders/README.md`) |
 | Auth callbacks | `AUTH-CALLBACKS.md` |
 
 ## Old queued email (decision 6)
@@ -126,6 +127,10 @@ email, now or later, is left untouched for the sender-approval step. Rollback le
 Not tested: real browser sessions, a real Supabase confirmation email, any real email.
 
 ## Release order (each step separately approved)
+
+As of 2026-10-23: steps 0–1 are done (migration applied; verified 2026-10-18). Step 4's deploy is done; the bounded test and
+switching on are not verified. Steps 2–3 are owner checks and are not recorded here.
+
 
 0. Merge PR #10, then PR #11 (code only; nothing in the database changes).
 1. Run `export.sql`, then apply `proposal.sql` in one transaction. Check:

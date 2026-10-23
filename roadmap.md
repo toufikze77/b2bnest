@@ -1,3 +1,7 @@
+> Installation statuses re-checked on 2026-10-23 against `supabase/migrations`, the docs and read-only production
+> queries (tables, storage buckets, deployed Edge Function list). "Owner-confirmed" items are recorded as the owner
+> reported them and were not re-verified. Packages applied from `docs/` have no file in `supabase/migrations`.
+
 # Super Admin multi-tenant upgrade — status
 
 - [x] Inspect existing schema, auth, roles, RLS (no new architecture introduced)
@@ -99,9 +103,9 @@
 - [x] Remove crypto pages, footer Invest section, price sidebars, crypto checkout, converter tool, crypto images, crypto SEO/sitemap/llms.txt
 - [ ] Real 410/404 for retired URLs — blocked: Lovable static hosting serves the app with HTTP 200 on every path; mitigated with noindex on not-found
 - [x] fetch-news 5-minute cron removed in production by the owner; fetch-news function code and its config.toml entry removed from the repo (Phase 8)
-- [ ] Delete the deployed fetch-news Edge Function in Supabase (still deployed; owner action)
+- [x] fetch-news Edge Function deleted — not in the deployed function list (read-only check 2026-10-23)
 - [ ] Decide on news_articles (about 7,388 rows, nothing reads them): export and drop, or keep — needs owner authorization
-- [ ] Retire create-coinbase-charge function — needs owner authorization
+- [ ] Retire create-coinbase-charge function — still deployed (checked 2026-10-23); needs owner authorization
 - [ ] Post-publish HTTP/asset verification on www.b2bnest.online
 
 ## Workspace templates (preview)
@@ -138,7 +142,7 @@
 - [x] Pricing: current plan disabled "Your current plan"; plan changes update the existing Stripe subscription
 - [x] Update Help / Knowledge base / assistant answers
 - [ ] Separate review (not started): Starter 1 / Professional 25 / Enterprise 50 seats — no entitlement change
-- [ ] Stripe sandbox verification of plan switching (blocked: no sandbox key)
+- [x] Stripe sandbox verification of plan switching — owner-confirmed PASS (see Release checklist); not re-verified
 - [x] Workflow email sending: owner-confirmed PASS 2026-10-04 (provider accepted; arrived in junk — inbox placement not guaranteed). SMTP troubleshooting CLOSED.
 - [x] Redact email addresses from logged provider replies
 - [ ] Deliverability: DKIM not enabled for b2bnest.online in Microsoft 365; DMARC p=none, no rua (owner DNS/M365 action)
@@ -180,20 +184,21 @@
 - [x] Preview UI: audiences, campaign drafts, planned content, archive/restore, follow-up task
 - [x] Per-currency weighted pipeline; deals without probability shown separately
 - [x] Migration + rollback tested on throwaway DB (30/30) — docs/marketing-workspace-2026-10-10/README.md
-- [ ] Apply live migration — awaiting owner approval
+- [x] Live migration applied — marketing_audiences, marketing_campaigns, marketing_content_items present in production (read-only check 2026-10-23); apply date as recorded above (2026-10-14), not independently verified
 - [ ] Signed-in desktop/mobile check — needs owner (no preview sign-in available)
 
 ## Support ticketing (2026-10-15) — reusable per company; NG TELECOM first
 - [x] Release package: docs/support-ticketing-2026-10-15 (proposal, rollback, export, tests 74/74 on throwaway DB)
 - [x] Preview: Support tickets desk (selected company), customer portal (/support/portal), Help answer
-- [ ] Apply migration + create private bucket — awaiting owner approval after review
-- [x] Agent picker UI (preview); email sender prepared, not deployed (docs folder)
+- [x] Migration applied and private bucket created — support_* tables and the private `support-attachments` bucket present in production (read-only check 2026-10-23); apply date not verified
+- [x] Agent picker UI; email sender moved to `supabase/functions/support-email-sender` (Phase 10) and deployed (in the function list 2026-10-23); whether sending is switched on: not verified
 - [ ] AI assistant text — after approval (lives in a server function; editing deploys live)
 - [ ] NG TELECOM support hours — not supplied; hours stay hidden until set
 - Deferred: email-to-ticket, AI replies, SLA automation, asset management, paid integrations; ngtelecom.co.uk link proposed separately
 
-## Ticketing onboarding (2026-10-15) — package ready, awaiting owner review
-- [ ] Owner review + approval to apply docs/onboarding-2026-10-15/proposal.sql (staff invites, customer invite emails, status notifications, feedback)
+## Ticketing onboarding (2026-10-15) — applied
+- [x] docs/onboarding-2026-10-15/proposal.sql applied; verified present in production by read-only queries on 2026-10-18 (re-checked 2026-10-23); apply date not recorded
 - [ ] Owner decision: set member limits on plans (none set live, so no seat cap yet)
-- [ ] Separate approval: deploy senders (off), then switch on email; needs nominated test addresses
+- [x] Senders deployed (onboarding-email-sender and support-email-sender in the function list, 2026-10-23)
+- [ ] Switch on email after one bounded test to a nominated address (docs/phase10-email-senders) — current switch state not verified
 - [ ] Owner signed-in acceptance of the screens after apply

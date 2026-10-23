@@ -263,7 +263,7 @@ const HMRCSettings = ({ onDisconnect }: HMRCSettingsProps) => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">Auto-submit VAT Returns</p>
+                <p className="font-medium">Automatic VAT filing (not available yet)</p>
                 <p className="text-sm text-gray-600">Not available: {HMRC_FILING_UNAVAILABLE}</p>
               </div>
               <input

@@ -123,23 +123,9 @@ The Integration Hub allows users to connect external services:
 - Automatic file synchronization
 - Secure token management and refresh
 
-### Twitter Integration
-- Connect Twitter account for social media management
-- Schedule and post tweets
-- View analytics and engagement metrics
-- Manage multiple Twitter accounts
-
-### LinkedIn Integration
-- Connect LinkedIn profile for professional networking
-- Share content to LinkedIn
-- Schedule LinkedIn posts
-- Access LinkedIn analytics
-
-### Facebook Integration
-- Connect Facebook pages and accounts
-- Schedule Facebook posts
-- View page insights and analytics
-- Manage multiple Facebook pages
+### X (Twitter), LinkedIn and Facebook
+- Accounts can be connected, but posting from B2BNEST is switched off for customers until it has been verified
+- There is no post scheduling, analytics or engagement tracking
 
 ### Firecrawl Web Scraper
 - Scrape single web pages or entire websites
@@ -150,48 +136,18 @@ The Integration Hub allows users to connect external services:
 - Support for custom include/exclude tags
 - Main content extraction (removes ads, navigation, etc.)
 
-## HMRC INTEGRATION (UK Tax Authority)
-- Connect to HMRC via OAuth2 authentication
-- Submit VAT returns electronically
-- File Corporation Tax returns
-- Submit PAYE payroll information
-- View tax obligations and deadlines
-- Access submission history and logs
-- Sandbox mode for testing
-- Automatic token refresh
-- Email notifications for submission status
-- Multi-organization support
+## HMRC (UK tax)
+- HMRC filing is not available yet. Nothing is sent to HMRC: no VAT returns, no Corporation Tax or Self Assessment
+  returns, no payroll RTI (FPS/EPS). Never tell a user they can file or have filed with HMRC through B2BNEST.
+- Users can save company and HMRC details (VAT number, UTR, PAYE reference) and connect an HMRC sign-in for later use
+- The VAT, payroll and tax return screens show example figures, labelled "Preview only"
+- To file, users must go to HMRC directly or use their accountant
 
-### HMRC Features:
-- VAT Returns: Quarterly VAT submission with automatic calculations
-- Tax Returns: Corporation Tax filing with supporting documents
-- PAYE Submissions: Employee payroll data submission
-- Obligation Tracking: View upcoming deadlines and requirements
-- Submission Logs: Complete audit trail of all HMRC interactions
-- Settings: Configure company details, VAT number, UTR, PAYE reference
-
-## WORKFLOW AUTOMATION
-- Visual workflow builder with drag-and-drop interface
-- Pre-built workflow templates for common business processes
-- Custom workflow creation with multiple node types:
-  - Trigger nodes (webhooks, schedules, events)
-  - Action nodes (email, API calls, database operations)
-  - Logic nodes (conditions, loops, delays)
-  - Integration nodes (connect to external services)
-- Workflow execution history and logs
-- Error handling and retry mechanisms
-- Workflow testing and debugging
-- Schedule workflows to run automatically
-- Real-time workflow monitoring
-
-### Workflow Features:
-- LinkedIn Post Automation
-- Twitter Post Scheduling
-- Email Campaign Automation
-- Data Processing Pipelines
-- Multi-step Business Processes
-- Conditional Logic and Branching
-- Parallel Execution Support
+## WORKFLOWS (Workflow Studio)
+- Simple rules: "When this happens → Do this"
+- Steps that don't run yet are hidden; X (Twitter), LinkedIn and WhatsApp steps never run for customers
+- Sending a workflow email uses the company's email settings; delivery to the inbox isn't guaranteed
+- There is no drag-and-drop builder, no loops or parallel steps, and no marketing email campaigns
 
 ## CRM (Customer Relationship Management)
 - Contact management with full profiles
@@ -208,8 +164,7 @@ The Integration Hub allows users to connect external services:
 - Employee management
 - Payroll calculations (UK tax and NI)
 - Payslip generation
-- PAYE and NI submissions to HMRC
-- Real-Time Information (RTI) reporting
+- RTI (FPS/EPS) filing with HMRC is not available yet; payroll figures are for preparation only
 - P60 and P45 generation
 - Pension auto-enrollment
 - Statutory payments (SSP, SMP, SPP)
@@ -248,14 +203,11 @@ The Integration Hub allows users to connect external services:
 - Predictive analytics
 
 ## SECURITY & COMPLIANCE
-- Two-factor authentication (2FA)
+- Two-step sign-in is not active yet: signing in needs only a password
 - Role-based access control
 - Audit logs for all actions
-- Data encryption at rest and in transit
-- GDPR compliance
-- SOC 2 Type II certified infrastructure
-- Regular security audits
-- Backup and disaster recovery
+- Data travels over HTTPS; storage is provided by Supabase
+- No certifications are claimed. Don't state any security score, certification or audit.
 
 ## COLLABORATION
 - Team workspaces
