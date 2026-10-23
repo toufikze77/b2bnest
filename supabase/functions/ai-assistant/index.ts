@@ -227,21 +227,12 @@ The Integration Hub allows users to connect external services:
 - Export to PDF, Excel, CSV
 - Scheduled reports
 
-## MOBILE & API
-- Responsive web design (mobile-friendly)
-- API access for integrations
-- Webhook support
-- REST API documentation
-- Rate limiting and quotas
+## DEVICES
+- Works in the web browser on computers and phones. There is no mobile app and no public API.
 
-## SUPPORT & RESOURCES
-- Knowledge base and documentation
-- Video tutorials
-- Email support
-- Live chat support
-- Community forum
-- Feature request system
-- Regular platform updates
+## HELP
+- The Help page and Knowledge base answer common questions
+- Users can contact the team from the Contact page. No plan includes a support response-time promise.
 `;
 
     // Build system prompt based on conversation type

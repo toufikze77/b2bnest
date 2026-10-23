@@ -2,7 +2,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import AIDocumentAssistant from './AIDocumentAssistant';
-import { PLANS } from '@/lib/plans';
+import { PLANS, limitText, aiCreditsText } from '@/lib/plans';
 import { answerQuestion, UNKNOWN_ANSWER } from '@/lib/helpAssistant';
 
 const BANNED = [/trading/i, /portfolio/i, /unlimited crm users/i, /15 users/i, /\binvest/i, /crypto/i, /24\/7/i, /phone support/i, /live chat/i, /\bAI assistant\b/i, /always learning/i];
@@ -40,9 +40,11 @@ describe('homepage help assistant', () => {
     const dialog = open();
     ask(dialog, 'What plans do you offer?');
     for (const plan of PLANS) {
-      expect(dialog).toHaveTextContent(`${plan.name}: £${plan.monthly} a month or £${plan.annual} a year, up to ${plan.userLimit}`);
+      expect(dialog).toHaveTextContent(`${plan.name}: £${plan.monthly} a month or £${plan.annual} a year, ${limitText(plan)}, ${aiCreditsText(plan)}`);
     }
-    expect(PLANS.map((p) => [p.name, p.users])).toEqual([['Starter', 1], ['Professional', 5], ['Enterprise', 25]]);
+    expect(PLANS.map((p) => [p.name, p.users, p.admins])).toEqual([['Solo', 1, 1], ['Business', 50, 5], ['Scale', 100, 10]]);
+    // Limits are listed but not applied yet, and the assistant says so.
+    expect(dialog).toHaveTextContent("User and admin limits aren't applied yet");
   });
 
   it('says plainly when it does not know, with links to Help and Contact', () => {

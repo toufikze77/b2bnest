@@ -1,14 +1,18 @@
 import { assert, assertEquals } from "https://deno.land/std@0.190.0/testing/asserts.ts";
 import { changePlan, Deps } from "./handler.ts";
 
-const PRICES: Record<string, { id: string; lookup_key: string; recurring: { interval: string } }> = {
-  starter_month: { id: "price_sm", lookup_key: "b2bnest_starter_monthly_gbp", recurring: { interval: "month" } },
-  professional_month: { id: "price_pm", lookup_key: "b2bnest_professional_monthly_gbp", recurring: { interval: "month" } },
-  professional_year: { id: "price_py", lookup_key: "b2bnest_professional_annual_gbp", recurring: { interval: "year" } },
-  enterprise_month: { id: "price_em", lookup_key: "b2bnest_enterprise_monthly_gbp", recurring: { interval: "month" } },
+// Today's prices (Solo/Business/Scale) plus the legacy ones existing subscribers still pay (Business £35, Scale £85).
+const PRICES: Record<string, { id: string; lookup_key: string; unit_amount: number; recurring: { interval: string } }> = {
+  starter_month: { id: "price_sm", lookup_key: "b2bnest_starter_monthly_gbp", unit_amount: 1900, recurring: { interval: "month" } },
+  professional_month: { id: "price_bm", lookup_key: "b2bnest_business_monthly_gbp", unit_amount: 5900, recurring: { interval: "month" } },
+  professional_year: { id: "price_by", lookup_key: "b2bnest_business_annual_gbp", unit_amount: 59000, recurring: { interval: "year" } },
+  enterprise_month: { id: "price_scm", lookup_key: "b2bnest_scale_monthly_gbp", unit_amount: 8900, recurring: { interval: "month" } },
+  legacy_professional_month: { id: "price_pm", lookup_key: "b2bnest_professional_monthly_gbp", unit_amount: 3500, recurring: { interval: "month" } },
+  legacy_professional_year: { id: "price_py", lookup_key: "b2bnest_professional_annual_gbp", unit_amount: 35000, recurring: { interval: "year" } },
+  legacy_enterprise_month: { id: "price_em", lookup_key: "b2bnest_enterprise_monthly_gbp", unit_amount: 8500, recurring: { interval: "month" } },
 };
 
-function fakeStripe(opts: { subs?: number; failPayment?: boolean; price?: string } = {}) {
+function fakeStripe(opts: { subs?: number; failPayment?: boolean; price?: string; notConfigured?: boolean } = {}) {
   const state = {
     subs: Array.from({ length: opts.subs ?? 1 }, (_, i) => ({
       id: `sub_${i}`, status: "active", metadata: {}, schedule: null as string | null,
@@ -58,7 +62,8 @@ function fakeStripe(opts: { subs?: number; failPayment?: boolean; price?: string
     stripe,
     getUser: async (t) => (t === "good" ? { id: "u1", email: "a@b.co" } : null),
     getStoredCustomerId: async () => "cus_1",
-    resolvePrice: async (plan, interval) => PRICES[`${plan}_${interval}`].id,
+    // Only today's prices can be resolved for a change; null = not created in Stripe yet.
+    resolvePrice: async (plan, interval) => (opts.notConfigured ? null : PRICES[`${plan}_${interval}`]?.id ?? null),
   };
   return { state, deps };
 }
@@ -75,7 +80,7 @@ Deno.test("upgrade updates the one subscription with the right monthly price; no
   assertEquals(r.status, 200);
   assertEquals(state.subs.length, 1);
   assertEquals(state.created, 0);
-  assertEquals(state.subs[0].items.data[0].price.id, "price_pm");
+  assertEquals(state.subs[0].items.data[0].price.id, "price_bm"); // today's Business price
   assertEquals(state.subs[0].items.data[0].price.recurring.interval, "month");
 });
 
@@ -90,7 +95,9 @@ Deno.test("preview shows proration and changes nothing", async () => {
   const r = await changePlan("good", { mode: "preview", planId: "professional" }, deps);
   assertEquals(r.status, 200);
   assertEquals(r.body.amountDueNow, 1600);
-  assertEquals(r.body.newPrice, 3500);
+  assertEquals(r.body.newPrice, 5900);
+  assertEquals(r.body.newPlan, "Business");
+  assertEquals(r.body.legacyPriceEnds, undefined); // Solo is not a legacy price
   assertEquals(state.updates, 0);
 });
 
@@ -136,7 +143,7 @@ Deno.test("downgrade is scheduled for period end on the same subscription: no ch
   assertEquals(r.body.scheduled, true);
   assertEquals(r.body.amountDueNow, 0);
   assertEquals(r.body.effectiveDate, new Date(1_702_592_000 * 1000).toISOString());
-  assertEquals(state.subs[0].items.data[0].price.id, "price_pm"); // still Professional
+  assertEquals(state.subs[0].items.data[0].price.id, "price_bm"); // still Business
   assertEquals(state.updates, 0);
   assertEquals(state.created, 0);
   const sch = state.schedules.get(state.subs[0].schedule!);
@@ -145,7 +152,7 @@ Deno.test("downgrade is scheduled for period end on the same subscription: no ch
   assertEquals(sch.phases[0].end_date, 1_702_592_000);
   assertEquals(sch.phases[1].items[0].price, "price_sm");
   const st = await changePlan("good", { mode: "status" }, deps);
-  assertEquals((st.body.pendingDowngrade as { plan: string }).plan, "Starter");
+  assertEquals((st.body.pendingDowngrade as { plan: string }).plan, "Solo");
   assertEquals((st.body.pendingDowngrade as { price: number }).price, 1900);
 });
 
@@ -163,7 +170,7 @@ Deno.test("annual to monthly on the same tier is a downgrade at the annual renew
   const { state, deps } = fakeStripe({ price: "professional_year" });
   const r = await changePlan("good", { planId: "professional", isAnnual: false, requestId: "req-00000301" }, deps);
   assertEquals(r.body.scheduled, true);
-  assertEquals(state.subs[0].items.data[0].price.id, "price_py");
+  assertEquals(state.subs[0].items.data[0].price.id, "price_by");
 });
 
 Deno.test("cancelling a pending downgrade keeps the current plan", async () => {
@@ -172,7 +179,7 @@ Deno.test("cancelling a pending downgrade keeps the current plan", async () => {
   const c = await changePlan("good", { mode: "cancel_downgrade", requestId: "req-00000402" }, deps);
   assertEquals(c.body.cancelled, true);
   assertEquals(state.subs[0].schedule, null);
-  assertEquals(state.subs[0].items.data[0].price.id, "price_pm");
+  assertEquals(state.subs[0].items.data[0].price.id, "price_bm");
   assertEquals((await changePlan("good", { mode: "status" }, deps)).body.pendingDowngrade, null);
   const c2 = await changePlan("good", { mode: "cancel_downgrade", requestId: "req-00000403" }, deps);
   assertEquals(c2.body.cancelled, false);
@@ -184,7 +191,7 @@ Deno.test("upgrade while a downgrade is pending cancels it and upgrades immediat
   const r = await changePlan("good", { planId: "enterprise", requestId: "req-00000502" }, deps);
   assertEquals(r.status, 200);
   assertEquals(state.released, 1);
-  assertEquals(state.subs[0].items.data[0].price.id, "price_em");
+  assertEquals(state.subs[0].items.data[0].price.id, "price_scm"); // today's Scale price
 });
 
 Deno.test("a schedule not created by this app is never modified", async () => {
@@ -194,4 +201,66 @@ Deno.test("a schedule not created by this app is never modified", async () => {
   assertEquals((await changePlan("good", { planId: "starter", requestId: "req-00000601" }, deps)).body.error, "unsupported_schedule");
   assertEquals((await changePlan("good", { mode: "cancel_downgrade", requestId: "req-00000602" }, deps)).body.error, "unsupported_schedule");
   assertEquals(state.released, 0);
+});
+
+// ---- Legacy prices (existing subscribers keep £35 / £85 until they change plan) ----
+
+Deno.test("legacy: status reports the real price the customer pays and that it is an earlier price", async () => {
+  const { deps } = fakeStripe({ price: "legacy_professional_month" });
+  const st = await changePlan("good", { mode: "status" }, deps);
+  assertEquals(st.body.currentPlan, "Business");
+  assertEquals(st.body.currentPlanKey, "professional");
+  assertEquals(st.body.currentPrice, 3500);
+  assertEquals(st.body.currentLegacy, true);
+  assertEquals(st.body.currentLimits, { members: 5, admins: 5 });
+});
+
+Deno.test("legacy: same plan and interval is refused and keeps the earlier price", async () => {
+  const { state, deps } = fakeStripe({ price: "legacy_professional_month" });
+  const r = await changePlan("good", { planId: "professional", requestId: "req-00000201" }, deps);
+  assertEquals(r.body.error, "already_on_plan");
+  assert(String(r.body.message).includes("You keep your current price."));
+  assertEquals(state.updates, 0);
+  assertEquals(state.subs[0].items.data[0].price.id, "price_pm");
+});
+
+Deno.test("legacy: monthly to annual moves to today's annual price and says the earlier price ends", async () => {
+  const { state, deps } = fakeStripe({ price: "legacy_professional_month" });
+  const p = await changePlan("good", { mode: "preview", planId: "professional", isAnnual: true }, deps);
+  assertEquals(p.body.newPrice, 59000);
+  assertEquals(p.body.legacyPriceEnds, true);
+  assertEquals(p.body.currentPrice, 3500);
+  const r = await changePlan("good", { planId: "professional", isAnnual: true, requestId: "req-00000202" }, deps);
+  assertEquals(r.status, 200);
+  assertEquals(state.subs[0].items.data[0].price.id, "price_by"); // today's Business annual, never the legacy £350
+  const st = await changePlan("good", { mode: "status" }, deps);
+  assertEquals(st.body.currentLegacy, false);
+});
+
+Deno.test("legacy: Scale (£85) to Business is a downgrade scheduled at today's Business price", async () => {
+  const { state, deps } = fakeStripe({ price: "legacy_enterprise_month" });
+  const r = await changePlan("good", { planId: "professional", requestId: "req-00000203" }, deps);
+  assertEquals(r.body.scheduled, true);
+  assertEquals(r.body.newPrice, 5900);
+  assertEquals(r.body.legacyPriceEnds, true);
+  const sch = state.schedules.get(state.subs[0].schedule!);
+  assertEquals(sch.phases[0].items[0].price, "price_em"); // keeps the earlier price until period end
+  assertEquals(sch.phases[1].items[0].price, "price_bm");
+});
+
+Deno.test("legacy: Business (£35) to Scale upgrades to today's Scale price", async () => {
+  const { state, deps } = fakeStripe({ price: "legacy_professional_month" });
+  const r = await changePlan("good", { planId: "enterprise", requestId: "req-00000204" }, deps);
+  assertEquals(r.status, 200);
+  assertEquals(r.body.plan, "Scale");
+  assertEquals(state.subs[0].items.data[0].price.id, "price_scm");
+});
+
+Deno.test("a price the owner hasn't created in Stripe yet: clear error, nothing changed or charged", async () => {
+  const { state, deps } = fakeStripe({ price: "starter_month", notConfigured: true });
+  const r = await changePlan("good", { planId: "professional", requestId: "req-00000205" }, deps);
+  assertEquals(r.status, 503);
+  assertEquals(r.body.error, "plan_not_available");
+  assertEquals(state.updates, 0);
+  assertEquals(state.schedulesCreated, 0);
 });

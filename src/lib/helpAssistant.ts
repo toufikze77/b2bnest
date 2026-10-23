@@ -1,4 +1,4 @@
-import { PLANS, type Plan } from '@/lib/plans';
+import { PLANS, type Plan, limitText, aiCreditsText, SEAT_LIMITS_NOTE } from '@/lib/plans';
 
 /**
  * The homepage help assistant. It is NOT an AI: it matches keywords against a short list of questions and
@@ -33,11 +33,8 @@ export const HELP_TOPICS: { id: string; label: string; question: string }[] = [
 ];
 
 const money = (n: number) => `£${n}`;
-const aiCredits = (plan: Plan) => plan.features.find((f) => /AI credits/i.test(f))?.replace(/\s*\(.*\)$/, '');
-
 export function describePlan(plan: Plan): string {
-  const credits = aiCredits(plan);
-  return `${plan.name}: ${money(plan.monthly)} a month or ${money(plan.annual)} a year, up to ${plan.userLimit}${credits ? `, ${credits}` : ''}.`;
+  return `${plan.name}: ${money(plan.monthly)} a month or ${money(plan.annual)} a year, ${limitText(plan)}, ${aiCreditsText(plan)}.`;
 }
 
 export const UNKNOWN_ANSWER: HelpAnswer = {
@@ -72,7 +69,7 @@ export function answerQuestion(input: string): HelpAnswer {
 
   if (has(q, ['price', 'pricing', 'cost', 'plan', 'subscription', 'how much', 'users', 'seats'])) {
     return {
-      text: `There are ${PLANS.length} plans, priced in pounds:\n\n${PLANS.map(describePlan).join('\n')}\n\nPaid plans start with a ${TRIAL_DAYS}-day free trial. The full list of what each plan includes is on the Pricing page.`,
+      text: `There are ${PLANS.length} plans, priced in pounds:\n\n${PLANS.map(describePlan).join('\n')}\n\n${SEAT_LIMITS_NOTE} Paid plans start with a ${TRIAL_DAYS}-day free trial. The full list of what each plan includes is on the Pricing page.`,
       links: [PRICING_LINK],
       suggestions: ['Is there a free trial?', 'How do I get started?'],
     };

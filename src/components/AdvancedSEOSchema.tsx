@@ -37,7 +37,7 @@ const AdvancedSEOSchema = ({ page = 'home' }: AdvancedSEOSchemaProps) => {
           "priceCurrency": "GBP",
           "availability": "https://schema.org/InStock",
           "billingDuration": "P1M",
-          "description": "Paid plans including CRM, project management, AI assistants, financial tracking, HMRC integration, and advanced features"
+          "description": "Paid plans (Solo, Business, Scale) including invoicing, CRM, project management, AI tools and financial tracking"
         }
       ]
     };

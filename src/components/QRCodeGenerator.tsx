@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { QrCode, Download, Copy, Check, Zap, Globe, Mail, Phone, Wifi } from 'lucide-react';
+import { QrCode, Download, Copy, Check, Globe, Mail, Phone, Wifi } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -260,25 +260,6 @@ const QRCodeGenerator = () => {
         </Card>
       </div>
 
-      {/* Upgrade CTA */}
-      <Card className="mt-6">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-3">
-            <Zap className="h-5 w-5 text-blue-600 mt-0.5" />
-            <div>
-              <h4 className="font-semibold text-blue-900 mb-1">Want Custom QR Codes?</h4>
-              <p className="text-sm text-blue-700 mb-3">
-                Upgrade to get custom colors, logos, high-resolution downloads, and analytics tracking.
-              </p>
-              <div className="flex gap-2 flex-wrap">
-                <Badge variant="outline" className="text-xs">Starter: Custom Colors</Badge>
-                <Badge variant="outline" className="text-xs">Pro: Logos + Analytics</Badge>
-                <Badge variant="outline" className="text-xs">Enterprise: White-label</Badge>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

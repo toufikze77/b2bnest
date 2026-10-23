@@ -49,13 +49,16 @@ describe('onboarding rules', () => {
 });
 
 describe('seat summary text (one allowance per paying owner)', () => {
-  it('mentions pooling only when the plan covers several companies', () => {
-    expect(seatSummaryText({ used: 7, pending: 1, seat_limit: 25, pooled_companies: 3, basis: 'subscription:professional', enforced: true }))
-      .toBe("Seats: 7 staff + 1 pending invitation across 3 companies on the same plan of 25. Support customers don't use seats.");
-    expect(seatSummaryText({ used: 2, pending: 0, seat_limit: null, pooled_companies: 1 })).toContain("aren't switched on");
+  it('when limits apply: users and admins against the plan, pooling only when several companies share it', () => {
+    expect(seatSummaryText({ used: 7, pending: 1, seat_limit: 50, pooled_companies: 3, basis: 'subscription:professional', enforced: true, admin_used: 2, admin_pending: 1, admin_limit: 5 }))
+      .toBe("Users: 7 staff + 1 pending invitation across 3 companies on the same plan of 50. Admins: 2 + 1 pending of 5. Support customers don't use seats.");
   });
-  it('never shows a limit as active while caps are off', () => {
-    expect(seatSummaryText({ used: 3, pending: 0, seat_limit: 25, pooled_companies: 1, enforced: false })).not.toContain('of 25');
+  it('while caps are off: says the limits are not applied, shows them only as what the plan allows', () => {
+    const t = seatSummaryText({ used: 3, pending: 0, seat_limit: 50, pooled_companies: 1, enforced: false, admin_used: 1, admin_pending: 0, admin_limit: 5 });
+    expect(t).toBe("Users: 3 staff + 0 pending invitations (your plan allows 50 users, up to 5 admins). Admins: 1. User and admin limits aren't applied yet. We'll announce the date before they start. Support customers don't use seats.");
+    expect(t).not.toContain('of 50');
+    expect(seatSummaryText({ used: 2, pending: 0, seat_limit: null, pooled_companies: 1 })).toContain("aren't applied yet");
+    expect(seatSummaryText({ used: 1, pending: 0, seat_limit: 1, pooled_companies: 1, enforced: false, admin_used: 1, admin_limit: 1 })).toContain('your plan allows 1 user, up to 1 admin');
   });
   it('explains companies without a billing owner', () => {
     expect(seatSummaryText({ used: 1, pending: 0, seat_limit: null, pooled_companies: 1, basis: 'no_billing_owner' })).toContain('no billing owner');

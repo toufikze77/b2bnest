@@ -63,10 +63,6 @@ export const PlanUpgradeDialog: React.FC<PlanUpgradeDialogProps> = ({
                     <Check className="h-4 w-4 text-green-500" />
                     Team collaboration
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    Priority support
-                  </div>
                 </div>
               </div>
             </CardContent>

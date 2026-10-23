@@ -8,7 +8,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { PLANS, type Plan } from '@/lib/plans';
+import { PLANS, type Plan, limitText, aiCreditsText, SEAT_LIMITS_NOTE } from '@/lib/plans';
+import { useBillingStatus, poundsText } from '@/hooks/useBillingStatus';
 
 const PricingPlans = () => {
   const [isAnnual, setIsAnnual] = useState(false);
@@ -17,6 +18,8 @@ const PricingPlans = () => {
   const { subscribed, subscription_tier } = useSubscription();
   const currentPlanId = subscribed ? String(subscription_tier || '').toLowerCase() : null;
   const isCurrent = (planId: string) => currentPlanId === planId;
+  // An existing subscriber on an earlier price sees what they really pay on their own plan's card.
+  const { status: billing } = useBillingStatus(subscribed);
 
   const PLAN_STYLE: Record<Plan['id'], { icon: typeof Zap; color: string }> = {
     starter: { icon: Zap, color: 'from-blue-500 to-cyan-500' },
@@ -44,7 +47,12 @@ const PricingPlans = () => {
       const per = preview.newInterval === 'year' ? 'year' : 'month';
       const due = Number(preview.amountDueNow) || 0;
       const dateText = (d?: string | null) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'the end of your billing period';
-      const message = (preview.scheduled ? [
+      // Moving off an earlier price: say plainly that it ends and can't come back.
+      const legacyLines = preview.legacyPriceEnds ? [
+        '',
+        `You're on an earlier price (${money(Number(preview.currentPrice) || 0)} per ${preview.currentInterval === 'year' ? 'year' : 'month'}). Changing plan or billing period moves you to today's price (${money(preview.newPrice)} per ${per}). Your earlier price can't be restored afterwards.`,
+      ] : [];
+      const message = [...(preview.scheduled ? [
         `Switch from ${preview.currentPlan ?? 'your current plan'} to ${preview.newPlan} (${money(preview.newPrice)} per ${per})?`,
         '',
         `This change starts on ${dateText(preview.effectiveDate)}, at the end of the period you've already paid for.`,
@@ -60,7 +68,7 @@ const PricingPlans = () => {
         preview.intervalChanges ? `Your billing period changes to ${per}ly, starting today.` : '',
         preview.cancelsPendingDowngrade ? 'Your pending downgrade will be cancelled.' : '',
         'If the payment fails, your current plan stays as it is.',
-      ]).filter((l) => l !== undefined).join('\n');
+      ]), ...legacyLines].filter((l) => l !== undefined).join('\n');
       if (!window.confirm(message)) return;
       const requestId = crypto.randomUUID();
       const { data, error } = await supabase.functions.invoke('change-subscription-plan', { body: { planId, isAnnual, requestId } });
@@ -103,6 +111,10 @@ const PricingPlans = () => {
       if (error) {
         const context = (error as { context?: { text: () => Promise<string> } }).context;
         const details = context ? await context.text().catch(() => '') : '';
+        if (details.includes('plan_not_available')) {
+          toast({ title: 'Plan not available yet', description: "This plan can't be bought yet. Nothing has been charged. Please try again later.", variant: 'destructive' });
+          return;
+        }
         if (details.includes('already_subscribed')) {
           toast({
             title: 'You already have a subscription',
@@ -142,8 +154,8 @@ const PricingPlans = () => {
       toast({
         title: data?.status === 'already_active' ? 'Trial Already Active' : 'Free Trial Activated!',
         description: data?.trial_ends_at
-          ? `Enterprise access until ${new Date(data.trial_ends_at).toLocaleString()}`
-          : 'You now have Enterprise access for 14 days.',
+          ? `${PLANS[2].name} access until ${new Date(data.trial_ends_at).toLocaleString()}`
+          : `You now have ${PLANS[2].name} access for 14 days.`,
       });
       // Refresh subscription and trial state
       try { (window as any).gtag?.('event', 'trial_activated'); } catch {}
@@ -240,9 +252,15 @@ const PricingPlans = () => {
                          <span className="text-sm text-gray-500">{isAnnual ? '/year' : '/month'}</span>
                       </div>
                       <p className="text-sm text-gray-500 mt-2">
-                        {plan.userLimit}
+                        {limitText(plan)}
+                        <span className="block">{aiCreditsText(plan)}</span>
                         {isAnnual && <span className="block text-xs">Billed annually (2 months free)</span>}
                       </p>
+                      {isCurrent(plan.id) && billing?.currentLegacy && billing.currentPrice != null && (
+                        <p className="mt-2 rounded-md bg-blue-50 px-2 py-1 text-xs text-blue-900">
+                          You pay {poundsText(billing.currentPrice)} per {billing.currentInterval ?? 'month'}, an earlier price you keep while you stay on this plan.
+                        </p>
+                      )}
                    </div>
                 </CardHeader>
 
@@ -275,6 +293,8 @@ const PricingPlans = () => {
             );
           })}
         </div>
+
+        <p className="mt-8 text-center text-sm text-gray-600">{SEAT_LIMITS_NOTE}</p>
 
         {/* FAQ Section */}
         <div className="mt-20 text-center">

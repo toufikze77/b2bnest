@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { resolveStripePrice } from "../_shared/plans.ts";
+import { priceForNewSubscription } from "../_shared/plans.ts";
 import { changePlan } from "./handler.ts";
 import { resolveVerifiedCustomer } from "../_shared/verified-customer.ts";
 
@@ -37,7 +37,10 @@ serve(async (req) => {
         if (!r.customerId) console.error("[CHANGE-PLAN] no verified customer", r.reason);
         return r.customerId;
       },
-      resolvePrice: async (plan, interval) => (await resolveStripePrice(stripe, plan, interval)).priceId,
+      resolvePrice: async (plan, interval) => {
+        const r = await priceForNewSubscription(stripe, plan, interval);
+        return r.ok ? r.priceId : null;
+      },
     });
     if (result.status === 200 && result.body.subscriptionId) console.log("[CHANGE-PLAN] updated", JSON.stringify({ plan: result.body.plan, interval: result.body.interval }));
     return json(result.body, result.status);

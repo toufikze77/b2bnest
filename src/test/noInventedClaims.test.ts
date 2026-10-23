@@ -24,6 +24,8 @@ const BANNED: { what: string; re: RegExp; allow?: RegExp }[] = [
   { what: 'HMRC filing claim', re: /submit\w* (VAT|PAYE|payroll|RTI)\b|file corporation tax|VAT submission|(PAYE|NI) submissions? to HMRC|RTI (reporting|submissions)|Corporation Tax filing/i, allow: HONEST },
   // Task titles such as "Schedule posts and emails" in templates are the user's own to-dos, not a product claim.
   { what: 'social post scheduling claim', re: /schedul\w* (and post )?tweets|schedul\w* (LinkedIn|Facebook) posts|schedule posts to|post scheduling|scheduled posts/i, allow: HONEST },
+  // Phase 11b: support is not a plan feature, and these were never built. Removed from every plan list.
+  { what: 'removed plan claim (support / integrations / white-label / account manager / SLA)', re: /priority support|\bemail support\b|mobile app access|custom integrations|custom AI integrations|custom AI model training|white-label|white label AI|dedicated account manager|training (&|and) onboarding|SLA guarantee/i },
   { what: 'advanced automation claim', re: /drag-and-drop interface|Parallel Execution|Email Campaign Automation|retry mechanisms|Real-time workflow monitoring/i, allow: HONEST },
 ];
 
@@ -38,7 +40,7 @@ function sourceFiles(dir: string): string[] {
 // The generated Supabase types mirror the database (table and column names), not product copy.
 // Test files may quote the banned phrases to check they are gone.
 const files = sourceFiles(SRC).filter((f) => !f.endsWith(path.join('integrations', 'supabase', 'types.ts')));
-const functionFiles = sourceFiles(FUNCTIONS);
+const functionFiles = [...sourceFiles(FUNCTIONS), path.resolve(__dirname, '../../index.html'), path.resolve(__dirname, '../../public/llms.txt')];
 const ROOT = path.resolve(__dirname, '../..');
 
 describe('no invented claims in src or supabase/functions', () => {

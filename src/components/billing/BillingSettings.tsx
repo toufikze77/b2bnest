@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,6 +6,8 @@ import { CalendarClock, CreditCard, ExternalLink, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from '@/hooks/use-toast';
+import { useBillingStatus, poundsText } from '@/hooks/useBillingStatus';
+import { planNameForTier, limitText, SEAT_LIMITS_NOTE } from '@/lib/plans';
 
 export interface PendingDowngrade {
   plan: string;
@@ -39,17 +41,10 @@ export const PendingPlanChange = ({ pending, busy, onKeep }: { pending: PendingD
 const BillingSettings = () => {
   const { subscribed, subscription_tier, subscription_end, loading } = useSubscription();
   const [opening, setOpening] = useState(false);
-  const [pending, setPending] = useState<PendingDowngrade | null>(null);
   const [keeping, setKeeping] = useState(false);
-
-  const loadPending = useCallback(async () => {
-    const { data, error } = await supabase.functions.invoke('change-subscription-plan', { body: { mode: 'status' } });
-    setPending(!error && data?.pendingDowngrade ? (data.pendingDowngrade as PendingDowngrade) : null);
-  }, []);
-
-  useEffect(() => {
-    if (subscribed) void loadPending();
-  }, [subscribed, loadPending]);
+  // Live from Stripe: the price this customer really pays (an earlier price is shown as it is), and any pending change.
+  const { status, reload: loadPending } = useBillingStatus(subscribed);
+  const pending: PendingDowngrade | null = status?.pendingDowngrade ?? null;
 
   const keepCurrentPlan = async () => {
     setKeeping(true);
@@ -106,10 +101,20 @@ const BillingSettings = () => {
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <Badge variant={subscribed ? 'default' : 'secondary'}>
-              {subscribed ? subscription_tier : 'Free'}
+              {subscribed ? (status?.currentPlan ?? planNameForTier(subscription_tier)) : 'Free'}
             </Badge>
           )}
         </div>
+
+        {subscribed && status?.currentPrice != null && status.currentInterval && (
+          <div className="space-y-1 text-sm text-muted-foreground">
+            <p>
+              Your price: <span className="font-medium text-foreground">{poundsText(status.currentPrice)} per {status.currentInterval}</span>
+              {status.currentLegacy && ' (an earlier price you keep while you stay on this plan and billing period)'}
+            </p>
+            {status.currentLimits && <p>Plan limits: {limitText({ users: status.currentLimits.members, admins: status.currentLimits.admins })}. {SEAT_LIMITS_NOTE}</p>}
+          </div>
+        )}
 
         {subscribed && subscription_end && (
           <p className="text-sm text-muted-foreground">

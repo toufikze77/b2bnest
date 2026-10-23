@@ -110,7 +110,7 @@ serve(async (req) => {
     const resolved = planFromLookupKey(price.lookup_key) ??
       planFromAmount(price.unit_amount || 0, price.recurring?.interval);
     const planName = resolved
-      ? `${resolved.plan.name} (${resolved.interval === "year" ? "Annual" : "Monthly"})`
+      ? `${resolved.plan.name} (${resolved.interval === "year" ? "Annual" : "Monthly"}${resolved.legacy ? ", earlier price" : ""})`
       : "Subscription Plan";
 
     // Amount actually paid (Stripe total, already inclusive of any tax Stripe charged).
