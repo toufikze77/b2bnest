@@ -21,13 +21,14 @@ function fakeDb(tables: Record<string, Row[]>, fail: { op?: 'update' | 'delete' 
   const calls: Call[] = [];
   const result = (call: Call, apply: () => void) => {
     calls.push(call);
-    if (fail.op === call.op) return Promise.resolve({ error: fail.error ?? { message: 'Simulated network error' } });
+    if (fail.op === call.op) return Promise.resolve({ data: null, error: fail.error ?? { message: 'Simulated network error' } });
     apply();
-    return Promise.resolve({ error: null });
+    return Promise.resolve({ data: [{ id: 'changed' }], error: null });
   };
+  // Updates and deletes end with .select('id'), so the app can check exactly one row changed.
   const filtered = (table: string, op: string, payload: unknown, apply: (id: string) => void) => ({
     eq: (c1: string, v1: string) => ({
-      eq: (c2: string, v2: string) => result({ table, op, payload, filters: [[c1, v1], [c2, v2]] }, () => apply(v1)),
+      eq: (c2: string, v2: string) => ({ select: () => result({ table, op, payload, filters: [[c1, v1], [c2, v2]] }, () => apply(v1)) }),
     }),
   });
   const client = {

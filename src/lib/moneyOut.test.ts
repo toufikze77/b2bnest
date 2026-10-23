@@ -88,7 +88,7 @@ describe('supplier delete messages', () => {
 describe('moneyOutApi', () => {
   const fake = () => {
     const calls: unknown[][] = [];
-    const end = { eq: (c: string, v: string) => { calls.push(['eq', c, v]); return { eq: (c2: string, v2: string) => { calls.push(['eq', c2, v2]); return Promise.resolve({ error: null }); } }; } };
+    const end = { eq: (c: string, v: string) => { calls.push(['eq', c, v]); return { eq: (c2: string, v2: string) => { calls.push(['eq', c2, v2]); return { select: (c3: string) => { calls.push(['select', c3]); return Promise.resolve({ data: [{ id: 'x' }], error: null }); } }; } }; } };
     const client = {
       from: (t: string) => {
         calls.push(['from', t]);
@@ -108,8 +108,8 @@ describe('moneyOutApi', () => {
     await api.update('e1', { amount: 10 });
     await api.remove('e2');
     expect(calls).toEqual([
-      ['from', 'expenses'], ['update', { amount: 10 }], ['eq', 'id', 'e1'], ['eq', 'user_id', 'u1'],
-      ['from', 'expenses'], ['delete'], ['eq', 'id', 'e2'], ['eq', 'user_id', 'u1'],
+      ['from', 'expenses'], ['update', { amount: 10 }], ['eq', 'id', 'e1'], ['eq', 'user_id', 'u1'], ['select', 'id'],
+      ['from', 'expenses'], ['delete'], ['eq', 'id', 'e2'], ['eq', 'user_id', 'u1'], ['select', 'id'],
     ]);
   });
 
