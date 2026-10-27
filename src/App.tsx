@@ -35,6 +35,7 @@ const Forum = lazyPage(() => import('@/pages/Forum'));
 const AIStudio = lazyPage(() => import('@/pages/AIStudio'));
 const WorkflowStudio = lazyPage(() => import('@/pages/WorkflowStudio'));
 const Pricing = lazyPage(() => import('@/pages/Pricing'));
+const BusinessResourcesPage = lazyPage(() => import('@/pages/BusinessResourcesPage'));
 const HumanResources = lazyPage(() => import('@/pages/categories/HumanResources'));
 const LegalDocuments = lazyPage(() => import('@/pages/categories/LegalDocuments'));
 const FinancialForms = lazyPage(() => import('@/pages/categories/FinancialForms'));
@@ -139,6 +140,7 @@ function App() {
               <Route path="/integrations/whatsapp" element={<ProtectedRoute><WhatsAppSettings /></ProtectedRoute>} />
             <Route path="/forum" element={<Forum />} />
               <Route path="/pricing" element={<Pricing />} />
+              <Route path="/business-resources" element={<BusinessResourcesPage />} />
               <Route path="/plr" element={<PLR />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<TermsOfService />} />

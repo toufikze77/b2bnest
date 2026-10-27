@@ -2,7 +2,7 @@
 
 > B2BNest is a SaaS business software platform for entrepreneurs and small businesses: business tools in one place, including CRM, projects and tasks, invoicing, expenses, finance tools, AI document generation and an AI business advisor.
 
-B2BNest replaces several separate subscriptions with one workspace that supports multiple companies per account. Free utilities (QR code generator, currency converter, business name generator and more) are available without a paid plan.
+B2BNest replaces several separate subscriptions with one workspace that supports multiple companies per account. Every new account gets a 14-day free trial of all features. No card is needed. After 14 days you choose a plan to continue. The Business Resources page (official GOV.UK and HMRC guidance links) is free to read without an account.
 
 ## Pricing (GBP)
 
@@ -17,6 +17,7 @@ B2BNest replaces several separate subscriptions with one workspace that supports
 - [About](/about): Company mission, values, and story
 - [Pricing](/pricing): Plans, features, and subscription tiers
 - [Business Tools](/business-tools): Catalogue of business tools
+- [Business Resources](/business-resources): Free page of official GOV.UK and HMRC guidance for UK small businesses (no account needed), plus two disclosed referral links
 - [Contact](/contact): Get in touch with the B2BNest team
 - [Blog](/blog): Articles on business documentation, compliance, and operational efficiency
 - [Knowledge Base](/knowledge-base): Guides and how-to articles

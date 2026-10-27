@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import React from 'react';
 import { SearchProvider, useSearch } from "@/contexts/SearchContext";
 import { templateService } from "@/services/templateService";
@@ -79,6 +80,21 @@ const IndexContent = () => {
 
       {/* Business Tools Section - Only show when not searching */}
       {!showSearchResults && <BusinessToolsSection />}
+
+      {/* Free public page: official GOV.UK / HMRC guidance (no sign-in) */}
+      {!showSearchResults && (
+        <section aria-labelledby="home-resources" className="px-4 py-12 sm:px-6 lg:px-8">
+          <div className="mx-auto flex max-w-5xl flex-col items-start gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 id="home-resources" className="text-2xl font-bold text-brand-navy dark:text-foreground">Free resources for UK small businesses</h2>
+              <p className="mt-1 text-muted-foreground">Official GOV.UK and HMRC guidance on starting up, VAT, PAYE and employing people. No account needed.</p>
+            </div>
+            <Link to="/business-resources" className="inline-flex h-11 shrink-0 items-center rounded-md bg-brand-blue px-5 font-semibold text-white hover:bg-brand-blue/90 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
+              Browse resources
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* Testimonials Section - only show when not searching */}
 

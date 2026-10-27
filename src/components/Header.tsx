@@ -74,6 +74,9 @@ const Header = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            <Link to="/business-resources" className="text-gray-700 hover:text-blue-600 transition-colors">
+              Resources
+            </Link>
             <Link to="/pricing" className="text-gray-700 hover:text-blue-600 transition-colors">
               Pricing
             </Link>
@@ -275,6 +278,13 @@ const Header = () => {
                  <InstallAppButton variant="default" size="default" className="w-full" />
                  <ShareButton variant="outline" size="default" />
                </div>
+               <Link
+                 to="/business-resources"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Resources
+              </Link>
                <Link
                  to="/pricing"
                 className="text-gray-700 hover:text-blue-600 transition-colors px-2"

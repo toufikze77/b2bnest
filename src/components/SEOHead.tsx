@@ -17,9 +17,9 @@ interface SEOHeadProps {
 const SITE_URL = "https://www.b2bnest.online";
 
 const SEOHead = ({
-  title = "B2BNest — Affordable Business Tools & Free AI",
-  description = "Free and affordable business tools in one platform: AI documents, CRM, invoicing, and financial tracking for modern entrepreneurs.",
-  keywords = "affordable business tools, free business tools, free CRM, free project management, free invoice generator, affordable SaaS, business automation, small business tools",
+  title = "B2BNEST — Business Tools for UK Small Businesses",
+  description = "CRM, projects, invoicing, finance and AI documents in one workspace. Every new account gets a 14-day free trial of all features; after 14 days you choose a plan.",
+  keywords = "business tools, CRM, project management, invoicing, small business software UK, business automation",
   canonical,
   canonicalUrl,
   ogImage = `${SITE_URL}/og-image.jpg`,
