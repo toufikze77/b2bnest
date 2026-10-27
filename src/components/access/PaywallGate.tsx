@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 // Verified 27 Oct 2026: nothing deletes data when a trial ends or a subscription is cancelled (no cron job, database
 // function or Edge Function removes user data on expiry; the only cron job sends due-date notifications).
 export const NOTHING_DELETED = 'Nothing has been deleted. Your information is waiting for you when you subscribe.';
+export const NOTHING_DELETED_MEMBER = 'Nothing has been deleted. Your information is waiting for you when your company subscribes.';
 
 /** The full-page "trial has ended" screen. Owners choose a plan; members of someone else's company are told who decides. */
 export function TrialEndedScreen({ access }: { access: Access }) {
@@ -27,7 +28,7 @@ export function TrialEndedScreen({ access }: { access: Access }) {
           ) : (
             <p className="mt-4 text-lg text-muted-foreground">Choose a plan to keep using B2BNEST.</p>
           )}
-          <p className="mt-3 text-base text-foreground">{NOTHING_DELETED}</p>
+          <p className="mt-3 text-base text-foreground">{member ? NOTHING_DELETED_MEMBER : NOTHING_DELETED}</p>
         </div>
 
         {!member && <div className="mt-8"><PricingPlans variant="paywall" /></div>}

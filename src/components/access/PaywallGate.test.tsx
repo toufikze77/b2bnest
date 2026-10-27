@@ -9,7 +9,7 @@ vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user, loading: false }) })
 vi.mock('@/hooks/useAccess', () => ({ useAccess: () => access }));
 vi.mock('@/components/PricingPlans', () => ({ default: ({ variant }: { variant?: string }) => <div data-testid="plans">plans:{variant}<button>Subscribe</button></div> }));
 
-import PaywallGate, { NOTHING_DELETED } from './PaywallGate';
+import PaywallGate, { NOTHING_DELETED, NOTHING_DELETED_MEMBER } from './PaywallGate';
 import TrialBanner from './TrialBanner';
 
 const set = (state: 'owner' | 'subscribed' | 'trial' | 'trial_ended', over: Record<string, unknown> = {}) => {
@@ -38,6 +38,7 @@ describe('PaywallGate', () => {
     expect(screen.getByText(/Ask Bea Boss to choose a plan/)).toBeInTheDocument();
     expect(screen.queryByTestId('plans')).toBeNull();
     expect(screen.queryByRole('button', { name: /subscribe/i })).toBeNull();
+    expect(screen.getByText(NOTHING_DELETED_MEMBER)).toBeInTheDocument();
   });
 
   it('member view without a name on file says "the account owner"', () => {
