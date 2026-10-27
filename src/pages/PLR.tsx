@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, FileText, Video, Image, Headphones, Star, CheckCircle, ArrowRight, Users, Clock, DollarSign, Zap, Eye } from 'lucide-react';
+import { Download, FileText, Video, Image, Headphones, CheckCircle, ArrowRight, Users, Clock, DollarSign, Zap, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -67,21 +67,18 @@ const PLR = () => {
       title: 'Complete Business Startup Guide',
       type: 'eBook',
       pages: '150 pages',
-      rating: 4.9,
       image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=250&fit=crop'
     },
     {
       title: 'Social Media Marketing Mastery',
       type: 'Video Course',
       duration: '5 hours',
-      rating: 4.8,
       image: 'https://images.unsplash.com/photo-1649972904349-6e44c42644a7?w=400&h=250&fit=crop'
     },
     {
       title: 'Professional Business Templates',
       type: 'Graphics Pack',
       items: '50 templates',
-      rating: 4.7,
       image: 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=400&h=250&fit=crop'
     }
   ];
@@ -287,10 +284,6 @@ const PLR = () => {
                 <CardHeader>
                   <div className="flex items-center gap-2 mb-2">
                     <Badge variant="outline">{content.type}</Badge>
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm">{content.rating}</span>
-                    </div>
                   </div>
                   <CardTitle className="text-lg">{content.title}</CardTitle>
                 </CardHeader>

@@ -50,6 +50,7 @@ const Settings = lazyPage(() => import('@/pages/Settings'));
 const CompanyReconciliation = lazyPage(() => import('@/pages/CompanyReconciliation'));
 const PaymentSuccess = lazyPage(() => import('@/pages/PaymentSuccess'));
 import ProtectedRoute from "@/components/ProtectedRoute";
+import PaywallGate from "@/components/access/PaywallGate";
 const PublicWorkRequest = lazyPage(() => import('@/pages/PublicWorkRequest'));
 const B2BForm = lazyPage(() => import('@/pages/B2BForm'));
 const Help = lazyPage(() => import('@/pages/Help'));
@@ -111,6 +112,7 @@ function App() {
             <RouteMeta />
             <RouteErrorBoundary>
             <Suspense fallback={<RouteFallback />}>
+            <PaywallGate>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/about" element={<About />} />
@@ -209,6 +211,7 @@ function App() {
                
                <Route path="*" element={<NotFound />} />
             </Routes>
+            </PaywallGate>
             </Suspense>
             </RouteErrorBoundary>
             <Toaster />

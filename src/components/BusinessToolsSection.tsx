@@ -203,7 +203,7 @@ const BusinessToolsSection = () => {
             </Button>
           </Link>
           <p className="text-sm text-gray-500 mt-4">
-            Free to use • No credit card required • Start in minutes
+            14-day free trial of every feature • No card needed • After 14 days you choose a plan
           </p>
         </div>
       </div>

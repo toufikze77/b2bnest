@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { checkAccess } from '../_shared/access.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,6 +28,13 @@ serve(async (req) => {
 
     if (!user) {
       throw new Error('Unauthorized');
+    }
+
+    // Phase 12: no AI after the trial ends without a plan. Asked as the caller (their JWT), before any credit or model call.
+    const asCaller = createClient(supabaseUrl!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: authHeader ?? '' } } });
+    const access = await checkAccess(asCaller);
+    if (!access.ok) {
+      return new Response(JSON.stringify(access.body), { status: access.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     let prompt = '';

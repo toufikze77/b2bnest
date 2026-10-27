@@ -1,153 +1,40 @@
 import SEOHead from '@/components/SEOHead';
 
+// Phase 12: no "free forever", "no signup" or invented prices. Every new account gets a 14-day free trial of all
+// features; after 14 days you choose a plan (see /pricing). Prices live only in src/lib/plans.ts.
+const TOOLS: { name: string; tool: string; description: string }[] = [
+  { name: 'QR Code Generator', tool: 'qr-code-generator', description: 'Make QR codes for websites, contact details and printed materials.' },
+  { name: 'Currency Converter', tool: 'currency-converter', description: 'Convert between currencies.' },
+  { name: 'Time Tracker', tool: 'time-tracker', description: 'Track time spent on work.' },
+  { name: 'Contract Generator', tool: 'contract-generator', description: 'Draft a simple business contract to review and edit.' },
+  { name: 'Cash Flow Tracker', tool: 'cash-flow-tracker', description: 'Note money in and out for the last 30 days.' },
+  { name: 'ROI Calculator', tool: 'roi-calculator', description: 'Work out the return on an investment.' },
+];
+
 const BusinessToolsSEO = () => {
   const schemaMarkup = {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    "name": "Free Business Tools Collection for Entrepreneurs",
-    "description": "Collection of free and affordable business tools including free QR generator, currency converter, invoice creator, contract generator, ROI calculator and more",
-    "numberOfItems": 10,
-    "itemListElement": [
-      {
-        "@type": "SoftwareApplication",
-        "position": 1,
-        "name": "Free QR Code Generator",
-        "applicationCategory": "BusinessApplication",
-        "operatingSystem": "Web Browser",
-        "url": "https://b2bnest.online/business-tools?tool=qr-code-generator",
-        "description": "Generate QR codes for websites, contacts, and business materials - 100% free forever",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        }
-      },
-      {
-        "@type": "SoftwareApplication", 
-        "position": 2,
-        "name": "Free Currency Converter",
-        "applicationCategory": "BusinessApplication",
-        "operatingSystem": "Web Browser",
-        "url": "https://b2bnest.online/business-tools?tool=currency-converter",
-        "description": "Real-time currency conversion for 150+ currencies - completely free",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        }
-      },
-      {
-        "@type": "SoftwareApplication",
-        "position": 4,
-        "name": "Free Invoice Generator",
-        "applicationCategory": "BusinessApplication",
-        "operatingSystem": "Web Browser",
-        "url": "https://b2bnest.online/business-tools?tool=invoice-generator",
-        "description": "Create professional invoices instantly - free invoice maker for small businesses",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        }
-      },
-      {
-        "@type": "SoftwareApplication",
-        "position": 5,
-        "name": "Free Time Tracker",
-        "applicationCategory": "BusinessApplication",
-        "operatingSystem": "Web Browser",
-        "url": "https://b2bnest.online/business-tools?tool=time-tracker",
-        "description": "Track billable hours and productivity - free time tracking tool",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        }
-      },
-      {
-        "@type": "SoftwareApplication",
-        "position": 6,
-        "name": "Free Contract Generator",
-        "applicationCategory": "BusinessApplication",
-        "operatingSystem": "Web Browser",
-        "url": "https://b2bnest.online/business-tools?tool=contract-generator",
-        "description": "Generate professional business contracts with AI assistance - free",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        }
-      },
-      {
-        "@type": "SoftwareApplication",
-        "position": 7,
-        "name": "Free Cash Flow Tracker",
-        "applicationCategory": "BusinessApplication",
-        "operatingSystem": "Web Browser",
-        "url": "https://b2bnest.online/business-tools?tool=cash-flow-tracker",
-        "description": "Monitor business income, expenses and cash flow - completely free",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        }
-      },
-      {
-        "@type": "SoftwareApplication",
-        "position": 8,
-        "name": "Free ROI Calculator",
-        "applicationCategory": "BusinessApplication",
-        "operatingSystem": "Web Browser",
-        "url": "https://b2bnest.online/business-tools?tool=roi-calculator",
-        "description": "Calculate return on investment for business decisions - free calculator",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        }
-      },
-      {
-        "@type": "SoftwareApplication",
-        "position": 9,
-        "name": "Affordable CRM System",
-        "applicationCategory": "BusinessApplication", 
-        "operatingSystem": "Web Browser",
-        "url": "https://b2bnest.online/business-tools?tool=crm",
-        "description": "Full-featured CRM with contact management and pipeline tracking - only $9.99/month",
-        "offers": {
-          "@type": "Offer",
-          "price": "9.99",
-          "priceCurrency": "USD",
-          "billingDuration": "P1M"
-        }
-      },
-      {
-        "@type": "SoftwareApplication",
-        "position": 10,
-        "name": "Budget Project Management",
-        "applicationCategory": "BusinessApplication",
-        "operatingSystem": "Web Browser", 
-        "url": "https://b2bnest.online/business-tools?tool=project-management",
-        "description": "Professional project management with Kanban boards and Gantt charts - only $9.99/month",
-        "offers": {
-          "@type": "Offer",
-          "price": "9.99",
-          "priceCurrency": "USD",
-          "billingDuration": "P1M"
-        }
-      }
-    ]
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'B2BNEST business tools',
+    description: 'Quick business tools inside B2BNEST. Every new account gets a 14-day free trial of all features; after 14 days you choose a plan.',
+    itemListElement: TOOLS.map((t, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: t.name,
+      url: `https://b2bnest.online/business-tools?tool=${t.tool}`,
+      description: t.description,
+    })),
   };
 
   return (
     <SEOHead
-      title="Free Business Tools Online | B2BNest"
-      description="Free QR generator, invoice maker, currency converter, time tracker and ROI calculator — no signup needed. Plus affordable CRM from $9.99/month."
-      keywords="free business tools, free QR code generator, free invoice generator, free time tracker, free currency converter, free free ROI calculator, free contract generator, free cash flow tracker, free tools for small business, free online business tools, business tools no signup, free tools for entrepreneurs, free business calculator, affordable CRM, cheap project management, free business software, business tools under $10, free financial tools, entrepreneur tools free, small business free tools, free productivity tools, free business resources, no credit card required business tools, instant access business tools, free business utilities"
+      title="Business Tools | B2BNEST"
+      description="QR codes, currency converter, time tracker, ROI calculator and more, inside B2BNEST. Every new account gets a 14-day free trial of all features; after 14 days you choose a plan."
+      keywords="business tools, QR code generator, currency converter, time tracker, ROI calculator, contract generator, cash flow tracker, small business tools UK"
       schemaMarkup={schemaMarkup}
       canonicalUrl="https://b2bnest.online/business-tools"
-      ogTitle="Free Business Tools - QR Generator, Invoice Maker & More | No Signup"
-      ogDescription="Get instant access to FREE business tools. QR generator, invoice maker, currency converter, time tracker & more. No signup required. Free forever!"
+      ogTitle="Business Tools | B2BNEST"
+      ogDescription="Quick business tools inside B2BNEST. Try every feature free for 14 days; after 14 days you choose a plan."
     />
   );
 };

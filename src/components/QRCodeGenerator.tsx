@@ -115,7 +115,7 @@ const QRCodeGenerator = () => {
         <h1 className="text-3xl font-bold mb-2">QR Code Generator</h1>
         <p className="text-gray-600">Create QR codes for websites, contacts, and more</p>
         <Badge variant="secondary" className="mt-2">
-          Free Plan: Basic QR codes only
+          Basic QR codes
         </Badge>
       </div>
 

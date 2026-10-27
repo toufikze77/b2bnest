@@ -71,11 +71,11 @@ const GoalTracker = () => {
       return;
     }
 
-    // Free plan limitation: 10 goals max
+    // Quick-tool limit: 10 goals
     if (goals.length >= 10) {
       toast({
         title: "Goal Limit Reached",
-        description: "Free plan allows up to 10 goals. Upgrade for unlimited goals.",
+        description: "This quick tool holds up to 10 goals. Delete one to add another.",
         variant: "destructive"
       });
       return;
@@ -156,7 +156,7 @@ const GoalTracker = () => {
         <h1 className="text-3xl font-bold mb-2">Goal Tracker</h1>
         <p className="text-gray-600">Set and monitor your business milestones</p>
         <Badge variant="secondary" className="mt-2">
-          Free Plan: 10 goals maximum
+          Quick tool: up to 10 goals
         </Badge>
       </div>
 
@@ -359,26 +359,6 @@ const GoalTracker = () => {
               })}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Upgrade CTA */}
-      <Card className="mt-6">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-3">
-            <Zap className="h-5 w-5 text-blue-600 mt-0.5" />
-            <div>
-              <h4 className="font-semibold text-blue-900 mb-1">Ready to Scale Your Goals?</h4>
-              <p className="text-sm text-blue-700 mb-3">
-                Upgrade to get unlimited goals, sub-tasks, team goals, progress analytics, and milestone notifications.
-              </p>
-              <div className="flex gap-2 flex-wrap">
-                <Badge variant="outline" className="text-xs">Starter: Unlimited goals</Badge>
-                <Badge variant="outline" className="text-xs">Pro: Team goals + Analytics</Badge>
-                <Badge variant="outline" className="text-xs">Enterprise: Advanced reporting</Badge>
-              </div>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

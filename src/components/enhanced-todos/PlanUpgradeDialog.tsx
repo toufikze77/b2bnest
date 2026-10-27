@@ -1,8 +1,6 @@
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Crown, Check, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface PlanUpgradeDialogProps {
@@ -11,71 +9,26 @@ interface PlanUpgradeDialogProps {
   currentCount: number;
 }
 
-export const PlanUpgradeDialog: React.FC<PlanUpgradeDialogProps> = ({ 
-  isOpen, 
-  onOpenChange, 
-  currentCount 
-}) => {
+/** The quick to-do list holds 10 tasks for everyone. Projects has no such limit. (Name kept for existing imports.) */
+export const PlanUpgradeDialog: React.FC<PlanUpgradeDialogProps> = ({ isOpen, onOpenChange, currentCount }) => {
   const navigate = useNavigate();
-
-  const handleUpgrade = () => {
+  const openProjects = () => {
     onOpenChange(false);
-    navigate('/pricing');
+    navigate('/project-management?create=task');
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <Crown className="h-6 w-6 text-yellow-500" />
-            Upgrade Required
-          </DialogTitle>
+          <DialogTitle className="text-xl">The quick list is full</DialogTitle>
+          <DialogDescription>
+            The quick to-do list holds <strong>10 tasks</strong> (you have {currentCount}). Finish or delete one, or add the task in Projects, which has no limit.
+          </DialogDescription>
         </DialogHeader>
-        
-        <div className="space-y-4">
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-yellow-100 rounded-full mb-4">
-              <Zap className="h-8 w-8 text-yellow-600" />
-            </div>
-            <p className="text-gray-600">
-              You've reached your limit of <strong>10 tasks</strong> on the free plan.
-            </p>
-            <p className="text-sm text-gray-500 mt-2">
-              Currently: {currentCount} tasks
-            </p>
-          </div>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <h3 className="font-semibold mb-2">Upgrade to a paid plan</h3>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    Unlimited tasks
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    Advanced project management
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    Team collaboration
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
-              Maybe Later
-            </Button>
-            <Button onClick={handleUpgrade} className="flex-1">
-              Upgrade Now
-            </Button>
-          </div>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">Close</Button>
+          <Button onClick={openProjects} className="flex-1">Open Projects</Button>
         </div>
       </DialogContent>
     </Dialog>

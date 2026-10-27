@@ -49,11 +49,11 @@ const ContractGenerator = () => {
       return;
     }
 
-    // Free plan limitation: 3 contracts max
+    // Quick-tool limit: 3 contracts
     if (contracts.length >= 3) {
       toast({
         title: "Contract Limit Reached",
-        description: "Free plan allows up to 3 contracts. Upgrade for unlimited contracts.",
+        description: "This quick tool holds up to 3 contracts. Delete one to make another.",
         variant: "destructive"
       });
       return;
@@ -125,7 +125,7 @@ This is a basic contract template. Please consult with a legal professional befo
         <h1 className="text-3xl font-bold mb-2">Contract Generator</h1>
         <p className="text-gray-600">Generate professional contracts and agreements</p>
         <Badge variant="secondary" className="mt-2">
-          Free Plan: 3 contracts maximum
+          Quick tool: up to 3 contracts
         </Badge>
       </div>
 
@@ -301,26 +301,6 @@ This is a basic contract template. Please consult with a legal professional befo
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Upgrade CTA */}
-      <Card className="mt-6">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-3">
-            <Zap className="h-5 w-5 text-blue-600 mt-0.5" />
-            <div>
-              <h4 className="font-semibold text-blue-900 mb-1">Need More Advanced Contract Features?</h4>
-              <p className="text-sm text-blue-700 mb-3">
-                Upgrade to get unlimited contracts, legal templates, electronic signatures, and professional formatting.
-              </p>
-              <div className="flex gap-2 flex-wrap">
-                <Badge variant="outline" className="text-xs">Starter: Unlimited contracts</Badge>
-                <Badge variant="outline" className="text-xs">Pro: Legal templates</Badge>
-                <Badge variant="outline" className="text-xs">Enterprise: E-signatures</Badge>
-              </div>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

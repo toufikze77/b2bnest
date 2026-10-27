@@ -115,7 +115,7 @@ const TimeTracker = () => {
         isRunning: false
       };
 
-      setEntries(prev => [finalEntry, ...prev].slice(0, 10)); // Keep last 10 entries for free plan
+      setEntries(prev => [finalEntry, ...prev].slice(0, 10)); // Quick tool keeps the last 10 entries
       setCurrentEntry(null);
       setElapsedTime(0);
       setProject('');
@@ -145,7 +145,7 @@ const TimeTracker = () => {
         <h1 className="text-3xl font-bold mb-2">Time Tracker</h1>
         <p className="text-gray-600">Track time spent on projects and tasks</p>
         <Badge variant="secondary" className="mt-2">
-          Free Plan: Last 10 entries only
+          Quick tool: last 10 entries
         </Badge>
       </div>
 
@@ -281,26 +281,6 @@ const TimeTracker = () => {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Upgrade CTA */}
-      <Card className="mt-6">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-3">
-            <Zap className="h-5 w-5 text-blue-600 mt-0.5" />
-            <div>
-              <h4 className="font-semibold text-blue-900 mb-1">Need Advanced Time Tracking?</h4>
-              <p className="text-sm text-blue-700 mb-3">
-                Upgrade to get unlimited entries, detailed reports, team collaboration, and invoicing integration.
-              </p>
-              <div className="flex gap-2 flex-wrap">
-                <Badge variant="outline" className="text-xs">Starter: Unlimited entries</Badge>
-                <Badge variant="outline" className="text-xs">Pro: Team tracking + Reports</Badge>
-                <Badge variant="outline" className="text-xs">Enterprise: Advanced analytics</Badge>
-              </div>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

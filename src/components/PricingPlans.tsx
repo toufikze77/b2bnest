@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Check, Zap, Crown, Building2, Sparkles, Users, TrendingUp, Shield } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,11 +12,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { PLANS, type Plan, limitText, aiCreditsText, SEAT_LIMITS_NOTE } from '@/lib/plans';
 import { useBillingStatus, poundsText } from '@/hooks/useBillingStatus';
 
-const PricingPlans = () => {
+export const TRIAL_FAQ_ANSWER = 'Every new account gets a 14-day free trial of all features. No card is needed. After 14 days you choose a plan to continue.';
+
+/** `paywall`: only the billing toggle and the three plans (used on the "trial has ended" screen). */
+const PricingPlans = ({ variant = 'page' }: { variant?: 'page' | 'paywall' }) => {
   const [isAnnual, setIsAnnual] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null);
   const { user } = useAuth();
-  const { subscribed, subscription_tier } = useSubscription();
+  const { subscribed, subscription_tier, access } = useSubscription();
+  const trialDaysLeft = user && access?.state === 'trial' ? access.daysLeft : null;
   const currentPlanId = subscribed ? String(subscription_tier || '').toLowerCase() : null;
   const isCurrent = (planId: string) => currentPlanId === planId;
   // An existing subscriber on an earlier price sees what they really pay on their own plan's card.
@@ -143,41 +148,16 @@ const PricingPlans = () => {
   };
 
 
-  const handleStartTrial = async () => {
-    if (!user) {
-      window.location.href = '/auth';
-      return;
-    }
-    try {
-      const { data, error } = await supabase.functions.invoke('activate-trial', { body: { source: 'pricing' } });
-      if (error) throw error;
-      toast({
-        title: data?.status === 'already_active' ? 'Trial Already Active' : 'Free Trial Activated!',
-        description: data?.trial_ends_at
-          ? `${PLANS[2].name} access until ${new Date(data.trial_ends_at).toLocaleString()}`
-          : `You now have ${PLANS[2].name} access for 14 days.`,
-      });
-      // Refresh subscription and trial state
-      try { (window as any).gtag?.('event', 'trial_activated'); } catch {}
-      window.location.reload();
-    } catch (err: any) {
-      console.error('activate-trial error', err);
-      toast({
-        title: 'Could not start trial',
-        description: err?.message || 'Please try again later.',
-        variant: 'destructive',
-      });
-    }
-  };
   const getCurrentPlanBadge = (planId: string) =>
     isCurrent(planId) ? <Badge className="absolute -top-1 -right-2">Your current plan</Badge> : null;
 
   return (
     <>
-      <div className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className={variant === 'paywall' ? 'px-0 py-2' : 'py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-50 to-blue-50'}>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-16">
+        <div className={variant === 'paywall' ? 'text-center mb-8' : 'text-center mb-16'}>
+          {variant === 'page' && (<>
           <div className="flex items-center justify-center gap-2 mb-4">
             <Sparkles className="h-8 w-8 text-blue-600" />
             <h2 className="text-4xl font-bold text-gray-900">
@@ -185,9 +165,15 @@ const PricingPlans = () => {
             </h2>
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-            Choose the plan that fits your growth stage.
+ Choose the plan that fits your growth stage.
           </p>
-          
+          {trialDaysLeft !== null && (
+            <p className="mx-auto mb-6 w-fit rounded-full bg-blue-100 px-4 py-1 text-sm font-medium text-blue-900">
+              Free trial: {trialDaysLeft} {trialDaysLeft === 1 ? 'day' : 'days'} left
+            </p>
+          )}
+          </>)}
+
           {/* Annual/Monthly Toggle */}
           <div className="flex items-center justify-center gap-4 mb-8">
             <span className={`text-lg font-medium ${!isAnnual ? 'text-gray-900' : 'text-gray-500'}`}>
@@ -196,6 +182,7 @@ const PricingPlans = () => {
             <Switch
               checked={isAnnual}
               onCheckedChange={setIsAnnual}
+              aria-label="Annual billing"
               className="data-[state=checked]:bg-blue-600"
             />
             <span className={`text-lg font-medium ${isAnnual ? 'text-gray-900' : 'text-gray-500'}`}>
@@ -296,6 +283,7 @@ const PricingPlans = () => {
 
         <p className="mt-8 text-center text-sm text-gray-600">{SEAT_LIMITS_NOTE}</p>
 
+        {variant === 'page' && (<>
         {/* FAQ Section */}
         <div className="mt-20 text-center">
           <h3 className="text-2xl font-bold text-gray-900 mb-8">
@@ -315,7 +303,7 @@ const PricingPlans = () => {
                 Is there a free trial?
               </h4>
               <p className="text-gray-600">
-                All paid plans come with a 14-day free trial. No credit card required to start.
+                {TRIAL_FAQ_ANSWER}
               </p>
             </div>
             <div className="text-left">
@@ -338,14 +326,16 @@ const PricingPlans = () => {
             <p className="text-lg mb-6 opacity-90">
               Try every feature free for 14 days.
             </p>
-            <Button 
-              onClick={handleStartTrial}
-              className="bg-white text-blue-600 hover:bg-gray-100 font-semibold px-8 py-3"
-            >
-              Start Your Free Trial
-            </Button>
+            {!user ? (
+              <Button asChild className="bg-white text-blue-600 hover:bg-gray-100 font-semibold px-8 py-3">
+                <Link to="/auth?mode=signup">Start Your Free Trial</Link>
+              </Button>
+            ) : trialDaysLeft !== null ? (
+              <p className="text-lg font-semibold">Free trial: {trialDaysLeft} {trialDaysLeft === 1 ? 'day' : 'days'} left. Choose a plan above to keep going after it ends.</p>
+            ) : null}
           </div>
         </div>
+        </>)}
       </div>
 
       </div>

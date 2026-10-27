@@ -48,11 +48,11 @@ const PrivacyPolicyGenerator = () => {
       return;
     }
 
-    // Free plan limitation: 2 policies max
+    // Quick-tool limit: 2 policies
     if (policies.length >= 2) {
       toast({
         title: "Policy Limit Reached",
-        description: "Free plan allows up to 2 privacy policies. Upgrade for unlimited policies.",
+        description: "This quick tool holds up to 2 privacy policies. Delete one to make another.",
         variant: "destructive"
       });
       return;
@@ -173,7 +173,7 @@ This privacy policy template is for general guidance only and should be reviewed
         <h1 className="text-3xl font-bold mb-2">Privacy Policy Generator</h1>
         <p className="text-gray-600">Generate a privacy policy draft for your website. Adapt it to your business and have it checked before you publish it.</p>
         <Badge variant="secondary" className="mt-2">
-          Free Plan: 2 policies maximum
+          Quick tool: up to 2 policies
         </Badge>
       </div>
 
@@ -354,26 +354,6 @@ This privacy policy template is for general guidance only and should be reviewed
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Upgrade CTA */}
-      <Card className="mt-6">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-3">
-            <Zap className="h-5 w-5 text-blue-600 mt-0.5" />
-            <div>
-              <h4 className="font-semibold text-blue-900 mb-1">Need Advanced Legal Documents?</h4>
-              <p className="text-sm text-blue-700 mb-3">
-                Upgrade to get unlimited policies, terms of service, cookie policies, and legal compliance tools.
-              </p>
-              <div className="flex gap-2 flex-wrap">
-                <Badge variant="outline" className="text-xs">Starter: Unlimited policies</Badge>
-                <Badge variant="outline" className="text-xs">Pro: Terms of service</Badge>
-                <Badge variant="outline" className="text-xs">Enterprise: Legal review</Badge>
-              </div>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

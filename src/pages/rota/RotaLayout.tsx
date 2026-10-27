@@ -62,7 +62,7 @@ export default function RotaLayout({ children }: { children: ReactNode }) {
             <div className="flex-1">
               <p className="font-semibold text-amber-900 dark:text-amber-200">Preview mode</p>
               <p className="text-sm text-amber-800 dark:text-amber-300">
-                You're on a free plan. Add up to {PREVIEW_EMPLOYEE_LIMIT} employees{overLimit ? ' — limit reached' : ''}. Upgrade to Business Premium for unlimited employees, shift publishing, and reporting.
+                Add up to {PREVIEW_EMPLOYEE_LIMIT} employees in preview{overLimit ? ' — limit reached' : ''}. Choose a plan for unlimited employees, shift publishing and reporting.
               </p>
             </div>
             <Button asChild size="sm" className="bg-amber-600 hover:bg-amber-700 text-white">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useAccess } from '@/hooks/useAccess';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface SubscriptionData {
@@ -16,7 +16,7 @@ export interface SubscriptionData {
 
 export const useSubscription = () => {
   const { user } = useAuth();
-  const { isAdmin } = useUserRole();
+  const access = useAccess();
   const [subscription, setSubscription] = useState<SubscriptionData>({
     subscribed: false,
     subscription_tier: 'free',
@@ -45,25 +45,6 @@ export const useSubscription = () => {
 
     const fetchSubscription = async () => {
       try {
-        // Fetch trial info from profiles (primary source of truth)
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('trial_ends_at, is_trial_active')
-          .eq('id', user.id)
-          .single();
-
-        console.log('🔍 Trial Status Debug:', {
-          userId: user.id,
-          email: user.email,
-          trial_ends_at: profile?.trial_ends_at,
-          is_trial_active: profile?.is_trial_active,
-          now: new Date().toISOString()
-        });
-
-        if (profileError) {
-          console.error('Error fetching profile:', profileError);
-        }
-
         // Fetch subscription info
         const { data, error } = await supabase
           .from('subscribers')
@@ -75,30 +56,12 @@ export const useSubscription = () => {
           console.error('Error fetching subscription:', error);
         }
 
-        // Prefer secure RPC to get trial status bypassing RLS safely
-        const { data: trialData, error: trialError } = await supabase.rpc('check_trial_status', { user_id_param: user.id });
-        if (trialError) {
-          console.error('Error checking trial status via RPC:', trialError);
-        }
-        const trialRow: any = Array.isArray(trialData) ? trialData[0] : trialData;
-        const trialEndsAt = (trialRow?.is_trial_active && (trialRow?.days_remaining ?? 0) > 0)
-          ? (trialRow?.trial_ends_at as string)
-          : (profile?.trial_ends_at || null);
-        const hasActiveTrial = trialEndsAt && new Date(trialEndsAt) > new Date();
-        
-        console.log('✅ Subscription State:', {
-          hasActiveTrial,
-          trialEndsAt,
-          subscribed: data?.subscribed || false,
-          subscription_tier: data?.subscription_tier || 'free'
-        });
-
         if (data) {
           setSubscription({
             subscribed: data.subscribed,
             subscription_tier: data.subscription_tier || 'free',
             subscription_end: data.subscription_end,
-            trial_ends_at: trialEndsAt,
+            trial_ends_at: null,
             loading: false,
             ai_credits_remaining: data.ai_credits_remaining || 0,
             ai_credits_limit: data.ai_credits_limit || 0,
@@ -107,16 +70,16 @@ export const useSubscription = () => {
         } else {
           // No subscriber record: entitlement records are created ONLY by the trusted
           // server-side billing flow (check-subscription / stripe-webhook, service role).
-          // The absence of a record simply means "free tier".
+          // No record simply means "no subscription" (access still comes from my_access_state).
           supabase.functions.invoke('check-subscription').catch(() => {
-            /* non-fatal: UI stays on the free tier until the server confirms otherwise */
+            /* non-fatal: access is decided by my_access_state, not by this row */
           });
 
           setSubscription({
             subscribed: false,
             subscription_tier: 'free',
             subscription_end: null,
-            trial_ends_at: profile?.trial_ends_at || null,
+            trial_ends_at: null,
             loading: false,
             ai_credits_remaining: 10,
             ai_credits_limit: 10,
@@ -132,51 +95,16 @@ export const useSubscription = () => {
     fetchSubscription();
   }, [user]);
 
-  // Special access emails for AI Studio features
-  const specialAccessEmails = ['toufikze@gmail.com', 'toufik.zemri@outlook.com'];
-  const hasSpecialAccess = user?.email && specialAccessEmails.includes(user.email);
-  
-  // Check if user has active trial
-  const hasActiveTrial = subscription.trial_ends_at && new Date(subscription.trial_ends_at) > new Date();
-  
-  // Trial users get full Enterprise access, paid users get their tier, admins get everything
-  const isPremium = isAdmin || hasSpecialAccess || hasActiveTrial || (subscription.subscribed && subscription.subscription_tier !== 'free');
-  
-  const canAccessFeature = (featureId: string) => {
-    // Admin users have access to all features
-    if (isAdmin) {
-      console.log(`✅ Feature "${featureId}" granted: Admin access`);
-      return true;
-    }
-
-    // Owner / special access accounts get everything for free
-    if (hasSpecialAccess) {
-      console.log(`✅ Feature "${featureId}" granted: Owner access`);
-      return true;
-    }
-    
-    // Active trial users get full access to ALL features (Enterprise level)
-    if (hasActiveTrial) {
-      console.log(`✅ Feature "${featureId}" granted: Active trial (Enterprise access)`);
-      return true;
-    }
-    
-
-    
-    // Free features available to all users
-    if (['advisor', 'crm', 'contacts', 'deals', 'project-management'].includes(featureId)) {
-      console.log(`✅ Feature "${featureId}" granted: Free tier`);
-      return true;
-    }
-    
-    // Other features require premium subscription
-    const granted = isPremium;
-    console.log(`${granted ? '✅' : '❌'} Feature "${featureId}" ${granted ? 'granted' : 'denied'}: Premium required, isPremium=${isPremium}`);
-    return granted;
-  };
+  // Access comes from the server (my_access_state, see src/lib/access.ts). There is no free tier: during the 14-day
+  // trial everything is open, after it a plan is needed. The temporary owner-email rule lives in useAccess.
+  const isPremium = access.hasAccess;
+  const canAccessFeature = (_featureId: string) => access.hasAccess;
 
   return {
     ...subscription,
+    loading: subscription.loading || access.loading,
+    trial_ends_at: access.trialEndsAt,
+    access,
     isPremium,
     canAccessFeature,
     refreshSubscription: () => {
