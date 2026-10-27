@@ -66,7 +66,7 @@ const GettingStarted = () => {
               <div>
                 <h3 className="font-semibold mb-2">3. Explore the Free Trial</h3>
                 <p className="text-muted-foreground">
-                  All new accounts start with a 14-day free trial with access to all premium features. No credit card required!
+                  Every new account gets a 14-day free trial of all features. No card is needed. After 14 days you choose a plan to continue.
                 </p>
               </div>
             </CardContent>

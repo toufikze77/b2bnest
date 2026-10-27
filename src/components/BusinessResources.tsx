@@ -1,334 +1,138 @@
-
-import React, { useState } from 'react';
-import { Building2, CreditCard, Calculator, Wifi, Phone, Shield, Scale } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Link } from 'react-router-dom';
+import { ExternalLink, Landmark, Receipt, Users, ShieldCheck, Handshake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-interface ServiceProvider {
-  name: string;
-  description: string;
-  features: string[];
-  pricing: string;
-  rating: number;
-  website: string;
-  logo?: string;
-  popular?: boolean;
-}
+// Public, free page (Phase 12): no sign-in, no Supabase calls. Guidance links go to official GOV.UK pages only
+// (HMRC's guidance lives on GOV.UK). B2BNEST does not file anything with HMRC for you.
+// Each URL was confirmed on 27 Oct 2026 through search results (gov.uk could not be opened directly from the
+// build environment); see the Phase 12 PR for the list.
 
-const BusinessResources = () => {
-  const [selectedCategory, setSelectedCategory] = useState('banking');
+export const REFERRAL_DISCLOSURE = 'We may earn a commission if you sign up through this link. It does not change the price you pay.';
+export const REFERRAL_REL = 'sponsored noopener noreferrer';
 
-  const categories = {
-    banking: {
-      title: 'Business Resources',
-      icon: CreditCard,
-      services: [
-        {
-          name: 'Business Bank account',
-          description: 'Take your finances further with the account designed for efficiency, and built for business.',
-          website: 'https://business.revolut.com/signup?promo=b2b-ref-028-H2-TXL&ext=bcc2bf37-a7ca-3f5f-a13b-fbfc4b6829b4&context=B2B_REFERRAL',
-          popular: true,
-          logo: '/lovable-uploads/cc883fd6-cb02-4600-8302-bc4306a1ceee.png'
-        },
-        {
-          name: 'You\'re invited to Hostinger!',
-          description: 'Get an extra 20% discount • Free Domain Registration • Free website migration • 24/7 customer support • From £2.99/month + 2 extra months',
-          website: 'https://hostinger.co.uk?REFERRALCODE=TDWTOUFIKWBH',
-          logo: '/lovable-uploads/0c54b546-305a-43b0-8343-8194fd8a69f7.png'
-        }
-      ]
-    },
-    accounting: {
-      title: 'Accounting & Bookkeeping Software',
-      icon: Calculator,
-      services: [
-        {
-          name: 'QuickBooks Online',
-          description: 'Leading accounting software for small to medium businesses',
-          features: ['Invoicing', 'Expense tracking', 'Tax preparation', 'Payroll integration'],
-          pricing: 'Starting at $30/month',
-          rating: 4.4,
-          website: 'https://quickbooks.intuit.com',
-          popular: true
-        },
-        {
-          name: 'Xero',
-          description: 'Cloud-based accounting software with strong bank integration',
-          features: ['Bank reconciliation', 'Multi-currency', 'Third-party integrations'],
-          pricing: 'Starting at $13/month',
-          rating: 4.5,
-          website: 'https://xero.com'
-        },
-        {
-          name: 'FreshBooks',
-          description: 'User-friendly accounting software for service-based businesses',
-          features: ['Time tracking', 'Project management', 'Client portal'],
-          pricing: 'Starting at $17/month',
-          rating: 4.6,
-          website: 'https://freshbooks.com'
-        }
-      ]
-    },
-    connectivity: {
-      title: 'Connectivity & Internet Services',
-      icon: Wifi,
-      services: [
-        {
-          name: 'Comcast Business',
-          description: 'High-speed internet and networking solutions for businesses',
-          features: ['Dedicated internet', '24/7 support', 'Static IP addresses'],
-          pricing: 'Starting at $70/month',
-          rating: 4.1,
-          website: 'https://business.comcast.com'
-        },
-        {
-          name: 'Verizon Business',
-          description: 'Enterprise-grade internet and mobile solutions',
-          features: ['5G networks', 'Managed security', 'Cloud solutions'],
-          pricing: 'Custom pricing',
-          rating: 4.2,
-          website: 'https://verizon.com/business',
-          popular: true
-        },
-        {
-          name: 'AT&T Business',
-          description: 'Comprehensive connectivity and communication services',
-          features: ['Fiber internet', 'VoIP solutions', 'Mobile plans'],
-          pricing: 'Starting at $55/month',
-          rating: 4.0,
-          website: 'https://att.com/business'
-        }
-      ]
-    },
-    communications: {
-      title: 'Communications & Collaboration',
-      icon: Phone,
-      services: [
-        {
-          name: 'Zoom',
-          description: 'Video conferencing and communication platform',
-          features: ['HD video meetings', 'Screen sharing', 'Recording capabilities'],
-          pricing: 'Starting at $14.99/month per license',
-          rating: 4.5,
-          website: 'https://zoom.us',
-          popular: true
-        },
-        {
-          name: 'Microsoft Teams',
-          description: 'Integrated communication and collaboration platform',
-          features: ['Chat and calling', 'File sharing', 'Office 365 integration'],
-          pricing: 'Starting at $4/month per user',
-          rating: 4.3,
-          website: 'https://teams.microsoft.com'
-        },
-        {
-          name: 'Slack',
-          description: 'Team communication and productivity platform',
-          features: ['Organized channels', 'App integrations', 'File sharing'],
-          pricing: 'Starting at $7.25/month per user',
-          rating: 4.4,
-          website: 'https://slack.com'
-        }
-      ]
-    },
-    insurance: {
-      title: 'Business Insurance',
-      icon: Shield,
-      services: [
-        {
-          name: 'Hiscox',
-          description: 'Professional liability and business insurance',
-          features: ['Professional liability', 'General liability', 'Cyber insurance'],
-          pricing: 'Starting at $22/month',
-          rating: 4.4,
-          website: 'https://hiscox.com'
-        },
-        {
-          name: 'Next Insurance',
-          description: 'Digital-first business insurance platform',
-          features: ['Instant quotes', 'Flexible coverage', 'Mobile app'],
-          pricing: 'Starting at $7/month',
-          rating: 4.6,
-          website: 'https://nextinsurance.com',
-          popular: true
-        },
-        {
-          name: 'The Hartford',
-          description: 'Comprehensive business insurance solutions',
-          features: ['Workers compensation', 'Property insurance', 'Business auto'],
-          pricing: 'Custom quotes',
-          rating: 4.2,
-          website: 'https://thehartford.com'
-        }
-      ]
-    },
-    legal: {
-      title: 'Legal Services',
-      icon: Scale,
-      services: [
-        {
-          name: 'LegalZoom',
-          description: 'Online legal services for business formation and compliance',
-          features: ['Business formation', 'Legal documents', 'Attorney consultations'],
-          pricing: 'Starting at $79 + state fees',
-          rating: 4.3,
-          website: 'https://legalzoom.com',
-          popular: true
-        },
-        {
-          name: 'Rocket Lawyer',
-          description: 'Legal document creation and attorney services',
-          features: ['Document templates', 'Legal advice', 'Business compliance'],
-          pricing: 'Starting at $39.99/month',
-          rating: 4.1,
-          website: 'https://rocketlawyer.com'
-        },
-        {
-          name: 'Nolo',
-          description: 'Legal information and self-help resources',
-          features: ['Legal guides', 'Form libraries', 'Attorney directory'],
-          pricing: 'Varies by service',
-          rating: 4.4,
-          website: 'https://nolo.com'
-        }
-      ]
-    }
-  };
+export interface GuidanceLink { title: string; url: string; summary: string }
+export interface GuidanceSection { id: string; title: string; icon: typeof Landmark; links: GuidanceLink[] }
 
-  const renderStarRating = (rating: number) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
+export const GUIDANCE: GuidanceSection[] = [
+  {
+    id: 'starting', title: 'Starting a business', icon: Landmark, links: [
+      { title: 'Set up a business', url: 'https://www.gov.uk/set-up-business', summary: 'Choose a structure, a name and what to register.' },
+      { title: 'Set up as a sole trader: step by step', url: 'https://www.gov.uk/set-up-as-sole-trader', summary: 'Register for Self Assessment and keep records.' },
+      { title: 'Set up a limited company: step by step', url: 'https://www.gov.uk/set-up-limited-company', summary: 'Directors, shareholders, registered address and tax.' },
+    ],
+  },
+  {
+    id: 'tax', title: 'Tax and HMRC', icon: Receipt, links: [
+      { title: 'How to register for VAT', url: 'https://www.gov.uk/register-for-vat/how-register-for-vat', summary: 'What you need and how to register.' },
+      { title: 'Making Tax Digital for VAT', url: 'https://www.gov.uk/government/collections/making-tax-digital-for-vat', summary: "HMRC's guidance on digital records and returns." },
+      { title: 'HMRC online services: sign in or set up an account', url: 'https://www.gov.uk/log-in-register-hmrc-online-services', summary: 'Your own HMRC account for VAT, PAYE and Corporation Tax.' },
+      { title: 'Company and accounting records', url: 'https://www.gov.uk/running-a-limited-company/company-and-accounting-records', summary: 'What a limited company must keep, and for how long.' },
+    ],
+  },
+  {
+    id: 'employing', title: 'Employing people', icon: Users, links: [
+      { title: 'Employing staff for the first time', url: 'https://www.gov.uk/employing-staff', summary: 'The steps in order, from pay to insurance.' },
+      { title: 'PAYE and payroll for employers', url: 'https://www.gov.uk/paye-for-employers', summary: 'When to register and what payroll involves.' },
+      { title: 'The National Minimum Wage and Living Wage', url: 'https://www.gov.uk/national-minimum-wage', summary: 'Who it applies to; check the current rates.' },
+      { title: 'Workplace pensions for employers', url: 'https://www.gov.uk/workplace-pensions-employers', summary: 'Automatic enrolment duties.' },
+    ],
+  },
+  {
+    id: 'running', title: 'Data, support and funding', icon: ShieldCheck, links: [
+      { title: 'Data protection and your business', url: 'https://www.gov.uk/data-protection-your-business', summary: 'Using customer and staff personal data.' },
+      { title: 'Finance and support for your business', url: 'https://www.gov.uk/business-finance-support', summary: 'Government-backed finance and support schemes.' },
+      { title: 'Get help and support for your business', url: 'https://www.gov.uk/get-business-support', summary: 'Free advice, including local growth hubs.' },
+      { title: 'Business and self-employed', url: 'https://www.gov.uk/browse/business', summary: 'Every GOV.UK business topic in one place.' },
+    ],
+  },
+];
 
-    for (let i = 0; i < fullStars; i++) {
-      stars.push('★');
-    }
-    if (hasHalfStar) {
-      stars.push('☆');
-    }
-    while (stars.length < 5) {
-      stars.push('☆');
-    }
+// Owner to confirm both referral programmes are active and that these links are allowed to be published.
+export const REFERRALS: { name: string; provider: string; description: string; url: string }[] = [
+  {
+    name: 'Revolut Business account', provider: 'Revolut',
+    description: 'A business bank account from Revolut. Check fees, plans and eligibility on Revolut’s website.',
+    url: 'https://business.revolut.com/signup?promo=b2b-ref-028-H2-TXL&ext=bcc2bf37-a7ca-3f5f-a13b-fbfc4b6829b4&context=B2B_REFERRAL',
+  },
+  {
+    name: 'Hostinger website hosting', provider: 'Hostinger',
+    description: 'Website and email hosting from Hostinger. Current prices and offers are on Hostinger’s website.',
+    url: 'https://hostinger.co.uk?REFERRALCODE=TDWTOUFIKWBH',
+  },
+];
 
-    return (
-      <div className="flex items-center gap-1">
-        <span className="text-yellow-500">{stars.join('')}</span>
-        <span className="text-sm text-gray-600">({rating})</span>
-      </div>
-    );
-  };
+const linkClass = 'inline-flex items-start gap-1.5 font-semibold text-brand-blue underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring rounded-sm';
 
+/** `headingLevel` h1 on the public /business-resources page; h2 inside the /business-tools tab. */
+const BusinessResources = ({ headingLevel = 'h2' }: { headingLevel?: 'h1' | 'h2' }) => {
+  const Heading = headingLevel;
+  const Sub = headingLevel === 'h1' ? 'h2' : 'h3';
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-4">Business Resources & Referrals</h1>
-        <p className="text-gray-600 text-lg">
-          Discover trusted service providers and tools to help your business succeed. 
-          All recommendations are curated based on reliability, features, and user satisfaction.
+    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:py-12">
+      <header className="max-w-3xl">
+        <Heading className="text-3xl font-bold text-brand-navy dark:text-foreground sm:text-4xl">Free resources for UK small businesses</Heading>
+        <p className="mt-4 text-lg text-muted-foreground">
+          Official GOV.UK and HMRC guidance for starting a business, tax, employing people and getting support. Free to read, no account needed.
         </p>
-      </div>
+        <p className="mt-2 text-sm text-muted-foreground">
+          These links open the official guidance. B2BNEST does not file anything with HMRC for you.
+        </p>
+      </header>
 
-      <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 mb-8">
-          {Object.entries(categories).map(([key, category]) => {
-            const Icon = category.icon;
-            return (
-              <TabsTrigger key={key} value={key} className="flex items-center gap-2">
-                <Icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{category.title.split(' ')[0]}</span>
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
+      <p className="mt-6 rounded-lg border border-border bg-muted/50 px-4 py-3 text-sm text-foreground" data-testid="disclosure-top">
+        <strong>Referral links:</strong> the partner offers at the end of this page are referral links. {REFERRAL_DISCLOSURE}
+      </p>
 
-        {Object.entries(categories).map(([key, category]) => (
-          <TabsContent key={key} value={key}>
-            <div className="mb-6">
-              <h2 className="text-2xl font-semibold mb-2 flex items-center gap-2">
-                <category.icon className="h-6 w-6" />
-                {category.title}
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {category.services.map((service, index) => (
-                <Card key={index} className="relative h-full">
-                  {service.popular && (
-                    <Badge className="absolute -top-2 -right-2 bg-blue-500">
-                      Popular
-                    </Badge>
-                  )}
-                  <CardHeader>
-                    {service.logo && (
-                      <div className="mb-4">
-                        <img 
-                          src={service.logo} 
-                          alt={`${service.name} logo`}
-                          className="w-full h-40 object-cover rounded-lg"
-                        />
-                      </div>
-                    )}
-                    <CardTitle className="text-xl">{service.name}</CardTitle>
-                    <p className="text-gray-600 text-sm">{service.description}</p>
-                    {service.rating && renderStarRating(service.rating)}
-                  </CardHeader>
-                  <CardContent className="flex-1">
-                    <div className="space-y-4">
-                      {service.features && (
-                        <div>
-                          <h4 className="font-medium mb-2">Key Features:</h4>
-                          <ul className="space-y-1">
-                            {service.features.map((feature, featureIndex) => (
-                              <li key={featureIndex} className="text-sm text-gray-600 flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                                {feature}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      
-                      <div className={service.features || service.pricing ? "border-t pt-4" : ""}>
-                        {service.pricing && (
-                          <div className="flex justify-between items-center mb-3">
-                            <span className="font-medium">Pricing:</span>
-                            <span className="text-sm text-gray-600">{service.pricing}</span>
-                          </div>
-                        )}
-                        <Button 
-                          className="w-full" 
-                          onClick={() => window.open(service.website, '_blank')}
-                        >
-                          Learn More
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+      <div className="mt-8 grid gap-6 md:grid-cols-2">
+        {GUIDANCE.map(({ id, title, icon: Icon, links }) => (
+          <section key={id} aria-labelledby={`res-${id}`} className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <Sub id={`res-${id}`} className="flex items-center gap-2 text-xl font-semibold text-foreground">
+              <Icon className="h-5 w-5 text-brand-blue" aria-hidden="true" />{title}
+            </Sub>
+            <ul className="mt-4 space-y-4">
+              {links.map((l) => (
+                <li key={l.url}>
+                  <a href={l.url} target="_blank" rel="noopener noreferrer" className={linkClass}>
+                    <span>{l.title}</span><ExternalLink className="mt-1 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    <span className="sr-only"> (GOV.UK, opens in a new tab)</span>
+                  </a>
+                  <p className="mt-0.5 text-sm text-muted-foreground">{l.summary}</p>
+                </li>
               ))}
-            </div>
-          </TabsContent>
+            </ul>
+          </section>
         ))}
-      </Tabs>
-
-      <div className="mt-12 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-8">
-        <div className="text-center">
-          <h3 className="text-2xl font-bold mb-4">Need Help Choosing?</h3>
-          <p className="text-gray-600 mb-6">
-            Our team can help you evaluate which services are best for your specific business needs.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="outline">
-              Schedule a Consultation
-            </Button>
-            <Button>
-              Contact Our Experts
-            </Button>
-          </div>
-        </div>
       </div>
+
+      <section aria-labelledby="res-partners" className="mt-10">
+        <Sub id="res-partners" className="flex items-center gap-2 text-xl font-semibold text-foreground">
+          <Handshake className="h-5 w-5 text-brand-blue" aria-hidden="true" />Partner offers
+        </Sub>
+        <div className="mt-4 grid gap-6 md:grid-cols-2">
+          {REFERRALS.map((r) => (
+            <article key={r.provider} className="flex flex-col rounded-xl border border-border bg-card p-5 shadow-sm">
+              <p className="font-semibold text-foreground">{r.name}</p>
+              <p className="mt-1 flex-1 text-sm text-muted-foreground">{r.description}</p>
+              <a href={r.url} target="_blank" rel={REFERRAL_REL} className={`${linkClass} mt-4`}>
+                <span>Visit {r.provider}</span><ExternalLink className="mt-1 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <span className="sr-only"> (referral link, opens in a new tab)</span>
+              </a>
+              <p className="mt-2 text-xs text-muted-foreground" data-testid="disclosure-link">{REFERRAL_DISCLOSURE}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section aria-labelledby="res-cta" className="mt-12 rounded-2xl bg-brand-navy px-6 py-8 text-center text-white">
+        <Sub id="res-cta" className="text-2xl font-bold">Run your business in one place</Sub>
+        <p className="mx-auto mt-2 max-w-2xl text-white/85">
+          Every new account gets a 14-day free trial of all features. No card is needed. After 14 days you choose a plan to continue.
+        </p>
+        <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Button asChild className="bg-brand-blue text-white hover:bg-brand-blue/90"><Link to="/auth?mode=signup">Try B2BNEST free for 14 days</Link></Button>
+          <Button asChild variant="outline" className="border-white/60 bg-transparent text-white hover:bg-white/10 hover:text-white"><Link to="/pricing">See plans and prices</Link></Button>
+        </div>
+      </section>
     </div>
   );
 };

@@ -58,4 +58,31 @@ describe('no invented claims in src or supabase/functions', () => {
       expect(hits).toEqual([]);
     });
   }
+
+  // Phase 12 (owner decision 27 Oct 2026): no permanent free tier. "Free forever", "free plan" or "no credit card" may only
+  // appear on a page that also says the trial ends after 14 days.
+  const FREE_TIER = /free forever|free plan|no credit card/i;
+  const TRIAL_ENDS = /after 14 days|14-day (free )?trial[^\n]*(ends|then you choose|choose a plan)|trial (has )?ends? after 14 days/i;
+  it('no "free forever" / "free plan" / "no credit card" unless the same page says the trial ends after 14 days', () => {
+    const hits = [...files, ...functionFiles].flatMap((f) => {
+      const text = fs.readFileSync(f, 'utf8');
+      if (!FREE_TIER.test(text) || TRIAL_ENDS.test(text)) return [];
+      return text.split('\n').flatMap((line, i) => (FREE_TIER.test(line) ? [`${path.relative(ROOT, f)}:${i + 1}: ${line.trim().slice(0, 120)}`] : []));
+    });
+    expect(hits).toEqual([]);
+  });
+
+  it('the free-tier rule catches a bad page and passes an honest one', () => {
+    expect(FREE_TIER.test('Start on our free plan')).toBe(true);
+    expect(TRIAL_ENDS.test('Start on our free plan')).toBe(false);
+    expect(TRIAL_ENDS.test('No card is needed. After 14 days you choose a plan to continue.')).toBe(true);
+  });
+
+  // Phase 12: no star ratings or "Starting at $X/month" style prices for third-party products we can't verify.
+  it('no invented ratings or third-party "Starting at" prices', () => {
+    const re = /\brating:\s*[1-9](\.\d)?\b|Starting at \$|\b\d\.\d\s*\/\s*5\b|\b(reviewCount|downloads):\s*[1-9]/;
+    const hits = [...files, ...functionFiles].flatMap((f) =>
+      fs.readFileSync(f, 'utf8').split('\n').flatMap((line, i) => (re.test(line) ? [`${path.relative(ROOT, f)}:${i + 1}: ${line.trim().slice(0, 120)}`] : [])));
+    expect(hits).toEqual([]);
+  });
 });

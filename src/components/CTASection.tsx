@@ -32,7 +32,7 @@ const CTASection = () => {
           </Button>
         </div>
         <p className="text-blue-100 text-sm mt-4">
-          No credit card required • Cancel anytime
+          14-day free trial • No card needed • After 14 days you choose a plan
         </p>
       </div>
     </section>

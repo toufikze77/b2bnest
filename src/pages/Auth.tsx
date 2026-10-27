@@ -15,7 +15,8 @@ import { confirmationRedirect, safeNext } from '@/lib/onboarding';
 const Auth = () => {
   const { user, signIn, signUp, loading, verify2FA, sendVerificationCode, signInWithOAuth } = useAuth();
   const [searchParams] = useSearchParams();
-  const [isLogin, setIsLogin] = useState(true);
+  // /auth?mode=signup opens the create-account form (Pricing and Business Resources link here). Sign-in is unchanged.
+  const [isLogin, setIsLogin] = useState(() => searchParams.get('mode') !== 'signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');

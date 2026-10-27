@@ -50,7 +50,7 @@ const CustomerSurveyBuilder = () => {
     if (surveys.length >= 5) {
       toast({
         title: "Survey Limit Reached",
-        description: "Free plan allows up to 5 surveys. Upgrade for unlimited surveys.",
+        description: "This quick tool holds up to 5 surveys. Delete one to make another.",
         variant: "destructive"
       });
       return;
@@ -141,7 +141,7 @@ const CustomerSurveyBuilder = () => {
     if (surveys.length >= 5) {
       toast({
         title: "Survey Limit Reached",
-        description: "Free plan allows up to 5 surveys.",
+        description: "This quick tool holds up to 5 surveys.",
         variant: "destructive"
       });
       return;
@@ -316,7 +316,7 @@ const CustomerSurveyBuilder = () => {
         <h1 className="text-3xl font-bold mb-2">Customer Survey Builder</h1>
         <p className="text-gray-600">Create and manage customer feedback surveys</p>
         <Badge variant="secondary" className="mt-2">
-          Free Plan: 5 surveys maximum
+          Quick tool: up to 5 surveys
         </Badge>
       </div>
 

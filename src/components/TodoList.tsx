@@ -83,7 +83,7 @@ const TodoList = () => {
   const checkFreePlanLimit = () => {
     if (!user) return false;
     
-    // Check if user has reached the free plan limit of 10 todos
+    // The quick to-do list holds 10 tasks (Projects has no such limit)
     if (todos.length >= 10) {
       setShowUpgradeDialog(true);
       return true;
@@ -284,7 +284,7 @@ const TodoList = () => {
             <p className="text-gray-600">Organize tasks, track progress, and manage your workflow</p>
           </div>
           <div className="text-sm text-gray-500">
-            {totalCount}/10 tasks used (Free Plan)
+            {totalCount}/10 tasks used (quick list)
           </div>
         </div>
 

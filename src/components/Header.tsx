@@ -51,7 +51,7 @@ const Header = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center space-x-5 xl:space-x-6">
             <Link to="/" className="text-gray-700 hover:text-blue-600 transition-colors">
               Home
             </Link>
@@ -74,6 +74,9 @@ const Header = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            <Link to="/business-resources" className="text-gray-700 hover:text-blue-600 transition-colors">
+              Resources
+            </Link>
             <Link to="/pricing" className="text-gray-700 hover:text-blue-600 transition-colors">
               Pricing
             </Link>
@@ -111,7 +114,7 @@ const Header = () => {
               onClick={() => setIsFeedbackOpen(true)}
               aria-label="Support and feedback"
               title="Support & Feedback"
-              className="h-9 w-9"
+              className="hidden h-9 w-9 sm:inline-flex"
             >
               <MessageSquare className="h-4 w-4" />
             </Button>
@@ -136,7 +139,7 @@ const Header = () => {
                       <AvatarImage src={avatarUrl} alt={displayName || user.email || 'User'} />
                       <AvatarFallback className="text-xs">{initials}</AvatarFallback>
                     </Avatar>
-                    <span className="hidden sm:inline truncate max-w-32">
+                    <span className="hidden 2xl:inline truncate max-w-32">
                       {displayName || user.email}
                     </span>
                   </Button>
@@ -197,12 +200,12 @@ const Header = () => {
               </DropdownMenu>
             ) : (
               <div className="flex items-center space-x-2">
-                <Link to="/auth">
+                <Link to="/auth" className="hidden sm:block">
                   <Button variant="outline" size="sm" className="bg-primary/10 border-primary text-primary hover:bg-primary hover:text-primary-foreground">
                     Sign In
                   </Button>
                 </Link>
-                <Link to="/auth">
+                <Link to="/auth?mode=signup">
                   <Button size="sm" className="bg-primary hover:bg-primary/90 animate-pulse">
                     Sign Up
                   </Button>
@@ -276,6 +279,13 @@ const Header = () => {
                  <ShareButton variant="outline" size="default" />
                </div>
                <Link
+                 to="/business-resources"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Resources
+              </Link>
+               <Link
                  to="/pricing"
                 className="text-gray-700 hover:text-blue-600 transition-colors px-2"
                 onClick={() => setIsMenuOpen(false)}
@@ -330,6 +340,15 @@ const Header = () => {
                     Sign Out
                   </button>
                 </>
+              )}
+              {!user && (
+                <Link
+                  to="/auth"
+                  className="text-gray-700 hover:text-blue-600 transition-colors px-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Sign In
+                </Link>
               )}
             </div>
           </div>

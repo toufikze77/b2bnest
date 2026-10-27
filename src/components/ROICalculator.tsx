@@ -46,11 +46,11 @@ const ROICalculator = () => {
       return;
     }
 
-    // Free plan limitation: 10 calculations max
+    // Quick-tool limit: 10 calculations
     if (calculations.length >= 10) {
       toast({
         title: "Calculation Limit Reached",
-        description: "Free plan allows up to 10 ROI calculations. Upgrade for unlimited calculations.",
+        description: "This quick tool keeps up to 10 ROI calculations. Delete one to add another.",
         variant: "destructive"
       });
       return;
@@ -121,7 +121,7 @@ const ROICalculator = () => {
         <h1 className="text-3xl font-bold mb-2">ROI Calculator</h1>
         <p className="text-gray-600">Calculate return on investment for your business projects</p>
         <Badge variant="secondary" className="mt-2">
-          Free Plan: 10 calculations maximum
+          Quick tool: up to 10 calculations
         </Badge>
       </div>
 
@@ -304,26 +304,6 @@ const ROICalculator = () => {
               })}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Upgrade CTA */}
-      <Card className="mt-6">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-3">
-            <Zap className="h-5 w-5 text-blue-600 mt-0.5" />
-            <div>
-              <h4 className="font-semibold text-blue-900 mb-1">Need Advanced ROI Analysis?</h4>
-              <p className="text-sm text-blue-700 mb-3">
-                Upgrade to get unlimited calculations, scenario modeling, risk analysis, and portfolio comparisons.
-              </p>
-              <div className="flex gap-2 flex-wrap">
-                <Badge variant="outline" className="text-xs">Starter: Unlimited calculations</Badge>
-                <Badge variant="outline" className="text-xs">Pro: Scenario modeling</Badge>
-                <Badge variant="outline" className="text-xs">Enterprise: Risk analysis</Badge>
-              </div>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

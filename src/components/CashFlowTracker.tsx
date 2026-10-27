@@ -92,7 +92,7 @@ const CashFlowTracker = () => {
     if (entryDate < thirtyDaysAgo) {
       toast({
         title: "Date Limitation",
-        description: "Free plan only tracks the last 30 days. Upgrade for unlimited history.",
+        description: "This quick tracker keeps the last 30 days.",
         variant: "destructive"
       });
       return;
@@ -198,7 +198,7 @@ const CashFlowTracker = () => {
         <h1 className="text-3xl font-bold mb-2">Cash Flow Tracker</h1>
         <p className="text-muted-foreground">Monitor your business income and expenses</p>
         <div className="flex gap-2 mt-2 flex-wrap">
-          <Badge variant="secondary">Free Plan: Last 30 days • 50 entries max</Badge>
+          <Badge variant="secondary">Quick tool: last 30 days • up to 50 entries</Badge>
           <Badge variant="outline">Currency: {currencyCode}</Badge>
         </div>
       </div>
@@ -398,25 +398,6 @@ const CashFlowTracker = () => {
           </div>
         </TabsContent>
       </Tabs>
-
-      <Card className="mt-6">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-3">
-            <Zap className="h-5 w-5 text-blue-600 mt-0.5" />
-            <div>
-              <h4 className="font-semibold mb-1">Need Advanced Cash Flow Management?</h4>
-              <p className="text-sm text-muted-foreground mb-3">
-                Upgrade to get unlimited history, forecasting, multi-currency support, and advanced reporting.
-              </p>
-              <div className="flex gap-2 flex-wrap">
-                <Badge variant="outline" className="text-xs">Starter: Unlimited entries</Badge>
-                <Badge variant="outline" className="text-xs">Pro: Forecasting + Reports</Badge>
-                <Badge variant="outline" className="text-xs">Enterprise: Multi-currency</Badge>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

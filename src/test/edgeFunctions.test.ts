@@ -53,4 +53,17 @@ describe('supabase/functions', () => {
       expect(index).not.toMatch(/GMAIL_/);
     }
   });
+
+  // Phase 12: no AI after the trial ends. The access check runs as the caller, before any credit or model call.
+  it.each(['ai-assistant', 'business-insights'])('%s checks my_access_state before spending credits or calling a model', (name) => {
+    const src = fs.readFileSync(path.join(FUNCTIONS_DIR, name, 'index.ts'), 'utf8');
+    const check = src.indexOf('await checkAccess(asCaller)');
+    expect(check).toBeGreaterThan(0);
+    expect(src).toContain("Deno.env.get('SUPABASE_ANON_KEY')");
+    for (const later of ['check_and_deduct_ai_credit', 'api.openai.com']) {
+      const at = src.indexOf(later);
+      if (at >= 0) expect(at, later).toBeGreaterThan(check);
+    }
+    expect(src.slice(check, check + 400)).toContain('status: access.status');
+  });
 });

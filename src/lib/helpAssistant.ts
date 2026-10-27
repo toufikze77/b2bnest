@@ -21,7 +21,7 @@ export const HELP_LINK: HelpLink = { label: 'Help page', to: '/help' };
 export const CONTACT_LINK: HelpLink = { label: 'Contact us', to: '/contact' };
 export const PRICING_LINK: HelpLink = { label: 'Pricing page', to: '/pricing' };
 
-/** Length of the free trial, as set by the activate-trial function and stated on the Pricing page. */
+/** Length of the free trial every new account gets (profiles.trial_ends_at default; stated on the Pricing page). */
 export const TRIAL_DAYS = 14;
 
 export const HELP_TOPICS: { id: string; label: string; question: string }[] = [
@@ -53,7 +53,7 @@ export function answerQuestion(input: string): HelpAnswer {
 
   if (named) {
     return {
-      text: `${describePlan(named)}\n\nThe full list of what's included is on the Pricing page. Paid plans start with a ${TRIAL_DAYS}-day free trial.`,
+      text: `${describePlan(named)}\n\nThe full list of what's included is on the Pricing page. Every new account gets a ${TRIAL_DAYS}-day free trial of all features; after that you choose a plan.`,
       links: [PRICING_LINK],
       suggestions: ['What plans do you offer?', 'Is there a free trial?'],
     };
@@ -61,7 +61,7 @@ export function answerQuestion(input: string): HelpAnswer {
 
   if (has(q, ['trial', 'free'])) {
     return {
-      text: `Paid plans start with a ${TRIAL_DAYS}-day free trial. Prices and what each plan includes are on the Pricing page.`,
+      text: `Every new account gets a ${TRIAL_DAYS}-day free trial of all features. No card is needed. After ${TRIAL_DAYS} days you choose a plan to continue. Prices and what each plan includes are on the Pricing page.`,
       links: [PRICING_LINK],
       suggestions: ['What plans do you offer?'],
     };
@@ -69,7 +69,7 @@ export function answerQuestion(input: string): HelpAnswer {
 
   if (has(q, ['price', 'pricing', 'cost', 'plan', 'subscription', 'how much', 'users', 'seats'])) {
     return {
-      text: `There are ${PLANS.length} plans, priced in pounds:\n\n${PLANS.map(describePlan).join('\n')}\n\n${SEAT_LIMITS_NOTE} Paid plans start with a ${TRIAL_DAYS}-day free trial. The full list of what each plan includes is on the Pricing page.`,
+      text: `There are ${PLANS.length} plans, priced in pounds:\n\n${PLANS.map(describePlan).join('\n')}\n\n${SEAT_LIMITS_NOTE} Every new account gets a ${TRIAL_DAYS}-day free trial of all features; after that you choose a plan. The full list of what each plan includes is on the Pricing page.`,
       links: [PRICING_LINK],
       suggestions: ['Is there a free trial?', 'How do I get started?'],
     };
@@ -97,7 +97,7 @@ export function answerQuestion(input: string): HelpAnswer {
   if (has(q, ['start', 'sign up', 'signup', 'register', 'begin', 'account', 'set up', 'setup'])) {
     return {
       text:
-        `Create an account, then choose a plan; paid plans start with a ${TRIAL_DAYS}-day free trial. ` +
+        `Create an account: you get a ${TRIAL_DAYS}-day free trial of all features, then you choose a plan. ` +
         "Once you're signed in, the menu takes you to the dashboard, CRM, projects and tasks, invoices and quotes, notes and templates.",
       links: [PRICING_LINK, HELP_LINK],
       suggestions: ['What plans do you offer?', 'What is B2BNEST?'],

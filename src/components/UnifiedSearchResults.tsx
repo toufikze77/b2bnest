@@ -171,12 +171,12 @@ const UnifiedSearchResults = ({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4 text-sm text-gray-500">
                       <span className="font-medium">{result.category}</span>
-                      {result.rating && (
+                      {result.rating ? (
                         <div className="flex items-center space-x-1">
                           <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                           <span>{result.rating}</span>
                         </div>
-                      )}
+                      ) : null}
                       {result.tags && result.tags.length > 0 && (
                         <div className="flex space-x-1">
                           {result.tags.slice(0, 3).map((tag, index) => (

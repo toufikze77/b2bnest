@@ -29,9 +29,9 @@ export const sampleTemplates: Template[] = [
     author: 'Legal Templates Pro',
     version: '2.1',
     lastUpdated: '2024-01-15',
-    downloads: 2150,
-    rating: 4.8,
-    reviewCount: 89,
+    downloads: 0,
+    rating: 0, // no real ratings yet
+    reviewCount: 0,
     
     featured: true,
     trending: true,
@@ -66,9 +66,9 @@ export const sampleTemplates: Template[] = [
     author: 'HR Solutions Inc',
     version: '3.0',
     lastUpdated: '2024-02-01',
-    downloads: 3420,
-    rating: 4.9,
-    reviewCount: 156,
+    downloads: 0,
+    rating: 0, // no real ratings yet
+    reviewCount: 0,
     
     featured: true,
     trending: false,
@@ -103,9 +103,9 @@ export const sampleTemplates: Template[] = [
     author: 'Finance Pro Templates',
     version: '1.5',
     lastUpdated: '2024-01-28',
-    downloads: 1890,
-    rating: 4.7,
-    reviewCount: 78,
+    downloads: 0,
+    rating: 0, // no real ratings yet
+    reviewCount: 0,
     
     featured: false,
     trending: true,
@@ -140,9 +140,9 @@ export const sampleTemplates: Template[] = [
     author: 'Marketing Masters',
     version: '2.0',
     lastUpdated: '2024-02-10',
-    downloads: 965,
-    rating: 4.6,
-    reviewCount: 42,
+    downloads: 0,
+    rating: 0, // no real ratings yet
+    reviewCount: 0,
     
     featured: false,
     trending: false,
@@ -177,9 +177,9 @@ export const sampleTemplates: Template[] = [
     author: 'Business Strategy Experts',
     version: '4.1',
     lastUpdated: '2024-01-20',
-    downloads: 1256,
-    rating: 4.9,
-    reviewCount: 67,
+    downloads: 0,
+    rating: 0, // no real ratings yet
+    reviewCount: 0,
     
     featured: true,
     trending: false,
@@ -214,9 +214,9 @@ export const sampleTemplates: Template[] = [
     author: 'Legal Forms Library',
     version: '1.8',
     lastUpdated: '2024-02-05',
-    downloads: 1680,
-    rating: 4.5,
-    reviewCount: 93,
+    downloads: 0,
+    rating: 0, // no real ratings yet
+    reviewCount: 0,
     
     featured: false,
     trending: false,
@@ -251,9 +251,9 @@ export const sampleTemplates: Template[] = [
     author: 'Business Tech Experts',
     version: '1.0',
     lastUpdated: '2024-02-15',
-    downloads: 1240,
-    rating: 4.7,
-    reviewCount: 85,
+    downloads: 0,
+    rating: 0, // no real ratings yet
+    reviewCount: 0,
     
     featured: true,
     trending: true,
@@ -288,9 +288,9 @@ export const sampleTemplates: Template[] = [
     author: 'IT Procurement Specialists',
     version: '2.0',
     lastUpdated: '2024-02-12',
-    downloads: 678,
-    rating: 4.6,
-    reviewCount: 34,
+    downloads: 0,
+    rating: 0, // no real ratings yet
+    reviewCount: 0,
     
     featured: false,
     trending: true,
@@ -325,9 +325,9 @@ export const sampleTemplates: Template[] = [
     author: 'Project Pro Solutions',
     version: '3.2',
     lastUpdated: '2024-02-20',
-    downloads: 1456,
-    rating: 4.8,
-    reviewCount: 112,
+    downloads: 0,
+    rating: 0, // no real ratings yet
+    reviewCount: 0,
     
     featured: true,
     trending: true,
@@ -362,9 +362,9 @@ export const sampleTemplates: Template[] = [
     author: 'TechCraft Solutions (Verified Professional)',
     version: '1.0',
     lastUpdated: '2024-02-25',
-    downloads: 45,
-    rating: 5.0,
-    reviewCount: 8,
+    downloads: 0,
+    rating: 0, // no real ratings yet
+    reviewCount: 0,
     
     featured: true,
     trending: false,
@@ -399,9 +399,9 @@ export const sampleTemplates: Template[] = [
     author: 'PaymentTech Solutions (Verified Professional)',
     version: '1.0',
     lastUpdated: '2024-02-28',
-    downloads: 34,
-    rating: 4.9,
-    reviewCount: 7,
+    downloads: 0,
+    rating: 0, // no real ratings yet
+    reviewCount: 0,
     
     featured: true,
     trending: true,
@@ -436,9 +436,9 @@ export const sampleTemplates: Template[] = [
     author: 'RetailTech Solutions (Verified Professional)',
     version: '1.0',
     lastUpdated: '2024-02-28',
-    downloads: 18,
-    rating: 4.8,
-    reviewCount: 4,
+    downloads: 0,
+    rating: 0, // no real ratings yet
+    reviewCount: 0,
     
     featured: true,
     trending: true,
@@ -473,9 +473,9 @@ export const sampleTemplates: Template[] = [
     author: 'E-commerce Experts (Verified Professional)',
     version: '1.0',
     lastUpdated: '2024-02-28',
-    downloads: 28,
-    rating: 4.9,
-    reviewCount: 6,
+    downloads: 0,
+    rating: 0, // no real ratings yet
+    reviewCount: 0,
     
     featured: true,
     trending: true,
@@ -510,9 +510,9 @@ export const sampleTemplates: Template[] = [
     author: 'SEO Masters Agency (Verified Professional)',
     version: '1.0',
     lastUpdated: '2024-02-28',
-    downloads: 41,
-    rating: 4.8,
-    reviewCount: 9,
+    downloads: 0,
+    rating: 0, // no real ratings yet
+    reviewCount: 0,
     
     featured: true,
     trending: true,
@@ -547,9 +547,9 @@ export const sampleTemplates: Template[] = [
     author: 'Automation Solutions Pro (Verified Professional)',
     version: '1.0',
     lastUpdated: '2024-02-28',
-    downloads: 32,
-    rating: 4.7,
-    reviewCount: 8,
+    downloads: 0,
+    rating: 0, // no real ratings yet
+    reviewCount: 0,
     
     featured: true,
     trending: true,
@@ -584,9 +584,9 @@ export const sampleTemplates: Template[] = [
     author: 'CloudSec Solutions (Verified Professional)',
     version: '1.0',
     lastUpdated: '2024-02-28',
-    downloads: 19,
-    rating: 5.0,
-    reviewCount: 4,
+    downloads: 0,
+    rating: 0, // no real ratings yet
+    reviewCount: 0,
     
     featured: true,
     trending: true,
@@ -621,9 +621,9 @@ export const sampleTemplates: Template[] = [
     author: 'SupportTech Solutions (Verified Professional)',
     version: '1.0',
     lastUpdated: '2024-02-28',
-    downloads: 25,
-    rating: 4.8,
-    reviewCount: 5,
+    downloads: 0,
+    rating: 0, // no real ratings yet
+    reviewCount: 0,
     
     featured: true,
     trending: true,
@@ -658,9 +658,9 @@ export const sampleTemplates: Template[] = [
     author: 'MarketingTech Pro (Verified Professional)',
     version: '1.0',
     lastUpdated: '2024-02-28',
-    downloads: 37,
-    rating: 4.9,
-    reviewCount: 11,
+    downloads: 0,
+    rating: 0, // no real ratings yet
+    reviewCount: 0,
     
     featured: true,
     trending: true,

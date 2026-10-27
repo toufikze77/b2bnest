@@ -410,7 +410,7 @@ const BusinessTools = () => {
       case 'integrations':
         return <IntegrationHub />;
       case 'business-resources':
-        return <BusinessResources />;
+        return <BusinessResources headingLevel="h2" />;
       case 'project-management':
         navigate('/project-management');
         return null;

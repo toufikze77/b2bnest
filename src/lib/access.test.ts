@@ -1,0 +1,74 @@
+import { describe, expect, it } from 'vitest';
+import { accessFromState, isPaywallExempt, isTemporaryOwnerEmail, legacyStateRow, trialBannerText, type AccessStateRow } from './access';
+
+const row = (over: Partial<AccessStateRow>): AccessStateRow => ({
+  state: 'trial', trial_ends_at: '2026-11-10T00:00:00Z', days_left: 5, plan_key: null, subscription_status: null, via: 'self', owner_name: null, ...over,
+});
+
+describe('accessFromState', () => {
+  it('owner, subscribed and trial have access; trial_ended does not', () => {
+    for (const s of ['owner', 'subscribed', 'trial'] as const) expect(accessFromState(row({ state: s })).hasAccess).toBe(true);
+    const ended = accessFromState(row({ state: 'trial_ended', days_left: 0 }));
+    expect([ended.hasAccess, ended.trialEnded, ended.inTrial]).toEqual([false, true, false]);
+  });
+
+  it('maps every field of the row', () => {
+    const a = accessFromState(row({ state: 'subscribed', plan_key: 'starter', subscription_status: 'past_due', via: 'company', owner_name: '  Bea Boss ', days_left: 0 }));
+    expect(a).toMatchObject({ state: 'subscribed', planKey: 'starter', subscriptionStatus: 'past_due', via: 'company', ownerName: 'Bea Boss', daysLeft: 0 });
+  });
+
+  it('days left is never negative or fractional; empty owner name becomes null', () => {
+    expect(accessFromState(row({ days_left: -3 })).daysLeft).toBe(0);
+    expect(accessFromState(row({ days_left: 2.7 })).daysLeft).toBe(2);
+    expect(accessFromState(row({ days_left: null })).daysLeft).toBe(0);
+    expect(accessFromState(row({ owner_name: '   ' })).ownerName).toBeNull();
+  });
+
+  it('a missing or unknown row is "unknown": no paywall (the server still refuses paid work)', () => {
+    for (const r of [null, undefined, { ...row({}), state: 'free' } as unknown as AccessStateRow]) {
+      expect(accessFromState(r)).toMatchObject({ state: 'unknown', hasAccess: true, trialEnded: false });
+    }
+  });
+});
+
+describe('legacyStateRow (only until my_access_state is applied)', () => {
+  const now = new Date('2026-10-27T12:00:00Z');
+  it('applies the same order: owner, subscribed, trial, trial_ended', () => {
+    expect(legacyStateRow({ roles: ['admin'], trialEndsAt: '2026-01-01T00:00:00Z', subscriber: null, now }).state).toBe('owner');
+    expect(legacyStateRow({ roles: ['user'], trialEndsAt: '2026-01-01T00:00:00Z', subscriber: { subscription_status: 'past_due' }, now }).state).toBe('subscribed');
+    expect(legacyStateRow({ roles: [], trialEndsAt: '2026-01-01T00:00:00Z', subscriber: { subscription_status: 'canceled', subscribed: true }, now }).state).toBe('trial_ended');
+    expect(legacyStateRow({ roles: [], trialEndsAt: '2026-01-01T00:00:00Z', subscriber: { subscription_status: null, subscribed: true }, now }).state).toBe('subscribed');
+    const t = legacyStateRow({ roles: [], trialEndsAt: '2026-10-30T13:00:00Z', subscriber: null, now });
+    expect([t.state, t.days_left]).toEqual(['trial', 4]);
+    expect(legacyStateRow({ roles: [], trialEndsAt: now.toISOString(), subscriber: null, now }).state).toBe('trial_ended');
+    expect(legacyStateRow({ roles: [], trialEndsAt: null, subscriber: null, now }).state).toBe('trial_ended');
+  });
+});
+
+describe('trial banner and exempt routes', () => {
+  it('banner only during a trial, with the right plural', () => {
+    expect(trialBannerText(accessFromState(row({ days_left: 5 })))).toBe('Free trial: 5 days left');
+    expect(trialBannerText(accessFromState(row({ days_left: 1 })))).toBe('Free trial: 1 day left');
+    for (const s of ['owner', 'subscribed', 'trial_ended'] as const) expect(trialBannerText(accessFromState(row({ state: s })))).toBeNull();
+  });
+
+  it('exempt routes stay open after the trial ends', () => {
+    for (const p of ['/pricing', '/settings', '/settings/', '/auth', '/forgot-password', '/reset-password', '/join', '/onboarding', '/profile-setup',
+      '/payment-success', '/support/portal', '/help', '/contact', '/privacy', '/terms', '/business-resources', '/knowledge-base',
+      '/knowledge-base/security', '/blog', '/f/abc', '/p/my-page', '/forms/b2b', '/forms/work-request']) {
+      expect(isPaywallExempt(p), p).toBe(true);
+    }
+  });
+
+  it('the app itself is not exempt', () => {
+    for (const p of ['/dashboard', '/crm', '/project-management', '/business-tools', '/support-desk', '/workspaces/1', '/rota', '/ai-studio', '/pricingx', '/fo', '/admin']) {
+      expect(isPaywallExempt(p), p).toBe(false);
+    }
+  });
+
+  it('the temporary owner emails are recognised (case-insensitive) and nothing else', () => {
+    expect(isTemporaryOwnerEmail('Toufik.Zemri@outlook.com')).toBe(true);
+    expect(isTemporaryOwnerEmail('someone@else.test')).toBe(false);
+    expect(isTemporaryOwnerEmail(null)).toBe(false);
+  });
+});

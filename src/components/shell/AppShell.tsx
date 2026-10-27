@@ -23,6 +23,7 @@ import { activeNavTarget, matchesLocation, NavAlias } from '@/lib/navMatch';
 import { GlobalCommand } from './GlobalCommand';
 import { NotificationsPanel } from './NotificationsPanel';
 import { MobileTabBar } from './MobileTabBar';
+import TrialBanner from '@/components/access/TrialBanner';
 import { bottomItems, groups, topItems } from './navItems';
 
 // Option B navigation. Every item points at an existing route.
@@ -168,6 +169,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </DropdownMenu>
           </div>
         </header>
+        <TrialBanner />
         <main id="app-content" className="min-w-0 flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">{children}</main>
         <MobileTabBar matches={(to) => matchesLocation(to, location.pathname, location.search)} />
       </SidebarInset>
