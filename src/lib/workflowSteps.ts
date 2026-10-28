@@ -2,6 +2,7 @@
 // Only steps that a server function actually carries out are offered to customers.
 // Older workflows built in the previous canvas builder are kept as saved; their
 // steps are classified so the screen can say honestly which ones cannot run.
+import { placeholdersIn, renderTemplate } from '../../supabase/functions/_shared/placeholders.ts';
 
 export type StepKind = 'email' | 'x' | 'linkedin' | 'whatsapp';
 
@@ -58,6 +59,9 @@ const LEGACY_ALIASES: Record<string, StepKind> = {
 };
 
 export const MANUAL_TRIGGER_NAME = 'Run manually';
+
+/** Same cap as the server (workflow-execute MAX_STEPS) and the run-log step numbers (0-9). */
+export const MAX_STEPS = 10;
 
 export interface SimpleStep { id: string; kind: StepKind; config: Record<string, string> }
 
@@ -139,13 +143,48 @@ async function errorText(error: unknown): Promise<string | null> {
   const ctx = (error as { context?: { json?: () => Promise<{ error?: string; message?: string }> } })?.context;
   if (ctx?.json) {
     const body = await ctx.json().catch(() => null);
+    // A bare code such as "rate_limited" comes with a readable message: show that.
+    if (body?.error && /^[a-z_]+$/.test(body.error) && body.message) return String(body.message);
     if (body?.error || body?.message) return String(body.error || body.message);
   }
   return null;
 }
 
+/** One press of "Run": groups the steps in Run history and carries the "Run with these details" values. */
+export interface RunContext { runId: string; stepIndex: number; values: Record<string, string> }
+
+/** The step name stored in public.workflow_run_logs.step. */
+export const LOG_STEP: Record<StepKind, string> = { email: 'email.send', whatsapp: 'whatsapp.send', x: 'x.post', linkedin: 'linkedin.post' };
+
+/** What one Run would do: the email steps that will send, the steps that will be skipped, and unique recipients. */
+export function runPlan(steps: SimpleStep[]) {
+  const sending = steps.filter((s) => stepDefinition(s.kind).verified);
+  const skipped = steps.filter((s) => !stepDefinition(s.kind).verified);
+  const recipients = new Set(sending.flatMap((s) => (s.config.to ?? '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)));
+  const placeholders = placeholdersIn(...sending.flatMap((s) => [s.config.subject ?? '', s.config.body ?? '']));
+  return { sending, skipped, emails: sending.length, recipients: recipients.size, placeholders };
+}
+
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/** The confirm line shown before anything is sent. */
+export function confirmText(plan: ReturnType<typeof runPlan>): string {
+  const main = `This will send ${plural(plan.emails, 'email')} to ${plural(plan.recipients, 'recipient')}.`;
+  return plan.skipped.length ? `${main} ${plural(plan.skipped.length, 'step')} can't run yet and will be skipped.` : main;
+}
+
+/** Fills an email step's placeholders with the shared function the server uses (exactly what will be sent). */
+export function renderEmailStep(step: SimpleStep, values: Record<string, string>) {
+  return renderTemplate({ subject: step.config.subject ?? '', body: step.config.body ?? '' }, values);
+}
+
+/** The row a browser may write for a step it skipped (docs/phase15: only status 'skipped', provider 'none'). */
+export function skippedLogRow(step: SimpleStep, ctx: RunContext, userId: string, workflowId: string | null) {
+  return { user_id: userId, workflow_id: workflowId, run_id: ctx.runId, step_index: ctx.stepIndex, step: LOG_STEP[step.kind], status: 'skipped', provider: 'none' };
+}
+
 /** Runs one step. Success is reported ONLY when the server explicitly confirms it. */
-export async function executeStep(step: SimpleStep, workflowId: string | null, invoke: Invoke): Promise<StepResult> {
+export async function executeStep(step: SimpleStep, workflowId: string | null, invoke: Invoke, ctx?: RunContext): Promise<StepResult> {
   const c = step.config;
   // Without a readable server answer we can't know whether a message went out.
   const unknown = step.kind === 'email' ? EMAIL_STATUS_UNKNOWN : 'Status unknown — check before trying again.';
@@ -157,7 +196,17 @@ export async function executeStep(step: SimpleStep, workflowId: string | null, i
   };
   if (!stepDefinition(step.kind).verified) return { ok: false, message: NOT_YET_AVAILABLE };
   try {
-    if (step.kind === 'email') return await confirmed('workflow-send-email', { to: c.to, subject: c.subject, body: c.body, workflowId }, 'Accepted by the email provider (inbox delivery not confirmed)');
+    if (step.kind === 'email') {
+      // Placeholders are filled with the same function the server uses; the server fills them again and refuses to
+      // send anything that differs from this preview, or any {{placeholder}} without a value.
+      const r = renderEmailStep(step, ctx?.values ?? {});
+      if (r.ok === false) return { ok: false, message: `${r.errors.join(' ')} Nothing was sent.` };
+      const values = Object.fromEntries(r.used.map((k) => [k, (ctx?.values[k] ?? '').trim()]));
+      return await confirmed('workflow-send-email', {
+        to: c.to, subject: r.subject, body: r.body, template: { subject: c.subject, body: c.body }, values,
+        workflowId, ...(ctx ? { runId: ctx.runId, stepIndex: ctx.stepIndex } : {}),
+      }, 'Accepted by the email provider (inbox delivery not confirmed)');
+    }
     if (step.kind === 'x') return await confirmed('workflow-twitter-post', { text: c.text, workflowId }, 'Posted on X');
     if (step.kind === 'linkedin') return await confirmed('workflow-linkedin-post', { text: c.text, visibility: 'PUBLIC', workflowId }, 'Posted on LinkedIn');
     const { data, error } = await invoke('workflow-execute', { workflow_id: workflowId, steps: [{ type: 'whatsapp.send', to: c.to.trim(), body: c.body }] });

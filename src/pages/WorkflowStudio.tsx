@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, CheckCircle2, Loader2, MousePointerClick, Play, Plus, Save, Trash2, XCircle, Zap } from 'lucide-react';
+import { ArrowDown, ArrowUp, CheckCircle2, LayoutTemplate, Loader2, MousePointerClick, Play, Plus, Save, Trash2, XCircle, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,20 +11,26 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  STEP_DEFINITIONS, SimpleStep, StepResult, StepKind, parseSavedSteps, serializeSteps, stepDefinition, validateStep, executeStep,
+  MAX_STEPS, STEP_DEFINITIONS, RunContext, SimpleStep, StepResult, StepKind, parseSavedSteps, serializeSteps, skippedLogRow, stepDefinition,
+  validateStep, executeStep,
 } from '@/lib/workflowSteps';
+import { templateSteps, WorkingTemplate } from '@/lib/workflowEmailTemplates';
 import { EmailConnectionCheck } from '@/components/workflows/EmailConnectionCheck';
+import { RunDialog } from '@/components/workflows/RunDialog';
+import { RunHistory } from '@/components/workflows/RunHistory';
+import { TemplatePicker } from '@/components/workflows/TemplatePicker';
 
 interface SavedWorkflow { id: string; name: string; description: string | null; workflow_steps: unknown; updated_at: string }
 
+const stepId = () => `step_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 const newStep = (kind: StepKind): SimpleStep => ({
-  id: `step_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+  id: stepId(),
   kind,
   config: Object.fromEntries(stepDefinition(kind).fields.map((f) => [f.key, ''])),
 });
 
-const runStep = (step: SimpleStep, workflowId: string | null) =>
-  executeStep(step, workflowId, (fn, body) => supabase.functions.invoke(fn, { body }));
+const runStep = (step: SimpleStep, workflowId: string | null, ctx: RunContext) =>
+  executeStep(step, workflowId, (fn, body) => supabase.functions.invoke(fn, { body }), ctx);
 
 const WorkflowStudio = () => {
   const { user } = useAuth();
@@ -38,6 +44,9 @@ const WorkflowStudio = () => {
   const [saving, setSaving] = useState(false);
   const [running, setRunning] = useState(false);
   const [results, setResults] = useState<Record<string, StepResult>>({});
+  const [runOpen, setRunOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [historyKey, setHistoryKey] = useState(0);
   const runLock = useRef(false);
 
   const load = useCallback(async () => {
@@ -52,9 +61,9 @@ const WorkflowStudio = () => {
 
   useEffect(() => { load(); }, [load]);
 
-  const open = (w: SavedWorkflow | null, newName = 'Untitled workflow') => {
+  const open = (w: SavedWorkflow | null, newName = 'Untitled workflow', preset: SimpleStep[] = []) => {
     setResults({});
-    if (!w) { setId(null); setName(newName); setSteps([]); setUnsupported([]); return; }
+    if (!w) { setId(null); setName(newName); setSteps(preset); setUnsupported([]); return; }
     const parsed = parseSavedSteps(w.workflow_steps);
     setId(w.id); setName(w.name); setSteps(parsed.steps); setUnsupported(parsed.unsupported);
   };
@@ -86,18 +95,29 @@ const WorkflowStudio = () => {
     toast.success('Workflow deleted'); open(null); load();
   };
 
-  const problems = steps.map(validateStep).filter(Boolean) as string[];
-  const canRun = steps.length > 0 && !unsupported.length && !problems.length && !running;
+  const useTemplate = (t: WorkingTemplate) => open(null, t.name, templateSteps(t, user?.email ?? '', stepId));
 
-  const run = async () => {
+  const problems = steps.map(validateStep).filter(Boolean) as string[];
+  const canRun = steps.length > 0 && steps.length <= MAX_STEPS && !unsupported.length && !problems.length && !running;
+
+  // "Run now" opens the details, preview and confirm. Nothing is sent until the user confirms there.
+  const run = () => { if (canRun && !runLock.current) setRunOpen(true); };
+
+  const confirmRun = async (values: Record<string, string>) => {
     if (!canRun || runLock.current) return;
     runLock.current = true;
+    setRunOpen(false);
     try {
-      if (!window.confirm(`Run "${name}" now? This really sends ${steps.length} message${steps.length === 1 ? '' : 's'}/post${steps.length === 1 ? '' : 's'}.`)) return;
       setRunning(true); setResults({});
+      const runId = crypto.randomUUID();
       let failed = 0;
-      for (const step of steps) {
-        const r = await runStep(step, id).catch((e) => ({ ok: false, message: e instanceof Error ? e.message : 'Failed' }));
+      for (const [stepIndex, step] of steps.entries()) {
+        const ctx: RunContext = { runId, stepIndex, values };
+        if (!stepDefinition(step.kind).verified && user) {
+          // Run history: a skipped step is the one row a browser may write (docs/phase15). Best effort.
+          await Promise.resolve(supabase.from('workflow_run_logs').insert(skippedLogRow(step, ctx, user.id, id) as never)).catch(() => undefined);
+        }
+        const r = await runStep(step, id, ctx).catch((e) => ({ ok: false, message: e instanceof Error ? e.message : 'Failed' }));
         if (!r.ok) failed++;
         setResults((prev) => ({ ...prev, [step.id]: r }));
       }
@@ -106,6 +126,7 @@ const WorkflowStudio = () => {
     } finally {
       setRunning(false);
       runLock.current = false;
+      setHistoryKey((k) => k + 1);
     }
   };
 
@@ -121,6 +142,7 @@ const WorkflowStudio = () => {
       <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
         <aside className="space-y-2">
           <Button className="w-full" onClick={() => open(null)}><Plus className="mr-2 h-4 w-4" />New workflow</Button>
+          <Button className="w-full" variant="outline" onClick={() => setPickerOpen(true)}><LayoutTemplate className="mr-2 h-4 w-4" />Start from a template</Button>
           {loading ? <p className="flex items-center gap-2 p-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Loading…</p>
             : loadError ? <div className="p-2 text-sm text-destructive">Couldn't load workflows. <button className="underline" onClick={load}>Retry</button></div>
             : list.length === 0 ? <p className="p-2 text-sm text-muted-foreground">No saved workflows yet.</p>
@@ -206,6 +228,12 @@ const WorkflowStudio = () => {
                       </div>
                     </div>
                     <p className="mb-3 text-xs text-muted-foreground">{def.verified ? def.help : 'Not available yet: this step has not been verified and will not run.'}</p>
+                    {s.kind === 'email' && (
+                      <p className="mb-3 text-xs text-muted-foreground">
+                        You can use {'{{name}}'}, {'{{company}}'}, {'{{amount}}'}, {'{{due_date}}'}, {'{{invoice_number}}'}, {'{{quote_number}}'}, {'{{date}}'} and {'{{time}}'} in
+                        the subject and message. You fill them in when you run it.
+                      </p>
+                    )}
                     <div className="space-y-3">
                       {def.fields.map((f) => {
                         const fid = `${s.id}-${f.key}`;
@@ -229,8 +257,8 @@ const WorkflowStudio = () => {
                 );
               })}
               <div className="flex items-center gap-2">
-                <Select value="" onValueChange={(v) => setSteps((x) => [...x, newStep(v as StepKind)])}>
-                  <SelectTrigger className="w-[260px]" aria-label="Add a step"><SelectValue placeholder="+ Add a step" /></SelectTrigger>
+                <Select value="" disabled={steps.length >= MAX_STEPS} onValueChange={(v) => setSteps((x) => (x.length >= MAX_STEPS ? x : [...x, newStep(v as StepKind)]))}>
+                  <SelectTrigger className="w-full max-w-[260px]" aria-label="Add a step"><SelectValue placeholder={steps.length >= MAX_STEPS ? `Up to ${MAX_STEPS} steps` : '+ Add a step'} /></SelectTrigger>
                   <SelectContent>
                     {STEP_DEFINITIONS.map((d) => <SelectItem key={d.kind} value={d.kind} disabled={!d.verified}>{d.label}{d.verified ? '' : ' — not available yet'}</SelectItem>)}
                   </SelectContent>
@@ -241,9 +269,15 @@ const WorkflowStudio = () => {
               </p>
             </CardContent>
           </Card>
+
+          {id && user ? <RunHistory workflowId={id} userId={user.id} refreshKey={historyKey} />
+            : <p className="text-xs text-muted-foreground">Save this workflow to keep a run history.</p>}
           </>)}
         </section>
       </div>
+
+      <RunDialog open={runOpen} name={name} steps={steps} onCancel={() => setRunOpen(false)} onConfirm={confirmRun} />
+      <TemplatePicker open={pickerOpen} onClose={() => setPickerOpen(false)} onUse={useTemplate} />
     </div>
   );
 };
