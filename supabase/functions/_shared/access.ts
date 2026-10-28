@@ -2,7 +2,7 @@
 // JWT, never the service role), so the database decides: owner / subscribed / trial / trial_ended.
 // Call it after authenticating the user and BEFORE deducting AI credits or calling any model.
 
-export type AccessState = "owner" | "subscribed" | "trial" | "trial_ended";
+export type AccessState = "owner" | "subscribed" | "trial" | "trial_ended" | "suspended";
 
 /** The one call this needs (kept narrow so tests can pass a fake client). */
 export interface AccessRpcClient {
@@ -11,12 +11,15 @@ export interface AccessRpcClient {
 
 export type AccessCheck =
   | { ok: true; state: AccessState | "not_installed" }
-  | { ok: false; status: 402 | 503; body: { error: "trial_ended" | "access_check_failed"; message: string; via?: "self" | "company" } };
+  | { ok: false; status: 402 | 403 | 503; body: { error: "trial_ended" | "account_suspended" | "access_check_failed"; message: string; via?: "self" | "company" } };
 
 export const TRIAL_ENDED_MESSAGE =
   "Your 14-day trial has ended. Choose a plan on the Pricing page to keep using this feature. Nothing has been deleted.";
 export const COMPANY_TRIAL_ENDED_MESSAGE =
   "Your company's trial has ended. Ask the account owner to choose a plan to keep using this feature. Nothing has been deleted.";
+
+// Phase 12c: Admin → Users → Suspend. Never a payment problem, so 403 (not 402) and no plan wording.
+export const SUSPENDED_MESSAGE = "This account has been suspended. Contact us if you think this is a mistake.";
 
 const isMissingFunction = (e: { code?: string; message?: string }) =>
   e.code === "PGRST202" || e.code === "42883" || /could not find the function/i.test(e.message ?? "");
@@ -41,6 +44,7 @@ export async function checkAccess(client: AccessRpcClient): Promise<AccessCheck>
   const row = (Array.isArray(res.data) ? res.data[0] : res.data) as { state?: string; via?: string } | null;
   const state = row?.state;
   if (state === "owner" || state === "subscribed" || state === "trial") return { ok: true, state };
+  if (state === "suspended") return { ok: false, status: 403, body: { error: "account_suspended", message: SUSPENDED_MESSAGE } };
   if (state === "trial_ended") {
     const via = row?.via === "company" ? "company" : "self";
     return { ok: false, status: 402, body: { error: "trial_ended", message: via === "company" ? COMPANY_TRIAL_ENDED_MESSAGE : TRIAL_ENDED_MESSAGE, via } };
