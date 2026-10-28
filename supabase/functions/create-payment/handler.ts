@@ -1,6 +1,6 @@
 // One-off template purchase (Template Center → CheckoutModal → StripeCheckout). Dependencies are injected for tests.
-// deno-lint-ignore no-explicit-any
-type StripeLike = any;
+import { billingLinkError, isUnverified, resolveVerifiedCustomer, type StripeLike } from "../_shared/verified-customer.ts";
+
 export interface PaymentDeps {
   stripe: StripeLike;
   storedCustomerId: (userId: string) => Promise<string | null>;
@@ -25,10 +25,14 @@ export async function createPayment(user: { id: string; email: string }, payload
   const safeItemName = typeof itemName === "string" && itemName.trim().length > 0 ? itemName.slice(0, 200) : "Purchase";
   const customerEmail = user.email ?? "";
 
-  // Check if a Stripe customer record exists for this email
-  const customers = await stripe.customers.list({ email: customerEmail, limit: 1 });
-  let customerId: string | undefined;
-  if (customers.data.length > 0) customerId = customers.data[0].id;
+  // The caller's own verified customer, if any. With none, Stripe takes the email (guest checkout, as before).
+  // A same-email customer that isn't provably theirs is never used.
+  const resolved = await resolveVerifiedCustomer(stripe, { id: user.id, email: customerEmail }, await deps.storedCustomerId(user.id));
+  if (resolved.customerId === null && isUnverified(resolved.reason)) {
+    log("Billing account not verified", { reason: resolved.reason });
+    return billingLinkError(resolved.reason);
+  }
+  const customerId: string | undefined = resolved.customerId ?? undefined;
 
   const session = await stripe.checkout.sessions.create({
     customer: customerId,

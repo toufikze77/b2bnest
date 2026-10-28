@@ -1,8 +1,7 @@
 // Subscription checkout. Dependencies are injected so tests never touch Stripe or the database.
 import { type BillingInterval, isPlanKey, PLAN_CATALOG, priceForNewSubscription } from "../_shared/plans.ts";
+import { resolveOrCreateVerifiedCustomer, type StripeLike } from "../_shared/verified-customer.ts";
 
-// deno-lint-ignore no-explicit-any
-type StripeLike = any;
 export interface CheckoutDeps {
   stripe: StripeLike;
   /** The caller is an active member of this company. */
@@ -27,10 +26,14 @@ export async function startCheckout(user: { id: string; email: string }, payload
   // If an organization was supplied, the caller must be an active member of it.
   if (organizationId && !(await deps.isActiveMember(organizationId, user.id))) return { status: 403, body: { error: "Forbidden" } };
 
-  // Reuse an existing Stripe customer for this email, otherwise create one.
-  const existingCustomers = await stripe.customers.list({ email: user.email, limit: 1 });
-  const customer = existingCustomers.data[0] ??
-    await stripe.customers.create({ email: user.email, metadata: { supabase_user_id: user.id } });
+  // The caller's own customer: the stored one, or the one email match marked as theirs, or a NEW one when they have
+  // none. A same-email customer that isn't provably theirs is never reused: stop with a clear error instead.
+  const resolvedCustomer = await resolveOrCreateVerifiedCustomer(stripe, user, await deps.storedCustomerId(user.id));
+  if (!resolvedCustomer.ok) {
+    log("Billing account not verified", { reason: resolvedCustomer.body.reason });
+    return { status: resolvedCustomer.status, body: resolvedCustomer.body };
+  }
+  const customer = { id: resolvedCustomer.customerId };
 
   // Duplicate-subscription guard: never let one customer open a second live subscription.
   const liveStatuses = ["active", "trialing", "past_due", "unpaid", "incomplete"];

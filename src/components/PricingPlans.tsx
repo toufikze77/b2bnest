@@ -11,6 +11,7 @@ import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { PLANS, type Plan, limitText, aiCreditsText, SEAT_LIMITS_NOTE } from '@/lib/plans';
 import { useBillingStatus, poundsText } from '@/hooks/useBillingStatus';
+import { BILLING_LINK_ERROR, isBillingLinkError } from '@/lib/billingErrors';
 
 export const TRIAL_FAQ_ANSWER = 'Every new account gets a 14-day free trial of all features. No card is needed. After 14 days you choose a plan to continue.';
 
@@ -116,6 +117,10 @@ const PricingPlans = ({ variant = 'page' }: { variant?: 'page' | 'paywall' }) =>
       if (error) {
         const context = (error as { context?: { text: () => Promise<string> } }).context;
         const details = context ? await context.text().catch(() => '') : '';
+        if (isBillingLinkError(details)) {
+          toast({ title: 'Billing account not linked', description: BILLING_LINK_ERROR, variant: 'destructive' });
+          return;
+        }
         if (details.includes('plan_not_available')) {
           toast({ title: 'Plan not available yet', description: "This plan can't be bought yet. Nothing has been charged. Please try again later.", variant: 'destructive' });
           return;

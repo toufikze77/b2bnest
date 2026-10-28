@@ -1,9 +1,8 @@
 // Records a completed subscription checkout as an EXPENSE in the customer's own books (money they paid to B2BNEST),
 // never as a sales invoice. The official invoice is the one Stripe issues. Dependencies are injected for tests.
 import { planFromAmount, planFromLookupKey } from "../_shared/plans.ts";
+import { resolveVerifiedCustomer, type StripeLike } from "../_shared/verified-customer.ts";
 
-// deno-lint-ignore no-explicit-any
-type StripeLike = any;
 export interface InvoiceDeps {
   stripe: StripeLike;
   storedCustomerId: (userId: string) => Promise<string | null>;
@@ -17,19 +16,27 @@ export async function recordSubscriptionPurchase(user: { id: string; email: stri
   const log = deps.log ?? (() => {});
   const { stripe } = deps;
   if (!sessionId || typeof sessionId !== "string") return { status: 500, body: { error: "Session ID is required" } };
-  const callerEmail = (user.email || "").toLowerCase();
 
-  const session = await stripe.checkout.sessions.retrieve(sessionId);
+  let session;
+  try {
+    session = await stripe.checkout.sessions.retrieve(sessionId);
+  } catch (err) {
+    if ((err as { code?: string })?.code === "resource_missing") return { status: 404, body: { error: "Session not found" } };
+    throw err;
+  }
   log("Retrieved Stripe session", { status: session.payment_status });
   if (session.payment_status !== "paid") return { status: 500, body: { error: "Payment not completed" } };
 
-  const customer = await stripe.customers.retrieve(session.customer as string);
-  if (!customer || customer.deleted) return { status: 500, body: { error: "Customer not found" } };
+  // The session must be the caller's own (create-subscription-checkout sets both fields to the user's id) AND its
+  // customer must be the caller's verified customer. An email match alone is not enough.
+  const ownsSession = session.client_reference_id === user.id || session.metadata?.supabase_user_id === user.id;
+  const verified = ownsSession ? await resolveVerifiedCustomer(stripe, user, await deps.storedCustomerId(user.id)) : null;
+  if (!ownsSession || !verified?.customerId || verified.customerId !== session.customer) {
+    log("Session not the caller's", { ownsSession, reason: verified?.customerId === null ? verified.reason : null });
+    return { status: 403, body: { error: "Forbidden" } };
+  }
   const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
   const price = subscription.items.data[0].price;
-
-  // Confirm requesting user matches the Stripe customer
-  if (!customer.email || (customer.email || "").toLowerCase() !== callerEmail) return { status: 403, body: { error: "Forbidden" } };
 
   const sessionTag = `ref:${sessionId}`;
   const existing = await deps.findExpense(user.id, sessionTag);
