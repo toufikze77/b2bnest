@@ -96,7 +96,7 @@ export function trialBannerText(access: Access): string | null {
  * support portal used by external customers.
  */
 const EXEMPT_EXACT = ['/', '/about', '/pricing', '/auth', '/forgot-password', '/reset-password', '/join', '/onboarding',
-  '/profile-setup', '/payment-success', '/help', '/contact', '/privacy', '/terms', '/business-resources', '/blog'];
+  '/profile-setup', '/payment-success', '/help', '/contact', '/privacy', '/terms', '/business-resources', '/blog', '/unsubscribe'];
 const EXEMPT_PREFIXES = ['/settings', '/support/portal', '/knowledge-base', '/f', '/p', '/forms'];
 
 export function isPaywallExempt(pathname: string): boolean {
@@ -110,7 +110,7 @@ export function isPaywallExempt(pathname: string): boolean {
  * the support portal, so a suspended account never reaches plans or payment buttons.
  */
 const SUSPENDED_EXEMPT_EXACT = ['/', '/about', '/auth', '/forgot-password', '/reset-password', '/help', '/contact', '/privacy', '/terms',
-  '/business-resources', '/blog'];
+  '/business-resources', '/blog', '/unsubscribe'];
 const SUSPENDED_EXEMPT_PREFIXES = ['/knowledge-base', '/f', '/p', '/forms'];
 
 export function isSuspendedExempt(pathname: string): boolean {
