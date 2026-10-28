@@ -1,163 +1,45 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createPayment } from "./handler.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    // Require authenticated caller
-    const authHeader = req.headers.get('Authorization') || '';
-    const token = authHeader.replace('Bearer ', '');
-    if (!token) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    const token = (req.headers.get("Authorization") || "").replace("Bearer ", "");
+    if (!token) return json({ error: "Unauthorized" }, 401);
+    const anon = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_ANON_KEY") ?? "");
+    const { data: userData, error: userErr } = await anon.auth.getUser(token);
+    if (userErr || !userData?.user) return json({ error: "Unauthorized" }, 401);
+    const payload = await req.json().catch(() => ({}));
 
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-    );
-    const { data: userData, error: userErr } = await supabaseClient.auth.getUser(token);
-    if (userErr || !userData?.user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const user = userData.user;
-    const customerEmail = user.email ?? '';
-
-    const { amount, currency = "gbp", itemName, buyerInfo } = await req.json();
-
-    // Validate inputs
-    const allowedCurrencies = new Set(['gbp', 'usd', 'eur']);
-    const normalizedCurrency = typeof currency === 'string' ? currency.toLowerCase() : 'gbp';
-    if (!allowedCurrencies.has(normalizedCurrency)) {
-      return new Response(JSON.stringify({ error: 'Invalid currency' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const numericAmount = Number(amount);
-    if (!Number.isInteger(numericAmount) || numericAmount < 50 || numericAmount > 10_000_000) {
-      return new Response(JSON.stringify({ error: 'Invalid amount' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const safeItemName = typeof itemName === 'string' && itemName.trim().length > 0
-      ? itemName.slice(0, 200)
-      : 'Purchase';
-
-    // Service client for database writes
-    const supabaseService = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
-
+    const service = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "", { auth: { persistSession: false } });
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeSecretKey) {
-      throw new Error("Stripe secret key not configured");
-    }
+    if (!stripeSecretKey) throw new Error("Stripe secret key not configured");
+    const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" });
 
-    console.log("Creating Stripe payment for amount:", numericAmount, normalizedCurrency);
-
-    // Initialize Stripe
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2023-10-16",
+    const r = await createPayment({ id: userData.user.id, email: userData.user.email ?? "" }, payload, req.headers.get("origin"), {
+      stripe,
+      log: (step, details) => console.log(`[CREATE-PAYMENT] ${step}${details ? ` - ${JSON.stringify(details)}` : ""}`),
+      storedCustomerId: async (userId) => {
+        const { data } = await service.from("subscribers").select("stripe_customer_id").eq("user_id", userId).maybeSingle();
+        return (data?.stripe_customer_id as string | null) ?? null;
+      },
+      recordPayment: async (args) => {
+        const { error } = await service.rpc("create_payment_record", args);
+        if (error) throw new Error(error.message);
+      },
     });
-
-    // Check if a Stripe customer record exists for this email
-    const customers = await stripe.customers.list({
-      email: customerEmail,
-      limit: 1
-    });
-
-    let customerId;
-    if (customers.data.length > 0) {
-      customerId = customers.data[0].id;
-    }
-
-    // Create a one-time payment session
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      customer_email: customerId ? undefined : customerEmail,
-      line_items: [
-        {
-          price_data: {
-            currency: normalizedCurrency,
-            product_data: {
-              name: safeItemName
-            },
-            unit_amount: numericAmount,
-          },
-          quantity: 1,
-        },
-      ],
-      mode: "payment",
-      success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get("origin")}/pricing`,
-    });
-
-    console.log("Stripe payment session created:", session.id);
-
-    // Store payment record in database using secure function
-    try {
-      const { data: paymentId, error: paymentError } = await supabaseService
-        .rpc('create_payment_record', {
-          p_stripe_session_id: session.id,
-          p_customer_email: customerEmail,
-          p_amount: numericAmount,
-          p_item_name: safeItemName,
-          p_user_id: user.id,
-          p_customer_name: buyerInfo?.fullName || null,
-          p_company_name: buyerInfo?.companyName || null,
-          p_contact_number: buyerInfo?.contactNumber || null,
-          p_currency: normalizedCurrency,
-          p_metadata: {
-            session_created_at: new Date().toISOString(),
-            origin: req.headers.get("origin"),
-            stripe_customer_id: customerId || null
-          }
-        });
-
-      if (paymentError) {
-        console.error("Error storing payment record:", paymentError);
-        // Continue anyway - don't fail the payment creation
-      } else {
-        console.log("Payment record stored with ID:", paymentId);
-      }
-    } catch (dbError) {
-      console.error("Database error:", dbError);
-      // Continue anyway - don't fail the payment creation
-    }
-
-    return new Response(JSON.stringify({
-      id: session.id,
-      url: session.url,
-      status: session.status,
-      amount: numericAmount,
-      currency: normalizedCurrency
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
-
+    return json(r.body, r.status);
   } catch (error) {
-    console.error("Error creating Stripe payment:", error);
-    return new Response(JSON.stringify({
-      error: error.message || "Failed to create payment session"
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    console.error("Error creating Stripe payment:", error instanceof Error ? error.message : String(error));
+    return json({ error: (error as Error)?.message || "Failed to create payment session" }, 500);
   }
 });
