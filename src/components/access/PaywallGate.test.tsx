@@ -72,6 +72,38 @@ describe('PaywallGate', () => {
   });
 });
 
+// Phase 12b: a master account comes back from the server as state 'owner' (no platform role needed). The app has no
+// email list any more; whatever the email, only the server state decides.
+describe('master accounts (server state owner)', () => {
+  it('a master account with an ended trial never sees the paywall or the banner', () => {
+    user = { id: 'm1', email: 'mia@example.test' };
+    set('owner', { days_left: 0 });
+    at('/dashboard');
+    expect(screen.getByText('the app')).toBeInTheDocument();
+    expect(screen.queryByText(/trial has ended/)).toBeNull();
+    const { container } = render(<MemoryRouter><TrialBanner /></MemoryRouter>);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('switching the master account off brings back the normal rules (paywall after the trial)', () => {
+    user = { id: 'm1', email: 'mia@example.test' };
+    set('owner');
+    const view = render(<MemoryRouter initialEntries={['/dashboard']}><PaywallGate><p>the app</p></PaywallGate></MemoryRouter>);
+    expect(screen.getByText('the app')).toBeInTheDocument();
+    set('trial_ended');
+    view.rerender(<MemoryRouter initialEntries={['/dashboard']}><PaywallGate><p>the app</p></PaywallGate></MemoryRouter>);
+    expect(screen.queryByText('the app')).toBeNull();
+    expect(screen.getByRole('heading', { level: 1, name: 'Your 14-day trial has ended' })).toBeInTheDocument();
+  });
+
+  it('an owner email gets no special treatment: with trial_ended from the server it sees the paywall', () => {
+    user = { id: 'o1', email: 'toufikze@gmail.com' };
+    set('trial_ended');
+    at('/dashboard');
+    expect(screen.getByRole('heading', { level: 1, name: 'Your 14-day trial has ended' })).toBeInTheDocument();
+  });
+});
+
 describe('TrialBanner', () => {
   it('shows days left with a link to Pricing during a trial', () => {
     set('trial', { days_left: 6 });

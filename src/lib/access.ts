@@ -80,12 +80,6 @@ export function legacyStateRow(input: {
   return { ...base, state: 'trial_ended', days_left: 0 };
 }
 
-// TEMPORARY (Phase 12): the two owner accounts keep full access in the app even before my_access_state() is applied.
-// Both already hold `admin` in public.user_roles, which the server treats as `owner`, so this list can be deleted once
-// the SQL is live. It never gives access on the server.
-export const TEMPORARY_OWNER_EMAILS = ['toufikze@gmail.com', 'toufik.zemri@outlook.com'];
-export const isTemporaryOwnerEmail = (email?: string | null) => !!email && TEMPORARY_OWNER_EMAILS.includes(email.toLowerCase());
-
 /** The trial banner text, or null when no banner should show. */
 export function trialBannerText(access: Access): string | null {
   if (access.state !== 'trial') return null;
