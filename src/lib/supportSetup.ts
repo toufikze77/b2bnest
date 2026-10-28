@@ -28,7 +28,8 @@ export function timeZoneOffsetLabel(tz: string, at: Date = new Date()): string {
   try {
     const part = new Intl.DateTimeFormat('en-GB', { timeZone: tz, timeZoneName: 'shortOffset' }).formatToParts(at)
       .find((p) => p.type === 'timeZoneName');
-    return part?.value ?? '';
+    // ICU versions differ: some print "GMT+0" for UTC+0, others "GMT". Always show "GMT".
+    return (part?.value ?? '').replace(/^GMT[+-]0(?::00)?$/, 'GMT');
   } catch { return ''; }
 }
 
