@@ -32,6 +32,8 @@ const BANNED: { what: string; re: RegExp; allow?: RegExp }[] = [
   // Phase 18: workflow emails now carry the sender's own Reply-To, so the Phase 17 stop-gap warning is no longer true.
   // Phase 18: there is no free tier (owner decision); every account gets a 14-day trial, then chooses a plan.
   { what: '"free account" / freemium wording', re: /free account|freemium model with extensive free tools|offering free and premium/i },
+  // Phase 19 (owner decision 28 Oct 2026): workflows are in Business and Scale (and the trial), not in every plan.
+  { what: 'workflows-in-every-plan claim', re: /workflows? (are |is )?(included )?in (all|every) plans?|every plan includes (Workflow|workflows)|Solo (plan )?includes (Workflow|workflows)/i },
   { what: 'stale "replies go to B2BNEST" warning', re: /(repl(y|ies) go(es)? to B2BNEST|reply goes to B2BNEST), not (to )?you/i },
 ];
 

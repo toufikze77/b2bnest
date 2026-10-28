@@ -11,6 +11,7 @@ function deps(over: Partial<Deps> = {}) {
   const mails: Mail[] = []; const logs: RunLogRow[] = [];
   const d: Deps = {
     env: (n) => ENV[n], getUser: async (t) => (t === "good" ? { id: "u1" } : null),
+    accessState: () => Promise.resolve({ state: "subscribed", plan_key: "professional", via: "self" }),
     send: async (_c, m) => { mails.push(m); }, timeoutMs: 50, logRun: async (r) => { logs.push(r); }, ...over,
   };
   return { d, mails, logs };

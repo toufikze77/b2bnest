@@ -10,6 +10,7 @@ const W1 = '0f0f0f0f-0000-4000-8000-000000000001';
 let saved: unknown[] = [];
 let history: { data: unknown[] | null; error: unknown } = { data: [], error: null };
 const inserts: unknown[] = [];
+let accessRow: () => { data: unknown; error: unknown } = () => ({ data: null, error: { code: 'XX000', message: 'not read' } });
 const query = (result: () => { data: unknown; error: unknown }) => {
   const q: any = {
     select: () => q, eq: () => q, order: () => q, limit: () => Promise.resolve(result()),
@@ -21,7 +22,8 @@ const query = (result: () => { data: unknown; error: unknown }) => {
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     from: (t: string) => (t === 'workflow_run_logs' ? query(() => history) : query(() => ({ data: saved, error: null }))),
-    rpc: () => Promise.resolve({ data: false, error: null }),
+    // my_access_state() (Phase 19 plan rule). Default: not readable → editor shown, the server decides.
+    rpc: (fn: string) => Promise.resolve(fn === 'my_access_state' ? accessRow() : { data: false, error: null }),
     functions: { invoke: (...a: unknown[]) => invoke(...a) },
   },
 }));
@@ -30,6 +32,8 @@ vi.mock('@/hooks/useAuth', () => ({ useAuth: () => auth }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 import WorkflowStudio from './WorkflowStudio';
+import { clearAccessCache } from '@/hooks/useAccess';
+import { toast } from 'sonner';
 
 const wf = (subject = 'Hi', body = 'Hello', to = 'me@example.com') => [{
   id: W1, name: 'Email me', description: null, updated_at: '2026-10-04T00:00:00Z',
@@ -55,7 +59,8 @@ async function openAndRun() {
 
 beforeEach(() => {
   auth.user = { id: 'u1', email: 'owner@example.com', email_confirmed_at: '2026-10-01T10:00:00Z' };
-  invoke.mockReset(); inserts.length = 0; saved = wf(); history = { data: [], error: null };
+  invoke.mockReset(); inserts.length = 0; clearAccessCache();
+  accessRow = () => ({ data: null, error: { code: 'XX000', message: 'not read' } }); saved = wf(); history = { data: [], error: null };
   vi.spyOn(window, 'confirm').mockReturnValue(true);
 });
 
@@ -233,5 +238,45 @@ describe('Templates (Phase 15)', () => {
     fireEvent.click(await screen.findByRole('button', { name: /Start from a template/ }));
     const soon = await screen.findByRole('list', { name: 'Templates coming soon' });
     expect(within(soon).queryAllByRole('button')).toEqual([]);
+  });
+});
+
+describe('Workflow Studio by plan (Phase 19)', () => {
+  const plan = (state: string, plan_key: string | null, via = 'self') => () =>
+    ({ data: [{ state, plan_key, via, trial_ends_at: null, days_left: 0, subscription_status: plan_key ? 'active' : null }], error: null });
+
+  it('Solo: the upgrade panel instead of the editor; saved workflows are paused and past runs stay readable; no error toast', async () => {
+    accessRow = plan('subscribed', 'starter');
+    vi.mocked(toast.error).mockClear();
+    history = { data: [{ id: 'h1', created_at: '2026-10-20T10:00:00Z', user_id: 'u1', workflow_id: W1, run_id: 'r1', step_index: 0, step: 'email.send', status: 'ok', provider: 'smtp', request_summary: { recipients: 1 } }], error: null };
+    render(<MemoryRouter><WorkflowStudio /></MemoryRouter>);
+    const panel = await screen.findByTestId('workflows-upgrade');
+    expect(panel).toHaveTextContent('Workflows are included in the Business and Scale plans.');
+    expect(within(panel).getByRole('link', { name: 'See plans' })).toHaveAttribute('href', '/pricing');
+    expect(panel).toHaveTextContent('paused, not deleted');
+    expect(screen.queryByRole('button', { name: /New workflow/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Start from a template/ })).toBeNull();
+    fireEvent.click(await screen.findByRole('button', { name: /Email me/ }));
+    expect(screen.getByRole('button', { name: /Email me/ })).toHaveTextContent('Paused');
+    const card = await screen.findByTestId('paused-workflow');
+    expect(card).toHaveTextContent('Send an email: Hi');
+    expect(within(card).queryByRole('button', { name: /Run now|Save|Delete/ })).toBeNull();
+    expect(await within(card).findByText('Sent')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Run now/ })).toBeNull();
+    expect(invoke).not.toHaveBeenCalled();
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it('a company member on a Solo company plan sees the company wording', async () => {
+    accessRow = plan('subscribed', 'starter', 'company');
+    render(<MemoryRouter><WorkflowStudio /></MemoryRouter>);
+    expect(await screen.findByTestId('workflows-upgrade')).toHaveTextContent("Your company's plan doesn't include them.");
+  });
+
+  it.each([['subscribed', 'professional'], ['subscribed', 'enterprise'], ['trial', null], ['owner', null]])('%s %s: the editor, no upgrade panel', async (state, key) => {
+    accessRow = plan(state, key);
+    await openWorkflow();
+    expect(screen.getByRole('button', { name: /New workflow/ })).toBeInTheDocument();
+    expect(screen.queryByTestId('workflows-upgrade')).toBeNull();
   });
 });

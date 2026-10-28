@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { errorText } from "@/lib/workflowSteps";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -83,12 +84,16 @@ export default function WhatsAppSettings() {
     const { data, error } = await supabase.functions.invoke("workflow-execute", {
       body: { steps: [{ type: "whatsapp.send", to: testTo, body: testBody }] },
     });
+    // Phase 19: a refusal (plan doesn't include workflows, trial ended, plan check failed) comes back as a non-2xx
+    // reply with a plain message; show that message, not the generic "non-2xx status code".
+    const refused = error ? await errorText(error) : null;
     setTesting(false);
-    const result = (data as any)?.results?.[0];
-    if (error || (data as any)?.error || result?.ok === false) {
+    const reply = data as { error?: string; message?: string; results?: { ok?: boolean; message?: string; sid?: string }[] } | null;
+    const result = reply?.results?.[0];
+    if (error || reply?.error || result?.ok === false) {
       toast({
         title: "Test failed",
-        description: result?.message || (data as any)?.error || error?.message || "See logs.",
+        description: refused || result?.message || reply?.message || reply?.error || error?.message || "See logs.",
         variant: "destructive",
       });
       return;

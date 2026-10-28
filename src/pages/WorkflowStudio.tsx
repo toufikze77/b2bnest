@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, BookOpen, CheckCircle2, LayoutTemplate, Loader2, MousePointerClick, Play, Plus, Save, Trash2, XCircle, Zap } from 'lucide-react';
+import { ArrowDown, ArrowUp, BookOpen, CheckCircle2, LayoutTemplate, Loader2, MousePointerClick, PauseCircle, Play, Plus, Save, Trash2, XCircle, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { GUIDE_PATH } from '@/lib/workflowGuide';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { useAccess } from '@/hooks/useAccess';
+import { workflowsNeedUpgrade } from '@/lib/access';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +23,8 @@ import { EmailConnectionCheck } from '@/components/workflows/EmailConnectionChec
 import { RunDialog } from '@/components/workflows/RunDialog';
 import { RunHistory } from '@/components/workflows/RunHistory';
 import { TemplatePicker } from '@/components/workflows/TemplatePicker';
+import { WorkflowsUpgradePanel } from '@/components/workflows/WorkflowsUpgradePanel';
+import { WORKFLOWS_NOT_INCLUDED_MESSAGE } from '../../supabase/functions/_shared/workflow-access.ts';
 import { replyToAddress } from '../../supabase/functions/_shared/reply-to.ts';
 
 interface SavedWorkflow { id: string; name: string; description: string | null; workflow_steps: unknown; updated_at: string }
@@ -37,6 +41,10 @@ const runStep = (step: SimpleStep, workflowId: string | null, ctx: RunContext) =
 
 const WorkflowStudio = () => {
   const { user } = useAuth();
+  // Phase 19: workflows are in Business and Scale (and the trial). On Solo the editor is replaced by a calm upgrade
+  // panel; saved workflows are paused (kept, readable, not run) and past runs stay visible. The server enforces this.
+  const access = useAccess();
+  const paused = !access.loading && workflowsNeedUpgrade(access);
   const [list, setList] = useState<SavedWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -79,7 +87,7 @@ const WorkflowStudio = () => {
   });
 
   const save = async () => {
-    if (!user) return;
+    if (!user || paused) return;
     if (unsupported.length) return; // archived legacy workflows are read-only
     setSaving(true);
     const row = { user_id: user.id, name: name.trim() || 'Untitled workflow', workflow_steps: serializeSteps(steps) as never, updated_at: new Date().toISOString() };
@@ -101,7 +109,7 @@ const WorkflowStudio = () => {
   const useTemplate = (t: WorkingTemplate) => open(null, t.name, templateSteps(t, user?.email ?? '', stepId));
 
   const problems = steps.map(validateStep).filter(Boolean) as string[];
-  const canRun = steps.length > 0 && steps.length <= MAX_STEPS && !unsupported.length && !problems.length && !running;
+  const canRun = !paused && steps.length > 0 && steps.length <= MAX_STEPS && !unsupported.length && !problems.length && !running;
 
   // "Run now" opens the details, preview and confirm. Nothing is sent until the user confirms there.
   const run = () => { if (canRun && !runLock.current) setRunOpen(true); };
@@ -145,15 +153,17 @@ const WorkflowStudio = () => {
         </p>
       </div>
 
-      <EmailConnectionCheck />
+      {paused ? <WorkflowsUpgradePanel via={access.via} savedCount={list.length} /> : <EmailConnectionCheck />}
 
       <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
         <aside className="space-y-2">
-          <Button className="w-full" onClick={() => open(null)}><Plus className="mr-2 h-4 w-4" />New workflow</Button>
-          <Button className="w-full" variant="outline" onClick={() => setPickerOpen(true)}><LayoutTemplate className="mr-2 h-4 w-4" />Start from a template</Button>
+          {!paused && (<>
+            <Button className="w-full" onClick={() => open(null)}><Plus className="mr-2 h-4 w-4" />New workflow</Button>
+            <Button className="w-full" variant="outline" onClick={() => setPickerOpen(true)}><LayoutTemplate className="mr-2 h-4 w-4" />Start from a template</Button>
+          </>)}
           {loading ? <p className="flex items-center gap-2 p-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Loading…</p>
             : loadError ? <div className="p-2 text-sm text-destructive">Couldn't load workflows. <button className="underline" onClick={load}>Retry</button></div>
-            : list.length === 0 ? <p className="p-2 text-sm text-muted-foreground">No saved workflows yet.</p>
+            : list.length === 0 ? (paused ? null : <p className="p-2 text-sm text-muted-foreground">No saved workflows yet.</p>)
             : (
               <ul className="space-y-1" aria-label="Saved workflows">
                 {list.map((w) => {
@@ -164,7 +174,7 @@ const WorkflowStudio = () => {
                         className={`w-full rounded-md border px-3 py-2 text-left text-sm transition-colors hover:bg-muted ${w.id === id ? 'border-primary bg-primary/5' : 'border-border'}`}>
                         <span className="block truncate font-medium">{w.name}</span>
                         <span className="text-xs text-muted-foreground">
-                          {p.unsupported.length ? 'Archived · Can\'t run' : `${p.steps.length} step${p.steps.length === 1 ? '' : 's'}`}
+                          {p.unsupported.length ? 'Archived · Can\'t run' : paused ? 'Paused' : `${p.steps.length} step${p.steps.length === 1 ? '' : 's'}`}
                         </span>
                       </button>
                     </li>
@@ -175,7 +185,24 @@ const WorkflowStudio = () => {
         </aside>
 
         <section className="space-y-4">
-          {unsupported.length > 0 ? (
+          {paused ? (id ? (
+            <Card data-testid="paused-workflow">
+              <CardHeader>
+                <div className="flex flex-wrap items-center gap-2">
+                  <CardTitle className="text-lg">{name}</CardTitle>
+                  <Badge variant="outline" className="gap-1"><PauseCircle className="h-3.5 w-3.5" aria-hidden="true" />Paused</Badge>
+                </div>
+                <CardDescription>{WORKFLOWS_NOT_INCLUDED_MESSAGE} This workflow is kept exactly as saved; it isn't run or deleted.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ol className="list-decimal space-y-1 pl-6 text-sm text-muted-foreground" aria-label="Saved steps">
+                  {[...unsupported, ...steps.map((x) => (x.kind === 'email' && x.config.subject ? `${stepDefinition(x.kind).label}: ${x.config.subject}` : stepDefinition(x.kind).label))].map((n, i) => <li key={i}>{n}</li>)}
+                </ol>
+                {user && <RunHistory workflowId={id} userId={user.id} refreshKey={historyKey} />}
+              </CardContent>
+            </Card>
+          ) : list.length > 0 ? <p className="text-sm text-muted-foreground">Open a saved workflow to see its steps and past runs.</p> : null)
+          : unsupported.length > 0 ? (
             <Card>
               <CardHeader>
                 <div className="flex flex-wrap items-center gap-2">

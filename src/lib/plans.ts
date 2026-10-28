@@ -93,7 +93,9 @@ export const PLANS: Plan[] = [
       'Everything in Solo',
       'CRM & Project Management',
       'Team members and roles',
-      'Workflow builder (email steps only)',
+      // Phase 19 (owner decision 28 Oct 2026): workflows are in Business and Scale, not Solo. Enforced on the server
+      // (supabase/functions/_shared/workflow-access.ts); everyone can use them during the 14-day trial.
+      'Workflow Studio: one-click email workflows',
     ],
     cta: 'Subscribe',
     popular: true,
@@ -110,7 +112,7 @@ export const PLANS: Plan[] = [
     admins: 10,
     aiCredits: 5000,
     features: [
-      'Everything in Business',
+      'Everything in Business, including Workflow Studio',
       'Higher user, admin and AI credit limits',
     ],
     cta: 'Subscribe',

@@ -10,6 +10,8 @@ const deps = (over: Partial<Deps> = {}): Deps & { sent: number } => {
     sent: 0,
     env: (n: string) => ENV[n],
     getUser: async (t: string) => (t === "good" ? { id: "u1" } : null),
+    // A Business subscriber: workflows included (Phase 19 rule tested in phase19_test.ts).
+    accessState: () => Promise.resolve({ state: "subscribed", plan_key: "professional", via: "self" }),
     send: async () => { d.sent++; },
     timeoutMs: 50,
     ...over,

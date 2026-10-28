@@ -71,3 +71,21 @@ describe('public SEO copy matches the catalogue', () => {
     }
   });
 });
+
+// Phase 19 (owner decision 28 Oct 2026): Workflow Studio is in Business and Scale, not Solo. The Pricing list, the
+// Pricing FAQ and the server rule must say the same thing.
+import { WORKFLOWS_FAQ_ANSWER } from '@/components/PricingPlans';
+import { WORKFLOW_PLAN_KEYS, workflowsIncluded as serverRule } from '../../supabase/functions/_shared/workflow-access.ts';
+describe('workflows by plan', () => {
+  it('Business and Scale list Workflow Studio; Solo does not; the server rule agrees for every plan', () => {
+    const lists = Object.fromEntries(PLANS.map((p) => [p.id, p.features.join(' | ')]));
+    expect(lists.starter).not.toMatch(/workflow/i);
+    expect(lists.professional).toMatch(/Workflow Studio/);
+    expect(lists.enterprise).toMatch(/Workflow Studio/);
+    for (const p of PLANS) {
+      expect(serverRule({ state: 'subscribed', plan_key: p.id }), p.id).toBe(/workflow/i.test(p.features.join(' ')));
+    }
+    expect([...WORKFLOW_PLAN_KEYS]).toEqual(['professional', 'enterprise']);
+    expect(WORKFLOWS_FAQ_ANSWER).toMatch(/^Business and Scale include Workflow Studio\. Solo doesn't\./);
+  });
+});

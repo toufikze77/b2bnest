@@ -18,7 +18,8 @@ export const groups = [
     { label: 'Calendar', to: '/project-management?view=calendar', icon: CalendarDays },
     { label: 'Goals', to: '/project-management?tab=goals', icon: Target },
     { label: 'Notes', to: '/business-tools/notepro', icon: NotebookPen },
-    { label: 'Workflows', to: '/workflow-studio', icon: WandSparkles },
+    // Phase 19: marked "Business" in the menu for accounts whose plan doesn't include workflows (Solo).
+    { label: 'Workflows', to: '/workflow-studio', icon: WandSparkles, planBadge: 'Business' },
     { label: 'Templates', to: '/template-center', icon: LayoutTemplate },
     { label: 'All business tools', to: '/business-tools', icon: Sparkles },
   ] },
