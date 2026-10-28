@@ -99,4 +99,22 @@ describe('no invented claims in src or supabase/functions', () => {
       expect(FREE_TIER.test(out) && !TRIAL_ENDS.test(out), `${kind}: free-tier wording`).toBe(false);
     }
   });
+
+  // Phase 15: the Workflow Studio templates are scanned as files above; their text with details filled in is checked too.
+  it('Workflow Studio templates pass every claims rule once filled in', async () => {
+    const { WORKING_TEMPLATES } = await import('../lib/workflowEmailTemplates');
+    const { PLACEHOLDERS, renderTemplate } = await import('../../supabase/functions/_shared/placeholders.ts');
+    const values = Object.fromEntries(PLACEHOLDERS.map((p) => [p.key, p.example]));
+    for (const t of WORKING_TEMPLATES) {
+      for (const step of t.steps) {
+        const r = renderTemplate(step, values);
+        expect(r.ok, t.id).toBe(true);
+        const out = r.ok === true ? `${t.name}\n${t.description}\n${r.subject}\n${r.body}` : '';
+        for (const { what, re, allow } of BANNED) {
+          for (const line of out.split('\n')) expect(re.test(line) && !(allow && allow.test(line)), `${t.id}: ${what}: ${line}`).toBe(false);
+        }
+        expect(FREE_TIER.test(out), `${t.id}: free-tier wording`).toBe(false);
+      }
+    }
+  });
 });

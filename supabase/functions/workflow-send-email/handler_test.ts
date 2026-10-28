@@ -1,5 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.190.0/testing/asserts.ts";
-import { makeHandler, Deps } from "./handler.ts";
+import { Deps, makeHandler } from "./request.ts";
 
 const ENV: Record<string, string> = { GMAIL_USER: "sender@example.com", GMAIL_APP_PASSWORD: "x" };
 const req = (body: unknown, auth = "Bearer good") =>

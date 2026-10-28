@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { makeHandler, redactEmails } from "./handler.ts";
+import { redactEmails } from "./handler.ts";
+import { makeHandler, memoryRateLimit } from "./request.ts";
 import { probeSmtp } from "./probe.ts";
 import { sendSmtp } from "./smtp.ts";
 
@@ -17,6 +18,13 @@ serve(makeHandler({
     return data === true;
   },
   probe: (cfg) => probeSmtp(cfg),
+  // 30 email steps a minute per user, per instance (same style as workflow-execute).
+  rateLimit: memoryRateLimit(30, 60_000),
+  // Run history rows are written with the service role, so a browser can't forge a "sent" row (docs/phase15).
+  logRun: async (row) => {
+    const { error } = await admin.from("workflow_run_logs").insert(row);
+    if (error) throw new Error(error.message);
+  },
   // Own SMTP sender (denomailer hid the failing command behind "invalid cmd").
   send: async (cfg, mail) => {
     const r = await sendSmtp(cfg, mail);
