@@ -1,6 +1,7 @@
 // The workflow email step's request handling (Workflow Studio → "Send an email"). Dependencies are injected so tests
 // never contact a real mail server. Shared mail helpers stay in handler.ts, which the email senders also import.
 import { renderTemplate } from "../_shared/placeholders.ts";
+import { NO_REPLY_ADDRESS, replyToAddress } from "../_shared/reply-to.ts";
 import {
   classifySmtpError, corsHeaders, Deps as BaseDeps, Mail, redactEmails, resolveSmtp, sanitizeError, UNKNOWN_STATUS,
 } from "./handler.ts";
@@ -111,7 +112,14 @@ export function makeHandler(deps: Deps) {
     const cfg = resolveSmtp(deps.env);
     if (!cfg) return respond(503, { success: false, code: "not_configured", sent: "not_sent", error: "Email sending isn't set up on the server yet. Nothing was sent." }, "error");
 
-    const mail: Mail = { from: cfg.from, to, subject: rendered.subject, ...(body.html === true ? { html: rendered.body } : { content: rendered.body }) };
+    // Replies go to the sender's own verified account email (from the auth server, never the request body). The From
+    // address stays B2BNEST's. Without a verified, safe address no Reply-To is set and the response says so.
+    const replyTo = replyToAddress(user);
+    const mail: Mail = {
+      from: cfg.from, to, subject: rendered.subject, ...(body.html === true ? { html: rendered.body } : { content: rendered.body }),
+      ...(replyTo ? { replyTo } : {}),
+    };
+    const reply = replyTo ? { replyTo } : { replyTo: null, replyNote: NO_REPLY_ADDRESS };
     const ms = deps.timeoutMs ?? 20_000;
     let timer: number | undefined;
     try {
@@ -133,6 +141,6 @@ export function makeHandler(deps: Deps) {
     } finally { clearTimeout(timer); }
 
     console.log("workflow-send-email: accepted", { provider: cfg.provider, recipients: to.length });
-    return respond(200, { success: true, status: "accepted", message: "Accepted by the email provider. Inbox delivery isn't confirmed." }, "ok", cfg.provider);
+    return respond(200, { success: true, status: "accepted", message: "Accepted by the email provider. Inbox delivery isn't confirmed.", ...reply }, "ok", cfg.provider);
   };
 }

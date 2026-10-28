@@ -42,7 +42,7 @@ describe('workflow execution (mocked server, nothing is sent)', () => {
   const email = { id: 'e', kind: 'email' as const, config: { to: 'a@b.co', subject: 's', body: 'b' } };
   const wa = { id: 'w', kind: 'whatsapp' as const, config: { to: '+447700900123', body: 'b' } };
   it('reports success only when the server confirms it', async () => {
-    expect(await executeStep(email, null, async () => ({ data: { success: true }, error: null }))).toEqual({ ok: true, message: 'Accepted by the email provider (inbox delivery not confirmed)' });
+    expect(await executeStep(email, null, async () => ({ data: { success: true }, error: null }))).toEqual({ ok: true, message: "Accepted by the email provider (inbox delivery not confirmed). Replies go to B2BNEST's sending address." });
     expect((await executeStep(email, null, async () => ({ data: {}, error: null }))).ok).toBe(false);
     expect((await executeStep(email, null, async () => ({ data: null, error: null }))).ok).toBe(false);
     expect((await executeStep(email, null, async () => ({ data: { success: false, error: 'X not connected' }, error: null })))).toEqual({ ok: false, message: 'X not connected' });
@@ -66,5 +66,27 @@ describe('unknown outcomes', () => {
     const email = { id: 'e', kind: 'email' as const, config: { to: 'a@b.co', subject: 's', body: 'b' } };
     expect((await executeStep(email, null, async () => ({ data: null, error: new Error('fetch failed') }))).message).toBe('Delivery status unknown. Check your inbox before trying again.');
     expect((await executeStep(email, null, async () => { throw new Error('offline'); })).message).toBe('Delivery status unknown. Check your inbox before trying again.');
+  });
+});
+
+import { replyText, sentReplyText } from './workflowSteps';
+import { NO_REPLY_ADDRESS, replyToAddress } from '../../supabase/functions/_shared/reply-to.ts';
+
+describe('where replies go (Phase 18)', () => {
+  it('the preview uses only the signed-in sender\'s own verified email', () => {
+    expect(replyToAddress({ email: 'owner@acme.example', email_confirmed_at: '2026-10-01' })).toBe('owner@acme.example');
+    expect(replyToAddress({ email: 'owner@acme.example', email_confirmed_at: null })).toBeNull();
+    expect(replyToAddress({ email: 'owner@acme.example\r\nBcc: x@evil.example', email_confirmed_at: '2026-10-01' })).toBeNull();
+    expect(replyToAddress(null)).toBeNull();
+    expect(replyText('owner@acme.example')).toBe('Replies go to owner@acme.example.');
+    expect(replyText(null)).toBe(NO_REPLY_ADDRESS);
+  });
+  it('after sending, the result says where replies go, from the server\'s own answer', () => {
+    expect(sentReplyText({ success: true, replyTo: 'owner@acme.example' })).toBe('Replies go to owner@acme.example.');
+    expect(sentReplyText({ success: true, replyTo: null, replyNote: NO_REPLY_ADDRESS })).toBe(NO_REPLY_ADDRESS);
+    // A server without the Phase 18 change sets no Reply-To and sends no field: say so honestly.
+    expect(sentReplyText({ success: true })).toBe("Replies go to B2BNEST's sending address.");
+    // An unsafe value from the server is never shown as an address.
+    expect(sentReplyText({ success: true, replyTo: 'a@b.example\nBcc: c@d.example' })).toBe("Replies go to B2BNEST's sending address.");
   });
 });

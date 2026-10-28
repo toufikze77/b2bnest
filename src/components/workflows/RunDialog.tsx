@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Mail, Send } from 'lucide-react';
+import { Mail, Reply, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { SimpleStep, confirmText, renderEmailStep, runPlan, stepDefinition } from '@/lib/workflowSteps';
+import { SimpleStep, confirmText, renderEmailStep, replyText, runPlan, stepDefinition } from '@/lib/workflowSteps';
 import { PLACEHOLDERS } from '../../../supabase/functions/_shared/placeholders.ts';
 
 interface Props {
   open: boolean;
   name: string;
   steps: SimpleStep[];
+  /** The signed-in sender's own verified email (replyToAddress), or null. Never anyone else's address. */
+  replyTo: string | null;
   onCancel: () => void;
   onConfirm: (values: Record<string, string>) => void;
 }
@@ -19,7 +21,7 @@ interface Props {
  * Shown when the user presses "Run now": the details for any {{placeholders}}, an exact preview of every email
  * (filled by the same function the server uses), and a confirm button. Nothing is sent until that button is pressed.
  */
-export function RunDialog({ open, name, steps, onCancel, onConfirm }: Props) {
+export function RunDialog({ open, name, steps, replyTo, onCancel, onConfirm }: Props) {
   const plan = useMemo(() => runPlan(steps), [steps]);
   const [values, setValues] = useState<Record<string, string>>({});
   useEffect(() => { if (open) setValues({}); }, [open]);
@@ -62,6 +64,7 @@ export function RunDialog({ open, name, steps, onCancel, onConfirm }: Props) {
               {r.ok === true ? (
                 <dl className="space-y-1">
                   <div className="flex gap-2"><dt className="w-16 shrink-0 text-muted-foreground">To</dt><dd className="min-w-0 break-words">{step.config.to}</dd></div>
+                  <div className="flex gap-2"><dt className="w-16 shrink-0 text-muted-foreground">Replies</dt><dd className="min-w-0 break-words" data-testid="reply-to">{replyText(replyTo)}</dd></div>
                   <div className="flex gap-2"><dt className="w-16 shrink-0 text-muted-foreground">Subject</dt><dd className="min-w-0 break-words font-medium">{r.subject}</dd></div>
                   <div className="pt-1"><dt className="sr-only">Message</dt><dd className="whitespace-pre-wrap break-words rounded bg-muted/40 p-2">{r.body}</dd></div>
                 </dl>
@@ -77,7 +80,14 @@ export function RunDialog({ open, name, steps, onCancel, onConfirm }: Props) {
         </section>
 
         <DialogFooter className="flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-medium" data-testid="run-summary">{confirmText(plan)}</p>
+          <div className="space-y-1">
+            <p className="text-sm font-medium" data-testid="run-summary">{confirmText(plan)}</p>
+            {plan.emails > 0 && (
+              <p className={`flex items-start gap-1.5 text-xs ${replyTo ? 'text-muted-foreground' : 'text-warning'}`} data-testid="run-reply-to">
+                <Reply className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" /><span className="min-w-0 break-words">{replyText(replyTo)}</span>
+              </p>
+            )}
+          </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={onCancel}>Cancel</Button>
             <Button onClick={() => onConfirm(values)} disabled={blocked || plan.emails === 0}>

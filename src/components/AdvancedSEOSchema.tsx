@@ -15,7 +15,7 @@ const AdvancedSEOSchema = ({ page = 'home' }: AdvancedSEOSchemaProps) => {
       "@context": "https://schema.org",
       "@type": "Product",
       "name": "B2BNest Business Tools Suite",
-      "description": "Free and affordable business tools designed for entrepreneurs, startups, and small businesses",
+      "description": "Business tools for entrepreneurs, startups and small businesses: some quick tools without an account, the full workspace with a 14-day free trial and then a paid plan",
       "category": "Business Software",
       "brand": {
         "@type": "Brand",
@@ -67,7 +67,7 @@ const AdvancedSEOSchema = ({ page = 'home' }: AdvancedSEOSchemaProps) => {
       "@context": "https://schema.org",
       "@type": "Service",
       "name": "Affordable Business Tools Platform",
-      "description": "All-in-one business tools platform offering free and premium solutions for entrepreneurs and small businesses",
+      "description": "All-in-one business workspace for entrepreneurs and small businesses: a 14-day free trial of all features, then a paid plan",
       "provider": {
         "@type": "Organization",
         "name": "B2BNest"
@@ -84,7 +84,7 @@ const AdvancedSEOSchema = ({ page = 'home' }: AdvancedSEOSchemaProps) => {
         "@type": "Offer",
         "priceCurrency": "USD",
         "price": "0",
-        "description": "Freemium model with extensive free tools and affordable premium features"
+        "description": "Some quick tools can be used without an account. The full workspace has a 14-day free trial, then you choose a paid plan"
       }
     };
 

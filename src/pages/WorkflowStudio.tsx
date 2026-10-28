@@ -21,6 +21,7 @@ import { EmailConnectionCheck } from '@/components/workflows/EmailConnectionChec
 import { RunDialog } from '@/components/workflows/RunDialog';
 import { RunHistory } from '@/components/workflows/RunHistory';
 import { TemplatePicker } from '@/components/workflows/TemplatePicker';
+import { replyToAddress } from '../../supabase/functions/_shared/reply-to.ts';
 
 interface SavedWorkflow { id: string; name: string; description: string | null; workflow_steps: unknown; updated_at: string }
 
@@ -283,7 +284,7 @@ const WorkflowStudio = () => {
         </section>
       </div>
 
-      <RunDialog open={runOpen} name={name} steps={steps} onCancel={() => setRunOpen(false)} onConfirm={confirmRun} />
+      <RunDialog open={runOpen} name={name} steps={steps} replyTo={replyToAddress(user)} onCancel={() => setRunOpen(false)} onConfirm={confirmRun} />
       <TemplatePicker open={pickerOpen} onClose={() => setPickerOpen(false)} onUse={useTemplate} />
     </div>
   );

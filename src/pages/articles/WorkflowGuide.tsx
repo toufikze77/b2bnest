@@ -123,8 +123,9 @@ const WorkflowGuide = () => {
             <ul className="list-disc space-y-1 pl-6">
               <li>Have an email address you can read, so you can send the first run to yourself and check it.</li>
               <li>
-                Emails are sent from B2BNEST's sending address, so <strong>if your customer replies, the reply goes to B2BNEST, not to you</strong>.
-                Put your own phone number or email address in the message so customers can reach you.
+                Emails are sent from B2BNEST's sending address, and <strong>when your customer replies, the reply goes to your own account email</strong>.
+                The preview shows that address before you send. Your account email needs to be verified; if it isn't, the preview says so and
+                replies go to B2BNEST's sending address instead.
               </li>
               <li>You need to be signed in, and your account needs an active trial or plan to open Workflows.</li>
             </ul>
@@ -135,7 +136,7 @@ const WorkflowGuide = () => {
               <li>Open <strong>Workflows</strong> from the menu (under Work).</li>
               <li>Press <strong>"Start from a template"</strong>. Press <strong>"Preview"</strong> on a template to read the email, then <strong>"Use this template"</strong>.</li>
               <li><strong>"To"</strong> starts as your own email address, so your first run comes to you. When you're happy, change it to your customer's address (up to {MAX_RECIPIENTS}, separated by commas).</li>
-              <li>Change the subject and message as you like, and add your own contact details. Then press <strong>"Save"</strong>. Only saved workflows keep a run history.</li>
+              <li>Change the subject and message as you like. Then press <strong>"Save"</strong>. Only saved workflows keep a run history.</li>
               <li>Press <strong>"Run now"</strong>. Fill in <strong>"Run with these details"</strong>, check the <strong>"Email preview"</strong> and the line that says how many emails will go to how many recipients, then press the <strong>Send</strong> button.</li>
               <li>Each step shows its result, and the run is added to <strong>"Run history"</strong> below the steps.</li>
             </ol>

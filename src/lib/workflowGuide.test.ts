@@ -60,7 +60,15 @@ describe('workflows guide facts come from the code (Phase 17)', () => {
     expect(WORKFLOW_FAQS.find((f) => /start by themselves/.test(f.question))!.answer).toMatch(/^Not yet\./);
   });
 
-  it('templates no longer tell customers to reply (replies go to B2BNEST, not the business)', () => {
-    for (const t of WORKING_TEMPLATES) for (const s of t.steps) expect(`${s.subject}\n${s.body}`).not.toMatch(/reply to this email/i);
+  it('replies go to the sender (Phase 18): the guide, FAQ and step help say so, and nothing says they go to B2BNEST instead', () => {
+    const faq = WORKFLOW_FAQS.find((f) => f.question === 'Where do replies go?')!.answer;
+    expect(faq).toMatch(/your own account email/);
+    expect(faq).toMatch(/isn't verified/);
+    expect(read('src/pages/articles/WorkflowGuide.tsx')).toMatch(/the reply goes to your own account email/);
+    expect(read('src/lib/workflowSteps.ts')).toMatch(/Replies go to your own verified account email/);
+    for (const f of ['src/pages/articles/WorkflowGuide.tsx', 'src/lib/workflowGuide.ts', 'src/lib/workflowSteps.ts', 'src/components/workflows/TemplatePicker.tsx'])
+      expect(read(f), f).not.toMatch(/B2BNEST, not (to )?you/);
+    // With replies reaching the sender again, the templates may ask the customer to reply.
+    expect(WORKING_TEMPLATES.some((t) => t.steps.some((s) => /reply to this email/i.test(s.body)))).toBe(true);
   });
 });
