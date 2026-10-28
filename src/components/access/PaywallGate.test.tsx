@@ -1,18 +1,19 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { accessFromState, type Access } from '@/lib/access';
 
 let user: { id: string; email: string } | null = { id: 'u1', email: 'u@t.test' };
 let access: Access & { loading: boolean };
-vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user, loading: false }) }));
+const signOut = vi.fn(async () => undefined);
+vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user, loading: false, signOut }) }));
 vi.mock('@/hooks/useAccess', () => ({ useAccess: () => access }));
 vi.mock('@/components/PricingPlans', () => ({ default: ({ variant }: { variant?: string }) => <div data-testid="plans">plans:{variant}<button>Subscribe</button></div> }));
 
-import PaywallGate, { NOTHING_DELETED, NOTHING_DELETED_MEMBER } from './PaywallGate';
+import PaywallGate, { NOTHING_DELETED, NOTHING_DELETED_MEMBER, SUSPENDED_TITLE } from './PaywallGate';
 import TrialBanner from './TrialBanner';
 
-const set = (state: 'owner' | 'subscribed' | 'trial' | 'trial_ended', over: Record<string, unknown> = {}) => {
+const set = (state: 'owner' | 'subscribed' | 'trial' | 'trial_ended' | 'suspended', over: Record<string, unknown> = {}) => {
   access = { ...accessFromState({ state, trial_ends_at: null, days_left: 3, plan_key: null, subscription_status: null, via: 'self', ...over }), loading: false };
 };
 const at = (path: string) => render(<MemoryRouter initialEntries={[path]}><PaywallGate><p>the app</p></PaywallGate></MemoryRouter>);
@@ -101,6 +102,58 @@ describe('master accounts (server state owner)', () => {
     set('trial_ended');
     at('/dashboard');
     expect(screen.getByRole('heading', { level: 1, name: 'Your 14-day trial has ended' })).toBeInTheDocument();
+  });
+});
+
+describe('suspended (Phase 12c)', () => {
+  beforeEach(() => { user = { id: 'u1', email: 'u@t.test' }; signOut.mockClear(); });
+
+  it('shows the full-page suspended screen with Contact, Help and Sign out — and no plans or payment buttons', () => {
+    set('suspended');
+    at('/dashboard');
+    expect(screen.queryByText('the app')).toBeNull();
+    expect(screen.getByRole('heading', { level: 1, name: SUSPENDED_TITLE })).toBeInTheDocument();
+    expect(SUSPENDED_TITLE).toBe('Your account has been suspended');
+    expect(screen.getByRole('link', { name: 'Contact us' })).toHaveAttribute('href', '/contact');
+    expect(screen.getByRole('link', { name: 'Help' })).toHaveAttribute('href', '/help');
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
+    expect(screen.queryByTestId('plans')).toBeNull();
+    expect(screen.queryByRole('button', { name: /subscribe/i })).toBeNull();
+    expect(screen.queryByRole('link', { name: /pricing|compare plans|billing/i })).toBeNull();
+  });
+
+  it('Sign out signs the person out', () => {
+    set('suspended');
+    at('/crm');
+    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+    expect(signOut).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['/contact', '/help', '/privacy', '/terms', '/auth', '/business-resources', '/knowledge-base/security'])('%s stays open', (path) => {
+    set('suspended');
+    at(path);
+    expect(screen.getByText('the app')).toBeInTheDocument();
+  });
+
+  it.each(['/pricing', '/settings', '/payment-success', '/support/portal', '/onboarding'])('%s is blocked (no plans or payment for a suspended account)', (path) => {
+    set('suspended');
+    at(path);
+    expect(screen.getByRole('heading', { level: 1, name: SUSPENDED_TITLE })).toBeInTheDocument();
+  });
+
+  it('the trial banner never shows for a suspended account', () => {
+    set('suspended', { days_left: 5 });
+    const { container } = render(<MemoryRouter><TrialBanner /></MemoryRouter>);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('reactivated (server state back to trial) -> the app again', () => {
+    set('suspended');
+    const view = render(<MemoryRouter initialEntries={['/dashboard']}><PaywallGate><p>the app</p></PaywallGate></MemoryRouter>);
+    expect(screen.queryByText('the app')).toBeNull();
+    set('trial', { days_left: 3 });
+    view.rerender(<MemoryRouter initialEntries={['/dashboard']}><PaywallGate><p>the app</p></PaywallGate></MemoryRouter>);
+    expect(screen.getByText('the app')).toBeInTheDocument();
   });
 });
 

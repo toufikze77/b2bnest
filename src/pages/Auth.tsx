@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { FileText, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
+import { BANNED_MESSAGE, isBannedAuthError } from '@/lib/authErrors';
 import TwoFactorAuth from '@/components/TwoFactorAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { confirmationRedirect, safeNext } from '@/lib/onboarding';
@@ -22,6 +23,7 @@ const Auth = () => {
   const [fullName, setFullName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [suspendedNotice, setSuspendedNotice] = useState(false);
   const [showTwoFactor, setShowTwoFactor] = useState(false);
   const [twoFactorEmail, setTwoFactorEmail] = useState('');
   const [isVerification, setIsVerification] = useState(false);
@@ -119,6 +121,11 @@ const Auth = () => {
         if (error) {
           const notConfirmed = (error.message || '').toLowerCase().includes('not confirmed');
           if (notConfirmed) setPendingEmail(email);
+          // Phase 12c: suspended accounts are banned in Supabase Auth; say so plainly instead of a generic error.
+          if (isBannedAuthError(error)) {
+            setSuspendedNotice(true);
+            toast({ title: 'Account suspended', description: BANNED_MESSAGE, variant: 'destructive' });
+          } else
           toast({
             title: notConfirmed ? "Account not activated" : "Sign In Failed",
             description: notConfirmed ? "Please activate your account using the link we emailed you, or resend it from the red banner." : (error.message || "An unexpected error occurred"),
@@ -285,6 +292,11 @@ const Auth = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  {isLogin && suspendedNotice && (
+                    <p role="alert" className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-foreground">
+                      This account has been suspended. <Link to="/contact" className="font-semibold underline underline-offset-4">Contact us.</Link>
+                    </p>
+                  )}
                   <form onSubmit={handleSubmit} className="space-y-4">
                     {!isLogin && (
                       <>

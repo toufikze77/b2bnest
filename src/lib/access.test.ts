@@ -71,3 +71,16 @@ describe('trial banner and exempt routes', () => {
     expect(Object.keys(accessModule).filter((k) => /email|owner_?emails/i.test(k))).toEqual([]);
   });
 });
+
+describe('suspended (Phase 12c)', () => {
+  it('maps to no access, not trial_ended, no trial, no plan, and no banner', () => {
+    const a = accessFromState({ state: 'suspended', trial_ends_at: null, days_left: 0, plan_key: null, subscription_status: null, via: 'self', owner_name: null });
+    expect(a).toMatchObject({ state: 'suspended', suspended: true, hasAccess: false, trialEnded: false, inTrial: false, daysLeft: 0, planKey: null, via: 'self' });
+    expect(trialBannerText(a)).toBeNull();
+  });
+
+  it('every other state is not suspended', () => {
+    for (const s of ['owner', 'subscribed', 'trial', 'trial_ended'] as const) expect(accessFromState(row({ state: s })).suspended).toBe(false);
+    expect(accessFromState(null).suspended).toBe(false);
+  });
+});

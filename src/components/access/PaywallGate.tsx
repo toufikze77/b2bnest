@@ -1,8 +1,8 @@
 import { ReactNode } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccess } from '@/hooks/useAccess';
-import { isPaywallExempt, type Access } from '@/lib/access';
+import { isPaywallExempt, isSuspendedExempt, type Access } from '@/lib/access';
 import PricingPlans from '@/components/PricingPlans';
 import { Button } from '@/components/ui/button';
 
@@ -43,11 +43,39 @@ export function TrialEndedScreen({ access }: { access: Access }) {
   );
 }
 
-/** Wraps the signed-in app. Blocks only when the server says the trial has ended, and never on an exempt route. */
+export const SUSPENDED_TITLE = 'Your account has been suspended';
+export const SUSPENDED_TEXT = "You can't use B2BNEST while your account is suspended. If you think this is a mistake, contact us.";
+
+/** Phase 12c: shown to a suspended account. No plans, no payment buttons, no way round it but Contact. */
+export function SuspendedScreen() {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+  return (
+    <section aria-labelledby="suspended-title" className="min-h-screen bg-background px-4 py-16 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-xl text-center">
+        <h1 id="suspended-title" className="text-3xl font-bold text-brand-navy dark:text-foreground sm:text-4xl">{SUSPENDED_TITLE}</h1>
+        <p className="mt-4 text-lg text-muted-foreground">{SUSPENDED_TEXT}</p>
+        <p className="mt-3 text-base text-foreground">Nothing has been deleted.</p>
+        <nav aria-label="Help" className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <Button asChild><Link to="/contact">Contact us</Link></Button>
+          <Button asChild variant="outline"><Link to="/help">Help</Link></Button>
+          <Button variant="ghost" onClick={async () => { await signOut(); navigate('/'); }}>Sign out</Button>
+        </nav>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Wraps the signed-in app. Blocks when the server says the trial has ended (paywall, exempt routes as in Phase 12) or
+ * the account is suspended (narrower exempt list, see isSuspendedExempt). Never blocks while loading.
+ */
 export default function PaywallGate({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { pathname } = useLocation();
   const access = useAccess();
-  if (!user || isPaywallExempt(pathname) || access.loading || !access.trialEnded) return <>{children}</>;
+  if (!user || access.loading) return <>{children}</>;
+  if (access.suspended) return isSuspendedExempt(pathname) ? <>{children}</> : <SuspendedScreen />;
+  if (isPaywallExempt(pathname) || !access.trialEnded) return <>{children}</>;
   return <TrialEndedScreen access={access} />;
 }
