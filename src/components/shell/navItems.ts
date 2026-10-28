@@ -34,6 +34,17 @@ export const groups = [
   ] },
   { label: 'Team', items: [{ label: 'Employee rota', to: '/rota', icon: UsersRound }] },
 ];
+/** Leaves the app for the public website. Kept out of the in-app targets, so it is never shown as the current page. */
+export const homeItem = { label: 'B2BNEST home', to: '/', icon: Home };
+
+/**
+ * Where the shell's logo goes: to the dashboard from any app page, and to the public home page when you are
+ * already on the dashboard (so the logo can always reach the home page).
+ */
+export function logoTarget(pathname: string): { to: string; label: string } {
+  return pathname === '/dashboard' ? { to: '/', label: 'Go to home page' } : { to: '/dashboard', label: 'Go to dashboard' };
+}
+
 export const bottomItems = [
   { label: 'AI Studio', to: '/ai-studio', icon: Bot },
   { label: 'Integrations', to: '/business-tools?tool=integrations', icon: Plug },
