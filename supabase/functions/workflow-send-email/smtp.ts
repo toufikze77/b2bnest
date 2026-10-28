@@ -22,12 +22,19 @@ export class SmtpStageError extends Error {
   }
 }
 
+/** Header safety for Reply-To: one plain ASCII address, so no CR/LF, space, bracket or comma can reach a header. */
+const PLAIN_ADDRESS = /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9.-]+$/;
+
 export function buildMessage(mail: Mail, domain = "b2bnest.online"): string {
   const html = mail.html !== undefined;
   const body = html ? mail.html! : (mail.content ?? "");
+  // Reply-To is added only when a caller passes one (workflow emails), so other senders' messages are unchanged.
+  // It must be one plain address: anything with CR/LF, spaces or brackets is refused, never folded into a header.
+  if (mail.replyTo !== undefined && !PLAIN_ADDRESS.test(mail.replyTo)) throw new Error("Unsafe Reply-To address refused");
   return [
     `From: ${mail.from}`,
     `To: ${mail.to.join(", ")}`,
+    ...(mail.replyTo !== undefined ? [`Reply-To: ${mail.replyTo}`] : []),
     `Subject: ${encWord(mail.subject)}`,
     `Date: ${new Date().toUTCString()}`,
     `Message-ID: <${crypto.randomUUID()}@${domain}>`,

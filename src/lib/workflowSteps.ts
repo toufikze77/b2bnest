@@ -3,6 +3,7 @@
 // Older workflows built in the previous canvas builder are kept as saved; their
 // steps are classified so the screen can say honestly which ones cannot run.
 import { placeholdersIn, renderTemplate } from '../../supabase/functions/_shared/placeholders.ts';
+import { isSafeReplyAddress, NO_REPLY_ADDRESS } from '../../supabase/functions/_shared/reply-to.ts';
 
 export type StepKind = 'email' | 'x' | 'linkedin' | 'whatsapp';
 
@@ -25,7 +26,7 @@ export interface StepDefinition {
 export const STEP_DEFINITIONS: StepDefinition[] = [
   {
     kind: 'email', nodeName: 'Send Email', label: 'Send an email', verified: true,
-    help: `Sent from B2BNEST notifications, so replies go to B2BNEST, not to you: put your own contact details in the message. Up to ${MAX_RECIPIENTS} recipients, separated by commas.`,
+    help: `Sent from B2BNEST's sending address. Replies go to your own verified account email. Up to ${MAX_RECIPIENTS} recipients, separated by commas.`,
     fields: [
       { key: 'to', label: 'To', placeholder: 'name@example.com', required: true },
       { key: 'subject', label: 'Subject', required: true },
@@ -186,13 +187,29 @@ export function skippedLogRow(step: SimpleStep, ctx: RunContext, userId: string,
   return { user_id: userId, workflow_id: workflowId, run_id: ctx.runId, step_index: ctx.stepIndex, step: LOG_STEP[step.kind], status: 'skipped', provider: 'none' };
 }
 
+/** "Replies go to …" for the preview: the signed-in sender's own verified email (replyToAddress), or why there is none. */
+export const replyText = (address: string | null) => (address ? `Replies go to ${address}.` : NO_REPLY_ADDRESS);
+
+/**
+ * Where replies to a sent email go, from the server's own answer. A server without the Phase 18 change sends no
+ * `replyTo` field and sets no Reply-To header, so then replies go to B2BNEST's sending address.
+ */
+export function sentReplyText(data: unknown): string {
+  const d = (data ?? {}) as { replyTo?: unknown; replyNote?: unknown };
+  if (typeof d.replyTo === 'string' && isSafeReplyAddress(d.replyTo)) return `Replies go to ${d.replyTo}.`;
+  if (d.replyTo === null && typeof d.replyNote === 'string') return d.replyNote;
+  return "Replies go to B2BNEST's sending address.";
+}
+
 /** Runs one step. Success is reported ONLY when the server explicitly confirms it. */
 export async function executeStep(step: SimpleStep, workflowId: string | null, invoke: Invoke, ctx?: RunContext): Promise<StepResult> {
   const c = step.config;
   // Without a readable server answer we can't know whether a message went out.
   const unknown = step.kind === 'email' ? EMAIL_STATUS_UNKNOWN : 'Status unknown — check before trying again.';
+  let lastData: unknown = null;
   const confirmed = async (fn: string, body: Record<string, unknown>, okMessage: string): Promise<StepResult> => {
     const { data, error } = await invoke(fn, body);
+    lastData = data;
     if (error) return { ok: false, message: (await errorText(error)) ?? unknown };
     const d = data as { success?: boolean; error?: string; message?: string } | null;
     return d?.success === true ? { ok: true, message: okMessage } : { ok: false, message: d?.error || d?.message || 'Not confirmed by the server' };
@@ -205,10 +222,11 @@ export async function executeStep(step: SimpleStep, workflowId: string | null, i
       const r = renderEmailStep(step, ctx?.values ?? {});
       if (r.ok === false) return { ok: false, message: `${r.errors.join(' ')} Nothing was sent.` };
       const values = Object.fromEntries(r.used.map((k) => [k, (ctx?.values[k] ?? '').trim()]));
-      return await confirmed('workflow-send-email', {
+      const res = await confirmed('workflow-send-email', {
         to: c.to, subject: r.subject, body: r.body, template: { subject: c.subject, body: c.body }, values,
         workflowId, ...(ctx ? { runId: ctx.runId, stepIndex: ctx.stepIndex } : {}),
       }, 'Accepted by the email provider (inbox delivery not confirmed)');
+      return res.ok ? { ...res, message: `${res.message}. ${sentReplyText(lastData)}` } : res;
     }
     if (step.kind === 'x') return await confirmed('workflow-twitter-post', { text: c.text, workflowId }, 'Posted on X');
     if (step.kind === 'linkedin') return await confirmed('workflow-linkedin-post', { text: c.text, visibility: 'PUBLIC', workflowId }, 'Posted on LinkedIn');

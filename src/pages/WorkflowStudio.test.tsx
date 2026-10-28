@@ -25,7 +25,8 @@ vi.mock('@/integrations/supabase/client', () => ({
     functions: { invoke: (...a: unknown[]) => invoke(...a) },
   },
 }));
-vi.mock('@/hooks/useAuth', () => { const user = { id: 'u1', email: 'owner@example.com' }; return { useAuth: () => ({ user }) }; });
+const auth = vi.hoisted(() => ({ user: { id: 'u1', email: 'owner@example.com', email_confirmed_at: '2026-10-01T10:00:00Z' as string | null } }));
+vi.mock('@/hooks/useAuth', () => ({ useAuth: () => auth }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 import WorkflowStudio from './WorkflowStudio';
@@ -53,6 +54,7 @@ async function openAndRun() {
 }
 
 beforeEach(() => {
+  auth.user = { id: 'u1', email: 'owner@example.com', email_confirmed_at: '2026-10-01T10:00:00Z' };
   invoke.mockReset(); inserts.length = 0; saved = wf(); history = { data: [], error: null };
   vi.spyOn(window, 'confirm').mockReturnValue(true);
 });
@@ -145,6 +147,31 @@ describe('Run: confirm, details and preview (Phase 15)', () => {
 });
 
 describe('guide link (Phase 17)', () => {
+  // Phase 18: replies go to the sender's own verified account email, and the preview says so before anything is sent.
+  it('the preview and confirm show "Replies go to" the signed-in sender\'s own email, never another address', async () => {
+    saved = wf('Hi', 'Hello', 'customer@client.example');
+    invoke.mockResolvedValue({ data: { success: true, status: 'accepted', replyTo: 'owner@example.com' }, error: null });
+    fireEvent.click(await openWorkflow());
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByTestId('reply-to')).toHaveTextContent('Replies go to owner@example.com.');
+    expect(within(dialog).getByTestId('run-reply-to')).toHaveTextContent('Replies go to owner@example.com.');
+    expect(within(dialog).queryByText(/Replies go to customer@client\.example/)).toBeNull();
+    fireEvent.click(within(dialog).getByRole('button', { name: /Send 1 email/ }));
+    await waitFor(() => expect(invoke).toHaveBeenCalledTimes(1));
+    // The browser never sends a reply address: the server takes it from the signed-in account.
+    const body = invoke.mock.calls[0][1].body as Record<string, unknown>;
+    expect(Object.keys(body).some((k) => /reply/i.test(k))).toBe(false);
+    expect(await screen.findByText(/Replies go to owner@example\.com\./)).toBeInTheDocument();
+  });
+
+  it('an unverified account email is not shown as the reply address; the preview says replies go to B2BNEST', async () => {
+    auth.user = { id: 'u1', email: 'owner@example.com', email_confirmed_at: null };
+    fireEvent.click(await openWorkflow());
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByTestId('reply-to')).toHaveTextContent("Your account email address isn't verified, so replies will go to B2BNEST's sending address.");
+    expect(within(dialog).queryByText(/Replies go to owner@example\.com/)).toBeNull();
+  });
+
   it('"How workflows work" links to the guide', async () => {
     render(<MemoryRouter><WorkflowStudio /></MemoryRouter>);
     expect(await screen.findByRole('link', { name: 'How workflows work' })).toHaveAttribute('href', '/knowledge-base/workflows');

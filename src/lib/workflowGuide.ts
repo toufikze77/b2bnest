@@ -200,6 +200,6 @@ export const WORKFLOW_FAQS: { question: string; answer: string }[] = [
   },
   {
     question: 'Where do replies go?',
-    answer: "Workflow emails are sent from B2BNEST's sending address, so if your customer replies, the reply goes to B2BNEST, not to you. Put your own phone number or email address in the message so customers can reach you.",
+    answer: "To your own account email. Workflow emails are sent from B2BNEST's sending address, with your account email as the reply address, so when your customer presses Reply, the reply comes to you. The preview shows \"Replies go to\" and your address before you send. If your account email isn't verified yet, the preview says so and replies go to B2BNEST's sending address instead.",
   },
 ];

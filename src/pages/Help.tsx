@@ -10,7 +10,7 @@ const Help = () => {
   const faqs = [
     {
       question: "How do I get started with B2BNEST?",
-      answer: "Getting started is easy! Sign up for a free account, explore our Business Tools, and choose the features that best suit your needs. We offer a 14-day free trial for premium features."
+      answer: "Create an account to start your 14-day free trial of all features. No card is needed to try it. After the trial you choose a plan to keep using B2BNEST."
     },
     {
       question: "What integrations do you support?",

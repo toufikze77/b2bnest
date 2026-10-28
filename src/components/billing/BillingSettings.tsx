@@ -101,7 +101,7 @@ const BillingSettings = () => {
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <Badge variant={subscribed ? 'default' : 'secondary'}>
-              {subscribed ? (status?.currentPlan ?? planNameForTier(subscription_tier)) : 'Free'}
+              {subscribed ? (status?.currentPlan ?? planNameForTier(subscription_tier)) : 'No plan yet'}
             </Badge>
           )}
         </div>

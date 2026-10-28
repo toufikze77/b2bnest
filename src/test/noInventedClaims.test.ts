@@ -29,6 +29,10 @@ const BANNED: { what: string; re: RegExp; allow?: RegExp }[] = [
   { what: 'advanced automation claim', re: /drag-and-drop interface|Parallel Execution|Email Campaign Automation|retry mechanisms|Real-time workflow monitoring/i, allow: HONEST },
   // Phase 17: the project "automation rules" dialog showed success for rules that never ran.
   { what: 'fake automation success', re: /created and activated|would trigger correctly/i },
+  // Phase 18: workflow emails now carry the sender's own Reply-To, so the Phase 17 stop-gap warning is no longer true.
+  // Phase 18: there is no free tier (owner decision); every account gets a 14-day trial, then chooses a plan.
+  { what: '"free account" / freemium wording', re: /free account|freemium model with extensive free tools|offering free and premium/i },
+  { what: 'stale "replies go to B2BNEST" warning', re: /(repl(y|ies) go(es)? to B2BNEST|reply goes to B2BNEST), not (to )?you/i },
 ];
 
 function sourceFiles(dir: string): string[] {
@@ -126,6 +130,20 @@ describe('no invented claims in src or supabase/functions', () => {
         }
       }
     }
+  });
+
+  // Phase 18: "replies go to your own account email" is only said because the server really sets that Reply-To: the
+  // address comes from the authenticated user (replyToAddress), never the request body, and buildMessage writes it.
+  it('workflow copy about replies going to the sender is backed by the server code', async () => {
+    const fn = (f: string) => fs.readFileSync(path.join(FUNCTIONS, f), 'utf8');
+    const request = fn('workflow-send-email/request.ts');
+    expect(request).toMatch(/const replyTo = replyToAddress\(user\);/);
+    expect(request).toMatch(/\.\.\.\(replyTo \? \{ replyTo \} : \{\}\)/);
+    expect(request).not.toMatch(/body\.(replyTo|reply_to|from)\b|body\[["']reply/i);
+    expect(fn('workflow-send-email/index.ts')).toMatch(/email_confirmed_at: data\.user\.email_confirmed_at/);
+    expect(fn('workflow-send-email/smtp.ts')).toMatch(/`Reply-To: \$\{mail\.replyTo\}`/);
+    const { WORKFLOW_FAQS } = await import('../lib/workflowGuide');
+    expect(WORKFLOW_FAQS.find((f) => f.question === 'Where do replies go?')!.answer).toMatch(/^To your own account email\./);
   });
 
   // Phase 15: the Workflow Studio templates are scanned as files above; their text with details filled in is checked too.

@@ -11,7 +11,8 @@ serve(makeHandler({
   env: (n) => Deno.env.get(n),
   getUser: async (token) => {
     const { data, error } = await admin.auth.getUser(token);
-    return error || !data.user ? null : { id: data.user.id };
+    // The reply address comes from here (the auth server), never from the request body.
+    return error || !data.user ? null : { id: data.user.id, email: data.user.email ?? null, email_confirmed_at: data.user.email_confirmed_at ?? null };
   },
   isSuperAdmin: async (userId) => {
     const { data } = await admin.rpc("is_super_admin", { _user_id: userId });

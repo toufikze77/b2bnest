@@ -8,7 +8,11 @@ export const corsHeaders = {
 };
 
 export interface SmtpConfig { hostname: string; port: number; tls: boolean; username: string; password: string; from: string; provider: string }
-export interface Mail { from: string; to: string[]; subject: string; content?: string; html?: string }
+export interface Mail {
+  from: string; to: string[]; subject: string; content?: string; html?: string;
+  /** Optional Reply-To (workflow emails only). Omitted, the message is exactly as before for every other sender. */
+  replyTo?: string;
+}
 
 /** Result of a connection check that signs in and quits. It never sends a message. */
 export interface ProbeResult {
@@ -26,7 +30,8 @@ export interface ProbeResult {
 }
 
 export interface Deps {
-  getUser: (token: string) => Promise<{ id: string } | null>;
+  /** The signed-in user. `email` and `email_confirmed_at` come from the auth server, never from the request. */
+  getUser: (token: string) => Promise<{ id: string; email?: string | null; email_confirmed_at?: string | null } | null>;
   env: (name: string) => string | undefined;
   send: (cfg: SmtpConfig, mail: Mail) => Promise<void>;
   isSuperAdmin?: (userId: string) => Promise<boolean>;

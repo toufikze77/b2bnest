@@ -115,7 +115,7 @@ const ROUTE_META: Record<string, Meta> = {
   },
   '/auth': {
     title: 'Sign In or Create Your B2BNest Account',
-    description: 'Sign in to B2BNest or create a free account to access CRM, invoicing, projects and AI business tools.',
+    description: 'Sign in to B2BNest, or create an account to start a 14-day free trial of CRM, invoicing, projects and AI business tools. After the trial you choose a plan.',
     noIndex: true,
   },
 };
