@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CreditCard, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { BILLING_LINK_ERROR, isBillingLinkError, readFunctionError } from '@/lib/billingErrors';
 
 interface StripeCheckoutProps {
   amount: number;
@@ -58,6 +59,10 @@ const StripeCheckout = ({
 
       if (error) {
         console.error('Stripe payment error:', error);
+        if (isBillingLinkError(await readFunctionError(error))) {
+          onError(BILLING_LINK_ERROR);
+          return;
+        }
         onError(error.message || 'Failed to create payment session');
         return;
       }

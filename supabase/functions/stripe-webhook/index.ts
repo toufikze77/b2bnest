@@ -39,6 +39,25 @@ const handler = stripeSecretKey && webhookSecret
             p_stripe_payment_intent_id: a.p_stripe_payment_intent_id ?? null, p_payment_method: a.p_payment_method ?? null, p_metadata: a.p_metadata ?? null,
           });
         },
+        // Read-only lookups for matching a subscription to its account (handler.ts resolveOwner).
+        subscribersForCustomer: async (customerId) => {
+          const { data, error } = await supabase.from("subscribers").select("email, user_id").eq("stripe_customer_id", customerId).limit(10);
+          if (error) throw new Error(`subscribers: ${error.message}`);
+          return (data ?? []) as { email: string; user_id: string | null }[];
+        },
+        subscriberByEmail: async (email) => {
+          const { data, error } = await supabase.from("subscribers").select("user_id, stripe_customer_id").eq("email", email).maybeSingle();
+          if (error) throw new Error(`subscribers: ${error.message}`);
+          return (data as { user_id: string | null; stripe_customer_id: string | null } | null) ?? null;
+        },
+        authEmail: async (userId) => {
+          const { data, error } = await supabase.auth.admin.getUserById(userId);
+          if (error) {
+            if (error.status === 404) return null;
+            throw new Error(`auth: ${error.message}`); // retried by Stripe
+          }
+          return data?.user?.email ?? null;
+        },
       },
     });
   })()

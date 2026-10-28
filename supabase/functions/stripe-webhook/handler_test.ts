@@ -29,6 +29,10 @@ function memStore() {
       subs.set(row.email as string, { ...row, at }); return "applied";
     },
     async updatePaymentStatus(id: string, t: string, a: Record<string, unknown>) { own(id, t); s.paymentCalls++; if (payments.has(a.p_stripe_session_id as string)) payments.set(a.p_stripe_session_id as string, a.p_status as string); },
+    // Phase 14: the owner's account already holds this customer (rule 2), so these tests keep their meaning.
+    async subscribersForCustomer(c: string) { return c === "cus_1" ? [{ email: "owner@example.com", user_id: "u-owner" }] : []; },
+    async subscriberByEmail() { return null; },
+    async authEmail() { return null; },
   };
   return s;
 }

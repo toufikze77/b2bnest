@@ -21,6 +21,12 @@ describe('support desk setup rules', () => {
     expect(timeZoneOffsetLabel('Europe/London', new Date('2026-01-15T12:00:00Z'))).toBe('GMT');
     expect(timeZoneOffsetLabel('Europe/London', new Date('2026-07-15T12:00:00Z'))).toBe('GMT+1');
   });
+  it('shows "GMT" for UTC+0 whichever form the ICU data uses', () => {
+    const real = Intl.DateTimeFormat;
+    const fake = function () { return { formatToParts: () => [{ type: 'timeZoneName', value: 'GMT+0' }] }; } as unknown as typeof Intl.DateTimeFormat;
+    Intl.DateTimeFormat = fake;
+    try { expect(timeZoneOffsetLabel('Europe/London')).toBe('GMT'); } finally { Intl.DateTimeFormat = real; }
+  });
   it('invitation link carries no token', () => {
     expect(portalInviteLink('https://b2bnest.online/')).toBe('https://b2bnest.online/support/portal');
   });

@@ -34,7 +34,7 @@ serve(async (req) => {
         const { data: u } = await supabase.auth.getUser(token);
         const email = u?.user?.email ?? "";
         const r = await resolveVerifiedCustomer(stripe, { id: userId, email }, (data?.stripe_customer_id as string | null) ?? null);
-        if (!r.customerId) console.error("[CHANGE-PLAN] no verified customer", r.reason);
+        if (r.customerId === null) console.error("[CHANGE-PLAN] no verified customer", r.reason);
         return r.customerId;
       },
       resolvePrice: async (plan, interval) => {
