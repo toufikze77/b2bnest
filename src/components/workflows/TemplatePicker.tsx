@@ -28,7 +28,8 @@ export function TemplatePicker({ open, onClose, onUse }: { open: boolean; onClos
             ))}
             <p className="text-xs text-muted-foreground">
               Words in double braces, such as {'{{name}}'}, are filled in when you run it. "To" starts as your own email address so you
-              can try it on yourself first; change it to your customer's address.
+              can try it on yourself first; change it to your customer's address. Replies go to B2BNEST, not to you, so add your own
+              phone number or email address to the message.
             </p>
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={() => setPreview(null)}><ArrowLeft className="mr-2 h-4 w-4" />All templates</Button>

@@ -48,7 +48,7 @@ const BusinessToolsSection = () => {
       icon: Lightbulb,
       title: "AI Business Advisor",
       description: "Get AI-powered guidance, insights, and recommendations for your business",
-      features: ["Smart suggestions", "Workflow automation", "Personalized advice"],
+      features: ["Answers business questions", "Uses your AI credits", "Personalised advice"],
       color: "bg-green-500",
       popular: false
     },
@@ -109,7 +109,7 @@ const BusinessToolsSection = () => {
             </div>
             <div className="flex items-center gap-2">
               <Zap className="h-4 w-4 text-purple-500" />
-              <span>Automated workflows</span>
+              <span>One-click email workflows</span>
             </div>
           </div>
         </div>

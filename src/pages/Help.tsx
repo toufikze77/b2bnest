@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Mail, Book, HelpCircle, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SEOHead from '@/components/SEOHead';
+import { GUIDE_PATH, WORKFLOW_FAQS } from '@/lib/workflowGuide';
 
 const Help = () => {
   const faqs = [
@@ -62,10 +63,6 @@ const Help = () => {
     {
       question: "What is the AI Business Advisor?",
       answer: "The AI Business Advisor in AI Studio answers business questions using an AI model and uses your monthly AI credits. Like any AI, it can be wrong, so check anything important. The help assistant on the homepage is different: it gives fixed answers to common questions and is not an AI."
-    },
-    {
-      question: "How do workflows work?",
-      answer: "In Workflows you list steps under 'Do this' and run them all when you click 'Run now'. Only email steps are switched on right now; WhatsApp, X and LinkedIn steps are switched off until their delivery has been checked. Automatic starts (schedules, form submissions, new records) aren't available yet."
     },
   ];
 
@@ -170,6 +167,27 @@ const Help = () => {
                     <AccordionContent className="text-muted-foreground">
                       {faq.answer}
                     </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </CardContent>
+          </Card>
+
+          {/* Workflows: the questions come from src/lib/workflowGuide.ts, like the guide itself. */}
+          <Card className="mt-8" id="workflow-faq" aria-labelledby="workflow-faq-title">
+            <CardHeader>
+              <CardTitle className="text-2xl" id="workflow-faq-title">Workflows</CardTitle>
+              <CardDescription>
+                Sending emails with Workflow Studio. For a step-by-step walkthrough, read the{' '}
+                <Link to={GUIDE_PATH} className="text-link underline">workflows guide</Link>.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="single" collapsible className="w-full">
+                {WORKFLOW_FAQS.map((faq, index) => (
+                  <AccordionItem key={faq.question} value={`workflow-${index}`}>
+                    <AccordionTrigger className="text-left">{faq.question}</AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground">{faq.answer}</AccordionContent>
                   </AccordionItem>
                 ))}
               </Accordion>

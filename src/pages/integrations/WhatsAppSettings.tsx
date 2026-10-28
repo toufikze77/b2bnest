@@ -106,7 +106,7 @@ export default function WhatsAppSettings() {
           <h1 className="text-3xl font-bold tracking-tight">WhatsApp Integration</h1>
         </div>
         <p className="text-muted-foreground">
-          Each subscriber connects their own Twilio account. Credentials are encrypted at rest and only used for your workflows.
+          Each subscriber connects their own Twilio account. Credentials are encrypted at rest. WhatsApp steps in workflows are switched off until their delivery has been verified; you can send a test message here.
         </p>
       </div>
 
@@ -122,7 +122,7 @@ export default function WhatsAppSettings() {
             <CardDescription>
               {status === "connected"
                 ? `From ${meta?.from_number} via ${meta?.channel}`
-                : "Connect your Twilio account to send WhatsApp from workflows."}
+                : "Connect your Twilio account to send a test WhatsApp message."}
             </CardDescription>
           </div>
           {status === "connected" && (

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, CheckCircle2, LayoutTemplate, Loader2, MousePointerClick, Play, Plus, Save, Trash2, XCircle, Zap } from 'lucide-react';
+import { ArrowDown, ArrowUp, BookOpen, CheckCircle2, LayoutTemplate, Loader2, MousePointerClick, Play, Plus, Save, Trash2, XCircle, Zap } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { GUIDE_PATH } from '@/lib/workflowGuide';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -134,7 +136,12 @@ const WorkflowStudio = () => {
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">Workflows</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Set up a list of messages and posts, then send them all with one click.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Set up a list of emails, then send them all with one click.{' '}
+          <Link to={GUIDE_PATH} className="inline-flex items-center gap-1 rounded-control text-link underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
+            <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />How workflows work
+          </Link>
+        </p>
       </div>
 
       <EmailConnectionCheck />
@@ -210,7 +217,7 @@ const WorkflowStudio = () => {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base"><Zap className="h-4 w-4 text-primary" />Do this</CardTitle>
-              <CardDescription>Steps run in order. Each one really sends a message or post.</CardDescription>
+              <CardDescription>Steps run in order. Each one really sends an email.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {steps.length === 0 && <p className="text-sm text-muted-foreground">No steps yet. Add one below.</p>}

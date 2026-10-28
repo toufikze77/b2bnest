@@ -81,8 +81,8 @@ const ROUTE_META: Record<string, Meta> = {
     description: 'Guide to B2BNest financial tools covering invoicing, expenses, payroll, cash-flow forecasting and HMRC-ready reporting.',
   },
   '/knowledge-base/workflows': {
-    title: 'Workflow Automation Guide | B2BNest Workflow Studio',
-    description: 'Build automated business workflows in B2BNest: triggers, actions, notifications and integrations that remove manual work.',
+    title: 'Workflows Guide | B2BNest Workflow Studio',
+    description: 'How to use B2BNest Workflow Studio: send emails with one click from a template, fill in details such as a customer name, preview them and read the run history.',
   },
   '/knowledge-base/security': {
     title: 'Security Guide | How B2BNest Keeps Your Data Safe',

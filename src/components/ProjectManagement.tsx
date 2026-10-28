@@ -3270,106 +3270,16 @@ const ProjectManagement = () => {
       <Dialog open={showAutomationBuilder} onOpenChange={setShowAutomationBuilder}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Automation Workflow Builder</DialogTitle>
+            <DialogTitle>Automation rules aren't available yet</DialogTitle>
           </DialogHeader>
-          <div className="space-y-6">
-            <div className="grid grid-cols-3 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Trigger</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="When..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="task_created">Task is created</SelectItem>
-                      <SelectItem value="task_updated">Task is updated</SelectItem>
-                      <SelectItem value="deadline_approaching">Deadline approaches</SelectItem>
-                      <SelectItem value="status_changed">Status changes</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Conditions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="If..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="priority_urgent">Priority is urgent</SelectItem>
-                        <SelectItem value="tag_contains">Tag contains</SelectItem>
-                        <SelectItem value="assignee_is">Assignee is</SelectItem>
-                        <SelectItem value="project_is">Project is</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Input placeholder="Value" />
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Action</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Then..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="assign_to">Auto-assign to</SelectItem>
-                      <SelectItem value="send_notification">Send notification</SelectItem>
-                      <SelectItem value="update_status">Update status</SelectItem>
-                      <SelectItem value="create_subtask">Create subtask</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </CardContent>
-              </Card>
-            </div>
-            
+          {/* Phase 17: the rule builder that was here never ran anything (it only showed success messages), so it was removed
+              until project automation is built. Sending emails with one click is in Workflows. */}
+          <div className="space-y-4 text-sm text-muted-foreground">
+            <p>Rules such as "when a task is created, assign it" aren't built yet, so nothing set up here would run.</p>
+            <p>To send a set of emails with one click, use Workflows.</p>
             <div className="flex gap-2">
-              <Button 
-                className="flex-1"
-                onClick={() => {
-                  // Create new automation rule (simplified for demo)
-                  const newRule: AutomationRule = {
-                    id: `rule-${Date.now()}`,
-                    name: "Custom Automation",
-                    trigger: "task_created",
-                    conditions: [{ field: "priority", operator: "equals", value: "urgent" }],
-                    actions: [{ type: "assign_to", value: "team-lead" }],
-                    isActive: true,
-                    lastTriggered: undefined
-                  };
-                  
-                  setAutomationRules(prev => [...prev, newRule]);
-                  setShowAutomationBuilder(false);
-                  
-                  toast({
-                    title: "Automation Created",
-                    description: "Your automation rule has been created and activated.",
-                  });
-                }}
-              >
-                <Zap className="w-4 h-4 mr-2" />
-                Create Automation
-              </Button>
-              <Button variant="outline" onClick={() => {
-                toast({
-                  title: "Test Successful",
-                  description: "Your automation rule would trigger correctly.",
-                });
-              }}>
-                Test Rule
-              </Button>
+              <Button asChild><Link to="/workflow-studio" onClick={() => setShowAutomationBuilder(false)}>Open Workflows</Link></Button>
+              <Button variant="outline" onClick={() => setShowAutomationBuilder(false)}>Close</Button>
             </div>
           </div>
         </DialogContent>

@@ -26,7 +26,7 @@ const TOOLS: ToolOption[] = [
   { id: 'ai', name: 'AI Business Advisor', category: 'AI', competitor: 'ChatGPT Team', competitorCost: 30, b2bnestIncluded: true, description: 'Insights & recommendations' },
   { id: 'payroll', name: 'UK Payroll', category: 'Finance', competitor: 'Xero Payroll', competitorCost: 35, b2bnestIncluded: true, description: 'Payroll calculations (RTI filing not available yet)' },
   { id: 'hmrc', name: 'HMRC Integration', category: 'Compliance', competitor: 'FreeAgent', competitorCost: 29, b2bnestIncluded: true, description: 'HMRC details and return previews (filing not available yet)' },
-  { id: 'workflows', name: 'Workflow Automation', category: 'Automation', competitor: 'Zapier', competitorCost: 49, b2bnestIncluded: true, description: 'Email and in-app steps' },
+  { id: 'workflows', name: 'Workflow Automation', category: 'Automation', competitor: 'Zapier', competitorCost: 49, b2bnestIncluded: true, description: 'One-click email steps' },
   { id: 'integrations', name: 'Integration Hub', category: 'Automation', competitor: 'Make.com', competitorCost: 29, b2bnestIncluded: true, description: 'Calendars, OneDrive, social accounts' },
 ];
 

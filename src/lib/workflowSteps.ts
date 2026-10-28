@@ -6,6 +6,9 @@ import { placeholdersIn, renderTemplate } from '../../supabase/functions/_shared
 
 export type StepKind = 'email' | 'x' | 'linkedin' | 'whatsapp';
 
+/** Recipients one "Send an email" step may have (the server checks the same number). */
+export const MAX_RECIPIENTS = 10;
+
 export interface StepField { key: string; label: string; placeholder?: string; multiline?: boolean; required?: boolean }
 
 export interface StepDefinition {
@@ -22,7 +25,7 @@ export interface StepDefinition {
 export const STEP_DEFINITIONS: StepDefinition[] = [
   {
     kind: 'email', nodeName: 'Send Email', label: 'Send an email', verified: true,
-    help: 'Sent from B2BNEST notifications. Up to 10 recipients, separated by commas.',
+    help: `Sent from B2BNEST notifications, so replies go to B2BNEST, not to you: put your own contact details in the message. Up to ${MAX_RECIPIENTS} recipients, separated by commas.`,
     fields: [
       { key: 'to', label: 'To', placeholder: 'name@example.com', required: true },
       { key: 'subject', label: 'Subject', required: true },
@@ -120,7 +123,7 @@ export function validateStep(step: SimpleStep): string | null {
   }
   if (step.kind === 'email') {
     const list = step.config.to.split(',').map((s) => s.trim()).filter(Boolean);
-    if (list.length > 10) return 'Send an email: at most 10 recipients';
+    if (list.length > MAX_RECIPIENTS) return `Send an email: at most ${MAX_RECIPIENTS} recipients`;
     if (list.some((e) => !EMAIL.test(e))) return 'Send an email: check the email addresses';
   }
   if (step.kind === 'whatsapp') {
