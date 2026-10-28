@@ -27,6 +27,8 @@ const BANNED: { what: string; re: RegExp; allow?: RegExp }[] = [
   // Phase 11b: support is not a plan feature, and these were never built. Removed from every plan list.
   { what: 'removed plan claim (support / integrations / white-label / account manager / SLA)', re: /priority support|\bemail support\b|mobile app access|custom integrations|custom AI integrations|custom AI model training|white-label|white label AI|dedicated account manager|training (&|and) onboarding|SLA guarantee/i },
   { what: 'advanced automation claim', re: /drag-and-drop interface|Parallel Execution|Email Campaign Automation|retry mechanisms|Real-time workflow monitoring/i, allow: HONEST },
+  // Phase 17: the project "automation rules" dialog showed success for rules that never ran.
+  { what: 'fake automation success', re: /created and activated|would trigger correctly/i },
 ];
 
 function sourceFiles(dir: string): string[] {
@@ -97,6 +99,32 @@ describe('no invented claims in src or supabase/functions', () => {
         for (const line of out.split('\n')) expect(re.test(line) && !(allow && allow.test(line)), `${kind}: ${what}: ${line}`).toBe(false);
       }
       expect(FREE_TIER.test(out) && !TRIAL_ENDS.test(out), `${kind}: free-tier wording`).toBe(false);
+    }
+  });
+
+  // Phase 17: the workflows guide and the workflow FAQ, as customers read them (rendered), pass every rule, and any
+  // sentence about starting by itself / schedules / automatic is a "not yet" sentence.
+  it('the workflows guide and workflow FAQ pass every claims rule, and never promise automatic starts', async () => {
+    const { renderToStaticMarkup } = await import('react-dom/server');
+    const { createElement } = await import('react');
+    const { MemoryRouter } = await import('react-router-dom');
+    const { default: WorkflowGuide } = await import('../pages/articles/WorkflowGuide');
+    const { WORKFLOW_FAQS } = await import('../lib/workflowGuide');
+    const html = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(WorkflowGuide)));
+    const chunks = [
+      ...html.replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/g, '').split(/<[^>]+>/).map((t) => t.replace(/&#x27;|&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&').trim()).filter(Boolean),
+      ...WORKFLOW_FAQS.flatMap((f) => [f.question, f.answer]),
+    ];
+    expect(chunks.join(' ')).toContain('Workflows guide');
+    for (const line of chunks) {
+      for (const { what, re, allow } of BANNED) expect(re.test(line) && !(allow && allow.test(line)), `${what}: ${line}`).toBe(false);
+      expect(FREE_TIER.test(line), `free-tier wording: ${line}`).toBe(false);
+      for (const sentence of line.split(/(?<=[.!?])\s+/)) {
+        // Questions ("Can workflows start by themselves?") promise nothing; statements must be negative.
+        if (!sentence.trim().endsWith('?') && /schedul|automatic|by itself|by themselves|on its own/i.test(sentence)) {
+          expect(sentence, `automatic-start promise: ${sentence}`).toMatch(/\bnot\b|\bno\b|\bnothing\b|n't|never|only when|not yet/i);
+        }
+      }
     }
   });
 

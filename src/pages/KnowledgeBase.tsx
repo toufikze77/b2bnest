@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SEOHead from '@/components/SEOHead';
+import { guideLink, KB_WORKFLOW_ARTICLES } from '@/lib/workflowGuide';
 
 const KnowledgeBase = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -64,7 +65,7 @@ const KnowledgeBase = () => {
         { title: 'iCloud Calendar Setup', description: 'Connect your Apple calendar to B2BNEST', readTime: '4 min' },
         { title: 'Outlook 365 Integration', description: 'Microsoft calendar and email integration', readTime: '6 min' },
         { title: 'OneDrive Connection', description: 'Access and manage your OneDrive files', readTime: '5 min' },
-        { title: 'Social Media Automation', description: 'Connect X (Twitter) and LinkedIn for workflow posts', readTime: '8 min' },
+        { title: 'X (Twitter) and LinkedIn accounts', description: 'Connect your accounts. Posting from workflows is switched off for now', readTime: '4 min' },
         { title: 'HMRC Integration Setup', description: 'Step-by-step guide to connect HMRC: obtain Client ID/Secret from HMRC Developer Hub, configure in Settings → HMRC tab, and start OAuth flow', readTime: '12 min' },
         { title: 'HMRC Client ID & Secret', description: 'How to register on HMRC Developer Hub, create an application, and obtain your API credentials for Making Tax Digital', readTime: '8 min' },
         { title: 'Email Notifications Setup', description: 'Configure notification preferences for tasks, projects, and team updates in Settings → Notifications', readTime: '4 min' }
@@ -89,10 +90,8 @@ const KnowledgeBase = () => {
       title: 'Workflow Automation',
       icon: Zap,
       color: 'bg-indigo-500',
-      articles: [
-        { title: 'Creating Your First Workflow', description: 'Set up "When I click Run now → Do this" steps', readTime: '4 min' },
-        { title: 'Workflow Steps', description: 'Send an email (WhatsApp, X and LinkedIn steps are switched off for now)', readTime: '4 min' }
-      ]
+      // Each card opens its section of the workflows guide (src/lib/workflowGuide.ts).
+      articles: KB_WORKFLOW_ARTICLES.map((a) => ({ title: a.title, description: a.description, readTime: a.readTime, link: guideLink(a.anchor) }))
     },
     {
       id: 'security',
@@ -114,7 +113,7 @@ const KnowledgeBase = () => {
     { title: 'Creating Professional Invoices', category: 'Business Tools', link: '/knowledge-base/business-tools' },
     { title: 'HMRC Integration Setup Guide', category: 'Integrations', link: '/knowledge-base/integrations' },
     { title: 'How to Get HMRC Client ID & Secret', category: 'Financial', link: '/knowledge-base/financial-tools' },
-    { title: 'Workflow Automation Basics', category: 'Workflows', link: '/knowledge-base/workflows' },
+    { title: 'Your first workflow', category: 'Workflows', link: guideLink('first-workflow') },
     { title: 'Notification Preferences Setup', category: 'Getting Started', link: '/knowledge-base/getting-started' }
   ];
 
@@ -253,7 +252,7 @@ const KnowledgeBase = () => {
                           </CardHeader>
                           <CardContent>
                             <Button asChild variant="ghost" className="w-full justify-start">
-                              <Link to={`/knowledge-base/${category.id}`}>
+                              <Link to={('link' in article && article.link) || `/knowledge-base/${category.id}`} aria-label={`Read: ${article.title}`}>
                                 Read Article
                                 <ExternalLink className="ml-2 h-4 w-4" />
                               </Link>

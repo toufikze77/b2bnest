@@ -144,6 +144,13 @@ describe('Run: confirm, details and preview (Phase 15)', () => {
   });
 });
 
+describe('guide link (Phase 17)', () => {
+  it('"How workflows work" links to the guide', async () => {
+    render(<MemoryRouter><WorkflowStudio /></MemoryRouter>);
+    expect(await screen.findByRole('link', { name: 'How workflows work' })).toHaveAttribute('href', '/knowledge-base/workflows');
+  });
+});
+
 describe('Run history panel (Phase 15)', () => {
   it('empty state', async () => {
     await openWorkflow();

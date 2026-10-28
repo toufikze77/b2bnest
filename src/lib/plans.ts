@@ -93,7 +93,7 @@ export const PLANS: Plan[] = [
       'Everything in Solo',
       'CRM & Project Management',
       'Team members and roles',
-      'Workflow builder (email and in-app steps only)',
+      'Workflow builder (email steps only)',
     ],
     cta: 'Subscribe',
     popular: true,
