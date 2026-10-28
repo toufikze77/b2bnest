@@ -43,7 +43,7 @@ serve(async (req) => {
 
     // Stored id if it exists in this Stripe account; otherwise only a single, ownership-verified email match.
     const resolved = await resolveVerifiedCustomer(stripe, { id: user.id, email: user.email }, (subscriber?.stripe_customer_id as string | null) ?? null);
-    if (!resolved.customerId) {
+    if (resolved.customerId === null) {
       console.error("[CUSTOMER-PORTAL] no verified customer", resolved.reason);
       return json({ error: "No verified billing account found for this user. Please contact support.", reason: resolved.reason }, 404);
     }

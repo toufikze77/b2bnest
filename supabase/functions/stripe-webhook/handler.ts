@@ -37,6 +37,54 @@ export interface Store {
   applySubscriber(eventId: string, token: string, row: Record<string, unknown>, eventCreated: number): Promise<ApplyResult>;
   /** Idempotent: sets a payment's status by session / payment-intent id; never inserts a second record. */
   updatePaymentStatus(eventId: string, token: string, args: Record<string, unknown>): Promise<void>;
+  // Read-only lookups used to decide whose account a subscription belongs to (Phase 14).
+  /** public.subscribers rows whose stripe_customer_id is this customer. */
+  subscribersForCustomer(customerId: string): Promise<{ email: string; user_id: string | null }[]>;
+  /** The public.subscribers row with exactly this email, if any. */
+  subscriberByEmail(email: string): Promise<{ user_id: string | null; stripe_customer_id: string | null } | null>;
+  /** The sign-in email of this B2BNEST account (auth.users), or null if the account doesn't exist. */
+  authEmail(userId: string): Promise<string | null>;
+}
+
+export type Owner = { email: string; userId: string } | { refused: string };
+
+/**
+ * Whose account a subscription belongs to, in this order:
+ *   1. metadata.supabase_user_id on the subscription or the customer (set by create-subscription-checkout);
+ *   2. the one account whose subscribers row already holds this stripe_customer_id;
+ *   3. a verified email match: the subscribers row with the customer's email belongs to an account that signs in with
+ *      exactly that email and holds no other customer.
+ * Anything ambiguous or contradictory is refused, never guessed. Reads only.
+ */
+export async function resolveOwner(store: Store, customerId: string, customerEmail: string, subMeta?: Any, custMeta?: Any): Promise<Owner> {
+  const subOwner: string | null = subMeta?.supabase_user_id || null;
+  const custOwner: string | null = custMeta?.supabase_user_id || null;
+  if (subOwner && custOwner && subOwner !== custOwner) return { refused: "metadata_conflict" };
+  const linked = await store.subscribersForCustomer(customerId);
+  const linkedUsers = [...new Set(linked.map((r) => r.user_id).filter((u): u is string => !!u))];
+
+  const metaOwner = subOwner || custOwner;
+  if (metaOwner) {
+    if (linkedUsers.some((u) => u !== metaOwner)) return { refused: "customer_linked_to_other_account" };
+    const own = linked.find((r) => r.user_id === metaOwner);
+    if (own) return { email: own.email, userId: metaOwner };
+    const row = await store.subscriberByEmail(customerEmail);
+    if (row?.user_id && row.user_id !== metaOwner) return { refused: "email_row_owned_by_other_account" };
+    return { email: customerEmail, userId: metaOwner };
+  }
+
+  if (linkedUsers.length > 1) return { refused: "customer_linked_to_several_accounts" };
+  if (linkedUsers.length === 1) {
+    const own = linked.find((r) => r.user_id === linkedUsers[0])!;
+    return { email: own.email, userId: linkedUsers[0] };
+  }
+
+  const row = await store.subscriberByEmail(customerEmail);
+  if (row?.user_id && (row.stripe_customer_id === null || row.stripe_customer_id === customerId)) {
+    const signIn = await store.authEmail(row.user_id);
+    if (signIn && signIn.toLowerCase() === customerEmail.toLowerCase()) return { email: customerEmail, userId: row.user_id };
+  }
+  return { refused: "no_verified_owner" };
 }
 
 export interface Deps {
@@ -76,13 +124,20 @@ export function makeHandler(deps: Deps) {
     // Required update cannot be made: fail so the event is retried rather than silently dropped.
     if (!email) throw new Error("customer_email_missing");
 
-    const userId = subscription.metadata?.supabase_user_id || customer.metadata?.supabase_user_id || null;
+    const owner = await resolveOwner(store, subscription.customer as string, email, subscription.metadata, customer.metadata);
+    if ("refused" in owner) {
+      // Not attached to anyone. The event still completes (a retry would not change the answer); the fix is to set
+      // metadata.supabase_user_id on the customer in Stripe, after which the next event or sign-in syncs it.
+      log("Subscription not attached: owner not verified", { reason: owner.refused, customer: subscription.customer });
+      return;
+    }
+    const userId = owner.userId;
     const entitled = ENTITLED_STATUSES.includes(subscription.status);
     const iso = (t?: number | null) => (t ? new Date(t * 1000).toISOString() : null);
     const periodEnd = iso(subscription.current_period_end);
 
     const row: Record<string, unknown> = {
-      email,
+      email: owner.email,
       stripe_customer_id: subscription.customer as string,
       stripe_subscription_id: subscription.id,
       stripe_price_id: price?.id ?? null,
@@ -97,7 +152,7 @@ export function makeHandler(deps: Deps) {
       subscription_tier: entitled ? (resolved?.plan.tier ?? "Starter") : "free",
       subscription_end: periodEnd,
     };
-    if (userId) row.user_id = userId;
+    row.user_id = userId;
     // Sets the plan's credit LIMIT (absolute value); never adds credits, so a retry cannot double-allocate.
     if (entitled && resolved) row.ai_credits_limit = resolved.plan.aiCreditLimit;
 
