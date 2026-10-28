@@ -82,3 +82,7 @@ verify_jwt = true
 # Phase 12c: Admin → Users → Suspend / Reactivate. Caller's JWT required; the database checks the caller.
 [functions.admin-set-user-ban]
 verify_jwt = true
+
+# Phase 13: trial-ending emails. Service-role callers only; sends nothing while trial_email_settings.enabled is false.
+[functions.trial-email-sender]
+verify_jwt = true

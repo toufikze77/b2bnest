@@ -85,4 +85,18 @@ describe('no invented claims in src or supabase/functions', () => {
       fs.readFileSync(f, 'utf8').split('\n').flatMap((line, i) => (re.test(line) ? [`${path.relative(ROOT, f)}:${i + 1}: ${line.trim().slice(0, 120)}`] : [])));
     expect(hits).toEqual([]);
   });
+
+  // Phase 13: the trial emails are scanned as files above (supabase/functions/_shared/trial-emails.ts); here their
+  // RENDERED text is checked too, since prices and dates are filled in at send time.
+  it('rendered trial emails pass every claims rule', async () => {
+    const { renderTrialEmail, TRIAL_EMAIL_KINDS } = await import('../../supabase/functions/_shared/trial-emails.ts');
+    for (const kind of TRIAL_EMAIL_KINDS) {
+      const m = renderTrialEmail({ kind, to: 'a@example.test', firstName: 'Sam', trialEndsAt: '2026-11-01T09:00:00Z', daysLeft: 3, unsubscribeToken: 'c'.repeat(64) });
+      const out = `${m.subject}\n${m.text}`;
+      for (const { what, re, allow } of BANNED) {
+        for (const line of out.split('\n')) expect(re.test(line) && !(allow && allow.test(line)), `${kind}: ${what}: ${line}`).toBe(false);
+      }
+      expect(FREE_TIER.test(out) && !TRIAL_ENDS.test(out), `${kind}: free-tier wording`).toBe(false);
+    }
+  });
 });
