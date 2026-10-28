@@ -2,7 +2,8 @@
 // row it returns. Owner decision (27 Oct 2026): every account gets a 14-day trial of everything; after that a plan is
 // needed. There is no free tier.
 
-export type AccessStateName = 'owner' | 'subscribed' | 'trial' | 'trial_ended';
+// 'suspended' (Phase 12c): a super admin suspended the account in Admin → Users. No access at all, never a payment screen.
+export type AccessStateName = 'owner' | 'subscribed' | 'trial' | 'trial_ended' | 'suspended';
 
 /** One row of public.my_access_state(). */
 export interface AccessStateRow {
@@ -20,6 +21,8 @@ export interface Access {
   state: AccessStateName | 'unknown';
   hasAccess: boolean;
   trialEnded: boolean;
+  /** Suspended by a super admin: show the "account suspended" screen, never plans or payment buttons. */
+  suspended: boolean;
   inTrial: boolean;
   daysLeft: number;
   trialEndsAt: string | null;
@@ -30,10 +33,10 @@ export interface Access {
   ownerName: string | null;
 }
 
-const STATES: AccessStateName[] = ['owner', 'subscribed', 'trial', 'trial_ended'];
+const STATES: AccessStateName[] = ['owner', 'subscribed', 'trial', 'trial_ended', 'suspended'];
 
 export const UNKNOWN_ACCESS: Access = {
-  state: 'unknown', hasAccess: true, trialEnded: false, inTrial: false, daysLeft: 0, trialEndsAt: null,
+  state: 'unknown', hasAccess: true, trialEnded: false, suspended: false, inTrial: false, daysLeft: 0, trialEndsAt: null,
   planKey: null, subscriptionStatus: null, via: 'self', ownerName: null,
 };
 
@@ -42,8 +45,9 @@ export function accessFromState(row: AccessStateRow | null | undefined): Access 
   const name = row.owner_name?.trim();
   return {
     state: row.state,
-    hasAccess: row.state !== 'trial_ended',
+    hasAccess: row.state !== 'trial_ended' && row.state !== 'suspended',
     trialEnded: row.state === 'trial_ended',
+    suspended: row.state === 'suspended',
     inTrial: row.state === 'trial',
     daysLeft: Math.max(0, Math.floor(Number(row.days_left) || 0)),
     trialEndsAt: row.trial_ends_at ?? null,
@@ -98,4 +102,18 @@ const EXEMPT_PREFIXES = ['/settings', '/support/portal', '/knowledge-base', '/f'
 export function isPaywallExempt(pathname: string): boolean {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
   return EXEMPT_EXACT.includes(path) || EXEMPT_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
+}
+
+/**
+ * Routes a SUSPENDED account can still open: contact and help, legal pages, signing in and out, and public content.
+ * Narrower than the paywall list on purpose: no Pricing, Settings/billing, payment, onboarding, joining a company or
+ * the support portal, so a suspended account never reaches plans or payment buttons.
+ */
+const SUSPENDED_EXEMPT_EXACT = ['/', '/about', '/auth', '/forgot-password', '/reset-password', '/help', '/contact', '/privacy', '/terms',
+  '/business-resources', '/blog'];
+const SUSPENDED_EXEMPT_PREFIXES = ['/knowledge-base', '/f', '/p', '/forms'];
+
+export function isSuspendedExempt(pathname: string): boolean {
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+  return SUSPENDED_EXEMPT_EXACT.includes(path) || SUSPENDED_EXEMPT_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
 }

@@ -10,7 +10,17 @@ const calls: { fn: string; args: Record<string, unknown> }[] = [];
 const USERS = [
   { id: 'u-1', name: 'Ada Admin', email: 'ada@example.test', role: 'super_admin', is_active: true, subscribed: false, is_trial_active: false },
   { id: 'u-2', name: 'Ben Builder', email: 'ben@example.test', role: 'user', is_active: true, subscribed: false, is_trial_active: false },
+  { id: 'u-3', name: 'Cal Coach', email: 'cal@example.test', role: 'user', is_active: true, subscribed: false, is_trial_active: false },
+  { id: 'u-4', name: 'Dee Dormant', email: 'dee@example.test', role: 'user', is_active: false, subscribed: false, is_trial_active: false },
+  { id: 'u-5', name: 'Eli Editor', email: 'eli@example.test', role: 'admin', is_active: true, subscribed: false, is_trial_active: false },
+  { id: 'me', name: 'Me Myself', email: 'me@example.test', role: 'user', is_active: true, subscribed: false, is_trial_active: false },
 ];
+// The Edge Function (Phase 12c)
+let banReply: { data: unknown; error: unknown } = { data: { ok: true }, error: null };
+const invoke = vi.fn(async (..._a: unknown[]) => banReply);
+vi.mock('@/integrations/supabase/client', () => ({ supabase: { functions: { invoke: (...a: unknown[]) => invoke(...a) } } }));
+vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'me', email: 'me@example.test' }, loading: false }) }));
+const fnError = (body: unknown, status = 409) => ({ data: null, error: { context: { status, json: async () => body } } });
 vi.mock('@/lib/adminApi', () => ({
   adminRpc: async (fn: string, args: Record<string, unknown> = {}) => {
     calls.push({ fn, args });
@@ -48,6 +58,7 @@ const master = (id: string, email: string, name: string) => ({ user_id: id, emai
 describe('Admin users: master-account switch', () => {
   beforeEach(() => {
     superAdmin = true; masters = []; setError = null; listMissing = false; calls.length = 0; toast.mockClear();
+    invoke.mockClear(); banReply = { data: { ok: true }, error: null };
   });
 
   it('super admins see an "Unlimited access" switch per user and a badge on master accounts', async () => {
@@ -136,5 +147,72 @@ describe('Admin users: master-account switch', () => {
     expect(masterErrorMessage({ code: 'P0002', message: 'no such user' })).toBe('This account no longer exists.');
     expect(masterErrorMessage({ code: '22001', message: 'the note can be at most 300 characters' })).toBe('The note can be at most 300 characters.');
     expect(masterErrorMessage(new Error('network'))).toBe("Unlimited access wasn't changed. Please try again.");
+  });
+});
+
+describe('Admin users: Suspend / Reactivate (Phase 12c)', () => {
+  const row = (name: string) => screen.getByText(name).closest('tr') as HTMLElement;
+  beforeEach(() => {
+    superAdmin = true; masters = [master('u-3', 'cal@example.test', 'Cal Coach')]; calls.length = 0; toast.mockClear();
+    invoke.mockClear(); banReply = { data: { ok: true }, error: null };
+  });
+
+  it('no Suspend button for your own row, super admins, admins or master accounts — with the reason instead', async () => {
+    await showPage();
+    await waitFor(() => expect(within(row('Cal Coach')).queryByRole('button', { name: 'Suspend' })).toBeNull());
+    expect(within(row('Me Myself')).getByLabelText("You can't suspend your own account.")).toBeInTheDocument();
+    expect(within(row('Ada Admin')).getByLabelText("Super admins can't be suspended.")).toBeInTheDocument();
+    expect(within(row('Eli Editor')).getByLabelText("Admins can't be suspended. Remove the admin role first.")).toBeInTheDocument();
+    expect(within(row('Cal Coach')).getByLabelText("Master accounts can't be suspended. Switch off unlimited access first.")).toBeInTheDocument();
+    for (const n of ['Me Myself', 'Ada Admin', 'Eli Editor', 'Cal Coach']) expect(within(row(n)).queryByRole('button', { name: 'Suspend' })).toBeNull();
+    expect(within(row('Ben Builder')).getByRole('button', { name: 'Suspend' })).toBeInTheDocument();
+    expect(within(row('Dee Dormant')).getByRole('button', { name: 'Reactivate' })).toBeInTheDocument();
+  });
+
+  it('the confirm keeps its wording, adds the sign-in line, and calls the Edge Function (never the RPC directly)', async () => {
+    await showPage();
+    fireEvent.click(within(row('Ben Builder')).getByRole('button', { name: 'Suspend' }));
+    const dialog = await screen.findByRole('alertdialog');
+    expect(within(dialog).getByText('Suspend this account?')).toBeInTheDocument();
+    expect(dialog).toHaveTextContent('The user will lose access to B2BNest. Their data is preserved and the action can be reversed.');
+    expect(dialog).toHaveTextContent('This action is recorded in the audit log.');
+    expect(dialog).toHaveTextContent('They will be signed out and cannot sign in until you reactivate them.');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirm' }));
+    await waitFor(() => expect(invoke).toHaveBeenCalledWith('admin-set-user-ban', { body: { user_id: 'u-2', suspend: true } }));
+    expect(calls.some((c) => c.fn === 'admin_set_user_status')).toBe(false);
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Account suspended' })));
+  });
+
+  it('Reactivate calls the Edge Function with suspend: false (no sign-in line)', async () => {
+    await showPage();
+    fireEvent.click(within(row('Dee Dormant')).getByRole('button', { name: 'Reactivate' }));
+    const dialog = await screen.findByRole('alertdialog');
+    expect(dialog).not.toHaveTextContent('They will be signed out');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirm' }));
+    await waitFor(() => expect(invoke).toHaveBeenCalledWith('admin-set-user-ban', { body: { user_id: 'u-4', suspend: false } }));
+  });
+
+  it.each([
+    ['cannot_suspend_master', "You can't suspend a master account. Switch it off first."],
+    ['cannot_suspend_super_admin', "You can't suspend a super admin."],
+    ['own_account', "You can't suspend your own account."],
+    ['ban_failed', 'Sign-in could not be blocked, so nothing was changed. Please try again.'],
+  ])('a refusal (%s) is shown in plain language and the dialog stays open', async (code, text) => {
+    banReply = fnError({ error: code });
+    await showPage();
+    fireEvent.click(within(row('Ben Builder')).getByRole('button', { name: 'Suspend' }));
+    const dialog = await screen.findByRole('alertdialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirm' }));
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(text);
+    expect(toast).not.toHaveBeenCalledWith(expect.objectContaining({ title: 'Account suspended' }));
+  });
+
+  it('when the function is not deployed yet, it says so and nothing changes', async () => {
+    banReply = { data: null, error: { context: { status: 404, json: async () => { throw new Error('not json'); } } } };
+    await showPage();
+    fireEvent.click(within(row('Ben Builder')).getByRole('button', { name: 'Suspend' }));
+    const dialog = await screen.findByRole('alertdialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirm' }));
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent("The suspend service isn't available yet. Nothing was changed.");
   });
 });

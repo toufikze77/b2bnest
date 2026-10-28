@@ -8,13 +8,16 @@ import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
+import { useAuth } from '@/hooks/useAuth';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { setSuspended, suspendBlockReason, suspendErrorMessage, SUSPEND_SIGNED_OUT_LINE } from '@/lib/suspendAccount';
 import {
   fetchMasterAccounts, masterErrorMessage, setMasterAccess, MASTER_NOTE_MAX, MASTER_OFF_EXPLAINER, MASTER_ON_EXPLAINER,
   NOT_INSTALLED_MESSAGE, type MasterAccount,
@@ -48,6 +51,10 @@ export default function AdminUsers() {
   const [masterBusy, setMasterBusy] = useState(false);
   const [masterError, setMasterError] = useState<string | null>(null);
   const masterIds = new Set((masters ?? []).map((m) => m.user_id));
+  // Phase 12c: Suspend / Reactivate goes through the admin-set-user-ban Edge Function.
+  const { user: me } = useAuth();
+  const [statusBusy, setStatusBusy] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   const loadMasters = useCallback(async () => {
     if (!isSuperAdmin) return [];
@@ -93,15 +100,24 @@ export default function AdminUsers() {
     return () => clearTimeout(t);
   }, [load]);
 
+  const openStatus = (user: any, suspend: boolean) => {
+    setStatusError(null);
+    setPendingAction({ user, suspend });
+  };
+
   const applyStatus = async () => {
     if (!pendingAction) return;
+    setStatusBusy(true);
+    setStatusError(null);
     try {
-      await adminRpc('admin_set_user_status', { _user_id: pendingAction.user.id, _active: !pendingAction.suspend });
+      await setSuspended(pendingAction.user.id, pendingAction.suspend);
       toast({ title: pendingAction.suspend ? 'Account suspended' : 'Account reactivated' });
       setPendingAction(null);
       load();
-    } catch (e: any) {
-      toast({ title: 'Action failed', description: e.message, variant: 'destructive' });
+    } catch (e: unknown) {
+      setStatusError(suspendErrorMessage(e));
+    } finally {
+      setStatusBusy(false);
     }
   };
 
@@ -147,7 +163,7 @@ export default function AdminUsers() {
   };
 
   return (
-    <>
+    <TooltipProvider delayDuration={200}>
       <AdminPageHeader
         title="User Management"
         description="Search, review and manage B2BNest accounts. Suspension is reversible — no data is destroyed."
@@ -273,13 +289,26 @@ export default function AdminUsers() {
                     </TableCell>
                   )}
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                    {!u.master_only && <Button
-                      size="sm"
-                      variant={u.is_active ? 'outline' : 'default'}
-                      onClick={() => setPendingAction({ user: u, suspend: !!u.is_active })}
-                    >
-                      {u.is_active ? 'Suspend' : 'Reactivate'}
-                    </Button>}
+                    {!u.master_only && (() => {
+                      const reason = u.is_active ? suspendBlockReason(u, { selfId: me?.id, masterIds }) : null;
+                      if (reason) {
+                        return (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span tabIndex={0} aria-label={reason} className="inline-flex h-9 items-center rounded-md px-3 text-sm text-muted-foreground underline decoration-dotted underline-offset-4">
+                                Can't suspend
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>{reason}</TooltipContent>
+                          </Tooltip>
+                        );
+                      }
+                      return (
+                        <Button size="sm" variant={u.is_active ? 'outline' : 'default'} onClick={() => openStatus(u, !!u.is_active)}>
+                          {u.is_active ? 'Suspend' : 'Reactivate'}
+                        </Button>
+                      );
+                    })()}
                   </TableCell>
                 </TableRow>
               ))
@@ -350,7 +379,7 @@ export default function AdminUsers() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={!!pendingAction} onOpenChange={(o) => !o && setPendingAction(null)}>
+      <AlertDialog open={!!pendingAction} onOpenChange={(o) => !o && !statusBusy && setPendingAction(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{pendingAction?.suspend ? 'Suspend this account?' : 'Reactivate this account?'}</AlertDialogTitle>
@@ -359,14 +388,16 @@ export default function AdminUsers() {
                 ? 'The user will lose access to B2BNest. Their data is preserved and the action can be reversed.'
                 : 'The user will regain access to B2BNest.'}
               {' '}This action is recorded in the audit log.
+              {pendingAction?.suspend && <span className="mt-2 block">{SUSPEND_SIGNED_OUT_LINE}</span>}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {statusError && <p role="alert" className="text-sm font-medium text-destructive">{statusError}</p>}
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={applyStatus}>Confirm</AlertDialogAction>
+            <AlertDialogCancel disabled={statusBusy}>Cancel</AlertDialogCancel>
+            <Button onClick={applyStatus} disabled={statusBusy}>{statusBusy ? 'Saving…' : 'Confirm'}</Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </TooltipProvider>
   );
 }

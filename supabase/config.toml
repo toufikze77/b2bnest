@@ -78,3 +78,7 @@ verify_jwt = true
 
 [functions.support-email-sender]
 verify_jwt = true
+
+# Phase 12c: Admin → Users → Suspend / Reactivate. Caller's JWT required; the database checks the caller.
+[functions.admin-set-user-ban]
+verify_jwt = true

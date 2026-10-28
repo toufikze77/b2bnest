@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "https://deno.land/std@0.190.0/testing/asserts.ts";
-import { checkAccess, COMPANY_TRIAL_ENDED_MESSAGE, TRIAL_ENDED_MESSAGE, type AccessRpcClient } from "./access.ts";
+import { checkAccess, COMPANY_TRIAL_ENDED_MESSAGE, SUSPENDED_MESSAGE, TRIAL_ENDED_MESSAGE, type AccessRpcClient } from "./access.ts";
 
 function fake(result: { data?: unknown; error?: { code?: string; message?: string } | null } | Error) {
   const calls: string[] = [];
@@ -61,4 +61,14 @@ Deno.test("any other error, a thrown call, or no row: refused with 503 (fail clo
   ]) {
     assert(!r.ok && r.status === 503 && r.body.error === "access_check_failed", JSON.stringify(r));
   }
+});
+
+Deno.test("suspended (Phase 12c) is refused with 403 and a clear body, never 402", async () => {
+  const r = await checkAccess(fake({ data: row("suspended") }).client);
+  assertEquals(r.ok, false);
+  if (!r.ok) {
+    assertEquals(r.status, 403);
+    assertEquals(r.body, { error: "account_suspended", message: SUSPENDED_MESSAGE });
+  }
+  assertEquals(SUSPENDED_MESSAGE, "This account has been suspended. Contact us if you think this is a mistake.");
 });
