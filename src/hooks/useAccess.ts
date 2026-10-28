@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { accessFromState, isTemporaryOwnerEmail, legacyStateRow, UNKNOWN_ACCESS, type Access, type AccessStateRow } from '@/lib/access';
-
-const OWNER_ACCESS: Access = { ...UNKNOWN_ACCESS, state: 'owner', hasAccess: true };
+import { accessFromState, legacyStateRow, UNKNOWN_ACCESS, type Access, type AccessStateRow } from '@/lib/access';
 
 // "Function does not exist yet" (PostgREST PGRST202 / Postgres 42883): docs/phase12/proposal.sql not applied.
 const isMissingFunction = (e: { code?: string; message?: string } | null) =>
@@ -43,18 +41,16 @@ export function useAccess(): Access & { loading: boolean } {
   const { user, loading: authLoading } = useAuth();
   const [state, setState] = useState<{ userId: string | null; access: Access } | null>(null);
   const userId = user?.id ?? null;
-  const ownerByEmail = isTemporaryOwnerEmail(user?.email);
 
   useEffect(() => {
-    if (!userId || ownerByEmail) return;
+    if (!userId) return;
     let live = true;
     if (!cache.has(userId)) cache.set(userId, fetchAccess(userId).catch(() => UNKNOWN_ACCESS));
     void cache.get(userId)!.then((access) => { if (live) setState({ userId, access }); });
     return () => { live = false; };
-  }, [userId, ownerByEmail]);
+  }, [userId]);
 
   if (!userId) return { ...UNKNOWN_ACCESS, hasAccess: false, loading: authLoading };
-  if (ownerByEmail) return { ...OWNER_ACCESS, loading: false };
   if (!state || state.userId !== userId) return { ...UNKNOWN_ACCESS, loading: true };
   return { ...state.access, loading: false };
 }

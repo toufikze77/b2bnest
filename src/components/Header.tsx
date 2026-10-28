@@ -51,7 +51,7 @@ const Header = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-5 xl:space-x-6">
+          <nav className="hidden md:flex items-center space-x-5 whitespace-nowrap xl:space-x-6">
             <Link to="/" className="text-gray-700 hover:text-blue-600 transition-colors">
               Home
             </Link>
@@ -88,7 +88,7 @@ const Header = () => {
           {/* Share, Live Prices and User Menu */}
           <div className="flex items-center space-x-2">
             {user && (
-              <div className="hidden lg:block">
+              <div className="hidden 2xl:block">
                 <OrganizationSwitcher />
               </div>
             )}

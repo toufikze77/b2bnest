@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { accessFromState, isPaywallExempt, isTemporaryOwnerEmail, legacyStateRow, trialBannerText, type AccessStateRow } from './access';
+import * as accessModule from './access';
+import { accessFromState, isPaywallExempt, legacyStateRow, trialBannerText, type AccessStateRow } from './access';
 
 const row = (over: Partial<AccessStateRow>): AccessStateRow => ({
   state: 'trial', trial_ends_at: '2026-11-10T00:00:00Z', days_left: 5, plan_key: null, subscription_status: null, via: 'self', owner_name: null, ...over,
@@ -66,9 +67,7 @@ describe('trial banner and exempt routes', () => {
     }
   });
 
-  it('the temporary owner emails are recognised (case-insensitive) and nothing else', () => {
-    expect(isTemporaryOwnerEmail('Toufik.Zemri@outlook.com')).toBe(true);
-    expect(isTemporaryOwnerEmail('someone@else.test')).toBe(false);
-    expect(isTemporaryOwnerEmail(null)).toBe(false);
+  it('no email-based owner list is left in the access module (Phase 12b: owner access comes only from the server)', () => {
+    expect(Object.keys(accessModule).filter((k) => /email|owner_?emails/i.test(k))).toEqual([]);
   });
 });

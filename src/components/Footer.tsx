@@ -1,13 +1,13 @@
 import { useNavigate } from "react-router-dom";
 import ShareButton from "./ShareButton";
-import { useAuth } from "@/hooks/useAuth";
+import { useAccess } from "@/hooks/useAccess";
 
 const Footer = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-
-  const allowedMarketingEmails = ["toufikze@gmail.com", "toufik.zemri@outlook.com"];
-  const canSeeMarketing = user?.email && allowedMarketingEmails.includes(user.email);
+  // The Marketing Materials page is public; only its footer link is for platform owners (owner role or a master account,
+  // decided by the server in my_access_state()). Phase 12b replaced the two hard-coded emails with this.
+  const access = useAccess();
+  const canSeeMarketing = !access.loading && access.state === 'owner';
 
   return (
     <footer className="bg-gray-900 text-white py-12 px-4 sm:px-6 lg:px-8">
