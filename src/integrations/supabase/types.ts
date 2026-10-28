@@ -1761,10 +1761,33 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_type_prefs: {
+        Row: {
+          in_app: boolean
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          in_app?: boolean
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          in_app?: boolean
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string | null
+          dedupe_key: string | null
           id: string
+          link: string | null
           message: string
           read: boolean | null
           title: string
@@ -1773,7 +1796,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          dedupe_key?: string | null
           id?: string
+          link?: string | null
           message: string
           read?: boolean | null
           title: string
@@ -1782,7 +1807,9 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          dedupe_key?: string | null
           id?: string
+          link?: string | null
           message?: string
           read?: boolean | null
           title?: string
@@ -2384,8 +2411,140 @@ export type Database = {
           },
         ]
       }
+      phase12_subscribers_backup: {
+        Row: {
+          ai_credits_limit: number | null
+          ai_credits_remaining: number | null
+          ai_credits_reset_date: string | null
+          billing_interval: string | null
+          cancel_at_period_end: boolean | null
+          canceled_at: string | null
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          email: string | null
+          id: string | null
+          payment_status: string | null
+          plan_key: string | null
+          saved_at: string | null
+          stripe_customer_id: string | null
+          stripe_price_id: string | null
+          stripe_state_at: number | null
+          stripe_subscription_id: string | null
+          subscribed: boolean | null
+          subscription_end: string | null
+          subscription_status: string | null
+          subscription_tier: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          ai_credits_limit?: number | null
+          ai_credits_remaining?: number | null
+          ai_credits_reset_date?: string | null
+          billing_interval?: string | null
+          cancel_at_period_end?: boolean | null
+          canceled_at?: string | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          email?: string | null
+          id?: string | null
+          payment_status?: string | null
+          plan_key?: string | null
+          saved_at?: string | null
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_state_at?: number | null
+          stripe_subscription_id?: string | null
+          subscribed?: boolean | null
+          subscription_end?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          ai_credits_limit?: number | null
+          ai_credits_remaining?: number | null
+          ai_credits_reset_date?: string | null
+          billing_interval?: string | null
+          cancel_at_period_end?: boolean | null
+          canceled_at?: string | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          email?: string | null
+          id?: string | null
+          payment_status?: string | null
+          plan_key?: string | null
+          saved_at?: string | null
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_state_at?: number | null
+          stripe_subscription_id?: string | null
+          subscribed?: boolean | null
+          subscription_end?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      phase12_trial_flags_backup: {
+        Row: {
+          id: string
+          is_trial_active: boolean | null
+          saved_at: string
+          trial_expired: boolean | null
+        }
+        Insert: {
+          id: string
+          is_trial_active?: boolean | null
+          saved_at?: string
+          trial_expired?: boolean | null
+        }
+        Update: {
+          id?: string
+          is_trial_active?: boolean | null
+          saved_at?: string
+          trial_expired?: boolean | null
+        }
+        Relationships: []
+      }
+      platform_plan_prices: {
+        Row: {
+          created_at: string
+          note: string | null
+          plan_key: string
+          stripe_price_id: string
+        }
+        Insert: {
+          created_at?: string
+          note?: string | null
+          plan_key: string
+          stripe_price_id: string
+        }
+        Update: {
+          created_at?: string
+          note?: string | null
+          plan_key?: string
+          stripe_price_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_plan_prices_plan_key_fkey"
+            columns: ["plan_key"]
+            isOneToOne: false
+            referencedRelation: "platform_plans"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       platform_plans: {
         Row: {
+          admin_limit: number | null
           ai_credit_limit: number
           annual_price: number
           archived_at: string | null
@@ -2406,6 +2565,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          admin_limit?: number | null
           ai_credit_limit?: number
           annual_price?: number
           archived_at?: string | null
@@ -2426,6 +2586,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          admin_limit?: number | null
           ai_credit_limit?: number
           annual_price?: number
           archived_at?: string | null
@@ -5129,11 +5290,59 @@ export type Database = {
       }
     }
     Functions: {
+      _access_entitled: {
+        Args: { _status: string; _subscribed: boolean }
+        Returns: boolean
+      }
+      _access_state_for: {
+        Args: { _uid: string }
+        Returns: {
+          days_left: number
+          owner_name: string
+          plan_key: string
+          state: string
+          subscription_status: string
+          trial_ends_at: string
+          via: string
+        }[]
+      }
+      _admin_seat_needs_new: {
+        Args: { _email: string; _org: string; _user: string }
+        Returns: boolean
+      }
+      _notification_money: {
+        Args: { _amount: number; _currency: string }
+        Returns: string
+      }
+      _notification_today: { Args: { _user: string }; Returns: string }
+      _notification_wanted: {
+        Args: { _type: string; _user: string }
+        Returns: boolean
+      }
+      _notify: {
+        Args: {
+          _dedupe: string
+          _link: string
+          _message: string
+          _title: string
+          _type: string
+          _user: string
+        }
+        Returns: boolean
+      }
       _org_billing_owner: { Args: { _org: string }; Returns: string }
       _seat_caps_enabled: { Args: never; Returns: boolean }
       _seat_needs_new: {
         Args: { _email: string; _org: string; _user: string }
         Returns: boolean
+      }
+      _seat_plan: {
+        Args: { _bo: string }
+        Returns: {
+          admin_limit: number
+          member_limit: number
+          plan_key: string
+        }[]
       }
       _seat_pool: {
         Args: { _org: string }
@@ -5145,6 +5354,15 @@ export type Database = {
           pooled_companies: number
           seat_limit: number
           used: number
+        }[]
+      }
+      _seat_pool_admins: {
+        Args: { _org: string }
+        Returns: {
+          admin_limit: number
+          admin_pending: number
+          admin_used: number
+          enforced: boolean
         }[]
       }
       _seat_pool_lock: { Args: { _org: string }; Returns: undefined }
@@ -5349,6 +5567,7 @@ export type Database = {
       encrypt_integration_token: { Args: { token: string }; Returns: string }
       encrypt_payment_data: { Args: { data: string }; Returns: string }
       ensure_user_has_org: { Args: { p_user_id?: string }; Returns: string }
+      generate_due_notifications: { Args: { _limit?: number }; Returns: Json }
       get_advertisement_contact_info: {
         Args: { ad_id: string }
         Returns: {
@@ -5529,6 +5748,18 @@ export type Database = {
         Args: { _item_id: string; _organization_id: string }
         Returns: string
       }
+      my_access_state: {
+        Args: never
+        Returns: {
+          days_left: number
+          owner_name: string
+          plan_key: string
+          state: string
+          subscription_status: string
+          trial_ends_at: string
+          via: string
+        }[]
+      }
       onboarding_email_status: {
         Args: { _org: string }
         Returns: {
@@ -5582,6 +5813,9 @@ export type Database = {
       org_seat_summary: {
         Args: { _org: string }
         Returns: {
+          admin_limit: number
+          admin_pending: number
+          admin_used: number
           basis: string
           enforced: boolean
           pending: number
