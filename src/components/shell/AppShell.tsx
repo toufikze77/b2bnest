@@ -24,7 +24,7 @@ import { GlobalCommand } from './GlobalCommand';
 import { NotificationsPanel } from './NotificationsPanel';
 import { MobileTabBar } from './MobileTabBar';
 import TrialBanner from '@/components/access/TrialBanner';
-import { bottomItems, groups, topItems } from './navItems';
+import { bottomItems, groups, homeItem, logoTarget, topItems } from './navItems';
 
 // Option B navigation. Every item points at an existing route.
 const MARK_REVERSED = '/brand/svg/b2bnest-mark-reversed.svg';
@@ -50,6 +50,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const initials = (displayName || user?.email || '?').slice(0, 2).toUpperCase();
+  const logo = logoTarget(location.pathname);
 
   // Only the most specific matching item is active (e.g. Calendar, not also Projects).
   const activeTo = activeNavTarget(allTargets, location.pathname, location.search, navAliases)
@@ -84,8 +85,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <Sidebar collapsible="icon" className="border-sidebar-border bg-sidebar" aria-label="Main">
         <SidebarHeader className="h-[72px] justify-center border-b border-sidebar-border px-3 group-data-[collapsible=icon]:h-16">
           {/* Owner's reversed mark, straight on navy (no tile). */}
-          <Link to="/dashboard" className="flex w-fit items-center rounded-control focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-sidebar-ring">
-            <img src={MARK_REVERSED} alt="B2BNEST" width={52} height={52} className="h-[52px] w-[52px] group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8" />
+          <Link to={logo.to} aria-label={logo.label} title={logo.label} className="flex w-fit items-center rounded-control focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-sidebar-ring">
+            <img src={MARK_REVERSED} alt="" width={52} height={52} className="h-[52px] w-[52px] group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8" />
           </Link>
         </SidebarHeader>
         <SidebarContent className="gap-0 py-2">
@@ -115,6 +116,14 @@ export function AppShell({ children }: { children: ReactNode }) {
         </SidebarContent>
         <SidebarFooter className="border-t border-sidebar-border p-2">
           <SidebarMenu className="gap-0.5">{bottomItems.map(item)}</SidebarMenu>
+          {/* The public website. Separate from the app menu, and never marked as the current page. */}
+          <SidebarMenu className="border-t border-sidebar-border pt-2">
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip={homeItem.label} className={navItem}>
+                <Link to={homeItem.to}><homeItem.icon aria-hidden="true" /><span>{homeItem.label}</span></Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
         </SidebarFooter>
         <SidebarRail />
       </Sidebar>
@@ -123,8 +132,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Navy top bar on phones (with the reversed mark), white from md up. */}
         <header className="sticky top-0 z-40 flex h-16 items-center gap-2 border-b border-transparent bg-brand-navy px-3 text-white sm:px-5 md:border-border md:bg-card md:text-foreground lg:px-6">
           <SidebarTrigger className="h-11 w-11 text-current hover:bg-white/10 hover:text-white md:hover:bg-accent md:hover:text-accent-foreground" aria-label="Open menu" />
-          <Link to="/dashboard" className="shrink-0 rounded-control focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring md:hidden">
-            <img src={MARK_REVERSED} alt="B2BNEST" width={42} height={42} className="h-[42px] w-[42px]" />
+          <Link to={logo.to} aria-label={logo.label} title={logo.label} className="shrink-0 rounded-control focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring md:hidden">
+            <img src={MARK_REVERSED} alt="" width={42} height={42} className="h-[42px] w-[42px]" />
           </Link>
           <div className="ml-auto min-w-0 md:ml-0 md:flex-1"><GlobalCommand /></div>
           <div className="flex min-w-0 items-center gap-1 sm:gap-1.5 md:ml-auto">

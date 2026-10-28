@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, User, LogOut, Settings, BarChart3, Brain, Newspaper, Sun, Moon, MessageSquare, Rocket } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, BarChart3, Sun, Moon, MessageSquare, Rocket, MoreHorizontal } from 'lucide-react';
 
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,14 @@ import { useUserAvatar } from '@/hooks/useUserAvatar';
 import SupportFeedbackDialog from '@/components/SupportFeedbackDialog';
 import OrganizationSwitcher from '@/components/OrganizationSwitcher';
 import ProfileEditDialog from '@/components/ProfileEditDialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
+// Phase 16 spacing rules (tested in Header.test.tsx):
+// - the row keeps a fixed gap between the logo, the menu and the right-hand buttons, so they can never touch;
+// - the full menu shows from lg (1024px); below that the menu button opens the same links;
+// - Download, Share and Support & feedback sit in "More" on desktop, so the menu always fits next to the logo.
+export const HEADER_ROW_CLASS = 'flex h-20 items-center gap-3 lg:gap-6 xl:gap-8';
+export const HEADER_NAV_CLASS = 'hidden lg:flex shrink-0 items-center gap-x-4 whitespace-nowrap xl:gap-x-5';
 
 
 const Header = () => {
@@ -42,16 +50,16 @@ const Header = () => {
   return (
     <header className="bg-white dark:bg-card shadow-sm border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-20 items-center justify-between">
+        <div className={HEADER_ROW_CLASS} data-testid="header-row">
           {/* Logo */}
-          <Link to="/" className="flex shrink-0 items-center rounded-control focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
+          <Link to="/" aria-label="B2BNEST home" className="flex shrink-0 items-center rounded-control focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
             {/* Owner's wordmark: color on white, reversed on the dark-mode header. */}
             <img src="/brand/svg/b2bnest-wordmark-color.svg" alt="B2BNEST" width={213} height={32} className="h-7 w-auto dark:hidden sm:h-8" />
             <img src="/brand/svg/b2bnest-wordmark-reversed.svg" alt="B2BNEST" width={213} height={32} className="hidden h-7 w-auto dark:block sm:h-8" />
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-5 whitespace-nowrap xl:space-x-6">
+          <nav className={HEADER_NAV_CLASS} aria-label="Main">
             <Link to="/" className="text-gray-700 hover:text-blue-600 transition-colors">
               Home
             </Link>
@@ -64,9 +72,10 @@ const Header = () => {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <span className="text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">
+                {/* A real button, so keyboard users can open it (it was a span and was skipped by Tab). */}
+                <button type="button" className="rounded-control text-gray-700 hover:text-blue-600 transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
                   AI Tools
-                </span>
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem asChild>
@@ -85,36 +94,47 @@ const Header = () => {
             </Link>
           </nav>
 
-          {/* Share, Live Prices and User Menu */}
-          <div className="flex items-center space-x-2">
+          {/* Company, Dashboard, More, theme and account */}
+          <div className="ml-auto flex shrink-0 items-center gap-1.5">
             {user && (
-              <div className="hidden 2xl:block">
+              // Capped so the company name truncates instead of pushing the menu into the logo.
+              <div className="hidden 2xl:block [&_[role=combobox]]:w-[150px] [&_[role=combobox]>span]:block [&_[role=combobox]>span]:min-w-0 [&_[role=combobox]>span]:truncate">
                 <OrganizationSwitcher />
               </div>
             )}
             {user && (
               <Link
                 to="/dashboard"
-                className="hidden md:flex items-center text-gray-700 hover:text-blue-600 transition-colors px-2"
+                className="hidden lg:flex items-center rounded-control px-2 py-2 text-gray-700 hover:text-blue-600 transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
                 title="Dashboard"
+                aria-label="Dashboard"
               >
-                <BarChart3 className="h-4 w-4 lg:mr-1" />
-                <span className="hidden lg:inline">Dashboard</span>
+                <BarChart3 className="h-4 w-4 xl:mr-1" aria-hidden="true" />
+                <span className="hidden xl:inline">Dashboard</span>
               </Link>
             )}
-            <div className="hidden md:block">
-              <InstallAppButton variant="ghost" size="sm" label="" />
-            </div>
-            <div className="hidden md:block">
-              <ShareButton variant="ghost" size="sm" />
-            </div>
+            {/* Lower-priority actions, grouped so the main menu always fits. */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="hidden h-9 w-9 lg:inline-flex" aria-label="More: download app, share, support" title="More">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-56 space-y-1 p-2" data-testid="header-more">
+                <InstallAppButton variant="ghost" size="sm" label="Download app" className="w-full justify-start" />
+                <div className="[&_button]:w-full [&_button]:justify-start"><ShareButton variant="ghost" size="sm" /></div>
+                <Button variant="ghost" size="sm" className="w-full justify-start" onClick={() => setIsFeedbackOpen(true)}>
+                  <MessageSquare className="mr-2 h-4 w-4" />Support &amp; feedback
+                </Button>
+              </PopoverContent>
+            </Popover>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsFeedbackOpen(true)}
               aria-label="Support and feedback"
               title="Support & Feedback"
-              className="hidden h-9 w-9 sm:inline-flex"
+              className="hidden h-9 w-9 sm:inline-flex lg:hidden"
             >
               <MessageSquare className="h-4 w-4" />
             </Button>
@@ -134,14 +154,12 @@ const Header = () => {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center space-x-2 px-2">
+                  {/* The name is shown inside the menu, so the header keeps its width at every size. */}
+                  <Button variant="ghost" className="flex items-center px-2" aria-label={`Account menu for ${displayName || user.email}`}>
                     <Avatar className="h-7 w-7">
-                      <AvatarImage src={avatarUrl} alt={displayName || user.email || 'User'} />
+                      <AvatarImage src={avatarUrl} alt="" />
                       <AvatarFallback className="text-xs">{initials}</AvatarFallback>
                     </Avatar>
-                    <span className="hidden 2xl:inline truncate max-w-32">
-                      {displayName || user.email}
-                    </span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-64">
@@ -215,7 +233,7 @@ const Header = () => {
 
             {/* Mobile menu button */}
             <button
-              className="md:hidden p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100"
+              className="lg:hidden p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               aria-label={isMenuOpen ? "Close navigation menu" : "Open navigation menu"}
               aria-expanded={isMenuOpen}
@@ -227,7 +245,7 @@ const Header = () => {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t">
+          <div className="lg:hidden py-4 border-t">
             <div className="flex flex-col space-y-4">
               <Link
                 to="/"
