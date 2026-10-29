@@ -47,3 +47,24 @@ export function workflowAccess(row: WorkflowAccessInput | null | undefined): Wor
 
 /** true only when the rule above includes workflows. */
 export const workflowsIncluded = (row: WorkflowAccessInput | null | undefined): boolean => workflowAccess(row).included;
+
+/**
+ * Phase 21: the refusal for a caller whose access row doesn't include workflows, as workflow-send-email and
+ * workflow-execute answer (Phase 19). null = allowed. A missing row or unknown state means the check failed: refuse
+ * (fail closed) with "try again". Used by the X and LinkedIn post functions; the access row comes from the server.
+ */
+export function workflowRefusal(
+  access: WorkflowAccess | null,
+  messages: { suspended: string; trialEnded: string; companyTrialEnded: string },
+): { status: 402 | 403 | 503; code: string; message: string } | null {
+  if (!access) return { status: 503, code: "plan_check_failed", message: WORKFLOW_PLAN_CHECK_FAILED };
+  if (access.included) return null;
+  // (Narrowed explicitly: the app's tsconfig doesn't narrow this union by its boolean tag.)
+  const refused = access as Extract<WorkflowAccess, { included: false }>;
+  if (refused.reason === "unknown_state") return { status: 503, code: "plan_check_failed", message: WORKFLOW_PLAN_CHECK_FAILED };
+  if (refused.reason === "suspended") return { status: 403, code: "account_suspended", message: messages.suspended };
+  if (refused.reason === "trial_ended") {
+    return { status: 402, code: "trial_ended", message: refused.via === "company" ? messages.companyTrialEnded : messages.trialEnded };
+  }
+  return { status: 403, code: "plan_not_included", message: refused.via === "company" ? WORKFLOWS_NOT_INCLUDED_COMPANY_MESSAGE : WORKFLOWS_NOT_INCLUDED_MESSAGE };
+}

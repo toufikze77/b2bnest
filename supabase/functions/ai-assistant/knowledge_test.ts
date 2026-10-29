@@ -43,3 +43,9 @@ Deno.test("the facts proven false in Phase 20 are gone, and the honest ones stay
   for (const kept of ["HMRC filing is not available yet", "Two-step sign-in is not active yet", "There is no mobile app and no public API",
     "No plan includes a support response-time promise", "posting from B2BNEST is switched off for customers"]) assert(text.includes(kept), kept);
 });
+
+Deno.test("Phase 21: no 'coming soon' promises, and COLLABORATION says only what the code does", () => {
+  assertEquals(/coming soon|team chat \(|video conferenc/i.test(text), false);
+  for (const gone of ["Comments and mentions", "File sharing", "Real-time collaboration", "Team workspaces"]) assertEquals(text.includes(gone), false, gone);
+  assert(text.includes("There is no team chat, no video calls, no @mentions and no shared file storage"));
+});

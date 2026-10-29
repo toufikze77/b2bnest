@@ -710,7 +710,7 @@ const BusinessFinanceAssistant = () => {
               <CardContent>
                 <div className="space-y-4">
                   {bankAccounts.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">No bank accounts connected. Connect your first account to get started.</p>
+                    <p className="text-muted-foreground text-center py-8">No bank accounts connected. Connecting a bank account isn't available in B2BNEST yet.</p>
                   ) : (
                     bankAccounts.map((account) => (
                       <div key={account.id} className="flex items-center justify-between p-4 border rounded-lg">

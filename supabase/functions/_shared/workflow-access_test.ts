@@ -37,3 +37,15 @@ Deno.test("every catalogue plan key is classified (none falls through as unknown
   // Legacy prices (Business £35/£350, Scale £85/£850) belong to the same plan key, so they follow the same rule.
   assertEquals(Object.values(PLAN_CATALOG).filter((p) => p.legacy).map((p) => p.key), ["professional", "enterprise"]);
 });
+
+import { workflowRefusal, WORKFLOW_PLAN_CHECK_FAILED, WORKFLOWS_NOT_INCLUDED_MESSAGE } from "./workflow-access.ts";
+Deno.test("workflowRefusal: null when included; fails closed; same codes as the Phase 19 functions", () => {
+  const m = { suspended: "S", trialEnded: "T", companyTrialEnded: "CT" };
+  assertEquals(workflowRefusal(workflowAccess({ state: "trial" }), m), null);
+  assertEquals(workflowRefusal(workflowAccess({ state: "subscribed", plan_key: "enterprise" }), m), null);
+  assertEquals(workflowRefusal(null, m), { status: 503, code: "plan_check_failed", message: WORKFLOW_PLAN_CHECK_FAILED });
+  assertEquals(workflowRefusal(workflowAccess({}), m)?.code, "plan_check_failed");
+  assertEquals(workflowRefusal(workflowAccess({ state: "subscribed", plan_key: "starter" }), m), { status: 403, code: "plan_not_included", message: WORKFLOWS_NOT_INCLUDED_MESSAGE });
+  assertEquals(workflowRefusal(workflowAccess({ state: "trial_ended", via: "company" }), m), { status: 402, code: "trial_ended", message: "CT" });
+  assertEquals(workflowRefusal(workflowAccess({ state: "suspended" }), m), { status: 403, code: "account_suspended", message: "S" });
+});

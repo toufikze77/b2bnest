@@ -144,7 +144,7 @@ const WorkflowGuide = () => {
               <li>Press <strong>"Run now"</strong>. Fill in <strong>"Run with these details"</strong>, check the <strong>"Email preview"</strong> and the line that says how many emails will go to how many recipients, then press the <strong>Send</strong> button.</li>
               <li>Each step shows its result, and the run is added to <strong>"Run history"</strong> below the steps.</li>
             </ol>
-            <p>The templates are: {TEMPLATE_NAMES.join(', ')}. Each one is a single email you can change. Other named templates are marked "Coming soon" and can't be used yet.</p>
+            <p>The templates are: {TEMPLATE_NAMES.join(', ')}. Each one is a single email you can change. Other named templates are marked "Not available" and can't be used yet.</p>
             <p>To start from nothing, press <strong>"New workflow"</strong> and use <strong>"+ Add a step"</strong> to add "Send an email" steps.</p>
           </Section>
 
