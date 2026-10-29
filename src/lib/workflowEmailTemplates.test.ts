@@ -46,7 +46,7 @@ describe('working Workflow Studio templates', () => {
     expect(text).not.toMatch(/!/);
   });
 
-  it('every other named template is "coming soon", the blank one excepted', () => {
+  it('every other named template is "not available", the blank one excepted', () => {
     expect(COMING_SOON_TEMPLATES.length).toBe(workflowTemplates.length - 1 - WORKING_TEMPLATES.length);
     expect(COMING_SOON_TEMPLATES.some((t) => t.id === 'blank')).toBe(false);
   });

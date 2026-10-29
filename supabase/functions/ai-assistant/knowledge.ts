@@ -7,6 +7,9 @@
 // document version control, sentiment analysis, predictive analytics, scheduled reports; and in WORKFLOWS: "uses the
 // company's email settings" (it is sent from B2BNEST's address) and "steps that don't run yet are hidden" (they are
 // shown as not available).
+// Phase 21: COLLABORATION re-checked against the code. Removed the two promised-but-unbuilt lines (a chat feature and
+// video calls; owner decision: no promises), "Comments and mentions" (no mentions exist), "File sharing" (no shared file
+// storage) and "Real-time collaboration" (only task comments update live).
 import { PLAN_CATALOG, type PlanDefinition } from "../_shared/plans.ts";
 import { WORKFLOW_PLAN_KEYS } from "../_shared/workflow-access.ts";
 
@@ -173,13 +176,10 @@ ${workflowsSection()}
 - No certifications are claimed. Don't state any security score, certification or audit.
 
 ## COLLABORATION
-- Team workspaces
-- Real-time collaboration
-- Comments and mentions
-- Activity feeds
-- File sharing
-- Team chat (coming soon)
-- Video conferencing integration (coming soon)
+- Workspaces for organising work
+- Comments on tasks; new comments appear live for everyone viewing the task
+- Project activity timeline
+- There is no team chat, no video calls, no @mentions and no shared file storage
 
 ## REPORTING & ANALYTICS
 - Custom dashboards

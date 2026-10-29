@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { COMING_SOON_REASON, COMING_SOON_TEMPLATES, WORKING_TEMPLATES, WorkingTemplate } from '@/lib/workflowEmailTemplates';
 
-/** Pick a working template, see exactly what it contains, then use it. "Coming soon" ones can't be chosen. */
+/** Pick a working template, see exactly what it contains, then use it. "Not available" ones can't be chosen. */
 export function TemplatePicker({ open, onClose, onUse }: { open: boolean; onClose: () => void; onUse: (t: WorkingTemplate) => void }) {
   const [preview, setPreview] = useState<WorkingTemplate | null>(null);
   const close = () => { setPreview(null); onClose(); };
@@ -51,12 +51,12 @@ export function TemplatePicker({ open, onClose, onUse }: { open: boolean; onClos
                 </li>
               ))}
             </ul>
-            <section aria-labelledby="coming-soon" className="space-y-2">
-              <h3 id="coming-soon" className="text-sm font-semibold">Coming soon</h3>
+            <section aria-labelledby="not-available" className="space-y-2">
+              <h3 id="not-available" className="text-sm font-semibold">Not available</h3>
               <p className="text-xs text-muted-foreground">{COMING_SOON_REASON}</p>
-              <ul className="flex flex-wrap gap-2" aria-label="Templates coming soon">
+              <ul className="flex flex-wrap gap-2" aria-label="Templates not available">
                 {COMING_SOON_TEMPLATES.map((t) => (
-                  <li key={t.id}><Badge variant="outline" className="font-normal text-muted-foreground" aria-disabled="true">{t.name} · Coming soon</Badge></li>
+                  <li key={t.id}><Badge variant="outline" className="font-normal text-muted-foreground" aria-disabled="true">{t.name} · Not available</Badge></li>
                 ))}
               </ul>
             </section>

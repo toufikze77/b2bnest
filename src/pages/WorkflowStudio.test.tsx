@@ -222,7 +222,7 @@ describe('Templates (Phase 15)', () => {
     render(<MemoryRouter><WorkflowStudio /></MemoryRouter>);
     fireEvent.click(await screen.findByRole('button', { name: /Start from a template/ }));
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getAllByText(/· Coming soon/).length).toBeGreaterThan(10);
+    expect(within(dialog).getAllByText(/· Not available/).length).toBeGreaterThan(10);
     fireEvent.click(within(dialog).getByRole('button', { name: 'Preview Overdue invoice reminder' }));
     expect(within(dialog).getByTestId('template-preview')).toHaveTextContent('Invoice {{invoice_number}} is overdue');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Use this template' }));
@@ -233,10 +233,10 @@ describe('Templates (Phase 15)', () => {
     expect(screen.getByRole('button', { name: /Run now/ })).toBeEnabled();
   });
 
-  it('"Coming soon" templates have no button to use or run them', async () => {
+  it('"Not available" templates have no button to use or run them', async () => {
     render(<MemoryRouter><WorkflowStudio /></MemoryRouter>);
     fireEvent.click(await screen.findByRole('button', { name: /Start from a template/ }));
-    const soon = await screen.findByRole('list', { name: 'Templates coming soon' });
+    const soon = await screen.findByRole('list', { name: 'Templates not available' });
     expect(within(soon).queryAllByRole('button')).toEqual([]);
   });
 });

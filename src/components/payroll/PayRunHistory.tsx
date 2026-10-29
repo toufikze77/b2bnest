@@ -123,7 +123,7 @@ const PayRunHistory: React.FC<PayRunHistoryProps> = ({
       // Year to date section
       y += 15;
       pdf.setFontSize(10);
-      pdf.text('Year to Date figures would be calculated here in production', 20, y);
+      pdf.text('Year-to-date figures are not included on this payslip.', 20, y);
       
       // Footer
       y += 20;

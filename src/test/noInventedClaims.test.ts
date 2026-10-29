@@ -36,6 +36,11 @@ const BANNED: { what: string; re: RegExp; allow?: RegExp }[] = [
   { what: 'workflows-in-every-plan claim', re: /workflows? (are |is )?(included )?in (all|every) plans?|every plan includes (Workflow|workflows)|Solo (plan )?includes (Workflow|workflows)/i },
   // Phase 20: AI Studio says only what it does (example figures; fixed guidance; no invented impact statistics).
   { what: 'AI Studio overclaim', re: /automate complex workflows|More Relevant Content|Faster Task Completion|Reduced Manual Work|AI personalization settings|full power of AI-driven business automation|Customize your AI experience/i },
+  // Phase 21 (owner decision): no promise unless the code does it today. The two-step sign-in line is sign-in copy,
+  // left for the owner (lib/twoStep.ts, SecurityGuide.tsx), so it is the one allowed "coming soon".
+  { what: '"coming soon" promise', re: /coming soon/i, allow: /Coming soon: we'll tell you|TWO_STEP_COMING_SOON/ },
+  { what: 'unbuilt collaboration / payroll / VAT claim', re: /video conferenc|team chat|P45 and P60 generation|Workplace pension compliance|Student loan deductions|Statutory payments \(SSP, SMP, SPP\)<|Flat Rate Scheme support|Reverse charge transactions|Net present value|Internal rate of return|auto-calculates based on your data|Connect your first account|mentioned you|Powered by GPT-4|would be calculated here in production|planned, not available/i, allow: /There is no team chat/ },
+  { what: 'uptime / always-on promise', re: /99\.9\d*% uptime|\b24\/7 support|round-the-clock support/i },
   { what: 'stale "replies go to B2BNEST" warning', re: /(repl(y|ies) go(es)? to B2BNEST|reply goes to B2BNEST), not (to )?you/i },
 ];
 
@@ -186,5 +191,22 @@ describe('AI Studio honesty (Phase 20)', () => {
     const fn = read('supabase/functions/business-insights/handler.ts') + read('supabase/functions/business-insights/index.ts');
     expect(fn).not.toMatch(/Failed to parse AI response|replace\(\/```/);
     expect(fn).toMatch(/response_format: \{ type: "json_object" \}/);
+  });
+});
+
+// Phase 21: the financial tools guide says only what the finance and payroll screens do.
+describe('Financial tools guide (Phase 21)', () => {
+  const guide = fs.readFileSync(path.join(ROOT, 'src/pages/articles/FinancialToolsGuide.tsx'), 'utf8');
+  it('states the real limits', () => {
+    for (const t of [
+      'Entries are kept in this browser only (up to 50)', 'Bank accounts are not connected', 'Payback period, NPV and IRR are not calculated',
+      "Receipts can't be attached yet", 'The VAT figures in B2BNEST are examples, not your data',
+      'Not available yet: pensions, student loans, statutory payments (SSP, SMP, SPP), P45 and P60', "Year-to-date figures aren't included yet",
+    ]) expect(guide, t).toContain(t);
+  });
+  it('makes none of the old unbuilt claims', () => {
+    for (const t of ['Connect your bank accounts', 'automatic transaction imports', 'budget limits and alerts', 'Export reports to Excel/PDF',
+      'Upload receipt', 'Mark as billable', 'Budget vs. actual', 'Vendor spending analysis', 'Generate payslips (PDF or email)', 'Approve payroll',
+      'pensions</li>', 'all categories', 'MTD-enabled business account']) expect(guide, t).not.toContain(t);
   });
 });

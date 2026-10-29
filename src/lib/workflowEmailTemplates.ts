@@ -2,7 +2,7 @@
 // "Run now" start; the user edits them before use. Placeholders such as {{name}} are filled from the
 // "Run with these details" form (supabase/functions/_shared/placeholders.ts).
 // The other named templates in src/data/workflowTemplates.ts need an automatic start or a step that isn't available
-// yet, so they are listed as "Coming soon" and can't be used or run.
+// yet, so they are listed as "Not available" and can't be used or run.
 import { workflowTemplates } from '@/data/workflowTemplates';
 import type { SimpleStep } from '@/lib/workflowSteps';
 
@@ -69,10 +69,10 @@ export const WORKING_TEMPLATES: WorkingTemplate[] = [
   },
 ];
 
-/** Why the other named templates can't be used yet (shown next to each "Coming soon" name). */
+/** Why the other named templates can't be used yet (shown next to each "Not available" name). */
 export const COMING_SOON_REASON = "Needs an automatic start or a step that isn't available yet, so it can't be used or run.";
 
-/** Named templates that stay "Coming soon": every template except the blank one and those converted above. */
+/** Named templates that stay "Not available" (Phase 21: no promises of later availability): every template except the blank one and those converted above. */
 export const COMING_SOON_TEMPLATES = workflowTemplates
   .filter((t) => t.id !== 'blank' && !WORKING_TEMPLATES.some((w) => w.sourceId === t.id))
   .map((t) => ({ id: t.id, name: t.name }));

@@ -25,7 +25,7 @@ const FinancialToolsGuide = () => {
             <DollarSign className="h-12 w-12 text-primary mb-4" />
             <h1 className="text-4xl font-bold mb-4">Financial Tools Guide</h1>
             <p className="text-xl text-muted-foreground">
-              Complete guide to managing your business finances with B2BNEST
+              What the finance tools in B2BNEST do today, step by step.
             </p>
           </div>
 
@@ -39,29 +39,26 @@ const FinancialToolsGuide = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                Monitor your business's income and expenses in real-time to maintain healthy cash flow.
+                A quick tracker for money in and out over the last 30 days. Entries are kept in this browser only (up to 50), not in your account.
               </p>
 
               <div>
                 <h3 className="font-semibold mb-2">Setting Up Cash Flow Tracking</h3>
                 <ol className="list-decimal list-inside text-muted-foreground space-y-2 ml-4">
                   <li>Navigate to Business Tools → Cash Flow Tracker</li>
-                  <li>Connect your bank accounts (optional but recommended)</li>
-                  <li>Set up income and expense categories</li>
-                  <li>Configure automatic transaction imports</li>
-                  <li>Set budget limits and alerts</li>
+                  <li>Add each payment in or out by hand: amount, description and a category from the list</li>
+                  <li>Edit or delete an entry at any time</li>
+                  <li>Bank accounts are not connected and nothing is imported automatically</li>
                 </ol>
               </div>
 
               <div>
                 <h3 className="font-semibold mb-2">Key Features</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li>Real-time balance monitoring</li>
-                  <li>Visual cash flow charts and forecasts</li>
-                  <li>Category-based expense tracking</li>
-                  <li>Recurring transaction management</li>
-                  <li>Cash flow projections (30/60/90 days)</li>
-                  <li>Export reports to Excel/PDF</li>
+                  <li>30-day summary: money in, money out and net flow</li>
+                  <li>Top categories for income and for expenses</li>
+                  <li>Fixed income and expense categories (for example Sales Revenue, Office Rent, Software/Tools)</li>
+                  <li>No charts, forecasts, budgets, recurring entries or exports yet</li>
                 </ul>
               </div>
 
@@ -95,10 +92,9 @@ const FinancialToolsGuide = () => {
                 <h3 className="font-semibold mb-2">How to Use</h3>
                 <ol className="list-decimal list-inside text-muted-foreground space-y-2 ml-4">
                   <li>Enter initial investment amount</li>
-                  <li>Input expected returns or revenue</li>
-                  <li>Add timeframe for the investment</li>
-                  <li>Include ongoing costs (optional)</li>
-                  <li>View ROI percentage and payback period</li>
+                  <li>Input the total expected returns</li>
+                  <li>Add the timeframe in months</li>
+                  <li>View the ROI percentage, annualised ROI and net profit</li>
                 </ol>
               </div>
 
@@ -106,10 +102,9 @@ const FinancialToolsGuide = () => {
                 <h3 className="font-semibold mb-2">Calculations Included</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
                   <li>Simple ROI percentage</li>
-                  <li>Annualized ROI</li>
-                  <li>Payback period</li>
-                  <li>Net present value (NPV)</li>
-                  <li>Internal rate of return (IRR)</li>
+                  <li>Annualised ROI</li>
+                  <li>Net profit (returns minus investment)</li>
+                  <li>Payback period, NPV and IRR are not calculated</li>
                 </ul>
               </div>
 
@@ -129,42 +124,36 @@ const FinancialToolsGuide = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                Track, categorize, and manage all your business expenses efficiently.
+                Record business expenses, sort them by category and supplier, and download them as a CSV file.
               </p>
 
               <div>
                 <h3 className="font-semibold mb-2">Recording Expenses</h3>
                 <ol className="list-decimal list-inside text-muted-foreground space-y-2 ml-4">
-                  <li>Click "Add Expense" button</li>
-                  <li>Enter expense details (amount, date, category)</li>
-                  <li>Upload receipt photo or PDF</li>
-                  <li>Add notes or descriptions</li>
-                  <li>Mark as billable if applicable</li>
-                  <li>Assign to project or client</li>
+                  <li>Open Finance → Expenses and click "Add expense"</li>
+                  <li>Enter a description, amount, date and category</li>
+                  <li>Choose a supplier (optional) and a status (Pending, Approved or Paid)</li>
+                  <li>Receipts can't be attached yet</li>
                 </ol>
               </div>
 
               <div>
                 <h3 className="font-semibold mb-2">Expense Categories</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li>Office supplies and equipment</li>
-                  <li>Travel and accommodation</li>
-                  <li>Marketing and advertising</li>
-                  <li>Professional services</li>
-                  <li>Utilities and rent</li>
-                  <li>Meals and entertainment</li>
-                  <li>Custom categories available</li>
+                  <li>Premises and office: office costs, rent and rates, utilities, telephone and internet, software</li>
+                  <li>Travel: travel and transport, vehicle running costs, fuel, meals and subsistence</li>
+                  <li>People and services: wages, subcontractors, training, professional fees (accountant, legal)</li>
+                  <li>Stock, equipment, marketing, insurance, bank charges, licences, taxes and duties</li>
+                  <li>"Other (type your own)" adds your own category</li>
                 </ul>
               </div>
 
               <div>
                 <h3 className="font-semibold mb-2">Reports & Analytics</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li>Expense trends by category</li>
-                  <li>Month-over-month comparisons</li>
-                  <li>Tax-deductible expense summaries</li>
-                  <li>Vendor spending analysis</li>
-                  <li>Budget vs. actual reports</li>
+                  <li>Search by description, category or supplier, and filter by status or category</li>
+                  <li>Expenses this month on the Finance Reports tab</li>
+                  <li>Download expenses as a CSV file</li>
                 </ul>
               </div>
 
@@ -190,10 +179,8 @@ const FinancialToolsGuide = () => {
               <div>
                 <h3 className="font-semibold mb-2">Prerequisites</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li>HMRC integration configured</li>
-                  <li>Valid VAT registration number</li>
-                  <li>Government Gateway credentials</li>
-                  <li>MTD-enabled business account</li>
+                  <li>Nothing: the VAT screen shows example figures to show the layout</li>
+                  <li>You can save your VAT number in HMRC settings for later use</li>
                 </ul>
               </div>
 
@@ -203,8 +190,7 @@ const FinancialToolsGuide = () => {
                   <li>Navigate to HMRC Integration Suite</li>
                   <li>Click "VAT Returns" tab</li>
                   <li>Select the return period</li>
-                  <li>Review auto-calculated figures</li>
-                  <li>Check the preview figures</li>
+                  <li>Look at the example figures (marked "Preview only")</li>
                   <li>File the return with HMRC yourself (filing from B2BNEST is not available yet)</li>
                 </ol>
               </div>
@@ -212,17 +198,14 @@ const FinancialToolsGuide = () => {
               <div>
                 <h3 className="font-semibold mb-2">Auto-Calculation Features</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li>Output VAT from sales invoices</li>
-                  <li>Input VAT from expenses</li>
-                  <li>Net VAT due calculation</li>
-                  <li>Flat Rate Scheme support</li>
-                  <li>Reverse charge transactions</li>
+                  <li>Nothing is calculated from your invoices or expenses yet</li>
+                  <li>The figures shown are examples, the same for everyone</li>
                 </ul>
               </div>
 
               <div className="bg-yellow-50 dark:bg-yellow-950/20 p-4 rounded-lg">
                 <p className="text-sm text-muted-foreground">
-                  <strong>Important:</strong> Always review VAT figures before submission. B2BNEST auto-calculates based on your data, but you're responsible for accuracy.
+                  <strong>Important:</strong> The VAT figures in B2BNEST are examples, not your data. Work out your VAT return from your own records or with your accountant.
                 </p>
               </div>
 
@@ -242,16 +225,16 @@ const FinancialToolsGuide = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                UK payroll calculations. RTI filing (FPS/EPS) with HMRC is not available yet.
+                UK payroll calculations to help you prepare pay runs. RTI filing (FPS/EPS) with HMRC is not available yet. Check every figure before you pay anyone.
               </p>
 
               <div>
                 <h3 className="font-semibold mb-2">Setting Up Payroll</h3>
                 <ol className="list-decimal list-inside text-muted-foreground space-y-2 ml-4">
                   <li>Add employee information (name, NI number, tax code)</li>
-                  <li>Configure pay frequencies</li>
-                  <li>Set up salary and deductions</li>
-                  <li>Enter PAYE reference number</li>
+                  <li>Choose monthly or weekly pay and the NI category (A, B, C, H, M or Z)</li>
+                  <li>Enter the annual salary</li>
+                  <li>Enter the employer PAYE reference and Accounts Office reference</li>
                 </ol>
               </div>
 
@@ -259,37 +242,31 @@ const FinancialToolsGuide = () => {
                 <h3 className="font-semibold mb-2">Running Payroll</h3>
                 <ol className="list-decimal list-inside text-muted-foreground space-y-2 ml-4">
                   <li>Create new pay run for the period</li>
-                  <li>Review employee hours/salaries</li>
-                  <li>System calculates PAYE, NI, pensions</li>
-                  <li>Review deductions and net pay</li>
-                  <li>Approve payroll</li>
-                  <li>Generate payslips (PDF or email)</li>
+                  <li>Review each employee's pay and add any bonus</li>
+                  <li>B2BNEST calculates income tax (PAYE) and employee National Insurance</li>
+                  <li>Review tax, NI and net pay, then save the pay run</li>
+                  <li>Download payslips and a pay run summary as PDFs</li>
                   <li>File RTI with HMRC yourself or through your accountant (not available from B2BNEST yet)</li>
-                  <li>Process payments to employees</li>
+                  <li>Pay your employees from your bank yourself</li>
                 </ol>
               </div>
 
               <div>
                 <h3 className="font-semibold mb-2">Compliance Features</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li>Automatic PAYE calculations</li>
-                  <li>National Insurance calculations (all categories)</li>
-                  <li>Workplace pension compliance</li>
-                  <li>Student loan deductions</li>
-                  <li>Statutory payments (SSP, SMP, SPP)</li>
-                  <li>P45 and P60 generation</li>
-                  <li>RTI previews (FPS/EPS); filing not available yet</li>
+                  <li>Income tax (PAYE) from the tax code</li>
+                  <li>Employee National Insurance for categories A, B, C, H, M and Z</li>
+                  <li>RTI previews (FPS/EPS) with example figures; filing not available yet</li>
+                  <li>Not available yet: pensions, student loans, statutory payments (SSP, SMP, SPP), P45 and P60</li>
                 </ul>
               </div>
 
               <div>
                 <h3 className="font-semibold mb-2">Reports Available</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li>Payroll summary by period</li>
-                  <li>PAYE/NI liability reports</li>
-                  <li>Year-to-date summaries</li>
-                  <li>Payslip history</li>
-                  <li>Pension contribution reports</li>
+                  <li>Pay run history with each employee's payslip</li>
+                  <li>Pay run summary (PDF) with total gross pay, tax, NI and net pay</li>
+                  <li>Year-to-date figures aren't included yet</li>
                 </ul>
               </div>
 
