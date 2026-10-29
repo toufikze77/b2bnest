@@ -34,6 +34,8 @@ const BANNED: { what: string; re: RegExp; allow?: RegExp }[] = [
   { what: '"free account" / freemium wording', re: /free account|freemium model with extensive free tools|offering free and premium/i },
   // Phase 19 (owner decision 28 Oct 2026): workflows are in Business and Scale (and the trial), not in every plan.
   { what: 'workflows-in-every-plan claim', re: /workflows? (are |is )?(included )?in (all|every) plans?|every plan includes (Workflow|workflows)|Solo (plan )?includes (Workflow|workflows)/i },
+  // Phase 20: AI Studio says only what it does (example figures; fixed guidance; no invented impact statistics).
+  { what: 'AI Studio overclaim', re: /automate complex workflows|More Relevant Content|Faster Task Completion|Reduced Manual Work|AI personalization settings|full power of AI-driven business automation|Customize your AI experience/i },
   { what: 'stale "replies go to B2BNEST" warning', re: /(repl(y|ies) go(es)? to B2BNEST|reply goes to B2BNEST), not (to )?you/i },
 ];
 
@@ -164,5 +166,25 @@ describe('no invented claims in src or supabase/functions', () => {
         expect(FREE_TIER.test(out), `${t.id}: free-tier wording`).toBe(false);
       }
     }
+  });
+});
+
+// Phase 20: the AI Studio honesty labels exist where customers see them, and the AI functions no longer make up a
+// "fallback" analysis or silently pick an industry.
+describe('AI Studio honesty (Phase 20)', () => {
+  const read = (f: string) => fs.readFileSync(path.join(ROOT, f), 'utf8');
+  it('example-figures and general-guidance labels are shown on the screens', async () => {
+    const { EXAMPLE_FIGURES_LABEL, PERSONALIZATION_NOTE } = await import('../lib/aiStudio');
+    expect(EXAMPLE_FIGURES_LABEL).toBe('Based on example figures, not your business data');
+    expect(PERSONALIZATION_NOTE).toMatch(/aren't written by AI and aren't based on your business data/);
+    expect(read('src/components/ai/IntelligentAnalytics.tsx')).toMatch(/EXAMPLE_FIGURES_LABEL/);
+    expect(read('src/components/ai/IntelligentAnalytics.tsx')).toMatch(/resultLabel\(/);
+    expect(read('src/components/ai/SmartPersonalization.tsx')).toMatch(/PERSONALIZATION_NOTE/);
+  });
+  it("no silent 'technology' / 'growth' and no fabricated fallback analysis", () => {
+    expect(read('src/components/ai/IntelligentAnalytics.tsx')).not.toMatch(/industry: 'technology'|businessStage: 'growth'/);
+    const fn = read('supabase/functions/business-insights/handler.ts') + read('supabase/functions/business-insights/index.ts');
+    expect(fn).not.toMatch(/Failed to parse AI response|replace\(\/```/);
+    expect(fn).toMatch(/response_format: \{ type: "json_object" \}/);
   });
 });

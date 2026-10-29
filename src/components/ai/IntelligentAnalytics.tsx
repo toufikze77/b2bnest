@@ -3,9 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { TrendingUp, BarChart3, PieChart, Target, AlertTriangle } from "lucide-react";
+import { TrendingUp, BarChart3, PieChart, Target, AlertTriangle, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { BUSINESS_STAGES, EXAMPLE_FIGURES_LABEL, INDUSTRIES, aiErrorMessage, resultLabel } from "@/lib/aiStudio";
 
 interface InsightData {
   id: string;
@@ -19,6 +20,9 @@ const IntelligentAnalytics = () => {
   const [insights, setInsights] = useState<InsightData[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedAnalysis, setSelectedAnalysis] = useState('');
+  // Phase 20: chosen by the user (the Advisor's lists), no default. Previously 'technology' / 'growth' were sent silently.
+  const [industry, setIndustry] = useState('');
+  const [businessStage, setBusinessStage] = useState('');
   const { toast } = useToast();
 
   const analysisTypes = [
@@ -27,7 +31,7 @@ const IntelligentAnalytics = () => {
     { value: 'industry_trends', label: 'Industry Trends', icon: PieChart }
   ];
 
-  // Sample data for demonstration
+  // Example figures (not the user's data; connecting real data is a later phase). Every result is labelled.
   const sampleBusinessData = {
     costs: {
       monthly_expenses: [
@@ -77,6 +81,14 @@ const IntelligentAnalytics = () => {
       });
       return;
     }
+    if (!industry || !businessStage) {
+      toast({
+        title: "Choose your industry and stage",
+        description: "Pick your industry and business stage first, so the analysis fits your business type.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsGenerating(true);
     try {
@@ -85,8 +97,8 @@ const IntelligentAnalytics = () => {
           analysisType: selectedAnalysis,
           data: selectedAnalysis === 'cost_forecast' ? sampleBusinessData.costs : 
                 selectedAnalysis === 'document_usage' ? sampleBusinessData.documents : {},
-          industry: 'technology',
-          businessStage: 'growth'
+          industry,
+          businessStage
         }
       });
 
@@ -94,14 +106,14 @@ const IntelligentAnalytics = () => {
 
       await loadInsights(); // Reload insights
       toast({
-        title: "Analysis Complete",
-        description: "New business insights have been generated!",
+        title: "Analysis ready",
+        description: `${EXAMPLE_FIGURES_LABEL}.`,
       });
     } catch (error) {
-      console.error('Error generating insight:', error);
+      // Phase 20: the server's own reason (trial ended, suspended, AI service didn't answer: nothing saved).
       toast({
-        title: "Error",
-        description: "Failed to generate insights. Please try again.",
+        title: "No analysis this time",
+        description: await aiErrorMessage(error, "The analysis couldn't be made. Please try again."),
         variant: "destructive",
       });
     } finally {
@@ -153,7 +165,7 @@ const IntelligentAnalytics = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                 <div>
                   <span className="text-blue-700 font-medium">Average Monthly Expense:</span>
-                  <div className="text-lg font-bold text-blue-900">${data.cost_trends.average_monthly_expense?.toLocaleString()}</div>
+                  <div className="text-lg font-bold text-blue-900">£{data.cost_trends.average_monthly_expense?.toLocaleString('en-GB')}</div>
                 </div>
                 <div>
                   <span className="text-blue-700 font-medium">Trend:</span>
@@ -196,7 +208,7 @@ const IntelligentAnalytics = () => {
                 {Object.entries(data.budget_recommendations.forecast || {}).map(([month, amount]) => (
                   <div key={month} className="text-center bg-white p-2 rounded border border-purple-200">
                     <div className="text-sm text-purple-700 font-medium">{month}</div>
-                    <div className="text-lg font-bold text-purple-900">${(amount as number).toLocaleString()}</div>
+                    <div className="text-lg font-bold text-purple-900">£{(amount as number).toLocaleString('en-GB')}</div>
                   </div>
                 ))}
               </div>
@@ -365,7 +377,7 @@ const IntelligentAnalytics = () => {
     // Fallback for any unstructured data
     return (
       <div className="bg-gray-50 p-4 rounded-lg">
-        <div className="text-sm text-gray-600 mb-2">Raw Data (parsing failed):</div>
+        <div className="text-sm text-gray-600 mb-2">This older result couldn't be read. New analyses are checked before they are saved.</div>
         <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-white p-3 rounded border max-h-64 overflow-auto">
           {typeof data === 'object' ? JSON.stringify(data, null, 2) : data}
         </pre>
@@ -388,8 +400,32 @@ const IntelligentAnalytics = () => {
               </CardDescription>
             </div>
           </div>
+          <p role="note" data-testid="example-figures-banner" className="mt-4 flex items-start gap-2 rounded-md border border-warning/50 bg-warning/10 p-3 text-sm font-semibold text-foreground">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
+            {EXAMPLE_FIGURES_LABEL}. The cost and document figures sent to the AI are examples, the same for everyone.
+          </p>
         </CardHeader>
         <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label id="ia-industry-label" className="text-sm font-medium mb-2 block">Industry</label>
+              <Select value={industry} onValueChange={setIndustry}>
+                <SelectTrigger aria-labelledby="ia-industry-label"><SelectValue placeholder="Select your industry" /></SelectTrigger>
+                <SelectContent>
+                  {INDUSTRIES.map((ind) => <SelectItem key={ind} value={ind.toLowerCase()}>{ind}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label id="ia-stage-label" className="text-sm font-medium mb-2 block">Business Stage</label>
+              <Select value={businessStage} onValueChange={setBusinessStage}>
+                <SelectTrigger aria-labelledby="ia-stage-label"><SelectValue placeholder="Select business stage" /></SelectTrigger>
+                <SelectContent>
+                  {BUSINESS_STAGES.map((st) => <SelectItem key={st} value={st.toLowerCase()}>{st}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <div className="flex gap-4">
             <div className="flex-1">
               <label className="text-sm font-medium mb-2 block">Analysis Type</label>
@@ -467,8 +503,11 @@ const IntelligentAnalytics = () => {
                           {insight.insight_type.replace('_', ' ').toUpperCase()}
                         </CardTitle>
                         <CardDescription>
-                          Generated on {new Date(insight.generated_at).toLocaleDateString()}
+                          Generated on {new Date(insight.generated_at).toLocaleDateString('en-GB')}
                         </CardDescription>
+                        <p className="mt-1 text-xs font-semibold text-warning" data-testid="result-basis">
+                          {resultLabel(insight.insight_type, parseInsightData(insight.data)?.basis)}
+                        </p>
                       </div>
                     </div>
                     <div className="text-right">

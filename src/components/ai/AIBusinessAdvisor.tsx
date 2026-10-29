@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Brain, Send, TrendingUp, Target, DollarSign, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { AI_QUESTION_MAX_LENGTH, BUSINESS_STAGES, INDUSTRIES, aiErrorMessage, creditsLeftText } from "@/lib/aiStudio";
 
 const AIBusinessAdvisor = () => {
   const [question, setQuestion] = useState('');
@@ -16,14 +17,9 @@ const AIBusinessAdvisor = () => {
   const [response, setResponse] = useState('');
   const { toast } = useToast();
 
-  const industries = [
-    'Technology', 'Healthcare', 'Finance', 'Retail', 'Manufacturing', 
-    'Professional Services', 'Real Estate', 'Education', 'Food & Beverage', 'Other'
-  ];
-
-  const businessStages = [
-    'Startup', 'Growth Stage', 'Established', 'Scale-up', 'Enterprise'
-  ];
+  const industries = INDUSTRIES;
+  const businessStages = BUSINESS_STAGES;
+  const [creditsLeft, setCreditsLeft] = useState<string | null>(null);
 
   const quickQuestions = [
     'How can I reduce operational costs?',
@@ -43,6 +39,11 @@ const AIBusinessAdvisor = () => {
       return;
     }
     
+    if (question.length > AI_QUESTION_MAX_LENGTH) {
+      toast({ title: "Question too long", description: `The limit is ${AI_QUESTION_MAX_LENGTH.toLocaleString('en-GB')} characters.`, variant: "destructive" });
+      return;
+    }
+
     if (!industry || !businessStage) {
       toast({
         title: "Missing Information", 
@@ -67,17 +68,21 @@ const AIBusinessAdvisor = () => {
       });
 
       if (error) throw error;
+      if (typeof data?.response !== 'string' || !data.response.trim()) throw new Error('No answer');
 
       setResponse(data.response);
+      // Phase 20: ai-assistant returns the credits left after this answer.
+      const left = creditsLeftText(data);
+      setCreditsLeft(left);
       toast({
-        title: "Advice Generated",
-        description: "Your AI business advisor has provided strategic insights!",
+        title: "Advice ready",
+        description: left ?? "Your answer is below.",
       });
     } catch (error) {
-      console.error('Error:', error);
+      // Phase 20: the server's own reason (no credits left, trial ended, suspended, AI service down: credit given back).
       toast({
-        title: "Error",
-        description: "Failed to get advice from AI. Please try again.",
+        title: "No answer this time",
+        description: await aiErrorMessage(error, "The AI advisor didn't answer. Please try again."),
         variant: "destructive",
       });
     } finally {
@@ -96,7 +101,7 @@ const AIBusinessAdvisor = () => {
             <div>
               <CardTitle>AI Business Advisor</CardTitle>
               <CardDescription>
-                Get personalized strategic advice based on your industry and business stage
+                General strategic advice for your industry and business stage. It doesn't read your own business data. Each answer uses one AI credit.
               </CardDescription>
             </div>
           </div>
@@ -151,13 +156,19 @@ const AIBusinessAdvisor = () => {
 
           {/* Question Input */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Your Question</label>
+            <label htmlFor="advisor-question" className="text-sm font-medium mb-2 block">Your Question</label>
             <Textarea
+              id="advisor-question"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
+              maxLength={AI_QUESTION_MAX_LENGTH}
+              aria-describedby="advisor-question-count"
               placeholder="Ask me anything about your business strategy, operations, growth, or challenges..."
               rows={3}
             />
+            <p id="advisor-question-count" className={`mt-1 text-right text-xs ${question.length >= AI_QUESTION_MAX_LENGTH ? 'text-destructive' : 'text-muted-foreground'}`} aria-live="polite">
+              {question.length.toLocaleString('en-GB')} / {AI_QUESTION_MAX_LENGTH.toLocaleString('en-GB')} characters
+            </p>
           </div>
 
           <Button 
@@ -190,6 +201,7 @@ const AIBusinessAdvisor = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {creditsLeft && <p className="mb-3 text-xs text-muted-foreground" data-testid="credits-left">{creditsLeft}</p>}
             <div className="prose prose-sm max-w-none">
               <div className="whitespace-pre-wrap bg-gray-50 p-4 rounded-lg">
                 {response}

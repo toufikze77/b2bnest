@@ -2,384 +2,57 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { checkAccess } from '../_shared/access.ts';
+import { makeHandler } from './handler.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Phase 20: request handling, the credit reserve/refund and the platform knowledge live in handler.ts / knowledge.ts.
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const admin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-const supabaseUrl = Deno.env.get('SUPABASE_URL');
-const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const { 
-      message, 
-      conversationType, 
-      context, 
-      conversationId,
-      userIndustry,
-      businessStage 
-    } = await req.json();
-
-    if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
-    }
-
-    const supabase = createClient(supabaseUrl!, supabaseServiceRoleKey!);
-
-    // Get user from authorization header
-    const authHeader = req.headers.get('authorization');
-    const token = authHeader?.replace('Bearer ', '');
-    const { data: { user } } = await supabase.auth.getUser(token);
-
-    if (!user) {
-      throw new Error('Unauthorized');
-    }
-
-    // Phase 12: no AI after the trial ends without a plan. Asked as the caller (their JWT), before any credit or model call.
-    const asCaller = createClient(supabaseUrl!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: authHeader ?? '' } } });
-    const access = await checkAccess(asCaller);
-    if (!access.ok) {
-      return new Response(JSON.stringify(access.body), { status: access.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-
-    // Check and deduct AI credits
-    const { data: creditCheck, error: creditError } = await supabase.rpc('check_and_deduct_ai_credit', {
-      p_user_id: user.id,
-      p_credits_to_deduct: 1
-    });
-
-    if (creditError) {
-      console.error('Error checking AI credits:', creditError);
-      throw new Error('Failed to check AI credits');
-    }
-
-    if (!creditCheck.success) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'insufficient_credits',
-          message: `You've reached your AI credit limit (${creditCheck.credits_limit} credits/month). Upgrade your plan for more credits.`,
-          credits_remaining: creditCheck.credits_remaining,
-          credits_limit: creditCheck.credits_limit,
-          reset_date: creditCheck.reset_date,
-          subscription_tier: creditCheck.subscription_tier
-        }),
-        { 
-          status: 402, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    // Comprehensive B2BNest platform knowledge base
-    const platformKnowledge = `
-B2BNest Platform Features & Capabilities:
-
-## PROJECT MANAGEMENT
-- Create and manage unlimited projects with custom fields (name, description, status, progress, deadline, client, color, budget, priority, stage)
-- Track project progress with visual indicators and deadlines
-- Assign team members to projects with role-based permissions
-- View projects in list or kanban board format
-- Filter projects by status, priority, and team members
-- Time tracking for projects and tasks
-- Project activity timeline and history
-- Budget tracking and financial management
-- Client management and communication
-- File attachments and document management
-
-## TASK MANAGEMENT
-- Create tasks with priorities (low, medium, high), status, due dates
-- Assign tasks to team members
-- Add subtasks and checklists
-- Task comments and collaboration
-- Task history and activity logs
-- Recurring tasks support
-- Task dependencies and relationships
-- Email notifications for task updates
-- Search and filter tasks across projects
-
-## INTEGRATION HUB
-The Integration Hub allows users to connect external services:
-
-### Google Calendar Integration
-- Sync events and meetings with Google Calendar
-- Create calendar events from within B2BNest
-- View calendar availability
-- Automatic event reminders
-
-### iCloud Calendar Integration
-- Connect and sync Apple iCloud Calendar
-- Manage calendar events and schedules
-- Two-way synchronization with iCloud
-- Support for multiple Apple calendars
-
-### Outlook Calendar Integration (Microsoft 365)
-- Connect Microsoft Outlook 365 Calendar
-- Sync events and meetings with Outlook
-- Create and manage Outlook calendar events
-- Integration with Microsoft 365 ecosystem
-
-### OneDrive Integration
-- Connect Microsoft OneDrive account via OAuth2
-- Access and manage OneDrive files directly from B2BNest
-- Automatic file synchronization
-- Secure token management and refresh
-
-### X (Twitter), LinkedIn and Facebook
-- Accounts can be connected, but posting from B2BNEST is switched off for customers until it has been verified
-- There is no post scheduling, analytics or engagement tracking
-
-### Firecrawl Web Scraper
-- Scrape single web pages or entire websites
-- Extract clean, structured data from websites
-- Convert web content to markdown or HTML
-- LLM-ready data extraction for AI applications
-- Rate limiting and credit-based usage
-- Support for custom include/exclude tags
-- Main content extraction (removes ads, navigation, etc.)
-
-## HMRC (UK tax)
-- HMRC filing is not available yet. Nothing is sent to HMRC: no VAT returns, no Corporation Tax or Self Assessment
-  returns, no payroll RTI (FPS/EPS). Never tell a user they can file or have filed with HMRC through B2BNEST.
-- Users can save company and HMRC details (VAT number, UTR, PAYE reference) and connect an HMRC sign-in for later use
-- The VAT, payroll and tax return screens show example figures, labelled "Preview only"
-- To file, users must go to HMRC directly or use their accountant
-
-## WORKFLOWS (Workflow Studio)
-- Simple rules: "When this happens → Do this"
-- Steps that don't run yet are hidden; X (Twitter), LinkedIn and WhatsApp steps never run for customers
-- Sending a workflow email uses the company's email settings; delivery to the inbox isn't guaranteed
-- There is no drag-and-drop builder, no loops or parallel steps, and no marketing email campaigns
-
-## CRM (Customer Relationship Management)
-- Contact management with full profiles
-- Deal pipeline with drag-and-drop stages
-- Lead tracking and scoring
-- Activity logging and notes
-- Email integration
-- Task and appointment scheduling
-- Sales forecasting and reporting
-- Custom fields and tags
-- Multi-currency support
-
-## PAYROLL (UK)
-- Employee management
-- Payroll calculations (UK tax and NI)
-- Payslip generation
-- RTI (FPS/EPS) filing with HMRC is not available yet; payroll figures are for preparation only
-- P60 and P45 generation
-- Pension auto-enrollment
-- Statutory payments (SSP, SMP, SPP)
-
-## FINANCIAL TOOLS
-- Invoice generation and management
-- Expense tracking and categorization
-- Bill management and payments
-- Cash flow tracking
-- ROI calculator
-- Cost calculator with industry templates
-- Multi-currency support
-- Tax calculations (VAT, Corporation Tax)
-- Financial reporting and analytics
-- Bank account integration via TrueLayer
-
-## DOCUMENT MANAGEMENT
-- Document templates library
-- AI-powered document generation
-- Contract generator
-- Privacy policy generator
-- Business cards designer
-- Email signature generator
-- Document version control
-- Secure file storage
-- Document sharing and collaboration
-
-## AI FEATURES
-- AI Document Assistant for document creation
-- AI Business Advisor for strategic guidance
-- Smart search across all data
-- Sentiment analysis
-- Content generation
-- Business insights and recommendations
-- Automated data classification
-- Predictive analytics
-
-## SECURITY & COMPLIANCE
-- Two-step sign-in is not active yet: signing in needs only a password
-- Role-based access control
-- Audit logs for all actions
-- Data travels over HTTPS; storage is provided by Supabase
-- No certifications are claimed. Don't state any security score, certification or audit.
-
-## COLLABORATION
-- Team workspaces
-- Real-time collaboration
-- Comments and mentions
-- Activity feeds
-- File sharing
-- Team chat (coming soon)
-- Video conferencing integration (coming soon)
-
-## REPORTING & ANALYTICS
-- Custom dashboards
-- Business insights
-- Financial reports
-- Project analytics
-- Team performance metrics
-- Export to PDF, Excel, CSV
-- Scheduled reports
-
-## DEVICES
-- Works in the web browser on computers and phones. There is no mobile app and no public API.
-
-## HELP
-- The Help page and Knowledge base answer common questions
-- Users can contact the team from the Contact page. No plan includes a support response-time promise.
-`;
-
-    // Build system prompt based on conversation type
-    let systemPrompt = '';
-    switch (conversationType) {
-      case 'document_assistant':
-        systemPrompt = `You are an expert business document assistant for B2BNest. Help users create, customize, and optimize business documents. Consider their industry: ${userIndustry}, business stage: ${businessStage}. Provide specific, actionable advice.
-
-${platformKnowledge}`;
-        break;
-      case 'business_advisor':
-        systemPrompt = `You are a strategic business advisor with expertise in ${userIndustry} industry. You have deep knowledge of the B2BNest platform. Provide insights on business growth, cost optimization, and strategic decisions for ${businessStage} businesses. Guide users on how to use B2BNest features to achieve their goals.
-
-${platformKnowledge}`;
-        break;
-      case 'workflow_builder':
-        systemPrompt = `You are an automation expert for B2BNest. Help users design efficient business workflows and processes using B2BNest's Workflow Automation features. Focus on practical, implementable solutions for ${userIndustry} businesses. Explain how to use workflow templates, integrations, and automation nodes.
-
-${platformKnowledge}`;
-        break;
-      case 'cost_forecasting':
-        systemPrompt = `You are a financial analyst specializing in business cost forecasting for B2BNest users. Analyze patterns and provide predictions based on business data and industry trends for ${userIndustry}. Help users leverage B2BNest's financial tools for accurate forecasting.
-
-${platformKnowledge}`;
-        break;
-      default:
-        systemPrompt = `You are B2BNest AI Assistant, a helpful AI assistant for business operations and management. You have comprehensive knowledge of all B2BNest features including Project Management, Integration Hub, HMRC, Workflow Automation, CRM, Payroll, Financial Tools, and more. Help users understand and make the most of the platform.
-
-${platformKnowledge}
-
-When users ask about features:
-- Explain how to access and use them
-- Provide step-by-step guidance
-- Suggest best practices
-- Offer tips for optimization
-- Help troubleshoot issues
-
-Be friendly, professional, and concise. Always prioritize user success.`;
-    }
-
-    // Call OpenAI
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
-        ],
-        temperature: 0.7,
-        max_tokens: 1000,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const aiResponse = data.choices[0].message.content;
-
-    // Save conversation to database
+serve(makeHandler({
+  openAIKey: Deno.env.get('OPENAI_API_KEY'),
+  getUserId: async (token) => {
+    const { data: { user } } = await admin.auth.getUser(token);
+    return user?.id ?? null;
+  },
+  // Phase 12: asked as the caller (their JWT), so the database decides.
+  checkAccess: (authHeader) =>
+    checkAccess(createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: authHeader } } })),
+  deduct: async (userId) => {
+    const { data, error } = await admin.rpc('check_and_deduct_ai_credit', { p_user_id: userId, p_credits_to_deduct: 1 });
+    return { data, error };
+  },
+  // docs/phase20/proposal.sql. Until it is applied this throws, and the answer says the credit couldn't be returned.
+  refund: async (userId) => {
+    const { data, error } = await admin.rpc('refund_ai_credit', { p_user_id: userId, p_credits: 1 });
+    if (error || !data?.success) throw new Error(error?.code ?? data?.error ?? 'refund_failed');
+    return data;
+  },
+  openai: (body, signal) => fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal,
+  }),
+  save: async ({ userId, conversationId, conversationType, message, answer, context }) => {
+    const now = new Date().toISOString();
+    const turn = [{ role: 'user', content: message, timestamp: now }, { role: 'assistant', content: answer, timestamp: now }];
     if (conversationId) {
-      // Update existing conversation
-      const { data: conversation } = await supabase
-        .from('ai_conversations')
-        .select('messages')
-        .eq('id', conversationId)
-        .eq('user_id', user.id)
-        .single();
-
+      const { data: conversation } = await admin.from('ai_conversations').select('messages')
+        .eq('id', conversationId).eq('user_id', userId).single();
       if (conversation) {
-        const updatedMessages = [
-          ...conversation.messages,
-          { role: 'user', content: message, timestamp: new Date().toISOString() },
-          { role: 'assistant', content: aiResponse, timestamp: new Date().toISOString() }
-        ];
-
-        await supabase
-          .from('ai_conversations')
-          .update({ messages: updatedMessages })
-          .eq('id', conversationId);
+        await admin.from('ai_conversations').update({ messages: [...conversation.messages, ...turn] })
+          .eq('id', conversationId).eq('user_id', userId);
       }
     } else {
-      // Create new conversation
-      await supabase
-        .from('ai_conversations')
-        .insert({
-          user_id: user.id,
-          conversation_type: conversationType,
-          messages: [
-            { role: 'user', content: message, timestamp: new Date().toISOString() },
-            { role: 'assistant', content: aiResponse, timestamp: new Date().toISOString() }
-          ],
-          context: { userIndustry, businessStage, ...context }
-        });
+      await admin.from('ai_conversations').insert({ user_id: userId, conversation_type: conversationType, messages: turn, context });
     }
-
-    // Generate insights based on conversation type
+    // Unchanged from before Phase 20: a cost forecast answer is also kept as an insight for 30 days.
     if (conversationType === 'cost_forecasting') {
-      await supabase
-        .from('business_insights')
-        .insert({
-          user_id: user.id,
-          insight_type: 'cost_forecast',
-          data: {
-            forecast: aiResponse,
-            generated_for: context,
-            methodology: 'ai_analysis'
-          },
-          confidence_score: 0.75,
-          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
-        });
+      await admin.from('business_insights').insert({
+        user_id: userId, insight_type: 'cost_forecast',
+        data: { forecast: answer, generated_for: context, methodology: 'ai_analysis' },
+        confidence_score: 0.75, expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      });
     }
-
-    return new Response(
-      JSON.stringify({ 
-        response: aiResponse,
-        conversationType,
-        timestamp: new Date().toISOString(),
-        credits_remaining: creditCheck.credits_remaining,
-        credits_limit: creditCheck.credits_limit,
-        reset_date: creditCheck.reset_date
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error) {
-    console.error('Error in ai-assistant function:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
-  }
-});
+  },
+}));
