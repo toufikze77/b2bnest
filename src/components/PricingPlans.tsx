@@ -13,6 +13,8 @@ import { PLANS, type Plan, limitText, aiCreditsText, SEAT_LIMITS_NOTE } from '@/
 import { useBillingStatus, poundsText } from '@/hooks/useBillingStatus';
 import { BILLING_LINK_ERROR, isBillingLinkError } from '@/lib/billingErrors';
 
+/** Phase 19: the same answer as the Help FAQ "Which plans include workflows?" (shortened). */
+export const WORKFLOWS_FAQ_ANSWER = "Business and Scale include Workflow Studio. Solo doesn't. Every new account can use workflows during the 14-day trial.";
 export const TRIAL_FAQ_ANSWER = 'Every new account gets a 14-day free trial of all features. No card is needed. After 14 days you choose a plan to continue.';
 
 /** `paywall`: only the billing toggle and the three plans (used on the "trial has ended" screen). */
@@ -309,6 +311,14 @@ const PricingPlans = ({ variant = 'page' }: { variant?: 'page' | 'paywall' }) =>
               </h4>
               <p className="text-gray-600">
                 {TRIAL_FAQ_ANSWER}
+              </p>
+            </div>
+            <div className="text-left">
+              <h4 className="font-semibold text-gray-900 mb-2">
+                Which plans include workflows?
+              </h4>
+              <p className="text-gray-600">
+                {WORKFLOWS_FAQ_ANSWER}
               </p>
             </div>
             <div className="text-left">

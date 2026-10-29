@@ -26,19 +26,28 @@ export const STATUS_TEXT: Record<StepStatus, string> = {
   sent: 'Sent', failed: 'Failed', unknown: 'Delivery status unknown', skipped: 'Skipped (step not available)',
 };
 
+/**
+ * Phase 19: a step the server refused before sending (plan doesn't include workflows, trial ended, plan check failed).
+ * Stored as 'skipped' with the server's own message; shown with that message, never as "step not available".
+ */
+export const SKIPPED_REFUSED_TEXT = 'Skipped (not sent)';
+
 /** Plain status for one row. "Sent" only when the server recorded 'ok'. */
 export function historyStep(row: RunLogRow): HistoryStep {
   const status: StepStatus = row.status === 'ok' ? 'sent' : row.status === 'unknown' ? 'unknown' : row.status === 'skipped' ? 'skipped' : 'failed';
   const reason = row.response_summary?.message || row.response_summary?.error || row.response_summary?.code || null;
+  // Browser-written skips (switched-off steps) carry no message; server refusals always do.
+  const refused = status === 'skipped' && row.provider === 'none' && !!row.response_summary?.message;
   const detail = status === 'sent'
     ? (row.step === 'email.send' ? 'Accepted by the email provider. Inbox delivery isn\'t confirmed.' : null)
     : status === 'unknown' ? EMAIL_STATUS_UNKNOWN
     : status === 'failed' ? (reason ?? 'The server gave no reason.')
+    : refused ? (row.response_summary?.message as string)
     : 'This step hasn\'t been verified yet, so it was not run.';
   const n = Number(row.request_summary?.recipients);
   return {
     key: row.id, index: Number.isInteger(row.step_index) ? (row.step_index as number) : null,
-    label: STEP_LABELS[row.step] ?? row.step, status, statusText: STATUS_TEXT[status], detail,
+    label: STEP_LABELS[row.step] ?? row.step, status, statusText: refused ? SKIPPED_REFUSED_TEXT : STATUS_TEXT[status], detail,
     recipients: row.step === 'email.send' && Number.isInteger(n) && n > 0 ? n : null,
   };
 }

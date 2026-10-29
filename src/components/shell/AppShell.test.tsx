@@ -11,6 +11,9 @@ vi.mock('@/components/SupportFeedbackDialog', () => ({ default: () => null }));
 vi.mock('@/components/access/TrialBanner', () => ({ default: () => null }));
 vi.mock('./GlobalCommand', () => ({ GlobalCommand: () => null }));
 vi.mock('./NotificationsPanel', () => ({ NotificationsPanel: () => null }));
+// Phase 19: the account's access (plan) decides whether "Workflows" is marked "Business" in the menu.
+const accessMock = vi.hoisted(() => ({ value: { loading: false, state: 'trial', planKey: null as string | null, via: 'self' } }));
+vi.mock('@/hooks/useAccess', () => ({ useAccess: () => accessMock.value }));
 
 import { AppShell } from './AppShell';
 
@@ -65,5 +68,24 @@ describe('a route home from the app (Phase 16)', () => {
     expect(logos.length).toBe(2); // sidebar header + phone top bar
     for (const l of logos) { expect(l).toHaveAttribute('href', '/'); expect(l).toHaveAttribute('title', 'Go to home page'); }
     expect(screen.queryByRole('link', { name: 'Go to dashboard' })).toBeNull();
+  });
+});
+
+describe('Workflows menu entry by plan (Phase 19)', () => {
+  afterEach(() => { accessMock.value = { loading: false, state: 'trial', planKey: null, via: 'self' }; });
+  it('Solo: the entry stays visible and is marked "Business"', () => {
+    width(1440);
+    accessMock.value = { loading: false, state: 'subscribed', planKey: 'starter', via: 'self' };
+    renderAt('/dashboard');
+    const link = within(sidebar()).getByRole('link', { name: /Workflows/ });
+    expect(link).toHaveAttribute('href', '/workflow-studio');
+    expect(link).toHaveTextContent('Business');
+    expect(link).toHaveTextContent('(in the Business and Scale plans)');
+  });
+  it.each([['trial', null], ['subscribed', 'professional'], ['subscribed', 'enterprise'], ['owner', null]])('%s %s: no mark', (state, planKey) => {
+    width(1440);
+    accessMock.value = { loading: false, state: state as string, planKey, via: 'self' };
+    renderAt('/dashboard');
+    expect(within(sidebar()).getByRole('link', { name: /Workflows/ })).not.toHaveTextContent('Business');
   });
 });

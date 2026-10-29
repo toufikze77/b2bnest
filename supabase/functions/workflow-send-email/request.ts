@@ -2,11 +2,21 @@
 // never contact a real mail server. Shared mail helpers stay in handler.ts, which the email senders also import.
 import { renderTemplate } from "../_shared/placeholders.ts";
 import { NO_REPLY_ADDRESS, replyToAddress } from "../_shared/reply-to.ts";
+import { COMPANY_TRIAL_ENDED_MESSAGE, SUSPENDED_MESSAGE, TRIAL_ENDED_MESSAGE } from "../_shared/access.ts";
+import {
+  WORKFLOW_PLAN_CHECK_FAILED, WORKFLOWS_NOT_INCLUDED_COMPANY_MESSAGE, WORKFLOWS_NOT_INCLUDED_MESSAGE, workflowAccess, WorkflowAccessInput,
+} from "../_shared/workflow-access.ts";
 import {
   classifySmtpError, corsHeaders, Deps as BaseDeps, Mail, redactEmails, resolveSmtp, sanitizeError, UNKNOWN_STATUS,
 } from "./handler.ts";
 
 export interface Deps extends BaseDeps {
+  /**
+   * The caller's row of public._access_state_for(uid), read with the service role (Phase 19). Workflows are included
+   * on the trial, for owners/master accounts and on Business or Scale (_shared/workflow-access.ts). Required: there is
+   * no way to skip the check, and a failed lookup refuses (nothing sent).
+   */
+  accessState: (userId: string) => Promise<WorkflowAccessInput | null>;
   /** false = this user has sent too many emails in the last minute. Omitted = no limit (tests). */
   rateLimit?: (userId: string) => boolean;
   /** Writes one public.workflow_run_logs row (service role). Best effort: a failure never changes the send result. */
@@ -16,7 +26,7 @@ export interface Deps extends BaseDeps {
 /** What Run history stores per email step: counts and the server's own reason. Never addresses or message text. */
 export interface RunLogRow {
   user_id: string; workflow_id: string | null; run_id: string; step_index: number; step: "email.send";
-  status: "ok" | "error" | "unknown"; provider: string;
+  status: "ok" | "error" | "unknown" | "skipped"; provider: string;
   request_summary: { recipients: number; subject_length: number; body_length: number; placeholders: number };
   response_summary: { code: string; message: string };
 }
@@ -67,10 +77,6 @@ export function makeHandler(deps: Deps) {
       return json(200, { success: p.ok, provider: cfg.provider, probe: p, sent: false });
     }
 
-    if (deps.rateLimit && !deps.rateLimit(user.id)) {
-      return json(429, { success: false, code: "rate_limited", sent: "not_sent", error: RATE_LIMITED });
-    }
-
     const to = (Array.isArray(body.to) ? body.to : String(body.to ?? "").split(","))
       .map((r) => String(r).trim()).filter(Boolean);
     const subject = String(body.subject ?? "").trim(), text = String(body.body ?? "");
@@ -90,6 +96,27 @@ export function makeHandler(deps: Deps) {
       }
       return json(status, payload);
     };
+
+    // Phase 19: Workflow Studio is a Business and Scale feature (plus the trial and owners). This is the real gate: the
+    // plan is read on the server from the caller's account, never from the request. Refused or unchecked = nothing sent,
+    // recorded in Run history as skipped.
+    const access = await deps.accessState(user.id).then(workflowAccess, (e) => {
+      console.error("workflow-send-email: plan check failed", { error: sanitizeError(e) });
+      return null;
+    });
+    if (!access || !access.included) {
+      const skip = (status: number, code: string, error: string) =>
+        respond(status, { success: false, code, sent: "not_sent", error }, "skipped");
+      if (!access || access.reason === "unknown_state") return skip(503, "plan_check_failed", WORKFLOW_PLAN_CHECK_FAILED);
+      if (access.reason === "suspended") return skip(403, "account_suspended", SUSPENDED_MESSAGE);
+      if (access.reason === "trial_ended") return skip(402, "trial_ended", access.via === "company" ? COMPANY_TRIAL_ENDED_MESSAGE : TRIAL_ENDED_MESSAGE);
+      if (access.reason === "unknown_plan") console.error("workflow-send-email: unknown plan key, workflows refused (fail closed)");
+      return skip(403, "plan_not_included", access.via === "company" ? WORKFLOWS_NOT_INCLUDED_COMPANY_MESSAGE : WORKFLOWS_NOT_INCLUDED_MESSAGE);
+    }
+
+    if (deps.rateLimit && !deps.rateLimit(user.id)) {
+      return json(429, { success: false, code: "rate_limited", sent: "not_sent", error: RATE_LIMITED });
+    }
 
     if (!to.length || !subject || !text.trim()) return respond(400, { success: false, code: "invalid_request", sent: "not_sent", error: "To, subject and message are required." }, "error");
     if (to.length > 10 || !to.every((r) => EMAIL.test(r))) return respond(400, { success: false, code: "invalid_request", sent: "not_sent", error: "Check the email addresses (up to 10)." }, "error");

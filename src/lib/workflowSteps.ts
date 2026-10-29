@@ -143,7 +143,7 @@ export const NOT_YET_AVAILABLE = 'Not available yet — this step has not been v
 export const EMAIL_STATUS_UNKNOWN = 'Delivery status unknown. Check your inbox before trying again.';
 
 /** Reads the server's reason; null when the server gave no readable answer (network drop, relay error). */
-async function errorText(error: unknown): Promise<string | null> {
+export async function errorText(error: unknown): Promise<string | null> {
   const ctx = (error as { context?: { json?: () => Promise<{ error?: string; message?: string }> } })?.context;
   if (ctx?.json) {
     const body = await ctx.json().catch(() => null);

@@ -84,3 +84,37 @@ describe('suspended (Phase 12c)', () => {
     expect(accessFromState(null).suspended).toBe(false);
   });
 });
+
+import { UNKNOWN_ACCESS, workflowsFor, workflowsIncluded, workflowsNeedUpgrade } from './access';
+import { workflowsIncluded as serverRule } from '../../supabase/functions/_shared/workflow-access.ts';
+
+describe('workflows by plan (Phase 19): the app uses the same rule as the server', () => {
+  const row = (state: AccessStateRow['state'], plan_key: string | null, via: 'self' | 'company' = 'self'): AccessStateRow =>
+    ({ state, plan_key, via, trial_ends_at: null, days_left: 0, subscription_status: plan_key ? 'active' : null });
+  it('every state and plan, including company members and unknown plans', () => {
+    const cases: [AccessStateRow, boolean, boolean][] = [
+      [row('trial', null), true, false],
+      [row('trial', null, 'company'), true, false],
+      [row('owner', null), true, false],
+      [row('subscribed', 'professional'), true, false],
+      [row('subscribed', 'enterprise'), true, false],
+      [row('subscribed', 'professional', 'company'), true, false],
+      [row('subscribed', 'starter'), false, true],
+      [row('subscribed', 'starter', 'company'), false, true],
+      [row('subscribed', 'gold'), false, true],
+      [row('subscribed', null), false, true],
+      [row('trial_ended', null), false, false],
+      [row('suspended', null), false, false],
+    ];
+    for (const [r, included, upgrade] of cases) {
+      const a = accessFromState(r);
+      expect(workflowsIncluded(a), JSON.stringify(r)).toBe(included);
+      expect(workflowsNeedUpgrade(a), JSON.stringify(r)).toBe(upgrade);
+      expect(workflowsIncluded(a)).toBe(serverRule({ state: r.state, plan_key: r.plan_key, via: r.via }));
+    }
+  });
+  it('access not read yet (unknown) is not "included", but never shows the upgrade panel either', () => {
+    expect(workflowsFor(UNKNOWN_ACCESS)).toEqual({ included: false, reason: 'unknown_state', via: 'self' });
+    expect(workflowsNeedUpgrade(UNKNOWN_ACCESS)).toBe(false);
+  });
+});

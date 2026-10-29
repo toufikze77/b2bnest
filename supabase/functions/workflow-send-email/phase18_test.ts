@@ -12,7 +12,8 @@ const req = (body: unknown) =>
   new Request("http://x", { method: "POST", headers: { Authorization: "Bearer good", "Content-Type": "application/json" }, body: JSON.stringify(body) });
 function deps(user: Awaited<ReturnType<Deps["getUser"]>> = VERIFIED) {
   const mails: Mail[] = [];
-  const d: Deps = { env: (n) => ENV[n], getUser: (t) => Promise.resolve(t === "good" ? user : null), send: (_c, m) => { mails.push(m); return Promise.resolve(); }, timeoutMs: 50 };
+  const d: Deps = { env: (n) => ENV[n], getUser: (t) => Promise.resolve(t === "good" ? user : null),
+    accessState: () => Promise.resolve({ state: "subscribed", plan_key: "professional", via: "self" }), send: (_c, m) => { mails.push(m); return Promise.resolve(); }, timeoutMs: 50 };
   return { d, mails };
 }
 const email = { to: "customer@client.example", subject: "Hello", body: "Hi there" };

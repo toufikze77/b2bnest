@@ -1,8 +1,15 @@
 // WhatsApp step runner (used by WhatsApp settings → "Send test"; the Workflow Studio WhatsApp step stays switched off).
 // Dependencies are injected so tests never call Twilio or the database.
+// Phase 19: workflows (and so this runner) are included on the trial, for owners/master accounts and on Business or
+// Scale only (_shared/workflow-access.ts). The plan is read on the server; a refusal sends nothing and is logged skipped.
 //
 // Run logs (public.workflow_run_logs) hold counts and codes only: never the phone number, the message, Twilio's
 // free-text reply (it can repeat the number) or raw exception text (it can include the account URL).
+
+import { COMPANY_TRIAL_ENDED_MESSAGE, SUSPENDED_MESSAGE, TRIAL_ENDED_MESSAGE } from "../_shared/access.ts";
+import {
+  WORKFLOW_PLAN_CHECK_FAILED, WORKFLOWS_NOT_INCLUDED_COMPANY_MESSAGE, WORKFLOWS_NOT_INCLUDED_MESSAGE, workflowAccess, WorkflowAccessInput,
+} from "../_shared/workflow-access.ts";
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,12 +19,14 @@ export const corsHeaders = {
 
 export interface WhatsAppAccount { auth_token: string; account_sid: string; from_number: string; channel: string }
 export interface ExecuteLogRow {
-  user_id: string; workflow_id: string | null; step: "whatsapp.send"; status: "ok" | "error"; provider: "twilio";
-  request_summary: { channel: string; body_length: number };
-  response_summary: { error?: string; status?: number; code?: number | string | null; sid?: string; twilio_status?: string };
+  user_id: string; workflow_id: string | null; step: "whatsapp.send"; status: "ok" | "error" | "skipped"; provider: "twilio" | "none";
+  request_summary: { channel: string; body_length: number } | { steps: number };
+  response_summary: { error?: string; status?: number; code?: number | string | null; sid?: string; twilio_status?: string; message?: string };
 }
 export interface ExecuteDeps {
   getUserId: (authHeader: string) => Promise<string | null>;
+  /** The caller's row of public._access_state_for(uid), read with the service role. Required; an error refuses. */
+  accessState: (userId: string) => Promise<WorkflowAccessInput | null>;
   rateLimit: (userId: string) => boolean;
   loadWhatsApp: (userId: string, authHeader: string) => Promise<{ ok: true; account: WhatsAppAccount } | { ok: false; error: string }>;
   twilio: (account: WhatsAppAccount, form: URLSearchParams) => Promise<Response>;
@@ -63,6 +72,23 @@ export function makeHandler(deps: ExecuteDeps) {
     if (!steps || steps.length === 0) return json({ error: "no_steps" }, 400);
     if (steps.length > MAX_STEPS) return json({ error: "too_many_steps" }, 400);
     const workflowId = typeof body?.workflow_id === "string" && UUID.test(body.workflow_id) ? body.workflow_id : null;
+
+    // Phase 19: the plan gate. Nothing is sent unless the caller's own plan (read on the server) includes workflows.
+    const access = await deps.accessState(userId).then(workflowAccess, (e) => {
+      console.error("workflow-execute: plan check failed", e instanceof Error ? e.name : typeof e);
+      return null;
+    });
+    if (!access || !access.included) {
+      const [status, error, message] = !access || access.reason === "unknown_state"
+        ? [503, "plan_check_failed", WORKFLOW_PLAN_CHECK_FAILED]
+        : access.reason === "suspended" ? [403, "account_suspended", SUSPENDED_MESSAGE]
+        : access.reason === "trial_ended" ? [402, "trial_ended", access.via === "company" ? COMPANY_TRIAL_ENDED_MESSAGE : TRIAL_ENDED_MESSAGE]
+        : [403, "plan_not_included", access.via === "company" ? WORKFLOWS_NOT_INCLUDED_COMPANY_MESSAGE : WORKFLOWS_NOT_INCLUDED_MESSAGE];
+      if (access?.reason === "unknown_plan") console.error("workflow-execute: unknown plan key, workflows refused (fail closed)");
+      await deps.log({ user_id: userId, workflow_id: workflowId, step: "whatsapp.send", status: "skipped", provider: "none",
+        request_summary: { steps: steps.length }, response_summary: { error, message } }).catch(() => {});
+      return json({ ok: false, error, message, sent: "not_sent" }, status as number);
+    }
 
     let wa: WhatsAppAccount | null = null;
     if (steps.some((s) => s?.type === "whatsapp.send")) {

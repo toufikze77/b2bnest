@@ -3,7 +3,7 @@
 // templates are the shared lists, and every troubleshooting message is checked against its source file
 // (src/lib/workflowGuide.test.ts). Describe only what Workflow Studio does on main.
 import { MAX_RECIPIENTS, MAX_STEPS, EMAIL_STATUS_UNKNOWN, NOT_YET_AVAILABLE } from '@/lib/workflowSteps';
-import { STATUS_TEXT } from '@/lib/workflowRuns';
+import { SKIPPED_REFUSED_TEXT, STATUS_TEXT } from '@/lib/workflowRuns';
 import { WORKING_TEMPLATES } from '@/lib/workflowEmailTemplates';
 import { MAX_BODY_LENGTH, MAX_SUBJECT_LENGTH, PLACEHOLDERS } from '../../supabase/functions/_shared/placeholders.ts';
 
@@ -50,6 +50,7 @@ export const STATUS_MEANINGS = [
   { status: STATUS_TEXT.failed, means: 'The email was not sent. The reason the server gave is shown under the step.' },
   { status: STATUS_TEXT.unknown, means: "The connection broke before the server could confirm either way. The email may or may not have gone. Check the recipient's inbox (or ask them) before you run it again, so they don't get it twice." },
   { status: STATUS_TEXT.skipped, means: "The step is one that's switched off (WhatsApp, X or LinkedIn), so it was not run." },
+  { status: SKIPPED_REFUSED_TEXT, means: "Nothing was sent because the server refused the run, for example because your plan doesn't include workflows or your trial has ended. The reason is shown under the step." },
 ];
 
 export interface TroubleshootingRow {
@@ -61,6 +62,7 @@ export interface TroubleshootingRow {
 }
 
 const SEND_EMAIL = 'supabase/functions/workflow-send-email/request.ts';
+const WORKFLOW_ACCESS = 'supabase/functions/_shared/workflow-access.ts';
 const SMTP = 'supabase/functions/workflow-send-email/handler.ts';
 const PH = 'supabase/functions/_shared/placeholders.ts';
 const STEPS = 'src/lib/workflowSteps.ts';
@@ -150,10 +152,23 @@ export const TROUBLESHOOTING: TroubleshootingRow[] = [
     todo: 'Remove the step if you no longer need it.',
     source: { file: STEPS, text: "NOT_YET_AVAILABLE = 'Not available yet — this step has not been verified, so it was not run.'" },
   },
+  {
+    shown: 'Workflows are included in the Business and Scale plans.',
+    means: "Your plan (or your company's plan) is Solo, which doesn't include workflows. Nothing was sent. Saved workflows are paused, not deleted.",
+    todo: 'See the plans on the Pricing page, or ask the account owner if your company pays.',
+    source: { file: WORKFLOW_ACCESS, text: 'WORKFLOWS_NOT_INCLUDED_MESSAGE = "Workflows are included in the Business and Scale plans."' },
+  },
+  {
+    shown: "We couldn't check your plan just now, so nothing was sent. Please try again in a moment.",
+    means: "The server couldn't read your plan, so it sent nothing rather than guess.",
+    todo: 'Wait a moment and press "Run now" again.',
+    source: { file: WORKFLOW_ACCESS, text: `"We couldn't check your plan just now, so nothing was sent. Please try again in a moment."` },
+  },
 ];
 
 /** Knowledge Base cards for this guide: each links to a section of the guide. */
 export const KB_WORKFLOW_ARTICLES: { title: string; description: string; readTime: string; anchor: GuideSectionId }[] = [
+  { title: 'Which plans include workflows', description: 'Business and Scale include Workflow Studio, and so does the 14-day trial. Solo does not', readTime: '2 min', anchor: 'before-you-start' },
   { title: 'Your first workflow', description: 'Start from a template, check the email and send it with "Run now"', readTime: '4 min', anchor: 'first-workflow' },
   { title: 'Placeholders and templates', description: 'Fill in {{name}}, {{amount}} and other details each time you run it', readTime: '4 min', anchor: 'placeholders' },
   { title: 'Run history and troubleshooting', description: 'What Sent, Failed, Delivery status unknown and Skipped mean, and what to do', readTime: '5 min', anchor: 'run-history' },
@@ -165,6 +180,10 @@ export const WORKFLOW_FAQS: { question: string; answer: string }[] = [
   {
     question: 'How do I make my first workflow?',
     answer: 'Open Workflows from the menu (under Work), choose "Start from a template", press "Preview" on a template, then "Use this template". Change "To" to the right address, press "Save", then "Run now". The guide in the Knowledge Base walks through it step by step.',
+  },
+  {
+    question: 'Which plans include workflows?',
+    answer: "Business and Scale. Every new account can also use workflows during its 14-day trial. Solo doesn't include them: on Solo, Workflows shows what they do and a link to the plans, and any workflows you saved are paused, not deleted, with their past runs still readable. If your company pays for B2BNEST, workflows follow your company's plan.",
   },
   {
     question: 'What can a workflow do today?',
@@ -196,7 +215,7 @@ export const WORKFLOW_FAQS: { question: string; answer: string }[] = [
   },
   {
     question: 'Is there a limit on emails?',
-    answer: `Each email step can go to up to ${MAX_RECIPIENTS} addresses, a workflow can have up to ${MAX_STEPS} steps, and each person can send up to ${SENDS_PER_MINUTE} email steps a minute. If you go over that, nothing is sent and you're asked to wait a minute.`,
+    answer: `Each email step can go to up to ${MAX_RECIPIENTS} addresses, a workflow can have up to ${MAX_STEPS} steps, and each person can send up to ${SENDS_PER_MINUTE} email steps a minute. If you go over that, nothing is sent and you're asked to wait a minute. There is no monthly email allowance. Workflows are included in the Business and Scale plans and during the 14-day trial.`,
   },
   {
     question: 'Where do replies go?',

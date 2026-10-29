@@ -127,7 +127,11 @@ const WorkflowGuide = () => {
                 The preview shows that address before you send. Your account email needs to be verified; if it isn't, the preview says so and
                 replies go to B2BNEST's sending address instead.
               </li>
-              <li>You need to be signed in, and your account needs an active trial or plan to open Workflows.</li>
+              <li>
+                <strong>Workflows are included in the Business and Scale plans</strong>, and every new account can use them during its 14-day trial.
+                Solo doesn't include them: on Solo, Workflows shows what they do and a link to the plans, and any workflows you saved are paused (kept,
+                not run) with their past runs still readable. If your company pays for B2BNEST, workflows follow your company's plan.
+              </li>
             </ul>
           </Section>
 

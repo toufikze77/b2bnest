@@ -2,6 +2,8 @@
 // row it returns. Owner decision (27 Oct 2026): every account gets a 14-day trial of everything; after that a plan is
 // needed. There is no free tier.
 
+import { workflowAccess, type WorkflowAccess } from '../../supabase/functions/_shared/workflow-access.ts';
+
 // 'suspended' (Phase 12c): a super admin suspended the account in Admin → Users. No access at all, never a payment screen.
 export type AccessStateName = 'owner' | 'subscribed' | 'trial' | 'trial_ended' | 'suspended';
 
@@ -117,3 +119,18 @@ export function isSuspendedExempt(pathname: string): boolean {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
   return SUSPENDED_EXEMPT_EXACT.includes(path) || SUSPENDED_EXEMPT_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
 }
+
+/**
+ * Phase 19: whether this account's plan includes Workflow Studio. The same rule the server applies
+ * (supabase/functions/_shared/workflow-access.ts): trial, owner, or Business / Scale. Company members follow the
+ * paying account's plan (planKey and via come from my_access_state()). 'unknown' (not read yet) is not included.
+ */
+export function workflowsFor(access: Pick<Access, 'state' | 'planKey' | 'via'>): WorkflowAccess {
+  return workflowAccess({ state: access.state === 'unknown' ? null : access.state, plan_key: access.planKey, via: access.via });
+}
+export const workflowsIncluded = (access: Pick<Access, 'state' | 'planKey' | 'via'>): boolean => workflowsFor(access).included;
+/** The plan doesn't include workflows (Solo, or a plan key we don't know): show the upgrade panel, not the editor. */
+export const workflowsNeedUpgrade = (access: Pick<Access, 'state' | 'planKey' | 'via'>): boolean => {
+  const r = workflowsFor(access).reason;
+  return r === 'plan_not_included' || r === 'unknown_plan';
+};

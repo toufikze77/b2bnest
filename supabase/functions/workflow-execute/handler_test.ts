@@ -9,6 +9,7 @@ function deps(over: Partial<ExecuteDeps> = {}) {
   const logs: ExecuteLogRow[] = []; const forms: URLSearchParams[] = [];
   const d: ExecuteDeps = {
     getUserId: async (a) => (a === "Bearer good" ? "u1" : null), rateLimit: () => true,
+    accessState: () => Promise.resolve({ state: "subscribed", plan_key: "professional", via: "self" }),
     loadWhatsApp: async () => ({ ok: true, account: ACCOUNT }),
     twilio: async (_a, f) => { forms.push(f); return new Response(JSON.stringify({ sid: "SM1", status: "queued" }), { status: 201 }); },
     log: async (r) => { logs.push(r); }, ...over,
@@ -63,4 +64,37 @@ Deno.test("WhatsApp not connected → 400 as before", async () => {
   const { d } = deps({ loadWhatsApp: async () => ({ ok: false, error: "whatsapp_not_connected" }) });
   const r = await makeHandler(d)(req({ steps: [step] }));
   assertEquals([r.status, await r.json()], [400, { error: "whatsapp_not_connected" }]);
+});
+
+// Phase 19: the WhatsApp runner is a workflow feature (Business, Scale, trial, owners). The plan is read on the server.
+import { WORKFLOW_PLAN_CHECK_FAILED, WORKFLOWS_NOT_INCLUDED_MESSAGE } from "../_shared/workflow-access.ts";
+Deno.test("plan gate: Solo / trial ended / suspended / lookup failure send nothing and log skipped; trial and Scale send", async () => {
+  const cases: [ExecuteDeps["accessState"], number, string | null][] = [
+    [() => Promise.resolve({ state: "subscribed", plan_key: "starter", via: "self" }), 403, "plan_not_included"],
+    [() => Promise.resolve({ state: "trial_ended", plan_key: null, via: "self" }), 402, "trial_ended"],
+    [() => Promise.resolve({ state: "suspended", plan_key: null, via: "self" }), 403, "account_suspended"],
+    [() => Promise.reject(new Error("db down")), 503, "plan_check_failed"],
+    [() => Promise.resolve(null), 503, "plan_check_failed"],
+    [() => Promise.resolve({ state: "trial", plan_key: null, via: "self" }), 200, null],
+    [() => Promise.resolve({ state: "subscribed", plan_key: "enterprise", via: "company" }), 200, null],
+    [() => Promise.resolve({ state: "owner", plan_key: null, via: "self" }), 200, null],
+  ];
+  for (const [accessState, status, error] of cases) {
+    const { d, logs, forms } = deps({ accessState });
+    const r = await makeHandler(d)(req({ steps: [step], plan_key: "enterprise", state: "owner" }));
+    assertEquals(r.status, status);
+    if (error) {
+      const b = await r.json();
+      assertEquals([b.ok, b.error, b.sent], [false, error, "not_sent"]);
+      assertEquals(forms.length, 0);
+      assertEquals(logs.map((l) => [l.status, l.provider, l.response_summary.error]), [["skipped", "none", error]]);
+    } else {
+      assertEquals(forms.length, 1);
+      assertEquals(logs.map((l) => l.status), ["ok"]);
+    }
+  }
+  const solo = deps({ accessState: () => Promise.resolve({ state: "subscribed", plan_key: "starter", via: "self" }) });
+  assertEquals((await (await makeHandler(solo.d)(req({ steps: [step] }))).json()).message, WORKFLOWS_NOT_INCLUDED_MESSAGE);
+  const down = deps({ accessState: () => Promise.reject(new Error("x")) });
+  assertEquals((await (await makeHandler(down.d)(req({ steps: [step] }))).json()).message, WORKFLOW_PLAN_CHECK_FAILED);
 });

@@ -2,6 +2,8 @@ import { ReactNode, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown, CalendarDays, FileText, FolderKanban, HelpCircle, Home, LogOut, Plus, Receipt, Settings, Sparkles, Users } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useAccess } from '@/hooks/useAccess';
+import { workflowsNeedUpgrade } from '@/lib/access';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useUserAvatar } from '@/hooks/useUserAvatar';
 import OrganizationSwitcher from '@/components/OrganizationSwitcher';
@@ -45,6 +47,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const access = useAccess();
+  const needsUpgrade = !access.loading && workflowsNeedUpgrade(access);
   const { toggleTheme } = useTheme();
   const { avatarUrl, displayName, email: profileEmail } = useUserAvatar();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -69,13 +73,20 @@ export function AppShell({ children }: { children: ReactNode }) {
     navigate('/');
   };
 
-  const item = ({ label, to, icon: Icon }: { label: string; to: string; icon: typeof Home }) => (
+  const item = ({ label, to, icon: Icon, planBadge }: { label: string; to: string; icon: typeof Home; planBadge?: string }) => {
+    const badge = planBadge && needsUpgrade ? planBadge : null;
+    return (
     <SidebarMenuItem key={to}>
-      <SidebarMenuButton asChild tooltip={label} isActive={active(to)} className={navItem}>
-        <Link to={to} aria-current={active(to) ? 'page' : undefined}><Icon /><span>{label}</span></Link>
+      <SidebarMenuButton asChild tooltip={badge ? `${label} (${badge} plan)` : label} isActive={active(to)} className={navItem}>
+        <Link to={to} aria-current={active(to) ? 'page' : undefined}>
+          <Icon /><span>{label}</span>
+          {badge && <span className="ml-auto rounded-full border border-current px-1.5 text-[10px] font-semibold uppercase leading-4 tracking-wide opacity-80 group-data-[collapsible=icon]:hidden" aria-hidden="true">{badge}</span>}
+          {badge && <span className="sr-only">(in the {badge} and Scale plans)</span>}
+        </Link>
       </SidebarMenuButton>
     </SidebarMenuItem>
-  );
+    );
+  };
 
   return (
     <SidebarProvider>

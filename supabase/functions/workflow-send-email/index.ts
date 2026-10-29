@@ -18,6 +18,13 @@ serve(makeHandler({
     const { data } = await admin.rpc("is_super_admin", { _user_id: userId });
     return data === true;
   },
+  // Phase 19: the caller's access row (state, plan_key, via) from the one access function, read with the service role.
+  // An error throws, so the handler refuses and sends nothing.
+  accessState: async (userId) => {
+    const { data, error } = await admin.rpc("_access_state_for", { _uid: userId });
+    if (error) throw new Error(`_access_state_for: ${error.code ?? ""} ${error.message}`);
+    return (Array.isArray(data) ? data[0] : data) ?? null;
+  },
   probe: (cfg) => probeSmtp(cfg),
   // 30 email steps a minute per user, per instance (same style as workflow-execute).
   rateLimit: memoryRateLimit(30, 60_000),

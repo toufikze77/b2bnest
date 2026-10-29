@@ -11,6 +11,12 @@ Deno.serve(makeHandler({
     const { data, error } = await asUser(auth).auth.getClaims(auth.replace('Bearer ', ''));
     return error || !data?.claims?.sub ? null : data.claims.sub;
   },
+  // Phase 19: the caller's access row (state, plan_key, via) from the one access function, read with the service role.
+  accessState: async (userId) => {
+    const { data, error } = await service.rpc('_access_state_for', { _uid: userId });
+    if (error) throw new Error(`_access_state_for: ${error.code ?? ''} ${error.message}`);
+    return (Array.isArray(data) ? data[0] : data) ?? null;
+  },
   rateLimit: memoryRateLimit(30, 60_000),
   loadWhatsApp: async (userId, auth) => {
     const supabase = asUser(auth);

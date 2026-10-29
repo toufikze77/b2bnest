@@ -120,11 +120,12 @@ const BusinessTools = () => {
     },
     {
       id: 'workflow-studio' as ToolType,
-      title: 'Workflow Automation Studio',
-      description: 'Visual workflow builder with drag-and-drop nodes, triggers, actions, and integrations (n8n/Zapier inspired)',
+      title: 'Workflow Studio',
+      // Phase 19: what it really does today, and that it is a Business and Scale feature (and on the 14-day trial).
+      description: 'Save emails you send often and send them with one click, with an exact preview first. Included in Business and Scale, and during the 14-day trial.',
       icon: Zap,
       color: 'bg-gradient-to-r from-purple-600 to-indigo-600',
-      benefits: ['Visual Builder', 'Drag & Drop Nodes', 'Triggers & Actions', 'API Integrations', 'Execution History', 'Workflow Templates'],
+      benefits: ['One-click email workflows', 'Exact preview before sending', 'Run history', 'Email templates', 'Business and Scale plans'],
       isPremium: true
     },
     {
