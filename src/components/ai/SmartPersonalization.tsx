@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Sparkles, User, Target, TrendingUp, FileText, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { BUSINESS_STAGES, INDUSTRIES, PERSONALIZATION_NOTE } from "@/lib/aiStudio";
 
 interface UserPreferences {
   id?: string;
@@ -25,14 +26,9 @@ const SmartPersonalization = () => {
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const { toast } = useToast();
 
-  const industries = [
-    'Technology', 'Healthcare', 'Finance', 'Retail', 'Manufacturing',
-    'Professional Services', 'Real Estate', 'Education', 'Food & Beverage', 'Other'
-  ];
-
-  const businessStages = [
-    'Startup', 'Growth Stage', 'Established', 'Scale-up', 'Enterprise'
-  ];
+  // Phase 20: the same lists as the Advisor. The recommendations below are fixed guidance, not AI.
+  const industries = INDUSTRIES;
+  const businessStages = BUSINESS_STAGES;
 
   const aiFeatures = [
     { id: 'document_assistant', label: 'Smart Document Assistant', icon: '📄' },
@@ -92,7 +88,7 @@ const SmartPersonalization = () => {
 
       toast({
         title: "Preferences Saved",
-        description: "Your AI personalization settings have been updated!",
+        description: "Your industry, stage and interests are saved.",
       });
     } catch (error) {
       console.error('Error saving preferences:', error);
@@ -177,7 +173,7 @@ const SmartPersonalization = () => {
             <div>
               <CardTitle>Smart Personalization</CardTitle>
               <CardDescription>
-                Customize your AI experience based on your industry and business needs
+                Save your industry and business stage and see general guidance for them. This page doesn't use AI or your business data.
               </CardDescription>
             </div>
           </div>
@@ -233,8 +229,9 @@ const SmartPersonalization = () => {
           <div className="space-y-4">
             <h4 className="font-semibold flex items-center gap-2">
               <Settings className="h-4 w-4" />
-              Preferred AI Features
+              Features you're interested in
             </h4>
+            <p className="text-xs text-muted-foreground">Saved here for your reference. They don't change how other features work yet.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {aiFeatures.map((feature) => (
                 <div key={feature.id} className="flex items-center space-x-3">
@@ -277,10 +274,10 @@ const SmartPersonalization = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5 text-blue-600" />
-              Personalized Recommendations
+              General guidance for your industry and stage
             </CardTitle>
-            <CardDescription>
-              Based on your {preferences.industry} industry and {preferences.business_stage} stage
+            <CardDescription data-testid="personalization-note">
+              {PERSONALIZATION_NOTE}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -298,31 +295,6 @@ const SmartPersonalization = () => {
         </Card>
       )}
 
-      {/* Usage Insights */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-green-600" />
-            Personalization Impact
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">85%</div>
-              <div className="text-sm text-green-700">More Relevant Content</div>
-            </div>
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">60%</div>
-              <div className="text-sm text-blue-700">Faster Task Completion</div>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">40%</div>
-              <div className="text-sm text-purple-700">Reduced Manual Work</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
