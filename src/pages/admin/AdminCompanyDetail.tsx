@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { TabStrip, tabStripListClass, tabStripTriggerClass } from '@/components/ui/tabbed-page-header';
 import { adminRpc, formatBytes, formatMoney } from '@/lib/adminApi';
+import { planDisplayName } from '@/lib/plans';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -109,7 +110,7 @@ export default function AdminCompanyDetail() {
         {[
           ['Status', statusBadge(suspended ? 'suspended' : c.status || 'active')],
           ['Users', (usage.users ?? 0).toLocaleString()],
-          ['Plan', plan?.name || c.plan_key || 'free'],
+          ['Plan', planDisplayName(c.plan_key || plan?.key || plan?.name)],
           ['Registered', c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'],
         ].map(([label, value]) => (
           <Card key={label as string}>
@@ -181,11 +182,11 @@ export default function AdminCompanyDetail() {
           <Card><CardContent className="pt-6">
             <dl className="space-y-2 text-sm">
               {[
-                ['Plan', plan?.name || sub.subscription_tier || 'Free'],
+                ['Plan', planDisplayName(sub.plan_key || sub.subscription_tier || plan?.key)],
                 ['Monthly price', plan ? formatMoney(plan.monthly_price, plan.currency || 'GBP') : NOT_TRACKED],
                 ['Annual price', plan?.annual_price ? formatMoney(plan.annual_price, plan.currency || 'GBP') : NOT_TRACKED],
                 ['Billing interval', sub.subscribed ? 'Monthly' : NOT_TRACKED],
-                ['Subscription status', sub.subscribed ? 'Active' : sub.is_trial_active ? 'Trial' : 'Free'],
+                ['Subscription status', sub.subscribed ? 'Active' : sub.is_trial_active ? 'Trial' : 'No plan'],
                 ['Trial status', sub.is_trial_active ? `Trial until ${sub.trial_ends_at ? new Date(sub.trial_ends_at).toLocaleDateString() : '—'}` : 'Not on trial'],
                 ['Renewal date', sub.renewal_date ? new Date(sub.renewal_date).toLocaleDateString() : '—'],
                 ['Cancellation', c.status === 'cancelled' ? 'Cancelled' : 'Not cancelled'],

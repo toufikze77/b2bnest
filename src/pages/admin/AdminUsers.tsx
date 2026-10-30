@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { adminRpc, downloadCsv, logAdminAction } from '@/lib/adminApi';
+import { accountPlanLabel, csvPlanRows, PLAN_FILTERS, USER_STATUS_FILTERS } from '@/lib/adminLabels';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,7 +31,7 @@ type MasterTarget = { id: string; email?: string | null; name?: string | null };
 
 const PAGE_SIZE = 25;
 const ROLES = ['user', 'manager', 'moderator', 'admin', 'owner', 'super_admin'];
-const PLANS = ['all', 'starter', 'professional', 'enterprise', 'free'];
+
 
 export default function AdminUsers() {
   const { toast } = useToast();
@@ -158,7 +159,7 @@ export default function AdminUsers() {
 
   const exportCsv = async () => {
     const data = await adminRpc<any>('admin_list_users', { _search: search || null, _status: status, _limit: 5000, _offset: 0 });
-    downloadCsv('b2bnest-users.csv', data.rows ?? []);
+    downloadCsv('b2bnest-users.csv', csvPlanRows(data.rows ?? []));
     await logAdminAction('export.users', 'users', null, { count: (data.rows ?? []).length });
   };
 
@@ -198,9 +199,9 @@ export default function AdminUsers() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {['all', 'active', 'suspended', 'paid', 'free', 'trial'].map((s) => (
-              <SelectItem key={s} value={s}>
-                {s[0].toUpperCase() + s.slice(1)}
+            {USER_STATUS_FILTERS.map((f) => (
+              <SelectItem key={f.value} value={f.value}>
+                {f.label}
               </SelectItem>
             ))}
             {isSuperAdmin && masters !== null && <SelectItem value="master">Master accounts</SelectItem>}
@@ -209,7 +210,7 @@ export default function AdminUsers() {
         <Select value={plan} onValueChange={(v) => { setPage(0); setPlan(v); }}>
           <SelectTrigger className="w-[170px]" aria-label="Filter by plan"><SelectValue /></SelectTrigger>
           <SelectContent>
-            {PLANS.map((p) => <SelectItem key={p} value={p}>{p[0].toUpperCase() + p.slice(1)}</SelectItem>)}
+            {PLAN_FILTERS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -263,7 +264,7 @@ export default function AdminUsers() {
                       <TableCell className="text-sm text-muted-foreground">—</TableCell>
                     </>
                   ) : (<>
-                  <TableCell>{u.subscribed ? <Badge>{u.plan || 'Paid'}</Badge> : <Badge variant="secondary">{u.is_trial_active ? 'Trial' : 'Free'}</Badge>}</TableCell>
+                  <TableCell>{u.subscribed ? <Badge>{accountPlanLabel(u)}</Badge> : <Badge variant="secondary">{accountPlanLabel(u)}</Badge>}</TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <Select value={u.role || 'user'} onValueChange={(v) => changeRole(u, v)}>
                       <SelectTrigger className="h-8 w-[140px]"><SelectValue /></SelectTrigger>
@@ -338,7 +339,7 @@ export default function AdminUsers() {
                 ['Registered', selected.created_at ? new Date(selected.created_at).toLocaleString() : '—'],
                 ['Last login', selected.last_login ? new Date(selected.last_login).toLocaleString() : 'Never'],
                 ['Status', selected.is_active ? 'Active' : 'Suspended'],
-                ['Subscription', selected.subscribed ? selected.plan || 'Paid' : selected.is_trial_active ? 'Trial' : 'Free'],
+                ['Plan', accountPlanLabel(selected)],
                 ['Trial ends', selected.trial_ends_at ? new Date(selected.trial_ends_at).toLocaleDateString() : '—'],
                 ['Projects', selected.projects ?? 0],
                 ['Documents', selected.documents ?? 0],

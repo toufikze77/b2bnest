@@ -210,3 +210,30 @@ describe('Financial tools guide (Phase 21)', () => {
       'pensions</li>', 'all categories', 'MTD-enabled business account']) expect(guide, t).not.toContain(t);
   });
 });
+
+// Phase 22 (owner decision): Admin shows the customer plan names (Solo, Business, Scale) and never a "Free" tier. No
+// string or JSX text in Admin may BE a raw tier name or "Free"/"Paid" as a plan label, and no `|| 'free'` fallbacks.
+// Code identifiers and internal filter values ('free' as a value sent to the server) are not labels and are allowed.
+describe('Admin plan names (Phase 22)', () => {
+  const adminFiles = ['src/pages/admin', 'src/components/admin'].flatMap((d) =>
+    fs.readdirSync(path.join(ROOT, d)).filter((f) => /\.tsx?$/.test(f) && !/\.test\./.test(f)).map((f) => path.join(d, f)));
+  // Template prices ("Free" template, no credits) are about templates, not account plans.
+  const ALLOWED = [/SelectItem value="free">Free<\/SelectItem>/, /plan: 'free',/];
+  it('no raw tier name or "Free" as a printed plan label', () => {
+    expect(adminFiles.length).toBeGreaterThan(10);
+    const hits = adminFiles.flatMap((f) => fs.readFileSync(path.join(ROOT, f), 'utf8').split('\n').flatMap((line, i) => {
+      if (ALLOWED.some((a) => a.test(line))) return [];
+      const label = />\s*(Free|FREE|Starter|Professional|Enterprise|Paid)\s*</.test(line)
+        || /label[:=]\s*['"{`]+\s*(Free|Starter|Professional|Enterprise)\b/.test(line)
+        || /\|\|\s*['"](free|Free|Paid|FREE)['"]/.test(line)
+        || /['"](Free Users|Free)['"]\s*[,}]/.test(line);
+      return label ? [`${f}:${i + 1}: ${line.trim().slice(0, 120)}`] : [];
+    }));
+    expect(hits).toEqual([]);
+  });
+  it('the guard catches the old wording', () => {
+    const old = ["<TableCell>{s.plan || 'free'}</TableCell>", "<AdminStatCard label=\"Free\" value={1} />", "{ label: 'Free Users', value: 1 },"];
+    const caught = old.filter((line) => /\|\|\s*['"](free|Free|Paid|FREE)['"]/.test(line) || /label[:=]\s*['"{`]+\s*(Free|Starter|Professional|Enterprise)\b/.test(line));
+    expect(caught).toHaveLength(3);
+  });
+});

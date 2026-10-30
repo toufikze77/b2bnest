@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { adminRpc, downloadCsv, logAdminAction } from '@/lib/adminApi';
+import { planDisplayName } from '@/lib/plans';
+import { csvPlanRows, PLAN_FILTERS } from '@/lib/adminLabels';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +19,6 @@ import { Download, Search } from 'lucide-react';
 
 const PAGE_SIZE = 25;
 const STATUSES = ['all', 'active', 'trial', 'suspended', 'cancelled'];
-const PLANS = ['all', 'starter', 'professional', 'enterprise', 'free'];
 
 function StatusBadge({ status }: { status: string }) {
   if (status === 'active') return <Badge variant="outline" className="text-emerald-500">Active</Badge>;
@@ -76,7 +77,7 @@ export default function AdminCompanies() {
 
   const exportCsv = async () => {
     const data = await adminRpc<any>('admin_list_companies', { _search: search || null, _limit: 5000, _offset: 0, _status: status, _plan: plan });
-    downloadCsv('b2bnest-companies.csv', data.rows ?? []);
+    downloadCsv('b2bnest-companies.csv', csvPlanRows(data.rows ?? [], 'subscription_plan'));
     await logAdminAction('export.companies', 'organizations', null, { count: (data.rows ?? []).length });
   };
 
@@ -99,7 +100,7 @@ export default function AdminCompanies() {
         </Select>
         <Select value={plan} onValueChange={(v) => { setPage(0); setPlan(v); }}>
           <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
-          <SelectContent>{PLANS.map((p) => <SelectItem key={p} value={p}>{p[0].toUpperCase() + p.slice(1)}</SelectItem>)}</SelectContent>
+          <SelectContent>{PLAN_FILTERS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
         </Select>
       </div>
 
@@ -134,7 +135,7 @@ export default function AdminCompanies() {
                   <div className="text-xs text-muted-foreground">{c.owner_email || ''}</div>
                 </TableCell>
                 <TableCell>{c.members ?? 0}</TableCell>
-                <TableCell><Badge variant="secondary">{c.subscription_plan || c.plan || 'free'}</Badge></TableCell>
+                <TableCell><Badge variant="secondary">{planDisplayName(c.subscription_plan || c.plan)}</Badge></TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {c.subscribed ? `Renews ${c.renewal_date ? new Date(c.renewal_date).toLocaleDateString() : '—'}` : c.status === 'trial' ? 'Trial' : 'No paid plan'}
                 </TableCell>

@@ -122,9 +122,24 @@ export const PLANS: Plan[] = [
 ];
 
 export const planById = (id: string | null | undefined): Plan | undefined => PLANS.find((p) => p.id === id);
-/** Display name for a stored tier ("Professional" → "Business"); unknown values are returned as they are. */
-export const planNameForTier = (tier: string | null | undefined): string => {
-  if (!tier) return 'Free';
-  const p = PLANS.find((x) => x.tier.toLowerCase() === tier.toLowerCase() || x.id === tier.toLowerCase());
-  return p ? p.name : tier === 'free' ? 'Free' : tier;
+/** What Admin and the app call an account that has no plan (owner decision: there is no free tier). */
+export const NO_PLAN = 'No plan';
+
+/**
+ * Phase 22: THE display name for a stored plan. Takes a plan key (starter / professional / enterprise, also the
+ * platform_plans "_legacy" keys) or a stored tier name (Starter / Professional / Enterprise), in any case, and returns
+ * Solo / Business / Scale. Anything else (missing, "free", unknown) is "No plan". Never prints the raw key or "Free".
+ */
+export const planDisplayName = (keyOrTier: string | null | undefined): string => {
+  const v = (keyOrTier ?? '').trim().toLowerCase().replace(/_legacy$/, '');
+  if (!v) return NO_PLAN;
+  const p = PLANS.find((x) => x.id === v || x.tier.toLowerCase() === v);
+  return p ? p.name : NO_PLAN;
 };
+/** The stored plan key (starter / professional / enterprise) for a key or tier name, or null. For CSV key columns. */
+export const planKeyOf = (keyOrTier: string | null | undefined): PlanId | null => {
+  const v = (keyOrTier ?? '').trim().toLowerCase().replace(/_legacy$/, '');
+  return PLANS.find((x) => x.id === v || x.tier.toLowerCase() === v)?.id ?? null;
+};
+/** @deprecated Same as planDisplayName (kept for existing callers). */
+export const planNameForTier = planDisplayName;
