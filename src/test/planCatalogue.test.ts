@@ -47,7 +47,7 @@ describe('legacy prices', () => {
   });
 
   it('stored tiers show the new display names', () => {
-    expect(['Starter', 'Professional', 'Enterprise', 'free', null].map(planNameForTier)).toEqual(['Solo', 'Business', 'Scale', 'Free', 'Free']);
+    expect(['Starter', 'Professional', 'Enterprise', 'free', null].map(planNameForTier)).toEqual(['Solo', 'Business', 'Scale', 'No plan', 'No plan']);
   });
 });
 
@@ -87,5 +87,23 @@ describe('workflows by plan', () => {
     }
     expect([...WORKFLOW_PLAN_KEYS]).toEqual(['professional', 'enterprise']);
     expect(WORKFLOWS_FAQ_ANSWER).toMatch(/^Business and Scale include Workflow Studio\. Solo doesn't\./);
+  });
+});
+
+// Phase 22: the prices Admin uses for MRR/ARR/Value (docs/phase22/proposal.sql → public.plan_prices) are the catalogue's.
+import fs from 'node:fs';
+import path from 'node:path';
+describe('Admin price table (docs/phase22) matches the catalogue', () => {
+  it('every current and legacy price, with its lookup key, plan and interval', () => {
+    const sql = fs.readFileSync(path.resolve(__dirname, '../../docs/phase22/proposal.sql'), 'utf8');
+    const rows = [...sql.matchAll(/\('(b2bnest_[a-z_]+)',\s*'(\w+)',\s*'(month|year)',\s*(\d+),\s*(true|false)\)/g)]
+      .map((m) => ({ lookupKey: m[1], plan: m[2], interval: m[3], amount: Number(m[4]), legacy: m[5] === 'true' }));
+    const expected = Object.values(PLAN_CATALOG).flatMap((p) => (['month', 'year'] as const).flatMap((i) => [
+      { lookupKey: p.prices[i].lookupKey, plan: p.key, interval: i, amount: p.prices[i].amount, legacy: false },
+      ...(p.legacy ? [{ lookupKey: p.legacy.prices[i].lookupKey, plan: p.key, interval: i, amount: p.legacy.prices[i].amount, legacy: true }] : []),
+    ]));
+    const sort = (a: { lookupKey: string }, b: { lookupKey: string }) => a.lookupKey.localeCompare(b.lookupKey);
+    expect(rows.sort(sort)).toEqual(expected.sort(sort));
+    expect(rows).toHaveLength(10);
   });
 });

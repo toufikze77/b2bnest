@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { adminRpc, downloadCsv, logAdminAction } from '@/lib/adminApi';
+import { csvPlanRows } from '@/lib/adminLabels';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -15,19 +16,19 @@ const JOBS: Job[] = [
     key: 'users',
     title: 'Users',
     description: 'All registered accounts with role, status and activity.',
-    run: async () => rowsOf(await adminRpc('admin_list_users', { _search: null, _status: 'all', _limit: 5000, _offset: 0 })),
+    run: async () => csvPlanRows(rowsOf(await adminRpc('admin_list_users', { _search: null, _status: 'all', _limit: 5000, _offset: 0 }))),
   },
   {
     key: 'companies',
     title: 'Companies',
     description: 'Organisations with owner, member count and plan.',
-    run: async () => rowsOf(await adminRpc('admin_list_companies', { _search: null, _limit: 5000, _offset: 0 })),
+    run: async () => csvPlanRows(rowsOf(await adminRpc('admin_list_companies', { _search: null, _limit: 5000, _offset: 0 })), 'subscription_plan'),
   },
   {
     key: 'subscriptions',
     title: 'Subscriptions',
-    description: 'Subscription records, plan tiers and billing status.',
-    run: async () => rowsOf(await adminRpc('admin_list_subscriptions', { _status: 'all', _search: null, _limit: 5000, _offset: 0 })),
+    description: 'Subscription records: plan (Solo, Business, Scale or No plan, plus the plan key), status and monthly value.',
+    run: async () => csvPlanRows(rowsOf(await adminRpc('admin_list_subscriptions', { _status: 'all', _search: null, _limit: 5000, _offset: 0 }))),
   },
   {
     key: 'projects',
