@@ -27,6 +27,36 @@ export type ApplyResult = "applied" | "stale";
 // deno-lint-ignore no-explicit-any
 type Any = any;
 
+/** A Stripe id that may arrive as a plain string or as an expanded object with an `id`. */
+const idOf = (v: unknown): string | null => {
+  if (typeof v === "string" && v) return v;
+  if (v && typeof v === "object" && typeof (v as { id?: unknown }).id === "string" && (v as { id: string }).id) return (v as { id: string }).id;
+  return null;
+};
+
+/**
+ * The subscription an invoice belongs to. From API 2025-03-31 (basil) on, the top-level `invoice.subscription` is gone
+ * and the id is at `invoice.parent.subscription_details.subscription`; older versions still send the top-level field.
+ * Either may be a string or an expanded object. Null when the invoice has no subscription (for example a one-off invoice).
+ */
+export function invoiceSubscriptionId(obj: Any): string | null {
+  return idOf(obj?.parent?.subscription_details?.subscription) ?? idOf(obj?.subscription);
+}
+
+/**
+ * A subscription's current billing period, in Stripe seconds. From API 2025-03-31 (basil) on, the period lives on each
+ * subscription item (`items.data[n].current_period_start/end`) and the subscription-level fields are gone; older versions
+ * have them at the top level. Reads the first item first (B2BNEST subscriptions have one item), then the top level.
+ */
+export function subscriptionPeriod(sub: Any): { start: number | null; end: number | null } {
+  const item = sub?.items?.data?.[0];
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+  return {
+    start: num(item?.current_period_start) ?? num(sub?.current_period_start),
+    end: num(item?.current_period_end) ?? num(sub?.current_period_end),
+  };
+}
+
 export interface Store {
   claim(eventId: string, eventType: string): Promise<ClaimResult>;
   // Every write below is fenced by the claim token: it throws "claim_lost" if another worker has
@@ -113,7 +143,7 @@ export function makeHandler(deps: Deps) {
       });
       const live = others.data
         .filter((s: Any) => s.id !== subscription.id && ENTITLED_STATUSES.includes(s.status))
-        .sort((a: Any, b: Any) => (b.current_period_end ?? 0) - (a.current_period_end ?? 0))[0];
+        .sort((a: Any, b: Any) => (subscriptionPeriod(b).end ?? 0) - (subscriptionPeriod(a).end ?? 0))[0];
       if (live) subscription = live;
     }
     const price = subscription.items.data[0]?.price;
@@ -134,7 +164,8 @@ export function makeHandler(deps: Deps) {
     const userId = owner.userId;
     const entitled = ENTITLED_STATUSES.includes(subscription.status);
     const iso = (t?: number | null) => (t ? new Date(t * 1000).toISOString() : null);
-    const periodEnd = iso(subscription.current_period_end);
+    const period = subscriptionPeriod(subscription);
+    const periodEnd = iso(period.end);
 
     const row: Record<string, unknown> = {
       email: owner.email,
@@ -146,7 +177,7 @@ export function makeHandler(deps: Deps) {
       subscription_status: subscription.status,
       cancel_at_period_end: subscription.cancel_at_period_end ?? false,
       canceled_at: iso(subscription.canceled_at),
-      current_period_start: iso(subscription.current_period_start),
+      current_period_start: iso(period.start),
       current_period_end: periodEnd,
       subscribed: entitled,
       subscription_tier: entitled ? (resolved?.plan.tier ?? "Starter") : "free",
@@ -194,7 +225,8 @@ export function makeHandler(deps: Deps) {
       const obj = event.data.object;
       switch (event.type) {
         case "checkout.session.completed":
-          if (obj.mode === "subscription" && obj.subscription) await sync(obj.subscription, created);
+          // `subscription` is still top level on Checkout Sessions (a string in webhook payloads; an object if expanded).
+          if (obj.mode === "subscription" && idOf(obj.subscription)) await sync(idOf(obj.subscription)!, created);
           else {
             await store.updatePaymentStatus(event.id, token, {
               p_status: "completed", p_stripe_session_id: obj.id, p_stripe_payment_intent_id: obj.payment_intent,
@@ -209,9 +241,13 @@ export function makeHandler(deps: Deps) {
           await sync(obj.id, created);
           break;
         case "invoice.paid":
-        case "invoice.payment_failed":
-          if (obj.subscription) await sync(obj.subscription, created);
+        case "invoice.payment_failed": {
+          const subId = invoiceSubscriptionId(obj);
+          // Nothing to sync; the event still completes. Only the event id and type are logged (no customer data).
+          if (subId) await sync(subId, created);
+          else log("Invoice without subscription", { id: event.id, type: event.type });
           break;
+        }
         case "payment_intent.payment_failed":
           await store.updatePaymentStatus(event.id, token, {
             p_status: "failed", p_stripe_payment_intent_id: obj.id,
