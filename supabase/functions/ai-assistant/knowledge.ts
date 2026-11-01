@@ -169,7 +169,7 @@ ${workflowsSection()}
 - Each answer from the AI assistant (Advisor, document assistant) uses one AI credit. If the AI service fails, the credit is given back.
 
 ## SECURITY & COMPLIANCE
-- Two-step sign-in is not active yet: signing in needs only a password
+- Two-step sign-in is optional for each user (Settings → Security): a 6-digit code from an authenticator app such as Microsoft Authenticator, Google Authenticator, Authy or 1Password, checked by Supabase Auth. It is required for platform administrators. There is no SMS option.
 - Role-based access control
 - Audit logs for all actions
 - Data travels over HTTPS; storage is provided by Supabase

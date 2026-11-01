@@ -5,6 +5,9 @@ import RouteFallback from "@/components/shell/RouteFallback";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/hooks/useAuth";
+import { AssuranceProvider } from "@/components/twoStep/AssuranceProvider";
+import TwoStepGate from "@/components/twoStep/TwoStepGate";
+import LegacyTwoStepPrompt from "@/components/twoStep/LegacyTwoStepPrompt";
 import { UserSettingsProvider } from "@/hooks/useUserSettings";
 import { OrganizationProvider } from "@/contexts/OrganizationContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -51,6 +54,7 @@ const BusinessOverview = lazyPage(() => import('@/pages/BusinessOverview'));
 const Settings = lazyPage(() => import('@/pages/Settings'));
 const CompanyReconciliation = lazyPage(() => import('@/pages/CompanyReconciliation'));
 const PaymentSuccess = lazyPage(() => import('@/pages/PaymentSuccess'));
+const TwoStepRequired = lazyPage(() => import('@/pages/TwoStepRequired'));
 import ProtectedRoute from "@/components/ProtectedRoute";
 import PaywallGate from "@/components/access/PaywallGate";
 const PublicWorkRequest = lazyPage(() => import('@/pages/PublicWorkRequest'));
@@ -106,10 +110,13 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <AssuranceProvider>
         <OrganizationProvider>
         <UserSettingsProvider>
           <ThemeProvider>
           <Router>
+          {/* Phase 25: while a signed-in session still needs its two-step code, nothing else renders. */}
+          <TwoStepGate>
           <Layout>
             <RouteMeta />
             <RouteErrorBoundary>
@@ -132,6 +139,7 @@ function App() {
               <Route path="/business-tools" element={<BusinessTools />} />
               <Route path="/template-center" element={<TemplateCenter />} />
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+              <Route path="/two-step-required" element={<ProtectedRoute><TwoStepRequired /></ProtectedRoute>} />
 
               <Route path="/business-tools/notepro" element={<ProtectedRoute><NotePro /></ProtectedRoute>} />
               <Route path="/ai-showcase" element={<Navigate to="/ai-studio" replace />} />
@@ -221,11 +229,14 @@ function App() {
             </RouteErrorBoundary>
             <Toaster />
             <SonnerToaster />
+            <LegacyTwoStepPrompt />
           </Layout>
+          </TwoStepGate>
           </Router>
           </ThemeProvider>
         </UserSettingsProvider>
         </OrganizationProvider>
+        </AssuranceProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

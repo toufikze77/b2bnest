@@ -5,6 +5,9 @@ import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 
 const auth = { user: null as null | { id: string }, loading: false };
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => auth }));
+// Phase 25: no two-step code pending and nothing required, so these tests are only about signed in / signed out.
+vi.mock('@/hooks/useAssurance', () => ({ useAssurance: () => ({ loading: false, needsCode: false, verified: [], factors: [], error: null }) }));
+vi.mock('@/hooks/useTwoStepRequirement', () => ({ useTwoStepRequirement: () => ({ loading: false, scope: null, mustSetUp: false, hasApp: false, showBanner: false }) }));
 
 import ProtectedRoute from './ProtectedRoute';
 

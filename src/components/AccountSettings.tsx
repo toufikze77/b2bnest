@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
-import { TWO_STEP_STATUS, TWO_STEP_NOT_ACTIVE, TWO_STEP_COMING_SOON } from '@/lib/twoStep';
+import { TWO_STEP_EXPLAINER, TWO_STEP_OFF, TWO_STEP_ON } from '@/lib/twoStep';
+import { useAssurance } from '@/hooks/useAssurance';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -305,26 +306,8 @@ const AccountSettings = () => {
           </CardContent>
         </Card>
 
-        {/* Two-step sign-in: not enforced at sign-in yet, so it cannot be switched on here (src/lib/twoStep.ts). */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Two-step sign-in
-            </CardTitle>
-            <CardDescription>{TWO_STEP_NOT_ACTIVE}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="two-step-switch">Turn on two-step sign-in</Label>
-                <p className="text-sm text-muted-foreground">{TWO_STEP_COMING_SOON}</p>
-              </div>
-              <Switch id="two-step-switch" checked={false} disabled aria-describedby="two-step-note" />
-            </div>
-            <p id="two-step-note" className="text-sm text-muted-foreground">{TWO_STEP_STATUS}.</p>
-          </CardContent>
-        </Card>
+        {/* Two-step sign-in (Phase 25): set up in Settings → Security; the status is the real verified-factor state. */}
+        <TwoStepSummary />
       </TabsContent>
 
       <TabsContent value="preferences" className="space-y-6">
@@ -521,3 +504,23 @@ const AccountSettings = () => {
 };
 
 export default AccountSettings;
+
+function TwoStepSummary() {
+  const { loading, verified } = useAssurance();
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Shield className="h-5 w-5" />
+          Two-step sign-in
+        </CardTitle>
+        <CardDescription>{TWO_STEP_EXPLAINER}</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm">Status: <span className="font-medium">{loading ? '…' : verified.length > 0 ? TWO_STEP_ON : TWO_STEP_OFF}</span></p>
+        <Button asChild variant="outline"><Link to="/settings?tab=security">{verified.length > 0 ? 'Manage' : 'Set it up'}</Link></Button>
+      </CardContent>
+    </Card>
+  );
+}
+

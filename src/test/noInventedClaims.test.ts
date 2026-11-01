@@ -36,9 +36,11 @@ const BANNED: { what: string; re: RegExp; allow?: RegExp }[] = [
   { what: 'workflows-in-every-plan claim', re: /workflows? (are |is )?(included )?in (all|every) plans?|every plan includes (Workflow|workflows)|Solo (plan )?includes (Workflow|workflows)/i },
   // Phase 20: AI Studio says only what it does (example figures; fixed guidance; no invented impact statistics).
   { what: 'AI Studio overclaim', re: /automate complex workflows|More Relevant Content|Faster Task Completion|Reduced Manual Work|AI personalization settings|full power of AI-driven business automation|Customize your AI experience/i },
-  // Phase 21 (owner decision): no promise unless the code does it today. The two-step sign-in line is sign-in copy,
-  // left for the owner (lib/twoStep.ts, SecurityGuide.tsx), so it is the one allowed "coming soon".
-  { what: '"coming soon" promise', re: /coming soon/i, allow: /Coming soon: we'll tell you|TWO_STEP_COMING_SOON/ },
+  // Phase 21 (owner decision): no promise unless the code does it today. Phase 25 made two-step sign-in real, so its
+  // "coming soon" line is gone too and there is no exception left.
+  { what: '"coming soon" promise', re: /coming soon/i },
+  // Phase 25: two-step sign-in is real now; the old "not active yet" wording must not come back anywhere.
+  { what: 'stale "two-step not active" wording', re: /two-step sign-in is not active|not active yet\. Signing in needs only|TWO_STEP_NOT_ACTIVE|TWO_STEP_COMING_SOON/i },
   { what: 'unbuilt collaboration / payroll / VAT claim', re: /video conferenc|team chat|P45 and P60 generation|Workplace pension compliance|Student loan deductions|Statutory payments \(SSP, SMP, SPP\)<|Flat Rate Scheme support|Reverse charge transactions|Net present value|Internal rate of return|auto-calculates based on your data|Connect your first account|mentioned you|Powered by GPT-4|would be calculated here in production|planned, not available/i, allow: /There is no team chat/ },
   { what: 'uptime / always-on promise', re: /99\.9\d*% uptime|\b24\/7 support|round-the-clock support/i },
   { what: 'stale "replies go to B2BNEST" warning', re: /(repl(y|ies) go(es)? to B2BNEST|reply goes to B2BNEST), not (to )?you/i },

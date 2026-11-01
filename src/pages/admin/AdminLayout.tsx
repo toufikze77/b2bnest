@@ -1,4 +1,7 @@
-import { NavLink, Outlet, Link } from 'react-router-dom';
+import { NavLink, Outlet, Link, Navigate, useLocation } from 'react-router-dom';
+import { useTwoStepRequirement } from '@/hooks/useTwoStepRequirement';
+import { useAssurance } from '@/hooks/useAssurance';
+import TwoStepCodeScreen from '@/components/twoStep/TwoStepCodeScreen';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { useAuth } from '@/hooks/useAuth';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -57,8 +60,12 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export default function AdminLayout() {
-  const { isSuperAdmin, loading } = useSuperAdmin();
+  const { isSuperAdmin, loading: superLoading } = useSuperAdmin();
   const { user } = useAuth();
+  const assurance = useAssurance();
+  const twoStep = useTwoStepRequirement();
+  const location = useLocation();
+  const loading = superLoading || assurance.loading || (isSuperAdmin && twoStep.loading);
 
   if (loading) {
     return (
@@ -66,6 +73,14 @@ export default function AdminLayout() {
         <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-primary" />
       </div>
     );
+  }
+
+  // Phase 25: Admin needs two-step sign-in (TWO_STEP_REQUIRED_ROLES). The code screen if the app exists but this
+  // session only used the password; the set-up page if there is no app yet.
+  if (assurance.needsCode) return <TwoStepCodeScreen />;
+  if (isSuperAdmin && twoStep.mustSetUp) {
+    const here = location.pathname + location.search;
+    return <Navigate to={`/two-step-required?next=${encodeURIComponent(here)}`} replace />;
   }
 
   if (!isSuperAdmin) {

@@ -9,6 +9,7 @@ vi.mock('@/components/OrganizationSwitcher', () => ({ default: () => null }));
 vi.mock('@/components/ProfileEditDialog', () => ({ default: () => null }));
 vi.mock('@/components/SupportFeedbackDialog', () => ({ default: () => null }));
 vi.mock('@/components/access/TrialBanner', () => ({ default: () => null }));
+vi.mock('@/components/twoStep/ProtectAccountBanner', () => ({ default: () => null })); // Phase 25: tested in twoStepFlows.test.tsx
 vi.mock('./GlobalCommand', () => ({ GlobalCommand: () => null }));
 vi.mock('./NotificationsPanel', () => ({ NotificationsPanel: () => null }));
 // Phase 19: the account's access (plan) decides whether "Workflows" is marked "Business" in the menu.
