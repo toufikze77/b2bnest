@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { ToastAction } from '@/components/ui/toast';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarClock, CreditCard, ExternalLink, Loader2 } from 'lucide-react';
@@ -8,6 +10,12 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from '@/hooks/use-toast';
 import { useBillingStatus, poundsText } from '@/hooks/useBillingStatus';
 import { planNameForTier, limitText, SEAT_LIMITS_NOTE } from '@/lib/plans';
+import { useAccess } from '@/hooks/useAccess';
+import { trialBannerText } from '@/lib/access';
+import { billingKind, NO_PAID_PLAN, PORTAL_UNAVAILABLE, TRIAL_ENDED_TEXT } from '@/lib/billingView';
+import { functionErrorStatus, functionErrorText, isNoCustomer, NO_BILLING_ACCOUNT, readFunctionError } from '@/lib/billingErrors';
+
+
 
 export interface PendingDowngrade {
   plan: string;
@@ -39,7 +47,13 @@ export const PendingPlanChange = ({ pending, busy, onKeep }: { pending: PendingD
 );
 
 const BillingSettings = () => {
-  const { subscribed, subscription_tier, subscription_end, loading } = useSubscription();
+  const { subscribed: storedSubscribed, subscription_tier, subscription_end, loading: subLoading } = useSubscription();
+  const access = useAccess();
+  const navigate = useNavigate();
+  const kind = billingKind(access, storedSubscribed);
+  const subscribed = kind === 'paid';
+  const loading = subLoading || access.loading;
+  const trialLine = access.trialEnded ? TRIAL_ENDED_TEXT : trialBannerText(access);
   const [opening, setOpening] = useState(false);
   const [keeping, setKeeping] = useState(false);
   // Live from Stripe: the price this customer really pays (an earlier price is shown as it is), and any pending change.
@@ -52,7 +66,8 @@ const BillingSettings = () => {
       const { data, error } = await supabase.functions.invoke('change-subscription-plan', {
         body: { mode: 'cancel_downgrade', requestId: crypto.randomUUID() },
       });
-      if (error || !data?.ok) throw new Error('The scheduled change could not be cancelled. Please try again.');
+      if (error) throw new Error(functionErrorText(await readFunctionError(error), 'The scheduled change could not be cancelled. Please try again.'));
+      if (!data?.ok) throw new Error('The scheduled change could not be cancelled. Please try again.');
       toast({ title: 'Plan change cancelled', description: 'Your current plan continues.' });
       await loadPending();
     } catch (err: unknown) {
@@ -66,7 +81,19 @@ const BillingSettings = () => {
     setOpening(true);
     try {
       const { data, error } = await supabase.functions.invoke('customer-portal');
-      if (error) throw error;
+      if (error) {
+        const body = await readFunctionError(error);
+        if (isNoCustomer(functionErrorStatus(error), body)) {
+          // Correct answer from the server: this account has never had a Stripe customer, so there is no portal.
+          toast({
+            title: 'No billing account yet',
+            description: NO_BILLING_ACCOUNT,
+            action: <ToastAction altText="View plans" onClick={() => navigate('/pricing')}>View plans</ToastAction>,
+          });
+          return;
+        }
+        throw new Error(functionErrorText(body, 'Please try again later.'));
+      }
       if (data?.url) {
         window.location.href = data.url;
         return;
@@ -74,7 +101,7 @@ const BillingSettings = () => {
       throw new Error('Could not open the billing portal');
     } catch (err: unknown) {
       toast({
-        title: 'Billing portal unavailable',
+        title: PORTAL_UNAVAILABLE,
         description: err instanceof Error ? err.message : 'Please try again later.',
         variant: 'destructive',
       });
@@ -100,8 +127,10 @@ const BillingSettings = () => {
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Badge variant={subscribed ? 'default' : 'secondary'}>
-              {subscribed ? (status?.currentPlan ?? planNameForTier(subscription_tier)) : 'No plan yet'}
+            <Badge variant={kind === 'none' ? 'secondary' : 'default'}>
+              {kind === 'paid' ? (status?.currentPlan ?? planNameForTier(access.planKey ?? subscription_tier))
+                : kind === 'company' ? `${planNameForTier(access.planKey)} (company plan)`
+                : kind === 'owner' ? 'Full access' : 'No plan yet'}
             </Badge>
           )}
         </div>
@@ -124,15 +153,37 @@ const BillingSettings = () => {
 
         {pending && <PendingPlanChange pending={pending} busy={keeping} onKeep={keepCurrentPlan} />}
 
-        <div className="flex flex-wrap gap-3">
-          <Button onClick={openPortal} disabled={opening}>
-            {opening ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ExternalLink className="h-4 w-4 mr-2" />}
-            Manage billing
-          </Button>
-          <Button variant="outline" onClick={() => (window.location.href = '/pricing')}>
-            {subscribed ? 'Change plan' : 'View plans'}
-          </Button>
-        </div>
+        {!loading && kind === 'paid' && (
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={openPortal} disabled={opening}>
+              {opening ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ExternalLink className="h-4 w-4 mr-2" />}
+              Manage billing
+            </Button>
+            <Button variant="outline" onClick={() => (window.location.href = '/pricing')}>
+              Change plan
+            </Button>
+          </div>
+        )}
+
+        {!loading && kind === 'none' && (
+          <div className="space-y-3" data-testid="billing-no-plan">
+            {trialLine && <p className="text-sm font-medium text-foreground">{trialLine}</p>}
+            <p className="text-sm text-muted-foreground">{NO_PAID_PLAN}</p>
+            <Button asChild><Link to="/pricing">View plans</Link></Button>
+          </div>
+        )}
+
+        {!loading && kind === 'company' && (
+          <p className="text-sm text-muted-foreground" data-testid="billing-company">
+            Your company's plan is paid by {access.ownerName ?? "its account owner"}. They manage billing and invoices.
+          </p>
+        )}
+
+        {!loading && kind === 'owner' && (
+          <p className="text-sm text-muted-foreground" data-testid="billing-owner">
+            This account has full access without a plan, so there is nothing to pay.
+          </p>
+        )}
 
         <p className="text-xs text-muted-foreground">
           Payments, invoices and cancellations are handled securely by Stripe. Downgrades and cancellations take effect at the end of your paid period.

@@ -11,7 +11,7 @@ import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { PLANS, type Plan, limitText, aiCreditsText, SEAT_LIMITS_NOTE } from '@/lib/plans';
 import { useBillingStatus, poundsText } from '@/hooks/useBillingStatus';
-import { BILLING_LINK_ERROR, isBillingLinkError } from '@/lib/billingErrors';
+import { BILLING_LINK_ERROR, functionErrorText, isBillingLinkError } from '@/lib/billingErrors';
 
 /** Phase 19: the same answer as the Help FAQ "Which plans include workflows?" (shortened). */
 export const WORKFLOWS_FAQ_ANSWER = "Business and Scale include Workflow Studio. Solo doesn't. Every new account can use workflows during the 14-day trial.";
@@ -49,7 +49,7 @@ const PricingPlans = ({ variant = 'page' }: { variant?: 'page' | 'paywall' }) =>
       const { data: preview, error: previewError } = await supabase.functions.invoke('change-subscription-plan', { body: { mode: 'preview', planId, isAnnual } });
       if (previewError) {
         const body = await readError(previewError);
-        throw new Error(body?.error === 'no_subscription' ? 'No active subscription was found. Open Settings → Billing, or contact support.' : body?.message || previewError.message);
+        throw new Error(body?.error === 'no_subscription' ? 'No active subscription was found. Open Settings → Billing, or contact support.' : functionErrorText(body, "We couldn't check this change. Your plan hasn't changed. Please try again later."));
       }
       const money = (pence: number) => `£${(Math.abs(pence) / 100).toFixed(2)}`;
       const per = preview.newInterval === 'year' ? 'year' : 'month';
@@ -82,7 +82,7 @@ const PricingPlans = ({ variant = 'page' }: { variant?: 'page' | 'paywall' }) =>
       const { data, error } = await supabase.functions.invoke('change-subscription-plan', { body: { planId, isAnnual, requestId } });
       if (error) {
         const body = await readError(error);
-        throw new Error(body?.message || error.message);
+        throw new Error(functionErrorText(body, "Your plan hasn't changed. Please try again later."));
       }
       if (data?.scheduled) {
         toast({ title: 'Plan change scheduled', description: `You'll move to ${data?.newPlan ?? planName} on ${dateText(data?.effectiveDate)}. You keep your current plan until then.` });
@@ -135,7 +135,10 @@ const PricingPlans = ({ variant = 'page' }: { variant?: 'page' | 'paywall' }) =>
           });
           return;
         }
-        throw error;
+        // Phase 26: the function's own words, never the client's "non-2xx" text.
+        let parsed: { error?: string; message?: string } | null = null;
+        try { parsed = details ? JSON.parse(details) : null; } catch { parsed = null; }
+        throw new Error(functionErrorText(parsed, 'Checkout could not start. Nothing has been charged. Please try again later.'));
       }
 
       if (data?.url) {

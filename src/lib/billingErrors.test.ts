@@ -36,3 +36,23 @@ describe('billing-link error (Phase 14)', () => {
     }
   });
 });
+
+describe('functionErrorText (Phase 26)', () => {
+  it('prefers the message, then a sentence in error, else the fallback; never "non-2xx", codes or stack lines', async () => {
+    const { functionErrorText } = await import('./billingErrors');
+    expect(functionErrorText({ error: 'already_on_plan', message: 'This is already your current plan.' }, 'x')).toBe('This is already your current plan.');
+    expect(functionErrorText({ error: 'No verified billing account found for this user. Please contact support.' }, 'x')).toBe('No verified billing account found for this user. Please contact support.');
+    expect(functionErrorText({ error: 'no_subscription' }, 'fallback')).toBe('fallback');
+    expect(functionErrorText({ error: 'Edge Function returned a non-2xx status code' }, 'fallback')).toBe('fallback');
+    expect(functionErrorText({ error: 'Card declined by bank\n    at foo (bar.js:1:2)' }, 'x')).toBe('Card declined by bank');
+    expect(functionErrorText(null, 'fallback')).toBe('fallback');
+    expect(functionErrorText({ message: 'y '.repeat(400) }, 'x').length).toBeLessThanOrEqual(300);
+  });
+  it('isNoCustomer only for a 404 with reason no_customer', async () => {
+    const { isNoCustomer } = await import('./billingErrors');
+    expect(isNoCustomer(404, { reason: 'no_customer' })).toBe(true);
+    expect(isNoCustomer(409, { reason: 'no_customer' })).toBe(false);
+    expect(isNoCustomer(404, { reason: 'unverified' })).toBe(false);
+    expect(isNoCustomer(null, null)).toBe(false);
+  });
+});
