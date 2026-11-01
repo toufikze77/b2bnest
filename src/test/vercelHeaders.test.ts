@@ -8,7 +8,7 @@ const config = JSON.parse(readFileSync(resolve(__dirname, '../../vercel.json'), 
 };
 const all = config.headers.find((h) => h.source === '/(.*)')!;
 const header = (k: string) => all.headers.find((h) => h.key.toLowerCase() === k.toLowerCase())?.value;
-const csp = Object.fromEntries((header('Content-Security-Policy-Report-Only') ?? '').split(';').map((d) => d.trim()).filter(Boolean)
+const csp = Object.fromEntries((header('Content-Security-Policy') ?? '').split(';').map((d) => d.trim()).filter(Boolean)
   .map((d) => { const [name, ...v] = d.split(/\s+/); return [name, v]; }));
 
 describe('vercel.json security headers', () => {
@@ -21,9 +21,9 @@ describe('vercel.json security headers', () => {
     expect(header('X-Frame-Options')).toBe('DENY');
     expect(header('Permissions-Policy')).toBe('camera=(), microphone=(), geolocation=(), payment=(), usb=()');
   });
-  it('ships the CSP as Report-Only first (not enforced yet)', () => {
-    expect(header('Content-Security-Policy-Report-Only')).toBeTruthy();
-    expect(header('Content-Security-Policy')).toBeUndefined();
+  it('ships an enforced CSP', () => {
+    expect(header('Content-Security-Policy')).toBeTruthy();
+    expect(header('Content-Security-Policy-Report-Only')).toBeUndefined();
   });
   it('the CSP is locked down where it must be', () => {
     expect(csp['default-src']).toEqual(["'self'"]);

@@ -99,7 +99,7 @@
 | `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` |
 | `X-Frame-Options` | `DENY` |
 | `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), payment=(), usb=()`. The code uses none of these: no `getUserMedia`, `geolocation`, `PaymentRequest` or `navigator.usb`. Only clipboard writes, which aren't restricted. |
-| `Content-Security-Policy-Report-Only` | see below. **Report-only: it does not block anything yet.** |
+| `Content-Security-Policy` | see below. **Enforced since Phase 27** (shipped as `Content-Security-Policy-Report-Only` in Phase 24). |
 
 ### CSP directives and why each origin is allowed
 
@@ -117,7 +117,7 @@
 | `object-src` | `'none'` | No plugins. |
 | `base-uri` | `'self'` | |
 | `form-action` | `'self'` | No form posts to another site. Stripe Checkout, OAuth and the billing portal open by navigation (`window.location.href = url`), which `form-action` doesn't govern, so no Stripe host is needed. |
-| `frame-ancestors` | `'none'` | Browsers ignore this inside Report-Only. `X-Frame-Options: DENY` enforces it today. |
+| `frame-ancestors` | `'none'` | Enforced since Phase 27 (browsers ignored it while the policy was Report-Only). `X-Frame-Options: DENY` enforces the same. |
 
 **What I checked:** I served the production build locally with this policy **enforced** and loaded these 17 pages signed out in Chromium:
 - `/`, `/pricing`, `/template-center`, `/business-tools` (and two free tools), `/ai-studio`, `/about`, `/help`;
@@ -125,7 +125,15 @@
 
 There were **0 violations**. A deliberately forbidden fetch on the same page was reported, so the detector works. **Signed-in pages were not checked with the CSP.**
 
-### Before enforcing (owner)
+### Phase 27: enforced
+
+- **Why:** the owner opened the main pages on the Vercel test site with the Console open (Dashboard, Template Centre, CRM,
+  Invoices, AI Studio, Settings, Pricing) and saw no `[Report Only] Refused` messages. So the policy is enforced unchanged:
+  only the header key changed, from `Content-Security-Policy-Report-Only` to `Content-Security-Policy`. The value is identical.
+- **Rollback:** a one-line revert. Change the key in `vercel.json` back to `Content-Security-Policy-Report-Only`, or revert the
+  Phase 27 PR, then publish.
+
+### Before enforcing (owner, done in Phase 27)
 
 1. Deploy. Then, signed in and signed out, open each main page with DevTools open and look for `[Report Only] Refused to …` in the Console:
    - Home, Pricing, Template Centre (Preview and Use template), Business Tools (every free tool);
