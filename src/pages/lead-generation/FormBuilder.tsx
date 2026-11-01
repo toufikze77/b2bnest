@@ -73,7 +73,7 @@ export default function FormBuilder() {
   };
 
   return (
-    <LeadGenLayout title={id ? "Edit Form" : "New Form"} subtitle="Build a lead capture form"
+    <LeadGenLayout showBackBar={false} title={id ? "Edit Form" : "New Form"} subtitle="Build a lead capture form"
       right={<div className="flex gap-2">
         <Button variant="outline" onClick={() => navigate("/lead-generation/forms")}><ArrowLeft className="h-4 w-4 mr-1.5" /> Back</Button>
         <Button variant="outline" onClick={() => save("Draft")}>Save Draft</Button>

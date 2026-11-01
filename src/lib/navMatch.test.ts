@@ -30,3 +30,15 @@ describe('activeNavTarget', () => {
     expect(at('', '/nowhere')).toBeUndefined();
   });
 });
+
+describe('Cash flow in the Money menu (Phase 29)', () => {
+  it('highlights "Cash flow" on the Cash Flow Tracker, with the real menu items and aliases', async () => {
+    const { groups, topItems, bottomItems, navAliases, CASH_FLOW_TO } = await import('@/components/shell/navItems');
+    const all = [...topItems, ...groups.flatMap((g) => g.items), ...bottomItems].map((i) => i.to);
+    const active = (search: string) => activeNavTarget(all, '/business-tools', search, navAliases);
+    expect(active('?tool=cash-flow-tracker')).toBe(CASH_FLOW_TO);
+    expect(active('?tool=cash-flow-tracker&x=1')).toBe(CASH_FLOW_TO);
+    expect(active('?tool=business-finance-assistant&tab=quotes')).toBe(INVOICES);
+    expect(active('')).toBe('/business-tools');
+  });
+});

@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { formatCurrencyWithLocale } from '@/utils/currencyUtils';
+import CategorySelect from '@/components/cashflow/CategorySelect';
+import { loadCustomCategories, saveCustomCategories, type CustomCategories } from '@/lib/cashFlowCategories';
 
 interface CashFlowEntry {
   id: string;
@@ -18,14 +20,7 @@ interface CashFlowEntry {
   date: Date;
 }
 
-const incomeCategories = [
-  'Sales Revenue', 'Service Revenue', 'Investment', 'Loan', 'Grant', 'Other Income'
-];
-
-const expenseCategories = [
-  'Office Rent', 'Marketing', 'Software/Tools', 'Utilities', 'Salaries', 'Travel',
-  'Equipment', 'Legal/Professional', 'Insurance', 'Other Expenses'
-];
+// Phase 29: categories live in src/lib/cashFlowCategories.ts (fuller UK lists, groups, your own categories).
 
 const STORAGE_KEY = 'cashFlowTracker.entries.v1';
 
@@ -58,6 +53,8 @@ const CashFlowTracker = () => {
     amount: number;
     date: string;
   } | null>(null);
+  const [customCategories, setCustomCategories] = useState<CustomCategories>(loadCustomCategories);
+  const updateCustom = (next: CustomCategories) => { setCustomCategories(next); saveCustomCategories(next); };
   const { toast } = useToast();
   const { settings } = useUserSettings();
   const currencyCode = settings?.currency_code || 'USD';
@@ -259,16 +256,8 @@ const CashFlowTracker = () => {
                 </Button>
               </div>
 
-              <select
-                className="w-full p-2 text-sm border border-input bg-background rounded-md"
-                value={newEntry.category}
-                onChange={(e) => setNewEntry(p => ({ ...p, category: e.target.value }))}
-              >
-                <option value="">Select category</option>
-                {(newEntry.type === 'income' ? incomeCategories : expenseCategories).map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
+              <CategorySelect id="cf-new-category" type={newEntry.type} value={newEntry.category}
+                onChange={(category) => setNewEntry(p => ({ ...p, category }))} custom={customCategories} onCustomChange={updateCustom} />
 
               <Input placeholder="Description" value={newEntry.description} onChange={(e) => setNewEntry(p => ({ ...p, description: e.target.value }))} className="text-sm" />
               <Input type="number" placeholder="Amount" value={newEntry.amount || ''} onChange={(e) => setNewEntry(p => ({ ...p, amount: parseFloat(e.target.value) || 0 }))} className="text-sm" />
@@ -312,16 +301,8 @@ const CashFlowTracker = () => {
                               <Minus className="h-3 w-3 mr-1" />Expense
                             </Button>
                           </div>
-                          <select
-                            className="w-full p-2 text-sm border border-input bg-background rounded-md"
-                            value={editDraft.category}
-                            onChange={(e) => setEditDraft(d => d && ({ ...d, category: e.target.value }))}
-                          >
-                            <option value="">Select category</option>
-                            {(editDraft.type === 'income' ? incomeCategories : expenseCategories).map(cat => (
-                              <option key={cat} value={cat}>{cat}</option>
-                            ))}
-                          </select>
+                          <CategorySelect id={`cf-edit-category-${entry.id}`} type={editDraft.type} value={editDraft.category}
+                            onChange={(category) => setEditDraft(d => d && ({ ...d, category }))} custom={customCategories} onCustomChange={updateCustom} />
                           <Input value={editDraft.description} onChange={(e) => setEditDraft(d => d && ({ ...d, description: e.target.value }))} placeholder="Description" />
                           <Input type="number" value={editDraft.amount || ''} onChange={(e) => setEditDraft(d => d && ({ ...d, amount: parseFloat(e.target.value) || 0 }))} placeholder="Amount" />
                           <Input type="date" value={editDraft.date} onChange={(e) => setEditDraft(d => d && ({ ...d, date: e.target.value }))} />

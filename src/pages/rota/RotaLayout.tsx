@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calendar, Users, Crown, ShieldAlert } from 'lucide-react';
 import { ReactNode } from 'react';
+import PageBackBar from '@/components/shell/PageBackBar';
 
 export default function RotaLayout({ children }: { children: ReactNode }) {
   const { isAdmin, orgLoading, isRotaPremium, employees } = useRota();
@@ -16,6 +17,8 @@ export default function RotaLayout({ children }: { children: ReactNode }) {
 
   if (!isAdmin) {
     return (
+      <>
+      <PageBackBar title="Employee rota" />
       <div className="max-w-2xl mx-auto p-6">
         <Alert>
           <ShieldAlert className="h-4 w-4" />
@@ -24,6 +27,7 @@ export default function RotaLayout({ children }: { children: ReactNode }) {
           </AlertDescription>
         </Alert>
       </div>
+      </>
     );
   }
 
@@ -35,6 +39,8 @@ export default function RotaLayout({ children }: { children: ReactNode }) {
   const overLimit = !isRotaPremium && employees.filter(e => e.is_active).length >= PREVIEW_EMPLOYEE_LIMIT;
 
   return (
+    <>
+    <PageBackBar title="Employee rota" />
     <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
@@ -74,5 +80,6 @@ export default function RotaLayout({ children }: { children: ReactNode }) {
 
       {children}
     </div>
+    </>
   );
 }

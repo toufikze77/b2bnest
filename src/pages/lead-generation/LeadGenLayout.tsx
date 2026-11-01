@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Target } from "lucide-react";
 import { seedIfEmpty } from "@/lib/leadGen";
 import { cn } from "@/lib/utils";
+import PageBackBar from "@/components/shell/PageBackBar";
 
 const tabs = [
   { to: "/lead-generation", label: "Overview", end: true },
@@ -12,13 +13,15 @@ const tabs = [
   { to: "/lead-generation/import", label: "Import" },
 ];
 
-interface Props { children: ReactNode; title?: string; subtitle?: string; right?: ReactNode; }
+/** showBackBar: the form and page builders have their own "back to the list" button, so they turn the bar off (Phase 29). */
+interface Props { children: ReactNode; title?: string; subtitle?: string; right?: ReactNode; showBackBar?: boolean; }
 
-export default function LeadGenLayout({ children, title = "Lead Generation", subtitle = "Capture, score and convert leads — automatically added to your CRM", right }: Props) {
+export default function LeadGenLayout({ children, title = "Lead Generation", subtitle = "Capture, score and convert leads — automatically added to your CRM", right, showBackBar = true }: Props) {
   useEffect(() => { seedIfEmpty(); }, []);
   const { pathname } = useLocation();
   return (
     <div className="min-h-screen bg-background">
+      {showBackBar && <PageBackBar title="Lead generation" />}
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">

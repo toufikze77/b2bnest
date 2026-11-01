@@ -1,11 +1,14 @@
 import {
-  BarChart3, Bot, BriefcaseBusiness, CalendarDays, CircleDollarSign, FileText, FolderKanban, Home, LayoutGrid, LayoutTemplate, LifeBuoy, ListChecks, NotebookPen, Plug, Receipt, Settings, Sparkles, Target, Users, UsersRound, WandSparkles,
+  BarChart3, Bot, BriefcaseBusiness, CalendarDays, CircleDollarSign, FileText, FolderKanban, Home, LayoutGrid, LayoutTemplate, LifeBuoy, ListChecks, NotebookPen, Plug, Receipt, Settings, Sparkles, Target, TrendingUp, Users, UsersRound, WandSparkles,
 } from 'lucide-react';
+import type { NavAlias } from '@/lib/navMatch';
 
 /**
  * Sidebar menu (Option B). Every item points at an existing route. The phone "More" button opens
  * this same menu. Business overview sits directly under Dashboard (Phase 4).
  */
+export const CASH_FLOW_TO = '/business-tools?tool=cash-flow-tracker';
+
 export const topItems = [
   { label: 'Dashboard', to: '/dashboard', icon: Home },
   { label: 'Business overview', to: '/business-overview', icon: BarChart3 },
@@ -32,9 +35,21 @@ export const groups = [
     { label: 'Invoices & quotes', to: '/business-tools?tool=business-finance-assistant&tab=invoices', icon: FileText },
     { label: 'Expenses', to: '/business-tools?tool=business-finance-assistant&tab=expenses', icon: Receipt },
     { label: 'Finance', to: '/business-tools?tool=business-finance-assistant&tab=dashboard', icon: CircleDollarSign },
+    // Phase 29: the Cash Flow Tracker belongs with the money tools.
+    { label: 'Cash flow', to: CASH_FLOW_TO, icon: TrendingUp },
   ] },
   { label: 'Team', items: [{ label: 'Employee rota', to: '/rota', icon: UsersRound }] },
 ];
+/**
+ * Menu items that also light up for a wider set of pages than their own link: any tab of the finance tool highlights
+ * "Invoices & quotes" (unless another item links to that exact tab), and the Cash Flow Tracker highlights "Cash flow"
+ * whatever else is in the address (it beats "All business tools", which matches /business-tools only).
+ */
+export const navAliases: NavAlias[] = [
+  { to: '/business-tools?tool=business-finance-assistant&tab=invoices', alsoMatches: '/business-tools?tool=business-finance-assistant' },
+  { to: CASH_FLOW_TO, alsoMatches: CASH_FLOW_TO },
+];
+
 /** Leaves the app for the public website. Kept out of the in-app targets, so it is never shown as the current page. */
 export const homeItem = { label: 'B2BNEST home', to: '/', icon: Home };
 

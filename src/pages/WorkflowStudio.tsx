@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import PageBackBar from '@/components/shell/PageBackBar';
 import { ArrowDown, ArrowUp, BookOpen, CheckCircle2, LayoutTemplate, Loader2, MousePointerClick, PauseCircle, Play, Plus, Save, Trash2, XCircle, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { GUIDE_PATH } from '@/lib/workflowGuide';
@@ -142,6 +143,8 @@ const WorkflowStudio = () => {
   };
 
   return (
+    <>
+    <PageBackBar title="Workflows" />
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">Workflows</h1>
@@ -314,6 +317,7 @@ const WorkflowStudio = () => {
       <RunDialog open={runOpen} name={name} steps={steps} replyTo={replyToAddress(user)} onCancel={() => setRunOpen(false)} onConfirm={confirmRun} />
       <TemplatePicker open={pickerOpen} onClose={() => setPickerOpen(false)} onUse={useTemplate} />
     </div>
+    </>
   );
 };
 

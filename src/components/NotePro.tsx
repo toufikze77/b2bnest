@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import PageBackBar from '@/components/shell/PageBackBar';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,10 +31,9 @@ import {
   CheckSquare,
   Palette,
   FileCode,
-  Home,
-  ArrowLeft
+  Home
 } from "lucide-react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { ReminderBadge, ReminderField } from "@/components/note-pro/Reminder";
 import { notesApi, type NotesWrites } from "@/lib/notesApi";
 
@@ -65,7 +65,6 @@ interface Category {
 }
 
 export default function NotePro() {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
@@ -395,22 +394,15 @@ export default function NotePro() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      {/* Phase 29: one back control (the old icon button stepped back in browser history, which could leave the website). */}
+      <PageBackBar title="NotePro" />
+      <div className="max-w-7xl mx-auto p-8">
         {/* Header */}
         <div className="bg-gradient-to-r from-primary via-primary/90 to-primary/80 text-primary-foreground rounded-2xl p-5 sm:p-8 mb-6 shadow-lg">
           {/* Wraps: on narrow screens the actions move under the title instead of pushing the page wider. */}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex min-w-0 flex-[1_1_20rem] items-center gap-4">
-              <Button
-                variant="secondary"
-                size="icon"
-                onClick={() => navigate(-1)}
-                className="h-11 w-11 shrink-0"
-                aria-label="Back"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
               <div className="min-w-0">
                 <h1 className="text-2xl sm:text-3xl font-bold mb-2 break-words">NotePro - Professional Note Taking</h1>
                 <p className="opacity-90">Organize your thoughts, ideas, and tasks in one place</p>
