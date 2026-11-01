@@ -58,7 +58,7 @@ export default function PageBuilder() {
   };
 
   return (
-    <LeadGenLayout title={id ? "Edit Page" : "New Landing Page"} subtitle="Build a one-page lead capture site"
+    <LeadGenLayout showBackBar={false} title={id ? "Edit Page" : "New Landing Page"} subtitle="Build a one-page lead capture site"
       right={<div className="flex gap-2">
         <Button variant="outline" onClick={() => navigate("/lead-generation/pages")}><ArrowLeft className="h-4 w-4 mr-1.5" /> Back</Button>
         <Button variant="outline" onClick={() => save("Draft")}>Save Draft</Button>

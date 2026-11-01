@@ -19,3 +19,11 @@ describe('sidebar menu order', () => {
     expect(logoTarget('/dashboard')).toEqual({ to: '/', label: 'Go to home page' });
   });
 });
+
+describe('Money group (Phase 29)', () => {
+  it('has a "Cash flow" item linking to the Cash Flow Tracker, after Invoices, Expenses and Finance', () => {
+    const money = groups.find((g) => g.label === 'Money')!;
+    expect(money.items.map((i) => i.label)).toEqual(['Invoices & quotes', 'Expenses', 'Finance', 'Cash flow']);
+    expect(money.items.find((i) => i.label === 'Cash flow')!.to).toBe('/business-tools?tool=cash-flow-tracker');
+  });
+});

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, CheckSquare, Shield, Lightbulb, Zap, ArrowLeft, Building2, Home, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, BarChart, File, Globe, CreditCard, Layout, Mail, Megaphone, Quote, Receipt, Eye, Download, Star, Tag, Trophy, Link2, Calendar as CalIcon, Filter, ArrowRight, Flame, Zap as ZapIcon } from 'lucide-react';
+import { Calculator, CheckSquare, Shield, Lightbulb, Zap, Building2, FileText, KanbanSquare, Users, ListTodo, Sparkles, QrCode, Clock, TrendingUp, Target, BarChart, File, Globe, CreditCard, Layout, Mail, Megaphone, Quote, Receipt, Eye, Download, Star, Tag, Trophy, Link2, Calendar as CalIcon, Filter, ArrowRight, Flame, Zap as ZapIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavoriteTools } from '@/hooks/useFavoriteTools';
+import PageBackBar from '@/components/shell/PageBackBar';
 import { authUrlWithNext } from '@/lib/onboarding';
 import SubscriptionUpgrade from '@/components/SubscriptionUpgrade';
 import CostCalculator from '@/components/CostCalculator';
@@ -34,47 +35,37 @@ import BusinessToolsSEO from '@/components/BusinessToolsSEO';
 
 type ToolType = 'overview' | 'notepro' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'qr-code-generator' | 'coupon-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'customer-survey-builder' | 'business-finance-assistant' | 'currency-converter' | 'hmrc-integration' | 'workflow-studio' | 'lead-generation' | 'employee-rota';
 
-type FilterType = 'all' | 'premium' | 'favorites' | 'free';
+type FilterType = 'all' | 'premium' | 'favorites' | 'free' | 'finance';
+
+/** Phase 29: money tools, shown under the Finance filter (the Cash Flow Tracker is in the Money menu group too). */
+const FINANCE_TOOLS = ['business-finance-assistant', 'cash-flow-tracker', 'currency-converter', 'cost-calculator', 'roi-calculator', 'hmrc-integration'];
 
 const BusinessTools = () => {
-  const getInitialTool = (): ToolType => {
-    if (typeof window === 'undefined') return 'overview';
-    const urlParams = new URLSearchParams(window.location.search);
-    const toolParam = urlParams.get('tool') as ToolType | null;
-    const locationState = window.history.state?.usr;
-    const selectedTool = locationState?.selectedTool as ToolType | undefined;
+  // Phase 29: the address bar (React Router) is the single source of truth for which tool is open.
+  const location = useLocation();
+  const toolFromLocation = (): ToolType => {
+    const toolParam = new URLSearchParams(location.search).get('tool') as ToolType | null;
+    const selectedTool = (location.state as { selectedTool?: ToolType } | null)?.selectedTool;
     // The address bar wins: history state survives a refresh and could reopen a different tool.
     return toolParam || selectedTool || 'overview';
   };
-
-  const [currentTool, setCurrentToolState] = useState<ToolType>(getInitialTool);
+  const [currentTool, setCurrentToolState] = useState<ToolType>(toolFromLocation);
   const [filter, setFilter] = useState<FilterType>('all');
   const navigate = useNavigate();
   const { isPremium } = useSubscription();
   const { user } = useAuth();
   const { favorites, toggleFavorite, isFavorited } = useFavoriteTools();
 
+  // Phase 29: a normal React Router push (no hand-made history entries), so Back and Forward stay inside the app.
   const setCurrentTool = (tool: ToolType) => {
-    setCurrentToolState(tool);
-    const url = new URL(window.location.href);
-    if (tool === 'overview') {
-      url.searchParams.delete('tool');
-    } else {
-      url.searchParams.set('tool', tool);
-    }
-    window.history.pushState(window.history.state, '', url.toString());
+    const params = new URLSearchParams(location.search);
+    if (tool === 'overview') params.delete('tool'); else params.set('tool', tool);
+    const search = params.toString();
+    navigate({ pathname: '/business-tools', search: search ? `?${search}` : '' });
     window.scrollTo({ top: 0, behavior: 'auto' });
   };
 
-  // Sync state with browser back/forward navigation
-  useEffect(() => {
-    const onPop = () => setCurrentToolState(getInitialTool());
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
-  }, []);
-
-  // Sync when the side menu links to a tool while already on this page
-  const location = useLocation();
+  // The tool follows the address bar (menu links, Back/Forward, opening a link directly).
   useEffect(() => {
     const toolParam = new URLSearchParams(location.search).get('tool') as ToolType | null;
     setCurrentToolState(toolParam || 'overview');
@@ -313,6 +304,7 @@ const BusinessTools = () => {
 
   const filteredTools = tools.filter(tool => {
     if (filter === 'premium') return tool.isPremium;
+    if (filter === 'finance') return FINANCE_TOOLS.includes(tool.id);
     if (filter === 'free') return !tool.isPremium;
     if (filter === 'favorites') return isFavorited(tool.id);
     return true;
@@ -357,12 +349,6 @@ const BusinessTools = () => {
                     className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                   >
                     Sign In / Sign Up
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setCurrentTool('overview')}
-                  >
-                     View All Tools
                   </Button>
                 </div>
               </CardContent>
@@ -439,14 +425,6 @@ const BusinessTools = () => {
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">
                 <h1 className="text-3xl font-bold">Business Tools</h1>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/')}
-                  className="flex items-center gap-2"
-                >
-                  <Home className="h-4 w-4" />
-                  Go Back Home
-                </Button>
               </div>
               <p className="text-gray-600 text-lg">
                 Comprehensive tools to help you start, manage, and grow your business with confidence.
@@ -474,6 +452,13 @@ const BusinessTools = () => {
                   onClick={() => setFilter('premium')}
                 >
                   Premium Tools ({tools.filter(t => t.isPremium).length})
+                </Button>
+                <Button
+                  variant={filter === 'finance' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setFilter('finance')}
+                >
+                  Finance ({tools.filter(t => FINANCE_TOOLS.includes(t.id)).length})
                 </Button>
                 {user && (
                   <Button
@@ -773,30 +758,9 @@ const BusinessTools = () => {
     <div className="min-h-full">
       <BusinessToolsSEO />
       {currentTool !== 'overview' && !ownFrame && (
-        <div className="sticky top-16 z-10 bg-surface/95 backdrop-blur border-b border-border">
-          <div className="max-w-6xl mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <Button
-                variant="outline"
-                onClick={() => setCurrentTool('overview')}
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back to Tools
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => navigate('/')}
-                className="flex items-center gap-2"
-              >
-                <Home className="h-4 w-4" />
-                Go Back Home
-              </Button>
-            </div>
-          </div>
-        </div>
+        <PageBackBar title={tools.find((t) => t.id === currentTool)?.title ?? 'Business tool'} />
       )}
-      
+
       <div className={ownFrame ? undefined : 'py-8'}>
         {renderTool()}
       </div>

@@ -21,13 +21,13 @@ import {
   SidebarMenuItem, SidebarProvider, SidebarRail, SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
-import { activeNavTarget, matchesLocation, NavAlias } from '@/lib/navMatch';
+import { activeNavTarget, matchesLocation } from '@/lib/navMatch';
 import { GlobalCommand } from './GlobalCommand';
 import { NotificationsPanel } from './NotificationsPanel';
 import { MobileTabBar } from './MobileTabBar';
 import TrialBanner from '@/components/access/TrialBanner';
 import ProtectAccountBanner from '@/components/twoStep/ProtectAccountBanner';
-import { bottomItems, groups, homeItem, logoTarget, topItems } from './navItems';
+import { bottomItems, groups, homeItem, logoTarget, navAliases, topItems } from './navItems';
 
 // Option B navigation. Every item points at an existing route.
 const MARK_REVERSED = '/brand/svg/b2bnest-mark-reversed.svg';
@@ -39,8 +39,7 @@ const navItem = cn(
   "data-[active=true]:before:absolute data-[active=true]:before:inset-y-1.5 data-[active=true]:before:left-0 data-[active=true]:before:w-1 data-[active=true]:before:rounded-r-full data-[active=true]:before:bg-nav-marker data-[active=true]:before:content-['']",
 );
 
-// Any tab of the finance tool highlights "Invoices & quotes", unless another item links to that exact tab.
-const navAliases: NavAlias[] = [{ to: '/business-tools?tool=business-finance-assistant&tab=invoices', alsoMatches: '/business-tools?tool=business-finance-assistant' }];
+// Menu highlight aliases (Invoices & quotes for every finance tab, Cash flow): see navItems.ts.
 
 const allTargets = [...topItems.map((i) => i.to), ...groups.flatMap((g) => g.items.map((i) => i.to)), ...bottomItems.map((i) => i.to)];
 
