@@ -45,7 +45,7 @@ const FinancialToolsGuide = () => {
               <div>
                 <h3 className="font-semibold mb-2">Setting Up Cash Flow Tracking</h3>
                 <ol className="list-decimal list-inside text-muted-foreground space-y-2 ml-4">
-                  <li>Navigate to Business Tools → Cash Flow Tracker</li>
+                  <li>Open Money → Cash flow in the menu (or Business Tools → Cash Flow Tracker)</li>
                   <li>Add each payment in or out by hand: amount, description and a category from the list</li>
                   <li>Edit or delete an entry at any time</li>
                   <li>Bank accounts are not connected and nothing is imported automatically</li>
@@ -57,7 +57,7 @@ const FinancialToolsGuide = () => {
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
                   <li>30-day summary: money in, money out and net flow</li>
                   <li>Top categories for income and for expenses</li>
-                  <li>Fixed income and expense categories (for example Sales Revenue, Office Rent, Software/Tools)</li>
+                  <li>A longer list of UK income and expense categories (for example Sales Revenue, Office Rent, HMRC: VAT), plus your own categories</li>
                   <li>No charts, forecasts, budgets, recurring entries or exports yet</li>
                 </ul>
               </div>

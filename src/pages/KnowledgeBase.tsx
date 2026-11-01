@@ -51,7 +51,7 @@ const KnowledgeBase = () => {
         { title: 'Invoice Generator Guide', description: 'Create professional invoices in minutes', readTime: '6 min' },
         { title: 'CRM System Tutorial', description: 'Managing contacts, deals, and sales pipeline', readTime: '10 min' },
         { title: 'Project Management', description: 'Using tasks, timelines, and collaboration tools', readTime: '8 min' },
-        { title: 'Contract Generator', description: 'Create professional contracts with AI assistance', readTime: '5 min' },
+        { title: 'Contract Generator', description: 'AI-drafted UK contracts and legal notices to check with a solicitor', readTime: '5 min' },
         { title: 'Time Tracking', description: 'Track billable hours and generate reports', readTime: '4 min' }
       ]
     },
@@ -77,7 +77,7 @@ const KnowledgeBase = () => {
       icon: DollarSign,
       color: 'bg-yellow-500',
       articles: [
-        { title: 'Cash Flow Tracking', description: 'Monitor income and expenses in real-time', readTime: '7 min' },
+        { title: 'Cash Flow Tracking', description: 'Money in and out over the last 30 days, kept in this browser', readTime: '7 min' },
         { title: 'ROI Calculator', description: 'Calculate return on investment for projects', readTime: '5 min' },
         { title: 'Expense Management', description: 'Track and categorize business expenses', readTime: '6 min' },
         { title: 'HMRC VAT Returns', description: 'Preview VAT returns (HMRC filing is not available yet)', readTime: '10 min' },

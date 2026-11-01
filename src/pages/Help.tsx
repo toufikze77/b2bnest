@@ -5,6 +5,7 @@ import { Mail, Book, HelpCircle, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SEOHead from '@/components/SEOHead';
 import { GUIDE_PATH, WORKFLOW_FAQS } from '@/lib/workflowGuide';
+import { TOOL_FAQS } from '@/lib/helpFaqs';
 
 const Help = () => {
   const faqs = [
@@ -64,6 +65,8 @@ const Help = () => {
       question: "What is the AI Business Advisor?",
       answer: "The AI Business Advisor in AI Studio answers business questions using an AI model and uses your monthly AI credits. Like any AI, it can be wrong, so check anything important. The help assistant on the homepage is different: it gives fixed answers to common questions and is not an AI."
     },
+    // Phase 30b: tools, documents, two-step sign-in and sign-in (src/lib/helpFaqs.ts).
+    ...TOOL_FAQS,
   ];
 
   const resources = [

@@ -1,7 +1,9 @@
 // Phase 20: the assistant's platform knowledge can't state a price, credit amount or workflow plan that disagrees with
 // the plan catalogue (_shared/plans.ts) or the workflow rule (_shared/workflow-access.ts).
 import { assert, assertEquals } from "https://deno.land/std@0.190.0/testing/asserts.ts";
-import { platformKnowledge, NON_WORKFLOW_PLAN_NAMES, WORKFLOW_PLAN_NAMES } from "./knowledge.ts";
+import { LEGAL_DOCUMENT_CREDITS, platformKnowledge, NON_WORKFLOW_PLAN_NAMES, WORKFLOW_PLAN_NAMES } from "./knowledge.ts";
+import { CREDITS_PER_DOCUMENT } from "../generate-legal-document/handler.ts";
+import { DOC_TYPES, JURISDICTIONS } from "../generate-legal-document/catalogue.ts";
 import { PLAN_CATALOG } from "../_shared/plans.ts";
 import { workflowsIncluded } from "../_shared/workflow-access.ts";
 
@@ -22,9 +24,13 @@ Deno.test("every price in the text is a catalogue price for that plan, and every
   }
 });
 
-Deno.test("every 'N AI credits' figure is a catalogue credit allowance", () => {
+Deno.test("every 'N AI credits' figure is a catalogue credit allowance, or the cost of one legal document", () => {
   const allowed = new Set(plans.map((p) => p.aiCreditLimit));
-  for (const m of text.matchAll(/([\d,]+) AI credits/g)) assert(allowed.has(Number(m[1].replace(/,/g, ""))), m[0]);
+  for (const m of text.matchAll(/([\d,]+) AI credits( a month)?/g)) {
+    const n = Number(m[1].replace(/,/g, ""));
+    if (m[2]) assert(allowed.has(n), m[0]);
+    else assert(allowed.has(n) || n === CREDITS_PER_DOCUMENT, m[0]);
+  }
 });
 
 Deno.test("workflow plans agree with the server rule", () => {
@@ -49,4 +55,65 @@ Deno.test("Phase 21: no 'coming soon' promises, and COLLABORATION says only what
   assertEquals(/coming soon|team chat \(|video conferenc/i.test(text), false);
   for (const gone of ["Comments and mentions", "File sharing", "Real-time collaboration", "Team workspaces"]) assertEquals(text.includes(gone), false, gone);
   assert(text.includes("There is no team chat, no video calls, no @mentions and no shared file storage"));
+});
+
+// Phase 30b: what the assistant says about Phases 24-30 must match the code.
+const section = (heading: string) => {
+  const i = text.indexOf(`## ${heading}`);
+  assert(i >= 0, heading);
+  const next = text.indexOf("\n## ", i + 3);
+  return text.slice(i, next < 0 ? undefined : next);
+};
+
+Deno.test("Phase 30b: contracts are written by AI and cost the same credits as the function", () => {
+  assertEquals(LEGAL_DOCUMENT_CREDITS, CREDITS_PER_DOCUMENT);
+  const legal = section("CONTRACTS AND LEGAL NOTICES");
+  assert(legal.includes("The AI drafts the document from the details the user types in."));
+  assert(legal.includes(`Each document uses ${CREDITS_PER_DOCUMENT} AI credits. If the AI fails or doesn't produce a usable document, the credits are given back.`));
+  assert(text.includes(`Each contract or legal notice uses ${CREDITS_PER_DOCUMENT} AI credits`));
+  for (const j of JURISDICTIONS) assert(legal.includes(j.label), j.label);
+  assert(legal.includes("[Company number]"));
+  assert(legal.includes("PDF, Word (.docx) or Markdown (.md)"));
+  assert(legal.includes("The last 10 documents of each generator are saved in that browser only"));
+});
+
+Deno.test("Phase 30b: the document type lists are exactly the catalogue", () => {
+  const legal = section("CONTRACTS AND LEGAL NOTICES");
+  const listed = [...legal.matchAll(/^ {2}- ([^:]+): (.+)$/gm)].flatMap((m) => m[2].split("; ").map((label) => ({ group: m[1], label })));
+  assertEquals(listed, DOC_TYPES.map((d) => ({ group: d.group, label: d.label })));
+});
+
+Deno.test("Phase 30b: never claims legal advice, compliance or a lawyer's review", () => {
+  assert(text.includes("It is not legal advice: a qualified solicitor should check a document before anyone relies on it."));
+  for (const line of text.split("\n")) {
+    if (/legal advice/i.test(line)) assert(/not legal advice/i.test(line), line);
+  }
+  // Instructions to the assistant ("Never say ... is compliant") are the only place these words may appear.
+  const claims = text.split("\n").map((l) => l.replace(/Never say[^.]*\./g, "")).join("\n");
+  assertEquals(/(document|contract|policy|notice)s? (is|are) (legally )?(compliant|approved|lawyer-approved|legally binding)/i.test(claims), false);
+  assertEquals(/GDPR[- ]compliant|guaranteed compliance|solicitor-approved/i.test(claims), false);
+  assert(text.includes("Never say a generated document is compliant, approved or checked by a lawyer."));
+});
+
+Deno.test("Phase 30b: QR codes are real, local-only tools say so, old false lines are gone", () => {
+  const tools = section("BUSINESS TOOLS");
+  assert(tools.includes("makes real, scannable QR codes"));
+  for (const t of ["web address", "text", "email", "phone number", "SMS", "WhatsApp", "Wi-Fi", "contact card (vCard)", "PNG and SVG"]) assert(tools.includes(t), t);
+  assert(tools.includes("Generate, Validate, Manage and Import / Export tabs, with CSV import and export. Coupons are saved in that browser only."));
+  assert(tools.includes("Money → Cash flow. Entries are saved in that browser only."));
+  assert(tools.includes("Using a tool, a template or AI Studio, and the dashboard, needs signing in."));
+  assert(tools.includes("Back button and a breadcrumb"));
+  assert(text.includes("\"You don't have a paid plan yet.\" and a View plans button"));
+  for (const gone of ["- Contract generator", "- Privacy policy generator", "- Cash flow tracking", "Business cards designer", "Email signature generator",
+    "Secure file storage", "Document sharing and collaboration", "File attachments and document management"]) {
+    assertEquals(text.includes(gone), false, gone);
+  }
+});
+
+Deno.test("Phase 30b: two-step sign-in is described as built", () => {
+  const sec = section("SECURITY & COMPLIANCE");
+  for (const t of ["optional for each user (Settings → Security)", "authenticator app", "required for platform administrators to open the Admin area",
+    "There is no SMS option", "a platform administrator checks it is them and then resets their two-step sign-in", "There is no self-service reset"]) {
+    assert(sec.includes(t), t);
+  }
 });
