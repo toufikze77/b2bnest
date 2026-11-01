@@ -195,19 +195,19 @@ const BusinessTools = () => {
     {
       id: 'contract-generator' as ToolType,
       title: 'Contract Generator',
-      description: 'Generate professional contracts and agreements',
+      description: 'AI-drafted UK contracts to check with a solicitor (2 AI credits each)',
       icon: FileText,
       color: 'bg-purple-700',
-      benefits: ['Professional templates', 'Multiple contract types', 'Legal framework'],
+      benefits: ['26 UK contract types', 'England and Wales, Scotland or Northern Ireland', 'Word, PDF and Markdown downloads'],
       isPremium: true
     },
     {
       id: 'privacy-policy-generator' as ToolType,
-      title: 'Privacy Policy Generator',
-      description: 'Draft a privacy policy to adapt and check',
+      title: 'Privacy & Legal Notices',
+      description: 'AI-drafted UK privacy policies and notices to check (2 AI credits each)',
       icon: Shield,
       color: 'bg-green-700',
-      benefits: ['Covers GDPR topics', 'Customizable sections', 'Legal protection'],
+      benefits: ['7 UK notices and policies', 'UK GDPR and Data Protection Act 2018 topics', 'Word, PDF and Markdown downloads'],
       isPremium: true
     },
     {

@@ -89,3 +89,7 @@ verify_jwt = true
 # Phase 13: trial-ending emails. Service-role callers only; sends nothing while trial_email_settings.enabled is false.
 [functions.trial-email-sender]
 verify_jwt = true
+
+# Phase 30: AI contracts and legal notices (2 AI credits each). Caller's JWT required; the function checks access and credits.
+[functions.generate-legal-document]
+verify_jwt = true
