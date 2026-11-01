@@ -30,6 +30,7 @@ vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }));
 vi.mock('@/hooks/useUserSettings', () => ({ useUserSettings: () => ({ settings: { currency_code: 'GBP' } }) }));
 
 import Dashboard from './Dashboard';
+import { aiCreditsMock } from '@/test/aiCreditsMock';
 
 const today = isoDay(new Date());
 const eqVal = (c: Call, col: string) => c.filters.find((f) => f[0] === 'eq' && f[1] === col)?.[2];
@@ -341,5 +342,15 @@ describe('Dashboard', () => {
       expect(eqVal(c, 'organization_id')).toBe('org-1');
       expect(eqVal(c, 'shift_date')).toBe(today);
     });
+  });
+
+  it('Phase 30c: shows the AI credit card near the top, before the company summary', async () => {
+    aiCreditsMock.state.credits = { remaining: 42, limit: 250, resetDate: '2026-12-01T00:00:00Z', tier: 'Business', notStarted: false };
+    render(ui());
+    const card = screen.getByTestId('ai-credits-card');
+    expect(card).toHaveTextContent('42 of 250 AI credits left');
+    const summary = screen.getByLabelText('Company summary');
+    expect(card.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await screen.findByText('Nothing needs attention');
   });
 });

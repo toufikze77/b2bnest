@@ -21,6 +21,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useSubscription } from '@/hooks/useSubscription';
+import AICreditsDisplay from '@/components/AICreditsDisplay';
+import { useAiCreditsUpdater } from '@/hooks/useAiCredits';
 import SubscriptionUpgrade from '@/components/SubscriptionUpgrade';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,6 +46,7 @@ interface Workspace {
 
 const AIWorkspace = () => {
   const { isPremium, loading } = useSubscription();
+  const updateCredits = useAiCreditsUpdater();
   const { user } = useAuth();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
@@ -280,6 +283,7 @@ const AIWorkspace = () => {
       if (!data || !data.response) {
         throw new Error('No response received from AI');
       }
+      updateCredits(data);
 
       // Parse AI response and create blocks
       const aiContent = data.response;
@@ -467,6 +471,7 @@ const AIWorkspace = () => {
             <p className="text-muted-foreground">
               {workspaces.length} workspace{workspaces.length !== 1 ? 's' : ''} available
             </p>
+            <AICreditsDisplay variant="compact" className="mt-1" />
           </div>
         </div>
         

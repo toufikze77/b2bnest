@@ -12,6 +12,7 @@ import { GUIDE_PATH } from "@/lib/workflowGuide";
 import { authUrlWithNext } from "@/lib/onboarding";
 import Footer from "@/components/Footer";
 import AIBusinessAdvisor from "@/components/ai/AIBusinessAdvisor";
+import AICreditsDisplay from "@/components/AICreditsDisplay";
 import IntelligentAnalytics from "@/components/ai/IntelligentAnalytics";
 import SmartPersonalization from "@/components/ai/SmartPersonalization";
 import SubscriptionUpgrade from "@/components/SubscriptionUpgrade";
@@ -95,6 +96,8 @@ const AIStudio = () => {
             Ask the AI Business Advisor for general strategic advice, and try AI analysis on example figures.
             Connecting your own business data comes later.
           </p>
+          {/* Phase 30c: AI credit balance. */}
+          {user && <AICreditsDisplay variant="compact" className="mt-4 justify-center" />}
         </div>
 
         {/* Feature Grid */}

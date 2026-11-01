@@ -13,3 +13,9 @@ Object.defineProperty(window, "matchMedia", {
     dispatchEvent: () => {},
   }),
 });
+
+// Phase 30c: see src/test/aiCreditsMock.ts.
+import { beforeEach, vi } from "vitest";
+import { aiCreditsMock } from "./aiCreditsMock";
+vi.mock("@/hooks/useAiCredits", async () => (await import("./aiCreditsMock")).mockModule);
+beforeEach(() => aiCreditsMock.reset());

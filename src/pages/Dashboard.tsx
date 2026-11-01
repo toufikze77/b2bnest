@@ -17,6 +17,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/states';
+import AICreditsDisplay from '@/components/AICreditsDisplay';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { ComingUpWidget, ProjectsWidget, RecentWidget, TasksWidget, WorkspacesWidget } from '@/components/dashboard/WorkWidgets';
@@ -181,6 +182,9 @@ const Dashboard = () => {
           )}
           className="mb-0"
         />
+
+        {/* Phase 30c: AI credit balance, near the top (personal, not per company). Details in Settings → Billing. */}
+        <AICreditsDisplay className="max-w-xl" />
 
         {/* Summary row — selected company only */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4" aria-label="Company summary">

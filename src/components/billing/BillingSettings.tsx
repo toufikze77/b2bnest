@@ -11,6 +11,8 @@ import { toast } from '@/hooks/use-toast';
 import { useBillingStatus, poundsText } from '@/hooks/useBillingStatus';
 import { planNameForTier, limitText, SEAT_LIMITS_NOTE } from '@/lib/plans';
 import { useAccess } from '@/hooks/useAccess';
+import AICreditsDisplay from '@/components/AICreditsDisplay';
+import { CREDITS_USAGE_NOTE } from '@/lib/aiCredits';
 import { trialBannerText } from '@/lib/access';
 import { billingKind, NO_PAID_PLAN, PORTAL_UNAVAILABLE, TRIAL_ENDED_TEXT } from '@/lib/billingView';
 import { functionErrorStatus, functionErrorText, isNoCustomer, NO_BILLING_ACCOUNT, readFunctionError } from '@/lib/billingErrors';
@@ -184,6 +186,9 @@ const BillingSettings = () => {
             This account has full access without a plan, so there is nothing to pay.
           </p>
         )}
+
+        {/* Phase 30c: the AI credit balance (get_ai_credits_info). */}
+        <AICreditsDisplay note={CREDITS_USAGE_NOTE} />
 
         <p className="text-xs text-muted-foreground">
           Payments, invoices and cancellations are handled securely by Stripe. Downgrades and cancellations take effect at the end of your paid period.

@@ -104,6 +104,7 @@ Deno.test("Phase 30b: QR codes are real, local-only tools say so, old false line
   assert(tools.includes("Using a tool, a template or AI Studio, and the dashboard, needs signing in."));
   assert(tools.includes("Back button and a breadcrumb"));
   assert(text.includes("\"You don't have a paid plan yet.\" and a View plans button"));
+  assert(text.includes("Users can see their remaining AI credits and reset date on the Dashboard and in Settings → Billing."));
   for (const gone of ["- Contract generator", "- Privacy policy generator", "- Cash flow tracking", "Business cards designer", "Email signature generator",
     "Secure file storage", "Document sharing and collaboration", "File attachments and document management"]) {
     assertEquals(text.includes(gone), false, gone);

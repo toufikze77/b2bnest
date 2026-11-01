@@ -1,107 +1,96 @@
-import React, { useEffect, useState } from 'react';
-import { Zap, TrendingUp } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { toast } from '@/components/ui/use-toast';
+import { RefreshCw, Zap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+import { useAiCredits } from '@/hooks/useAiCredits';
+import { useAccess } from '@/hooks/useAccess';
+import {
+  CREDITS_LOAD_ERROR, creditLevel, creditPercent, creditsLeftLine, NOT_STARTED_LINE, resetLine, TRIAL_LINE, type CreditLevel,
+} from '@/lib/aiCredits';
 
-interface AICreditsInfo {
-  credits_remaining: number;
-  credits_limit: number;
-  reset_date: string;
-  subscription_tier: string;
+interface Props {
+  /** 'card': full panel with a progress bar. 'compact': one line for headers and dialogs. */
+  variant?: 'card' | 'compact';
+  /** An extra line under the card (for example what each feature costs). */
+  note?: string;
+  className?: string;
 }
 
-const AICreditsDisplay = () => {
-  const { user } = useAuth();
-  const [creditsInfo, setCreditsInfo] = useState<AICreditsInfo | null>(null);
-  const [loading, setLoading] = useState(true);
+const BAR: Record<CreditLevel, string> = { ok: 'bg-primary', low: 'bg-warning', critical: 'bg-destructive', none: 'bg-muted-foreground' };
+const TEXT: Record<CreditLevel, string> = { ok: 'text-foreground', low: 'text-warning', critical: 'text-destructive', none: 'text-muted-foreground' };
 
-  useEffect(() => {
-    if (user) {
-      fetchCreditsInfo();
-    }
-  }, [user]);
+/**
+ * Phase 30c: the customer's AI credit balance (src/hooks/useAiCredits.ts). Theme tokens only (dark-mode safe), a skeleton
+ * of the same size while loading, and a quiet error with Retry instead of a toast.
+ */
+export default function AICreditsDisplay({ variant = 'card', note, className }: Props) {
+  const { credits, loading, error, refetch } = useAiCredits();
+  const access = useAccess();
+  const compact = variant === 'compact';
 
-  const fetchCreditsInfo = async () => {
-    try {
-      const { data, error } = await supabase.rpc('get_ai_credits_info');
-      
-      if (error) throw error;
-      
-      setCreditsInfo(data as unknown as AICreditsInfo);
-    } catch (error: any) {
-      console.error('Error fetching AI credits:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load AI credits information',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (loading) {
+    return compact
+      ? <Skeleton className={cn('h-5 w-56', className)} data-testid="ai-credits-loading" />
+      : <Skeleton className={cn('h-[7.5rem] w-full rounded-lg', className)} data-testid="ai-credits-loading" />;
+  }
 
-  if (!user || loading) return null;
+  if (error || !credits) {
+    return (
+      <div className={cn('flex flex-wrap items-center gap-2 text-sm text-muted-foreground', !compact && 'rounded-lg border border-border bg-card p-4', className)} data-testid="ai-credits-error">
+        <span>{CREDITS_LOAD_ERROR}</span>
+        <Button type="button" size="sm" variant="ghost" onClick={() => void refetch()} className="h-7 px-2">
+          <RefreshCw className="mr-1 h-3.5 w-3.5" aria-hidden />Retry
+        </Button>
+      </div>
+    );
+  }
 
-  if (!creditsInfo) return null;
+  const level = creditLevel(credits.remaining, credits.limit);
+  const left = creditsLeftLine(credits);
+  const sub = credits.notStarted
+    ? [access.inTrial ? TRIAL_LINE : null, NOT_STARTED_LINE].filter(Boolean).join('. ')
+    : resetLine(credits.resetDate);
 
-  const percentage = (creditsInfo.credits_remaining / creditsInfo.credits_limit) * 100;
-  const resetDate = new Date(creditsInfo.reset_date).toLocaleDateString();
-  const isLow = percentage < 20;
-  const isCritical = percentage < 10;
+  if (compact) {
+    return (
+      <p className={cn('flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground', className)} data-testid="ai-credits-compact">
+        <Zap className="h-3.5 w-3.5 text-primary" aria-hidden />
+        <span className={cn('font-medium', TEXT[level])}>{left}</span>
+        {sub && <>{' '}<span>· {sub}</span></>}
+      </p>
+    );
+  }
 
+  const pct = creditPercent(credits.remaining, credits.limit);
   return (
-    <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
-      <CardContent className="pt-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Zap className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">AI Credits</h3>
-              <p className="text-xs text-gray-500">Resets on {resetDate}</p>
-            </div>
+    <section className={cn('rounded-lg border border-border bg-card p-4 text-card-foreground', className)} aria-labelledby="ai-credits-title" data-testid="ai-credits-card" data-level={level}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="rounded-md bg-primary/10 p-2"><Zap className="h-4 w-4 text-primary" aria-hidden /></span>
+          <div>
+            <h2 id="ai-credits-title" className="text-sm font-semibold">AI credits</h2>
+            {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
           </div>
-          <Badge 
-            variant={isCritical ? 'destructive' : isLow ? 'secondary' : 'default'}
-            className="text-xs"
-          >
-            {creditsInfo.subscription_tier}
-          </Badge>
         </div>
-
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Remaining</span>
-            <span className="font-semibold text-gray-900">
-              {creditsInfo.credits_remaining} / {creditsInfo.credits_limit}
-            </span>
-          </div>
-          
-          <Progress 
-            value={percentage} 
-            className={`h-2 ${
-              isCritical ? 'bg-red-200' : isLow ? 'bg-yellow-200' : 'bg-blue-200'
-            }`}
-          />
-
-          {isLow && (
-            <div className="flex items-start gap-2 mt-3 p-2 bg-yellow-50 rounded-lg border border-yellow-200">
-              <TrendingUp className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-yellow-800">
-                <p className="font-semibold">Running low on credits!</p>
-                <p>Upgrade your plan for more AI conversations.</p>
-              </div>
-            </div>
-          )}
+        <p className={cn('text-right text-sm font-semibold', TEXT[level])}>{left}</p>
+      </div>
+      {credits.limit > 0 && (
+        <div
+          className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted"
+          role="progressbar"
+          aria-label="AI credits left this month"
+          aria-valuemin={0}
+          aria-valuemax={credits.limit}
+          aria-valuenow={Math.max(0, credits.remaining)}
+          aria-valuetext={left}
+        >
+          <div className={cn('h-full rounded-full transition-all', BAR[level])} style={{ width: `${pct}%` }} />
         </div>
-      </CardContent>
-    </Card>
+      )}
+      {(level === 'low' || level === 'critical') && (
+        <p className={cn('mt-2 text-xs', TEXT[level])}>Running low. Credits reset each month; a bigger plan has more.</p>
+      )}
+      {note && <p className="mt-2 text-xs text-muted-foreground">{note}</p>}
+    </section>
   );
-};
-
-export default AICreditsDisplay;
+}
