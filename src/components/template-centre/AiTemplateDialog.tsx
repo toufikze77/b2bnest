@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useAiCredits, useAiCreditsUpdater } from '@/hooks/useAiCredits';
 import { useAuth } from '@/hooks/useAuth';
 import { parseAiTemplate, toWorkspaceTemplate, type AiTemplate } from '@/lib/aiTemplateSchema';
 import { ConfigState, ERROR_TEXT, generateTemplate, loadAiConfig, type Brief } from '@/services/aiTemplateService';
@@ -27,7 +27,9 @@ const AiTemplateDialog = ({ open, onClose, onCreate }: Props) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { organizationId, organization } = useActiveOrganization();
-  const { ai_credits_remaining, loading: subLoading } = useSubscription();
+  // Phase 30c: the shared balance (get_ai_credits_info), not useSubscription's copy.
+  const { remaining, loading: subLoading } = useAiCredits();
+  const updateCredits = useAiCreditsUpdater();
   const [config, setConfig] = useState<ConfigState | null>(null);
   const [brief, setBrief] = useState<Brief>({ businessPurpose: '', desiredBoards: '', taskStructure: '', kind: 'auto' });
   const [busy, setBusy] = useState(false);
@@ -45,7 +47,8 @@ const AiTemplateDialog = ({ open, onClose, onCreate }: Props) => {
 
   const enabled = config?.state === 'ready' && config.config.paid_generation_enabled && config.config.customer_price_credits != null;
   const price = config?.state === 'ready' ? config.config.customer_price_credits : null;
-  const enough = price != null && ai_credits_remaining >= price;
+  // Unknown balance (couldn't load): the server still checks, so don't block.
+  const enough = price != null && (remaining == null || remaining >= price);
   const briefOk = brief.businessPurpose.trim().length >= 10;
 
   const generate = async () => {
@@ -57,6 +60,7 @@ const AiTemplateDialog = ({ open, onClose, onCreate }: Props) => {
     const res = await generateTemplate(organizationId, newKey(), brief);
     inFlight.current = false;
     setBusy(false);
+    updateCredits(typeof res.creditsRemaining === 'number' ? { credits_remaining: res.creditsRemaining } : null);
     if (!res.ok) {
       setError(ERROR_TEXT[res.error ?? ''] ?? 'Something went wrong. Nothing was charged.');
       return;
@@ -94,7 +98,7 @@ const AiTemplateDialog = ({ open, onClose, onCreate }: Props) => {
         <dl className="grid grid-cols-1 gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm sm:grid-cols-3">
           <div><dt className="text-muted-foreground">Company</dt><dd className="font-medium">{organization?.name ?? 'No company selected'}</dd></div>
           <div><dt className="text-muted-foreground">Cost</dt><dd className="font-medium">{price != null ? `${price} AI credit${price === 1 ? '' : 's'}` : '—'}</dd></div>
-          <div><dt className="text-muted-foreground">Your credits</dt><dd className="font-medium">{subLoading ? '…' : ai_credits_remaining}</dd></div>
+          <div><dt className="text-muted-foreground">Your credits</dt><dd className="font-medium">{subLoading ? '…' : remaining == null ? '—' : remaining.toLocaleString('en-GB')}</dd></div>
         </dl>
         <p className="text-sm text-muted-foreground">
           You're only charged when a valid template is produced. If the AI fails or times out, nothing is charged.

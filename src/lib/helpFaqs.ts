@@ -15,7 +15,7 @@ export const TOOL_FAQS: Faq[] = [
   },
   {
     question: 'How many AI credits does a contract use?',
-    answer: `Each contract or legal notice uses ${CREDITS_PER_DOCUMENT} AI credits from your monthly allowance. If the AI fails or doesn't produce a usable document, the credits are given back. Your remaining credits are shown after each document.`,
+    answer: `Each contract or legal notice uses ${CREDITS_PER_DOCUMENT} AI credits from your monthly allowance. If the AI fails or doesn't produce a usable document, the credits are given back. You can see how many credits you have left, and when they reset, on the Dashboard, in Settings → Billing and on each AI screen.`,
   },
   {
     question: 'Is the generated contract legal advice?',

@@ -16,6 +16,7 @@ vi.mock('@/hooks/use-toast', () => ({ toast: (...a: unknown[]) => st.toast(...a)
 vi.mock('@/integrations/supabase/client', () => ({ supabase: { functions: { invoke: (...a: unknown[]) => st.invoke(...a) } } }));
 
 import BillingSettings from './BillingSettings';
+import { aiCreditsMock } from '@/test/aiCreditsMock';
 
 const fnError = (status: number, body: unknown) => ({ data: null, error: { message: 'Edge Function returned a non-2xx status code', context: { status, json: async () => body } } });
 const show = () => render(<MemoryRouter><BillingSettings /></MemoryRouter>);
@@ -114,5 +115,15 @@ describe('Settings → Billing: paid plan', () => {
     fireEvent.click(screen.getByRole('button', { name: /Manage billing/ }));
     await waitFor(() => expect(st.toast).toHaveBeenCalled());
     expect((st.toast.mock.calls[0][0] as { description: string }).description).toBe('Please try again later.');
+  });
+});
+
+describe('Settings → Billing: AI credits (Phase 30c)', () => {
+  it('shows the credit card with what features cost', () => {
+    aiCreditsMock.state.credits = { remaining: 42, limit: 250, resetDate: '2026-12-01T00:00:00Z', tier: 'Business', notStarted: false };
+    show();
+    expect(screen.getByTestId('ai-credits-card')).toHaveTextContent('42 of 250 AI credits left');
+    expect(screen.getByText('Resets 1 December 2026')).toBeInTheDocument();
+    expect(screen.getByText("Advisor answers use 1 credit, contracts and legal notices use 2. Unused credits don't roll over.")).toBeInTheDocument();
   });
 });

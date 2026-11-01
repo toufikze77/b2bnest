@@ -17,6 +17,14 @@ export {
 export const CREDITS_PER_DOCUMENT = 2;
 export const DEFAULT_JURISDICTION: Jurisdiction = 'england_wales';
 export const CREDIT_COST_TEXT = `Uses ${CREDITS_PER_DOCUMENT} AI credits`;
+
+/** Phase 30c: "Uses 2 AI credits · you have 46 left" (just the cost while the balance is unknown). */
+export const creditLine = (remaining: number | null) =>
+  remaining == null ? CREDIT_COST_TEXT : `${CREDIT_COST_TEXT} · you have ${remaining.toLocaleString('en-GB')} left`;
+
+/** Shown (and Generate disabled) when the balance is known to be below the cost. */
+export const notEnoughCreditsText = (remaining: number, resetLabel: string | null) =>
+  `A document needs ${CREDITS_PER_DOCUMENT} AI credits and you have ${remaining.toLocaleString('en-GB')} left.${resetLabel ? ` ${resetLabel.replace(/^Resets/, 'They reset')}.` : ''}`;
 export const AI_DRAFT_BANNER = 'AI-drafted. Not legal advice. Have a solicitor check it.';
 export const PROGRESS_TEXT = 'Drafting your document… this can take up to a minute.';
 

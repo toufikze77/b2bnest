@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, Copy, Download, FileText, Loader2, Trash2 } from 'lucide-react';
+import { AlertTriangle, Copy, Download, FileText, Loader2, Trash2, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,13 +9,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import LegalMarkdown from '@/components/legal/LegalMarkdown';
 import {
-  AI_DRAFT_BANNER, buildFields, CREDIT_COST_TEXT, creditsRemainingText, DATA_COLLECTED_OPTIONS, DEFAULT_JURISDICTION, docTypeById,
-  fieldLabel, fieldMax, FIELDS, groupedDocTypes, invokeGenerateLegalDocument, JURISDICTIONS, PROGRESS_TEXT,
+  AI_DRAFT_BANNER, buildFields, creditLine, CREDITS_PER_DOCUMENT, DATA_COLLECTED_OPTIONS, DEFAULT_JURISDICTION, docTypeById,
+  fieldLabel, fieldMax, FIELDS, groupedDocTypes, invokeGenerateLegalDocument, JURISDICTIONS, notEnoughCreditsText, PROGRESS_TEXT,
   type DocKind, type FieldId, type GenerateError, type Jurisdiction,
 } from '@/lib/legalDocuments';
 import { buildDocx, buildPdf, documentFileName, downloadBlob, markdownBlob } from '@/lib/legalExport';
 import { deleteHistory, type HistoryEntry, loadHistory, newHistoryId, saveHistory } from '@/lib/legalHistory';
 import { placeholdersIn } from '@/lib/legalMarkdown';
+import { useAiCredits, useAiCreditsUpdater } from '@/hooks/useAiCredits';
+import { resetLine } from '@/lib/aiCredits';
 
 interface Props { kind: DocKind; title: string; intro: string }
 
@@ -34,7 +36,9 @@ export default function LegalDocumentGenerator({ kind, title, intro }: Props) {
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<GenerateError | null>(null);
   const [missing, setMissing] = useState<string[]>([]);
-  const [credits, setCredits] = useState<string | null>(null);
+  const balance = useAiCredits();
+  const updateCredits = useAiCreditsUpdater();
+  const short = balance.remaining != null && balance.remaining < CREDITS_PER_DOCUMENT;
   const [current, setCurrent] = useState<HistoryEntry | null>(null);
   const [text, setText] = useState('');
   const [editing, setEditing] = useState(false);
@@ -45,7 +49,7 @@ export default function LegalDocumentGenerator({ kind, title, intro }: Props) {
   const idp = `legal-${kind}`;
 
   const generate = async () => {
-    if (!doc || running) return;
+    if (!doc || running || short) return;
     const built = buildFields(doc, values, dataCollected);
     setMissing(built.missing);
     setError(null);
@@ -53,7 +57,7 @@ export default function LegalDocumentGenerator({ kind, title, intro }: Props) {
     setRunning(true);
     const r = await invokeGenerateLegalDocument({ kind, docType: doc.id, jurisdiction, fields: built.fields });
     setRunning(false);
-    if (!r.ok) { setError((r as Extract<typeof r, { ok: false }>).error); return; }
+    if (!r.ok) { setError((r as Extract<typeof r, { ok: false }>).error); updateCredits(null); return; }
     const data = (r as Extract<typeof r, { ok: true }>).data;
     const entry: HistoryEntry = {
       id: newHistoryId(), kind, docType: doc.id, label: doc.label, jurisdiction,
@@ -61,7 +65,7 @@ export default function LegalDocumentGenerator({ kind, title, intro }: Props) {
     };
     setHistory(saveHistory(entry));
     setCurrent(entry); setText(data.document); setEditing(false);
-    setCredits(creditsRemainingText(data));
+    updateCredits(data);
   };
 
   const open = (e: HistoryEntry) => { setCurrent(e); setText(e.document); setEditing(false); setError(null); };
@@ -181,13 +185,26 @@ export default function LegalDocumentGenerator({ kind, title, intro }: Props) {
 
           {missing.length > 0 && <p role="alert" className="text-sm text-destructive">Fill in: {missing.join(', ')}.</p>}
 
+          <p className="flex items-center gap-1.5 text-sm text-muted-foreground" data-testid="credits-left">
+            <Zap className="h-3.5 w-3.5 text-primary" aria-hidden />{creditLine(balance.remaining)}
+          </p>
+          {short && (
+            <p id={`${idp}-short`} role="status" className="text-sm text-destructive">
+              {notEnoughCreditsText(balance.remaining!, resetLine(balance.resetDate))}{' '}
+              <Link to="/pricing" className="font-medium text-primary underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring">Compare plans</Link>
+            </p>
+          )}
+          {balance.error && (
+            <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              Couldn't load your credits; the server still checks them when you generate.
+              <Button type="button" size="sm" variant="ghost" className="h-6 px-2" onClick={() => void balance.refetch()}>Retry</Button>
+            </p>
+          )}
           <div className="flex flex-wrap items-center gap-3">
-            <Button type="button" onClick={generate} disabled={running || !doc}>
+            <Button type="button" onClick={generate} disabled={running || !doc || short} aria-describedby={short ? `${idp}-short` : undefined}>
               {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : <FileText className="mr-2 h-4 w-4" aria-hidden />}
               {running ? 'Drafting…' : 'Generate with AI'}
             </Button>
-            <span className="text-sm text-muted-foreground">{CREDIT_COST_TEXT}</span>
-            {credits && <span className="text-sm text-muted-foreground" data-testid="credits-left">{credits}</span>}
           </div>
           {running && <p role="status" className="text-sm text-muted-foreground">{PROGRESS_TEXT}</p>}
           {error && (

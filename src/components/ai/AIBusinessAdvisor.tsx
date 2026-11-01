@@ -8,6 +8,8 @@ import { Brain, Send, TrendingUp, Target, DollarSign, Users } from "lucide-react
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AI_QUESTION_MAX_LENGTH, BUSINESS_STAGES, INDUSTRIES, aiErrorMessage, creditsLeftText } from "@/lib/aiStudio";
+import AICreditsDisplay from "@/components/AICreditsDisplay";
+import { useAiCreditsUpdater } from "@/hooks/useAiCredits";
 
 const AIBusinessAdvisor = () => {
   const [question, setQuestion] = useState('');
@@ -16,6 +18,7 @@ const AIBusinessAdvisor = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState('');
   const { toast } = useToast();
+  const updateCredits = useAiCreditsUpdater();
 
   const industries = INDUSTRIES;
   const businessStages = BUSINESS_STAGES;
@@ -73,12 +76,14 @@ const AIBusinessAdvisor = () => {
       setResponse(data.response);
       // Phase 20: ai-assistant returns the credits left after this answer.
       const left = creditsLeftText(data);
+      updateCredits(data);
       setCreditsLeft(left);
       toast({
         title: "Advice ready",
         description: left ?? "Your answer is below.",
       });
     } catch (error) {
+      updateCredits(null);
       // Phase 20: the server's own reason (no credits left, trial ended, suspended, AI service down: credit given back).
       toast({
         title: "No answer this time",
@@ -103,6 +108,7 @@ const AIBusinessAdvisor = () => {
               <CardDescription>
                 General strategic advice for your industry and business stage. It doesn't read your own business data. Each answer uses one AI credit.
               </CardDescription>
+              <AICreditsDisplay variant="compact" className="mt-1" />
             </div>
           </div>
         </CardHeader>

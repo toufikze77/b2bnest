@@ -29,6 +29,7 @@ describe('Help: tools, documents and two-step sign-in', () => {
     expect(c).toContain('England and Wales unless you choose Scotland or Northern Ireland');
     expect(answer('How many AI credits does a contract use?')).toContain(`uses ${CREDITS_PER_DOCUMENT} AI credits`);
     expect(answer('How many AI credits does a contract use?')).toContain('the credits are given back');
+    expect(answer('How many AI credits does a contract use?')).toContain('on the Dashboard, in Settings → Billing and on each AI screen');
   });
 
   it('never says a document is legal advice or compliant', () => {

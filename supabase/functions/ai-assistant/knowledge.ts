@@ -41,6 +41,7 @@ export function plansSection(): string {
 ${plans.map(planLine).join("\n")}
 - Every new account gets a ${TRIAL_DAYS}-day free trial of all features, including workflows. After the trial a plan is needed to keep using the workspace.
 - Prices and what each plan includes are on the Pricing page. Never quote a price, credit amount or plan feature that isn't listed here.
+- Users can see their remaining AI credits and reset date on the Dashboard and in Settings → Billing.
 - Settings → Billing: an account without a paid plan (for example during the trial) sees "You don't have a paid plan yet." and a View plans button that opens the Pricing page.`;
 }
 
