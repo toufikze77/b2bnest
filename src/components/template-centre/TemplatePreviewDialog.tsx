@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { getTemplateAvailability } from '@/lib/templateKind';
 import React from 'react';
 import { Sparkles, CheckCircle2, LayoutGrid, Workflow, Users, Target } from 'lucide-react';
@@ -22,6 +23,8 @@ interface Props {
   hasPremiumAccess: boolean;
   onClose: () => void;
   onUse: (t: WorkspaceTemplate) => void;
+  /** Set for a signed-out visitor: "Use template" goes to sign-in (with the return path). Preview stays available. */
+  signInHref?: string;
 }
 
 const Section = ({
@@ -49,7 +52,7 @@ const Section = ({
     </div>
   ) : null;
 
-const TemplatePreviewDialog = ({ template, isOpen, hasPremiumAccess, onClose, onUse }: Props) => {
+const TemplatePreviewDialog = ({ template, isOpen, hasPremiumAccess, onClose, onUse, signInHref }: Props) => {
   if (!template) return null;
   const totalTasks = template.boards.reduce(
     (sum, b) => sum + b.groups.reduce((s, g) => s + g.tasks.length, 0),
@@ -75,7 +78,7 @@ const TemplatePreviewDialog = ({ template, isOpen, hasPremiumAccess, onClose, on
           </div>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[60vh]">
+        <ScrollArea className="max-h-[45vh] sm:max-h-[60vh]">
           <div className="grid gap-6 p-6 md:grid-cols-2">
             <div className="space-y-6">
               <div className="h-44 rounded-lg border border-border bg-muted/30 p-3">
@@ -136,10 +139,22 @@ const TemplatePreviewDialog = ({ template, isOpen, hasPremiumAccess, onClose, on
           {!getTemplateAvailability(template).available && (
             <p className="mr-auto self-center text-xs text-muted-foreground">{getTemplateAvailability(template).reason}</p>
           )}
+          {signInHref && getTemplateAvailability(template).available ? (
+            <>
+              <p className="order-last self-center text-sm text-muted-foreground sm:order-none sm:mr-auto" data-testid="template-sign-in-line">Sign in to use this template</p>
+              <Button asChild>
+                <Link to={signInHref} aria-label={`Sign in to use ${template.name}`}>
+                  <LayoutGrid className="mr-2 h-4 w-4" />
+                  Use template
+                </Link>
+              </Button>
+            </>
+          ) : (
           <Button onClick={() => onUse(template)} disabled={!getTemplateAvailability(template).available}>
             <LayoutGrid className="mr-2 h-4 w-4" />
             {getTemplateAvailability(template).available ? 'Use template' : 'Not available yet'}
           </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

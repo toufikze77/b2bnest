@@ -39,7 +39,7 @@ const ShareButton = ({
   const handleShare = (platform: string) => {
     const link = shareLinks[platform as keyof typeof shareLinks];
     if (link) {
-      window.open(link, '_blank', 'width=600,height=400');
+      window.open(link, '_blank', 'width=600,height=400,noopener,noreferrer');
     }
   };
 

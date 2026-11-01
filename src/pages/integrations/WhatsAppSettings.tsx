@@ -144,7 +144,7 @@ export default function WhatsAppSettings() {
             <CardTitle>Connect Twilio</CardTitle>
             <CardDescription>
               Find these in your{" "}
-              <a className="underline" href="https://console.twilio.com/" target="_blank" rel="noreferrer">
+              <a className="underline" href="https://console.twilio.com/" target="_blank" rel="noopener noreferrer">
                 Twilio Console
               </a>
               . We verify your credentials before saving.

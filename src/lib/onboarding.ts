@@ -17,7 +17,22 @@ export function safeNext(raw: string | null | undefined): string {
   const path = raw.split(/[?#]/)[0];
   return NEXT_ALLOWED.some((p) => path === p || path.startsWith(p + '/')) ? raw : '/';
 }
-export const authUrlWithNext = (next: string) => `/auth?next=${encodeURIComponent(safeNext(next))}`;
+/**
+ * Where to go back to after signing in (Phase 24): any page on this site, never another site. Accepts only a path that
+ * starts with a single "/" — rejects absolute URLs (https://…), protocol-relative URLs (//host), backslashes (browsers
+ * read "/\\host" as "//host"), whitespace and control characters (browsers strip tabs and newlines, turning "/\t/host"
+ * into "//host"), and /auth itself (no loop). Anything else goes home.
+ * Confirmation emails still use the stricter safeNext, because Supabase only accepts its own redirect allow-list.
+ */
+export function safeReturnPath(raw: string | null | undefined): string {
+  if (typeof raw !== 'string' || !raw.startsWith('/') || raw.startsWith('//')) return '/';
+  // eslint-disable-next-line no-control-regex
+  if (/[\\\s\u0000-\u001f\u007f]/.test(raw)) return '/';
+  const path = raw.split(/[?#]/)[0];
+  if (path === '/auth' || path.startsWith('/auth/')) return '/';
+  return raw;
+}
+export const authUrlWithNext = (next: string) => `/auth?next=${encodeURIComponent(safeReturnPath(next))}`;
 
 /** Where Supabase's confirmation email returns the person: same host (https except localhost) + the vetted `next` page. */
 export function confirmationRedirect(origin: string, search: string): string {

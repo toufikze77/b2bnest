@@ -32,7 +32,7 @@ const UnifiedSearchResults = ({
       if (result.url.startsWith('/')) {
         navigate(result.url);
       } else {
-        window.open(result.url, '_blank');
+        window.open(result.url, '_blank', 'noopener,noreferrer');
       }
     }
   };

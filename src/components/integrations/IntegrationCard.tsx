@@ -81,7 +81,7 @@ export const IntegrationCard = ({
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => window.open(docsUrl, '_blank')}
+              onClick={() => window.open(docsUrl, '_blank', 'noopener,noreferrer')}
               title="View documentation"
             >
               <ExternalLink className="h-4 w-4" />

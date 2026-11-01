@@ -94,7 +94,6 @@ const PayPalCheckout = ({
             try {
               console.log('PayPal payment approved, capturing...');
               const order = await actions.order.capture();
-              console.log('PayPal payment successful:', order);
               onSuccess({
                 orderId: order.id,
                 paymentMethod: 'paypal',

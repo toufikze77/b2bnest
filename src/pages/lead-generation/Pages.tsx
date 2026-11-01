@@ -38,7 +38,7 @@ export default function PagesList() {
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <h3 className="font-semibold text-[#0A1628]">{p.name}</h3>
-                    <a href={url} target="_blank" rel="noreferrer" className="text-xs text-[#2563eb] hover:underline flex items-center gap-1"><Link2 className="h-3 w-3" /> /p/{p.slug}</a>
+                    <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#2563eb] hover:underline flex items-center gap-1"><Link2 className="h-3 w-3" /> /p/{p.slug}</a>
                   </div>
                   <span className={`px-2 py-0.5 rounded-full text-xs ${p.status === "Published" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>{p.status}</span>
                 </div>

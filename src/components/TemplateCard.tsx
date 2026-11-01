@@ -52,7 +52,6 @@ const TemplateCard = ({ template, searchQuery = '', onPreview, onDownload }: Tem
   };
 
   const handlePaymentSuccess = async (paymentData: any) => {
-    console.log('Payment completed for template:', template.id, paymentData);
     
     try {
       // Double-check authentication before adding purchase

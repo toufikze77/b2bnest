@@ -111,7 +111,7 @@ export default function AdminSettings() {
             <p>Google and Microsoft sign-in, password rules and session length are set in the Supabase authentication dashboard, not in B2BNest. They apply to every company.</p>
             <p>This page does not change them, so nothing here can switch sign-in methods on or off.</p>
             <Button asChild variant="outline" size="sm">
-              <a href="https://supabase.com/dashboard/project/gvftvswyrevummbvyhxa/auth/providers" target="_blank" rel="noreferrer">Open authentication providers</a>
+              <a href="https://supabase.com/dashboard/project/gvftvswyrevummbvyhxa/auth/providers" target="_blank" rel="noopener noreferrer">Open authentication providers</a>
             </Button>
             <p>Platform roles (super admin, admin) are managed under Users.</p>
           </CardContent>

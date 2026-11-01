@@ -96,7 +96,7 @@ const DomainAvailability = () => {
   const handleRegister = (domain: DomainResult) => {
     // Track affiliate click for analytics
     console.log(`Affiliate click: ${domain.domain} via ${domain.registrar}`);
-    window.open(domain.affiliateLink, '_blank');
+    window.open(domain.affiliateLink, '_blank', 'noopener,noreferrer');
   };
 
   return (

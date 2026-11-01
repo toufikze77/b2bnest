@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Search,
   SlidersHorizontal,
@@ -48,6 +48,8 @@ import {
   WorkspaceTemplate,
 } from '@/types/workspaceTemplate';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useAuth } from '@/hooks/useAuth';
+import { authUrlWithNext } from '@/lib/onboarding';
 
 type SortKey = 'featured' | 'popular' | 'recent' | 'name';
 
@@ -69,6 +71,12 @@ const QUICK_LINKS = [
 
 const TemplateCenter = () => {
   const { isPremium } = useSubscription();
+  // Phase 24: the catalogue is a public showcase. A signed-out visitor can browse and preview; every action that would
+  // create something ("Use template", "Create with AI") goes to sign-in and comes back here afterwards.
+  const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const signInHref = user ? undefined : authUrlWithNext(location.pathname + location.search);
   const [templates, setTemplates] = useState<WorkspaceTemplate[]>([]);
   const [usage, setUsage] = useState<Record<string, TemplateUsage>>({});
   const [loading, setLoading] = useState(true);
@@ -220,6 +228,7 @@ const TemplateCenter = () => {
 
   const handleUse = (t: WorkspaceTemplate) => {
     if (!getTemplateAvailability(t).available) return;
+    if (signInHref) { navigate(signInHref); return; }
     setPreview(null);
     setUseTemplate(t);
     void logTemplateEvent(t.slug, 'use_click');
@@ -252,9 +261,17 @@ const TemplateCenter = () => {
               <LayoutGrid className="h-4 w-4" />
             </span>
             <h1 className="text-lg font-semibold">Template Centre</h1>
-            <Button variant="outline" size="sm" className="ml-2" onClick={() => setAiOpen(true)}>
-              <Sparkles className="mr-1 h-4 w-4" /> Create with AI
-            </Button>
+            {signInHref ? (
+              <Button asChild variant="outline" size="sm" className="ml-2">
+                <Link to={signInHref} aria-label="Sign in to create a template with AI">
+                  <Sparkles className="mr-1 h-4 w-4" /> Create with AI
+                </Link>
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" className="ml-2" onClick={() => setAiOpen(true)}>
+                <Sparkles className="mr-1 h-4 w-4" /> Create with AI
+              </Button>
+            )}
           </div>
 
           <div className="relative flex-1 md:mx-6 md:max-w-xl">
@@ -477,6 +494,7 @@ const TemplateCenter = () => {
                     hasPremiumAccess={!!isPremium}
                     onPreview={handlePreview}
                     onUse={handleUse}
+                    signInHref={signInHref}
                   />
                 ))}
               </div>
@@ -535,6 +553,7 @@ const TemplateCenter = () => {
                   hasPremiumAccess={!!isPremium}
                   onPreview={handlePreview}
                   onUse={handleUse}
+                  signInHref={signInHref}
                 />
               ))}
             </div>
@@ -548,17 +567,18 @@ const TemplateCenter = () => {
         hasPremiumAccess={!!isPremium}
         onClose={() => setPreview(null)}
         onUse={handleUse}
+        signInHref={signInHref}
       />
 
       <AiTemplateDialog
-        open={aiOpen}
+        open={aiOpen && !!user}
         onClose={() => setAiOpen(false)}
         onCreate={(t) => { setAiOpen(false); setUseTemplate(t); }}
       />
 
       <UseWorkspaceTemplateDialog
         template={useTemplate}
-        isOpen={!!useTemplate}
+        isOpen={!!useTemplate && !!user}
         onClose={() => setUseTemplate(null)}
       />
 
