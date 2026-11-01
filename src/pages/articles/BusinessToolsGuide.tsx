@@ -213,17 +213,19 @@ const BusinessToolsGuide = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                Draft professional, ready-to-sign business contracts with AI assistance.
+                The AI drafts a UK contract from the details you type in, under the law of England and Wales unless you
+                choose Scotland or Northern Ireland. Each document uses 2 AI credits, given back if the AI fails. It is a
+                draft, not legal advice: have a qualified solicitor check it before you rely on it.
               </p>
 
               <div>
-                <h3 className="font-semibold mb-2">Common Contracts</h3>
+                <h3 className="font-semibold mb-2">What it covers</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li>Service agreements</li>
-                  <li>NDAs and confidentiality</li>
-                  <li>Freelance and contractor agreements</li>
-                  <li>Partnership agreements</li>
-                  <li>Sales and supplier contracts</li>
+                  <li>Services, employment, commercial, confidentiality and other contracts (for example a service agreement, an employment contract or an NDA)</li>
+                  <li>Privacy policies and other legal notices, in the Privacy &amp; Legal Notices Generator</li>
+                  <li>Anything you leave out appears as a [placeholder] to fill in</li>
+                  <li>Edit the result, copy it, or download it as PDF, Word or Markdown</li>
+                  <li>The last 10 documents are saved in this browser only</li>
                 </ul>
               </div>
 
