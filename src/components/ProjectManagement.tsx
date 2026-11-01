@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchActiveMembersWithProfiles, type MemberWithProfile } from '@/lib/memberProfiles';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
 import { assertActiveOrganization } from '@/lib/activeOrganization';
@@ -551,24 +552,10 @@ const ProjectManagement = () => {
       }));
       setTeams(teamsData as TeamItem[]);
 
-      // Fetch members across these orgs
-      const { data: membersData, error } = await supabase
-        .from('organization_members')
-        .select(`
-          id,
-          user_id,
-          role,
-          created_at,
-          organization_id,
-          profiles:user_id (
-            id,
-            display_name,
-            email,
-            full_name
-          )
-        `)
-        .in('organization_id', orgIds)
-        .eq('is_active', true);
+      // Fetch members across these orgs (Phase 28: two plain queries; there is no members→profiles relationship to embed)
+      let membersData: MemberWithProfile[] | null = null;
+      let error: unknown = null;
+      try { membersData = await fetchActiveMembersWithProfiles(orgIds); } catch (e) { error = e; console.error('Error fetching organization members:', e); }
 
       if (!error && Array.isArray(membersData)) {
         const grouped: Record<string, TeamMemberItem[]> = {};
