@@ -1,5 +1,6 @@
 // src/lib/teamProjectHelpers.ts
 import { supabase } from '@/integrations/supabase/client';
+import { fetchActiveMembersWithProfiles } from '@/lib/memberProfiles';
 
 /**
  * Add (or upsert) a user into organization_members (using organizations as teams).
@@ -85,20 +86,12 @@ export async function getUserProjects(userId: string) {
  */
 export async function getTeamMembers(organizationId: string) {
   try {
-    const { data: members, error: membersErr } = await supabase
-      .from('organization_members')
-      .select(`
-        *,
-        profiles:user_id(id, email, full_name, display_name)
-      `)
-      .eq('organization_id', organizationId)
-      .eq('is_active', true);
-
-    if (membersErr) throw membersErr;
-    if (!members || members.length === 0) return [];
+    // Phase 28: two plain queries (organization_members.user_id points at auth.users, so no profiles embed).
+    const members = await fetchActiveMembersWithProfiles([organizationId]);
+    if (members.length === 0) return [];
 
     // Format the data to match expected structure
-    const formatted = members.map((member: any) => ({
+    const formatted = members.map((member) => ({
       id: member.id,
       team_id: member.organization_id,
       user_id: member.user_id,
