@@ -45,8 +45,10 @@ const SecurityGuide = () => {
               <div>
                 <h3 className="font-semibold mb-2">Two-step sign-in</h3>
                 <p className="text-muted-foreground mb-2">
-                  Two-step sign-in is not active yet. Signing in needs only your password. Coming soon: we'll tell you
-                  when it's available. Until then, a strong, unique password is your main protection.
+                  Turn it on in Settings → Security. Signing in then needs your password and a 6-digit code from a free
+                  authenticator app on your phone, such as Microsoft Authenticator, Google Authenticator, Authy or
+                  1Password. Add a second phone as a backup. If you lose your phone, contact support@b2bnest.online and
+                  we'll check it's you before resetting it.
                 </p>
               </div>
 

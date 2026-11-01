@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Loader2, LogOut, ShieldAlert, Activity } from 'lucide-react';
+import { Loader2, LogOut, Activity } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { TWO_STEP_STATUS, TWO_STEP_NOT_ACTIVE, TWO_STEP_COMING_SOON, TWO_STEP_OLD_SETTING } from '@/lib/twoStep';
+import TwoStepSetup from '@/components/twoStep/TwoStepSetup';
 
 type Load<T> = { state: 'loading' } | { state: 'error'; message: string } | { state: 'ready'; data: T };
 
@@ -19,20 +18,14 @@ interface AuditRow { id: string; action: string; resource_type: string | null; c
 const AccountSecurity = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [mfa, setMfa] = useState<Load<boolean>>({ state: 'loading' });
   const [activity, setActivity] = useState<Load<AuditRow[]>>({ state: 'loading' });
   const [signingOut, setSigningOut] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
-    setMfa({ state: 'loading' });
     setActivity({ state: 'loading' });
-    const [m, a] = await Promise.all([
-      supabase.from('user_2fa_settings').select('is_enabled').eq('user_id', user.id).maybeSingle(),
-      supabase.from('audit_logs').select('id, action, resource_type, created_at')
-        .eq('user_id', user.id).order('created_at', { ascending: false }).limit(20),
-    ]);
-    setMfa(m.error ? { state: 'error', message: m.error.message } : { state: 'ready', data: !!m.data?.is_enabled });
+    const a = await supabase.from('audit_logs').select('id, action, resource_type, created_at')
+      .eq('user_id', user.id).order('created_at', { ascending: false }).limit(20);
     setActivity(a.error ? { state: 'error', message: a.error.message } : { state: 'ready', data: (a.data ?? []) as AuditRow[] });
   }, [user]);
 
@@ -48,17 +41,8 @@ const AccountSecurity = () => {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Two-step sign-in</CardTitle>
-          <CardDescription>{TWO_STEP_NOT_ACTIVE}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <Badge variant="outline" className="gap-1"><ShieldAlert className="h-3.5 w-3.5" />{TWO_STEP_STATUS}</Badge>
-          <p className="text-sm text-muted-foreground">{TWO_STEP_COMING_SOON}</p>
-          {mfa.state === 'ready' && mfa.data && <p className="text-sm text-muted-foreground">{TWO_STEP_OLD_SETTING}</p>}
-        </CardContent>
-      </Card>
+      {/* Phase 25: real two-step sign-in (authenticator app, checked by Supabase Auth). */}
+      <TwoStepSetup />
 
       <Card>
         <CardHeader>

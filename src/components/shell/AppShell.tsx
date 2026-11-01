@@ -26,6 +26,7 @@ import { GlobalCommand } from './GlobalCommand';
 import { NotificationsPanel } from './NotificationsPanel';
 import { MobileTabBar } from './MobileTabBar';
 import TrialBanner from '@/components/access/TrialBanner';
+import ProtectAccountBanner from '@/components/twoStep/ProtectAccountBanner';
 import { bottomItems, groups, homeItem, logoTarget, topItems } from './navItems';
 
 // Option B navigation. Every item points at an existing route.
@@ -190,6 +191,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <TrialBanner />
+        <ProtectAccountBanner />
         <main id="app-content" className="min-w-0 flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">{children}</main>
         <MobileTabBar matches={(to) => matchesLocation(to, location.pathname, location.search)} />
       </SidebarInset>

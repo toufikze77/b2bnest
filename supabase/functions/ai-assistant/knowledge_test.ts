@@ -37,10 +37,11 @@ Deno.test("workflow plans agree with the server rule", () => {
 
 Deno.test("the facts proven false in Phase 20 are gone, and the honest ones stay", () => {
   for (const gone of ["Recurring tasks", "Task dependencies", "P60 and P45", "Pension auto-enrollment", "Statutory payments", "TrueLayer",
-    "Document version control", "Sentiment analysis", "Predictive analytics", "Scheduled reports", "company's email settings", "Steps that don't run yet are hidden"]) {
+    "Document version control", "Sentiment analysis", "Predictive analytics", "Scheduled reports", "company's email settings", "Steps that don't run yet are hidden",
+    "Two-step sign-in is not active yet"]) {
     assertEquals(text.includes(gone), false, gone);
   }
-  for (const kept of ["HMRC filing is not available yet", "Two-step sign-in is not active yet", "There is no mobile app and no public API",
+  for (const kept of ["HMRC filing is not available yet", "Two-step sign-in is optional for each user", "There is no SMS option", "There is no mobile app and no public API",
     "No plan includes a support response-time promise", "posting from B2BNEST is switched off for customers"]) assert(text.includes(kept), kept);
 });
 

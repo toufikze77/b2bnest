@@ -19,6 +19,7 @@ import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { useAuth } from '@/hooks/useAuth';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { setSuspended, suspendBlockReason, suspendErrorMessage, SUSPEND_SIGNED_OUT_LINE } from '@/lib/suspendAccount';
+import { resetTwoStep, resetErrorMessage, RESET_EXPLAINER, RESET_REASON_MAX, RESET_REASON_MIN } from '@/lib/resetTwoStep';
 import {
   fetchMasterAccounts, masterErrorMessage, setMasterAccess, MASTER_NOTE_MAX, MASTER_OFF_EXPLAINER, MASTER_ON_EXPLAINER,
   NOT_INSTALLED_MESSAGE, type MasterAccount,
@@ -56,6 +57,26 @@ export default function AdminUsers() {
   const { user: me } = useAuth();
   const [statusBusy, setStatusBusy] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
+  // Phase 25: owner-assisted recovery of two-step sign-in (super admins only; the server checks again).
+  const [resetFor, setResetFor] = useState<{ id: string; email?: string; name?: string } | null>(null);
+  const [resetReason, setResetReason] = useState('');
+  const [resetBusy, setResetBusy] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const applyReset = async () => {
+    if (!resetFor) return;
+    setResetBusy(true);
+    setResetError(null);
+    try {
+      const removed = await resetTwoStep(resetFor.id, resetReason);
+      toast({ title: 'Two-step sign-in reset', description: removed > 0 ? `Removed ${removed} authenticator ${removed === 1 ? 'app' : 'apps'}. They can now sign in with their password and set up a new app.` : 'This account had no authenticator app. The request was recorded.' });
+      setResetFor(null);
+      setResetReason('');
+    } catch (e: unknown) {
+      setResetError(resetErrorMessage(e));
+    } finally {
+      setResetBusy(false);
+    }
+  };
 
   const loadMasters = useCallback(async () => {
     if (!isSuperAdmin) return [];
@@ -352,8 +373,42 @@ export default function AdminUsers() {
               ))}
             </dl>
           )}
+          {selected && isSuperAdmin && !selected.master_only && selected.id !== me?.id && (
+            <div className="mt-6 space-y-2 border-t border-border pt-4">
+              <p className="text-sm font-medium">Two-step sign-in</p>
+              <p className="text-xs text-muted-foreground">If they lost every phone with their authenticator app, check it is them, then reset it.</p>
+              <Button variant="outline" size="sm" onClick={() => { setResetFor({ id: selected.id, email: selected.email, name: selected.name }); setResetReason(''); setResetError(null); }}>
+                Reset two-step sign-in
+              </Button>
+            </div>
+          )}
         </SheetContent>
       </Sheet>
+
+      <AlertDialog open={!!resetFor} onOpenChange={(o) => !o && !resetBusy && setResetFor(null)}>
+        <AlertDialogContent data-testid="reset-two-step-dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset two-step sign-in?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <span className="block font-medium text-foreground">{resetFor?.email ?? resetFor?.name}</span>
+              <span className="mt-2 block">{RESET_EXPLAINER}</span>
+              <span className="mt-2 block">The reset and your reason are recorded in the audit log, and they will see it in their activity.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="reset-reason">Reason (required)</Label>
+            <Input id="reset-reason" value={resetReason} maxLength={RESET_REASON_MAX} placeholder="How you checked it is them"
+              onChange={(e) => setResetReason(e.target.value)} />
+          </div>
+          {resetError && <p role="alert" className="text-sm font-medium text-destructive">{resetError}</p>}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resetBusy}>Cancel</AlertDialogCancel>
+            <Button variant="destructive" onClick={applyReset} disabled={resetBusy || resetReason.trim().length < RESET_REASON_MIN}>
+              {resetBusy ? 'Resetting…' : 'Reset two-step sign-in'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!pendingMaster} onOpenChange={(o) => !o && !masterBusy && setPendingMaster(null)}>
         <AlertDialogContent>

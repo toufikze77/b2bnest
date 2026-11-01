@@ -9,12 +9,11 @@ import { FileText, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { BANNED_MESSAGE, isBannedAuthError } from '@/lib/authErrors';
-import TwoFactorAuth from '@/components/TwoFactorAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { confirmationRedirect, safeReturnPath } from '@/lib/onboarding';
 
 const Auth = () => {
-  const { user, signIn, signUp, loading, verify2FA, sendVerificationCode, signInWithOAuth } = useAuth();
+  const { user, signIn, signUp, loading, signInWithOAuth } = useAuth();
   const [searchParams] = useSearchParams();
   // /auth?mode=signup opens the create-account form (Pricing and Business Resources link here). Sign-in is unchanged.
   const [isLogin, setIsLogin] = useState(() => searchParams.get('mode') !== 'signup');
@@ -24,9 +23,6 @@ const Auth = () => {
   const [companyName, setCompanyName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [suspendedNotice, setSuspendedNotice] = useState(false);
-  const [showTwoFactor, setShowTwoFactor] = useState(false);
-  const [twoFactorEmail, setTwoFactorEmail] = useState('');
-  const [isVerification, setIsVerification] = useState(false);
   const [pendingEmail, setPendingEmail] = useState('');
   const [resending, setResending] = useState(false);
 
@@ -79,36 +75,9 @@ const Auth = () => {
     return <Navigate to={safeReturnPath(searchParams.get('next'))} replace />;
   }
 
-  // Show 2FA screen if needed
-  if (showTwoFactor) {
-    return (
-      <TwoFactorAuth 
-        email={twoFactorEmail}
-        isVerification={isVerification}
-        onSuccess={() => {
-          setShowTwoFactor(false);
-          setTwoFactorEmail('');
-          setIsVerification(false);
-          if (isVerification) {
-            // Handle invitation acceptance after email verification for signup
-            if (isInvited && invitationOrgId) {
-              setTimeout(() => handleInvitationAcceptance(invitationOrgId), 1000);
-            }
-            toast({
-              title: "Email Verified!",
-              description: isInvited ? "Welcome to the organization! You can now access the team." : "You can now sign in to your account."
-            });
-            setIsLogin(true);
-          }
-        }}
-        onBack={() => {
-          setShowTwoFactor(false);
-          setTwoFactorEmail('');
-          setIsVerification(false);
-        }}
-      />
-    );
-  }
+  // Phase 25: the second step after the password is Supabase's authenticator-app code. It is shown by TwoStepGate (App.tsx)
+  // for every sign-in path, so this page has no code step of its own. The old email-code screen (TwoFactorAuth) is no
+  // longer reachable; its file and the send-2fa-email / verify-2fa-code functions are left in place, unused.
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,22 +125,13 @@ const Auth = () => {
           description: "Please wait while we request your activation email.",
         });
         
-        const { error, needsVerification } = await signUp(email, password, fullName, companyName);
+        const { error } = await signUp(email, password, fullName, companyName);
         if (error) {
           const isEmailDeliveryDelay = error.code === 'email_delivery_timeout';
           toast({
             title: isEmailDeliveryDelay ? "Check Your Email" : "Sign Up Failed",
             description: error.message || "An unexpected error occurred",
             variant: isEmailDeliveryDelay ? "default" : "destructive"
-          });
-        } else if (needsVerification) {
-          // Move to verification step
-          setTwoFactorEmail(email);
-          setIsVerification(true);
-          setShowTwoFactor(true);
-          toast({
-            title: "Verify Your Email",
-            description: "Please check your email for the verification code."
           });
         } else {
           // Handle invitation acceptance for signup
