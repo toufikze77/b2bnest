@@ -56,8 +56,6 @@ const CheckoutModal = ({
   };
 
   const handlePaymentSuccess = (paymentData: any) => {
-    console.log('Payment successful:', paymentData);
-    console.log('Buyer information:', buyerInfo);
     
     toast({
       title: "Payment Successful!",

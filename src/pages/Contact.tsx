@@ -23,7 +23,7 @@ const Contact = () => {
       title: 'Address',
       description: 'Visit our office',
       value: '1 St Katharine\'s Way, London E1W 1UN',
-      action: () => window.open('https://maps.google.com/?q=1+St+Katharine\'s+Way,+London+E1W+1UN'),
+      action: () => window.open('https://maps.google.com/?q=1+St+Katharine\'s+Way,+London+E1W+1UN', '_blank', 'noopener,noreferrer'),
     },
   ];
 

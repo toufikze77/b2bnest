@@ -7,6 +7,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavoriteTools } from '@/hooks/useFavoriteTools';
+import { authUrlWithNext } from '@/lib/onboarding';
 import SubscriptionUpgrade from '@/components/SubscriptionUpgrade';
 import CostCalculator from '@/components/CostCalculator';
 import BusinessSetupChecklist from '@/components/BusinessSetupChecklist';
@@ -331,7 +332,7 @@ const BusinessTools = () => {
                   <Users className="h-8 w-8 text-white" />
                 </div>
                 <CardTitle className="text-2xl text-gray-900">
-                  Sign In Required
+                  Sign in to use this tool
                 </CardTitle>
                 <p className="text-gray-600 mt-2">
                   Please sign in to access <strong>{currentToolData.title}</strong> and other premium tools.
@@ -351,7 +352,8 @@ const BusinessTools = () => {
                 </div>
                 <div className="flex gap-3 justify-center">
                   <Button 
-                    onClick={() => navigate('/auth')}
+                    // Phase 24: back to this tool after signing in.
+                    onClick={() => navigate(authUrlWithNext(`/business-tools?tool=${encodeURIComponent(currentTool)}`))}
                     className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                   >
                     Sign In / Sign Up

@@ -3,22 +3,33 @@ import { useLocation } from 'react-router-dom';
 import Header from '@/components/Header';
 import WelcomeTour from '@/components/onboarding/WelcomeTour';
 import { AppShell } from '@/components/shell/AppShell';
+import RouteFallback from '@/components/shell/RouteFallback';
+import { useAuth } from '@/hooks/useAuth';
+import { isAppShellPath } from '@/lib/appShellRoutes';
 
 interface LayoutProps {
   children: ReactNode;
 }
 
+/**
+ * Phase 24: the app shell is shown only to a signed-in person. A signed-out visitor on any route — including the public
+ * showcase pages /template-center and /business-tools — gets the public Header, exactly like Pricing. While sign-in is
+ * still being checked on an app route, neither is shown: only the neutral page skeleton, so the shell never flashes.
+ */
 const Layout = ({ children }: LayoutProps) => {
   const { pathname } = useLocation();
-  const appPrefixes = [
-    '/dashboard', '/business-overview', '/settings', '/profile-setup', '/onboarding',
-    '/crm', '/project-management', '/lead-generation', '/rota',
-    '/workflow-studio', '/integrations/', '/business-tools', '/template-center', '/workspaces', '/support-desk',
-  ];
-  const isAppRoute = appPrefixes.some((path) => pathname === path || pathname.startsWith(`${path}/`));
-  const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
+  const { user, loading } = useAuth();
+  const isAppRoute = isAppShellPath(pathname);
 
-  if (isAppRoute && !isAdminRoute) {
+  if (isAppRoute && loading) {
+    return (
+      <div className="min-h-screen bg-background" data-testid="layout-loading">
+        <RouteFallback />
+      </div>
+    );
+  }
+
+  if (isAppRoute && user) {
     return (
       <div className="min-h-screen bg-background">
         <AppShell>{children}</AppShell>

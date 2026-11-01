@@ -1,5 +1,6 @@
 import { getTemplateKind, getTemplateAvailability, TEMPLATE_KIND_LABELS } from '@/lib/templateKind';
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Sparkles, LayoutGrid, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,8 @@ interface Props {
   hasPremiumAccess: boolean;
   onPreview: (t: WorkspaceTemplate) => void;
   onUse: (t: WorkspaceTemplate) => void;
+  /** Set for a signed-out visitor: "Use template" goes to sign-in (with the return path) instead of opening the dialog. */
+  signInHref?: string;
 }
 
 export const planLabel = (t: WorkspaceTemplate, hasPremiumAccess: boolean) => {
@@ -24,7 +27,7 @@ export const planLabel = (t: WorkspaceTemplate, hasPremiumAccess: boolean) => {
 export const categoryName = (id: string) =>
   TEMPLATE_CATEGORIES.find((c) => c.id === id)?.name ?? 'Templates';
 
-const TemplateCard = ({ template, usage, hasPremiumAccess, onPreview, onUse }: Props) => {
+const TemplateCard = ({ template, usage, hasPremiumAccess, onPreview, onUse, signInHref }: Props) => {
   const uses = usage?.created ?? 0;
   const plan = planLabel(template, hasPremiumAccess);
   const availability = getTemplateAvailability(template);
@@ -85,7 +88,11 @@ const TemplateCard = ({ template, usage, hasPremiumAccess, onPreview, onUse }: P
         <p className="mt-3 text-xs text-muted-foreground">{availability.reason}</p>
       )}
 
-      <div className="mt-auto flex flex-wrap gap-2 border-t border-border pt-3 [&>button]:min-w-[7rem]">
+      {signInHref && availability.available && (
+        <p className="mt-3 text-xs text-muted-foreground" data-testid="template-sign-in-line">Sign in to use this template</p>
+      )}
+
+      <div className="mt-auto flex flex-wrap gap-2 border-t border-border pt-3 [&>a]:min-w-[7rem] [&>button]:min-w-[7rem]">
         <Button
           variant="outline"
           size="sm"
@@ -97,6 +104,13 @@ const TemplateCard = ({ template, usage, hasPremiumAccess, onPreview, onUse }: P
         >
           Preview
         </Button>
+        {signInHref && availability.available ? (
+          <Button asChild size="sm" className="flex-1">
+            <Link to={signInHref} aria-label={`Sign in to use ${template.name}`} onClick={(e) => e.stopPropagation()}>
+              <LayoutGrid className="mr-1 h-4 w-4" /> Use template
+            </Link>
+          </Button>
+        ) : (
         <Button
           size="sm"
           className="flex-1"
@@ -109,6 +123,7 @@ const TemplateCard = ({ template, usage, hasPremiumAccess, onPreview, onUse }: P
         >
           <LayoutGrid className="mr-1 h-4 w-4" /> {availability.available ? 'Use template' : 'Unavailable'}
         </Button>
+        )}
       </div>
     </article>
   );

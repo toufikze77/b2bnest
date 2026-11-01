@@ -109,7 +109,6 @@ const CRM = ({ band = false }: CRMProps) => {
         return;
       }
 
-      console.log('Fetching CRM data for user:', user.id);
       
       // Fetch contacts
       const { data: contactsData, error: contactsError } = await supabase
@@ -154,7 +153,6 @@ const CRM = ({ band = false }: CRMProps) => {
 
   const updateContact = async (contactId: string, contactData: Partial<Contact>) => {
     try {
-      console.log('Updating contact with ID:', contactId, 'data:', contactData);
       
       if (!user?.id) {
         console.error('No user ID available');
@@ -262,7 +260,6 @@ const CRM = ({ band = false }: CRMProps) => {
 
   const addContact = async (contactData: Partial<Contact>) => {
     try {
-      console.log('Adding contact with data:', contactData);
       
       if (!user?.id) {
         console.error('No user ID available');
@@ -296,7 +293,6 @@ const CRM = ({ band = false }: CRMProps) => {
         user_id: user.id
       };
 
-      console.log('Insert contact data:', insertData);
 
       const { data, error } = await supabase
         .from('crm_contacts')
@@ -314,7 +310,6 @@ const CRM = ({ band = false }: CRMProps) => {
         return;
       }
 
-      console.log('Contact added successfully:', data);
       
       // Update local state
       setContacts(prev => [...prev, data]);
@@ -441,7 +436,6 @@ const CRM = ({ band = false }: CRMProps) => {
 
   const addDeal = async (dealData: Partial<Deal>) => {
     try {
-      console.log('Adding deal with data:', dealData);
       
       if (!user?.id) {
         console.error('No user ID available');
@@ -466,7 +460,6 @@ const CRM = ({ band = false }: CRMProps) => {
       // Explicit currency (deal's own, else the account currency) and probability (blank → null, 0 stays 0).
       const insertData = dealInsertPayload(dealData, user.id, accountCurrency);
 
-      console.log('Insert deal data:', insertData);
 
       const { data, error } = await supabase
         .from('crm_deals')
@@ -484,7 +477,6 @@ const CRM = ({ band = false }: CRMProps) => {
         return;
       }
 
-      console.log('Deal added successfully:', data);
       
       // Update local state
       setDeals(prev => [...prev, data]);

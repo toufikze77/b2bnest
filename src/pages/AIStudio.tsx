@@ -9,12 +9,24 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAccess } from "@/hooks/useAccess";
 import { aiFeatureLock, type AiFeatureId } from "@/lib/aiStudio";
 import { GUIDE_PATH } from "@/lib/workflowGuide";
+import { authUrlWithNext } from "@/lib/onboarding";
 import Footer from "@/components/Footer";
 import AIBusinessAdvisor from "@/components/ai/AIBusinessAdvisor";
 import IntelligentAnalytics from "@/components/ai/IntelligentAnalytics";
 import SmartPersonalization from "@/components/ai/SmartPersonalization";
 import SubscriptionUpgrade from "@/components/SubscriptionUpgrade";
 import { WORKFLOWS_NOT_INCLUDED_MESSAGE } from "../../supabase/functions/_shared/workflow-access.ts";
+
+/** Phase 24: a signed-out visitor sees what each tool does, and a sign-in step instead of a tool that would fail. */
+const SignInPanel = ({ title }: { title: string }) => (
+  <Card data-testid="ai-sign-in-panel">
+    <CardHeader><CardTitle>{title}</CardTitle><CardDescription>Sign in to use this tool.</CardDescription></CardHeader>
+    <CardContent className="flex flex-wrap gap-3">
+      <Button asChild><Link to={authUrlWithNext("/ai-studio")}>Sign in</Link></Button>
+      <Button variant="outline" asChild><Link to="/pricing">See plans</Link></Button>
+    </CardContent>
+  </Card>
+);
 
 /** Shown instead of a tab when the server would refuse it (trial ended, suspended). Never a payment screen when suspended. */
 const LockedPanel = ({ lock }: { lock: NonNullable<ReturnType<typeof aiFeatureLock>> }) => (
@@ -138,16 +150,16 @@ const AIStudio = () => {
           </TabsList>
 
           <TabsContent value="advisor" className="space-y-6">
-            {lockOf('advisor') ? <LockedPanel lock={lockOf('advisor')!} /> : <AIBusinessAdvisor />}
+            {!user ? <SignInPanel title="AI Business Advisor" /> : lockOf('advisor') ? <LockedPanel lock={lockOf('advisor')!} /> : <AIBusinessAdvisor />}
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
-            {lockOf('analytics') ? <LockedPanel lock={lockOf('analytics')!} /> : <IntelligentAnalytics />}
+            {!user ? <SignInPanel title="Intelligent Analytics" /> : lockOf('analytics') ? <LockedPanel lock={lockOf('analytics')!} /> : <IntelligentAnalytics />}
           </TabsContent>
 
           <TabsContent value="workflows" className="space-y-6">
             {/* Phase 20: the same rule as Workflow Studio and the server (_shared/workflow-access.ts). */}
-            {lockOf('workflows') ? (
+            {!user ? <SignInPanel title="Workflows" /> : lockOf('workflows') ? (
               <Card data-testid="workflows-card-upgrade">
                 <CardHeader>
                   <CardTitle>{WORKFLOWS_NOT_INCLUDED_MESSAGE}</CardTitle>
@@ -173,7 +185,7 @@ const AIStudio = () => {
           </TabsContent>
 
           <TabsContent value="personalization" className="space-y-6">
-            {lockOf('personalization') ? <LockedPanel lock={lockOf('personalization')!} /> : <SmartPersonalization />}
+            {!user ? <SignInPanel title="Smart Personalization" /> : lockOf('personalization') ? <LockedPanel lock={lockOf('personalization')!} /> : <SmartPersonalization />}
           </TabsContent>
         </Tabs>
 

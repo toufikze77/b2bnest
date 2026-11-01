@@ -78,7 +78,6 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
       if (organizationId) memberQuery = memberQuery.eq('organization_id', organizationId);
       const { data: membersData, error } = await memberQuery;
 
-      console.log('Raw members data:', membersData);
 
       if (error) {
         console.error('Error loading team members:', error);
@@ -112,7 +111,6 @@ const JiraTaskView: React.FC<JiraTaskViewProps> = ({
         };
       });
       
-      console.log('Formatted members:', formattedMembers);
       setLocalTeamMembers(formattedMembers);
     } catch (error) {
       console.error('Catch error loading team members:', error);

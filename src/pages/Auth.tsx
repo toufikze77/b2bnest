@@ -11,7 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { BANNED_MESSAGE, isBannedAuthError } from '@/lib/authErrors';
 import TwoFactorAuth from '@/components/TwoFactorAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { confirmationRedirect, safeNext } from '@/lib/onboarding';
+import { confirmationRedirect, safeReturnPath } from '@/lib/onboarding';
 
 const Auth = () => {
   const { user, signIn, signUp, loading, verify2FA, sendVerificationCode, signInWithOAuth } = useAuth();
@@ -76,7 +76,7 @@ const Auth = () => {
 
   // Redirect if already authenticated
   if (user && !loading) {
-    return <Navigate to={safeNext(searchParams.get('next'))} replace />;
+    return <Navigate to={safeReturnPath(searchParams.get('next'))} replace />;
   }
 
   // Show 2FA screen if needed

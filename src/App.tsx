@@ -179,7 +179,8 @@ function App() {
               <Route path="/knowledge-base/workflows" element={<WorkflowGuide />} />
               <Route path="/knowledge-base/security" element={<SecurityGuide />} />
               <Route path="/knowledge-base/lead-generation" element={<LeadGenerationGuide />} />
-                <Route path="/payment-success" element={<PaymentSuccess />} />
+                {/* Phase 24: creates the subscription expense for the signed-in payer; signed out → sign-in, then back here. */}
+                <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
                 <Route path="/help" element={<Help />} />
                 <Route path="/knowledge-base" element={<KnowledgeBase />} />
                 <Route path="/blog" element={<Blog />} />
