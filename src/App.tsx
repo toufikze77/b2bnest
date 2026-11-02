@@ -82,6 +82,7 @@ const PublicPage = lazyPage(() => import('@/pages/lead-generation/PublicPage'));
 const RotaIndex = lazyPage(() => import('@/pages/rota/Index'));
 const RotaEmployees = lazyPage(() => import('@/pages/rota/Employees'));
 const RotaSchedule = lazyPage(() => import('@/pages/rota/Schedule'));
+const RotaHoliday = lazyPage(() => import('@/pages/rota/Holiday'));
 const AdminLayout = lazyPage(() => import('@/pages/admin/AdminLayout'));
 const AdminDashboard = lazyPage(() => import('@/pages/admin/AdminDashboard'));
 const AdminMetricDetail = lazyPage(() => import('@/pages/admin/AdminMetricDetail'));
@@ -175,6 +176,7 @@ function App() {
               <Route path="/rota" element={<ProtectedRoute><RotaIndex /></ProtectedRoute>} />
               <Route path="/rota/employees" element={<ProtectedRoute><RotaEmployees /></ProtectedRoute>} />
               <Route path="/rota/schedule" element={<ProtectedRoute><RotaSchedule /></ProtectedRoute>} />
+              <Route path="/rota/holiday" element={<ProtectedRoute><RotaHoliday /></ProtectedRoute>} />
               <Route path="/f/:formId" element={<PublicForm />} />
               <Route path="/p/:slug" element={<PublicPage />} />
               <Route path="/workspaces" element={<ProtectedRoute><WorkspacesIndex /></ProtectedRoute>} />
