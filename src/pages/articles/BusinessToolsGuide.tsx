@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Wrench, FileText, Users, Clock, BookOpen } from 'lucide-react';
+import { TIME_TRACKER_FACTS } from '@/lib/timeTracker';
 import { Link } from 'react-router-dom';
 import SEOHead from '@/components/SEOHead';
 import { CREDITS_PER_DOCUMENT } from '@/lib/legalDocuments';
@@ -174,32 +175,18 @@ const BusinessToolsGuide = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                Track billable hours, monitor productivity, and generate detailed time reports.
+                Business Tools → Time Tracker records the time you spend on your projects and tasks, saved to your account.
               </p>
 
               <div>
-                <h3 className="font-semibold mb-2">Tracking Time</h3>
+                <h3 className="font-semibold mb-2">What it does</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li>Start/stop timers for tasks</li>
-                  <li>Manual time entry for past work</li>
-                  <li>Tag time entries by project and client</li>
-                  <li>Mark entries as billable/non-billable</li>
-                  <li>Add notes and descriptions</li>
-                </ul>
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-2">Reports & Invoicing</h3>
-                <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li>Generate timesheet reports</li>
-                  <li>Export to various formats</li>
-                  <li>Convert time entries to invoices</li>
-                  <li>View team productivity metrics</li>
+                  {TIME_TRACKER_FACTS.map((f) => <li key={f}>{f}</li>)}
                 </ul>
               </div>
 
               <Button asChild className="w-full">
-                <Link to="/business-tools">Open Time Tracker</Link>
+                <Link to="/business-tools?tool=time-tracker">Open Time Tracker</Link>
               </Button>
             </CardContent>
           </Card>

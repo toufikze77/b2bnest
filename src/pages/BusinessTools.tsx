@@ -160,11 +160,12 @@ const BusinessTools = () => {
     {
       id: 'time-tracker' as ToolType,
       title: 'Time Tracker',
-      description: 'Track time spent on projects and tasks',
+      description: 'Track time on projects and tasks, saved to your account',
       icon: Clock,
       color: 'bg-emerald-600',
-      benefits: ['Project tracking', 'Real-time timer', 'Activity summaries'],
-      isPremium: false
+      // Phase 31: saved to the account, so it needs signing in (trial and paying accounts, like the other saved tools).
+      benefits: ['Timer that keeps running across devices', 'Billable hours and value', 'Totals by day and project, CSV export'],
+      isPremium: true
     },
     {
       id: 'cash-flow-tracker' as ToolType,
