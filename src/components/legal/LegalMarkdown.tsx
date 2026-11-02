@@ -48,6 +48,23 @@ export default function LegalMarkdown({ markdown }: { markdown: string }) {
             return <p key={n} className="flex gap-2 pl-2"><span aria-hidden>•</span><span><Inlines inlines={b.inlines} /></span></p>;
           case 'quote':
             return <blockquote key={n} className="border-l-4 border-border pl-3 text-muted-foreground"><Inlines inlines={b.inlines} /></blockquote>;
+          case 'table':
+            return (
+              <div key={n} className="overflow-x-auto">
+                <table className="w-full border-collapse text-left text-sm">
+                  {b.header && (
+                    <thead>
+                      <tr>{b.header.map((c, i) => <th key={i} scope="col" className="border border-border bg-muted px-2 py-1 font-semibold"><Inlines inlines={c} /></th>)}</tr>
+                    </thead>
+                  )}
+                  <tbody>
+                    {b.rows.map((r, ri) => (
+                      <tr key={ri}>{r.map((c, i) => <td key={i} className="border border-border px-2 py-1 align-top"><Inlines inlines={c} /></td>)}</tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
           case 'rule':
             return <hr key={n} className="border-border" />;
           default:
