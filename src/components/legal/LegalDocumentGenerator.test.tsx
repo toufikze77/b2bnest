@@ -22,7 +22,7 @@ import { HISTORY_KEY } from '@/lib/legalHistory';
 import { aiCreditsMock } from '@/test/aiCreditsMock';
 
 const DOC = `# Service Agreement\n\n1. **Definitions**\n1.1 The Client is Beta Client plc, company number [Company number].\n\n${'Body text. '.repeat(80)}`;
-const ok = (over: Record<string, unknown> = {}) => ({ data: { document: DOC, docType: 'service_agreement', jurisdiction: 'england_wales', credits_used: 2, credits_remaining: 46, credits_limit: 50, reset_date: '2026-12-01T00:00:00Z', ...over }, error: null });
+const ok = (over: Record<string, unknown> = {}) => ({ data: { document: DOC, docType: 'service_agreement', jurisdiction: 'england_wales', credits_used: 10, credits_remaining: 46, credits_limit: 50, reset_date: '2026-12-01T00:00:00Z', ...over }, error: null });
 const fnError = (status: number, body: Record<string, unknown>) => ({ data: null, error: { message: 'Edge Function returned a non-2xx status code', context: { status, json: () => Promise.resolve(body) } } });
 
 const renderContracts = () => render(<MemoryRouter><ContractGenerator /></MemoryRouter>);
@@ -49,7 +49,7 @@ describe('Contract Generator', () => {
     expect(screen.getByLabelText(/^Job title \(required\)/)).toBeInTheDocument();
     expect(screen.getByLabelText(/^Employer name/)).toBeInTheDocument();
     expect(screen.queryByLabelText(/^Scope/)).toBeNull();
-    expect(screen.getByTestId('credits-left')).toHaveTextContent('Uses 2 AI credits · you have 200 left');
+    expect(screen.getByTestId('credits-left')).toHaveTextContent('Uses 10 AI credits · you have 200 left');
   });
 
   it('missing required fields: says which, calls nothing', () => {
@@ -79,7 +79,7 @@ describe('Contract Generator', () => {
     expect(screen.getByRole('button', { name: /Generate with AI/ })).toBeEnabled();
     expect(screen.getByRole('note')).toHaveTextContent(AI_DRAFT_BANNER);
     // Phase 30c: the shared balance takes the credits_remaining in the reply at once.
-    expect(screen.getByTestId('credits-left')).toHaveTextContent('Uses 2 AI credits · you have 46 left');
+    expect(screen.getByTestId('credits-left')).toHaveTextContent('Uses 10 AI credits · you have 46 left');
     expect(aiCreditsMock.updates.at(-1)).toMatchObject({ credits_remaining: 46, credits_limit: 50 });
     expect(screen.getByText('[Company number]').tagName).toBe('MARK');
     expect(screen.getByText(/Saved in this browser only/)).toBeInTheDocument();
@@ -157,34 +157,58 @@ describe('Contract Generator', () => {
 });
 
 describe('credit balance (Phase 30c)', () => {
-  it.each([[1], [0]])('Generate is disabled with a clear message when %i credits are left', (left) => {
+  it.each([[9], [1], [0]])('Generate is disabled with a clear message when %i credits are left', (left) => {
     aiCreditsMock.state.credits = { remaining: left, limit: 250, resetDate: '2026-12-01T00:00:00Z', tier: 'Business', notStarted: false };
     renderContracts();
     fillServiceAgreement();
     const button = screen.getByRole('button', { name: /Generate with AI/ });
     expect(button).toBeDisabled();
-    expect(screen.getByTestId('credits-left')).toHaveTextContent(`Uses 2 AI credits · you have ${left} left`);
-    expect(screen.getByRole('status')).toHaveTextContent(`A document needs 2 AI credits and you have ${left} left. They reset 1 December 2026.`);
+    expect(screen.getByTestId('credits-left')).toHaveTextContent(`Uses 10 AI credits · you have ${left} left`);
+    expect(screen.getByRole('status')).toHaveTextContent(`A document needs 10 AI credits and you have ${left} left. They reset 1 December 2026.`);
     fireEvent.click(button);
     expect(invoke).not.toHaveBeenCalled();
   });
 
-  it('exactly 2 credits is enough; the line then drops to 0 from the reply', async () => {
-    aiCreditsMock.state.credits = { remaining: 2, limit: 250, resetDate: '2026-12-01T00:00:00Z', tier: 'Business', notStarted: false };
+  it('Phase 30e: exactly 10 credits (the 10-credit starter allowance) is enough for one document; the line then drops by 10 to 0', async () => {
+    aiCreditsMock.state.credits = { remaining: 10, limit: 250, resetDate: '2026-12-01T00:00:00Z', tier: 'Business', notStarted: false };
     invoke.mockResolvedValue(ok({ credits_remaining: 0 }));
     renderContracts();
     fillServiceAgreement();
     expect(screen.getByRole('button', { name: /Generate with AI/ })).toBeEnabled();
     generate();
     await screen.findByRole('note');
-    expect(screen.getByTestId('credits-left')).toHaveTextContent('Uses 2 AI credits · you have 0 left');
+    expect(screen.getByTestId('credits-left')).toHaveTextContent('Uses 10 AI credits · you have 0 left');
     expect(screen.getByRole('button', { name: /Generate with AI/ })).toBeDisabled();
+  });
+
+  it('Phase 30e: 9 credits cannot generate, 10 can (the server is not called with 9)', () => {
+    aiCreditsMock.state.credits = { remaining: 9, limit: 250, resetDate: null, tier: 'Business', notStarted: false };
+    const { unmount } = renderContracts();
+    fillServiceAgreement();
+    expect(screen.getByRole('button', { name: /Generate with AI/ })).toBeDisabled();
+    unmount();
+    aiCreditsMock.state.credits = { remaining: 10, limit: 250, resetDate: null, tier: 'Business', notStarted: false };
+    renderContracts();
+    fillServiceAgreement();
+    expect(screen.getByRole('button', { name: /Generate with AI/ })).toBeEnabled();
+    expect(screen.queryByText(/A document needs/)).toBeNull();
+  });
+
+  it('Phase 30e: a result takes the balance down by 10 (from the reply)', async () => {
+    aiCreditsMock.state.credits = { remaining: 56, limit: 250, resetDate: null, tier: 'Business', notStarted: false };
+    invoke.mockResolvedValue(ok({ credits_remaining: 46 }));
+    renderContracts();
+    fillServiceAgreement();
+    expect(screen.getByTestId('credits-left')).toHaveTextContent('you have 56 left');
+    generate();
+    await screen.findByRole('note');
+    expect(screen.getByTestId('credits-left')).toHaveTextContent('Uses 10 AI credits · you have 46 left');
   });
 
   it('balance unknown (loading or failed): shows the cost only and leaves the check to the server', () => {
     aiCreditsMock.state = { credits: null, loading: false, error: new Error('mfa') };
     renderContracts();
-    expect(screen.getByTestId('credits-left')).toHaveTextContent(/^Uses 2 AI credits$/);
+    expect(screen.getByTestId('credits-left')).toHaveTextContent(/^Uses 10 AI credits$/);
     expect(screen.getByText(/Couldn't load your credits/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     expect(aiCreditsMock.refetch).toHaveBeenCalled();
@@ -224,11 +248,11 @@ describe('Privacy / Legal Notices Generator', () => {
 });
 
 describe('Privacy / Legal Notices Generator credits', () => {
-  it('Generate disabled below 2 credits', () => {
-    aiCreditsMock.state.credits = { remaining: 1, limit: 10, resetDate: null, tier: 'free', notStarted: false };
+  it('Generate disabled below 10 credits', () => {
+    aiCreditsMock.state.credits = { remaining: 9, limit: 10, resetDate: null, tier: 'free', notStarted: false };
     render(<MemoryRouter><PrivacyPolicyGenerator /></MemoryRouter>);
     expect(screen.getByRole('button', { name: /Generate with AI/ })).toBeDisabled();
-    expect(screen.getByRole('status')).toHaveTextContent('A document needs 2 AI credits and you have 1 left.');
+    expect(screen.getByRole('status')).toHaveTextContent('A document needs 10 AI credits and you have 9 left.');
   });
 });
 

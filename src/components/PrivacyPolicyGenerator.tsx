@@ -1,6 +1,6 @@
 import LegalDocumentGenerator from '@/components/legal/LegalDocumentGenerator';
 
-/** Phase 30: AI-drafted UK privacy policies and legal notices (generate-legal-document, 2 AI credits each). */
+/** Phase 30: AI-drafted UK privacy policies and legal notices (generate-legal-document, 10 AI credits each). */
 const PrivacyPolicyGenerator = () => (
   <LegalDocumentGenerator
     kind="legal_notice"

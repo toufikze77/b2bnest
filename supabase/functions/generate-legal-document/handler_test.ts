@@ -170,7 +170,7 @@ Deno.test("insufficient credits: 402 with the reset date, OpenAI not called, not
   assertEquals(r.status, 402);
   assertEquals(r.body.error, "insufficient_credits");
   assert(String(r.body.message).includes("1 December 2026"));
-  assert(String(r.body.message).includes("2 AI credits"));
+  assert(String(r.body.message).includes("10 AI credits"));
   assertEquals(r.body.reset_date, "2026-12-01T00:00:00Z");
   assertEquals(f.calls.openai.length, 0);
   assertEquals(f.calls.refund.length, 0);
@@ -187,11 +187,11 @@ Deno.test("success: deducts exactly CREDITS_PER_DOCUMENT once and returns the do
   const f = fake();
   const r = await run(f, post(goodBody()));
   assertEquals(r.status, 200);
-  assertEquals(CREDITS_PER_DOCUMENT, 2);
-  assertEquals(f.calls.deduct, [2]);
+  assertEquals(CREDITS_PER_DOCUMENT, 10);
+  assertEquals(f.calls.deduct, [10]);
   assertEquals(f.calls.refund.length, 0);
   assertEquals(r.body, {
-    document: DOC_TEXT, docType: "service_agreement", jurisdiction: "england_wales", credits_used: 2,
+    document: DOC_TEXT, docType: "service_agreement", jurisdiction: "england_wales", credits_used: 10,
     credits_remaining: 48, credits_limit: 50, reset_date: "2026-12-01T00:00:00Z",
   });
   const sent = f.calls.openai[0];
@@ -215,8 +215,8 @@ for (const [name, reply] of [
     assertEquals(r.body.error, "ai_failed");
     assertEquals(r.body.credit_refunded, true);
     assertEquals(r.body.message, AI_FAILED_REFUNDED);
-    assertEquals(f.calls.deduct, [2]);
-    assertEquals(f.calls.refund, [2]);
+    assertEquals(f.calls.deduct, [10]);
+    assertEquals(f.calls.refund, [10]);
   });
 }
 
@@ -227,7 +227,7 @@ Deno.test("timeout: aborts, refunds exactly once", async () => {
   });
   const r = await run(f, post(goodBody()));
   assertEquals(r.status, 502);
-  assertEquals(f.calls.refund, [2]);
+  assertEquals(f.calls.refund, [10]);
   assert(f.logs.some((l) => l.includes('"reason":"timeout"')));
 });
 
@@ -346,17 +346,17 @@ Deno.test("Phase 30d: the prompt lists every required clause and the word target
   }
 });
 
-Deno.test("Phase 30d: a long valid answer passes and charges 2; a thin one is refused and refunded once", async () => {
+Deno.test("Phase 30d: a long valid answer passes and charges 10; a thin one is refused and refunded once", async () => {
   const ok = fake({ openai: () => Promise.resolve(openaiOk(docOf(minWordsFloor(SA) + 10))) });
   const good = await run(ok, post(goodBody()));
   assertEquals(good.status, 200);
-  assertEquals(ok.calls.deduct, [2]);
+  assertEquals(ok.calls.deduct, [10]);
   assertEquals(ok.calls.refund.length, 0);
   const thin = fake({ openai: () => Promise.resolve(openaiOk(docOf(minWordsFloor(SA) - 60))) });
   const bad = await run(thin, post(goodBody()));
   assertEquals(bad.status, 502);
   assertEquals(bad.body.message, AI_FAILED_REFUNDED);
-  assertEquals(thin.calls.refund, [2]);
+  assertEquals(thin.calls.refund, [10]);
   assert(thin.logs.some((l) => l.includes('"reason":"too_short"')));
 });
 
@@ -384,4 +384,21 @@ Deno.test("Phase 30d catalogue: all 33 types have required clauses and sensible 
   }
   // Rough check of the output budget: the longest target fits well inside MAX_TOKENS (about 1.4 tokens a word with Markdown).
   assert(Math.max(...DOC_TYPES.map((d) => d.minWords)) * 1.4 < MAX_TOKENS);
+});
+
+Deno.test("Phase 30e: a document reserves 10 credits; 9 left is refused with 402 before the model, 10 left is enough", async () => {
+  // The database decides (check_and_deduct_ai_credit); this fake answers like it does for 9 and for 10 credits left.
+  const nine = fake({ credit: { success: false, credits_remaining: 9, credits_limit: 10, reset_date: "2026-12-01T00:00:00Z" } });
+  const refused = await run(nine, post(goodBody()));
+  assertEquals(nine.calls.deduct, [10]);
+  assertEquals(refused.status, 402);
+  assert(String(refused.body.message).startsWith("A document uses 10 AI credits"));
+  assertEquals(nine.calls.openai.length, 0);
+  assertEquals(nine.calls.refund.length, 0);
+  const ten = fake({ credit: { success: true, credits_remaining: 0, credits_limit: 10, reset_date: "2026-12-01T00:00:00Z" } });
+  const ok = await run(ten, post(goodBody()));
+  assertEquals(ok.status, 200);
+  assertEquals(ten.calls.deduct, [10]);
+  assertEquals(ok.body.credits_used, 10);
+  assertEquals(ok.body.credits_remaining, 0);
 });

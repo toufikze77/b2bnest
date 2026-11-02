@@ -1,6 +1,6 @@
 import LegalDocumentGenerator from '@/components/legal/LegalDocumentGenerator';
 
-/** Phase 30: AI-drafted UK contracts (generate-legal-document, 2 AI credits each). */
+/** Phase 30: AI-drafted UK contracts (generate-legal-document, 10 AI credits each). */
 const ContractGenerator = () => (
   <LegalDocumentGenerator
     kind="contract"

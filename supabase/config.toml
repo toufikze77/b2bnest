@@ -90,6 +90,6 @@ verify_jwt = true
 [functions.trial-email-sender]
 verify_jwt = true
 
-# Phase 30: AI contracts and legal notices (2 AI credits each). Caller's JWT required; the function checks access and credits.
+# Phase 30: AI contracts and legal notices (10 AI credits each). Caller's JWT required; the function checks access and credits.
 [functions.generate-legal-document]
 verify_jwt = true

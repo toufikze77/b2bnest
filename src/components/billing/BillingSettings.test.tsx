@@ -124,6 +124,6 @@ describe('Settings → Billing: AI credits (Phase 30c)', () => {
     show();
     expect(screen.getByTestId('ai-credits-card')).toHaveTextContent('42 of 250 AI credits left');
     expect(screen.getByText('Resets 1 December 2026')).toBeInTheDocument();
-    expect(screen.getByText("Advisor answers use 1 credit, contracts and legal notices use 2. Unused credits don't roll over.")).toBeInTheDocument();
+    expect(screen.getByText("Advisor answers use 1 credit, contracts and legal notices use 10. Unused credits don't roll over.")).toBeInTheDocument();
   });
 });

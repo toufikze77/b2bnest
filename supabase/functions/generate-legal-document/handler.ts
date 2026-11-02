@@ -33,7 +33,12 @@ export const MAX_TOKENS = 8000;
  * whatever the plan. The model gets 130 s, leaving about 20 s for sign-in, the credit RPCs and a refund.
  */
 export const AI_TIMEOUT_MS = 130_000;
-export const CREDITS_PER_DOCUMENT = 2;
+/**
+ * Phase 30e (owner decision, 2 November 2026): 10 credits a document (was 2). gpt-4.1 full-length documents cost about
+ * 4-5p each; 10 keeps the worst case (every credit spent on documents) well under each plan's price. Reserve and refund
+ * both use this constant.
+ */
+export const CREDITS_PER_DOCUMENT = 10;
 /** A document shorter than this share of its type's minWords is too thin to sell: refunded (passesQualityGate). */
 export const MIN_WORDS_SHARE = 0.7;
 export const minWordsFloor = (doc: DocType) => Math.floor(doc.minWords * MIN_WORDS_SHARE);

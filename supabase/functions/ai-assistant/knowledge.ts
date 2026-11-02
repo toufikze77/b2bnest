@@ -23,7 +23,7 @@ export const TRIAL_DAYS = 14;
 /** Same cap as Workflow Studio (src/lib/workflowSteps.ts MAX_STEPS) and workflow-execute. */
 const WORKFLOW_MAX_STEPS = 10;
 /** Same as CREDITS_PER_DOCUMENT in generate-legal-document/handler.ts (knowledge_test.ts fails if they differ). */
-export const LEGAL_DOCUMENT_CREDITS = 2;
+export const LEGAL_DOCUMENT_CREDITS = 10;
 
 const pounds = (pence: number) => `£${(pence / 100).toLocaleString("en-GB", { minimumFractionDigits: pence % 100 ? 2 : 0 })}`;
 const plans = Object.values(PLAN_CATALOG);

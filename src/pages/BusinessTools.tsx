@@ -32,6 +32,7 @@ import CustomerSurveyBuilder from '@/components/CustomerSurveyBuilder';
 import BusinessFinanceAssistant from '@/components/BusinessFinanceAssistant';
 import HMRCIntegration from '@/components/HMRCIntegration';
 import BusinessToolsSEO from '@/components/BusinessToolsSEO';
+import { CREDITS_PER_DOCUMENT } from '@/lib/legalDocuments';
 
 type ToolType = 'overview' | 'notepro' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'qr-code-generator' | 'coupon-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'customer-survey-builder' | 'business-finance-assistant' | 'currency-converter' | 'hmrc-integration' | 'workflow-studio' | 'lead-generation' | 'employee-rota';
 
@@ -195,7 +196,7 @@ const BusinessTools = () => {
     {
       id: 'contract-generator' as ToolType,
       title: 'Contract Generator',
-      description: 'AI-drafted UK contracts to check with a solicitor (2 AI credits each)',
+      description: `AI-drafted UK contracts to check with a solicitor (${CREDITS_PER_DOCUMENT} AI credits each)`,
       icon: FileText,
       color: 'bg-purple-700',
       benefits: ['26 UK contract types', 'England and Wales, Scotland or Northern Ireland', 'Word, PDF and Markdown downloads'],
@@ -204,7 +205,7 @@ const BusinessTools = () => {
     {
       id: 'privacy-policy-generator' as ToolType,
       title: 'Privacy & Legal Notices',
-      description: 'AI-drafted UK privacy policies and notices to check (2 AI credits each)',
+      description: `AI-drafted UK privacy policies and notices to check (${CREDITS_PER_DOCUMENT} AI credits each)`,
       icon: Shield,
       color: 'bg-green-700',
       benefits: ['7 UK notices and policies', 'UK GDPR and Data Protection Act 2018 topics', 'Word, PDF and Markdown downloads'],

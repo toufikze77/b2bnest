@@ -58,7 +58,7 @@ describe('error states', () => {
     const e = generateErrorFrom(402, { error: 'insufficient_credits', reset_date: '2026-12-01T00:00:00Z' });
     expect(e.kind).toBe('insufficient_credits');
     expect(e.message).toContain('1 December 2026');
-    expect(e.message).toContain('uses 2');
+    expect(e.message).toContain('uses 10');
   });
   it('trial ended', () => {
     const e = generateErrorFrom(402, { error: 'trial_ended', message: 'Your 14-day trial has ended. Choose a plan on the Pricing page.' });
