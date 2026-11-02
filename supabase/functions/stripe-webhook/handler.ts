@@ -117,10 +117,23 @@ export async function resolveOwner(store: Store, customerId: string, customerEma
   return { refused: "no_verified_owner" };
 }
 
+/** Phase 37 top-up RPCs (service role). Both are idempotent in the database (session id / lot status). */
+export interface TopupStore {
+  /** public.grant_ai_topup. Returns its JSON: { success, duplicate?, granted?, lot_id?, error? }. */
+  grant(args: { userId: string; packId: string; sessionId: string; paymentIntentId: string | null; amountPence: number | null }): Promise<Any>;
+  /** public.void_ai_topup. Returns its JSON: { success, duplicate?, removed?, lot_id?, error? }. */
+  void(args: { sessionId: string | null; paymentIntentId: string | null; reason: string }): Promise<Any>;
+}
+
+/** A Checkout Session started by create-ai-topup-checkout (Phase 37). */
+export const isTopupSession = (obj: Any): boolean => obj?.mode === "payment" && obj?.metadata?.type === "ai_topup";
+
 export interface Deps {
   verify(body: string, signature: string): Promise<Any>;
   stripe: Any;
   store: Store;
+  /** Phase 37. Credits are granted ONLY here, after Stripe says the session is paid. */
+  topups?: TopupStore;
   log?: (step: string, details?: unknown) => void;
   /** true = live key (accept only livemode events), false = test key. Undefined disables the guard (tests only). */
   expectedLivemode?: boolean;
@@ -191,6 +204,36 @@ export function makeHandler(deps: Deps) {
     log(r === "applied" ? "Entitlements synced" : "Older event ignored (newer state stored)", { status: subscription.status, plan: resolved?.plan.key });
   };
 
+  // Phase 37. Logs hold ids and codes only. A paid session that cannot be granted for a reason a retry would not change
+  // (wrong amount, unknown pack or account, over the cap) is logged as an ALERT for a manual refund and the event completes;
+  // a database error throws, so Stripe retries.
+  const grantTopup = async (obj: Any, type: string) => {
+    if (!deps.topups) throw new Error("topups_not_configured"); // retried; never silently dropped
+    const session = obj.id as string;
+    if (obj.payment_status !== "paid") {
+      log("Top-up awaiting payment", { session, payment_status: obj.payment_status ?? null, type });
+      return; // checkout.session.async_payment_succeeded grants it later; a failed payment grants nothing
+    }
+    const meta = obj.metadata ?? {};
+    const alert = (code: string) => log("ALERT top-up paid but not granted: refund by hand", { session, code });
+    if (typeof meta.user_id !== "string" || !meta.user_id || obj.client_reference_id !== meta.user_id) return alert("user_mismatch");
+    if (obj.currency !== "gbp") return alert("currency_mismatch");
+    const r = await deps.topups.grant({
+      userId: meta.user_id, packId: String(meta.pack_id ?? ""), sessionId: session, paymentIntentId: idOf(obj.payment_intent),
+      amountPence: typeof obj.amount_total === "number" ? obj.amount_total : null,
+    });
+    if (r?.success) log(r.duplicate ? "Top-up already granted" : "Top-up granted", { session, lot: r.lot_id ?? null, credits: r.granted ?? 0 });
+    else alert(String(r?.error ?? "unknown"));
+  };
+  const voidTopup = async (obj: Any, type: string) => {
+    const paymentIntentId = idOf(obj.payment_intent);
+    if (!paymentIntentId) { log("Refund or dispute without payment intent", { id: obj.id, type }); return; }
+    if (!deps.topups) throw new Error("topups_not_configured");
+    const r = await deps.topups.void({ sessionId: null, paymentIntentId, reason: type });
+    if (r?.success) log(r.duplicate ? "Top-up already voided" : "Top-up voided", { lot: r.lot_id ?? null, removed: r.removed ?? 0, type });
+    else log("Refund or dispute not for a top-up", { type }); // subscription payments: unchanged, nothing written
+  };
+
   return async (req: Request): Promise<Response> => {
     if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
     const body = await req.text();
@@ -225,6 +268,7 @@ export function makeHandler(deps: Deps) {
       const obj = event.data.object;
       switch (event.type) {
         case "checkout.session.completed":
+          if (isTopupSession(obj)) { await grantTopup(obj, event.type); break; }
           // `subscription` is still top level on Checkout Sessions (a string in webhook payloads; an object if expanded).
           if (obj.mode === "subscription" && idOf(obj.subscription)) await sync(idOf(obj.subscription)!, created);
           else {
@@ -253,6 +297,14 @@ export function makeHandler(deps: Deps) {
             p_status: "failed", p_stripe_payment_intent_id: obj.id,
             p_metadata: { webhook_event_id: event.id, failure_reason: obj.last_payment_error?.message },
           });
+          break;
+        case "checkout.session.async_payment_succeeded":
+          if (isTopupSession(obj)) await grantTopup(obj, event.type);
+          else log("Unhandled event type", { type: event.type });
+          break;
+        case "charge.refunded":
+        case "charge.dispute.created":
+          await voidTopup(obj, event.type);
           break;
         default:
           log("Unhandled event type", { type: event.type });

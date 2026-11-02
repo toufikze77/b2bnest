@@ -15,7 +15,7 @@ describe('AICreditsDisplay', () => {
   it('normal: "42 of 250 AI credits left", the en-GB reset date and a labelled bar', () => {
     set(200, 250);
     render(<AICreditsDisplay />);
-    expect(screen.getByText('200 of 250 AI credits left')).toBeInTheDocument();
+    expect(screen.getByText('200 of 250 AI credits left this month')).toBeInTheDocument();
     expect(screen.getByText('Resets 1 December 2026')).toBeInTheDocument();
     const bar = screen.getByRole('progressbar', { name: 'AI credits left this month' });
     expect(bar).toHaveAttribute('aria-valuenow', '200');
@@ -63,7 +63,7 @@ describe('AICreditsDisplay', () => {
   it('compact variant: one line', () => {
     set(42, 250);
     render(<AICreditsDisplay variant="compact" />);
-    expect(screen.getByTestId('ai-credits-compact')).toHaveTextContent('42 of 250 AI credits left · Resets 1 December 2026');
+    expect(screen.getByTestId('ai-credits-compact')).toHaveTextContent('42 of 250 AI credits left this month · Resets 1 December 2026');
     expect(screen.queryByRole('progressbar')).toBeNull();
   });
 
@@ -72,8 +72,23 @@ describe('AICreditsDisplay', () => {
     aiCreditsMock.state.credits = { remaining: 50, limit: 50, resetDate: null, tier: 'free', notStarted: true };
     render(<AICreditsDisplay variant="compact" />);
     const line = screen.getByTestId('ai-credits-compact');
-    expect(line).toHaveTextContent('50 of 50 AI credits left · Included in your free trial. Your 50 credits start counting from your first AI request.');
+    expect(line).toHaveTextContent('50 of 50 AI credits left this month · Included in your free trial. Your 50 credits start counting from your first AI request.');
     expect(line).not.toHaveTextContent('Resets');
     access.value = { inTrial: false };
+  });
+
+  it('Phase 37: "X left this month" plus "+ Y top-up credits (expire from …)"; the bar is the monthly allowance', () => {
+    set(342, 250, { monthlyRemaining: 42, topupCredits: 300, topupNextExpiry: '2027-11-02T10:00:00Z' });
+    render(<AICreditsDisplay />);
+    expect(screen.getByText('42 of 250 AI credits left this month')).toBeInTheDocument();
+    expect(screen.getByTestId('ai-credits-topup')).toHaveTextContent('+ 300 top-up credits (expire from 2 November 2027)');
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '42');
+    expect(screen.getByTestId('ai-credits-card')).toHaveAttribute('data-level', 'low');
+  });
+
+  it('Phase 37: no top-up credits, no top-up line', () => {
+    set(42, 250, { monthlyRemaining: 42, topupCredits: 0, topupNextExpiry: null });
+    render(<AICreditsDisplay variant="compact" />);
+    expect(screen.queryByTestId('ai-credits-topup')).toBeNull();
   });
 });

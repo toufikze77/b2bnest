@@ -10,6 +10,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { PLANS, type Plan, limitText, aiCreditsText, SEAT_LIMITS_NOTE } from '@/lib/plans';
+import { TOPUP_FAQ_ANSWER, TOPUP_FAQ_QUESTION } from '@/lib/aiTopups';
 import { useBillingStatus, poundsText } from '@/hooks/useBillingStatus';
 import { BILLING_LINK_ERROR, functionErrorText, isBillingLinkError } from '@/lib/billingErrors';
 
@@ -300,6 +301,10 @@ const PricingPlans = ({ variant = 'page' }: { variant?: 'page' | 'paywall' }) =>
             Frequently Asked Questions
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <div className="text-left">
+              <h4 className="font-semibold text-gray-900 mb-2">{TOPUP_FAQ_QUESTION}</h4>
+              <p className="text-gray-600">{TOPUP_FAQ_ANSWER}</p>
+            </div>
             <div className="text-left">
               <h4 className="font-semibold text-gray-900 mb-2">
                 Can I change plans anytime?

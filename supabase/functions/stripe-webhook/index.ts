@@ -25,6 +25,13 @@ const handler = stripeSecretKey && webhookSecret
       // Derived from the key prefix (sk_live_/rk_live_ vs sk_test_/rk_test_); no extra secret needed.
       expectedLivemode: /^(sk|rk)_live_/.test(stripeSecretKey),
       verify: (body, sig) => stripe.webhooks.constructEventAsync(body, sig, webhookSecret),
+      // Phase 37: AI credit top-ups (docs/phase37). Granted only here, after Stripe confirms payment.
+      topups: {
+        grant: (a) => rpc("grant_ai_topup", {
+          p_user_id: a.userId, p_pack_id: a.packId, p_checkout_session_id: a.sessionId, p_payment_intent_id: a.paymentIntentId, p_amount_pence: a.amountPence,
+        }),
+        void: (a) => rpc("void_ai_topup", { p_checkout_session_id: a.sessionId, p_payment_intent_id: a.paymentIntentId, p_reason: a.reason }),
+      },
       store: {
         claim: async (id, type) => {
           const r = (await rpc("claim_stripe_webhook_event", { p_event_id: id, p_event_type: type, p_lease_seconds: 120 }))?.[0];

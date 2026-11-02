@@ -137,3 +137,31 @@ describe('access (same guard as the rest of /admin)', () => {
     expect(h.rpc).not.toHaveBeenCalled();
   });
 });
+
+describe('AI usage: top-ups (Phase 37)', () => {
+  it('before Phase 37: says so, no invented numbers', async () => {
+    h.rpc.mockImplementation((fn: string, args?: Record<string, unknown>) => (fn === 'admin_ai_topup_summary' ? Promise.reject(new Error('Could not find the function')) : emptyData(fn, args)));
+    app('/admin/overview/ai-usage');
+    await screen.findByRole('heading', { name: 'AI usage' });
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Business development' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Business development' }));
+    expect(await screen.findAllByText('Not available until the Phase 37 database update (docs/phase37) is applied.')).not.toHaveLength(0);
+  });
+
+  it('revenue, packs sold, credits sold vs used vs expired, and a needs-refund warning', async () => {
+    h.rpc.mockImplementation((fn: string, args?: Record<string, unknown>) => (fn === 'admin_ai_topup_summary'
+      ? Promise.resolve({ packs_sold: 7, revenue_pence: 18700, refunded_pence: 500, credits_sold: 5500, credits_used: 5, credits_unused: 5000, credits_expired: 395, credits_voided: 100, needs_refund: 1,
+          by_pack: [{ pack_id: 'credits_100', credits: 100, amount_pence: 500, sold: 2, voided: 1 }, { pack_id: 'credits_300', credits: 300, amount_pence: 1200, sold: 0, voided: 0 }] })
+      : emptyData(fn, args)));
+    app('/admin/overview/ai-usage');
+    await screen.findByRole('heading', { name: 'AI usage' });
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Business development' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Business development' }));
+    expect(await screen.findByText('£187.00')).toBeInTheDocument();
+    const credits = screen.getByText('Top-up credits: sold, used, unused, expired').closest('div.rounded-lg, .rounded-xl, [class*="card"]') ?? document.body;
+    expect(credits.textContent).toMatch(/5,500.*5.*5,000.*395.*100/);
+    expect(screen.getByText('100 credits')).toBeInTheDocument();
+    expect(screen.queryByText('300 credits')).toBeNull();
+    expect(screen.getAllByRole('alert').some((a) => /could not be added/.test(a.textContent ?? ''))).toBe(true);
+  });
+});

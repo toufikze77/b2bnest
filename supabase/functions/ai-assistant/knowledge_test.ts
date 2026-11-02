@@ -11,8 +11,9 @@ const text = platformKnowledge();
 const plans = Object.values(PLAN_CATALOG);
 const pounds = (p: number) => `£${p / 100}`;
 
-Deno.test("every price in the text is a catalogue price for that plan, and every plan's prices are there", () => {
-  const allowed = new Set(plans.flatMap((p) => [pounds(p.prices.month.amount), pounds(p.prices.year.amount)]));
+Deno.test("every price in the text is a catalogue price for that plan (or a top-up pack price), and every plan's prices are there", async () => {
+  const { TOPUP_PACKS } = await import("../_shared/topup-packs.ts");
+  const allowed = new Set([...plans.flatMap((p) => [pounds(p.prices.month.amount), pounds(p.prices.year.amount)]), ...TOPUP_PACKS.map((t) => pounds(t.amountPence))]);
   const found = text.match(/£[\d,.]+/g) ?? [];
   assert(found.length >= plans.length * 2);
   for (const f of found) assert(allowed.has(f.replace(/,/g, "")), `price not in the catalogue: ${f}`);
@@ -127,4 +128,14 @@ Deno.test("Phase 35: free-trial accounts include 50 AI credits, the same number 
   assert(sql.includes("false, 'free', 50, 50)"));
   const ui = await Deno.readTextFile(new URL("../../../src/lib/aiCredits.ts", import.meta.url));
   assert(ui.includes("export const TRIAL_AI_CREDITS = 50;"));
+});
+
+Deno.test("Phase 37: top-up packs, 12 months, after monthly, no roll-over, subscribers only; all from the catalogue", async () => {
+  const { TOPUP_PACKS } = await import("../_shared/topup-packs.ts");
+  for (const p of TOPUP_PACKS) {
+    const price = `£${p.amountPence % 100 === 0 ? p.amountPence / 100 : (p.amountPence / 100).toFixed(2)}`;
+    assert(text.includes(`${p.credits.toLocaleString("en-GB")} credits ${price}`), `${p.id} missing`);
+  }
+  assert(text.includes("100 credits £5, 300 credits £12, 1,000 credits £35"));
+  for (const s of ["last 12 months", "used after the monthly credits", "don't roll over", "subscribers on their own paid plan only", "prices as shown"]) assert(text.includes(s), s);
 });

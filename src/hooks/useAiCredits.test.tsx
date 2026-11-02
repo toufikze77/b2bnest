@@ -82,4 +82,15 @@ describe('useAiCredits', () => {
     act(() => result.current.update({ credits_remaining: 40, credits_limit: 250 }));
     await waitFor(() => expect(result.current.c.remaining).toBe(40));
   });
+
+  it('Phase 37: after a reply without the split, monthly is spent first (the top-up part stays until the re-read)', async () => {
+    db.rpc.mockResolvedValue({ data: { ...INFO, credits_remaining: 342, monthly_remaining: 42, topup_credits: 300, topup_next_expiry: '2027-11-02T10:00:00Z' }, error: null });
+    const { result } = renderHook(() => ({ c: useAiCredits(), update: useAiCreditsUpdater() }), { wrapper });
+    await waitFor(() => expect(result.current.c.remaining).toBe(342));
+    db.rpc.mockReturnValue(new Promise(() => {}));
+    act(() => result.current.update({ credits_remaining: 332, credits_limit: 250 }));
+    await waitFor(() => expect(result.current.c.credits).toMatchObject({ remaining: 332, monthlyRemaining: 32, topupCredits: 300, topupNextExpiry: '2027-11-02T10:00:00Z' }));
+    act(() => result.current.update({ credits_remaining: 290, credits_limit: 250 }));
+    await waitFor(() => expect(result.current.c.credits).toMatchObject({ remaining: 290, monthlyRemaining: 0, topupCredits: 290 }));
+  });
 });

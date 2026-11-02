@@ -13,6 +13,7 @@ import {
   fieldLabel, fieldMax, FIELDS, groupedDocTypes, invokeGenerateLegalDocument, JURISDICTIONS, notEnoughCreditsText, PROGRESS_TEXT,
   type DocKind, type FieldId, type GenerateError, type Jurisdiction,
 } from '@/lib/legalDocuments';
+import OutOfCreditsAction from '@/components/ai/OutOfCreditsAction';
 import { buildDocx, buildPdf, documentFileName, downloadBlob, markdownBlob } from '@/lib/legalExport';
 import { deleteHistory, type HistoryEntry, loadHistory, newHistoryId, saveHistory } from '@/lib/legalHistory';
 import { placeholdersIn } from '@/lib/legalMarkdown';
@@ -191,7 +192,7 @@ export default function LegalDocumentGenerator({ kind, title, intro }: Props) {
           {short && (
             <p id={`${idp}-short`} role="status" className="text-sm text-destructive">
               {notEnoughCreditsText(balance.remaining!, resetLine(balance.resetDate))}{' '}
-              <Link to="/pricing" className="font-medium text-primary underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring">Compare plans</Link>
+              <OutOfCreditsAction />
             </p>
           )}
           {balance.error && (
@@ -211,7 +212,7 @@ export default function LegalDocumentGenerator({ kind, title, intro }: Props) {
             <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-foreground">
               <p>{error.message}</p>
               {error.kind === 'trial_ended' && <Link to="/pricing" className="mt-1 inline-block font-medium text-primary underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring">See plans on the Pricing page</Link>}
-              {error.kind === 'insufficient_credits' && <Link to="/pricing" className="mt-1 inline-block font-medium text-primary underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring">Compare plans</Link>}
+              {error.kind === 'insufficient_credits' && <OutOfCreditsAction className="mt-1 inline-block" />}
             </div>
           )}
         </CardContent>

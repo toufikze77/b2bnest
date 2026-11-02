@@ -14,6 +14,7 @@
 // generate-legal-document catalogue (flattened as gld_catalogue.ts). Removed because the code proves them false: "File
 // attachments and document management", "Secure file storage" and "Document sharing and collaboration" (the only file
 // uploads are support-ticket attachments), "Business cards designer" and "Email signature generator" (no such tools).
+import { TOPUP_VALID_MONTHS, topupPacksText } from "../_shared/topup-packs.ts";
 import { PLAN_CATALOG, type PlanDefinition } from "../_shared/plans.ts";
 import { WORKFLOW_PLAN_KEYS } from "../_shared/workflow-access.ts";
 import { docTypesFor, JURISDICTIONS, type DocKind } from "../generate-legal-document/catalogue.ts";
@@ -211,6 +212,8 @@ ${legalDocumentsSection()}
 - Automated data classification
 - Each answer from the AI assistant (Advisor, document assistant) uses one AI credit. If the AI service fails, the credit is given back.
 - Each contract or legal notice uses ${LEGAL_DOCUMENT_CREDITS} AI credits (see CONTRACTS AND LEGAL NOTICES).
+- Monthly AI credits reset each month and unused monthly credits don't roll over.
+- AI credit top-ups (Phase 37), in Settings → Billing, for subscribers on their own paid plan only (not free-trial accounts and not company members whose company pays): ${topupPacksText()}, one-off payments, prices as shown. Top-up credits last ${TOPUP_VALID_MONTHS} months and are used after the monthly credits. If Settings → Billing says top-ups aren't available yet, they can't be bought yet. A free-trial user who runs out should choose a plan first.
 
 ## SECURITY & COMPLIANCE
 - Two-step sign-in is optional for each user (Settings → Security): a 6-digit code from an authenticator app such as Microsoft Authenticator, Google Authenticator, Authy or 1Password, checked by Supabase Auth. It is required for platform administrators to open the Admin area. There is no SMS option.

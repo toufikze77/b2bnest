@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { useAiCredits } from '@/hooks/useAiCredits';
 import { useAccess } from '@/hooks/useAccess';
 import {
-  CREDITS_LOAD_ERROR, creditLevel, creditPercent, creditsLeftLine, NOT_STARTED_LINE, resetLine, TRIAL_LINE, type CreditLevel,
+  CREDITS_LOAD_ERROR, creditLevel, creditPercent, creditsLeftLine, monthlyOf, NOT_STARTED_LINE, resetLine, topupLine, TRIAL_LINE, type CreditLevel,
 } from '@/lib/aiCredits';
 
 interface Props {
@@ -45,8 +45,11 @@ export default function AICreditsDisplay({ variant = 'card', note, className }: 
     );
   }
 
-  const level = creditLevel(credits.remaining, credits.limit);
+  // Phase 37: the bar and level are the monthly allowance; purchased (top-up) credits are a separate line.
+  const monthly = monthlyOf(credits);
+  const level = creditLevel(monthly, credits.limit);
   const left = creditsLeftLine(credits);
+  const topup = topupLine(credits);
   const sub = credits.notStarted
     ? [access.inTrial ? TRIAL_LINE : null, NOT_STARTED_LINE].filter(Boolean).join('. ')
     : resetLine(credits.resetDate);
@@ -56,12 +59,13 @@ export default function AICreditsDisplay({ variant = 'card', note, className }: 
       <p className={cn('flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground', className)} data-testid="ai-credits-compact">
         <Zap className="h-3.5 w-3.5 text-primary" aria-hidden />
         <span className={cn('font-medium', TEXT[level])}>{left}</span>
+        {topup && <>{' '}<span className="font-medium text-foreground" data-testid="ai-credits-topup">{topup}</span></>}
         {sub && <>{' '}<span>· {sub}</span></>}
       </p>
     );
   }
 
-  const pct = creditPercent(credits.remaining, credits.limit);
+  const pct = creditPercent(monthly, credits.limit);
   return (
     <section className={cn('rounded-lg border border-border bg-card p-4 text-card-foreground', className)} aria-labelledby="ai-credits-title" data-testid="ai-credits-card" data-level={level}>
       <div className="flex items-start justify-between gap-3">
@@ -72,7 +76,10 @@ export default function AICreditsDisplay({ variant = 'card', note, className }: 
             {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
           </div>
         </div>
-        <p className={cn('text-right text-sm font-semibold', TEXT[level])}>{left}</p>
+        <div className="text-right">
+          <p className={cn('text-sm font-semibold', TEXT[level])}>{left}</p>
+          {topup && <p className="text-xs font-medium text-foreground" data-testid="ai-credits-topup">{topup}</p>}
+        </div>
       </div>
       {credits.limit > 0 && (
         <div
@@ -81,7 +88,7 @@ export default function AICreditsDisplay({ variant = 'card', note, className }: 
           aria-label="AI credits left this month"
           aria-valuemin={0}
           aria-valuemax={credits.limit}
-          aria-valuenow={Math.max(0, credits.remaining)}
+          aria-valuenow={Math.max(0, monthly)}
           aria-valuetext={left}
         >
           <div className={cn('h-full rounded-full transition-all', BAR[level])} style={{ width: `${pct}%` }} />
