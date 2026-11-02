@@ -84,6 +84,7 @@ const RotaEmployees = lazyPage(() => import('@/pages/rota/Employees'));
 const RotaSchedule = lazyPage(() => import('@/pages/rota/Schedule'));
 const AdminLayout = lazyPage(() => import('@/pages/admin/AdminLayout'));
 const AdminDashboard = lazyPage(() => import('@/pages/admin/AdminDashboard'));
+const AdminMetricDetail = lazyPage(() => import('@/pages/admin/AdminMetricDetail'));
 const AdminUsers = lazyPage(() => import('@/pages/admin/AdminUsers'));
 const AdminCompanies = lazyPage(() => import('@/pages/admin/AdminCompanies'));
 const AdminCompanyDetail = lazyPage(() => import('@/pages/admin/AdminCompanyDetail'));
@@ -202,6 +203,8 @@ function App() {
                {/* B2BNest Super Admin */}
                <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
                  <Route index element={<AdminDashboard />} />
+                 {/* Phase 36: every Platform Overview card opens its analytics (same AdminLayout guard). */}
+                 <Route path="overview/:metric" element={<AdminMetricDetail />} />
                  <Route path="users" element={<AdminUsers />} />
                   <Route path="companies" element={<AdminCompanies />} />
                   <Route path="companies/:id" element={<AdminCompanyDetail />} />
