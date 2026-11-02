@@ -48,9 +48,38 @@ export async function buildPdf(markdown: string, title: string): Promise<Blob> {
     });
     y += opts.gap ?? 6;
   };
+  // Phase 30d: tables (cookie lists, retention schedules) as a simple grid: equal columns, wrapped cells, rows that
+  // move to the next page whole (a row taller than a page is split line by line).
+  const writeTable = (header: Inline[][] | null, rows: Inline[][][]) => {
+    const size = 9; const lh = size * 1.3; const pad = 4;
+    const cols = Math.max(1, (header ?? rows[0] ?? []).length);
+    const colW = (pageW - margin * 2) / cols;
+    const drawRow = (row: Inline[][], bold: boolean) => {
+      doc.setFont('helvetica', bold ? 'bold' : 'normal'); doc.setFontSize(size);
+      const wrapped = row.map((c) => doc.splitTextToSize(inlineText(c), colW - pad * 2) as string[]);
+      const lines = Math.max(1, ...wrapped.map((w) => w.length));
+      const h = lines * lh + pad * 2;
+      if (y + h > bottom && h <= bottom - margin) { doc.addPage(); y = margin; }
+      const top = y;
+      for (let li = 0; li < lines; li++) {
+        if (y + lh > bottom) { doc.addPage(); y = margin; }
+        wrapped.forEach((w, ci) => { if (w[li]) doc.text(w[li], margin + ci * colW + pad, y + pad + size); });
+        y += lh;
+      }
+      y += pad * 2;
+      if (y > top) for (let ci = 0; ci <= cols; ci++) doc.line(margin + ci * colW, top, margin + ci * colW, y);
+      doc.line(margin, top, margin + cols * colW, top);
+      doc.line(margin, y, margin + cols * colW, y);
+    };
+    doc.setDrawColor(180);
+    if (header) drawRow(header, true);
+    rows.forEach((r) => drawRow(r, false));
+    y += 8;
+  };
   for (const b of parseMarkdown(markdown)) {
     if (b.type === 'heading') write(inlineText(b.inlines), { size: HEADING_SIZE[b.level], bold: true, gap: 8 });
     else if (b.type === 'rule') y += 8;
+    else if (b.type === 'table') writeTable(b.header, b.rows);
     else if (b.type === 'clause') {
       const bold = b.inlines.length > 0 && b.inlines.every((i) => i.bold);
       write(inlineText(b.inlines), { indent: b.depth * 16, prefix: b.number, bold });
@@ -67,7 +96,7 @@ export async function buildPdf(markdown: string, title: string): Promise<Blob> {
 }
 
 export async function buildDocx(markdown: string, title: string): Promise<Blob> {
-  const { AlignmentType, Document, Footer, HeadingLevel, Packer, PageNumber, Paragraph, TextRun } = await import('docx');
+  const { AlignmentType, Document, Footer, HeadingLevel, Packer, PageNumber, Paragraph, Table, TableCell, TableRow, TextRun, WidthType } = await import('docx');
   const runs = (inlines: Inline[]) => inlines.map((i) => new TextRun({ text: i.text, bold: i.bold, italics: i.italic, highlight: i.placeholder ? 'yellow' : undefined }));
   const HEADINGS = { 1: HeadingLevel.HEADING_1, 2: HeadingLevel.HEADING_2, 3: HeadingLevel.HEADING_3, 4: HeadingLevel.HEADING_4 } as const;
   const paragraph = (b: Block) => {
@@ -77,6 +106,17 @@ export async function buildDocx(markdown: string, title: string): Promise<Blob> 
       case 'bullet': return new Paragraph({ bullet: { level: 0 }, children: runs(b.inlines) });
       case 'quote': return new Paragraph({ indent: { left: 360 }, children: runs(b.inlines) });
       case 'rule': return new Paragraph({ children: [] });
+      case 'table': {
+        if (!b.header && !b.rows.length) return new Paragraph({ children: [] });
+        const row = (cellsOf: Inline[][], header: boolean) => new TableRow({
+          tableHeader: header,
+          children: cellsOf.map((c) => new TableCell({ children: [new Paragraph({ children: runs(header ? c.map((i) => ({ ...i, bold: true })) : c) })] })),
+        });
+        return new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          rows: [...(b.header ? [row(b.header, true)] : []), ...b.rows.map((r) => row(r, false))],
+        });
+      }
       default: return new Paragraph({ spacing: { after: 120 }, children: runs(b.inlines) });
     }
   };

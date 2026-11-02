@@ -10,7 +10,22 @@ export type Block =
   | { type: 'clause'; number: string; depth: number; inlines: Inline[] }
   | { type: 'bullet'; inlines: Inline[] }
   | { type: 'quote'; inlines: Inline[] }
+  /** Phase 30d: a Markdown table (cookie lists, retention schedules). header is null when there is no |---| row. */
+  | { type: 'table'; header: Inline[][] | null; rows: Inline[][][] }
   | { type: 'rule' };
+
+const cells = (line: string) => line.replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim());
+const isSeparator = (row: string[]) => row.length > 0 && row.every((c) => /^:?-{2,}:?$/.test(c));
+
+function tableBlock(lines: string[]): Block {
+  const rows = lines.map(cells);
+  const sep = rows.findIndex(isSeparator);
+  const header = sep === 1 ? rows[0] : null;
+  const body = rows.filter((r, i) => !isSeparator(r) && !(header && i === 0));
+  const width = Math.max(header?.length ?? 0, ...body.map((r) => r.length));
+  const pad = (r: string[]) => Array.from({ length: width }, (_, i) => parseInline(r[i] ?? ''));
+  return { type: 'table', header: header ? pad(header) : null, rows: body.map(pad) };
+}
 
 /** "[Company number]" and the like; not "[text](link)". */
 const PLACEHOLDER = /\[[^[\]\n]{1,80}\](?!\()/g;
@@ -48,14 +63,23 @@ export function parseInline(raw: string): Inline[] {
 export function parseMarkdown(markdown: string): Block[] {
   const blocks: Block[] = [];
   let para: string[] = [];
+  let table: string[] = [];
   const flush = () => {
     if (para.length) blocks.push({ type: 'paragraph', inlines: parseInline(para.join(' ')) });
+    if (table.length) blocks.push(tableBlock(table));
     para = [];
+    table = [];
   };
   for (const rawLine of markdown.replace(/\r\n?/g, '\n').split('\n')) {
     const line = rawLine.trim();
     if (!line || /^```/.test(line)) { flush(); continue; }
     let m: RegExpExecArray | null;
+    if (line.startsWith('|')) {
+      if (para.length) { const t = table; table = []; flush(); table = t; }
+      table.push(line);
+      continue;
+    }
+    if (table.length) flush();
     if ((m = /^(#{1,6})\s+(.*)$/.exec(line))) {
       flush();
       blocks.push({ type: 'heading', level: Math.min(m[1].length, 4) as 1 | 2 | 3 | 4, inlines: parseInline(m[2].replace(/\s*#+\s*$/, '')) });

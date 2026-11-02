@@ -26,7 +26,12 @@ export const creditLine = (remaining: number | null) =>
 export const notEnoughCreditsText = (remaining: number, resetLabel: string | null) =>
   `A document needs ${CREDITS_PER_DOCUMENT} AI credits and you have ${remaining.toLocaleString('en-GB')} left.${resetLabel ? ` ${resetLabel.replace(/^Resets/, 'They reset')}.` : ''}`;
 export const AI_DRAFT_BANNER = 'AI-drafted. Not legal advice. Have a solicitor check it.';
-export const PROGRESS_TEXT = 'Drafting your document… this can take up to a minute.';
+export const PROGRESS_TEXT = 'Drafting your full document… this can take up to about two minutes. Please keep this page open.';
+/**
+ * Phase 30d: the function answers within Supabase's 150 s request limit (its model call stops at 130 s and refunds). The
+ * browser waits a little longer than that, so a lost connection still ends with a message instead of spinning forever.
+ */
+export const CLIENT_TIMEOUT_MS = 160_000;
 
 /** The doc types of one kind, grouped in catalogue order (for <optgroup>). */
 export function groupedDocTypes(kind: DocKind): { group: string; types: DocType[] }[] {
@@ -117,7 +122,7 @@ export interface GenerateRequest { kind: DocKind; docType: string; jurisdiction:
 
 export async function invokeGenerateLegalDocument(request: GenerateRequest): Promise<GenerateResult> {
   try {
-    const { data, error } = await supabase.functions.invoke('generate-legal-document', { body: request });
+    const { data, error } = await supabase.functions.invoke('generate-legal-document', { body: request, timeout: CLIENT_TIMEOUT_MS });
     if (error) return { ok: false, error: generateErrorFrom(functionErrorStatus(error), await readFunctionError(error) as Record<string, unknown> | null) };
     const d = data as GeneratedDocument | null;
     if (!d || typeof d.document !== 'string' || !d.document.trim()) return { ok: false, error: { kind: 'other', message: GENERIC } };

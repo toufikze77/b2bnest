@@ -68,13 +68,13 @@ describe('Contract Generator', () => {
     generate();
     const button = screen.getByRole('button', { name: /Drafting/ });
     expect(button).toBeDisabled();
-    expect(screen.getByRole('status')).toHaveTextContent('Drafting your document');
+    expect(screen.getByRole('status')).toHaveTextContent('Drafting your full document… this can take up to about two minutes.');
     fireEvent.click(button);
     expect(invoke).toHaveBeenCalledTimes(1);
     expect(invoke).toHaveBeenCalledWith('generate-legal-document', { body: {
       kind: 'contract', docType: 'service_agreement', jurisdiction: 'scotland',
       fields: { business_name: 'Acme Ltd', other_party_name: 'Beta Client plc', scope: 'Monthly bookkeeping' },
-    } });
+    }, timeout: 160_000 });
     await act(async () => { resolve(ok()); });
     expect(screen.getByRole('button', { name: /Generate with AI/ })).toBeEnabled();
     expect(screen.getByRole('note')).toHaveTextContent(AI_DRAFT_BANNER);
