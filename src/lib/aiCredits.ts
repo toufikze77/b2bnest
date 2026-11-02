@@ -1,6 +1,13 @@
 // Phase 30c: the AI credit balance shown to customers. One source of truth: public.get_ai_credits_info() (own account
 // only, SECURITY DEFINER), read by src/hooks/useAiCredits.ts. These helpers are pure so they are easy to test.
 
+/**
+ * Phase 35 (owner decision, 2 Nov 2026): what a trial / no-plan account starts with. docs/phase35/proposal.sql makes
+ * check_and_deduct_ai_credit create the missing subscribers row with 50 / 50 (was 10 / 10); aiCredits.test.ts checks
+ * the two agree.
+ */
+export const TRIAL_AI_CREDITS = 50;
+
 export interface AiCredits {
   remaining: number;
   limit: number;
@@ -8,9 +15,9 @@ export interface AiCredits {
   resetDate: string | null;
   tier: string | null;
   /**
-   * No subscribers row yet. get_ai_credits_info() then answers 10 / 10 with a reset date of "now + 1 month" that moves on
-   * every call. What the server will really do (check_and_deduct_ai_credit): on the first AI request it creates the row
-   * with 10 of 10 credits and the month starts then. So the figure is true; the reset date is not shown.
+   * No subscribers row yet. get_ai_credits_info() then answers with a reset date of "now + 1 month" that moves on every
+   * call. What the server will really do (check_and_deduct_ai_credit): on the first AI request it creates the row with
+   * TRIAL_AI_CREDITS of TRIAL_AI_CREDITS and the month starts then. So that figure is shown; the reset date is not.
    */
   notStarted: boolean;
 }
@@ -45,7 +52,7 @@ export function resetLine(resetDate: string | null): string | null {
   return `Resets ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`;
 }
 
-export const NOT_STARTED_LINE = 'Your monthly count starts with your first AI request.';
+export const NOT_STARTED_LINE = `Your ${TRIAL_AI_CREDITS} credits start counting from your first AI request.`;
 export const TRIAL_LINE = 'Included in your free trial';
 export const CREDITS_LOAD_ERROR = "Couldn't load your credits";
 /** The 10 must match CREDITS_PER_DOCUMENT (src/lib/legalDocuments.ts); aiCredits.test.ts checks it. */
@@ -55,9 +62,10 @@ export const CREDITS_USAGE_NOTE = "Advisor answers use 1 credit, contracts and l
 export function parseCreditsInfo(data: unknown, hasRow: boolean): AiCredits | null {
   const d = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null;
   if (!d || typeof d.credits_remaining !== 'number' || typeof d.credits_limit !== 'number') return null;
+  // No row yet: show what the server creates on the first request (TRIAL_AI_CREDITS), not the RPC's placeholder.
   return {
-    remaining: d.credits_remaining,
-    limit: d.credits_limit,
+    remaining: hasRow ? d.credits_remaining : TRIAL_AI_CREDITS,
+    limit: hasRow ? d.credits_limit : TRIAL_AI_CREDITS,
     resetDate: hasRow && typeof d.reset_date === 'string' ? d.reset_date : null,
     tier: typeof d.subscription_tier === 'string' ? d.subscription_tier : null,
     notStarted: !hasRow,

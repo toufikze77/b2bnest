@@ -16,7 +16,7 @@ type Rpc = (fn: string) => PromiseLike<{ data: unknown; error: { message?: strin
 export async function fetchAiCredits(userId: string): Promise<AiCredits> {
   const [info, row] = await Promise.all([
     (supabase.rpc as unknown as Rpc)('get_ai_credits_info'),
-    // Own row only (RLS select_own_subscription). Tells "no row yet" apart from a real 10 / 10 balance.
+    // Own row only (RLS select_own_subscription). Tells "no row yet" apart from a real balance.
     supabase.from('subscribers').select('user_id').eq('user_id', userId).maybeSingle(),
   ]);
   if (info.error) throw new Error(info.error.message ?? 'credits_unavailable');

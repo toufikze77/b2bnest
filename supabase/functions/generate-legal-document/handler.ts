@@ -9,7 +9,11 @@
 // delivered document is never refunded.
 //
 // Logs never hold the fields, the prompt or the document: only lengths, status codes, the document type and error codes.
+// Phase 35: one request id per request; the reserve and the refund carry it (feature "legal_document"), the refund is
+// retried once with the same id (the database refunds at most once per request), and the tokens of every reply that has
+// them go to public.record_ai_usage with the doc type (best effort, at most USAGE_TIMEOUT_MS).
 import type { AccessCheck } from "../_shared/access.ts";
+import { type LedgerRef, newRequestId, readUsage, recordUsageBestEffort, refundWithRetry, type Usage, type UsageRow } from "../_shared/ai-ledger.ts";
 import {
   DATA_COLLECTED_OPTIONS, DETAILS_MAX, docTypeById, FIELD_MAX, fieldLabel, JURISDICTIONS,
   type DocKind, type DocType, type FieldId, type Jurisdiction,
@@ -61,10 +65,13 @@ export interface Deps {
   openAIKey: string | undefined;
   getUserId: (token: string) => Promise<string | null>;
   checkAccess: (authHeader: string) => Promise<AccessCheck>;
-  /** public.check_and_deduct_ai_credit(user, credits). */
-  deduct: (userId: string, credits: number) => Promise<{ data: CreditResult | null; error: unknown }>;
-  /** public.refund_ai_credit(user, credits). Throws if it couldn't. */
-  refund: (userId: string, credits: number) => Promise<{ credits_remaining?: number }>;
+  /** public.check_and_deduct_ai_credit(user, credits, feature, request id). */
+  deduct: (userId: string, credits: number, ref: LedgerRef) => Promise<{ data: CreditResult | null; error: unknown }>;
+  /** public.refund_ai_credit(user, credits, feature, request id). Throws if it couldn't. */
+  refund: (userId: string, credits: number, ref: LedgerRef) => Promise<{ credits_remaining?: number }>;
+  /** public.record_ai_usage: tokens and cost of the model call (Phase 35, best effort). */
+  recordUsage?: (row: UsageRow) => Promise<unknown>;
+  newRequestId?: () => string;
   openai: (body: Record<string, unknown>, signal: AbortSignal) => Promise<Response>;
   timeoutMs?: number;
   log?: (level: "info" | "error", message: string, meta?: Record<string, unknown>) => void;
@@ -181,12 +188,19 @@ export function userMessage(v: ValidRequest): string {
   return JSON.stringify({ document_type: v.doc.label, jurisdiction: JURISDICTIONS.find((j) => j.id === v.jurisdiction)!.label, facts });
 }
 
-export async function readDocument(res: Response): Promise<string | null> {
-  if (!res.ok) return null;
+/** The document text (trimmed; null when the reply isn't a usable completion) and the token usage, if any. */
+export async function readCompletion(res: Response): Promise<{ text: string | null; usage: Usage | null }> {
+  if (!res.ok) return { text: null, usage: null };
   const data = await res.json().catch(() => null) as { choices?: { message?: { content?: unknown } }[] } | null;
   const content = data?.choices?.[0]?.message?.content;
-  return typeof content === "string" ? content.trim() : null;
+  return { text: typeof content === "string" ? content.trim() : null, usage: readUsage(data) };
 }
+
+export async function readDocument(res: Response): Promise<string | null> {
+  return (await readCompletion(res)).text;
+}
+
+export const FEATURE = "legal_document" as const;
 
 export function makeHandler(deps: Deps) {
   const log = deps.log ?? ((level, message, meta) => (level === "error" ? console.error : console.log)(`generate-legal-document: ${message}`, meta ?? {}));
@@ -209,7 +223,8 @@ export function makeHandler(deps: Deps) {
     const access = await deps.checkAccess(auth);
     if (!access.ok) return json(access.status, access.body);
 
-    const { data: credit, error: creditError } = await deps.deduct(userId, CREDITS_PER_DOCUMENT).catch((e) => ({ data: null, error: e }));
+    const ref: LedgerRef = { feature: FEATURE, requestId: (deps.newRequestId ?? newRequestId)() };
+    const { data: credit, error: creditError } = await deps.deduct(userId, CREDITS_PER_DOCUMENT, ref).catch((e) => ({ data: null, error: e }));
     if (creditError || !credit) {
       log("error", "credit check failed", { doc_type: v.doc.id });
       return json(503, { error: "credit_check_failed", message: CREDIT_CHECK_FAILED });
@@ -225,7 +240,7 @@ export function makeHandler(deps: Deps) {
 
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), deps.timeoutMs ?? AI_TIMEOUT_MS);
-    let document: string | null = null; let status = 0; let reason = ""; let words = 0;
+    let document: string | null = null; let status = 0; let reason = ""; let words = 0; let usage: Usage | null = null;
     try {
       const res = await deps.openai({
         model: MODEL,
@@ -233,7 +248,7 @@ export function makeHandler(deps: Deps) {
         temperature: TEMPERATURE, max_tokens: MAX_TOKENS,
       }, ctl.signal);
       status = res.status;
-      document = await readDocument(res);
+      ({ text: document, usage } = await readCompletion(res));
       if (!res.ok) reason = "openai_status";
       else if (!document) reason = "empty_answer";
       else {
@@ -245,10 +260,19 @@ export function makeHandler(deps: Deps) {
       reason = e instanceof DOMException && e.name === "AbortError" ? "timeout" : "network";
     } finally { clearTimeout(timer); }
 
+    // Tokens were spent even when the document is refused (too short and so on): record them (best effort, short).
+    const recordUsage = () => usage
+      ? recordUsageBestEffort(deps.recordUsage, {
+          userId, requestId: ref.requestId, feature: FEATURE, docType: v.doc.id, model: MODEL,
+          promptTokens: usage.promptTokens, completionTokens: usage.completionTokens,
+        }, (m, meta) => log("error", m, meta))
+      : Promise.resolve();
+
     if (!document) {
       log("error", "no document", { reason, status, doc_type: v.doc.id, words, min_words: minWordsFloor(v.doc) });
+      await recordUsage();
       try {
-        const r = await deps.refund(userId, CREDITS_PER_DOCUMENT);
+        const r = await refundWithRetry(() => deps.refund(userId, CREDITS_PER_DOCUMENT, ref));
         return json(502, { error: "ai_failed", message: AI_FAILED_REFUNDED, credit_refunded: true, credits_remaining: r.credits_remaining, credits_limit: credit.credits_limit, reset_date: credit.reset_date });
       } catch {
         log("error", "refund failed", { reason, doc_type: v.doc.id });
@@ -256,7 +280,11 @@ export function makeHandler(deps: Deps) {
       }
     }
 
-    log("info", "drafted", { doc_type: v.doc.id, jurisdiction: v.jurisdiction, document_length: document.length, words, status });
+    log("info", "drafted", {
+      doc_type: v.doc.id, jurisdiction: v.jurisdiction, document_length: document.length, words, status,
+      prompt_tokens: usage?.promptTokens ?? null, completion_tokens: usage?.completionTokens ?? null,
+    });
+    await recordUsage();
     return json(200, {
       document, docType: v.doc.id, jurisdiction: v.jurisdiction, credits_used: CREDITS_PER_DOCUMENT,
       credits_remaining: credit.credits_remaining, credits_limit: credit.credits_limit, reset_date: credit.reset_date,

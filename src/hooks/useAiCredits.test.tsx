@@ -67,10 +67,11 @@ describe('useAiCredits', () => {
 
   it('no subscribers row: notStarted, no reset date', async () => {
     db.row = { data: null, error: null };
+    // Before docs/phase35 is applied the RPC still says 10 / 10; the screen shows what the server will create (50).
     db.rpc.mockResolvedValue({ data: { ...INFO, credits_remaining: 10, credits_limit: 10, subscription_tier: 'free' }, error: null });
     const { result } = renderHook(() => useAiCredits(), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current).toMatchObject({ remaining: 10, limit: 10, resetDate: null, notStarted: true });
+    expect(result.current).toMatchObject({ remaining: 50, limit: 50, resetDate: null, notStarted: true });
   });
 
   it('the updater shows the credits_remaining from an AI reply at once', async () => {

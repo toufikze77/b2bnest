@@ -69,10 +69,10 @@ describe('AICreditsDisplay', () => {
 
   it('no subscribers row yet, in the trial: the real 10, "Included in your free trial", no invented reset date', () => {
     access.value = { inTrial: true };
-    aiCreditsMock.state.credits = { remaining: 10, limit: 10, resetDate: null, tier: 'free', notStarted: true };
+    aiCreditsMock.state.credits = { remaining: 50, limit: 50, resetDate: null, tier: 'free', notStarted: true };
     render(<AICreditsDisplay variant="compact" />);
     const line = screen.getByTestId('ai-credits-compact');
-    expect(line).toHaveTextContent('10 of 10 AI credits left · Included in your free trial. Your monthly count starts with your first AI request.');
+    expect(line).toHaveTextContent('50 of 50 AI credits left · Included in your free trial. Your 50 credits start counting from your first AI request.');
     expect(line).not.toHaveTextContent('Resets');
     access.value = { inTrial: false };
   });
