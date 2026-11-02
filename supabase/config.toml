@@ -62,6 +62,9 @@ verify_jwt = false
 [functions.create-subscription-checkout]
 verify_jwt = true
 
+[functions.create-ai-topup-checkout]
+verify_jwt = true
+
 [functions.customer-portal]
 verify_jwt = true
 

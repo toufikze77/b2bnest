@@ -1,3 +1,4 @@
+import { TOPUP_FAQ_ANSWER, TOPUP_FAQ_QUESTION } from '@/lib/aiTopups';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
@@ -65,6 +66,8 @@ const Help = () => {
       question: "What is the AI Business Advisor?",
       answer: "The AI Business Advisor in AI Studio answers business questions using an AI model and uses your monthly AI credits. Like any AI, it can be wrong, so check anything important. The help assistant on the homepage is different: it gives fixed answers to common questions and is not an AI."
     },
+    // Phase 37: AI credit top-ups (src/lib/aiTopups.ts, built from the catalogue).
+    { question: TOPUP_FAQ_QUESTION, answer: TOPUP_FAQ_ANSWER },
     // Phase 30b: tools, documents, two-step sign-in and sign-in (src/lib/helpFaqs.ts).
     ...TOOL_FAQS,
   ];

@@ -55,17 +55,27 @@ export function useAiCredits() {
 export function useAiCreditsUpdater() {
   const { user } = useAuth();
   const client = useQueryClient();
-  return useCallback((reply: { credits_remaining?: unknown; credits_limit?: unknown; reset_date?: unknown } | null | undefined) => {
+  return useCallback((reply: { credits_remaining?: unknown; credits_limit?: unknown; reset_date?: unknown; monthly_remaining?: unknown; topup_credits?: unknown } | null | undefined) => {
     if (!user?.id) return;
     const key = aiCreditsKey(user.id);
     if (reply && typeof reply.credits_remaining === 'number') {
-      client.setQueryData<AiCredits>(key, (old) => ({
-        remaining: reply.credits_remaining as number,
-        limit: typeof reply.credits_limit === 'number' ? reply.credits_limit : old?.limit ?? 0,
-        resetDate: typeof reply.reset_date === 'string' ? reply.reset_date : old?.resetDate ?? null,
-        tier: old?.tier ?? null,
-        notStarted: false,
-      }));
+      client.setQueryData<AiCredits>(key, (old) => {
+        const total = reply.credits_remaining as number;
+        // Phase 37: monthly credits are spent first, so without the split in the reply the monthly part is what is left
+        // above the top-up credits held before (never negative). The re-read below then shows the server's own split.
+        const monthly = typeof reply.monthly_remaining === 'number' ? reply.monthly_remaining : Math.max(0, total - (old?.topupCredits ?? 0));
+        const topup = typeof reply.topup_credits === 'number' ? reply.topup_credits : Math.max(0, total - monthly);
+        return {
+          remaining: total,
+          limit: typeof reply.credits_limit === 'number' ? reply.credits_limit : old?.limit ?? 0,
+          resetDate: typeof reply.reset_date === 'string' ? reply.reset_date : old?.resetDate ?? null,
+          tier: old?.tier ?? null,
+          notStarted: false,
+          monthlyRemaining: monthly,
+          topupCredits: topup,
+          topupNextExpiry: topup > 0 ? old?.topupNextExpiry ?? null : null,
+        };
+      });
     }
     void client.invalidateQueries({ queryKey: key });
   }, [client, user?.id]);

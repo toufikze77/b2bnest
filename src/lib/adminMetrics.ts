@@ -11,6 +11,7 @@ import {
 /** How many rows the list RPCs are asked for. A page says so when there are more. */
 export const LIST_LIMIT = 1000;
 export const PHASE36_MISSING = 'Not available until the Phase 36 database update (docs/phase36) is applied.';
+export const PHASE37_MISSING = 'Not available until the Phase 37 database update (docs/phase37) is applied.';
 export const NO_AI_USAGE = 'No AI usage yet. Credits, costs and documents appear here as soon as people use the AI features.';
 
 type Obj = Record<string, unknown>;
@@ -244,7 +245,7 @@ const FEATURE_NAMES: Record<string, string> = { ai_assistant: 'AI assistant and 
 const featureName = (f: unknown) => FEATURE_NAMES[String(f)] ?? label(f);
 
 async function aiMetric(src: Sources, days: number): Promise<MetricResult> {
-  const [s, both, stats, dailyRows, byPlan, top, subs] = await Promise.all([
+  const [s, both, stats, dailyRows, byPlan, top, subs, topups] = await Promise.all([
     src.get<AiSummary>('admin_ai_ledger_summary', { _days: days }),
     src.get<AiSummary>('admin_ai_ledger_summary', { _days: days * 2 }),
     src.get<Obj>('admin_overview_stats'),
@@ -252,6 +253,7 @@ async function aiMetric(src: Sources, days: number): Promise<MetricResult> {
     src.optional<Obj[]>('admin_overview_series', { _metric: 'ai_by_plan', _days: days }),
     src.optional<Obj[]>('admin_overview_series', { _metric: 'ai_top_users', _days: days }),
     src.get<Obj>('admin_list_subscriptions', { _status: 'all', _search: null, _limit: LIST_LIMIT, _offset: 0 }),
+    src.optional<Obj>('admin_ai_topup_summary', { _days: days }),
   ]);
   const empty = ledgerIsEmpty(s);
   const net = num(s.net_credits), netPrev = num(both.net_credits) - net;
@@ -337,7 +339,7 @@ async function aiMetric(src: Sources, days: number): Promise<MetricResult> {
         columns: [{ key: 'email', label: 'Email' }, { key: 'company', label: 'Company' }, { key: 'plan', label: 'Plan' },
           { key: 'left', label: 'Credits left', numeric: true }, { key: 'limit', label: 'Monthly credits', numeric: true }],
         rows: nearLimit.map((r) => ({ email: String(r.email ?? ''), company: String(r.company ?? ''), plan: planDisplayName(String(r.plan_key ?? r.plan ?? '')), left: num(r.ai_credits_remaining), limit: num(r.ai_credits_limit) })),
-        note: 'At most 25, least left first. Top-up packs are not on sale yet.' },
+        note: topups ? 'At most 25, least left first. Credits left here are monthly credits only.' : 'At most 25, least left first. Top-up packs are not on sale yet.' },
       { title: 'Credits used per plan against plan price', csvName: 'ai-by-plan', emptyText: byPlan ? NO_AI_USAGE : PHASE36_MISSING,
         columns: [{ key: 'plan', label: 'Plan' }, { key: 'subscribers', label: 'Active subscribers', numeric: true }, { key: 'credits', label: 'Credits (net)', numeric: true },
           { key: 'cost', label: 'OpenAI cost' }, { key: 'price', label: 'Monthly price' }, { key: 'per_sub', label: 'Cost per subscriber' }],
@@ -350,6 +352,25 @@ async function aiMetric(src: Sources, days: number): Promise<MetricResult> {
     ],
     notes: [rateNote, `The cost is for the last ${days} days; the price is a month's list price.`],
   };
+  // Phase 37: AI credit top-ups (admin_ai_topup_summary). Revenue is what Stripe took for packs not refunded or disputed.
+  const tp = topups ?? {};
+  business.headlines.push(
+    { label: 'Top-up revenue', value: topups ? fmtGbp(num(tp.revenue_pence) / 100, 2) : '–', hint: topups ? `Last ${days} days; ${fmtGbp(num(tp.refunded_pence) / 100, 2)} refunded or disputed. Prices as shown (VAT: check with the accountant).` : PHASE37_MISSING },
+    { label: 'Top-up packs sold', value: topups ? fmtInt(tp.packs_sold) : '–', hint: topups ? `Last ${days} days` : PHASE37_MISSING },
+  );
+  business.tables!.push(
+    { title: 'Top-up credits: sold, used, unused, expired', csvName: 'ai-topup-credits', emptyText: PHASE37_MISSING,
+      note: 'All top-ups ever sold. Unused = not yet expired; expired credits are lost (they last 12 months).',
+      columns: [{ key: 'sold', label: 'Sold', numeric: true }, { key: 'used', label: 'Used', numeric: true }, { key: 'unused', label: 'Unused', numeric: true },
+        { key: 'expired', label: 'Expired', numeric: true }, { key: 'voided', label: 'Removed (refund or dispute)', numeric: true }],
+      rows: topups ? [{ sold: num(tp.credits_sold), used: num(tp.credits_used), unused: num(tp.credits_unused), expired: num(tp.credits_expired), voided: num(tp.credits_voided) }] : [] },
+    { title: 'Top-up packs sold', csvName: 'ai-topup-packs', emptyText: topups ? 'No top-ups sold yet.' : PHASE37_MISSING,
+      columns: [{ key: 'pack', label: 'Pack' }, { key: 'price', label: 'Price' }, { key: 'sold', label: 'Sold', numeric: true }, { key: 'voided', label: 'Refunded or disputed', numeric: true }],
+      rows: arr(tp.by_pack).filter((p) => num(p.sold) > 0).map((p) => ({ pack: `${fmtInt(p.credits)} credits`, price: fmtGbp(num(p.amount_pence) / 100), sold: num(p.sold), voided: num(p.voided) })) },
+  );
+  if (num(tp.needs_refund) > 0) {
+    business.warnings = [...(business.warnings ?? []), `${fmtInt(tp.needs_refund)} paid top-up(s) could not be added (over the 5,000 cap). Refund them in Stripe (see docs/phase37/README.md).`];
+  }
   return { views: { management, operations, business } };
 }
 

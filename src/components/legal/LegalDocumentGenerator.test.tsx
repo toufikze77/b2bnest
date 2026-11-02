@@ -6,6 +6,9 @@ const toast = vi.hoisted(() => vi.fn());
 vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast }) }));
 const invoke = vi.hoisted(() => vi.fn());
 vi.mock('@/integrations/supabase/client', () => ({ supabase: { functions: { invoke } } }));
+// Phase 37: who is offered a top-up (OutOfCreditsAction). Default: a subscriber on their own plan.
+const acc = vi.hoisted(() => ({ value: { state: 'subscribed', via: 'self', loading: false } as Record<string, unknown> }));
+vi.mock('@/hooks/useAccess', () => ({ useAccess: () => acc.value }));
 const exportSpy = vi.hoisted(() => ({ pdf: vi.fn(), docx: vi.fn(), download: vi.fn() }));
 vi.mock('@/lib/legalExport', async (orig) => ({
   ...(await orig<object>()),
@@ -265,5 +268,30 @@ describe('LegalMarkdown renderer', () => {
     expect(container.textContent).toContain('<img src=x onerror="alert(2)">');
     expect(container.querySelector('strong')?.textContent).toBe('bold');
     expect(container.querySelector('mark[data-placeholder]')?.textContent).toBe('[Fee]');
+  });
+});
+
+describe('out of credits (Phase 37)', () => {
+  beforeEach(() => { acc.value = { state: 'subscribed', via: 'self', loading: false }; });
+  it('a subscriber is offered a top-up (monthly + top-up count towards the 10)', () => {
+    aiCreditsMock.state.credits = { remaining: 9, limit: 250, resetDate: null, tier: 'Business', notStarted: false, monthlyRemaining: 0, topupCredits: 9 };
+    renderContracts();
+    fillServiceAgreement();
+    expect(screen.getByRole('link', { name: 'Top up AI credits' })).toHaveAttribute('href', '/settings?tab=billing#ai-topup');
+    expect(screen.getByRole('link', { name: 'Compare plans' })).toHaveAttribute('href', '/pricing');
+  });
+  it('2 monthly + 8 top-up = 10: enough for a document', () => {
+    aiCreditsMock.state.credits = { remaining: 10, limit: 250, resetDate: null, tier: 'Business', notStarted: false, monthlyRemaining: 2, topupCredits: 8 };
+    renderContracts();
+    fillServiceAgreement();
+    expect(screen.getByRole('button', { name: /Generate with AI/ })).toBeEnabled();
+  });
+  it('a trial user sees "Choose a plan first. Top-ups are for subscribers." with View plans', () => {
+    acc.value = { state: 'trial', via: 'self', loading: false };
+    aiCreditsMock.state.credits = { remaining: 5, limit: 50, resetDate: null, tier: 'free', notStarted: false };
+    renderContracts();
+    fillServiceAgreement();
+    expect(screen.getByTestId('choose-plan-first')).toHaveTextContent('Choose a plan first. Top-ups are for subscribers. View plans');
+    expect(screen.queryByRole('link', { name: 'Top up AI credits' })).toBeNull();
   });
 });
