@@ -43,6 +43,8 @@ export const useRota = () => {
   const orgRole = (organization?.role || '').toLowerCase();
   // Any platform admin, or the owner/admin/manager of the active company, can manage the rota.
   const isAdmin = isGlobalAdmin || role === 'super_admin' || ['owner', 'admin', 'manager'].includes(orgRole);
+  // Phase 32: holiday decisions are for the company's owner and admins (the database checks the same).
+  const isLeaveManager = ['owner', 'admin'].includes(orgRole);
 
   const [employees, setEmployees] = useState<RotaEmployee[]>([]);
   const [shifts, setShifts] = useState<RotaShift[]>([]);
@@ -88,6 +90,7 @@ export const useRota = () => {
     organizationId,
     orgLoading: orgLoading || roleLoading,
     isAdmin,
+    isLeaveManager,
     isRotaPremium,
     employees,
     shifts,

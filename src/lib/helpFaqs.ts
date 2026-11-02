@@ -4,6 +4,7 @@ import { CREDITS_PER_DOCUMENT, docTypesFor, JURISDICTIONS } from '@/lib/legalDoc
 import { HISTORY_MAX } from '@/lib/legalHistory';
 import { TWO_STEP_APPS } from '@/lib/twoStep';
 import { TIME_TRACKER_FAQ } from '@/lib/timeTracker';
+import { HOLIDAY_FAQ } from '@/lib/rotaLeave';
 
 export interface Faq { question: string; answer: string }
 
@@ -12,6 +13,8 @@ const [defaultLaw, ...otherLaws] = JURISDICTIONS.map((j) => j.label);
 export const TOOL_FAQS: Faq[] = [
   // Phase 31.
   TIME_TRACKER_FAQ,
+  // Phase 32.
+  HOLIDAY_FAQ,
   {
     question: 'Can B2BNEST write contracts for me?',
     answer: `Yes. Business Tools → Contract Generator drafts a contract with AI from the details you type in, under the law of ${defaultLaw} unless you choose ${otherLaws.join(' or ')}. There are ${docTypesFor('contract').length} UK contract types, such as a service agreement, an employment contract or an NDA, and the Privacy & Legal Notices Generator drafts ${docTypesFor('legal_notice').length} notices, such as a website privacy policy or a cookie policy. Anything you leave out appears as a [placeholder] for you to fill in.`,

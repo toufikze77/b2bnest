@@ -16,13 +16,17 @@ interface Props {
   employeeId: string;
   shiftDate: string;
   shift?: RotaShift | null;
+  /** Phase 32: the day is on this person's approved holiday. Saving then needs a confirmation (not blocked). */
+  holidayWarning?: string | null;
   onSaved: () => void;
 }
 
-export default function ShiftDialog({ open, onOpenChange, organizationId, employeeId, shiftDate, shift, onSaved }: Props) {
+export default function ShiftDialog({ open, onOpenChange, organizationId, employeeId, shiftDate, shift, holidayWarning, onSaved }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [confirmHoliday, setConfirmHoliday] = useState(false);
+  useEffect(() => { setConfirmHoliday(false); }, [open, holidayWarning]);
   const [form, setForm] = useState({
     start_time: '09:00',
     end_time: '17:00',
@@ -102,6 +106,12 @@ export default function ShiftDialog({ open, onOpenChange, organizationId, employ
           <DialogTitle>{shift ? 'Edit shift' : 'Add shift'} — {shiftDate}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
+          {holidayWarning && (
+            <div role="alert" className="space-y-2 rounded-md border border-warning/50 bg-warning/10 p-3 text-sm text-foreground" data-testid="shift-holiday-warning">
+              <p>{holidayWarning}</p>
+              <label className="flex items-center gap-2"><input type="checkbox" className="h-4 w-4 accent-primary" checked={confirmHoliday} onChange={(e) => setConfirmHoliday(e.target.checked)} />Plan this shift anyway</label>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Start</Label>
@@ -133,7 +143,7 @@ export default function ShiftDialog({ open, onOpenChange, organizationId, employ
           {shift && <Button variant="destructive" onClick={remove}>Delete</Button>}
           <div className="flex-1" />
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+          <Button onClick={save} disabled={saving || (!!holidayWarning && !confirmHoliday)}>{saving ? 'Saving…' : 'Save'}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

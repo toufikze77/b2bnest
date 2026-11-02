@@ -8,6 +8,8 @@ import ShiftDialog from '@/components/rota/ShiftDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { calendar as leaveCalendar } from '@/lib/rotaLeaveApi';
+import { holidayOn, shiftOnHolidayWarning, type AwayEntry } from '@/lib/rotaLeave';
 
 function startOfWeek(d: Date) {
   const date = new Date(d);
@@ -30,7 +32,7 @@ function shiftHours(s: RotaShift) {
 export default function Schedule() {
   const { organizationId, employees, shifts, fetchShifts, isRotaPremium } = useRota();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
-  const [dialog, setDialog] = useState<{ employeeId: string; date: string; shift: RotaShift | null } | null>(null);
+  const [dialog, setDialog] = useState<{ employeeId: string; date: string; shift: RotaShift | null; holiday?: string | null } | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -40,6 +42,15 @@ export default function Schedule() {
   useEffect(() => {
     if (organizationId) fetchShifts(fmt(weekStart), fmt(weekEnd));
   }, [organizationId, weekStart, fetchShifts]);
+
+  // Phase 32: approved holiday this week (nothing before the database update; errors only hide the blocks).
+  const [away, setAway] = useState<AwayEntry[]>([]);
+  useEffect(() => {
+    if (!organizationId) return;
+    let live = true;
+    leaveCalendar(organizationId, fmt(weekStart), fmt(weekEnd)).then((r) => { if (live) setAway(r.error ? [] : r.data ?? []); }, () => { if (live) setAway([]); });
+    return () => { live = false; };
+  }, [organizationId, weekStart, weekEnd]);
 
   const shiftsByCell: Record<string, RotaShift[]> = {};
   for (const s of shifts) {
@@ -68,6 +79,8 @@ export default function Schedule() {
       toast({ title: 'No shifts in previous week to copy' });
       return;
     }
+    const onHoliday = data.filter(s => holidayOn(s.employee_id, fmt(addDays(new Date(s.shift_date), 7)), away)).length;
+    if (onHoliday > 0 && !window.confirm(`${onHoliday} of the copied shifts fall on approved holiday. Copy them anyway?`)) return;
     const rows = data.map(s => ({
       organization_id: organizationId,
       employee_id: s.employee_id,
@@ -158,13 +171,19 @@ export default function Schedule() {
                     {days.map(d => {
                       const key = `${emp.id}|${fmt(d)}`;
                       const cellShifts = shiftsByCell[key] || [];
+                      const holiday = holidayOn(emp.id, fmt(d), away);
                       return (
                         <td key={key} className="p-1 align-top border-l min-h-[70px]">
                           <div className="space-y-1">
+                            {holiday && (
+                              <div className="rounded border border-dashed border-warning bg-warning/10 px-2 py-1 text-xs font-semibold text-foreground" data-testid="holiday-block">
+                                {holiday}
+                              </div>
+                            )}
                             {cellShifts.map(s => (
                               <button
                                 key={s.id}
-                                onClick={() => setDialog({ employeeId: emp.id, date: fmt(d), shift: s })}
+                                onClick={() => setDialog({ employeeId: emp.id, date: fmt(d), shift: s, holiday })}
                                 className="block w-full text-left rounded px-2 py-1 text-xs text-white hover:opacity-90"
                                 style={{ background: emp.color || '#6366f1' }}
                               >
@@ -174,7 +193,7 @@ export default function Schedule() {
                               </button>
                             ))}
                             <button
-                              onClick={() => setDialog({ employeeId: emp.id, date: fmt(d), shift: null })}
+                              onClick={() => setDialog({ employeeId: emp.id, date: fmt(d), shift: null, holiday })}
                               className="w-full text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded py-1"
                             >
                               <Plus className="h-3 w-3 inline" /> Add
@@ -223,6 +242,7 @@ export default function Schedule() {
           employeeId={dialog.employeeId}
           shiftDate={dialog.date}
           shift={dialog.shift}
+          holidayWarning={dialog.holiday ? shiftOnHolidayWarning(employees.find((e) => e.id === dialog.employeeId)?.full_name ?? 'This person', dialog.holiday) : null}
           onSaved={() => fetchShifts(fmt(weekStart), fmt(weekEnd))}
         />
       )}
