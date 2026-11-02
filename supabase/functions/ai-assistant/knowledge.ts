@@ -79,6 +79,7 @@ export function businessToolsSection(): string {
 - Each tool page has a Back button and a breadcrumb. Back returns to the previous page in B2BNEST, or to Business tools.
 - QR Code Generator: makes real, scannable QR codes for a web address, text, email, phone number, SMS, WhatsApp message, Wi-Fi network or contact card (vCard), with PNG and SVG downloads. The codes are created in the browser.
 - Create Coupon: Generate, Validate, Manage and Import / Export tabs, with CSV import and export. Coupons are saved in that browser only.
+- Time Tracker (Phase 31): saved to the user's account, so a running timer and every entry survive a refresh, closing the page and another device. Needs signing in (trial and paying accounts). One timer runs at a time (start, pause, resume, stop; stopping under a minute asks first). Each entry needs one of the user's projects or a description. Past entries can be added by date and start/end time or a duration, and any entry edited or deleted; overlaps are allowed and marked; no entries in the future or longer than 24 hours. Entries can be billable or not, with an optional hourly rate in pounds and a default rate; a billable value is shown only when a rate is set (never guessed). Views: today, this week, this month or a custom range, with totals, hours per day and by project, and a CSV export. It doesn't create invoices, and there is no team timesheet screen.
 - Cash Flow Tracker: income and expense entries with a longer list of UK business categories (including HMRC: VAT, PAYE / NI and Corporation Tax) and the user's own categories. It is in the menu under Money → Cash flow. Entries are saved in that browser only.`;
 }
 
@@ -103,7 +104,7 @@ ${plansSection()}
 - Assign team members to projects with role-based permissions
 - View projects in list or kanban board format
 - Filter projects by status, priority, and team members
-- Time tracking for projects and tasks
+- Time tracking: see Time Tracker under BUSINESS TOOLS
 - Project activity timeline and history
 - Budget tracking and financial management
 - Client management and communication
