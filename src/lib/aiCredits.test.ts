@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { creditLevel, creditPercent, creditsLeftLine, parseCreditsInfo, resetLine } from '@/lib/aiCredits';
+import { CREDITS_USAGE_NOTE, creditLevel, creditPercent, creditsLeftLine, parseCreditsInfo, resetLine } from '@/lib/aiCredits';
+
+import { CREDITS_PER_DOCUMENT } from '@/lib/legalDocuments';
+
+describe('credit usage note (Phase 30e)', () => {
+  it('states the real document cost and the 1-credit Advisor answer', () => {
+    expect(CREDITS_PER_DOCUMENT).toBe(10);
+    expect(CREDITS_USAGE_NOTE).toBe(`Advisor answers use 1 credit, contracts and legal notices use ${CREDITS_PER_DOCUMENT}. Unused credits don't roll over.`);
+  });
+});
 
 describe('aiCredits helpers', () => {
   it('levels: ok, low (<20%), critical (<10%), none (limit 0, never divides by zero)', () => {

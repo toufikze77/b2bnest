@@ -70,7 +70,9 @@ describe('Help: tools, documents and two-step sign-in', () => {
   it('the Help page shows these questions; the guide article uses the real credit cost and history size', () => {
     expect(read('pages/Help.tsx')).toContain('...TOOL_FAQS');
     const guide = read('pages/articles/BusinessToolsGuide.tsx');
-    expect(guide).toContain(`Each document uses ${CREDITS_PER_DOCUMENT} AI credits`);
+    // The article renders the constant itself (Phase 30e), so it can't drift.
+    expect(guide).toContain('Each document uses {CREDITS_PER_DOCUMENT} AI credits');
+    expect(guide).toContain("import { CREDITS_PER_DOCUMENT } from '@/lib/legalDocuments';");
     expect(guide).toContain(`The last ${HISTORY_MAX} documents`);
     expect(guide).not.toContain('ready-to-sign');
     expect(read('pages/articles/FinancialToolsGuide.tsx')).not.toContain('Fixed income and expense categories');

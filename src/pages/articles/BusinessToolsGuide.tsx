@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Wrench, FileText, Users, Clock, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SEOHead from '@/components/SEOHead';
+import { CREDITS_PER_DOCUMENT } from '@/lib/legalDocuments';
 
 const BusinessToolsGuide = () => {
   return (
@@ -214,7 +215,7 @@ const BusinessToolsGuide = () => {
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
                 The AI drafts a UK contract from the details you type in, under the law of England and Wales unless you
-                choose Scotland or Northern Ireland. Each document uses 2 AI credits, given back if the AI fails. It is a
+                choose Scotland or Northern Ireland. Each document uses {CREDITS_PER_DOCUMENT} AI credits, given back if the AI fails. It is a
                 draft, not legal advice: have a qualified solicitor check it before you rely on it.
               </p>
 

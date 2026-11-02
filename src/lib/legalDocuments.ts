@@ -14,11 +14,11 @@ export {
 };
 
 /** Must match CREDITS_PER_DOCUMENT in the function's handler.ts (checked by the test). */
-export const CREDITS_PER_DOCUMENT = 2;
+export const CREDITS_PER_DOCUMENT = 10;
 export const DEFAULT_JURISDICTION: Jurisdiction = 'england_wales';
 export const CREDIT_COST_TEXT = `Uses ${CREDITS_PER_DOCUMENT} AI credits`;
 
-/** Phase 30c: "Uses 2 AI credits · you have 46 left" (just the cost while the balance is unknown). */
+/** Phase 30c: "Uses 10 AI credits · you have 46 left" (just the cost while the balance is unknown). */
 export const creditLine = (remaining: number | null) =>
   remaining == null ? CREDIT_COST_TEXT : `${CREDIT_COST_TEXT} · you have ${remaining.toLocaleString('en-GB')} left`;
 

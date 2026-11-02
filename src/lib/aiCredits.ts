@@ -48,7 +48,8 @@ export function resetLine(resetDate: string | null): string | null {
 export const NOT_STARTED_LINE = 'Your monthly count starts with your first AI request.';
 export const TRIAL_LINE = 'Included in your free trial';
 export const CREDITS_LOAD_ERROR = "Couldn't load your credits";
-export const CREDITS_USAGE_NOTE = "Advisor answers use 1 credit, contracts and legal notices use 2. Unused credits don't roll over.";
+/** The 10 must match CREDITS_PER_DOCUMENT (src/lib/legalDocuments.ts); aiCredits.test.ts checks it. */
+export const CREDITS_USAGE_NOTE = "Advisor answers use 1 credit, contracts and legal notices use 10. Unused credits don't roll over.";
 
 /** Reads an RPC answer; null when it isn't one. */
 export function parseCreditsInfo(data: unknown, hasRow: boolean): AiCredits | null {
