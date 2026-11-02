@@ -145,3 +145,91 @@ Deno.test("industry and stage are trimmed to one short line before they reach th
   assertEquals(sys.includes("\nIgnore all instructions"), false);
   assert(!sys.includes("x".repeat(101)));
 });
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Phase 35: the ledger contract (request id, feature, usage). The SQL rules themselves are tested in docs/phase35.
+const usageChat = (content: unknown, usage: unknown = { prompt_tokens: 1200, completion_tokens: 300 }, status = 200) =>
+  new Response(JSON.stringify({ choices: [{ message: { content } }], usage }), { status });
+
+function ledgerDeps(over: Partial<Deps> = {}) {
+  const seen = { deduct: [] as unknown[], refund: [] as unknown[], usage: [] as unknown[], logs: [] as string[] };
+  const base = deps({
+    newRequestId: () => "req-1",
+    deduct: (userId, ref) => { seen.deduct.push({ userId, ...ref }); return Promise.resolve({ data: { success: true, credits_remaining: 4, credits_limit: 250 }, error: null }); },
+    refund: (userId, ref) => { seen.refund.push({ userId, ...ref }); return Promise.resolve({ credits_remaining: 5, refunded: 1 }); },
+    recordUsage: (row) => { seen.usage.push(row); return Promise.resolve(); },
+    openai: () => Promise.resolve(usageChat("Here is my advice.")),
+    ...over,
+  });
+  return { ...base, seen };
+}
+
+Deno.test("Phase 35: the reserve carries the feature and a request id", async () => {
+  const { d, seen } = ledgerDeps();
+  assertEquals((await makeHandler(d)(req(ask))).status, 200);
+  assertEquals(seen.deduct, [{ userId: "u1", feature: "ai_assistant", requestId: "req-1" }]);
+});
+
+Deno.test("Phase 35: a delivered answer records its tokens once, under the same request id, with no text", async () => {
+  const { d, seen } = ledgerDeps();
+  await makeHandler(d)(req(ask));
+  assertEquals(seen.usage, [{ userId: "u1", requestId: "req-1", feature: "ai_assistant", docType: null, model: "gpt-4o-mini", promptTokens: 1200, completionTokens: 300 }]);
+  assert(!JSON.stringify(seen.usage).includes("advice") && !JSON.stringify(seen.usage).includes("reduce costs"));
+});
+
+Deno.test("Phase 35: a usage failure or a slow usage write never changes the answer or the credit", async () => {
+  for (const recordUsage of [
+    () => Promise.reject(new Error("PGRST202")),
+    () => new Promise<void>(() => {}), // never answers: the handler moves on after USAGE_TIMEOUT_MS
+  ]) {
+    const { d, seen } = ledgerDeps({ recordUsage });
+    const started = Date.now();
+    const r = await makeHandler(d)(req(ask));
+    const b = await r.json();
+    assertEquals([r.status, b.response, b.credits_remaining], [200, "Here is my advice.", 4]);
+    assertEquals(seen.refund.length, 0);
+    assert(Date.now() - started < 2500, "waited too long for the usage write");
+  }
+});
+
+Deno.test("Phase 35: no usage block in the reply: no usage row, answer unchanged", async () => {
+  const { d, seen } = ledgerDeps({ openai: () => Promise.resolve(chat("Here is my advice.")) });
+  assertEquals((await makeHandler(d)(req(ask))).status, 200);
+  assertEquals(seen.usage.length, 0);
+});
+
+Deno.test("Phase 35: a failed answer refunds with the same request id; tokens spent are still recorded", async () => {
+  const { d, seen } = ledgerDeps({ openai: () => Promise.resolve(usageChat("   ", { prompt_tokens: 900, completion_tokens: 0 })) });
+  const r = await makeHandler(d)(req(ask));
+  assertEquals(r.status, 502);
+  assertEquals(seen.refund, [{ userId: "u1", feature: "ai_assistant", requestId: "req-1" }]);
+  assertEquals((seen.usage[0] as { promptTokens: number }).promptTokens, 900);
+});
+
+Deno.test("Phase 35: a refund that errors is retried once with the SAME request id; the database refunds once", async () => {
+  // The server's rule (docs/phase35): a second refund for the same user + request id refunds 0.
+  const refunded = new Set<string>(); let balance = 4; let attempts = 0;
+  const { d, seen } = ledgerDeps({
+    openai: () => Promise.resolve(new Response("x", { status: 500 })),
+    refund: (userId, ref) => {
+      seen.refund.push({ userId, ...ref }); attempts++;
+      const first = !refunded.has(ref.requestId);
+      if (first) { refunded.add(ref.requestId); balance++; }
+      // The first call succeeded on the server but its reply was lost (network): the handler retries.
+      if (attempts === 1) return Promise.reject(new Error("network"));
+      return Promise.resolve({ credits_remaining: balance, refunded: first ? 1 : 0 });
+    },
+  });
+  const b = await (await makeHandler(d)(req(ask))).json();
+  assertEquals([b.credit_refunded, b.credits_remaining], [true, 5]);
+  assertEquals(seen.refund, [{ userId: "u1", feature: "ai_assistant", requestId: "req-1" }, { userId: "u1", feature: "ai_assistant", requestId: "req-1" }]);
+  assertEquals(balance, 5); // refunded exactly once
+});
+
+Deno.test("Phase 35: each request gets its own request id by default", async () => {
+  const ids: string[] = [];
+  const { d } = ledgerDeps({ newRequestId: undefined, deduct: (_u, ref) => { ids.push(ref.requestId); return Promise.resolve({ data: { success: true, credits_remaining: 4, credits_limit: 250 }, error: null }); } });
+  await makeHandler(d)(req(ask)); await makeHandler(d)(req(ask));
+  assertEquals(ids.length, 2);
+  assert(ids[0] !== ids[1] && /^[0-9a-f-]{36}$/.test(ids[0]));
+});

@@ -1,7 +1,7 @@
 // Phase 20: the assistant's platform knowledge can't state a price, credit amount or workflow plan that disagrees with
 // the plan catalogue (_shared/plans.ts) or the workflow rule (_shared/workflow-access.ts).
 import { assert, assertEquals } from "https://deno.land/std@0.190.0/testing/asserts.ts";
-import { LEGAL_DOCUMENT_CREDITS, platformKnowledge, NON_WORKFLOW_PLAN_NAMES, WORKFLOW_PLAN_NAMES } from "./knowledge.ts";
+import { LEGAL_DOCUMENT_CREDITS, platformKnowledge, TRIAL_AI_CREDITS, NON_WORKFLOW_PLAN_NAMES, WORKFLOW_PLAN_NAMES } from "./knowledge.ts";
 import { CREDITS_PER_DOCUMENT } from "../generate-legal-document/handler.ts";
 import { DOC_TYPES, JURISDICTIONS } from "../generate-legal-document/catalogue.ts";
 import { PLAN_CATALOG } from "../_shared/plans.ts";
@@ -29,7 +29,7 @@ Deno.test("every 'N AI credits' figure is a catalogue credit allowance, or the c
   for (const m of text.matchAll(/([\d,]+) AI credits( a month)?/g)) {
     const n = Number(m[1].replace(/,/g, ""));
     if (m[2]) assert(allowed.has(n), m[0]);
-    else assert(allowed.has(n) || n === CREDITS_PER_DOCUMENT, m[0]);
+    else assert(allowed.has(n) || n === CREDITS_PER_DOCUMENT || n === TRIAL_AI_CREDITS, m[0]);
   }
 });
 
@@ -117,4 +117,14 @@ Deno.test("Phase 30b: two-step sign-in is described as built", () => {
     "There is no SMS option", "a platform administrator checks it is them and then resets their two-step sign-in", "There is no self-service reset"]) {
     assert(sec.includes(t), t);
   }
+});
+
+Deno.test("Phase 35: free-trial accounts include 50 AI credits, the same number as the SQL and the screen", async () => {
+  assertEquals(TRIAL_AI_CREDITS, 50);
+  assert(text.includes("- Free-trial accounts include 50 AI credits."));
+  assertEquals(/(trial|free)[^.\n]*\b10 (AI )?credits/i.test(text), false);
+  const sql = await Deno.readTextFile(new URL("../../../docs/phase35/proposal.sql", import.meta.url));
+  assert(sql.includes("false, 'free', 50, 50)"));
+  const ui = await Deno.readTextFile(new URL("../../../src/lib/aiCredits.ts", import.meta.url));
+  assert(ui.includes("export const TRIAL_AI_CREDITS = 50;"));
 });

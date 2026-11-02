@@ -31,20 +31,24 @@ function fake(opts: {
   key?: string | undefined; user?: string | null; access?: Awaited<ReturnType<Deps["checkAccess"]>>;
   credit?: { success: boolean; credits_remaining?: number; credits_limit?: number; reset_date?: string } | null; creditError?: unknown;
   openai?: (body: Record<string, unknown>, signal: AbortSignal) => Promise<Response>; refundThrows?: boolean; timeoutMs?: number;
+  recordUsage?: Deps["recordUsage"];
 } = {}) {
-  const calls = { deduct: [] as number[], refund: [] as number[], openai: [] as Record<string, unknown>[], access: 0 };
+  const calls = { deduct: [] as number[], refund: [] as number[], openai: [] as Record<string, unknown>[], access: 0,
+    refs: [] as { op: string; feature: string; requestId: string }[], usage: [] as unknown[] };
   const logs: string[] = [];
   const deps: Deps = {
     openAIKey: "key" in opts ? opts.key : "sk-test",
     getUserId: () => Promise.resolve(opts.user === undefined ? USER : opts.user),
     checkAccess: () => { calls.access++; return Promise.resolve(opts.access ?? { ok: true, state: "subscribed" }); },
-    deduct: (_u, credits) => {
-      calls.deduct.push(credits);
+    newRequestId: () => "req-1",
+    recordUsage: opts.recordUsage ?? ((row) => { calls.usage.push(row); return Promise.resolve(); }),
+    deduct: (_u, credits, ref) => {
+      calls.deduct.push(credits); calls.refs.push({ op: "reserve", ...ref });
       if (opts.creditError) return Promise.resolve({ data: null, error: opts.creditError });
       return Promise.resolve({ data: opts.credit === undefined ? { success: true, credits_remaining: 48, credits_limit: 50, reset_date: "2026-12-01T00:00:00Z" } : opts.credit, error: null });
     },
-    refund: (_u, credits) => {
-      calls.refund.push(credits);
+    refund: (_u, credits, ref) => {
+      calls.refund.push(credits); calls.refs.push({ op: "refund", ...ref });
       if (opts.refundThrows) return Promise.reject(new Error("refund_failed"));
       return Promise.resolve({ credits_remaining: 50 });
     },
@@ -231,14 +235,16 @@ Deno.test("timeout: aborts, refunds exactly once", async () => {
   assert(f.logs.some((l) => l.includes('"reason":"timeout"')));
 });
 
-Deno.test("refund fails: 502 with the contact-us message, refund tried once", async () => {
+Deno.test("refund fails: 502 with the contact-us message, refund tried twice with the same request id", async () => {
   const f = fake({ openai: () => Promise.resolve(openaiOk("", 500)), refundThrows: true });
   const r = await run(f, post(goodBody()));
   assertEquals(r.status, 502);
   assertEquals(r.body.credit_refunded, false);
   assertEquals(r.body.message, AI_FAILED_NOT_REFUNDED);
   assert(AI_FAILED_NOT_REFUNDED.includes("contact us"));
-  assertEquals(f.calls.refund.length, 1);
+  // Phase 35: one retry, same request id (the database refunds at most once per request).
+  assertEquals(f.calls.refund, [10, 10]);
+  assertEquals(f.calls.refs.filter((r) => r.op === "refund").map((r) => r.requestId), ["req-1", "req-1"]);
 });
 
 Deno.test("logs never hold the fields, the prompt or the document", async () => {
@@ -401,4 +407,53 @@ Deno.test("Phase 30e: a document reserves 10 credits; 9 left is refused with 402
   assertEquals(ten.calls.deduct, [10]);
   assertEquals(ok.body.credits_used, 10);
   assertEquals(ok.body.credits_remaining, 0);
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Phase 35: the ledger contract (request id, feature, usage with doc type). The SQL rules are tested in docs/phase35.
+const openaiUsage = (content: unknown = DOC_TEXT, usage: unknown = { prompt_tokens: 2000, completion_tokens: 5500 }, status = 200) =>
+  new Response(JSON.stringify({ choices: [{ message: { content } }], usage }), { status, headers: { "Content-Type": "application/json" } });
+
+Deno.test("Phase 35: reserve carries feature legal_document and the request id; success records usage with the doc type", async () => {
+  const f = fake({ openai: () => Promise.resolve(openaiUsage()) });
+  const r = await run(f, post(goodBody()));
+  assertEquals(r.status, 200);
+  assertEquals(f.calls.refs, [{ op: "reserve", feature: "legal_document", requestId: "req-1" }]);
+  assertEquals(f.calls.usage, [{ userId: USER, requestId: "req-1", feature: "legal_document", docType: "service_agreement", model: "gpt-4.1", promptTokens: 2000, completionTokens: 5500 }]);
+  assert(!JSON.stringify(f.calls.usage).includes(SECRET_FIELD) && !JSON.stringify(f.calls.usage).includes("Definitions"), "usage row holds no content");
+});
+
+Deno.test("Phase 35: a refused (too short) document still records the tokens spent, and refunds with the same request id", async () => {
+  const f = fake({ openai: () => Promise.resolve(openaiUsage(docOf(100), { prompt_tokens: 2000, completion_tokens: 300 })) });
+  const r = await run(f, post(goodBody()));
+  assertEquals(r.status, 502);
+  assertEquals(f.calls.refs, [{ op: "reserve", feature: "legal_document", requestId: "req-1" }, { op: "refund", feature: "legal_document", requestId: "req-1" }]);
+  assertEquals((f.calls.usage[0] as { completionTokens: number }).completionTokens, 300);
+});
+
+Deno.test("Phase 35: a usage failure or a hanging usage write never changes the document, the credit or (much) the time", async () => {
+  for (const recordUsage of [() => Promise.reject(new Error("PGRST202")), () => new Promise<unknown>(() => {})]) {
+    const f = fake({ openai: () => Promise.resolve(openaiUsage()), recordUsage });
+    const started = Date.now();
+    const r = await run(f, post(goodBody()));
+    assertEquals([r.status, r.body.document, r.body.credits_used], [200, DOC_TEXT, 10]);
+    assertEquals(f.calls.refund.length, 0);
+    assert(Date.now() - started < 2500);
+    assert(f.logs.some((l) => l.includes("usage not recorded")));
+    assert(!f.logs.join("\n").includes(SECRET_FIELD));
+  }
+});
+
+Deno.test("Phase 35: a refund retry is idempotent on the server: one refund in the balance", async () => {
+  // Fake server with the docs/phase35 rule: the second refund for the same request id refunds 0.
+  const refunded = new Set<string>(); let balance = 40; let attempts = 0;
+  const f = fake({ openai: () => Promise.resolve(openaiOk("", 500)) });
+  f.deps.refund = (_u, credits, ref) => {
+    attempts++;
+    if (!refunded.has(ref.requestId)) { refunded.add(ref.requestId); balance += credits; }
+    return attempts === 1 ? Promise.reject(new Error("network")) : Promise.resolve({ credits_remaining: balance });
+  };
+  const r = await run(f, post(goodBody()));
+  assertEquals([r.status, r.body.credit_refunded, r.body.credits_remaining], [502, true, 50]);
+  assertEquals([attempts, balance], [2, 50]);
 });

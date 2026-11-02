@@ -24,6 +24,8 @@ export const TRIAL_DAYS = 14;
 const WORKFLOW_MAX_STEPS = 10;
 /** Same as CREDITS_PER_DOCUMENT in generate-legal-document/handler.ts (knowledge_test.ts fails if they differ). */
 export const LEGAL_DOCUMENT_CREDITS = 10;
+/** Phase 35: what a trial / no-plan account starts with (docs/phase35/proposal.sql; src/lib/aiCredits.ts TRIAL_AI_CREDITS). */
+export const TRIAL_AI_CREDITS = 50;
 
 const pounds = (pence: number) => `£${(pence / 100).toLocaleString("en-GB", { minimumFractionDigits: pence % 100 ? 2 : 0 })}`;
 const plans = Object.values(PLAN_CATALOG);
@@ -42,6 +44,7 @@ ${plans.map(planLine).join("\n")}
 - Every new account gets a ${TRIAL_DAYS}-day free trial of all features, including workflows. After the trial a plan is needed to keep using the workspace.
 - Prices and what each plan includes are on the Pricing page. Never quote a price, credit amount or plan feature that isn't listed here.
 - Users can see their remaining AI credits and reset date on the Dashboard and in Settings → Billing.
+- Free-trial accounts include ${TRIAL_AI_CREDITS} AI credits.
 - Settings → Billing: an account without a paid plan (for example during the trial) sees "You don't have a paid plan yet." and a View plans button that opens the Pricing page.`;
 }
 

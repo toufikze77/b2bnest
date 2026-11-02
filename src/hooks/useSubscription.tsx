@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccess } from '@/hooks/useAccess';
+import { TRIAL_AI_CREDITS } from '@/lib/aiCredits';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface SubscriptionData {
@@ -81,8 +82,9 @@ export const useSubscription = () => {
             subscription_end: null,
             trial_ends_at: null,
             loading: false,
-            ai_credits_remaining: 10,
-            ai_credits_limit: 10,
+            // Phase 35: what the server creates on the first AI request (docs/phase35/proposal.sql).
+            ai_credits_remaining: TRIAL_AI_CREDITS,
+            ai_credits_limit: TRIAL_AI_CREDITS,
             ai_credits_reset_date: null
           });
         }

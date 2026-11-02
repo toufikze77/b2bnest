@@ -8,7 +8,12 @@
 // or returned twice for one request.
 //
 // Logs never hold the question, the answer or the model's raw output: only lengths, status codes and error codes.
+//
+// Phase 35: every request has a request id. The reserve and the refund carry it (feature "ai_assistant"), the refund is
+// retried once with the same id (the database refunds at most once per request), and the tokens of every reply that has
+// them go to public.record_ai_usage (best effort, at most USAGE_TIMEOUT_MS; never changes the answer or the credit).
 import type { AccessCheck } from "../_shared/access.ts";
+import { type LedgerRef, newRequestId, readUsage, recordUsageBestEffort, refundWithRetry, type Usage, type UsageRow } from "../_shared/ai-ledger.ts";
 import { AI_CONTEXT_FIELD_MAX_LENGTH, AI_QUESTION_MAX_LENGTH } from "../_shared/ai-limits.ts";
 import { platformKnowledge } from "./knowledge.ts";
 
@@ -20,6 +25,7 @@ export const corsHeaders = {
 export const MODEL = "gpt-4o-mini";
 export const MAX_TOKENS = 1000;
 export const AI_TIMEOUT_MS = 30_000;
+export const FEATURE = "ai_assistant" as const;
 
 export interface CreditResult {
   success: boolean; credits_remaining?: number; credits_limit?: number; reset_date?: string; subscription_tier?: string; error?: string;
@@ -30,10 +36,13 @@ export interface Deps {
   getUserId: (token: string) => Promise<string | null>;
   /** Phase 12 access check, asked as the caller (their JWT). */
   checkAccess: (authHeader: string) => Promise<AccessCheck>;
-  /** public.check_and_deduct_ai_credit(user, 1): the reservation. */
-  deduct: (userId: string) => Promise<{ data: CreditResult | null; error: unknown }>;
-  /** public.refund_ai_credit(user, 1): gives the reserved credit back. Throws if it couldn't. */
-  refund: (userId: string) => Promise<{ credits_remaining?: number; refunded?: number }>;
+  /** public.check_and_deduct_ai_credit(user, 1, feature, request id): the reservation. */
+  deduct: (userId: string, ref: LedgerRef) => Promise<{ data: CreditResult | null; error: unknown }>;
+  /** public.refund_ai_credit(user, 1, feature, request id): gives the reserved credit back. Throws if it couldn't. */
+  refund: (userId: string, ref: LedgerRef) => Promise<{ credits_remaining?: number; refunded?: number }>;
+  /** public.record_ai_usage: tokens and cost of one model call (Phase 35, best effort). */
+  recordUsage?: (row: UsageRow) => Promise<unknown>;
+  newRequestId?: () => string;
   /** POST to OpenAI chat completions with this body. */
   openai: (body: Record<string, unknown>, signal: AbortSignal) => Promise<Response>;
   /** Saves the conversation (best effort; a failure never changes the answer or the credit). */
@@ -71,12 +80,17 @@ export function systemPrompt(type: ConversationType, industry: string, stage: st
   }
 }
 
-/** The answer text, or null when the reply isn't a usable chat completion. */
-export async function readAnswer(res: Response): Promise<string | null> {
-  if (!res.ok) return null;
+/** The answer text (null when the reply isn't a usable chat completion) and the token usage, if the reply has it. */
+export async function readCompletion(res: Response): Promise<{ text: string | null; usage: Usage | null }> {
+  if (!res.ok) return { text: null, usage: null };
   const data = await res.json().catch(() => null) as { choices?: { message?: { content?: unknown } }[] } | null;
   const content = data?.choices?.[0]?.message?.content;
-  return typeof content === "string" && content.trim() ? content : null;
+  return { text: typeof content === "string" && content.trim() ? content : null, usage: readUsage(data) };
+}
+
+/** The answer text, or null when the reply isn't a usable chat completion. */
+export async function readAnswer(res: Response): Promise<string | null> {
+  return (await readCompletion(res)).text;
 }
 
 export function makeHandler(deps: Deps) {
@@ -105,8 +119,9 @@ export function makeHandler(deps: Deps) {
     const access = await deps.checkAccess(auth);
     if (!access.ok) return json(access.status, access.body);
 
-    // Reserve one credit (atomic, row-locked).
-    const { data: credit, error: creditError } = await deps.deduct(userId).catch((e) => ({ data: null, error: e }));
+    // Reserve one credit (atomic, row-locked), recorded in the ledger under this request id.
+    const ref: LedgerRef = { feature: FEATURE, requestId: (deps.newRequestId ?? newRequestId)() };
+    const { data: credit, error: creditError } = await deps.deduct(userId, ref).catch((e) => ({ data: null, error: e }));
     if (creditError || !credit) {
       console.error("ai-assistant: credit check failed");
       return json(503, { error: "credit_check_failed", message: CREDIT_CHECK_FAILED });
@@ -122,7 +137,7 @@ export function makeHandler(deps: Deps) {
     // Call the model. Anything but a usable answer gives the credit back (once) and says so.
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), deps.timeoutMs ?? AI_TIMEOUT_MS);
-    let answer: string | null = null; let status = 0; let reason = "";
+    let answer: string | null = null; let status = 0; let reason = ""; let usage: Usage | null = null;
     try {
       const res = await deps.openai({
         model: MODEL,
@@ -130,16 +145,25 @@ export function makeHandler(deps: Deps) {
         temperature: 0.7, max_tokens: MAX_TOKENS,
       }, ctl.signal);
       status = res.status;
-      answer = await readAnswer(res);
+      ({ text: answer, usage } = await readCompletion(res));
       if (!answer) reason = res.ok ? "empty_answer" : "openai_status";
     } catch (e) {
       reason = e instanceof DOMException && e.name === "AbortError" ? "timeout" : "network";
     } finally { clearTimeout(timer); }
 
+    // Tokens were spent whether or not the answer is usable: record them (best effort, short timeout).
+    const recordUsage = () => usage
+      ? recordUsageBestEffort(deps.recordUsage, {
+          userId, requestId: ref.requestId, feature: FEATURE, docType: null, model: MODEL,
+          promptTokens: usage.promptTokens, completionTokens: usage.completionTokens,
+        }, (m, meta) => console.error(`ai-assistant: ${m}`, meta))
+      : Promise.resolve();
+
     if (!answer) {
       console.error("ai-assistant: no answer", { reason, status, question_length: message.length });
+      await recordUsage();
       try {
-        const r = await deps.refund(userId);
+        const r = await refundWithRetry(() => deps.refund(userId, ref));
         return json(502, { error: "ai_failed", message: AI_FAILED_REFUNDED, credit_refunded: true, credits_remaining: r.credits_remaining, credits_limit: credit.credits_limit });
       } catch {
         console.error("ai-assistant: refund failed", { reason });
@@ -150,7 +174,11 @@ export function makeHandler(deps: Deps) {
     await deps.save({ userId, conversationId, conversationType, message, answer, context: { userIndustry: industry, businessStage: stage, ...context } })
       .catch(() => console.error("ai-assistant: conversation not saved"));
 
-    console.log("ai-assistant: answered", { type: conversationType, question_length: message.length, answer_length: answer.length });
+    console.log("ai-assistant: answered", {
+      type: conversationType, question_length: message.length, answer_length: answer.length,
+      prompt_tokens: usage?.promptTokens ?? null, completion_tokens: usage?.completionTokens ?? null,
+    });
+    await recordUsage();
     return json(200, {
       response: answer, conversationType, timestamp: new Date().toISOString(),
       credits_remaining: credit.credits_remaining, credits_limit: credit.credits_limit, reset_date: credit.reset_date,
