@@ -1,27 +1,34 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { CheckCircle, Circle, Pencil, Plus, Target, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { BROWSER_ONLY_NOTE } from '@/lib/freeTools';
-import { CATEGORIES, dueText, formatDay, goalErrors, loadGoals, localToday, MAX_GOALS, saveGoals, setProgress, type Goal } from '@/lib/goals';
+import { AccountPrompt, MoveToAccount, SaveStatus } from '@/components/freeTools/FreeToolAccount';
+import { useToolCollection } from '@/hooks/useToolCollection';
+import { isListOf, mergeById } from '@/lib/freeToolItems';
+import { CATEGORIES, dueText, formatDay, goalErrors, isGoal, loadGoals, localToday, MAX_GOALS, saveGoals, setProgress, type Goal } from '@/lib/goals';
+
+const GOALS_OPTS = { itemName: 'My goals', empty: [] as Goal[], isValid: isListOf(isGoal), isEmpty: (v: Goal[]) => v.length === 0, loadBrowser: loadGoals, saveBrowser: saveGoals, merge: mergeById<Goal> };
 
 const FIELD = 'h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 const CARD = 'rounded-card border border-border bg-card p-4 text-card-foreground';
 const BLANK = { title: '', description: '', targetDate: '', category: 'Business' };
 
-/** Phase 38: Goal Tracker. Saved in this browser only (localStorage "goalTrackerGoals"). */
+/**
+ * Phase 38: Goal Tracker. Signed out: saved in this browser (localStorage "goalTrackerGoals").
+ * Phase 39: signed in, saved to the account (one item, "My goals"); a free-account offer appears after the first edit.
+ */
 export default function GoalTracker() {
-  const [goals, setGoals] = useState<Goal[]>(loadGoals);
+  const c = useToolCollection<Goal[]>('goal-tracker', GOALS_OPTS);
+  const goals = c.value;
+  const setGoals = c.set;
   const [editing, setEditing] = useState<string | 'new' | null>(null);
   const [form, setForm] = useState(BLANK);
   const [errors, setErrors] = useState<{ title?: string; targetDate?: string }>({});
   const [announce, setAnnounce] = useState('');
-  const [storageOk, setStorageOk] = useState(true);
+  const storageOk = c.storageOk;
   const today = localToday();
-
-  useEffect(() => { setStorageOk(saveGoals(goals)); }, [goals]);
 
   const open = (g?: Goal) => { setErrors({}); setEditing(g ? g.id : 'new'); setForm(g ? { title: g.title, description: g.description, targetDate: g.targetDate, category: g.category } : BLANK); };
   const submit = (e: FormEvent) => {
@@ -54,9 +61,13 @@ export default function GoalTracker() {
       <header>
         <h1 className="text-2xl font-bold">Goal Tracker</h1>
         <p className="text-sm text-muted-foreground">Set business goals with a target date and track progress. Up to {MAX_GOALS} goals.</p>
-        <p className="mt-1 text-xs text-muted-foreground">{BROWSER_ONLY_NOTE}</p>
+        <SaveStatus mode={c.acct.mode} message={c.acct.message} browserReason={c.acct.browserReason} />
         {!storageOk && <p role="alert" className="mt-1 text-sm text-destructive">This browser isn't keeping your goals (storage is blocked or full), so they will be gone when you leave the page.</p>}
       </header>
+      {c.acct.mode === 'signed-out' && c.edited && <AccountPrompt tool="goal-tracker" title="Keep your goals on all your devices" text="Create a free account to save them to your account. Until then they stay in this browser." />}
+      {c.inAccount && c.acct.userId && c.browserHasData && (
+        <MoveToAccount tool="goal-tracker" userId={c.acct.userId} count={1} what="goals" onMove={c.moveToAccount} onRemoveBrowserCopy={c.removeBrowserCopy} />
+      )}
       <p aria-live="polite" className="sr-only" data-testid="goal-announce">{announce}</p>
 
       <div className="grid gap-3 sm:grid-cols-3" data-testid="goal-stats">

@@ -34,7 +34,9 @@ import HMRCIntegration from '@/components/HMRCIntegration';
 import BusinessToolsSEO from '@/components/BusinessToolsSEO';
 import { CREDITS_PER_DOCUMENT } from '@/lib/legalDocuments';
 import { isFreeTool } from '@/lib/freeTools';
-import FreeToolsBanner from '@/components/FreeToolsBanner';
+import { FinanceAssistantPromo } from '@/components/freeTools/Promos';
+import { TrialEndedNote } from '@/components/freeTools/FreeToolAccount';
+import { useAccess } from '@/hooks/useAccess';
 
 type ToolType = 'overview' | 'notepro' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'qr-code-generator' | 'coupon-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'customer-survey-builder' | 'business-finance-assistant' | 'currency-converter' | 'hmrc-integration' | 'workflow-studio' | 'lead-generation' | 'employee-rota';
 
@@ -57,6 +59,7 @@ const BusinessTools = () => {
   const navigate = useNavigate();
   const { isPremium } = useSubscription();
   const { user } = useAuth();
+  const access = useAccess();
   const { favorites, toggleFavorite, isFavorited } = useFavoriteTools();
 
   // Phase 29: a normal React Router push (no hand-made history entries), so Back and Forward stay inside the app.
@@ -456,7 +459,7 @@ const BusinessTools = () => {
 
 
 
-            {filter === 'free' && <div className="mb-6"><FreeToolsBanner /></div>}
+            {(filter === 'all' || filter === 'free' || filter === 'finance') && <div className="mb-6 max-w-2xl"><FinanceAssistantPromo /></div>}
 
             {/* Featured Tool: Lead Generation (ClickUp / Notion inspired) */}
             {(filter === 'all' || filter === 'premium' || (filter === 'favorites' && isFavorited('lead-generation'))) && (
@@ -746,9 +749,10 @@ const BusinessTools = () => {
       )}
 
       <div className={ownFrame ? undefined : 'py-8'}>
-        {/* Phase 38: the advert card for the free tools (above the tool, never over it). */}
-        {currentTool !== 'overview' && isFreeTool(currentTool) && (
-          <div className="mx-auto mb-4 max-w-6xl px-4 sm:px-6"><FreeToolsBanner /></div>
+        {/* Phase 39: the free tools stay free after a trial ends; one calm line, no countdown. Referral links now sit
+            next to the task inside the tools that need them (Setup Checklist, Cost Calculator), not above every tool. */}
+        {currentTool !== 'overview' && isFreeTool(currentTool) && access.trialEnded && !access.suspended && (
+          <div className="mx-auto mb-4 max-w-6xl px-4 sm:px-6"><TrialEndedNote /></div>
         )}
         {renderTool()}
       </div>

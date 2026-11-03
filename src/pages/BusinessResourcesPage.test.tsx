@@ -10,6 +10,10 @@ vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: null, loading: false
 
 import BusinessResourcesPage, { BUSINESS_RESOURCES_TITLE } from './BusinessResourcesPage';
 import { GUIDANCE, REFERRAL_DISCLOSURE, REFERRALS } from '@/components/BusinessResources';
+import { visibleGroups } from '@/data/freeToolsPromos';
+import { REVOLUT_BUSINESS } from '@/data/referralLinks';
+// Phase 39: Revolut Business is in the grouped referral slot (shared data), the other offers in REFERRALS.
+const SLOT = visibleGroups('business-resources').flatMap((g) => g.partners);
 
 const show = () => render(<MemoryRouter><BusinessResourcesPage /></MemoryRouter>);
 
@@ -27,7 +31,7 @@ describe('/business-resources (public)', () => {
     const ld = JSON.parse(document.querySelector('script[type="application/ld+json"]')!.textContent!);
     const types = ld['@graph'].map((n: { '@type': string }) => n['@type']);
     expect(types).toEqual(['WebPage', 'ItemList']);
-    const count = GUIDANCE.reduce((n, s) => n + s.links.length, 0) + REFERRALS.length;
+    const count = GUIDANCE.reduce((n, s) => n + s.links.length, 0) + REFERRALS.length + SLOT.length;
     expect(ld['@graph'][1].itemListElement).toHaveLength(count);
   });
 
@@ -48,14 +52,16 @@ describe('/business-resources (public)', () => {
     const external = links.filter((a) => a.getAttribute('href')?.startsWith('http'));
     for (const a of external) {
       const href = a.getAttribute('href')!;
-      if (REFERRALS.some((r) => r.url === href)) expect(a).toHaveAttribute('rel', 'sponsored noopener noreferrer');
+      if (REFERRALS.some((r) => r.url === href) || SLOT.some((p) => p.url === href)) expect(a).toHaveAttribute('rel', 'sponsored noopener noreferrer');
       else {
         expect(href.startsWith('https://www.gov.uk/'), href).toBe(true);
         expect(a).toHaveAttribute('rel', 'noopener noreferrer');
       }
       expect(a).toHaveAttribute('target', '_blank');
     }
-    expect(external.length).toBe(GUIDANCE.reduce((n, s) => n + s.links.length, 0) + REFERRALS.length);
+    expect(external.length).toBe(GUIDANCE.reduce((n, s) => n + s.links.length, 0) + REFERRALS.length + SLOT.length);
+    expect(SLOT.map((p) => p.url)).toEqual([REVOLUT_BUSINESS.url]);
+    expect(screen.getByTestId('referral-slot-business-resources')).toHaveTextContent('Banking & finance');
   });
 
   it('no ratings, review scores or "Starting at" prices; no HMRC filing claim', () => {

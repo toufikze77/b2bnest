@@ -27,3 +27,9 @@ export function loadDone(): string[] {
   } catch { return []; }
 }
 
+
+/** Phase 39: the ticked steps, kept in this browser (signed out) — true when the browser kept them. */
+export function saveDone(done: string[]): boolean {
+  try { localStorage.setItem(CHECKLIST_KEY, JSON.stringify(done)); return true; } catch { return false; }
+}
+export const isStepId = (x: unknown): x is string => typeof x === 'string' && SETUP_STEPS.some((s) => s.id === x);

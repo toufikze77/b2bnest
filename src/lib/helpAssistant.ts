@@ -47,9 +47,30 @@ export const UNKNOWN_ANSWER: HelpAnswer = {
 
 const has = (text: string, words: string[]) => words.some((w) => text.includes(w));
 
+export const TOPUPS_ANSWER = 'Top-ups are not available yet.';
+export const FREE_TIER_ANSWER = 'The free Business Tools (ROI Calculator, Goal Tracker, Customer Survey Builder, Cost Calculator, Setup Checklist, Compliance Checker, Best Practices Guide and more) work without an account, and stay free after a trial ends. With a free account you can save your work in them and see it on any device. Everything else needs a plan.';
+
 export function answerQuestion(input: string): HelpAnswer {
   const q = input.toLowerCase();
   const named = PLANS.find((p) => q.includes(p.name.toLowerCase()));
+
+  // Phase 39: AI credit top-ups are prepared (docs/phase37) but not switched on.
+  if (has(q, ['top-up', 'top up', 'topup', 'top-ups', 'more credits', 'extra credits', 'buy credits'])) {
+    return {
+      text: TOPUPS_ANSWER,
+      links: [PRICING_LINK],
+      suggestions: ['What plans do you offer?'],
+    };
+  }
+
+  // Phase 39: the free tier after the trial.
+  if (has(q, ['free tool', 'after my trial', 'after the trial', 'trial ended', 'trial has ended', 'trial is over', 'free account'])) {
+    return {
+      text: FREE_TIER_ANSWER,
+      links: [PRICING_LINK],
+      suggestions: ['Is there a free trial?', 'What plans do you offer?'],
+    };
+  }
 
   if (named) {
     return {

@@ -20,3 +20,14 @@ export function isOpenFreeToolLocation(pathname: string, search: string): boolea
 }
 
 export const BROWSER_ONLY_NOTE = 'Saved in this browser only. Clearing your browser data removes it, and it does not appear on your other devices.';
+
+/**
+ * Phase 39: /business-tools itself (the list of tools, no tool chosen). Trial-ended accounts and accounts with no plan
+ * may open it to reach the free tools; paid tools still open the trial-ended screen. Suspended accounts don't get it.
+ */
+export function isFreeToolsOverview(pathname: string, search: string): boolean {
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+  if (path !== '/business-tools') return false;
+  const tool = new URLSearchParams(search).get('tool');
+  return !tool || tool === 'overview';
+}

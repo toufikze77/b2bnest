@@ -52,3 +52,7 @@ export function goalErrors(f: { title: string; targetDate: string }): { title?: 
   return e;
 }
 export const setProgress = (g: Goal, p: number): Goal => { const progress = Math.min(100, Math.max(0, Math.round(p))); return { ...g, progress, isCompleted: progress >= 100 }; };
+
+/** Phase 39: a goal read back from the account. */
+export const isGoal = (x: unknown): x is Goal => !!x && typeof x === 'object' && typeof (x as Goal).id === 'string' && typeof (x as Goal).title === 'string'
+  && typeof (x as Goal).targetDate === 'string' && typeof (x as Goal).progress === 'number';

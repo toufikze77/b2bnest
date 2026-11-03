@@ -110,6 +110,14 @@ describe('sign-up confirmation keeps the invitation / portal destination', () =>
       expect(supabaseRedirectAllowed(u, PROD)).toBe(false);
     }
   });
+  it('Phase 39: a sign-up from a free tool comes back to it, once the owner adds its allow-list entry', () => {
+    const search = authUrlWithNext('/business-tools?tool=roi-calculator');
+    const url = confirmationRedirect('https://www.b2bnest.online', search.slice(search.indexOf('?')) + '&mode=signup');
+    expect(url).toBe('https://www.b2bnest.online/business-tools?tool=roi-calculator');
+    expect(supabaseRedirectAllowed(url, PROD)).toBe(false); // today: Supabase falls back to the Site URL (home)
+    expect(supabaseRedirectAllowed(url, [...PROD, 'https://www.b2bnest.online/business-tools?tool=*'])).toBe(true);
+    expect(supabaseRedirectAllowed('https://www.b2bnest.online/business-tools?tool=x/../admin', ['https://www.b2bnest.online/business-tools?tool=*'])).toBe(false);
+  });
   it('a Vercel preview host needs its own entries (production entries do not cover it)', () => {
     const preview = confirmationRedirect('https://b2bnest-git-claude-onboarding-rev2-toufik-s-projects.vercel.app', `?next=${encodeURIComponent('/join?token=' + TOKEN)}`);
     expect(supabaseRedirectAllowed(preview, PROD)).toBe(false);

@@ -1,5 +1,6 @@
 import SEOHead from '@/components/SEOHead';
 import BusinessResources, { GUIDANCE, REFERRALS } from '@/components/BusinessResources';
+import { visibleGroups } from '@/data/freeToolsPromos';
 
 const URL = 'https://www.b2bnest.online/business-resources';
 export const BUSINESS_RESOURCES_TITLE = 'Free Resources for UK Small Businesses | B2BNEST';
@@ -8,7 +9,8 @@ export const BUSINESS_RESOURCES_DESCRIPTION =
 
 /** Public page: no sign-in and no Supabase calls. */
 const BusinessResourcesPage = () => {
-  const items = [...GUIDANCE.flatMap((s) => s.links.map((l) => ({ name: l.title, url: l.url }))), ...REFERRALS.map((r) => ({ name: r.name, url: r.url }))];
+  const items = [...GUIDANCE.flatMap((s) => s.links.map((l) => ({ name: l.title, url: l.url }))), ...visibleGroups('business-resources').flatMap((g) => g.partners.map((p) => ({ name: p.name, url: p.url as string }))),
+    ...REFERRALS.map((r) => ({ name: r.name, url: r.url }))];
   const schemaMarkup = {
     '@context': 'https://schema.org',
     '@graph': [

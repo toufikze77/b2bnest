@@ -82,4 +82,4 @@ export function costsCsv(items: CostItem[], amounts: Record<string, string>, inc
   });
   return tableToCsv(CSV_COLUMNS, rows);
 }
-export const NO_FIGURES_NOTE = 'No fees are filled in: they change, so open the official page for today\'s fee and type in what you see, or the quotes you have had. Nothing you type is saved or sent anywhere.';
+export const NO_FIGURES_NOTE = 'No fees are filled in: they change, so open the official page for today\'s fee and type in what you see, or the quotes you have had. What you type stays in this browser tab unless you choose "Save this result" with a free account.';

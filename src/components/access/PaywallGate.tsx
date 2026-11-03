@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccess } from '@/hooks/useAccess';
 import { isPaywallExempt, isSuspendedExempt, type Access } from '@/lib/access';
-import { isOpenFreeToolLocation } from '@/lib/freeTools';
+import { isFreeToolsOverview, isOpenFreeToolLocation } from '@/lib/freeTools';
 import PricingPlans from '@/components/PricingPlans';
 import { Button } from '@/components/ui/button';
 
@@ -79,6 +79,9 @@ export default function PaywallGate({ children }: { children: ReactNode }) {
   // Phase 38: the free Business Tools (browser only, no account data) stay open for trial-ended and suspended accounts.
   if (isOpenFreeToolLocation(pathname, search)) return <>{children}</>;
   if (access.suspended) return isSuspendedExempt(pathname) ? <>{children}</> : <SuspendedScreen />;
+  // Phase 39: the free tier. After a trial ends (or with no plan) the Business Tools list stays open, so the free tools
+  // can be found; choosing a paid tool there still shows the trial-ended screen.
+  if (isFreeToolsOverview(pathname, search)) return <>{children}</>;
   if (isPaywallExempt(pathname) || !access.trialEnded) return <>{children}</>;
   return <TrialEndedScreen access={access} />;
 }

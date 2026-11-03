@@ -45,6 +45,10 @@ export const TOOL_FAQS: Faq[] = [
   },
   {
     question: 'Do I need an account to use the tools?',
-    answer: 'You can look at the public pages, including Pricing, Help, the Knowledge base and the lists of tools and templates, without signing in, and the free tools (such as the ROI Calculator, Goal Tracker and Cost Calculator) work without an account and keep their data in your browser only. Using any other tool, a template or AI Studio, and the dashboard, needs you to sign in. In Settings → Billing, an account without a paid plan sees "You don\'t have a paid plan yet." and a View plans button.',
+    answer: 'You can look at the public pages, including Pricing, Help, the Knowledge base and the lists of tools and templates, without signing in, and the free tools (such as the ROI Calculator, Goal Tracker and Cost Calculator) work without an account and keep their data in your browser, and they stay free after a trial ends; with a free account you can save your work in them and see it on any device. Using any other tool, a template or AI Studio, and the dashboard, needs you to sign in. In Settings → Billing, an account without a paid plan sees "You don\'t have a paid plan yet." and a View plans button.',
+  },
+  {
+    question: 'Can I buy AI credit top-ups?',
+    answer: 'Top-ups are not available yet. Your plan\'s monthly AI credits are the only credits for now.',
   },
 ];
