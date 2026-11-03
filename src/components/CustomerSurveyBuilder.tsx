@@ -1,439 +1,146 @@
-import React, { useState } from 'react';
-import { FileText, Plus, Trash2, Save, Eye, Users, BarChart3, Download } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useEffect, useState } from 'react';
+import { ArrowDown, ArrowUp, Copy, Download, Eye, FileText, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
+import { BROWSER_ONLY_NOTE } from '@/lib/freeTools';
+import {
+  loadSurveys, MAX_QUESTIONS, MAX_SURVEYS, move, NO_RESPONSES_NOTE, QUESTION_TYPES, saveSurveys, surveyErrors, surveyText,
+  type Question, type QuestionType, type Survey,
+} from '@/lib/surveys';
 
-interface Question {
-  id: string;
-  type: 'text' | 'multiple-choice' | 'rating' | 'yes-no' | 'email';
-  question: string;
-  options?: string[];
-  required: boolean;
-}
+const FIELD = 'h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+const CARD = 'rounded-card border border-border bg-card p-4 text-card-foreground';
+const newQuestion = (): Question => ({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, type: 'text', question: '', options: [], required: false });
 
-interface CustomerSurvey {
-  id: string;
-  title: string;
-  description: string;
-  questions: Question[];
-  status: 'draft' | 'published';
-  responses: number;
-  createdAt: Date;
-}
-
-const CustomerSurveyBuilder = () => {
-  const [surveys, setSurveys] = useState<CustomerSurvey[]>([]);
-  const [currentSurvey, setCurrentSurvey] = useState<CustomerSurvey | null>(null);
-  const [isBuilding, setIsBuilding] = useState(false);
-  const [surveyData, setSurveyData] = useState({
-    title: '',
-    description: '',
-    questions: [] as Question[]
-  });
-  const { toast } = useToast();
-
-  const questionTypes = [
-    { value: 'text', label: 'Text Answer' },
-    { value: 'multiple-choice', label: 'Multiple Choice' },
-    { value: 'rating', label: 'Rating (1-5)' },
-    { value: 'yes-no', label: 'Yes/No' },
-    { value: 'email', label: 'Email Address' }
-  ];
-
-  const startNewSurvey = () => {
-    if (surveys.length >= 5) {
-      toast({
-        title: "Survey Limit Reached",
-        description: "This quick tool holds up to 5 surveys. Delete one to make another.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsBuilding(true);
-    setSurveyData({
-      title: '',
-      description: '',
-      questions: []
-    });
-  };
-
-  const addQuestion = () => {
-    const newQuestion: Question = {
-      id: Date.now().toString(),
-      type: 'text',
-      question: '',
-      required: false
-    };
-
-    setSurveyData(prev => ({
-      ...prev,
-      questions: [...prev.questions, newQuestion]
-    }));
-  };
-
-  const updateQuestion = (questionId: string, updates: Partial<Question>) => {
-    setSurveyData(prev => ({
-      ...prev,
-      questions: prev.questions.map(q => 
-        q.id === questionId ? { ...q, ...updates } : q
-      )
-    }));
-  };
-
-  const deleteQuestion = (questionId: string) => {
-    setSurveyData(prev => ({
-      ...prev,
-      questions: prev.questions.filter(q => q.id !== questionId)
-    }));
-  };
-
-  const saveSurvey = () => {
-    if (!surveyData.title || surveyData.questions.length === 0) {
-      toast({
-        title: "Missing Information",
-        description: "Please add a title and at least one question.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const survey: CustomerSurvey = {
-      id: Date.now().toString(),
-      title: surveyData.title,
-      description: surveyData.description,
-      questions: surveyData.questions,
-      status: 'draft',
-      responses: 0,
-      createdAt: new Date()
-    };
-
-    setSurveys(prev => [survey, ...prev]);
-    setIsBuilding(false);
-    setSurveyData({ title: '', description: '', questions: [] });
-
-    toast({
-      title: "Survey Created",
-      description: `Survey "${survey.title}" has been saved as draft.`
-    });
-  };
-
-  const publishSurvey = (surveyId: string) => {
-    setSurveys(prev => prev.map(survey => 
-      survey.id === surveyId 
-        ? { ...survey, status: 'published' as const }
-        : survey
-    ));
-
-    toast({
-      title: "Survey Published",
-      description: "Your survey is now live and ready to collect responses."
-    });
-  };
-
-  const duplicateSurvey = (survey: CustomerSurvey) => {
-    if (surveys.length >= 5) {
-      toast({
-        title: "Survey Limit Reached",
-        description: "This quick tool holds up to 5 surveys.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const duplicated: CustomerSurvey = {
-      ...survey,
-      id: Date.now().toString(),
-      title: `${survey.title} (Copy)`,
-      status: 'draft',
-      responses: 0,
-      createdAt: new Date()
-    };
-
-    setSurveys(prev => [duplicated, ...prev]);
-    toast({
-      title: "Survey Duplicated",
-      description: "Survey has been duplicated and saved as draft."
-    });
-  };
-
-  const getStatusColor = (status: string) => {
-    return status === 'published' 
-      ? 'bg-green-100 text-green-800' 
-      : 'bg-gray-100 text-gray-800';
-  };
-
-  if (isBuilding) {
-    return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Build Your Survey</h1>
-          <p className="text-gray-600">Create engaging surveys to collect customer feedback</p>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Survey Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="title">Survey Title *</Label>
-              <Input
-                id="title"
-                placeholder="e.g. After-purchase feedback"
-                value={surveyData.title}
-                onChange={(e) => setSurveyData(prev => ({ ...prev, title: e.target.value }))}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                placeholder="Help us improve by sharing your feedback..."
-                rows={3}
-                value={surveyData.description}
-                onChange={(e) => setSurveyData(prev => ({ ...prev, description: e.target.value }))}
-              />
-            </div>
-
-            <div className="border-t pt-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Questions</h3>
-                <Button onClick={addQuestion} variant="outline">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Question
-                </Button>
-              </div>
-
-              {surveyData.questions.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p>No questions added yet. Click "Add Question" to get started!</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {surveyData.questions.map((question, index) => (
-                    <div key={question.id} className="border rounded-lg p-4 bg-gray-50">
-                      <div className="flex items-start justify-between mb-3">
-                        <span className="text-sm font-medium text-gray-600">Question {index + 1}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteQuestion(question.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div>
-                          <Label>Question Text</Label>
-                          <Input
-                            placeholder="Enter your question..."
-                            value={question.question}
-                            onChange={(e) => updateQuestion(question.id, { question: e.target.value })}
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label>Question Type</Label>
-                            <Select 
-                              value={question.type} 
-                              onValueChange={(value: any) => updateQuestion(question.id, { type: value })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {questionTypes.map((type) => (
-                                  <SelectItem key={type.value} value={type.value}>
-                                    {type.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="flex items-center space-x-2 pt-6">
-                            <input
-                              type="checkbox"
-                              id={`required-${question.id}`}
-                              checked={question.required}
-                              onChange={(e) => updateQuestion(question.id, { required: e.target.checked })}
-                              className="rounded"
-                            />
-                            <Label htmlFor={`required-${question.id}`}>Required</Label>
-                          </div>
-                        </div>
-
-                        {question.type === 'multiple-choice' && (
-                          <div>
-                            <Label>Options (one per line)</Label>
-                            <Textarea
-                              placeholder="Option 1&#10;Option 2&#10;Option 3"
-                              rows={3}
-                              value={question.options?.join('\n') || ''}
-                              onChange={(e) => updateQuestion(question.id, { 
-                                options: e.target.value.split('\n').filter(opt => opt.trim()) 
-                              })}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <Button onClick={saveSurvey} className="flex-1">
-                <Save className="h-4 w-4 mr-2" />
-                Save Survey
-              </Button>
-              <Button variant="outline" onClick={() => setIsBuilding(false)}>
-                Cancel
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
+function Preview({ survey }: { survey: Survey }) {
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Customer Survey Builder</h1>
-        <p className="text-gray-600">Create and manage customer feedback surveys</p>
-        <Badge variant="secondary" className="mt-2">
-          Quick tool: up to 5 surveys
-        </Badge>
-      </div>
-
-      <div className="mb-6">
-        <Button onClick={startNewSurvey} disabled={surveys.length >= 5}>
-          <Plus className="h-4 w-4 mr-2" />
-          {surveys.length >= 5 ? 'Limit Reached' : 'Create New Survey'}
-        </Button>
-      </div>
-
-      {surveys.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-12">
-            <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Surveys Created Yet</h3>
-            <p className="text-gray-600 mb-4">
-              Start collecting valuable customer feedback by creating your first survey.
-            </p>
-            <Button onClick={startNewSurvey}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Your First Survey
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {surveys.map((survey) => (
-            <Card key={survey.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-lg mb-1">{survey.title}</CardTitle>
-                    {survey.description && (
-                      <p className="text-sm text-gray-600 line-clamp-2">{survey.description}</p>
-                    )}
-                  </div>
-                  <Badge className={getStatusColor(survey.status)}>
-                    {survey.status}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-sm text-gray-600">
-                    <span className="flex items-center gap-1">
-                      <FileText className="h-4 w-4" />
-                      {survey.questions.length} questions
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Users className="h-4 w-4" />
-                      {survey.responses} responses
-                    </span>
-                  </div>
-
-                  <div className="text-xs text-gray-500">
-                    Created: {survey.createdAt.toLocaleDateString()}
-                  </div>
-
-                  <div className="flex gap-2 pt-2">
-                    {survey.status === 'draft' && (
-                      <Button
-                        size="sm"
-                        onClick={() => publishSurvey(survey.id)}
-                        className="flex-1"
-                      >
-                        <Eye className="h-3 w-3 mr-1" />
-                        Publish
-                      </Button>
-                    )}
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => duplicateSurvey(survey)}
-                      disabled={surveys.length >= 5}
-                    >
-                      Copy
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* Info Card */}
-      <Card className="mt-8 bg-blue-50 border-blue-200">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-3">
-            <BarChart3 className="h-5 w-5 text-blue-600 mt-0.5" />
-            <div>
-              <h4 className="font-semibold text-blue-900 mb-1">Survey Distribution & Analytics</h4>
-              <p className="text-sm text-blue-700 mb-3">
-                Once published, you can share your survey link with customers via email, social media, or embed it on your website. 
-                Track responses and analyze feedback to improve your business.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                <div className="bg-white rounded p-3">
-                  <div className="font-semibold text-blue-800">Share Options</div>
-                  <div className="text-blue-600">Email, SMS, Social Media, Website Embed</div>
-                </div>
-                <div className="bg-white rounded p-3">
-                  <div className="font-semibold text-blue-800">Analytics</div>
-                  <div className="text-blue-600">Response rates, completion time, feedback trends</div>
-                </div>
-                <div className="bg-white rounded p-3">
-                  <div className="font-semibold text-blue-800">Export</div>
-                  <div className="text-blue-600">CSV, PDF reports, data visualization</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="space-y-4" data-testid="survey-preview">
+      <p className="text-xs text-muted-foreground">Preview only: answers here aren't saved or sent.</p>
+      <h3 className="text-lg font-semibold">{survey.title || 'Untitled survey'}</h3>
+      {survey.description && <p className="text-sm text-muted-foreground">{survey.description}</p>}
+      {survey.questions.map((q, i) => (
+        <fieldset key={q.id} className="space-y-1">
+          <legend className="text-sm font-medium">{i + 1}. {q.question || 'Question text'}{q.required ? ' (required)' : ''}</legend>
+          {q.type === 'text' && <Textarea aria-label={q.question} rows={2} />}
+          {q.type === 'email' && <Input type="email" aria-label={q.question} />}
+          {q.type === 'yes-no' && ['Yes', 'No'].map((o) => <label key={o} className="mr-4 text-sm"><input type="radio" name={`p-${q.id}`} className="mr-1" />{o}</label>)}
+          {q.type === 'rating' && [1, 2, 3, 4, 5].map((n) => <label key={n} className="mr-3 text-sm"><input type="radio" name={`p-${q.id}`} className="mr-1" />{n}</label>)}
+          {q.type === 'multiple-choice' && q.options.filter((o) => o.trim()).map((o) => <label key={o} className="block text-sm"><input type="radio" name={`p-${q.id}`} className="mr-1" />{o}</label>)}
+        </fieldset>
+      ))}
     </div>
   );
-};
+}
 
-export default CustomerSurveyBuilder;
+/** Phase 38: write and check customer surveys. Saved in this browser only; it doesn't publish or collect answers. */
+export default function CustomerSurveyBuilder() {
+  const [surveys, setSurveys] = useState<Survey[]>(loadSurveys);
+  const [draft, setDraft] = useState<Survey | null>(null);
+  const [preview, setPreview] = useState(false);
+  const [problems, setProblems] = useState<string[]>([]);
+  const [announce, setAnnounce] = useState('');
+  const [storageOk, setStorageOk] = useState(true);
+  useEffect(() => { setStorageOk(saveSurveys(surveys)); }, [surveys]);
+
+  const edit = (s?: Survey) => { setProblems([]); setPreview(false); setDraft(s ? structuredClone(s) : { id: `${Date.now()}`, title: '', description: '', questions: [newQuestion()], updatedAt: '' }); };
+  const setQ = (i: number, q: Partial<Question>) => draft && setDraft({ ...draft, questions: draft.questions.map((x, j) => (j === i ? { ...x, ...q } : x)) });
+  const save = () => {
+    if (!draft) return;
+    const errs = surveyErrors(draft);
+    setProblems(errs);
+    if (errs.length) return;
+    const s = { ...draft, title: draft.title.trim(), updatedAt: new Date().toISOString() };
+    setSurveys(surveys.some((x) => x.id === s.id) ? surveys.map((x) => (x.id === s.id ? s : x)) : [s, ...surveys]);
+    setDraft(null); setAnnounce(`Survey "${s.title}" saved in this browser.`);
+  };
+  const remove = (s: Survey) => { if (!window.confirm(`Delete "${s.title}"?`)) return; setSurveys(surveys.filter((x) => x.id !== s.id)); setAnnounce(`"${s.title}" deleted.`); };
+  const downloadText = (s: Survey) => {
+    const url = URL.createObjectURL(new Blob([surveyText(s)], { type: 'text/plain;charset=utf-8;' }));
+    const a = document.createElement('a'); a.href = url; a.download = `${s.title.replace(/[^\w-]+/g, '-').slice(0, 40) || 'survey'}.txt`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  const copyText = async (s: Survey) => {
+    try { await navigator.clipboard.writeText(surveyText(s)); setAnnounce('Questions copied.'); } catch { setAnnounce("Couldn't copy. Use Download instead."); }
+  };
+
+  return (
+    <div className="mx-auto max-w-5xl space-y-6 px-4 sm:px-6">
+      <header>
+        <h1 className="text-2xl font-bold">Customer Survey Builder</h1>
+        <p className="text-sm text-muted-foreground">Write a customer survey, check how it reads, then copy or download the questions. Up to {MAX_SURVEYS} surveys.</p>
+        <p className="mt-2 rounded-md border border-border bg-muted/40 p-3 text-sm" data-testid="survey-no-responses">{NO_RESPONSES_NOTE}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{BROWSER_ONLY_NOTE}</p>
+        {!storageOk && <p role="alert" className="mt-1 text-sm text-destructive">This browser isn't keeping your surveys (storage is blocked or full).</p>}
+      </header>
+      <p aria-live="polite" className="sr-only" data-testid="survey-announce">{announce}</p>
+
+      {draft ? (
+        <section className={`${CARD} space-y-4`} aria-label="Edit survey">
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" variant={preview ? 'outline' : 'default'} aria-pressed={!preview} onClick={() => setPreview(false)}><Pencil className="mr-1 h-4 w-4" aria-hidden />Edit</Button>
+            <Button type="button" size="sm" variant={preview ? 'default' : 'outline'} aria-pressed={preview} onClick={() => setPreview(true)}><Eye className="mr-1 h-4 w-4" aria-hidden />Preview</Button>
+          </div>
+          {preview ? <Preview survey={draft} /> : (
+            <>
+              <div><Label htmlFor="sv-title">Survey title</Label><Input id="sv-title" value={draft.title} maxLength={120} placeholder="For example: after-purchase feedback" onChange={(e) => setDraft({ ...draft, title: e.target.value })} /></div>
+              <div><Label htmlFor="sv-desc">Introduction (optional)</Label><Textarea id="sv-desc" rows={2} maxLength={500} value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} /></div>
+              <ol className="space-y-3">
+                {draft.questions.map((q, i) => (
+                  <li key={q.id} className="space-y-2 rounded-md border border-border p-3" data-testid="survey-question">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-sm font-medium">Question {i + 1}</span>
+                      <div className="flex gap-1">
+                        <Button type="button" size="icon" variant="ghost" aria-label={`Move question ${i + 1} up`} disabled={i === 0} onClick={() => setDraft({ ...draft, questions: move(draft.questions, i, -1) })}><ArrowUp className="h-4 w-4" aria-hidden /></Button>
+                        <Button type="button" size="icon" variant="ghost" aria-label={`Move question ${i + 1} down`} disabled={i === draft.questions.length - 1} onClick={() => setDraft({ ...draft, questions: move(draft.questions, i, 1) })}><ArrowDown className="h-4 w-4" aria-hidden /></Button>
+                        <Button type="button" size="icon" variant="ghost" aria-label={`Delete question ${i + 1}`} onClick={() => setDraft({ ...draft, questions: draft.questions.filter((_, j) => j !== i) })}><Trash2 className="h-4 w-4" aria-hidden /></Button>
+                      </div>
+                    </div>
+                    <div><Label htmlFor={`q-${q.id}`}>Question text</Label><Input id={`q-${q.id}`} value={q.question} maxLength={300} onChange={(e) => setQ(i, { question: e.target.value })} /></div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <div><Label htmlFor={`qt-${q.id}`}>Type</Label>
+                        <select id={`qt-${q.id}`} className={FIELD} value={q.type} onChange={(e) => setQ(i, { type: e.target.value as QuestionType })}>
+                          {QUESTION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                        </select></div>
+                      <label className="flex items-center gap-2 self-end pb-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-primary" checked={q.required} onChange={(e) => setQ(i, { required: e.target.checked })} />Required</label>
+                    </div>
+                    {q.type === 'multiple-choice' && (
+                      <div><Label htmlFor={`qo-${q.id}`}>Options (one per line)</Label>
+                        <Textarea id={`qo-${q.id}`} rows={3} value={q.options.join('\n')} onChange={(e) => setQ(i, { options: e.target.value.split('\n') })} /></div>
+                    )}
+                  </li>
+                ))}
+              </ol>
+              {draft.questions.length === 0 && <p className="text-sm text-muted-foreground">No questions yet.</p>}
+              <Button type="button" variant="outline" disabled={draft.questions.length >= MAX_QUESTIONS} onClick={() => setDraft({ ...draft, questions: [...draft.questions, newQuestion()] })}><Plus className="mr-1 h-4 w-4" aria-hidden />Add a question</Button>
+            </>
+          )}
+          {problems.length > 0 && <ul role="alert" className="list-disc pl-5 text-sm text-destructive">{problems.map((p) => <li key={p}>{p}</li>)}</ul>}
+          <div className="flex gap-2"><Button type="button" onClick={save}>Save survey</Button><Button type="button" variant="ghost" onClick={() => setDraft(null)}>Cancel</Button></div>
+        </section>
+      ) : (
+        <Button type="button" onClick={() => edit()} disabled={surveys.length >= MAX_SURVEYS}><Plus className="mr-1 h-4 w-4" aria-hidden />{surveys.length >= MAX_SURVEYS ? `Limit of ${MAX_SURVEYS} surveys reached` : 'New survey'}</Button>
+      )}
+
+      {!draft && (surveys.length === 0 ? (
+        <p className="text-sm text-muted-foreground" data-testid="surveys-empty">No surveys yet. Choose "New survey" to write your first one.</p>
+      ) : (
+        <ul className="grid gap-4 md:grid-cols-2">
+          {surveys.map((s) => (
+            <li key={s.id} className={CARD} data-testid="survey-card">
+              <p className="flex items-center gap-2 font-semibold"><FileText className="h-4 w-4" aria-hidden />{s.title}</p>
+              <p className="text-sm text-muted-foreground">{s.questions.length} {s.questions.length === 1 ? 'question' : 'questions'}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button type="button" size="sm" variant="outline" onClick={() => edit(s)}>Edit or preview</Button>
+                <Button type="button" size="sm" variant="outline" onClick={() => void copyText(s)}><Copy className="mr-1 h-4 w-4" aria-hidden />Copy questions</Button>
+                <Button type="button" size="sm" variant="outline" onClick={() => downloadText(s)}><Download className="mr-1 h-4 w-4" aria-hidden />Download (.txt)</Button>
+                <Button type="button" size="sm" variant="ghost" aria-label={`Delete ${s.title}`} onClick={() => remove(s)}><Trash2 className="h-4 w-4" aria-hidden /></Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ))}
+    </div>
+  );
+}
