@@ -39,20 +39,29 @@ The component is `src/components/FreeToolsBanner.tsx`; its content is in `src/da
 - **Business Finance Assistant:** the copy matches what it does today: quotes, invoices, what is owed, expenses, outgoings, suppliers and products.
   - It says it needs an account and a plan, with a 14-day trial.
   - It links to `/business-tools?tool=business-finance-assistant`.
-- **Bank referrals:** the list ships **empty**, because the real partner links aren't known. With an empty list, the bank section isn't shown.
+- **Referral partners (follow-up to #65):** partners are grouped by category, in `REFERRAL_GROUPS` and `REFERRAL_PARTNERS` in `src/data/freeToolsPromos.ts`.
+  - It ships with one group, **"Banking & finance"**, shown by default, and one entry: **Revolut Business**.
+  - The Revolut name, description and referral link live in `src/data/referralLinks.ts`. The Business Resources page and the card both use that file, so the link is kept in one place.
+  - The card never shows a group without entries, or an entry without a link.
+  - With two or more groups that have entries, the card shows a group selector. It works with arrow keys, Home and End, and the selected group is announced. "Banking & finance" comes first, and the choice is remembered for this browser session only.
 
-### How to add a bank partner
-Add an entry to `BANK_PARTNERS` in `src/data/freeToolsPromos.ts`:
+### How to change the referral partners
+- **The Revolut link:** edit `REVOLUT_BUSINESS.url` in `src/data/referralLinks.ts`. The card and the Business Resources page both change.
+- **An offer line:** add `offer: '<exactly as the partner states it>'` to the entry in `REFERRAL_PARTNERS`, and remove it when it ends.
+  - Don't add rates, bonuses or fees the partner hasn't given you in writing.
+- **Another partner:** add an entry to `REFERRAL_PARTNERS`:
 
-```ts
-{ name: "<the bank's own name>", description: '<one line>', url: 'https://<your referral link>', offer: '<optional, exactly as the bank states it>' }
-```
+  ```ts
+  { id: 'unique-id', name: "<the partner's own name>", description: '<one line>', url: 'https://<your referral link>', group: 'banking' }
+  ```
 
-The card then shows the bank section with "We may earn a commission if you open an account through these links". Links open in a new tab with `rel="sponsored noopener noreferrer"`.
+  Without a `url` it isn't shown.
+- **Another group** (for example accounting software, insurance, payments or legal):
+  - add `{ id: 'accounting', label: 'Accounting software' }` to `REFERRAL_GROUPS`, in the order it should appear;
+  - give its entries `group: 'accounting'`;
+  - the selector appears once two groups have entries.
 
-Don't add rates, bonuses or offers the bank hasn't given you in writing.
-
-`src/components/BusinessResources.tsx` already has a Revolut Business referral link from before this phase. The owner can copy it into `BANK_PARTNERS`; I didn't, because the brief said to ship with no partners.
+Next to the links, the card always shows "We may earn a commission if you open an account through these links". The links open in a new tab with `rel="sponsored noopener noreferrer"`.
 
 ## What was found and fixed, per tool
 
