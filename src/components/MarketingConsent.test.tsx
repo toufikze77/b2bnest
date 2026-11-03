@@ -41,29 +41,28 @@ const signUpForm = (path: string) => {
   fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'a-long-password' } });
 };
 
-describe('marketing consent at sign-up (Phase 39)', () => {
-  it('the box is unticked, says exactly what it means, and sign-up works without ticking it', async () => {
+describe('sign-up (Phase 39b): no marketing checkbox; the free tool signed up from is still passed', () => {
+  it('the sign-up form has no marketing checkbox, and sign-up passes only signup_source', async () => {
     signUpForm('/auth?mode=signup');
-    const box = screen.getByRole('checkbox', { name: CONSENT_TEXT });
-    expect(CONSENT_TEXT).toBe('Send me tips and offers about B2BNEST. You can unsubscribe at any time.');
-    expect(box).not.toBeChecked();
-    expect(box).not.toBeRequired();
+    expect(screen.queryByRole('checkbox')).toBeNull();
+    expect(screen.queryByText(CONSENT_TEXT)).toBeNull();
+    expect(screen.queryByText(/tips and offers/i)).toBeNull();
     fireEvent.submit(screen.getByLabelText('Email').closest('form')!);
     await waitFor(() => expect(st.signUp).toHaveBeenCalledTimes(1));
-    expect(st.signUp).toHaveBeenCalledWith('ada@example.test', 'a-long-password', 'Ada Lovelace', '', { marketing_consent: false, signup_source: 'signup' });
+    expect(st.signUp).toHaveBeenCalledWith('ada@example.test', 'a-long-password', 'Ada Lovelace', '', { signup_source: 'signup' });
   });
 
-  it('ticked from a free tool: yes, with that tool as the only extra detail', async () => {
+  it('from a free tool: that tool is the source, and no marketing choice is sent', async () => {
     signUpForm(`/auth?next=${encodeURIComponent('/business-tools?tool=roi-calculator')}&mode=signup`);
-    fireEvent.click(screen.getByRole('checkbox', { name: CONSENT_TEXT }));
     fireEvent.submit(screen.getByLabelText('Email').closest('form')!);
-    await waitFor(() => expect(st.signUp).toHaveBeenCalledWith('ada@example.test', 'a-long-password', 'Ada Lovelace', '', { marketing_consent: true, signup_source: 'roi-calculator' }));
+    await waitFor(() => expect(st.signUp).toHaveBeenCalledWith('ada@example.test', 'a-long-password', 'Ada Lovelace', '', { signup_source: 'roi-calculator' }));
+    expect(JSON.stringify(st.signUp.mock.calls[0])).not.toMatch(/marketing_consent/);
   });
 
-  it('the sign-in form has no consent box', () => {
+  it('the sign-in form has no checkbox either', () => {
     st.user = null;
     render(<MemoryRouter initialEntries={['/auth']}><Auth /></MemoryRouter>);
-    expect(screen.queryByRole('checkbox', { name: CONSENT_TEXT })).toBeNull();
+    expect(screen.queryByRole('checkbox')).toBeNull();
   });
 
   it('source: only one of the seven free tools, else "signup"', () => {

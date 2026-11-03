@@ -16,17 +16,23 @@ beforeEach(() => { sessionStorage.clear(); });
 describe('ReferralSlot (Phase 39)', () => {
   it('ships one group, "Banking & finance", with one entry: Revolut Business from the shared referral data, in the three places', () => {
     expect(REFERRAL_GROUPS).toEqual([{ id: 'banking', label: 'Banking & finance' }]);
-    expect(REFERRAL_PARTNERS).toEqual([{ id: 'revolut-business', name: REVOLUT_BUSINESS.name, description: REVOLUT_BUSINESS.description, url: REVOLUT_BUSINESS.url, group: 'banking', contexts: [...ALL] }]);
+    expect(REFERRAL_PARTNERS).toEqual([{ id: 'revolut-business', kind: 'Business account', name: 'Revolut Business', description: REVOLUT_BUSINESS.description, url: REVOLUT_BUSINESS.url, group: 'banking', contexts: [...ALL] }]);
     expect(REFERRAL_PARTNERS.every((p) => !p.offer)).toBe(true);
   });
 
-  it.each(ALL)('%s: Advert label, the commission line, sponsored link in a new tab, not financial advice', (context) => {
+  it.each(ALL)('%s: no "Advert" badge; a neutral label, the commission line with the link, sponsored link in a new tab, not financial advice', (context) => {
     render(<ReferralSlot context={context} />);
     const box = screen.getByTestId(`referral-slot-${context}`);
-    expect(within(box).getByText('Advert')).toBeVisible();
-    expect(within(box).getByText('We may earn a commission if you open an account through these links.')).toBeInTheDocument();
+    expect(box.textContent).not.toMatch(/\bAdvert\b|\bSponsored\b|\bAd\b/);
+    expect(box).not.toHaveAttribute('aria-label', 'Advert');
+    expect(within(box).getByRole('heading', { name: 'Banking & finance' })).toBeInTheDocument();
+    expect(within(box).getByTestId('rs-partner')).toHaveTextContent(/^Business account: Revolut Business/);
+    const commission = within(box).getByTestId('rs-commission');
+    expect(commission).toHaveTextContent('We may earn a commission if you open an account through this link.');
+    expect(commission).toHaveClass('text-sm'); // readable size, not small print
+    expect(commission.previousElementSibling?.contains(within(box).getByRole('link'))).toBe(true); // directly with the link
     expect(within(box).getByText('Not financial advice. Check the terms with the provider.')).toBeInTheDocument();
-    const link = within(box).getByRole('link', { name: /Revolut Business account/ });
+    const link = within(box).getByRole('link', { name: /Revolut Business/ });
     expect(link).toHaveAttribute('href', REVOLUT_BUSINESS.url);
     expect(link).toHaveAttribute('rel', 'sponsored noopener noreferrer');
     expect(link).toHaveAttribute('target', '_blank');
@@ -52,6 +58,7 @@ describe('ReferralSlot (Phase 39)', () => {
     expect(document.activeElement).toBe(screen.getByRole('tab', { name: 'Accounting software' }));
     expect(screen.getByText('Offer exactly as stated')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Books One/ })).toHaveAttribute('rel', 'sponsored noopener noreferrer');
+    expect(screen.getByTestId('rs-commission')).toHaveTextContent('through this link.');
     unmount();
     // In a place where only one of those groups has entries, there is no selector.
     render(<ReferralSlot context="cost-calculator" groups={GROUPS} partners={[BOOKS, BANK]} />);
@@ -59,9 +66,14 @@ describe('ReferralSlot (Phase 39)', () => {
     expect(screen.getByRole('heading', { name: 'Banking & finance' })).toBeInTheDocument();
   });
 
+  it('two links in one group: the commission line says "these links"', () => {
+    slot({ groups: GROUPS, partners: [BANK, { ...BANK, id: 'b2', name: 'Bank Two', url: 'https://two.example.test/ref' }] });
+    expect(screen.getByTestId('rs-commission')).toHaveTextContent('We may earn a commission if you open an account through these links.');
+  });
+
   it('dismissed for this session only, per place', () => {
     const { unmount } = render(<ReferralSlot context="cost-calculator" />);
-    fireEvent.click(screen.getByRole('button', { name: 'Hide this advert for now' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Hide this for now' }));
     expect(screen.queryByTestId('referral-slot-cost-calculator')).toBeNull();
     unmount();
     render(<><ReferralSlot context="cost-calculator" /><ReferralSlot context="setup-checklist" /></>);
