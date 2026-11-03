@@ -33,6 +33,8 @@ import BusinessFinanceAssistant from '@/components/BusinessFinanceAssistant';
 import HMRCIntegration from '@/components/HMRCIntegration';
 import BusinessToolsSEO from '@/components/BusinessToolsSEO';
 import { CREDITS_PER_DOCUMENT } from '@/lib/legalDocuments';
+import { isFreeTool } from '@/lib/freeTools';
+import FreeToolsBanner from '@/components/FreeToolsBanner';
 
 type ToolType = 'overview' | 'notepro' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'qr-code-generator' | 'coupon-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'customer-survey-builder' | 'business-finance-assistant' | 'currency-converter' | 'hmrc-integration' | 'workflow-studio' | 'lead-generation' | 'employee-rota';
 
@@ -72,7 +74,7 @@ const BusinessTools = () => {
     setCurrentToolState(toolParam || 'overview');
   }, [location.search, location.key]);
 
-  const tools = [
+  const toolList = [
     {
       id: 'lead-generation' as ToolType,
       title: 'Lead Generation & Prospecting',
@@ -80,7 +82,6 @@ const BusinessTools = () => {
       icon: Filter,
       color: 'bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600',
       benefits: ['Smart lead scoring', 'Form & landing page builder', 'CSV import & export', 'Native CRM sync', 'Activity timeline', 'Shareable public forms'],
-      isPremium: true,
       featured: true
     },
     {
@@ -90,7 +91,6 @@ const BusinessTools = () => {
       icon: CalIcon,
       color: 'bg-gradient-to-r from-amber-600 to-rose-600',
       benefits: ['Weekly schedule grid', 'Employee management', 'Labour cost totals', 'Copy last week', 'Publish shifts', 'Org-scoped & secure'],
-      isPremium: true,
       featured: true
     },
     {
@@ -99,8 +99,7 @@ const BusinessTools = () => {
       description: 'Organize your thoughts, ideas, and tasks in one professional note-taking app',
       icon: FileText,
       color: 'bg-gradient-to-r from-purple-600 to-pink-600',
-      benefits: ['Rich text editing', 'Tags & categories', 'Search & archive', 'Favorites & templates'],
-      isPremium: false
+      benefits: ['Rich text editing', 'Tags & categories', 'Search & archive', 'Favorites & templates']
     },
     {
       id: 'hmrc-integration' as ToolType,
@@ -108,8 +107,7 @@ const BusinessTools = () => {
       description: 'Save your HMRC details and preview VAT, payroll and tax returns. HMRC filing is not available yet.',
       icon: Building2,
       color: 'bg-gradient-to-r from-green-600 to-blue-600',
-      benefits: ['VAT return previews', 'Payroll (FPS/EPS) previews', 'Corporation Tax previews', 'HMRC connection settings', 'Filing: not available yet'],
-      isPremium: true
+      benefits: ['VAT return previews', 'Payroll (FPS/EPS) previews', 'Corporation Tax previews', 'HMRC connection settings', 'Filing: not available yet']
     },
     {
       id: 'workflow-studio' as ToolType,
@@ -118,8 +116,7 @@ const BusinessTools = () => {
       description: 'Save emails you send often and send them with one click, with an exact preview first. Included in Business and Scale, and during the 14-day trial.',
       icon: Zap,
       color: 'bg-gradient-to-r from-purple-600 to-indigo-600',
-      benefits: ['One-click email workflows', 'Exact preview before sending', 'Run history', 'Email templates', 'Business and Scale plans'],
-      isPremium: true
+      benefits: ['One-click email workflows', 'Exact preview before sending', 'Run history', 'Email templates', 'Business and Scale plans']
     },
     {
       id: 'business-finance-assistant' as ToolType,
@@ -127,8 +124,7 @@ const BusinessTools = () => {
       description: 'Complete finance management with invoices, quotes, and financial tracking',
       icon: Calculator,
       color: 'bg-green-600',
-      benefits: ['Invoice & Quote Generation', 'Financial Dashboard', 'Client Management', 'Revenue Tracking'],
-      isPremium: true
+      benefits: ['Invoice & Quote Generation', 'Financial Dashboard', 'Client Management', 'Revenue Tracking']
     },
     {
       id: 'todo-list' as ToolType,
@@ -136,8 +132,7 @@ const BusinessTools = () => {
       description: 'Organize and track your tasks efficiently',
       icon: ListTodo,
       color: 'bg-green-600',
-      benefits: ['Stay organized', 'Track progress', 'Boost productivity'],
-      isPremium: true
+      benefits: ['Stay organized', 'Track progress', 'Boost productivity']
     },
     {
       id: 'coupon-generator' as ToolType,
@@ -145,8 +140,7 @@ const BusinessTools = () => {
       description: 'Generate and manage coupon codes with validation and CSV export/import',
       icon: Tag,
       color: 'bg-rose-600',
-      benefits: ['Unique code patterns', 'Bulk generation', 'CSV import/export', 'Validation rules'],
-      isPremium: false
+      benefits: ['Unique code patterns', 'Bulk generation', 'CSV import/export', 'Validation rules']
     },
     {
       id: 'qr-code-generator' as ToolType,
@@ -154,8 +148,7 @@ const BusinessTools = () => {
       description: 'Create QR codes for websites, contacts, and more',
       icon: QrCode,
       color: 'bg-gray-600',
-      benefits: ['Multiple formats', 'Instant generation', 'Easy download'],
-      isPremium: false
+      benefits: ['Multiple formats', 'Instant generation', 'Easy download']
     },
     {
       id: 'time-tracker' as ToolType,
@@ -164,8 +157,7 @@ const BusinessTools = () => {
       icon: Clock,
       color: 'bg-emerald-600',
       // Phase 31: saved to the account, so it needs signing in (trial and paying accounts, like the other saved tools).
-      benefits: ['Timer that keeps running across devices', 'Billable hours and value', 'Totals by day and project, CSV export'],
-      isPremium: true
+      benefits: ['Timer that keeps running across devices', 'Billable hours and value', 'Totals by day and project, CSV export']
     },
     {
       id: 'cash-flow-tracker' as ToolType,
@@ -173,8 +165,7 @@ const BusinessTools = () => {
       description: 'Monitor your business income and expenses',
       icon: TrendingUp,
       color: 'bg-green-600',
-      benefits: ['Income/expense tracking', 'Financial insights', 'Category analysis'],
-      isPremium: true
+      benefits: ['Income/expense tracking', 'Financial insights', 'Category analysis']
     },
     {
       id: 'goal-tracker' as ToolType,
@@ -182,8 +173,7 @@ const BusinessTools = () => {
       description: 'Set and monitor your business milestones',
       icon: Target,
       color: 'bg-red-600',
-      benefits: ['Milestone tracking', 'Progress monitoring', 'Achievement insights'],
-      isPremium: true
+      benefits: ['Milestone tracking', 'Progress monitoring', 'Achievement insights']
     },
     {
       id: 'roi-calculator' as ToolType,
@@ -191,8 +181,7 @@ const BusinessTools = () => {
       description: 'Calculate return on investment for projects',
       icon: BarChart,
       color: 'bg-yellow-600',
-      benefits: ['Investment analysis', 'Performance tracking', 'Decision support'],
-      isPremium: true
+      benefits: ['Investment analysis', 'Performance tracking', 'Decision support']
     },
     {
       id: 'contract-generator' as ToolType,
@@ -200,8 +189,7 @@ const BusinessTools = () => {
       description: `AI-drafted UK contracts to check with a solicitor (${CREDITS_PER_DOCUMENT} AI credits each)`,
       icon: FileText,
       color: 'bg-purple-700',
-      benefits: ['26 UK contract types', 'England and Wales, Scotland or Northern Ireland', 'Word, PDF and Markdown downloads'],
-      isPremium: true
+      benefits: ['26 UK contract types', 'England and Wales, Scotland or Northern Ireland', 'Word, PDF and Markdown downloads']
     },
     {
       id: 'privacy-policy-generator' as ToolType,
@@ -209,8 +197,7 @@ const BusinessTools = () => {
       description: `AI-drafted UK privacy policies and notices to check (${CREDITS_PER_DOCUMENT} AI credits each)`,
       icon: Shield,
       color: 'bg-green-700',
-      benefits: ['7 UK notices and policies', 'UK GDPR and Data Protection Act 2018 topics', 'Word, PDF and Markdown downloads'],
-      isPremium: true
+      benefits: ['7 UK notices and policies', 'UK GDPR and Data Protection Act 2018 topics', 'Word, PDF and Markdown downloads']
     },
     {
       id: 'customer-survey-builder' as ToolType,
@@ -218,8 +205,7 @@ const BusinessTools = () => {
       description: 'Create and manage customer feedback surveys',
       icon: BarChart,
       color: 'bg-violet-600',
-      benefits: ['Custom questions', 'Response tracking', 'Analytics dashboard'],
-      isPremium: true
+      benefits: ['Custom questions', 'Response tracking', 'Analytics dashboard']
     },
     {
       id: 'currency-converter' as ToolType,
@@ -227,8 +213,7 @@ const BusinessTools = () => {
       description: 'Convert currencies with real-time exchange rates',
       icon: TrendingUp,
       color: 'bg-green-600',
-      benefits: ['Real-time rates', '20+ currencies', 'Business-focused'],
-      isPremium: false
+      benefits: ['Real-time rates', '20+ currencies', 'Business-focused']
     },
     {
       id: 'cost-calculator' as ToolType,
@@ -236,8 +221,7 @@ const BusinessTools = () => {
       description: 'Calculate setup costs for your business structure',
       icon: Calculator,
       color: 'bg-blue-500',
-      benefits: ['Accurate cost estimates', 'Compare business structures', 'Plan your budget'],
-      isPremium: true
+      benefits: ['Accurate cost estimates', 'Compare business structures', 'Plan your budget']
     },
     {
       id: 'setup-checklist' as ToolType,
@@ -245,8 +229,7 @@ const BusinessTools = () => {
       description: 'Step-by-step guide to starting your business',
       icon: CheckSquare,
       color: 'bg-green-500',
-      benefits: ['Never miss important steps', 'Track your progress', 'Organized workflow'],
-      isPremium: true
+      benefits: ['Never miss important steps', 'Track your progress', 'Organized workflow']
     },
     {
       id: 'compliance' as ToolType,
@@ -254,8 +237,7 @@ const BusinessTools = () => {
       description: 'Ensure your business meets all requirements',
       icon: Shield,
       color: 'bg-red-500',
-      benefits: ['Avoid penalties', 'Stay compliant', 'Industry-specific guidance'],
-      isPremium: true
+      benefits: ['Avoid penalties', 'Stay compliant', 'Industry-specific guidance']
     },
     {
       id: 'best-practices' as ToolType,
@@ -263,8 +245,7 @@ const BusinessTools = () => {
       description: 'Learn proven strategies for business success',
       icon: Lightbulb,
       color: 'bg-yellow-500',
-      benefits: ['Expert insights', 'Avoid common mistakes', 'Accelerate growth'],
-      isPremium: true
+      benefits: ['Expert insights', 'Avoid common mistakes', 'Accelerate growth']
     },
     {
       id: 'integrations' as ToolType,
@@ -272,8 +253,7 @@ const BusinessTools = () => {
       description: 'Connect with Google Workspace, Slack, DocuSign & more',
       icon: Zap,
       color: 'bg-purple-500',
-      benefits: ['Streamline workflows', 'Automate processes', 'Boost productivity'],
-      isPremium: true
+      benefits: ['Streamline workflows', 'Automate processes', 'Boost productivity']
     },
     {
       id: 'business-resources' as ToolType,
@@ -281,8 +261,7 @@ const BusinessTools = () => {
       description: 'Trusted referrals for banking, accounting, and business services',
       icon: Building2,
       color: 'bg-orange-500',
-      benefits: ['Vetted service providers', 'Compare options', 'Get recommendations'],
-      isPremium: false
+      benefits: ['Vetted service providers', 'Compare options', 'Get recommendations']
     },
     {
       id: 'project-management' as ToolType,
@@ -290,8 +269,7 @@ const BusinessTools = () => {
       description: 'Organize tasks, track progress, and collaborate with your team',
       icon: KanbanSquare,
       color: 'bg-teal-500',
-      benefits: ['Kanban & List views', 'Task assignments', 'Progress tracking', 'Team collaboration'],
-      isPremium: true
+      benefits: ['Kanban & List views', 'Task assignments', 'Progress tracking', 'Team collaboration']
     },
     {
       id: 'crm' as ToolType,
@@ -299,10 +277,12 @@ const BusinessTools = () => {
       description: 'Manage leads, contacts, and sales pipeline efficiently',
       icon: Users,
       color: 'bg-pink-500',
-      benefits: ['Contact management', 'Sales pipeline', 'Lead tracking', 'Revenue forecasting'],
-      isPremium: true
+      benefits: ['Contact management', 'Sales pipeline', 'Lead tracking', 'Revenue forecasting']
     }
   ];
+  // Phase 38: free or not comes from one list (src/lib/freeTools.ts), so badges, filters and gates follow it.
+  const tools = toolList.map((t) => ({ ...t, isPremium: !isFreeTool(t.id) }));
+
 
   const filteredTools = tools.filter(tool => {
     if (filter === 'premium') return tool.isPremium;
@@ -475,6 +455,8 @@ const BusinessTools = () => {
             </div>
 
 
+
+            {filter === 'free' && <div className="mb-6"><FreeToolsBanner /></div>}
 
             {/* Featured Tool: Lead Generation (ClickUp / Notion inspired) */}
             {(filter === 'all' || filter === 'premium' || (filter === 'favorites' && isFavorited('lead-generation'))) && (
@@ -764,6 +746,10 @@ const BusinessTools = () => {
       )}
 
       <div className={ownFrame ? undefined : 'py-8'}>
+        {/* Phase 38: the advert card for the free tools (above the tool, never over it). */}
+        {currentTool !== 'overview' && isFreeTool(currentTool) && (
+          <div className="mx-auto mb-4 max-w-6xl px-4 sm:px-6"><FreeToolsBanner /></div>
+        )}
         {renderTool()}
       </div>
     </div>

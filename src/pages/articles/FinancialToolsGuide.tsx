@@ -91,25 +91,26 @@ const FinancialToolsGuide = () => {
               <div>
                 <h3 className="font-semibold mb-2">How to Use</h3>
                 <ol className="list-decimal list-inside text-muted-foreground space-y-2 ml-4">
-                  <li>Enter initial investment amount</li>
-                  <li>Input the total expected returns</li>
-                  <li>Add the timeframe in months</li>
-                  <li>View the ROI percentage, annualised ROI and net profit</li>
+                  <li>Enter the initial investment and any ongoing monthly cost</li>
+                  <li>Enter the expected return, as a total or per month, and the timeframe in months</li>
+                  <li>Optionally add a resale value and a yearly discount rate</li>
+                  <li>Save scenarios to compare up to 5 side by side, and export them as CSV</li>
                 </ol>
               </div>
 
               <div>
                 <h3 className="font-semibold mb-2">Calculations Included</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li>Simple ROI percentage</li>
-                  <li>Annualised ROI</li>
-                  <li>Net profit (returns minus investment)</li>
-                  <li>Payback period, NPV and IRR are not calculated</li>
+                  <li>Net profit and ROI (on the investment plus ongoing costs)</li>
+                  <li>Payback period and monthly break-even return</li>
+                  <li>Annualised ROI for 12 months or more</li>
+                  <li>Net present value when you enter a discount rate (IRR is not calculated)</li>
+                  <li>Free for everyone; scenarios are saved in your browser only</li>
                 </ul>
               </div>
 
               <Button asChild className="w-full">
-                <Link to="/business-tools">Open ROI Calculator</Link>
+                <Link to="/business-tools?tool=roi-calculator">Open ROI Calculator</Link>
               </Button>
             </CardContent>
           </Card>

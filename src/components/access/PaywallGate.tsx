@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccess } from '@/hooks/useAccess';
 import { isPaywallExempt, isSuspendedExempt, type Access } from '@/lib/access';
+import { isOpenFreeToolLocation } from '@/lib/freeTools';
 import PricingPlans from '@/components/PricingPlans';
 import { Button } from '@/components/ui/button';
 
@@ -72,9 +73,11 @@ export function SuspendedScreen() {
  */
 export default function PaywallGate({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const access = useAccess();
   if (!user || access.loading) return <>{children}</>;
+  // Phase 38: the free Business Tools (browser only, no account data) stay open for trial-ended and suspended accounts.
+  if (isOpenFreeToolLocation(pathname, search)) return <>{children}</>;
   if (access.suspended) return isSuspendedExempt(pathname) ? <>{children}</> : <SuspendedScreen />;
   if (isPaywallExempt(pathname) || !access.trialEnded) return <>{children}</>;
   return <TrialEndedScreen access={access} />;

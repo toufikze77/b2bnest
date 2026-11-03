@@ -41,7 +41,7 @@ const BANNED: { what: string; re: RegExp; allow?: RegExp }[] = [
   { what: '"coming soon" promise', re: /coming soon/i },
   // Phase 25: two-step sign-in is real now; the old "not active yet" wording must not come back anywhere.
   { what: 'stale "two-step not active" wording', re: /two-step sign-in is not active|not active yet\. Signing in needs only|TWO_STEP_NOT_ACTIVE|TWO_STEP_COMING_SOON/i },
-  { what: 'unbuilt collaboration / payroll / VAT claim', re: /video conferenc|team chat|P45 and P60 generation|Workplace pension compliance|Student loan deductions|Statutory payments \(SSP, SMP, SPP\)<|Flat Rate Scheme support|Reverse charge transactions|Net present value|Internal rate of return|auto-calculates based on your data|Connect your first account|mentioned you|Powered by GPT-4|would be calculated here in production|planned, not available/i, allow: /There is no team chat/ },
+  { what: 'unbuilt collaboration / payroll / VAT claim', re: /video conferenc|team chat|P45 and P60 generation|Workplace pension compliance|Student loan deductions|Statutory payments \(SSP, SMP, SPP\)<|Flat Rate Scheme support|Reverse charge transactions|Internal rate of return|auto-calculates based on your data|Connect your first account|mentioned you|Powered by GPT-4|would be calculated here in production|planned, not available/i, allow: /There is no team chat/ },
   { what: 'uptime / always-on promise', re: /99\.9\d*% uptime|\b24\/7 support|round-the-clock support/i },
   { what: 'stale "replies go to B2BNEST" warning', re: /(repl(y|ies) go(es)? to B2BNEST|reply goes to B2BNEST), not (to )?you/i },
 ];
@@ -201,7 +201,7 @@ describe('Financial tools guide (Phase 21)', () => {
   const guide = fs.readFileSync(path.join(ROOT, 'src/pages/articles/FinancialToolsGuide.tsx'), 'utf8');
   it('states the real limits', () => {
     for (const t of [
-      'Entries are kept in this browser only (up to 50)', 'Bank accounts are not connected', 'Payback period, NPV and IRR are not calculated',
+      'Entries are kept in this browser only (up to 50)', 'Bank accounts are not connected', 'IRR is not calculated', // Phase 38: payback and NPV are now built (src/lib/roi.ts)
       "Receipts can't be attached yet", 'The VAT figures in B2BNEST are examples, not your data',
       'Not available yet: pensions, student loans, statutory payments (SSP, SMP, SPP), P45 and P60', "Year-to-date figures aren't included yet",
     ]) expect(guide, t).toContain(t);

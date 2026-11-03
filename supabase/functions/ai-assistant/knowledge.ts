@@ -75,7 +75,11 @@ ${documentTypeLines("legal_notice").join("\n")}
 
 export function businessToolsSection(): string {
   return `## BUSINESS TOOLS
-- Signed-out visitors only see the public pages (home, Pricing, Help, Knowledge base and the lists of tools and templates). Using a tool, a template or AI Studio, and the dashboard, needs signing in.
+- Signed-out visitors see the public pages (home, Pricing, Help, Knowledge base and the lists of tools and templates) and the free tools. Using any other tool, a template or AI Studio, and the dashboard, needs signing in.
+- Free tools (Phase 38), open to everyone with no account, including accounts whose trial has ended: ROI Calculator, Goal Tracker, Customer Survey Builder, Cost Calculator, Business Setup Checklist, Compliance Checker, Best Practices Guide, Create Coupon, QR Code Generator, Currency Converter and Business Resources. They keep their data in that browser only (clearing browser data removes it). NotePro is free with an account, because notes are saved to the account.
+- ROI Calculator: net profit, ROI (on the investment plus ongoing costs), payback period, annualised ROI (for 12 months or more), monthly break-even return and, with a discount rate, net present value; compares up to 5 scenarios with a chart and CSV export. Results depend on the numbers entered and are not financial advice.
+- Customer Survey Builder: writes and previews surveys and copies or downloads the questions. It doesn't publish surveys or collect answers.
+- Cost Calculator: lists the set-up steps and costs for a UK sole trader, partnership, limited company or LLP; no fees are filled in, the user types current amounts from GOV.UK and quotes. The Business Setup Checklist and Compliance Checker link each step to GOV.UK and are general guidance, not legal advice.
 - Each tool page has a Back button and a breadcrumb. Back returns to the previous page in B2BNEST, or to Business tools.
 - QR Code Generator: makes real, scannable QR codes for a web address, text, email, phone number, SMS, WhatsApp message, Wi-Fi network or contact card (vCard), with PNG and SVG downloads. The codes are created in the browser.
 - Create Coupon: Generate, Validate, Manage and Import / Export tabs, with CSV import and export. Coupons are saved in that browser only.
@@ -194,8 +198,7 @@ ${legalDocumentsSection()}
 - Expense tracking and categorization
 - Bill management and payments
 - Cash Flow Tracker (see BUSINESS TOOLS)
-- ROI calculator
-- Cost calculator with industry templates
+- ROI calculator and Cost Calculator (free, see BUSINESS TOOLS)
 - Multi-currency support
 - Tax calculations (VAT, Corporation Tax)
 - Financial reporting and analytics

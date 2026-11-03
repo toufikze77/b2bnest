@@ -102,7 +102,9 @@ Deno.test("Phase 30b: QR codes are real, local-only tools say so, old false line
   for (const t of ["web address", "text", "email", "phone number", "SMS", "WhatsApp", "Wi-Fi", "contact card (vCard)", "PNG and SVG"]) assert(tools.includes(t), t);
   assert(tools.includes("Generate, Validate, Manage and Import / Export tabs, with CSV import and export. Coupons are saved in that browser only."));
   assert(tools.includes("Money → Cash flow. Entries are saved in that browser only."));
-  assert(tools.includes("Using a tool, a template or AI Studio, and the dashboard, needs signing in."));
+  assert(tools.includes("Using any other tool, a template or AI Studio, and the dashboard, needs signing in."));
+  // Phase 38: the free tools, browser only.
+  assert(tools.includes("open to everyone with no account") && tools.includes("browser only"));
   assert(tools.includes("Back button and a breadcrumb"));
   assert(text.includes("\"You don't have a paid plan yet.\" and a View plans button"));
   assert(text.includes("Users can see their remaining AI credits and reset date on the Dashboard and in Settings → Billing."));
