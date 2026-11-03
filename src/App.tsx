@@ -105,6 +105,7 @@ const AdminSettings = lazyPage(() => import('@/pages/admin/AdminSettings'));
 const AdminTemplates = lazyPage(() => import('@/pages/admin/AdminTemplates'));
 const AdminAITemplates = lazyPage(() => import('@/pages/admin/AdminAITemplates'));
 import RouteMeta from '@/components/RouteMeta';
+import { ConsentRecorder } from '@/components/MarketingConsent';
 
 const queryClient = new QueryClient();
 
@@ -121,6 +122,8 @@ function App() {
           <TwoStepGate>
           <Layout>
             <RouteMeta />
+            {/* Phase 39: records the sign-up form's marketing choice once, after two-step verification. */}
+            <ConsentRecorder />
             <RouteErrorBoundary>
             <Suspense fallback={<RouteFallback />}>
             <PaywallGate>

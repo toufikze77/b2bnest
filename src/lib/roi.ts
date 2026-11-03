@@ -195,3 +195,11 @@ export function scenariosCsv(list: Scenario[]): string {
   });
   return tableToCsv(CSV_COLUMNS, rows);
 }
+
+/** Phase 39: a form read back from storage or the account (every field a string, a known mode). */
+export function isRoiForm(v: unknown): v is RoiForm {
+  if (!v || typeof v !== 'object') return false;
+  const f = v as Record<string, unknown>;
+  return (f.mode === 'total' || f.mode === 'monthly')
+    && (['name', 'investment', 'monthlyCost', 'totalReturn', 'monthlyReturn', 'months', 'residual', 'discountRate'] as const).every((k) => typeof f[k] === 'string');
+}

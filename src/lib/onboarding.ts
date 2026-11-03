@@ -10,8 +10,13 @@ export function invitableRoles(myRole: string | undefined): InviteRole[] {
   return [];
 }
 
-/** Only in-app paths we expect to return to after sign-in; anything else goes home (no open redirects). */
-const NEXT_ALLOWED = ['/join', '/support/portal', '/support-desk', '/settings'];
+/**
+ * Only in-app paths we expect to return to after sign-in; anything else goes home (no open redirects).
+ * Phase 39: /business-tools, so a sign-up from a free tool comes back to that tool after the confirmation email. Until
+ * the owner adds https://www.b2bnest.online/business-tools?tool=* to Supabase's redirect allow-list, Supabase sends
+ * those confirmations to the Site URL (home), as before.
+ */
+const NEXT_ALLOWED = ['/join', '/support/portal', '/support-desk', '/settings', '/business-tools'];
 export function safeNext(raw: string | null | undefined): string {
   if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) return '/';
   const path = raw.split(/[?#]/)[0];

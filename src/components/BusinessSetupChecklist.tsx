@@ -1,16 +1,28 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ExternalLink, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BROWSER_ONLY_NOTE } from '@/lib/freeTools';
 import { LINKS_NOTE } from '@/data/ukOfficialLinks';
-import { CHECKLIST_KEY, loadDone, SETUP_STEPS } from '@/lib/setupChecklist';
+import { AccountPrompt, MoveToAccount, SaveStatus } from '@/components/freeTools/FreeToolAccount';
+import { ReferralSlot } from '@/components/freeTools/Promos';
+import { useToolCollection } from '@/hooks/useToolCollection';
+import { isListOf } from '@/lib/freeToolItems';
+import { isStepId, loadDone, saveDone, SETUP_STEPS } from '@/lib/setupChecklist';
 
-/** Phase 38: UK business set-up checklist. Ticks are saved in this browser only. */
+const DONE_OPTS = {
+  itemName: 'My checklist', empty: [] as string[], isValid: isListOf(isStepId), isEmpty: (v: string[]) => v.length === 0, loadBrowser: loadDone, saveBrowser: saveDone,
+  merge: (a: string[], b: string[]) => Array.from(new Set([...a, ...b])),
+};
+
+/**
+ * Phase 38: UK business set-up checklist. Phase 39: signed out, ticks stay in this browser; signed in, they are saved to
+ * the account. The referral slot sits at the "open a business bank account" step.
+ */
 export default function BusinessSetupChecklist() {
-  const [done, setDone] = useState<string[]>(loadDone);
+  const c = useToolCollection<string[]>('setup-checklist', DONE_OPTS);
+  const done = c.value;
+  const setDone = c.set;
   const [category, setCategory] = useState('All');
-  useEffect(() => { try { localStorage.setItem(CHECKLIST_KEY, JSON.stringify(done)); } catch { /* storage blocked */ } }, [done]);
   const categories = ['All', ...Array.from(new Set(SETUP_STEPS.map((s) => s.category)))];
   const shown = category === 'All' ? SETUP_STEPS : SETUP_STEPS.filter((s) => s.category === category);
   const pct = Math.round((done.length / SETUP_STEPS.length) * 100);
@@ -21,8 +33,13 @@ export default function BusinessSetupChecklist() {
       <header>
         <h2 className="text-2xl font-bold">Business set-up checklist (UK)</h2>
         <p className="text-sm text-muted-foreground">The usual steps to start a business in the UK. Not every step applies to every business.</p>
-        <p className="mt-1 text-xs text-muted-foreground">{BROWSER_ONLY_NOTE}</p>
+        <SaveStatus mode={c.acct.mode} message={c.acct.message} browserReason={c.acct.browserReason} />
+        {!c.storageOk && <p role="alert" className="mt-1 text-sm text-destructive">This browser isn't keeping your ticks (storage is blocked or full).</p>}
       </header>
+      {c.acct.mode === 'signed-out' && c.edited && <AccountPrompt tool="setup-checklist" title="Keep your checklist on all your devices" text="Create a free account to save your ticks to your account. Until then they stay in this browser." />}
+      {c.inAccount && c.acct.userId && c.browserHasData && (
+        <MoveToAccount tool="setup-checklist" userId={c.acct.userId} count={1} what="checklist ticks" onMove={c.moveToAccount} onRemoveBrowserCopy={c.removeBrowserCopy} />
+      )}
       <section className="rounded-card border border-border bg-card p-4" aria-live="polite">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="font-semibold" data-testid="checklist-progress">{done.length} of {SETUP_STEPS.length} steps done ({pct}%)</p>
@@ -49,6 +66,7 @@ export default function BusinessSetupChecklist() {
               <Badge variant="outline">{s.category}</Badge>{s.when && <Badge variant="secondary">{s.when}</Badge>}
               {s.link && <a href={s.link.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-primary underline">{s.link.label} (GOV.UK)<ExternalLink className="h-3.5 w-3.5" aria-hidden /></a>}
             </div>
+            {s.id === 'bank' && <div className="mt-3 pl-7"><ReferralSlot context="setup-checklist" /></div>}
           </li>
         ))}
       </ul>

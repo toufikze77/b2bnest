@@ -31,7 +31,9 @@ const BANNED: { what: string; re: RegExp; allow?: RegExp }[] = [
   { what: 'fake automation success', re: /created and activated|would trigger correctly/i },
   // Phase 18: workflow emails now carry the sender's own Reply-To, so the Phase 17 stop-gap warning is no longer true.
   // Phase 18: there is no free tier (owner decision); every account gets a 14-day trial, then chooses a plan.
-  { what: '"free account" / freemium wording', re: /free account|freemium model with extensive free tools|offering free and premium/i },
+  // Phase 39 (owner request): a free account now exists for the free Business Tools only (save your work in them);
+  // everything else still needs a plan. So "free account" is allowed; the freemium marketing claims are still banned.
+  { what: 'freemium wording', re: /freemium model with extensive free tools|offering free and premium/i },
   // Phase 19 (owner decision 28 Oct 2026): workflows are in Business and Scale (and the trial), not in every plan.
   { what: 'workflows-in-every-plan claim', re: /workflows? (are |is )?(included )?in (all|every) plans?|every plan includes (Workflow|workflows)|Solo (plan )?includes (Workflow|workflows)/i },
   // Phase 20: AI Studio says only what it does (example figures; fixed guidance; no invented impact statistics).

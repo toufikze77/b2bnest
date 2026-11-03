@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ArrowDown, ArrowUp, Copy, Download, Eye, FileText, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { BROWSER_ONLY_NOTE } from '@/lib/freeTools';
+import { AccountPrompt, MoveToAccount, SaveStatus } from '@/components/freeTools/FreeToolAccount';
+import { useToolCollection } from '@/hooks/useToolCollection';
+import { isListOf, mergeById } from '@/lib/freeToolItems';
 import {
-  loadSurveys, MAX_QUESTIONS, MAX_SURVEYS, move, NO_RESPONSES_NOTE, QUESTION_TYPES, saveSurveys, surveyErrors, surveyText,
+  isSurvey, loadSurveys, MAX_QUESTIONS, MAX_SURVEYS, move, NO_RESPONSES_NOTE, QUESTION_TYPES, saveSurveys, surveyErrors, surveyText,
   type Question, type QuestionType, type Survey,
 } from '@/lib/surveys';
 
@@ -34,15 +36,20 @@ function Preview({ survey }: { survey: Survey }) {
   );
 }
 
+const SURVEY_OPTS = { itemName: 'My surveys', empty: [] as Survey[], isValid: isListOf(isSurvey), isEmpty: (v: Survey[]) => v.length === 0, loadBrowser: loadSurveys, saveBrowser: saveSurveys, merge: mergeById<Survey> };
+
 /** Phase 38: write and check customer surveys. Saved in this browser only; it doesn't publish or collect answers. */
 export default function CustomerSurveyBuilder() {
-  const [surveys, setSurveys] = useState<Survey[]>(loadSurveys);
+  const c = useToolCollection<Survey[]>('customer-survey-builder', SURVEY_OPTS);
+  const surveys = c.value;
+  const setSurveys = c.set;
+  const [exportPrompt, setExportPrompt] = useState(false);
+  const signedOut = c.acct.mode === 'signed-out';
   const [draft, setDraft] = useState<Survey | null>(null);
   const [preview, setPreview] = useState(false);
   const [problems, setProblems] = useState<string[]>([]);
   const [announce, setAnnounce] = useState('');
-  const [storageOk, setStorageOk] = useState(true);
-  useEffect(() => { setStorageOk(saveSurveys(surveys)); }, [surveys]);
+  const storageOk = c.storageOk;
 
   const edit = (s?: Survey) => { setProblems([]); setPreview(false); setDraft(s ? structuredClone(s) : { id: `${Date.now()}`, title: '', description: '', questions: [newQuestion()], updatedAt: '' }); };
   const setQ = (i: number, q: Partial<Question>) => draft && setDraft({ ...draft, questions: draft.questions.map((x, j) => (j === i ? { ...x, ...q } : x)) });
@@ -53,15 +60,17 @@ export default function CustomerSurveyBuilder() {
     if (errs.length) return;
     const s = { ...draft, title: draft.title.trim(), updatedAt: new Date().toISOString() };
     setSurveys(surveys.some((x) => x.id === s.id) ? surveys.map((x) => (x.id === s.id ? s : x)) : [s, ...surveys]);
-    setDraft(null); setAnnounce(`Survey "${s.title}" saved in this browser.`);
+    setDraft(null); setAnnounce(c.inAccount ? '' : `Survey "${s.title}" saved in this browser.`);
   };
   const remove = (s: Survey) => { if (!window.confirm(`Delete "${s.title}"?`)) return; setSurveys(surveys.filter((x) => x.id !== s.id)); setAnnounce(`"${s.title}" deleted.`); };
   const downloadText = (s: Survey) => {
+    if (signedOut) { setExportPrompt(true); return; }
     const url = URL.createObjectURL(new Blob([surveyText(s)], { type: 'text/plain;charset=utf-8;' }));
     const a = document.createElement('a'); a.href = url; a.download = `${s.title.replace(/[^\w-]+/g, '-').slice(0, 40) || 'survey'}.txt`;
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   const copyText = async (s: Survey) => {
+    if (signedOut) { setExportPrompt(true); return; }
     try { await navigator.clipboard.writeText(surveyText(s)); setAnnounce('Questions copied.'); } catch { setAnnounce("Couldn't copy. Use Download instead."); }
   };
 
@@ -71,10 +80,15 @@ export default function CustomerSurveyBuilder() {
         <h1 className="text-2xl font-bold">Customer Survey Builder</h1>
         <p className="text-sm text-muted-foreground">Write a customer survey, check how it reads, then copy or download the questions. Up to {MAX_SURVEYS} surveys.</p>
         <p className="mt-2 rounded-md border border-border bg-muted/40 p-3 text-sm" data-testid="survey-no-responses">{NO_RESPONSES_NOTE}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{BROWSER_ONLY_NOTE}</p>
+        <SaveStatus mode={c.acct.mode} message={c.acct.message} browserReason={c.acct.browserReason} />
         {!storageOk && <p role="alert" className="mt-1 text-sm text-destructive">This browser isn't keeping your surveys (storage is blocked or full).</p>}
       </header>
       <p aria-live="polite" className="sr-only" data-testid="survey-announce">{announce}</p>
+      {signedOut && exportPrompt && <AccountPrompt forced tool="customer-survey-builder" title="Create a free account to copy and download" text="Copying and downloading your questions needs a free account. Your surveys stay in this browser meanwhile." onClose={() => setExportPrompt(false)} />}
+      {signedOut && !exportPrompt && c.edited && <AccountPrompt tool="customer-survey-builder" title="Keep your surveys on all your devices" text="Create a free account to save them to your account. Until then they stay in this browser." />}
+      {c.inAccount && c.acct.userId && c.browserHasData && (
+        <MoveToAccount tool="customer-survey-builder" userId={c.acct.userId} count={1} what="surveys" onMove={c.moveToAccount} onRemoveBrowserCopy={c.removeBrowserCopy} />
+      )}
 
       {draft ? (
         <section className={`${CARD} space-y-4`} aria-label="Edit survey">

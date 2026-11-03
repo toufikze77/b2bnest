@@ -59,3 +59,7 @@ export function surveyText(s: Survey): string {
   });
   return lines.join('\n').trimEnd() + '\n';
 }
+
+/** Phase 39: a survey read back from the account. */
+export const isSurvey = (x: unknown): x is Survey => !!x && typeof x === 'object' && typeof (x as Survey).id === 'string'
+  && typeof (x as Survey).title === 'string' && Array.isArray((x as Survey).questions);

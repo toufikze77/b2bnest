@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { ExternalLink, Landmark, Receipt, Users, ShieldCheck, Handshake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { REVOLUT_BUSINESS, type ReferralLink } from '@/data/referralLinks';
+import { type ReferralLink } from '@/data/referralLinks';
+import { ReferralSlot } from '@/components/freeTools/Promos';
 
 // Public, free page (Phase 12): no sign-in, no Supabase calls. Guidance links go to official GOV.UK pages only
 // (HMRC's guidance lives on GOV.UK). B2BNEST does not file anything with HMRC for you.
@@ -49,9 +50,9 @@ export const GUIDANCE: GuidanceSection[] = [
 ];
 
 // Owner to confirm both referral programmes are active and that these links are allowed to be published.
-// The Revolut link lives in src/data/referralLinks.ts (shared with the advert card on the free Business Tools).
+// Phase 39: banking and finance partners (Revolut Business) come from the grouped list in src/data/freeToolsPromos.ts
+// and show in the ReferralSlot above these cards; this list keeps the other partner offers.
 export const REFERRALS: ReferralLink[] = [
-  REVOLUT_BUSINESS,
   {
     name: 'Hostinger website hosting', provider: 'Hostinger',
     description: 'Website and email hosting from Hostinger. Current prices and offers are on Hostinger’s website.',
@@ -106,6 +107,7 @@ const BusinessResources = ({ headingLevel = 'h2' }: { headingLevel?: 'h1' | 'h2'
         <Sub id="res-partners" className="flex items-center gap-2 text-xl font-semibold text-foreground">
           <Handshake className="h-5 w-5 text-brand-blue" aria-hidden="true" />Partner offers
         </Sub>
+        <div className="mt-4 max-w-2xl"><ReferralSlot context="business-resources" /></div>
         <div className="mt-4 grid gap-6 md:grid-cols-2">
           {REFERRALS.map((r) => (
             <article key={r.provider} className="flex flex-col rounded-xl border border-border bg-card p-5 shadow-sm">

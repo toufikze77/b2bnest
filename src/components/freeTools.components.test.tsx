@@ -1,5 +1,11 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+// Phase 39: these are the signed-out (browser only) behaviours; signed-in saving is in src/components/freeTools/*.test.tsx.
+vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: null, loading: false }) }));
+vi.mock('@/hooks/useAccess', () => ({ useAccess: () => ({ loading: false, trialEnded: false, suspended: false }) }));
+vi.mock('@/integrations/supabase/client', () => ({ supabase: new Proxy({}, { get: () => { throw new Error('signed out: no database call'); } }) }));
 import GoalTracker from './GoalTracker';
 import CustomerSurveyBuilder from './CustomerSurveyBuilder';
 import BusinessSetupChecklist from './BusinessSetupChecklist';
@@ -10,11 +16,11 @@ import CostCalculator from './CostCalculator';
 import { STORAGE_KEY as GOALS_KEY } from '@/lib/goals';
 import { STORAGE_KEY as SURVEYS_KEY } from '@/lib/surveys';
 
-beforeEach(() => { localStorage.clear(); vi.restoreAllMocks(); });
+beforeEach(() => { localStorage.clear(); sessionStorage.clear(); vi.restoreAllMocks(); });
 
 describe('Goal Tracker (Phase 38)', () => {
   it('validates in words, adds, edits, shows progress accessibly, completes and deletes; saved in the browser', () => {
-    render(<GoalTracker />);
+    render(<GoalTracker />, { wrapper: MemoryRouter });
     expect(screen.getByTestId('goals-empty')).toBeInTheDocument();
     expect(screen.getByText(/Saved in this browser only/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Add a goal' }));
@@ -44,7 +50,7 @@ describe('Goal Tracker (Phase 38)', () => {
 
 describe('Customer Survey Builder (Phase 38)', () => {
   it('says plainly it does not collect answers; no Publish; reorder, required, preview, save in the browser', () => {
-    render(<CustomerSurveyBuilder />);
+    render(<CustomerSurveyBuilder />, { wrapper: MemoryRouter });
     expect(screen.getByTestId('survey-no-responses')).toHaveTextContent("doesn't publish it or collect answers");
     expect(screen.queryByRole('button', { name: /Publish/ })).toBeNull();
     expect(document.body.textContent).not.toMatch(/ready to collect responses|Share Options|Analytics/);
@@ -71,13 +77,13 @@ describe('Customer Survey Builder (Phase 38)', () => {
 
 describe('Business Setup Checklist (Phase 38)', () => {
   it('UK steps with GOV.UK links; ticks saved in the browser; reset', () => {
-    const { unmount } = render(<BusinessSetupChecklist />);
+    const { unmount } = render(<BusinessSetupChecklist />, { wrapper: MemoryRouter });
     expect(document.body.textContent).not.toMatch(/\bEIN\b|\bIRS\b|LLC|state and local/);
     expect(screen.getAllByRole('link', { name: /GOV\.UK/ }).length).toBeGreaterThan(5);
     fireEvent.click(screen.getByRole('checkbox', { name: /Open a business bank account/ }));
     expect(screen.getByTestId('checklist-progress')).toHaveTextContent('1 of 12 steps done (8%)');
     unmount();
-    render(<BusinessSetupChecklist />);
+    render(<BusinessSetupChecklist />, { wrapper: MemoryRouter });
     expect(screen.getByTestId('checklist-progress')).toHaveTextContent('1 of 12 steps done');
     expect(JSON.parse(localStorage.getItem(CHECKLIST_KEY)!)).toEqual(['bank']);
     vi.spyOn(window, 'confirm').mockReturnValue(true);
@@ -88,7 +94,7 @@ describe('Business Setup Checklist (Phase 38)', () => {
 
 describe('Compliance Checker, Best Practices, Cost Calculator (Phase 38)', () => {
   it('compliance: not legal advice, empty state, then items each linked to GOV.UK', () => {
-    render(<ComplianceChecker />);
+    render(<ComplianceChecker />, { wrapper: MemoryRouter });
     expect(screen.getByTestId('not-legal-advice')).toHaveTextContent('General guidance, not legal advice.');
     expect(screen.getByTestId('cc-none')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Do you (or will you) employ anyone?'), { target: { value: 'yes' } });
@@ -97,12 +103,12 @@ describe('Compliance Checker, Best Practices, Cost Calculator (Phase 38)', () =>
     for (const i of items) expect(within(i).getByRole('link')).toHaveAttribute('href', expect.stringMatching(/^https:\/\/www\.gov\.uk\//));
   });
   it('best practices: no ratings, time estimates or made-up resources', () => {
-    render(<BestPracticesGuide />);
+    render(<BestPracticesGuide />, { wrapper: MemoryRouter });
     expect(document.body.textContent).not.toMatch(/impact|beginner|intermediate|advanced|Template Library|Template\b|\d+-\d+ (weeks|hours|days)/);
     expect(screen.getByText(/General guidance, not legal, tax or financial advice/)).toBeInTheDocument();
   });
   it('cost calculator: UK structures, no figures until typed, totals and required count', () => {
-    render(<CostCalculator />);
+    render(<CostCalculator />, { wrapper: MemoryRouter });
     expect(screen.getByTestId('cc-empty')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Business structure'), { target: { value: 'limited_company' } });
     expect(screen.getByTestId('cc-totals')).toHaveTextContent('£0.00');

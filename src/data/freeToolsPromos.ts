@@ -1,5 +1,8 @@
-// Phase 38: what the advert card on the free Business Tools shows (src/components/FreeToolsBanner.tsx).
-// The owner changes this file, not the component.
+// Phase 39: the referral slots next to the task (src/components/freeTools/Promos.tsx: ReferralSlot) and the Business
+// Finance Assistant promotion. The owner changes this file, not the components.
+//
+// WHERE a partner appears: its `contexts` — 'setup-checklist' (at the "open a business bank account" step),
+// 'cost-calculator' (under the total) and 'business-resources' (the Business Resources page). Other tools show none.
 //
 // REFERRAL PARTNERS, grouped by category. The card shows a group only when at least one of its entries has a link.
 //   * To ADD A PARTNER: add an object to REFERRAL_PARTNERS with a unique id, the partner's own name, one line about it,
@@ -26,7 +29,10 @@ export interface ReferralPartner {
   offer?: string;
   /** A REFERRAL_GROUPS id. */
   group: string;
+  /** Where it is shown (see the top of this file). */
+  contexts: ReferralContext[];
 }
+export type ReferralContext = 'setup-checklist' | 'cost-calculator' | 'business-resources';
 
 /** Ordered; the first group is shown by default. Only "Banking & finance" for now; the owner adds more. */
 export const REFERRAL_GROUPS: ReferralGroup[] = [
@@ -34,13 +40,15 @@ export const REFERRAL_GROUPS: ReferralGroup[] = [
 ];
 
 export const REFERRAL_PARTNERS: ReferralPartner[] = [
-  { id: 'revolut-business', name: REVOLUT_BUSINESS.name, description: REVOLUT_BUSINESS.description, url: REVOLUT_BUSINESS.url, group: 'banking' },
+  { id: 'revolut-business', name: REVOLUT_BUSINESS.name, description: REVOLUT_BUSINESS.description, url: REVOLUT_BUSINESS.url, group: 'banking',
+    contexts: ['setup-checklist', 'cost-calculator', 'business-resources'] },
 ];
 
 const hasLink = (p: ReferralPartner) => typeof p.url === 'string' && /^https:\/\/\S+$/.test(p.url);
-/** The groups to show, in order, each with its entries that have a link; empty groups are left out. */
-export function visibleGroups(groups: ReferralGroup[] = REFERRAL_GROUPS, partners: ReferralPartner[] = REFERRAL_PARTNERS) {
-  return groups.map((g) => ({ ...g, partners: partners.filter((p) => p.group === g.id && hasLink(p)) })).filter((g) => g.partners.length > 0);
+/** The groups to show in a place, in order, each with its entries that have a link; empty groups are left out. */
+export function visibleGroups(context: ReferralContext, groups: ReferralGroup[] = REFERRAL_GROUPS, partners: ReferralPartner[] = REFERRAL_PARTNERS) {
+  return groups.map((g) => ({ ...g, partners: partners.filter((p) => p.group === g.id && hasLink(p) && p.contexts.includes(context)) }))
+    .filter((g) => g.partners.length > 0);
 }
 
 /** B2BNEST's own Business Finance Assistant (Business Tools → Invoices & quotes). Must match what it does today. */

@@ -105,7 +105,7 @@ const FinancialToolsGuide = () => {
                   <li>Payback period and monthly break-even return</li>
                   <li>Annualised ROI for 12 months or more</li>
                   <li>Net present value when you enter a discount rate (IRR is not calculated)</li>
-                  <li>Free for everyone; scenarios are saved in your browser only</li>
+                  <li>Free for everyone; with a free account you can save scenarios, compare them and download them as CSV</li>
                 </ul>
               </div>
 

@@ -9,7 +9,7 @@ type AuthContextType = {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<any>;
-  signUp: (email: string, password: string, fullName?: string, companyName?: string) => Promise<any>;
+  signUp: (email: string, password: string, fullName?: string, companyName?: string, extra?: Record<string, unknown>) => Promise<any>;
   signOut: () => Promise<void>;
   signInWithOAuth: (provider: 'google' | 'github' | 'twitter', options?: any) => Promise<any>;
   resetPassword: (email: string) => Promise<{ error: any }>;
@@ -71,7 +71,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Email + password sign-up
-  const signUp = async (email: string, password: string, fullName?: string, companyName?: string) => {
+  // Phase 39: `extra` = the marketing choice and the free tool signed up from (signupConsentMetadata), kept in the
+  // sign-up details until marketing_consent_record_signup() records it after the first sign-in.
+  const signUp = async (email: string, password: string, fullName?: string, companyName?: string, extra?: Record<string, unknown>) => {
     try {
       // Wait for the real result: abandoning early made created accounts look failed.
       const { data, error } = await supabase.auth.signUp({
@@ -79,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password,
         options: {
           emailRedirectTo: confirmationRedirect(window.location.origin, window.location.search),
-          data: { full_name: fullName, company_name: companyName }
+          data: { full_name: fullName, company_name: companyName, ...(extra ?? {}) }
         }
       });
 

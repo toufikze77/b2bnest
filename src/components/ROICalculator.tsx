@@ -1,12 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Download, Save, Trash2, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ChartCard, ColumnChart } from '@/components/charts';
-import { BROWSER_ONLY_NOTE } from '@/lib/freeTools';
+import { AccountPrompt, MoveToAccount, SaveStatus } from '@/components/freeTools/FreeToolAccount';
+import { FinanceAssistantPromo } from '@/components/freeTools/Promos';
+import { useFreeToolAccount } from '@/hooks/useFreeToolAccount';
+import { loadDraft, MAX_ITEMS_PER_TOOL, saveDraft } from '@/lib/freeToolItems';
 import {
-  annualisedText, bestByRoi, calculate, EMPTY_FORM, loadScenarios, MAX_SCENARIOS, money, monthsText, percent, RESULT_NOTE, saveScenarios,
+  annualisedText, bestByRoi, calculate, EMPTY_FORM, isRoiForm, loadScenarios, MAX_SCENARIOS, money, monthsText, percent, RESULT_NOTE, saveScenarios,
   scenariosCsv, validate, verdict, type RoiForm, type RoiResult, type Scenario,
 } from '@/lib/roi';
 
@@ -42,12 +45,26 @@ const ROWS: { label: string; value: (r: RoiResult) => string }[] = [
   { label: 'Net present value', value: (r) => (r.npv === null ? 'No discount rate' : money(r.npv)) },
 ];
 
-/** Phase 38: a proper ROI calculator. The maths is in src/lib/roi.ts; this only displays it. Browser only. */
+/**
+ * Phase 38: a proper ROI calculator. The maths is in src/lib/roi.ts; this only displays it.
+ * Phase 39: anyone can calculate a scenario and see the results. Saving scenarios, comparing them and the CSV need a
+ * free account (signed in: saved to the account). The form in progress is kept for this browser tab, so it is still
+ * there after signing in. Scenarios saved in this browser before (Phase 38) are kept and can be moved to the account.
+ */
 export default function ROICalculator() {
-  const [form, setForm] = useState<RoiForm>(EMPTY_FORM);
+  const acct = useFreeToolAccount<RoiForm>('roi-calculator');
+  const [form, setForm] = useState<RoiForm>(() => loadDraft('roi-calculator', isRoiForm) ?? EMPTY_FORM);
   const [touched, setTouched] = useState<Partial<Record<keyof RoiForm, boolean>>>({});
-  const [scenarios, setScenarios] = useState<Scenario[]>(loadScenarios);
+  const [browserScenarios, setBrowserScenarios] = useState<Scenario[]>(loadScenarios);
   const [notice, setNotice] = useState('');
+  const [prompt, setPrompt] = useState(false);
+  useEffect(() => { saveDraft('roi-calculator', form); }, [form]);
+  const inAccount = acct.mode === 'account';
+  const signedOut = acct.mode === 'signed-out';
+  const scenarios: Scenario[] = inAccount
+    ? acct.items.filter((i) => isRoiForm(i.data)).map((i) => ({ id: i.id, name: i.name, form: { ...EMPTY_FORM, ...i.data }, savedAt: i.updated_at }))
+    : browserScenarios;
+  const limit = inAccount ? MAX_ITEMS_PER_TOOL : MAX_SCENARIOS;
   const { inputs, errors } = useMemo(() => validate(form), [form]);
   const result = inputs ? calculate(inputs) : null;
   const set = (k: keyof RoiForm, v: string) => { setForm((f) => ({ ...f, [k]: v })); setTouched((t) => ({ ...t, [k]: true })); };
@@ -55,15 +72,33 @@ export default function ROICalculator() {
   const aria = (k: keyof RoiForm) => ({ 'aria-invalid': !!err(k), 'aria-describedby': err(k) ? `roi-${k}-error` : undefined });
 
   const persist = (list: Scenario[], said: string) => {
-    setScenarios(list);
+    setBrowserScenarios(list);
     setNotice(saveScenarios(list) ? said : `${said} This browser wouldn't keep it, so it will be gone when you leave the page.`);
   };
-  const saveScenario = () => {
+  const needAccount = () => { setPrompt(true); setNotice(''); };
+  const saveScenario = async () => {
     setTouched({ investment: true, totalReturn: true, monthlyReturn: true, months: true, monthlyCost: true, residual: true, discountRate: true, name: true });
     if (!inputs) { setNotice('Fix the fields marked above first.'); return; }
-    if (scenarios.length >= MAX_SCENARIOS) { setNotice(`You can compare up to ${MAX_SCENARIOS} scenarios. Delete one first.`); return; }
+    if (signedOut) { needAccount(); return; }
+    if (scenarios.length >= limit) { setNotice(`You can save up to ${limit} scenarios. Delete one first.`); return; }
     const name = form.name.trim() || `Scenario ${scenarios.length + 1}`;
-    persist([...scenarios, { id: `${Date.now()}`, name, form, savedAt: new Date().toISOString() }], `Saved "${name}" to compare.`);
+    if (inAccount) { setNotice(''); await acct.save(name, form); return; }
+    persist([...browserScenarios, { id: `${Date.now()}`, name, form, savedAt: new Date().toISOString() }], `Saved "${name}" to compare.`);
+  };
+  const removeScenario = async (s: Scenario) => {
+    if (inAccount) { if (await acct.remove(s.id)) setNotice(`Deleted "${s.name}".`); return; }
+    persist(browserScenarios.filter((x) => x.id !== s.id), `Deleted "${s.name}".`);
+  };
+  const clearAll = async () => {
+    if (!window.confirm(inAccount ? 'Delete all saved scenarios from your account?' : 'Delete all saved scenarios from this browser?')) return;
+    if (inAccount) { for (const s of scenarios) await acct.remove(s.id); setNotice('All scenarios deleted.'); return; }
+    persist([], 'All scenarios deleted.');
+  };
+  const exportCsv = () => (signedOut ? needAccount() : download('roi-scenarios.csv', scenariosCsv(scenarios)));
+  const moveToAccount = async () => {
+    for (const s of browserScenarios) { if (!(await acct.save(s.name, s.form))) return false; }
+    acct.setMessage(`Moved ${browserScenarios.length} scenario${browserScenarios.length === 1 ? '' : 's'} to your account.`);
+    return true;
   };
   const compared = scenarios.map((s) => { const v = validate(s.form); return v.inputs ? calculate(v.inputs) : null; }).filter((r): r is RoiResult => !!r);
   const best = bestByRoi(compared);
@@ -116,10 +151,13 @@ export default function ROICalculator() {
             </Field>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button type="submit" disabled={scenarios.length >= MAX_SCENARIOS}><Save className="mr-1 h-4 w-4" aria-hidden />Save to compare ({scenarios.length} of {MAX_SCENARIOS})</Button>
+            <Button type="submit" disabled={!signedOut && scenarios.length >= limit}>
+              <Save className="mr-1 h-4 w-4" aria-hidden />{signedOut ? 'Save to compare' : `Save to compare (${scenarios.length} of ${limit})`}
+            </Button>
             <Button type="button" variant="ghost" onClick={() => { setForm(EMPTY_FORM); setTouched({}); }}>Clear the form</Button>
           </div>
-          <p className="text-xs text-muted-foreground">{BROWSER_ONLY_NOTE}</p>
+          {prompt && signedOut && <AccountPrompt forced tool="roi-calculator" title="Create a free account to save and download" text="Save scenarios, compare them side by side and download them as CSV. It's free, and the figures you've entered are kept." onClose={() => setPrompt(false)} />}
+          <SaveStatus mode={acct.mode} message={acct.message} browserReason={acct.browserReason} />
         </form>
 
         <section className={CARD} aria-labelledby="roi-results-title">
@@ -152,21 +190,30 @@ export default function ROICalculator() {
         </section>
       </div>
 
+      {result && <FinanceAssistantPromo />}
+      {inAccount && acct.userId && (
+        <MoveToAccount tool="roi-calculator" userId={acct.userId} count={browserScenarios.length}
+          what={`${browserScenarios.length} ROI scenario${browserScenarios.length === 1 ? '' : 's'}`}
+          onMove={moveToAccount} onRemoveBrowserCopy={() => { saveScenarios([]); setBrowserScenarios([]); }} />
+      )}
+
       <p aria-live="polite" className="text-sm" data-testid="roi-notice">{notice}</p>
 
       <section className={CARD} aria-labelledby="roi-compare-title">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="roi-compare-title" className="text-card-title">Compare scenarios</h2>
           <div className="flex gap-2">
-            <Button type="button" size="sm" variant="outline" disabled={scenarios.length === 0} onClick={() => download('roi-scenarios.csv', scenariosCsv(scenarios))}>
+            <Button type="button" size="sm" variant="outline" disabled={scenarios.length === 0 && !signedOut} onClick={exportCsv}>
               <Download className="mr-1 h-4 w-4" aria-hidden />Export CSV
             </Button>
             <Button type="button" size="sm" variant="ghost" disabled={scenarios.length === 0}
-              onClick={() => { if (window.confirm('Delete all saved scenarios from this browser?')) persist([], 'All scenarios deleted.'); }}>Clear all</Button>
+              onClick={clearAll}>Clear all</Button>
           </div>
         </div>
         {scenarios.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground" data-testid="roi-no-scenarios">No scenarios saved yet. Fill in the form and choose "Save to compare" (up to {MAX_SCENARIOS}).</p>
+          <p className="mt-2 text-sm text-muted-foreground" data-testid="roi-no-scenarios">
+            {signedOut ? 'To compare scenarios side by side, save them to a free account.' : `No scenarios saved yet. Fill in the form and choose "Save to compare" (up to ${limit}).`}
+          </p>
         ) : (
           <div className="mt-3 overflow-x-auto">
             <table className="w-full min-w-[32rem] text-sm" data-testid="roi-compare">
@@ -177,7 +224,7 @@ export default function ROICalculator() {
                   {scenarios.map((s, i) => (
                     <th key={s.id} scope="col" className="py-2 pr-2 align-top">
                       <span className="block">{s.name}{i === best && scenarios.length > 1 ? ' (best ROI)' : ''}</span>
-                      <Button type="button" size="sm" variant="ghost" className="h-7 px-1" aria-label={`Delete ${s.name}`} onClick={() => persist(scenarios.filter((x) => x.id !== s.id), `Deleted "${s.name}".`)}>
+                      <Button type="button" size="sm" variant="ghost" className="h-7 px-1" aria-label={`Delete ${s.name}`} onClick={() => removeScenario(s)}>
                         <Trash2 className="h-3.5 w-3.5" aria-hidden />
                       </Button>
                     </th>
