@@ -1,29 +1,47 @@
 // Phase 38: what the advert card on the free Business Tools shows (src/components/FreeToolsBanner.tsx).
 // The owner changes this file, not the component.
 //
-// HOW TO ADD A BANK PARTNER (business bank account referral):
-//   Add an object to BANK_PARTNERS, for example
-//     { name: '<the bank's own name>', description: '<one line about the account>',
-//       url: 'https://<the referral link the bank gave you>', offer: '<optional: the offer exactly as the bank states it>' },
-//   - Use only the bank's real name, your real referral link and the offer wording the bank publishes. Don't add rates,
-//     bonuses or claims the bank hasn't given you in writing, and remove an offer when it ends.
-//   - The card then shows the bank section with "We may earn a commission if you open an account through these links".
-//   While the list is empty, the bank section isn't shown at all.
+// REFERRAL PARTNERS, grouped by category. The card shows a group only when at least one of its entries has a link.
+//   * To ADD A PARTNER: add an object to REFERRAL_PARTNERS with a unique id, the partner's own name, one line about it,
+//     your referral link (https) and the group id it belongs to. An entry without a link is not shown.
+//   * To ADD AN OFFER line: set `offer` to the wording exactly as the partner publishes it, and remove it when it ends.
+//     Don't add rates, bonuses or fees the partner hasn't given you in writing.
+//   * To ADD A GROUP (for example accounting software, insurance, payments, legal): add { id, label } to REFERRAL_GROUPS
+//     in the order it should appear, then give entries that group id. With two or more groups that have entries the
+//     card shows a group selector; "Banking & finance" stays first and is selected by default.
+//   * The Revolut Business link itself lives in src/data/referralLinks.ts (shared with the Business Resources page).
 import { TRIAL_DAYS } from '@/lib/helpAssistant';
+import { REVOLUT_BUSINESS } from '@/data/referralLinks';
 
-export interface BankPartner {
-  /** The bank's own name. */
+export interface ReferralGroup { id: string; label: string }
+export interface ReferralPartner {
+  id: string;
+  /** The partner's own name. */
   name: string;
-  /** One line about the account. */
+  /** One line about it. */
   description: string;
-  /** The referral link (https). */
-  url: string;
-  /** Optional: the offer exactly as the bank states it. */
+  /** The referral link (https). Without one, the entry is not shown. */
+  url?: string;
+  /** Optional: the offer exactly as the partner states it. */
   offer?: string;
+  /** A REFERRAL_GROUPS id. */
+  group: string;
 }
 
-/** No partners yet: the real referral links aren't known. Don't add placeholders. */
-export const BANK_PARTNERS: BankPartner[] = [];
+/** Ordered; the first group is shown by default. Only "Banking & finance" for now; the owner adds more. */
+export const REFERRAL_GROUPS: ReferralGroup[] = [
+  { id: 'banking', label: 'Banking & finance' },
+];
+
+export const REFERRAL_PARTNERS: ReferralPartner[] = [
+  { id: 'revolut-business', name: REVOLUT_BUSINESS.name, description: REVOLUT_BUSINESS.description, url: REVOLUT_BUSINESS.url, group: 'banking' },
+];
+
+const hasLink = (p: ReferralPartner) => typeof p.url === 'string' && /^https:\/\/\S+$/.test(p.url);
+/** The groups to show, in order, each with its entries that have a link; empty groups are left out. */
+export function visibleGroups(groups: ReferralGroup[] = REFERRAL_GROUPS, partners: ReferralPartner[] = REFERRAL_PARTNERS) {
+  return groups.map((g) => ({ ...g, partners: partners.filter((p) => p.group === g.id && hasLink(p)) })).filter((g) => g.partners.length > 0);
+}
 
 /** B2BNEST's own Business Finance Assistant (Business Tools → Invoices & quotes). Must match what it does today. */
 export const FINANCE_ASSISTANT_PROMO = {

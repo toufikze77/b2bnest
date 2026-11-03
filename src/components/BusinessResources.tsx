@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ExternalLink, Landmark, Receipt, Users, ShieldCheck, Handshake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { REVOLUT_BUSINESS, type ReferralLink } from '@/data/referralLinks';
 
 // Public, free page (Phase 12): no sign-in, no Supabase calls. Guidance links go to official GOV.UK pages only
 // (HMRC's guidance lives on GOV.UK). B2BNEST does not file anything with HMRC for you.
@@ -48,12 +49,9 @@ export const GUIDANCE: GuidanceSection[] = [
 ];
 
 // Owner to confirm both referral programmes are active and that these links are allowed to be published.
-export const REFERRALS: { name: string; provider: string; description: string; url: string }[] = [
-  {
-    name: 'Revolut Business account', provider: 'Revolut',
-    description: 'A business bank account from Revolut. Check fees, plans and eligibility on Revolut’s website.',
-    url: 'https://business.revolut.com/signup?promo=b2b-ref-028-H2-TXL&ext=bcc2bf37-a7ca-3f5f-a13b-fbfc4b6829b4&context=B2B_REFERRAL',
-  },
+// The Revolut link lives in src/data/referralLinks.ts (shared with the advert card on the free Business Tools).
+export const REFERRALS: ReferralLink[] = [
+  REVOLUT_BUSINESS,
   {
     name: 'Hostinger website hosting', provider: 'Hostinger',
     description: 'Website and email hosting from Hostinger. Current prices and offers are on Hostinger’s website.',
