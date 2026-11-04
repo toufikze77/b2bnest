@@ -2,7 +2,8 @@
 // service role in the functions). Ciphertext only ever passes through here; never a plain token.
 import type { HmrcEnvironment } from './config.ts';
 
-export type ManageRule = 'ok' | 'not_signed_in' | 'not_member' | 'not_admin' | 'trial_ended' | 'suspended';
+// plan_not_included: a paying account whose plan is not Business or Scale (docs/hmrc-plan/proposal.sql).
+export type ManageRule = 'ok' | 'not_signed_in' | 'not_member' | 'not_admin' | 'trial_ended' | 'suspended' | 'plan_not_included';
 export type AuditEvent = 'connect_started' | 'connected' | 'refreshed' | 'refresh_failed' | 'disconnected' | 'refused';
 export interface ConnectionRow {
   company_id: string;

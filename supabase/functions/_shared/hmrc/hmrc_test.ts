@@ -344,3 +344,33 @@ Deno.test('nothing secret reaches console output on any path', async () => {
     Object.assign(console, orig);
   }
 });
+
+// ---------------------------------------------------------------- plans (docs/hmrc-plan): Business and Scale only
+Deno.test('plan_not_included: start, complete and disconnect refuse with 403, a plain message and an audit row', async () => {
+  const w = world();
+  w.rules[`${CO}:solo`] = 'plan_not_included';
+  const r = await connectStart(auth('solo'), { company_id: CO }, deps(w));
+  assertEquals([r.status, r.body.code, r.body.message], [403, 'plan_not_included', 'HMRC tools are included in the Business and Scale plans.']);
+  assertEquals(w.states.length, 0);
+  assertEquals((await disconnect(auth('solo'), { company_id: CO }, deps(w))).body.code, 'plan_not_included');
+  assertEquals(w.audit.map((a) => [a.event, a.reason]), [['refused', 'plan_not_included'], ['refused', 'plan_not_included']]);
+  // A plan changed to Solo between start and complete: refused before HMRC is called.
+  const w2 = world();
+  const state = await started(w2);
+  w2.rules[`${CO}:owner`] = 'plan_not_included';
+  const c = await connectComplete(auth('owner'), { code: 'the-auth-code', state }, deps(w2));
+  assertEquals([c.status, c.body.code], [403, 'plan_not_included']);
+  assertEquals(w2.calls.length, 0);
+  assertEquals(w2.connections.length, 0);
+  assertEquals(w2.audit.at(-1), { company_id: CO, user_id: 'owner', environment: 'sandbox', event: 'refused', reason: 'plan_not_included' });
+});
+Deno.test('plan_not_included: the token helper refuses on behalf of a person on a plan without HMRC, and audits it', async () => {
+  const { w, d } = await connectedWorld(60 * 60 * 1000);
+  w.rules[`${CO}:solo`] = 'plan_not_included';
+  try { await getFreshHmrcToken(CO, d, 'solo'); throw new Error('no error'); } catch (e) { assert(e instanceof HmrcTokenError && e.code === 'plan_not_included', String(e)); }
+  assertEquals(w.audit.map((a) => [a.event, a.reason, a.user_id]), [['refused', 'plan_not_included', 'solo']]);
+  assertEquals(w.calls.length, 0);
+  assertEquals(await getFreshHmrcToken(CO, d, 'member'), 'OLD-ACCESS-TOKEN'); // a member on Business may use the connection
+  try { await getFreshHmrcToken(CO, d, 'ended'); throw new Error('no error'); } catch (e) { assert(e instanceof HmrcTokenError && e.code === 'not_allowed'); }
+  noSecrets(w, ['OLD-ACCESS', 'OLD-REFRESH']);
+});

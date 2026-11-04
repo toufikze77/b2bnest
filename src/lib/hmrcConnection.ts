@@ -4,6 +4,9 @@
 import { supabase } from '@/integrations/supabase/client';
 
 export const HMRC_NOT_SET_UP = "HMRC connection isn't set up yet.";
+/** docs/hmrc-plan: HMRC tools are a Business and Scale feature (and on the 14-day trial), like Workflow Studio. */
+export const HMRC_PLAN_MESSAGE = 'HMRC tools are included in the Business and Scale plans.';
+export const HMRC_INCLUDED_TEXT = 'Included in Business and Scale, and during the 14-day trial.';
 export const SANDBOX_LABEL = 'Sandbox (test)';
 export const HMRC_COMPANY_KEY = 'b2bnest.hmrc.company';
 export const HMRC_PAGE = '/business-tools?tool=hmrc-integration';
@@ -16,6 +19,7 @@ export const HMRC_CODE_MESSAGES: Record<string, string> = {
   not_admin: 'Only an owner or admin of this company can connect or disconnect HMRC.',
   trial_ended: 'Your trial has ended. Choose a plan to use HMRC Integration.',
   suspended: 'Your account is suspended.',
+  plan_not_included: HMRC_PLAN_MESSAGE,
   bad_request: 'Something was missing from the request. Please try again.',
   bad_state: 'This HMRC sign-in has expired or was already used. Start again from the HMRC page.',
   hmrc_refused: "HMRC didn't accept the sign-in. Please try connecting again.",
@@ -38,7 +42,7 @@ export type HmrcStatus =
   | { kind: 'not_set_up' }
   | { kind: 'no_access' }
   | { kind: 'two_step' }
-  | { kind: 'ended'; reason: 'trial_ended' | 'suspended' }
+  | { kind: 'ended'; reason: 'trial_ended' | 'suspended' | 'plan_not_included' }
   | { kind: 'error' }
   | { kind: 'ok'; canManage: boolean; connection: HmrcConnectionInfo | null };
 
@@ -58,7 +62,7 @@ export async function fetchHmrcStatus(companyId: string): Promise<HmrcStatus> {
     }
     const d = data as { access: string; can_manage: boolean; connections: HmrcConnectionInfo[] } | null;
     if (!d) return { kind: 'error' };
-    if (d.access === 'trial_ended' || d.access === 'suspended') return { kind: 'ended', reason: d.access };
+    if (d.access === 'trial_ended' || d.access === 'suspended' || d.access === 'plan_not_included') return { kind: 'ended', reason: d.access };
     const connection = (d.connections ?? []).find((c) => c.environment === 'sandbox') ?? null;
     return { kind: 'ok', canManage: !!d.can_manage, connection };
   } catch {

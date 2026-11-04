@@ -8,7 +8,7 @@ import { refreshTokens } from './oauth.ts';
 import type { HmrcStore } from './store.ts';
 
 export class HmrcTokenError extends Error {
-  constructor(public readonly code: 'not_configured' | 'not_connected' | 'needs_reconnect' | 'hmrc_unavailable' | 'busy') {
+  constructor(public readonly code: 'not_configured' | 'not_connected' | 'needs_reconnect' | 'hmrc_unavailable' | 'busy' | 'plan_not_included' | 'not_allowed') {
     super(`hmrc token: ${code}`);
   }
 }
@@ -25,6 +25,16 @@ export async function getFreshHmrcToken(companyId: string, deps: TokenDeps, acti
   const cfg = readConfig(deps.env);
   if (!cfg.ok) throw new HmrcTokenError('not_configured');
   const env = cfg.config.environment;
+  // On behalf of a person: the company rule still applies (any member may use a connection; the plan, trial and
+  // suspension rules apply to everyone). Without a person (a later scheduled job), the caller has checked already.
+  if (actingUser) {
+    const rule = await deps.store.manageAllowed(companyId, actingUser);
+    if (rule !== 'ok' && rule !== 'not_admin') {
+      await deps.store.audit({ company_id: companyId, user_id: actingUser, environment: env, event: 'refused', reason: rule === 'not_signed_in' ? 'unauthorized' : rule });
+      deps.log('refused', { reason: rule });
+      throw new HmrcTokenError(rule === 'plan_not_included' ? 'plan_not_included' : 'not_allowed');
+    }
+  }
   const ring = await keyringFrom(cfg.config.tokenKey);
   const usable = (row: { expires_at: string | null }) => !row.expires_at || Date.parse(row.expires_at) - deps.now().getTime() > REFRESH_MARGIN_MS;
 

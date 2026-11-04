@@ -1,7 +1,7 @@
 // HMRC P0: what the browser is told. Codes the UI understands, in plain UK English, never a token, code, secret or HMRC
 // response body.
 export type HmrcErrorCode =
-  | 'not_configured' | 'unauthorized' | 'two_step_required' | 'not_member' | 'not_admin' | 'trial_ended' | 'suspended'
+  | 'not_configured' | 'unauthorized' | 'two_step_required' | 'not_member' | 'not_admin' | 'trial_ended' | 'suspended' | 'plan_not_included'
   | 'bad_request' | 'bad_state' | 'hmrc_refused' | 'hmrc_unavailable' | 'not_connected' | 'needs_reconnect' | 'server_error';
 
 export const HMRC_MESSAGES: Record<HmrcErrorCode, string> = {
@@ -12,6 +12,7 @@ export const HMRC_MESSAGES: Record<HmrcErrorCode, string> = {
   not_admin: 'Only an owner or admin of this company can connect or disconnect HMRC.',
   trial_ended: 'Your trial has ended. Choose a plan to use HMRC Integration.',
   suspended: 'Your account is suspended.',
+  plan_not_included: 'HMRC tools are included in the Business and Scale plans.',
   bad_request: 'Something was missing from the request. Please try again.',
   bad_state: 'This HMRC sign-in has expired or was already used. Start again from the HMRC page.',
   hmrc_refused: "HMRC didn't accept the sign-in. Please try connecting again.",
@@ -21,7 +22,7 @@ export const HMRC_MESSAGES: Record<HmrcErrorCode, string> = {
   server_error: 'Something went wrong. Please try again.',
 };
 export const HMRC_STATUS: Record<HmrcErrorCode, number> = {
-  not_configured: 503, unauthorized: 401, two_step_required: 403, not_member: 403, not_admin: 403, trial_ended: 403, suspended: 403,
+  not_configured: 503, unauthorized: 401, two_step_required: 403, not_member: 403, not_admin: 403, trial_ended: 403, suspended: 403, plan_not_included: 403,
   bad_request: 400, bad_state: 400, hmrc_refused: 502, hmrc_unavailable: 502, not_connected: 409, needs_reconnect: 409, server_error: 500,
 };
 export type HandlerResult = { status: number; body: Record<string, unknown> };
