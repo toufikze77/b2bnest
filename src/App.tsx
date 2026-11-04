@@ -26,6 +26,7 @@ const WorkspacesIndex = lazyPage(() => import('@/pages/workspaces/WorkspacesInde
 const WorkspaceView = lazyPage(() => import('@/pages/workspaces/WorkspaceView'));
 
 const BusinessTools = lazyPage(() => import('@/pages/BusinessTools'));
+const HMRCCallback = lazyPage(() => import('@/pages/HMRCCallback'));
 const TemplateCenter = lazyPage(() => import('@/pages/TemplateCenter'));
 const Onboarding = lazyPage(() => import('@/pages/Onboarding'));
 const PLR = lazyPage(() => import('@/pages/PLR'));
@@ -142,6 +143,8 @@ function App() {
             
             <Route path="/profile-setup" element={<ProtectedRoute><ProfileSetup /></ProtectedRoute>} />
               <Route path="/business-tools" element={<BusinessTools />} />
+              {/* HMRC P0: HMRC returns here after sign-in; the code goes straight to hmrc-connect-complete. */}
+              <Route path="/hmrc/callback" element={<ProtectedRoute><HMRCCallback /></ProtectedRoute>} />
               <Route path="/template-center" element={<TemplateCenter />} />
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/two-step-required" element={<ProtectedRoute><TwoStepRequired /></ProtectedRoute>} />

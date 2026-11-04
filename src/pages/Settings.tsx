@@ -57,7 +57,7 @@ const Settings = () => {
         <TabsContent value="company-security"><CompanySecurity /></TabsContent>
         <TabsContent value="billing"><BillingSettings /></TabsContent>
         <TabsContent value="notifications" className="space-y-4"><InAppNotificationPreferences /><NotificationPreferences /><MarketingConsentSwitch /></TabsContent>
-        <TabsContent value="hmrc"><HMRCSettings onDisconnect={() => {}} /></TabsContent>
+        <TabsContent value="hmrc"><HMRCSettings /></TabsContent>
         <TabsContent value="companies">
           <Card>
             <CardHeader>

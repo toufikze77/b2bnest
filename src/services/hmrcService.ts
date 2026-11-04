@@ -1,50 +1,21 @@
 import { supabase } from '@/integrations/supabase/client';
 
-type HMRCAuth = {
-  accessToken: string;
-  expiresAt: number;
-};
+// HMRC P0: the browser never holds an HMRC token, client id or client secret (one B2BNEST HMRC application, server
+// secrets only). The connection is in src/lib/hmrcConnection.ts. This file keeps the user's business details and the
+// (empty) submission log reader. HMRC filing is not built: no submission API is called anywhere.
 
+/** Used by the payroll screen (PAYE details, kept in the browser by that screen). */
 type EmployerDetails = {
   payeReference: string; // e.g., 123/AB456
   accountsOfficeRef: string; // e.g., 123PA12345678
 };
 
-type EmployeeFPSRecord = {
-  employeeId: string;
-  niNumber?: string;
-  firstName: string;
-  lastName: string;
-  payDate: string; // YYYY-MM-DD
-  taxCode: string; // e.g., 1257L
-  niCategory: string; // e.g., A
-  payFrequency: 'W1' | 'M1' | 'MTH' | 'WK' | 'IRR';
-  grossPay: number;
-  taxablePay: number;
-  taxDeducted: number;
-  employeeNIC: number;
-  employerNIC: number;
-};
-
-type FPSSumbission = {
-  employer: EmployerDetails;
-  period: string; // e.g., 2024-09
-  submissions: EmployeeFPSRecord[];
-};
-
-type HMRCSettings = {
+type HMRCBusinessDetails = {
   companyName: string;
   companyNumber: string;
   utr: string;
   vatNumber: string;
   payeReference: string;
-  clientId: string;
-  clientSecret: string;
-  redirectUri: string;
-  autoSubmitVAT: boolean;
-  emailNotifications: boolean;
-  reminderDays: number;
-  sandboxMode: boolean;
 };
 
 type SubmissionLog = {
@@ -57,174 +28,53 @@ type SubmissionLog = {
   error_message: string | null;
 };
 
+const EMPTY: HMRCBusinessDetails = { companyName: '', companyNumber: '', utr: '', vatNumber: '', payeReference: '' };
+
 export const hmrcService = {
-  // OAuth flow
-  getAuthorizeUrl(clientId: string, redirectUri: string, state: string, sandboxMode: boolean): string {
-    const baseUrl = sandboxMode
-      ? 'https://test-www.tax.service.gov.uk/oauth/authorize'
-      : 'https://www.tax.service.gov.uk/oauth/authorize';
-    
-    const url = new URL(baseUrl);
-    url.searchParams.set('response_type', 'code');
-    url.searchParams.set('client_id', clientId);
-    url.searchParams.set('redirect_uri', redirectUri);
-    url.searchParams.set('state', state);
-    url.searchParams.set('scope', 'read:vat write:vat read:customs-financials-api');
-    return url.toString();
-  },
-
-  async startOAuth(clientId: string, redirectUri: string, sandboxMode: boolean): Promise<{ authUrl: string; state: string }> {
-    const bytes = crypto.getRandomValues(new Uint8Array(16));
-    const state = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-    sessionStorage.setItem('hmrc_oauth_state', state);
-    const authUrl = this.getAuthorizeUrl(clientId, redirectUri, state, sandboxMode);
-    return { authUrl, state };
-  },
-
-  async handleOAuthCallback(code: string, state: string): Promise<void> {
-    const expectedState = sessionStorage.getItem('hmrc_oauth_state');
-    if (state !== expectedState) {
-      throw new Error('Invalid OAuth state');
-    }
-
-    // Client credentials are resolved server-side inside the oauth-hmrc Edge Function.
-    // The browser never transmits the HMRC client secret.
-    const { data, error } = await supabase.functions.invoke('oauth-hmrc', {
-      body: { code, state },
-    });
-
-    if (error) throw error;
-    if (!data?.success) throw new Error(data?.error || 'OAuth failed');
-
-    sessionStorage.removeItem('hmrc_oauth_state');
-  },
-
-  async getToken(): Promise<HMRCAuth | null> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
-
-    // Use SECURITY DEFINER RPC to fetch decrypted tokens (table-level token columns are revoked)
-    const { data, error } = await supabase.rpc('get_hmrc_tokens', { p_user_id: user.id });
-    if (error || !data || data.length === 0) return null;
-
-    const row = data[0] as { access_token: string | null; refresh_token: string | null; expires_at: string | null };
-    const expiresAt = row.expires_at ? new Date(row.expires_at).getTime() : 0;
-    if (!row.access_token || expiresAt <= Date.now()) return null;
-
-    return {
-      accessToken: row.access_token,
-      expiresAt,
-    };
-  },
-
-
-  async isConnected(): Promise<boolean> {
-    const token = await this.getToken();
-    return !!token;
-  },
-
-  // HMRC filing is not built: no submission API is called anywhere. The old FPS/EPS "submit" functions simulated a
-  // filing with a random reference and logged it as submitted; they were removed and nothing writes hmrc_submission_logs.
-
   async getSubmissionLogs(): Promise<SubmissionLog[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
-
     const { data, error } = await supabase
       .from('hmrc_submission_logs')
       .select('*')
       .eq('user_id', user.id)
       .order('submitted_at', { ascending: false })
       .limit(50);
-
     if (error) {
-      console.error('Failed to fetch submission logs:', error);
+      console.error('Failed to fetch submission logs:', error.code);
       return [];
     }
-
     return data || [];
   },
 
-  async saveSettings(settings: HMRCSettings): Promise<void> {
+  async getBusinessDetails(): Promise<HMRCBusinessDetails> {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
-
-    const { data: orgMember } = await supabase
-      .from('organization_members')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .single();
-
-    const { error } = await supabase.from('hmrc_settings').upsert({
-      user_id: user.id,
-      organization_id: orgMember?.organization_id || null,
-      company_name: settings.companyName,
-      company_number: settings.companyNumber,
-      utr: settings.utr,
-      vat_number: settings.vatNumber,
-      paye_reference: settings.payeReference,
-      client_id: settings.clientId,
-      client_secret: settings.clientSecret,
-      redirect_uri: settings.redirectUri,
-      auto_submit_vat: settings.autoSubmitVAT,
-      email_notifications: settings.emailNotifications,
-      reminder_days: settings.reminderDays,
-      sandbox_mode: settings.sandboxMode,
-    }, {
-      onConflict: 'user_id,organization_id'
-    });
-
-    if (error) throw error;
-  },
-
-  async getSettings(): Promise<HMRCSettings | null> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
-
-    // Select everything except client_secret (revoked at column level)
+    if (!user) return EMPTY;
     const { data, error } = await supabase
       .from('hmrc_settings')
-      .select('company_name, company_number, utr, vat_number, paye_reference, client_id, redirect_uri, auto_submit_vat, email_notifications, reminder_days, sandbox_mode')
+      .select('company_name, company_number, utr, vat_number, paye_reference')
       .eq('user_id', user.id)
-      .single();
-
-    if (error || !data) return null;
-
-    // Fetch client_secret via secure RPC
-    const { data: clientSecret } = await supabase.rpc('get_hmrc_client_secret', { p_user_id: user.id });
-
+      .maybeSingle();
+    if (error || !data) return EMPTY;
     return {
-      companyName: data.company_name || '',
-      companyNumber: data.company_number || '',
-      utr: data.utr || '',
-      vatNumber: data.vat_number || '',
-      payeReference: data.paye_reference || '',
-      clientId: data.client_id,
-      clientSecret: (clientSecret as string) || '',
-      redirectUri: data.redirect_uri,
-      autoSubmitVAT: data.auto_submit_vat,
-      emailNotifications: data.email_notifications,
-      reminderDays: data.reminder_days,
-      sandboxMode: data.sandbox_mode,
+      companyName: data.company_name || '', companyNumber: data.company_number || '', utr: data.utr || '',
+      vatNumber: data.vat_number || '', payeReference: data.paye_reference || '',
     };
   },
 
-
-  async clearSettings(): Promise<void> {
+  /** Saves the business details only. Returns false when the database update (docs/hmrc-p0) isn't applied yet. */
+  async saveBusinessDetails(d: HMRCBusinessDetails): Promise<{ ok: boolean; needsUpdate?: boolean }> {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    await supabase.from('hmrc_settings').delete().eq('user_id', user.id);
-    await supabase.from('hmrc_integrations').delete().eq('user_id', user.id);
+    if (!user) return { ok: false };
+    const row = { company_name: d.companyName, company_number: d.companyNumber, utr: d.utr, vat_number: d.vatNumber, paye_reference: d.payeReference };
+    const { data: existing } = await supabase.from('hmrc_settings').select('id').eq('user_id', user.id).maybeSingle();
+    const { error } = existing
+      ? await supabase.from('hmrc_settings').update(row).eq('id', existing.id)
+      // Before docs/hmrc-p0 the credential columns are NOT NULL, so a first save fails: say so instead of crashing.
+      : await (supabase.from('hmrc_settings') as unknown as { insert: (r: unknown) => Promise<{ error: { code?: string } | null }> }).insert({ ...row, user_id: user.id });
+    if (!error) return { ok: true };
+    return { ok: false, needsUpdate: error.code === '23502' || error.code === '42501' };
   },
-
-  async isFullyConfigured(): Promise<boolean> {
-    const settings = await this.getSettings();
-    const token = await this.getToken();
-    return !!(settings && token && settings.clientId && settings.clientSecret);
-  }
 };
 
-export type { EmployerDetails, EmployeeFPSRecord, FPSSumbission, HMRCSettings, SubmissionLog };
-
+export type { EmployerDetails, HMRCBusinessDetails, SubmissionLog };

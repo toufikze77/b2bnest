@@ -6,7 +6,13 @@ verify_jwt = true
 [functions.get-oauth-config]
 verify_jwt = false
 
-[functions.oauth-hmrc]
+[functions.hmrc-connect-start]
+verify_jwt = true
+
+[functions.hmrc-connect-complete]
+verify_jwt = true
+
+[functions.hmrc-disconnect]
 verify_jwt = true
 
 [functions.b2b-form-submit]
