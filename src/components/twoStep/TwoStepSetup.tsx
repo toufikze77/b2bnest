@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAssurance } from '@/hooks/useAssurance';
 import {
-  cleanCode, codeErrorMessage, TWO_STEP_APPS, TWO_STEP_BACKUP_TIP, TWO_STEP_EXPLAINER, TWO_STEP_LOST_PHONE, TWO_STEP_OFF, TWO_STEP_ON,
+  byCreation, cleanCode, codeErrorMessage, TWO_STEP_ORDER_NOTE, TWO_STEP_APPS, TWO_STEP_BACKUP_TIP, TWO_STEP_EXPLAINER, TWO_STEP_LOST_PHONE, TWO_STEP_OFF, TWO_STEP_ON,
 } from '@/lib/twoStep';
 
 type Pending = { id: string; qr: string; secret: string; name: string };
@@ -139,10 +139,13 @@ export default function TwoStepSetup({ onEnabled }: { onEnabled?: () => void }) 
 
         {!loading && verified.length > 0 && (
           <ul className="divide-y divide-border rounded-md border border-border" aria-label="Your authenticator apps">
-            {verified.map((f) => (
-              <li key={f.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
-                <span className="flex min-w-0 items-center gap-2">
+            {byCreation(verified).map((f, i) => (
+              <li key={f.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm" data-testid="two-step-factor">
+                <span className="flex min-w-0 flex-wrap items-center gap-2">
                   <Smartphone className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  {verified.length > 1 && (
+                    <span className="shrink-0 rounded border border-border px-1.5 py-0.5 text-xs font-semibold text-foreground" data-testid="two-step-role">{i === 0 ? 'Main' : 'Backup'}</span>
+                  )}
                   <span className="truncate font-medium">{f.friendly_name || 'Authenticator app'}</span>
                   <span className="shrink-0 text-muted-foreground">· added {added(f.created_at)}</span>
                 </span>
@@ -152,6 +155,10 @@ export default function TwoStepSetup({ onEnabled }: { onEnabled?: () => void }) 
               </li>
             ))}
           </ul>
+        )}
+
+        {!loading && verified.length > 0 && (
+          <p className="text-sm text-muted-foreground" data-testid="two-step-order-note">{TWO_STEP_ORDER_NOTE}</p>
         )}
 
         {!loading && verified.length === 1 && !pending && (

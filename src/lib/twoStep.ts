@@ -83,3 +83,19 @@ export function legacyPromptDone(userId: string): boolean {
 export function markLegacyPromptDone(userId: string) {
   try { localStorage.setItem(legacyPromptKey(userId), new Date().toISOString()); } catch { /* asked again next time */ }
 }
+
+/**
+ * Main first, then backups, by when each was added (created_at, oldest first; id breaks a tie). Never by name: a factor
+ * called "Backup phone" that was added first is the main one. Used by the sign-in code screen and Settings → Security.
+ */
+export function byCreation<T extends { id: string; created_at: string }>(verified: readonly T[]): T[] {
+  const t = (f: T) => { const n = Date.parse(f.created_at); return Number.isNaN(n) ? Number.MAX_SAFE_INTEGER : n; };
+  return [...verified].sort((a, b) => t(a) - t(b) || a.id.localeCompare(b.id));
+}
+export const DEFAULT_FACTOR_NAME = 'Authenticator app';
+/** The name to show for a factor, or null for the default one (no point repeating "Authenticator app"). */
+export const shownFactorName = (f: { friendly_name?: string | null }) => {
+  const n = f.friendly_name?.trim();
+  return n && n !== DEFAULT_FACTOR_NAME ? n : null;
+};
+export const TWO_STEP_ORDER_NOTE = 'At sign-in we ask for your main authenticator first. Your backup is only offered as an alternative.';

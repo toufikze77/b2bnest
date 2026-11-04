@@ -178,10 +178,23 @@ describe('sign-in with an authenticator app', () => {
     await waitFor(() => expect(signOut).toHaveBeenCalled());
   });
 
-  it('two apps: the person chooses which one', async () => {
-    st.factors = [factor('f1', 'verified', 'Work phone'), factor('f2', 'verified', 'Home phone')]; st.next = 'aal2';
+  it('two apps: only the main (oldest) one is asked for; the backup is a choice at the bottom', async () => {
+    st.factors = [{ ...factor('f2', 'verified', 'Home phone'), created_at: '2026-11-02T10:00:00Z' }, factor('f1', 'verified', 'Work phone')]; st.next = 'aal2';
     app('/crm');
-    fireEvent.click(await screen.findByLabelText('Home phone'));
+    await screen.findByTestId('two-step-code-screen');
+    expect(screen.queryByText('Which app?')).toBeNull();
+    expect(screen.queryByRole('radio')).toBeNull();
+    expect(screen.getByTestId('two-step-factor-name')).toHaveTextContent('Work phone');
+    typeCode('Code', '123456');
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await waitFor(() => expect(mfa.challengeAndVerify).toHaveBeenCalledWith({ factorId: 'f1', code: '123456' }));
+  });
+
+  it('two apps: "Use a backup authenticator instead" switches to the backup and verifies against it', async () => {
+    st.factors = [factor('f1', 'verified', 'Work phone'), { ...factor('f2', 'verified', 'Home phone'), created_at: '2026-11-02T10:00:00Z' }]; st.next = 'aal2';
+    app('/crm');
+    fireEvent.click(await screen.findByRole('button', { name: 'Use a backup authenticator instead' }));
+    expect(screen.getByTestId('two-step-factor-name')).toHaveTextContent('Backup: Home phone');
     typeCode('Code', '123456');
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     await waitFor(() => expect(mfa.challengeAndVerify).toHaveBeenCalledWith({ factorId: 'f2', code: '123456' }));
@@ -266,6 +279,25 @@ describe('Settings → Security: set up an authenticator app', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add a backup phone' }));
     await screen.findByTestId('two-step-enrol');
     expect(mfa.enroll).toHaveBeenCalledWith({ factorType: 'totp', friendlyName: 'Backup phone' });
+  });
+
+  it('two apps: labelled Main and Backup in text by when they were added (not by name), with the sign-in note', async () => {
+    st.current = 'aal2'; st.next = 'aal2';
+    st.factors = [{ ...factor('f2', 'verified', 'Authenticator app'), created_at: '2026-11-03T10:00:00Z' }, factor('f1', 'verified', 'Backup phone')];
+    settings();
+    const rows = await screen.findAllByTestId('two-step-factor');
+    expect(rows.map((r) => within(r).getByTestId('two-step-role').textContent)).toEqual(['Main', 'Backup']);
+    expect(rows[0]).toHaveTextContent('Backup phone'); // the oldest is the main one, whatever it is called
+    expect(rows[1]).toHaveTextContent('Authenticator app');
+    expect(screen.getAllByText('At sign-in we ask for your main authenticator first. Your backup is only offered as an alternative.')).toHaveLength(1);
+  });
+
+  it('one app: no Main / Backup label; adding a backup still works as before', async () => {
+    st.current = 'aal2'; st.next = 'aal2'; st.factors = [factor('f1')];
+    settings();
+    await screen.findByTestId('two-step-factor');
+    expect(screen.queryByTestId('two-step-role')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Add a backup phone' })).toBeInTheDocument();
   });
 
   it('removal needs a fresh code (aal2) first; a wrong code removes nothing', async () => {

@@ -33,7 +33,7 @@ Two-step sign-in now uses **Supabase Auth TOTP**:
 
 ## How a locked-out person gets back in
 
-1. **Second phone:** Settings → Security recommends "Add a backup phone". The code screen lets them pick which app.
+1. **Second phone:** Settings → Security recommends "Add a backup phone". The code screen asks for the main authenticator (the oldest one added) and offers "Use a backup authenticator instead" at the bottom.
 2. **Owner-assisted reset:** they contact support@b2bnest.online. A super admin who has entered their own code (`aal2`) checks it is really them, then Admin → Users → open the person → **Reset two-step sign-in**, typing the reason.
    - `admin-reset-mfa` records an `audit_logs` row first: who (`details.admin_id`), whom (`user_id`), reason, time, number of apps. No secrets.
    - Then it removes every factor with `auth.admin.mfa.deleteFactor`.
