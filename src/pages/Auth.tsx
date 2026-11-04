@@ -11,7 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { BANNED_MESSAGE, isBannedAuthError } from '@/lib/authErrors';
 import { supabase } from '@/integrations/supabase/client';
 import { confirmationRedirect, safeReturnPath } from '@/lib/onboarding';
-import { CONSENT_TEXT, signupConsentMetadata } from '@/lib/marketingConsent';
+import { signupSourceMetadata } from '@/lib/marketingConsent';
 
 const Auth = () => {
   const { user, signIn, signUp, loading, signInWithOAuth } = useAuth();
@@ -22,8 +22,6 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [companyName, setCompanyName] = useState('');
-  // Phase 39: marketing emails only with a clear yes (UK GDPR / PECR): unticked, and sign-up works without it.
-  const [marketingConsent, setMarketingConsent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [suspendedNotice, setSuspendedNotice] = useState(false);
   const [pendingEmail, setPendingEmail] = useState('');
@@ -128,7 +126,7 @@ const Auth = () => {
           description: "Please wait while we request your activation email.",
         });
         
-        const { error } = await signUp(email, password, fullName, companyName, signupConsentMetadata(marketingConsent, searchParams.get('next')));
+        const { error } = await signUp(email, password, fullName, companyName, signupSourceMetadata(searchParams.get('next')));
         if (error) {
           const isEmailDeliveryDelay = error.code === 'email_delivery_timeout';
           toast({
@@ -311,14 +309,6 @@ const Auth = () => {
                         required
                       />
                     </div>
-
-                    {!isLogin && (
-                      <div className="flex items-start gap-2">
-                        <input id="marketingConsent" type="checkbox" className="mt-1 h-4 w-4 accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          checked={marketingConsent} onChange={(e) => setMarketingConsent(e.target.checked)} />
-                        <Label htmlFor="marketingConsent" className="text-sm font-normal leading-snug">{CONSENT_TEXT}</Label>
-                      </div>
-                    )}
 
                     <Button 
                       type="submit" 

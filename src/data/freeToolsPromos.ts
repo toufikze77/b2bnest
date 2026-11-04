@@ -23,6 +23,8 @@ export interface ReferralPartner {
   name: string;
   /** One line about it. */
   description: string;
+  /** What it is, shown before the name ("Business account: Revolut Business"). Neutral words only: no "Advert" or "Ad". */
+  kind?: string;
   /** The referral link (https). Without one, the entry is not shown. */
   url?: string;
   /** Optional: the offer exactly as the partner states it. */
@@ -40,7 +42,8 @@ export const REFERRAL_GROUPS: ReferralGroup[] = [
 ];
 
 export const REFERRAL_PARTNERS: ReferralPartner[] = [
-  { id: 'revolut-business', name: REVOLUT_BUSINESS.name, description: REVOLUT_BUSINESS.description, url: REVOLUT_BUSINESS.url, group: 'banking',
+  { id: 'revolut-business', kind: 'Business account', name: `${REVOLUT_BUSINESS.provider} Business`, description: REVOLUT_BUSINESS.description,
+    url: REVOLUT_BUSINESS.url, group: 'banking',
     contexts: ['setup-checklist', 'cost-calculator', 'business-resources'] },
 ];
 
@@ -60,6 +63,7 @@ export const FINANCE_ASSISTANT_PROMO = {
   to: '/business-tools?tool=business-finance-assistant',
 };
 
-export const ADVERT_LABEL = 'Advert';
-export const COMMISSION_LINE = 'We may earn a commission if you open an account through these links.';
+// Phase 39b: no "Advert" badge (people read it as an outside ad). The commission line below is the disclosure UK rules
+// (ASA/CAP, CMA) ask for: it stays next to the link, at a readable size, with rel="sponsored".
+export const commissionLine = (links: number) => `We may earn a commission if you open an account through ${links === 1 ? 'this link' : 'these links'}.`;
 export const NOT_ADVICE_LINE = 'Not financial advice. Check the terms with the provider.';

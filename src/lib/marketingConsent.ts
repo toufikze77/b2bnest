@@ -1,5 +1,5 @@
-// Phase 39: marketing email consent (UK GDPR / PECR). Unticked by default; sign-up works without it. The choice is
-// recorded on the server (public.marketing_consents, docs/phase39/proposal.sql) with the server's clock and the
+// Phase 39: marketing email consent (UK GDPR / PECR). Phase 39b: the sign-up form no longer asks; people opt in with
+// the switch in Settings → Notifications (off by default). The choice is recorded on the server (public.marketing_consents, docs/phase39/proposal.sql) with the server's clock and the
 // wording version. Only consented = true may be emailed for marketing. No marketing email is sent by this change.
 import { supabase } from '@/integrations/supabase/client';
 import { isSavableTool } from '@/lib/freeToolItems';
@@ -18,9 +18,12 @@ export function signupSourceFromNext(next: string | null | undefined): string {
   } catch { return 'signup'; }
 }
 
-/** What Supabase Auth keeps in the new account's sign-up details; marketing_consent_record_signup() reads it once. */
-export const signupConsentMetadata = (consented: boolean, next: string | null | undefined) =>
-  ({ marketing_consent: consented, signup_source: signupSourceFromNext(next) });
+/**
+ * What Supabase Auth keeps in the new account's sign-up details: only the free tool signed up from (Phase 39b).
+ * marketing_consent_record_signup() reads it once; with docs/phase39b applied it records consented = false with that
+ * source, before that nothing (no error either way).
+ */
+export const signupSourceMetadata = (next: string | null | undefined) => ({ signup_source: signupSourceFromNext(next) });
 
 type RpcError = { code?: string; message?: string } | null;
 type Rpc = (fn: string, args?: Record<string, unknown>) => Promise<{ data: unknown; error: RpcError }>;

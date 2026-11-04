@@ -96,6 +96,7 @@ Tests: `PG_RUN_USER=postgres bash docs/phase39/run-test.sh` (disposable local Po
 
 ### Marketing consent (`public.marketing_consents`)
 - **On the sign-up form:** the checkbox "Send me tips and offers about B2BNEST. You can unsubscribe at any time." is unticked and not required.
+  - **Removed in Phase 39b** (owner request): sign-up now passes only `signup_source`; people opt in with the Settings switch. See `docs/phase39b/README.md`.
 - **What is kept:** the choice (`marketing_consent`) and the free tool signed up from (`signup_source`) go into the sign-up details Supabase Auth keeps.
   - The source is one of the seven tool ids, else `signup`.
   - No other personal data.
@@ -125,7 +126,7 @@ Wording v1 is in the table comment. If the wording changes, bump the version in 
   - the Business Resources page, above the other partner card (Hostinger stays there).
   - No other tool has one.
 - **What each slot shows:**
-  - "Advert";
+  - "Advert" (**removed in Phase 39b**: now a neutral label, "Business account: Revolut Business" under "Banking & finance"; the commission line stays with the link);
   - "We may earn a commission if you open an account through these links.";
   - `rel="sponsored noopener noreferrer"`, `target="_blank"`;
   - "Not financial advice. Check the terms with the provider.".

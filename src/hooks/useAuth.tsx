@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Email + password sign-up
-  // Phase 39: `extra` = the marketing choice and the free tool signed up from (signupConsentMetadata), kept in the
+  // Phase 39b: `extra` = the free tool signed up from (signupSourceMetadata; no marketing choice), kept in the
   // sign-up details until marketing_consent_record_signup() records it after the first sign-in.
   const signUp = async (email: string, password: string, fullName?: string, companyName?: string, extra?: Record<string, unknown>) => {
     try {
