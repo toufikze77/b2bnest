@@ -1,6 +1,7 @@
-// HMRC P0: the two calls to HMRC's token endpoint (authorisation code, refresh). Endpoint URLs, grant names and the
-// response fields are NOT VERIFIED against HMRC's pages (unreachable from the build environment); they follow the
-// standard OAuth 2.0 authorisation-code flow the repo already used. HMRC response bodies are never logged or returned.
+// HMRC P0 / P1: the calls to HMRC's token endpoint. VERIFIED (4 Nov 2026) on HMRC's "User-restricted endpoints" and
+// "Application-restricted endpoints" pages: grant types authorization_code, refresh_token and client_credentials, the
+// parameters in the form body, and the response fields (access_token, token_type, expires_in, refresh_token, scope).
+// HMRC response bodies are never logged or returned.
 import { HMRC_ENDPOINTS, type HmrcConfig } from './config.ts';
 
 export interface TokenSet { access_token: string; refresh_token: string | null; expires_in: number | null; scope: string | null }
@@ -38,3 +39,16 @@ export const exchangeCode = (config: HmrcConfig, code: string, fetchFn: typeof f
   post(config, { grant_type: 'authorization_code', code, redirect_uri: config.redirectUri }, fetchFn);
 export const refreshTokens = (config: HmrcConfig, refreshToken: string, fetchFn: typeof fetch) =>
   post(config, { grant_type: 'refresh_token', refresh_token: refreshToken }, fetchFn);
+
+// Application-restricted endpoints (Hello application, Test Fraud Prevention Headers): a client-credentials token,
+// 4 hours, kept in memory only (never stored), a minute short of its expiry.
+let appToken: { env: string; token: string; until: number } | null = null;
+export async function applicationToken(config: HmrcConfig, fetchFn: typeof fetch, now: () => Date): Promise<TokenResult> {
+  if (appToken && appToken.env === config.environment && appToken.until > now().getTime()) {
+    return { ok: true, tokens: { access_token: appToken.token, refresh_token: null, expires_in: null, scope: null } };
+  }
+  const r = await post(config, { grant_type: 'client_credentials' }, fetchFn);
+  if (r.ok) appToken = { env: config.environment, token: r.tokens.access_token, until: now().getTime() + ((r.tokens.expires_in ?? 3600) - 60) * 1000 };
+  return r;
+}
+export const forgetApplicationToken = () => { appToken = null; };

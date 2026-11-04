@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import OrganizationSwitcher from '@/components/OrganizationSwitcher';
+import HMRCTestTools from '@/components/hmrc/HMRCTestTools';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
 import {
   callHmrcFunction, fetchHmrcStatus, HMRC_NOT_SET_UP, messageFor, rememberCompany, SANDBOX_LABEL, ukDate, type HmrcStatus,
@@ -106,6 +107,7 @@ export default function HMRCConnectionPanel() {
             ) : (
               <p className="text-sm text-muted-foreground" data-testid="hmrc-member-note">Ask an owner or admin of {organization?.name ?? 'your company'} to connect or disconnect HMRC.</p>
             )}
+            {status.canManage && state === 'connected' && organizationId && <HMRCTestTools companyId={organizationId} />}
             <p className="text-xs text-muted-foreground">Connecting lets B2BNEST read and, in later steps, send VAT information for this company. Filing is not available yet.</p>
           </div>
         );

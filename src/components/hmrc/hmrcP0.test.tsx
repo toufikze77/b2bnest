@@ -59,7 +59,9 @@ describe('HMRC connection panel (customers, owners and admins)', () => {
     expect(screen.getByTestId('hmrc-environment')).toHaveTextContent('Sandbox (test)');
     expect(screen.getByRole('button', { name: 'Disconnect' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Connect to HMRC/ })).toBeNull();
-    expect(st.rpcCalls).toEqual([['hmrc_connection_status', { p_company: CO }]]);
+    expect(st.rpcCalls[0]).toEqual(['hmrc_connection_status', { p_company: CO }]);
+    // HMRC P1: owners of a connected company also read the last test time
+    await waitFor(() => expect(st.rpcCalls.map((c) => c[0])).toContain('hmrc_audit_events'));
     expect(container.textContent).not.toMatch(/token|secret|client id/i);
   });
 
