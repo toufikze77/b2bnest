@@ -21,7 +21,7 @@ export interface TokenDeps {
   log: (event: string, meta?: Record<string, string | number | boolean | null>) => void;
 }
 
-export async function getFreshHmrcToken(companyId: string, deps: TokenDeps, actingUser: string | null = null): Promise<string> {
+export async function getFreshHmrcToken(companyId: string, deps: TokenDeps, actingUser: string | null = null, opts: { force?: boolean } = {}): Promise<string> {
   const cfg = readConfig(deps.env);
   if (!cfg.ok) throw new HmrcTokenError('not_configured');
   const env = cfg.config.environment;
@@ -41,7 +41,9 @@ export async function getFreshHmrcToken(companyId: string, deps: TokenDeps, acti
   let row = await deps.store.getConnection(companyId, env);
   if (!row || row.status === 'disconnected' || !row.access_token_enc) throw new HmrcTokenError('not_connected');
   if (row.status === 'needs_reconnect') throw new HmrcTokenError('needs_reconnect');
-  if (usable(row)) return decryptToken(row.access_token_enc, ring, tokenAad(companyId, env, 'access'));
+  // force: HMRC said the token is no longer valid (401), so refresh even though it hasn't run out by our clock.
+  const prevExpiry = row.expires_at;
+  if (!opts.force && usable(row)) return decryptToken(row.access_token_enc, ring, tokenAad(companyId, env, 'access'));
 
   if (!(await deps.store.claimRefresh(companyId, env, 30))) {
     // Someone else is refreshing: wait for their result rather than refreshing twice.
@@ -49,7 +51,7 @@ export async function getFreshHmrcToken(companyId: string, deps: TokenDeps, acti
       await deps.sleep(300);
       row = await deps.store.getConnection(companyId, env);
       if (row?.status === 'needs_reconnect') throw new HmrcTokenError('needs_reconnect');
-      if (row?.status === 'connected' && row.access_token_enc && usable(row)) return decryptToken(row.access_token_enc, ring, tokenAad(companyId, env, 'access'));
+      if (row?.status === 'connected' && row.access_token_enc && usable(row) && (!opts.force || row.expires_at !== prevExpiry)) return decryptToken(row.access_token_enc, ring, tokenAad(companyId, env, 'access'));
     }
     throw new HmrcTokenError('busy');
   }

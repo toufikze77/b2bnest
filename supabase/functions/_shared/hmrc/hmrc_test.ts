@@ -65,6 +65,7 @@ function store(w: World): HmrcStore {
       return true;
     },
     async audit(r) { w.audit.push({ ...r }); },
+    async takeTestSlot() { return true; },
   };
 }
 function deps(w: World, env = ENV): HandlerDeps {
@@ -146,7 +147,7 @@ Deno.test('start: owner gets the HMRC sign-in address; only a hash of the state 
   const url = new URL(String(r.body.url));
   assertEquals(url.origin + url.pathname, 'https://test-www.tax.service.gov.uk/oauth/authorize');
   assertEquals(url.searchParams.get('client_id'), 'b2bnest-client-id');
-  assertEquals(url.searchParams.get('scope'), 'read:vat write:vat');
+  assertEquals(url.searchParams.get('scope'), 'read:vat write:vat hello'); // sandbox adds the Hello World test scope (P1)
   assertEquals(url.searchParams.get('redirect_uri'), 'https://www.b2bnest.online/hmrc/callback');
   assertEquals(HMRC_SCOPES.join(' '), 'read:vat write:vat');
   const state = url.searchParams.get('state')!;

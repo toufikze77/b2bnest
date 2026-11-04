@@ -15,6 +15,9 @@ verify_jwt = true
 [functions.hmrc-disconnect]
 verify_jwt = true
 
+[functions.hmrc-test-call]
+verify_jwt = true
+
 [functions.b2b-form-submit]
 verify_jwt = false
 

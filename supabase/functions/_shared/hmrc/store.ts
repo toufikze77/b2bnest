@@ -4,7 +4,7 @@ import type { HmrcEnvironment } from './config.ts';
 
 // plan_not_included: a paying account whose plan is not Business or Scale (docs/hmrc-plan/proposal.sql).
 export type ManageRule = 'ok' | 'not_signed_in' | 'not_member' | 'not_admin' | 'trial_ended' | 'suspended' | 'plan_not_included';
-export type AuditEvent = 'connect_started' | 'connected' | 'refreshed' | 'refresh_failed' | 'disconnected' | 'refused';
+export type AuditEvent = 'connect_started' | 'connected' | 'refreshed' | 'refresh_failed' | 'disconnected' | 'refused' | 'test_call' | 'test_result';
 export interface ConnectionRow {
   company_id: string;
   environment: HmrcEnvironment;
@@ -23,6 +23,8 @@ export interface HmrcStore {
   updateConnection(companyId: string, environment: HmrcEnvironment, patch: Partial<ConnectionRow> & { refresh_lock_until?: string | null }): Promise<void>;
   claimRefresh(companyId: string, environment: HmrcEnvironment, seconds: number): Promise<boolean>;
   audit(row: { company_id: string; user_id: string | null; environment: HmrcEnvironment | null; event: AuditEvent; reason?: string | null }): Promise<void>;
+  /** HMRC P1: one test call for the company, if under its hourly limit (writes the test_call audit row). */
+  takeTestSlot(companyId: string, userId: string, environment: HmrcEnvironment, kind: string): Promise<boolean>;
 }
 
 // The subset of the Supabase client used here (kept loose on purpose: the real client's generics are not needed).
@@ -68,6 +70,11 @@ export function supabaseStore(admin: Sb): HmrcStore {
     async claimRefresh(companyId, environment, seconds) {
       const { data, error } = await admin.rpc('hmrc_claim_refresh', { p_company: companyId, p_environment: environment, p_seconds: seconds });
       must('hmrc_claim_refresh', error);
+      return data === true;
+    },
+    async takeTestSlot(companyId, userId, environment, kind) {
+      const { data, error } = await admin.rpc('hmrc_take_test_slot', { p_company: companyId, p_user: userId, p_environment: environment, p_kind: kind });
+      must('hmrc_take_test_slot', error);
       return data === true;
     },
     async audit(row) {

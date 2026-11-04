@@ -8,23 +8,34 @@ export interface CallerDeps {
   /** Verifies the access token with Supabase Auth; null when it is not a valid session. */
   getUser(jwt: string): Promise<{ id: string } | null>;
   /** The person's MFA factors (Supabase Auth admin API). */
-  listFactors(userId: string): Promise<{ factor_type: string; status: string }[]>;
+  listFactors(userId: string): Promise<{ id?: string; factor_type: string; status: string; created_at?: string }[]>;
 }
-export interface Caller { userId: string; aal: string | null }
+/** totpAt: when this session's authenticator code was entered (from the verified session token), if it was. */
+export interface Caller { userId: string; aal: string | null; totpAt: Date | null; totpFactorIds: string[] }
 
 export function jwtFrom(authHeader: string | null): string | null {
   const m = /^Bearer\s+(\S+)$/i.exec(authHeader ?? '');
   return m ? m[1] : null;
 }
-/** Reads the aal claim. Only called after getUser has verified the same token. */
-export function aalOf(jwt: string): string | null {
+function claims(jwt: string): Record<string, unknown> | null {
   try {
     const part = jwt.split('.')[1];
-    const json = JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (part.length % 4)) % 4)));
-    return typeof json.aal === 'string' ? json.aal : null;
+    return JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (part.length % 4)) % 4)));
   } catch {
     return null;
   }
+}
+/** Reads the aal claim. Only called after getUser has verified the same token. */
+export function aalOf(jwt: string): string | null {
+  const c = claims(jwt);
+  return typeof c?.aal === 'string' ? c.aal : null;
+}
+/** Supabase's amr claim: [{ method, timestamp (seconds) }]. The time of the TOTP step, if this session had one. */
+export function totpTimeOf(jwt: string): Date | null {
+  const amr = claims(jwt)?.amr;
+  if (!Array.isArray(amr)) return null;
+  const t = amr.find((e) => e && typeof e === 'object' && (e as { method?: unknown }).method === 'totp') as { timestamp?: unknown } | undefined;
+  return typeof t?.timestamp === 'number' && t.timestamp > 0 ? new Date(t.timestamp * 1000) : null;
 }
 
 export async function identify(authHeader: string | null, deps: CallerDeps): Promise<Caller | HmrcErrorCode> {
@@ -34,9 +45,9 @@ export async function identify(authHeader: string | null, deps: CallerDeps): Pro
   if (!user?.id) return 'unauthorized';
   const aal = aalOf(jwt);
   const factors = await deps.listFactors(user.id);
-  const enrolled = factors.some((f) => f.factor_type === 'totp' && f.status === 'verified');
-  if (enrolled && aal !== 'aal2') return 'two_step_required';
-  return { userId: user.id, aal };
+  const verified = factors.filter((f) => f.factor_type === 'totp' && f.status === 'verified');
+  if (verified.length && aal !== 'aal2') return 'two_step_required';
+  return { userId: user.id, aal, totpAt: aal === 'aal2' ? totpTimeOf(jwt) : null, totpFactorIds: verified.map((f) => f.id ?? '').filter(Boolean).sort() };
 }
 
 export async function canManage(store: HmrcStore, companyId: string, userId: string): Promise<'ok' | HmrcErrorCode> {

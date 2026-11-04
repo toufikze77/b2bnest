@@ -26,6 +26,11 @@ export const HMRC_CODE_MESSAGES: Record<string, string> = {
   hmrc_unavailable: "HMRC couldn't be reached. Please try again later.",
   needs_reconnect: 'The HMRC connection has expired. An owner or admin needs to connect again.',
   server_error: 'Something went wrong. Please try again.',
+  // HMRC P1 + P2: the test calls
+  not_connected: 'Connect this company to HMRC first, then test the connection.',
+  test_limit: 'You can run 10 HMRC tests an hour for this company. Please try again later.',
+  hmrc_busy: 'HMRC is busy right now. Please try again in a minute.',
+  scope_missing: 'Connect to HMRC again to run this test: the test needs one more permission from HMRC (test environment only).',
 };
 export const messageFor = (code: string | undefined) => HMRC_CODE_MESSAGES[code ?? ''] ?? HMRC_CODE_MESSAGES.server_error;
 
@@ -70,21 +75,45 @@ export async function fetchHmrcStatus(companyId: string): Promise<HmrcStatus> {
   }
 }
 
-export interface FnResult { ok: boolean; code?: string; message?: string; url?: string; status?: string; company_id?: string }
+export interface HmrcHeaderFeedback { code: string; message: string; headers: string[] }
+export interface HmrcHeaderCheck { code: string; message: string; errors: HmrcHeaderFeedback[]; warnings: HmrcHeaderFeedback[] }
+export interface FnResult {
+  ok: boolean; code?: string; message?: string | null; url?: string; status?: string; company_id?: string;
+  /** hmrc-test-call */
+  kind?: string; result?: HmrcHeaderCheck; omitted?: string[]; sent?: string[]; hmrc_code?: string | null;
+}
 
 /** Calls one HMRC Edge Function and returns its JSON, or a not-set-up result when it isn't deployed yet. */
-export async function callHmrcFunction(name: 'hmrc-connect-start' | 'hmrc-connect-complete' | 'hmrc-disconnect', body: Record<string, unknown>): Promise<FnResult> {
+export async function callHmrcFunction(name: 'hmrc-connect-start' | 'hmrc-connect-complete' | 'hmrc-disconnect' | 'hmrc-test-call', body: Record<string, unknown>): Promise<FnResult> {
   try {
     const { data, error } = await supabase.functions.invoke(name, { body });
     if (!error) return (data as FnResult) ?? { ok: false, code: 'server_error' };
     const ctx = (error as { context?: { status?: number; json?: () => Promise<unknown> } }).context;
     if (ctx?.status === 404) return { ok: false, code: 'not_configured', message: HMRC_NOT_SET_UP };
     const parsed = ctx?.json ? await ctx.json().catch(() => null) as FnResult | null : null;
-    if (parsed?.code) return { ok: false, code: parsed.code, message: parsed.message ?? messageFor(parsed.code) };
+    if (parsed?.code) return { ok: false, code: parsed.code, message: parsed.message ?? messageFor(parsed.code), hmrc_code: parsed.hmrc_code ?? null };
     // Not deployed / unreachable (FunctionsFetchError, FunctionsRelayError): treat as not set up, never a crash.
     return { ok: false, code: 'not_configured', message: HMRC_NOT_SET_UP };
   } catch {
     return { ok: false, code: 'not_configured', message: HMRC_NOT_SET_UP };
+  }
+}
+
+/** HMRC P1: the last test call for this company, from hmrc_audit_events (owners and admins only; null otherwise). */
+export interface HmrcLastTest { at: string; kind: string; passed: boolean }
+export async function fetchLastHmrcTest(companyId: string): Promise<HmrcLastTest | null> {
+  try {
+    const { data, error } = await (supabase.rpc as unknown as (f: string, a: Record<string, unknown>) => Promise<{ data: unknown; error: DbError }>)(
+      'hmrc_audit_events', { p_company: companyId, p_limit: 50 });
+    if (error || !Array.isArray(data)) return null;
+    const row = (data as { event?: string; reason?: string | null; created_at?: string }[])
+      .find((r) => r.event === 'test_result' && typeof r.reason === 'string' && typeof r.created_at === 'string');
+    if (!row) return null;
+    const m = /^(hello_world|hello_application|hello_user|fraud_headers_validate)_(.+)$/.exec(row.reason as string);
+    if (!m) return null;
+    return { at: row.created_at as string, kind: m[1], passed: m[2] === '200' };
+  } catch {
+    return null;
   }
 }
 

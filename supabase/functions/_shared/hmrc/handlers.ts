@@ -1,7 +1,7 @@
 // HMRC P0: hmrc-connect-start, hmrc-connect-complete and hmrc-disconnect, as plain functions (the index.ts files wire
 // in Supabase, fetch and Deno.env). Every path checks: valid session → two-step rule → company rule. Logs carry codes
 // only: never a token, an authorisation code, a state, a secret or an HMRC response body.
-import { HMRC_ENDPOINTS, HMRC_SCOPES, readConfig, readEnvironment, STATE_TTL_MS } from './config.ts';
+import { HMRC_ENDPOINTS, readConfig, readEnvironment, scopesFor, STATE_TTL_MS } from './config.ts';
 import { encryptToken, newState, sha256Hex, tokenAad } from './crypto.ts';
 import { canManage, type CallerDeps, identify, isUuid } from './caller.ts';
 import { done, fail, type HandlerResult, type HmrcErrorCode } from './errors.ts';
@@ -44,7 +44,7 @@ export async function connectStart(authHeader: string | null, body: Body, deps: 
   const url = new URL(HMRC_ENDPOINTS[cfg.config.environment].authorize);
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('client_id', cfg.config.clientId);
-  url.searchParams.set('scope', HMRC_SCOPES.join(' '));
+  url.searchParams.set('scope', scopesFor(cfg.config.environment).join(' '));
   url.searchParams.set('state', state);
   url.searchParams.set('redirect_uri', cfg.config.redirectUri);
   deps.log('connect_started');
@@ -82,7 +82,7 @@ export async function connectComplete(authHeader: string | null, body: Body, dep
     access_token_enc: await encryptToken(t.access_token, key, tokenAad(used.company_id, used.environment, 'access')),
     refresh_token_enc: t.refresh_token ? await encryptToken(t.refresh_token, key, tokenAad(used.company_id, used.environment, 'refresh')) : null,
     expires_at: t.expires_in ? new Date(now.getTime() + t.expires_in * 1000).toISOString() : null,
-    scopes: (t.scope ?? HMRC_SCOPES.join(' ')).split(/\s+/).filter(Boolean),
+    scopes: (t.scope ?? scopesFor(used.environment).join(' ')).split(/\s+/).filter(Boolean),
     connected_by: who.userId,
     connected_at: now.toISOString(),
   });

@@ -1,18 +1,27 @@
 // HMRC P0: server configuration. Every value comes from an Edge Function secret; none is ever sent to a browser.
 //
-// NOT VERIFIED against HMRC's published pages (developer.service.hmrc.gov.uk could not be reached from the build
-// environment): the scope names, the authorisation and token endpoint URLs, token lifetimes and refresh behaviour. The
-// URLs below are the ones the repo already used (supabase/functions/oauth-hmrc, src/services/hmrcService.ts). Each is in
-// one constant so it can be corrected in one place once checked.
-export const HMRC_SCOPES = ['read:vat', 'write:vat'] as const; // not verified
+// VERIFIED (HMRC P1 + P2, 4 Nov 2026) on HMRC's Developer Hub:
+//   * authorise https://test-www.tax.service.gov.uk/oauth/authorize (production https://www.tax.service.gov.uk) and
+//     token https://test-api.service.hmrc.gov.uk/oauth/token: "User-restricted endpoints" (Authorisation).
+//   * API base URLs: the Hello World and Test Fraud Prevention Headers API pages (sandbox test-api.service.hmrc.gov.uk).
+//   * Scopes: read:vat and write:vat (VAT (MTD) 1.0 OpenAPI file); hello for "Say hello user" (Hello World 1.0 OpenAPI).
+//   * Access tokens last 4 hours; refresh tokens are single use, a new one comes back on each refresh, and they stop
+//     working after 18 months ("User-restricted endpoints").
+export const HMRC_VAT_SCOPES = ['read:vat', 'write:vat'] as const;
+/** Sandbox only: "hello" lets the Hello World user test run (docs/hmrc-p1-p2). Never requested in production. */
+export const HMRC_SANDBOX_TEST_SCOPES = ['hello'] as const;
+export const HMRC_SCOPES = HMRC_VAT_SCOPES;
+export const scopesFor = (env: 'sandbox' | 'production'): string[] => env === 'sandbox' ? [...HMRC_VAT_SCOPES, ...HMRC_SANDBOX_TEST_SCOPES] : [...HMRC_VAT_SCOPES];
 export const HMRC_ENDPOINTS = {
   sandbox: {
-    authorize: 'https://test-www.tax.service.gov.uk/oauth/authorize', // not verified
-    token: 'https://test-api.service.hmrc.gov.uk/oauth/token', // not verified
+    authorize: 'https://test-www.tax.service.gov.uk/oauth/authorize',
+    token: 'https://test-api.service.hmrc.gov.uk/oauth/token',
+    api: 'https://test-api.service.hmrc.gov.uk',
   },
   production: {
-    authorize: 'https://www.tax.service.gov.uk/oauth/authorize', // not verified
-    token: 'https://api.service.hmrc.gov.uk/oauth/token', // not verified
+    authorize: 'https://www.tax.service.gov.uk/oauth/authorize',
+    token: 'https://api.service.hmrc.gov.uk/oauth/token',
+    api: 'https://api.service.hmrc.gov.uk',
   },
 } as const;
 /** Refresh this long before the access token runs out. */
