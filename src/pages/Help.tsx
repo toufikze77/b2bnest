@@ -28,11 +28,7 @@ const Help = () => {
     },
     {
       question: "How do I connect my HMRC account?",
-      answer: "First, go to Settings → HMRC tab and enter your HMRC Client ID and Client Secret (obtained from the HMRC Developer Hub at developer.service.hmrc.gov.uk). Save the settings, then navigate to Business Tools → HMRC Integration and click 'Connect to HMRC Government Gateway'. If you see 'missing Client ID in setting', it means you need to configure your credentials in Settings → HMRC first."
-    },
-    {
-      question: "Where do I get my HMRC Client ID and Secret?",
-      answer: "Register at the HMRC Developer Hub (developer.service.hmrc.gov.uk), create a new application, select the APIs you need (VAT, PAYE, etc.), and you'll receive a Client ID and Client Secret. Enter these in B2BNEST under Settings → HMRC tab."
+      answer: "An owner or admin of your company goes to Business Tools → HMRC Integration (or Settings → HMRC) and chooses 'Connect to HMRC', then signs in on HMRC's own page. For now this connects to HMRC's test environment, labelled 'Sandbox (test)'. You don't need an HMRC developer account or any keys: B2BNEST uses its own HMRC application. Other members of the company can see whether it is connected. Filing with HMRC is not available yet."
     },
     {
       question: "How do I configure email notifications?",

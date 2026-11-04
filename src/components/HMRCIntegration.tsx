@@ -1,4 +1,3 @@
-import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -26,8 +25,7 @@ import {
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { useHMRCCallback } from '@/hooks/useHMRCCallback';
-import { hmrcService } from '@/services/hmrcService';
+import HMRCConnectionPanel from '@/components/hmrc/HMRCConnectionPanel';
 import HMRCVATReturns from '@/components/hmrc/HMRCVATReturns';
 import HMRCPayrollSubmissions from '@/components/hmrc/HMRCPayrollSubmissions';
 import HMRCTaxReturns from '@/components/hmrc/HMRCTaxReturns';
@@ -38,67 +36,6 @@ import { HMRCFilingBanner, PREVIEW_ONLY } from '@/components/hmrc/filingStatus';
 
 const HMRCIntegration = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const { processing: callbackProcessing } = useHMRCCallback();
-  const [isConnected, setIsConnected] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
-
-  useEffect(() => {
-    const checkConnection = async () => {
-      const isConfigured = await hmrcService.isFullyConfigured();
-      if (isConfigured) {
-        setIsConnected(true);
-        setConnectionStatus('connected');
-      }
-    };
-    checkConnection();
-  }, []);
-
-  const handleConnectHMRC = async () => {
-    setLoading(true);
-    setConnectionStatus('connecting');
-    try {
-      const settings = await hmrcService.getSettings();
-      if (!settings || !settings.clientId || !settings.clientSecret) {
-        setConnectionStatus('disconnected');
-        toast({
-          title: "Missing credentials",
-          description: "Please add your HMRC Client ID and Secret in Settings first.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Start OAuth flow
-      const { authUrl } = await hmrcService.startOAuth(
-        settings.clientId,
-        settings.redirectUri,
-        settings.sandboxMode
-      );
-
-      // Redirect to HMRC OAuth
-      window.location.href = authUrl;
-    } catch (error) {
-      setConnectionStatus('disconnected');
-      toast({
-        title: "Connection Failed",
-        description: "Failed to initiate HMRC OAuth. Check credentials and try again.",
-        variant: "destructive",
-      });
-      setLoading(false);
-    }
-  };
-
-  const handleDisconnectHMRC = async () => {
-    setIsConnected(false);
-    setConnectionStatus('disconnected');
-    await hmrcService.clearSettings();
-    toast({
-      title: "HMRC Disconnected",
-      description: "Successfully disconnected from HMRC services",
-    });
-  };
 
   if (!user) {
     return (
@@ -120,20 +57,8 @@ const HMRCIntegration = () => {
     );
   }
 
-  if (callbackProcessing) {
-    return (
-      <div className="max-w-4xl mx-auto p-6">
-        <Card>
-          <CardContent className="p-12 text-center">
-            <RefreshCw className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-            <p className="text-lg font-semibold">Completing HMRC Authentication...</p>
-            <p className="text-muted-foreground mt-2">Please wait while we secure your connection.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
+  // HMRC P0: the company's connection (owners and admins connect; members see the status). Filing is not built yet,
+  // so the return screens below keep their example figures and "not available yet" banner.
   return (
     <div className="max-w-7xl mx-auto p-6">
       <div className="mb-6">
@@ -141,156 +66,47 @@ const HMRCIntegration = () => {
           <Building2 className="h-8 w-8 text-green-600" />
           HMRC Integration Suite
         </h1>
-        <p className="text-gray-600 mb-4">
-          Save your HMRC details and preview returns. Filing is not available yet.
+        <p className="text-muted-foreground mb-4">
+          Connect your company to HMRC (test environment for now) and preview returns. Filing is not available yet.
         </p>
-        <div className="flex gap-2 flex-wrap">
-          <Badge variant={isConnected ? 'default' : 'secondary'}>
-            {isConnected ? 'Connected to HMRC' : 'Not Connected'}
-          </Badge>
-          <Badge variant="outline">VAT Returns</Badge>
-          <Badge variant="outline">Payroll Submissions</Badge>
-          <Badge variant="outline">Corporation Tax</Badge>
-          <Badge variant="outline">Income Tax</Badge>
-          <Badge variant="outline">Making Tax Digital</Badge>
-        </div>
       </div>
 
-      {!isConnected ? (
-        <>
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <LinkIcon className="h-5 w-5" />
-                Connect to HMRC
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <HMRCFilingBanner />
-                
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="font-semibold mb-2">Planned (not available yet):</h3>
-                    <ul className="text-sm text-gray-600 space-y-1">
-                      <li>• VAT return filing</li>
-                      <li>• Payroll RTI filing (FPS/EPS)</li>
-                      <li>• Corporation Tax and Self Assessment filing</li>
-                      <li>• Obligations and deadlines read from HMRC</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-2">Requirements:</h3>
-                    <ul className="text-sm text-gray-600 space-y-1">
-                      <li>• HMRC Government Gateway account</li>
-                      <li>• Making Tax Digital enrollment</li>
-                      <li>• Valid UTR or VAT number</li>
-                      <li>• Agent authorization (if applicable)</li>
-                    </ul>
-                  </div>
-                </div>
-                
-                <Button 
-                  onClick={handleConnectHMRC} 
-                  disabled={loading || connectionStatus === 'connecting'}
-                  className="w-full md:w-auto"
-                >
-                  {connectionStatus === 'connecting' ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                   Connecting to HMRC...
-                    </>
-                  ) : (
-                    <>
-                      <LinkIcon className="h-4 w-4 mr-2" />
-                      Connect to HMRC Government Gateway
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      <div className="mb-6"><HMRCConnectionPanel /></div>
 
-          <HMRCSettings onDisconnect={handleDisconnectHMRC} />
-        </>
-      ) : (
-        <Tabs defaultValue="dashboard" className="space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 max-w-3xl">
-              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger value="vat">VAT Returns</TabsTrigger>
-              <TabsTrigger value="payroll">Payroll</TabsTrigger>
-              <TabsTrigger value="tax">Tax Returns</TabsTrigger>
-              <TabsTrigger value="obligations">Obligations</TabsTrigger>
-              <TabsTrigger value="settings">Settings</TabsTrigger>
-            </TabsList>
-            
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleDisconnectHMRC}
-            >
-              Disconnect HMRC
-            </Button>
+      <Tabs defaultValue="dashboard" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 max-w-3xl">
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="vat">VAT Returns</TabsTrigger>
+          <TabsTrigger value="payroll">Payroll</TabsTrigger>
+          <TabsTrigger value="tax">Tax Returns</TabsTrigger>
+          <TabsTrigger value="obligations">Obligations</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="dashboard">
+          <div className="grid gap-6">
+            <HMRCFilingBanner />
+            <Card>
+              <CardHeader><CardTitle>What works today</CardTitle></CardHeader>
+              <CardContent>
+                <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                  <li>Connect your company to HMRC's test environment (owners and admins)</li>
+                  <li>Save your business details (Settings tab)</li>
+                  <li>Preview VAT, payroll and tax return layouts with example figures ({PREVIEW_ONLY.toLowerCase()})</li>
+                  <li>Filing VAT, payroll (FPS/EPS) and tax returns with HMRC: not available yet</li>
+                </ul>
+              </CardContent>
+            </Card>
           </div>
+        </TabsContent>
+        <TabsContent value="vat"><HMRCVATReturns /></TabsContent>
+        <TabsContent value="payroll"><HMRCPayrollSubmissions /></TabsContent>
+        <TabsContent value="tax"><HMRCTaxReturns /></TabsContent>
+        <TabsContent value="obligations"><HMRCObligations /></TabsContent>
+        <TabsContent value="settings"><HMRCSettings showConnection={false} /></TabsContent>
+      </Tabs>
 
-          <TabsContent value="dashboard">
-            <div className="grid gap-6">
-              <HMRCFilingBanner />
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <div>
-                      <p className="font-semibold">HMRC sign-in saved</p>
-                      <p className="text-sm text-muted-foreground">
-                        Your HMRC connection details are stored for when filing becomes available. Nothing has been filed.
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader><CardTitle>What works today</CardTitle></CardHeader>
-                <CardContent>
-                  <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-                    <li>Save your company and HMRC details (Settings tab)</li>
-                    <li>Preview VAT, payroll and tax return layouts with example figures ({PREVIEW_ONLY.toLowerCase()})</li>
-                    <li>Filing VAT, payroll (FPS/EPS) and tax returns with HMRC: not available yet</li>
-                  </ul>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="vat">
-            <HMRCVATReturns />
-          </TabsContent>
-
-          <TabsContent value="payroll">
-            <HMRCPayrollSubmissions />
-          </TabsContent>
-
-          <TabsContent value="tax">
-            <HMRCTaxReturns />
-          </TabsContent>
-
-          <TabsContent value="obligations">
-            <HMRCObligations />
-          </TabsContent>
-
-          <TabsContent value="settings">
-            <HMRCSettings onDisconnect={handleDisconnectHMRC} />
-          </TabsContent>
-        </Tabs>
-      )}
-
-      {/* Add submission logs section when connected */}
-      {isConnected && (
-        <div className="mt-6">
-          <HMRCSubmissionLogs />
-        </div>
-      )}
+      <div className="mt-6"><HMRCSubmissionLogs /></div>
 
       {/* Help & Resources Section */}
       <Card className="mt-6 bg-muted/30">

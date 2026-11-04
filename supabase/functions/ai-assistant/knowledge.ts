@@ -166,7 +166,7 @@ The Integration Hub allows users to connect external services:
 ## HMRC (UK tax)
 - HMRC filing is not available yet. Nothing is sent to HMRC: no VAT returns, no Corporation Tax or Self Assessment
   returns, no payroll RTI (FPS/EPS). Never tell a user they can file or have filed with HMRC through B2BNEST.
-- Users can save company and HMRC details (VAT number, UTR, PAYE reference) and connect an HMRC sign-in for later use
+- Users can save business details (VAT number, UTR, PAYE reference). An owner or admin of a company can connect the company to HMRC's test environment ("Sandbox (test)") from Business Tools → HMRC Integration or Settings → HMRC; other members see the status only. Nobody needs an HMRC developer account, Client ID or Client Secret: B2BNEST uses its own HMRC application. Connecting reads nothing from HMRC and files nothing yet
 - The VAT, payroll and tax return screens show example figures, labelled "Preview only"
 - To file, users must go to HMRC directly or use their accountant
 
