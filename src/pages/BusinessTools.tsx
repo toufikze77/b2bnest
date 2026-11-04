@@ -107,10 +107,11 @@ const BusinessTools = () => {
     {
       id: 'hmrc-integration' as ToolType,
       title: 'HMRC Integration Suite',
-      description: 'Save your HMRC details and preview VAT, payroll and tax returns. HMRC filing is not available yet.',
+      // docs/hmrc-plan: a Business and Scale feature (and on the 14-day trial), worded like Workflow Studio.
+      description: "Connect your company to HMRC's test environment and preview VAT, payroll and tax returns. Filing is not available yet. Included in Business and Scale, and during the 14-day trial.",
       icon: Building2,
       color: 'bg-gradient-to-r from-green-600 to-blue-600',
-      benefits: ['VAT return previews', 'Payroll (FPS/EPS) previews', 'Corporation Tax previews', 'HMRC connection settings', 'Filing: not available yet']
+      benefits: ['HMRC connection (test environment)', 'VAT, payroll and tax return previews', 'Filing: not available yet', 'Business and Scale plans']
     },
     {
       id: 'workflow-studio' as ToolType,

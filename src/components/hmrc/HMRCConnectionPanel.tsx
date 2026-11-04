@@ -19,6 +19,7 @@ export default function HMRCConnectionPanel() {
   const [status, setStatus] = useState<HmrcStatus | null>(null);
   const [busy, setBusy] = useState<'connect' | 'disconnect' | null>(null);
   const [said, setSaid] = useState('');
+  const isAdmin = organization?.role === 'owner' || organization?.role === 'admin';
 
   const load = useCallback(async () => {
     if (!organizationId) { setStatus(null); return; }
@@ -65,7 +66,10 @@ export default function HMRCConnectionPanel() {
       case 'ended':
         return (
           <p className="text-sm" data-testid="hmrc-ended">
-            {messageFor(status.reason)}{status.reason === 'trial_ended' && <> <Link to="/pricing" className="font-medium text-primary underline underline-offset-4">See plans</Link></>}
+            {messageFor(status.reason)}
+            {status.reason !== 'suspended' && (isAdmin
+              ? <> <Link to="/pricing" className="font-medium text-primary underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">See plans</Link></>
+              : <> Ask an owner or admin of {organization?.name ?? 'your company'} about the plan. <Link to="/pricing" className="font-medium text-primary underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">See plans</Link></>)}
           </p>
         );
       case 'error':

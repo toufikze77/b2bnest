@@ -96,6 +96,9 @@ export const PLANS: Plan[] = [
       // Phase 19 (owner decision 28 Oct 2026): workflows are in Business and Scale, not Solo. Enforced on the server
       // (supabase/functions/_shared/workflow-access.ts); everyone can use them during the 14-day trial.
       'Workflow Studio: one-click email workflows',
+      // docs/hmrc-plan (owner decision): HMRC tools are in Business and Scale, not Solo; everyone has them during the
+      // 14-day trial. Enforced on the server (hmrc_manage_allowed → plan_not_included).
+      'HMRC Integration: connect your company to HMRC (filing not available yet)',
     ],
     cta: 'Subscribe',
     popular: true,
@@ -112,7 +115,7 @@ export const PLANS: Plan[] = [
     admins: 10,
     aiCredits: 5000,
     features: [
-      'Everything in Business, including Workflow Studio',
+      'Everything in Business, including Workflow Studio and HMRC Integration',
       'Higher user, admin and AI credit limits',
     ],
     cta: 'Subscribe',

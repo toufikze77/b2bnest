@@ -28,7 +28,7 @@ const Help = () => {
     },
     {
       question: "How do I connect my HMRC account?",
-      answer: "An owner or admin of your company goes to Business Tools → HMRC Integration (or Settings → HMRC) and chooses 'Connect to HMRC', then signs in on HMRC's own page. For now this connects to HMRC's test environment, labelled 'Sandbox (test)'. You don't need an HMRC developer account or any keys: B2BNEST uses its own HMRC application. Other members of the company can see whether it is connected. Filing with HMRC is not available yet."
+      answer: "An owner or admin of your company goes to Business Tools → HMRC Integration (or Settings → HMRC) and chooses 'Connect to HMRC', then signs in on HMRC's own page. For now this connects to HMRC's test environment, labelled 'Sandbox (test)'. You don't need an HMRC developer account or any keys: B2BNEST uses its own HMRC application. Other members of the company can see whether it is connected. HMRC Integration is included in the Business and Scale plans, and every new account can use it during the 14-day trial; Solo doesn't include it. Only the connection is available: filing with HMRC is not available yet."
     },
     {
       question: "How do I configure email notifications?",

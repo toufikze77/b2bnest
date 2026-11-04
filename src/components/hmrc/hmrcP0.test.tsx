@@ -167,6 +167,44 @@ describe('who sees what', () => {
   });
 });
 
+describe('plan_not_included (docs/hmrc-plan): Business and Scale only', () => {
+  it('owner or admin on Solo: the plan message with See plans; no connect button, no status, no figures', async () => {
+    status({ access: 'plan_not_included', can_manage: false });
+    const { container } = show(<HMRCConnectionPanel />);
+    const box = await screen.findByTestId('hmrc-ended');
+    expect(box).toHaveTextContent('HMRC tools are included in the Business and Scale plans.');
+    expect(within(box).getByRole('link', { name: 'See plans' })).toHaveAttribute('href', '/pricing');
+    expect(box).not.toHaveTextContent('Ask an owner or admin');
+    expect(screen.queryByRole('button')).toBeNull();
+    expect(screen.queryByTestId('hmrc-status')).toBeNull();
+    expect(container.textContent).not.toMatch(/£|Connected by/);
+  });
+
+  it('member of a company on Solo: the plan message and "Ask an owner or admin", no buttons', async () => {
+    st.memberships = [{ organizationId: CO, name: 'A Ltd', role: 'member' }];
+    status({ access: 'plan_not_included', can_manage: false });
+    show(<HMRCConnectionPanel />);
+    const box = await screen.findByTestId('hmrc-ended');
+    expect(box).toHaveTextContent('HMRC tools are included in the Business and Scale plans. Ask an owner or admin of A Ltd about the plan.');
+    expect(within(box).getByRole('link', { name: 'See plans' })).toBeInTheDocument();
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('a refusal from the functions (plan changed meanwhile) is announced with the same words', async () => {
+    status();
+    st.invoke.mockResolvedValue(fnError(403, { ok: false, code: 'plan_not_included', message: 'HMRC tools are included in the Business and Scale plans.' }));
+    show(<HMRCConnectionPanel />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Connect to HMRC' }));
+    await waitFor(() => expect(screen.getByTestId('hmrc-announce')).toHaveTextContent('HMRC tools are included in the Business and Scale plans.'));
+  });
+
+  it('Settings → HMRC shows the same message', async () => {
+    status({ access: 'plan_not_included', can_manage: false });
+    show(<HMRCSettings />);
+    expect(await screen.findByTestId('hmrc-ended')).toHaveTextContent('HMRC tools are included in the Business and Scale plans.');
+  });
+});
+
 describe('Settings → HMRC', () => {
   it('no HMRC credential fields and no sandbox switch; the business details remain', async () => {
     status();
