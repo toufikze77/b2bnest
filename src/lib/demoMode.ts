@@ -7,6 +7,8 @@
 // For a person who is not view only nothing here changes anything.
 
 export const DEMO_READONLY_MESSAGE = 'This is a demo account. It is view only.';
+// Internal-only demo for now. Set to true to show the 'view only' banner to demo visitors.
+export const SHOW_DEMO_BANNER = false;
 export const DEMO_BANNER_TEXT = 'Demo account: view only. Sign up free to try it with your own data.';
 
 let demoNow = false;

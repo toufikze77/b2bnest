@@ -22,6 +22,9 @@ vi.mock('@/integrations/supabase/client', () => ({
   },
 }));
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: st.user, loading: false }) }));
+// The banner is switched off by default (SHOW_DEMO_BANNER); these tests check it as it would show when switched on.
+// vi.mock is hoisted to the whole file; the Security tests below do not depend on the flag.
+vi.mock('@/lib/demoMode', async (orig) => ({ ...(await orig<typeof import('@/lib/demoMode')>()), SHOW_DEMO_BANNER: true }));
 vi.mock('@/components/twoStep/TwoStepSetup', () => ({ default: () => <div data-testid="two-step-setup">Two-step setup</div> }));
 
 import { DemoModeProvider } from '@/contexts/DemoModeContext';
