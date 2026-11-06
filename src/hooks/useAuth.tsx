@@ -3,6 +3,7 @@ import { confirmationRedirect } from '@/lib/onboarding';
 import { useState, useEffect, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { DEMO_READONLY_MESSAGE, isDemoNow } from '@/lib/demoMode';
 
 type AuthContextType = {
   user: User | null;
@@ -113,7 +114,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Sign out
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // Demo read-only: the demo login is shared, so sign out this device only (the default signs out every session).
+    await supabase.auth.signOut(isDemoNow() ? { scope: 'local' } : undefined);
     setUser(null);
     setSession(null);
   };
@@ -147,6 +149,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Update password
   const updatePassword = async (password: string) => {
+    // Demo read-only: Supabase Auth is not covered by the database guard, so the app does not offer it.
+    if (isDemoNow()) return { error: { message: DEMO_READONLY_MESSAGE } };
     const { error } = await supabase.auth.updateUser({ password });
     return { error };
   };

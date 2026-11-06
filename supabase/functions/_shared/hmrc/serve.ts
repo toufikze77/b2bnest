@@ -2,6 +2,7 @@
 // body, a header or an HMRC response.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { corsHeaders } from '../cors.ts';
+import { guardedDenoServe } from '../demo-guard.ts';
 import type { HandlerDeps } from './handlers.ts';
 import type { HandlerResult } from './errors.ts';
 import { fail } from './errors.ts';
@@ -34,7 +35,8 @@ export function realDeps(name: string): HandlerDeps {
 }
 
 export function serveHmrc(name: string, handler: (auth: string | null, body: Record<string, unknown>, deps: HandlerDeps) => Promise<HandlerResult>) {
-  Deno.serve(async (req) => {
+  // Demo read-only: a demo person is refused (403) before any HMRC check (docs/demo-readonly).
+  guardedDenoServe(async (req) => {
     if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
     if (req.method !== 'POST') return json({ status: 405, body: { ok: false, code: 'bad_request' } });
     try {

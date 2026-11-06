@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 import { encrypt } from '../shared/crypto.ts'
 import { verifyOAuthState } from '../_shared/oauth-state.ts'
+import { demoRefusal } from '../_shared/demo-guard.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,6 +25,8 @@ Deno.serve(async (req) => {
 
     let userId: string
     try { userId = await verifyOAuthState(state) } catch { throw new Error('Invalid OAuth state') }
+    // Demo read-only: never store a connection for a demo person (docs/demo-readonly).
+    { const demo = await demoRefusal(userId, corsHeaders); if (demo) return demo; }
 
 
     const consumerKey = Deno.env.get('TWITTER_CONSUMER_KEY')

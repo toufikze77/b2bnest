@@ -4,10 +4,11 @@ import { corsHeaders } from '../_shared/cors.ts';
 import { fail, type HandlerResult } from '../_shared/hmrc/errors.ts';
 import { realDeps } from '../_shared/hmrc/serve.ts';
 import { testCall } from '../_shared/hmrc/testCall.ts';
+import { guardedDenoServe } from '../_shared/demo-guard.ts'; // Demo read-only: demo people get 403 (docs/demo-readonly)
 
 const json = (r: HandlerResult) => new Response(JSON.stringify(r.body), { status: r.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-Deno.serve(async (req) => {
+guardedDenoServe(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   if (req.method !== 'POST') return json({ status: 405, body: { ok: false, code: 'bad_request' } });
   try {

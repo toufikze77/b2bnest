@@ -1,4 +1,7 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { serve as stdServe } from "https://deno.land/std@0.190.0/http/server.ts";
+import { guardedServe } from '../_shared/demo-guard.ts';
+// Demo read-only: a demo person is refused (403) before the handler runs (docs/demo-readonly).
+const serve = guardedServe(stdServe);
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { type BeginResult, startTopupCheckout } from "./handler.ts";

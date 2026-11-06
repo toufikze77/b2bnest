@@ -5,6 +5,7 @@ import RouteFallback from "@/components/shell/RouteFallback";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/hooks/useAuth";
+import { DemoModeProvider } from "@/contexts/DemoModeContext";
 import { AssuranceProvider } from "@/components/twoStep/AssuranceProvider";
 import TwoStepGate from "@/components/twoStep/TwoStepGate";
 import LegacyTwoStepPrompt from "@/components/twoStep/LegacyTwoStepPrompt";
@@ -114,6 +115,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <DemoModeProvider>
         <AssuranceProvider>
         <OrganizationProvider>
         <UserSettingsProvider>
@@ -248,6 +250,7 @@ function App() {
         </UserSettingsProvider>
         </OrganizationProvider>
         </AssuranceProvider>
+        </DemoModeProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

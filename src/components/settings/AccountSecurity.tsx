@@ -6,6 +6,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import TwoStepSetup from '@/components/twoStep/TwoStepSetup';
+import { useDemoMode } from '@/contexts/demoModeState';
+import { DemoReadonlyNote } from '@/components/demo/DemoBanner';
 
 type Load<T> = { state: 'loading' } | { state: 'error'; message: string } | { state: 'ready'; data: T };
 
@@ -17,6 +19,7 @@ interface AuditRow { id: string; action: string; resource_type: string | null; c
  */
 const AccountSecurity = () => {
   const { user } = useAuth();
+  const { isDemo } = useDemoMode();
   const { toast } = useToast();
   const [activity, setActivity] = useState<Load<AuditRow[]>>({ state: 'loading' });
   const [signingOut, setSigningOut] = useState(false);
@@ -42,7 +45,8 @@ const AccountSecurity = () => {
   return (
     <div className="space-y-6">
       {/* Phase 25: real two-step sign-in (authenticator app, checked by Supabase Auth). */}
-      <TwoStepSetup />
+      {/* Demo read-only: two-step setup and "sign out other devices" change the shared demo login, so they are not offered. */}
+      {isDemo ? <DemoReadonlyNote what="Two-step sign-in" /> : <TwoStepSetup />}
 
       <Card>
         <CardHeader>
@@ -52,10 +56,10 @@ const AccountSecurity = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button variant="outline" onClick={signOutOthers} disabled={signingOut} className="gap-2">
+          {isDemo ? <DemoReadonlyNote what="Signing out other devices" /> : <Button variant="outline" onClick={signOutOthers} disabled={signingOut} className="gap-2">
             {signingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
             Sign out other devices
-          </Button>
+          </Button>}
         </CardContent>
       </Card>
 

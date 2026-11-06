@@ -1,4 +1,7 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { serve as stdServe } from "https://deno.land/std@0.190.0/http/server.ts";
+import { guardedServe } from '../_shared/demo-guard.ts';
+// Demo read-only: a demo person is refused (403) before the handler runs (docs/demo-readonly).
+const serve = guardedServe(stdServe);
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { escapeHtml, escapeHtmlMultiline } from "../_shared/html.ts";

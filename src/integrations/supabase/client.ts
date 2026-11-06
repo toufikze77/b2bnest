@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { brokeredPreviewStorage } from './previewAuthStorage';
 import { supabaseConfig } from './config';
+import { demoAwareFetch } from '@/lib/demoMode';
 
 // Public values only: the project URL and the publishable (anon) key, from .env.production (or Vercel's settings).
 // When they are missing, importing this module must not throw (main.tsx shows a readable "can't start" screen instead),
@@ -34,6 +35,8 @@ export const supabase: SupabaseClient<Database> = supabaseConfig.ok
         storage: brokeredPreviewStorage(),
         persistSession: true,
         autoRefreshToken: true,
-      }
+      },
+      // Demo read-only: notices a demo refusal (403) so failure toasts can say so (src/lib/demoMode.ts).
+      global: { fetch: demoAwareFetch((...args: Parameters<typeof fetch>) => fetch(...args)) },
     })
   : unconfigured();

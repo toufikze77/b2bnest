@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useDemoMode } from '@/contexts/demoModeState';
+import { DemoReadonlyNote } from '@/components/demo/DemoBanner';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
@@ -21,6 +23,7 @@ import { COUNTRIES, LANGUAGES, TIMEZONES, DATE_FORMATS, TIME_FORMATS, UserSettin
 
 const AccountSettings = () => {
   const { user, updatePassword } = useAuth();
+  const { isDemo } = useDemoMode();
   // Saving goes through the shared settings context so every screen picks up the new currency at once.
   const { updateSettings: saveSharedSettings } = useUserSettings();
   const [currentPassword, setCurrentPassword] = useState('');
@@ -243,6 +246,7 @@ const AccountSettings = () => {
 
       <TabsContent value="security" className="space-y-6">
         {/* Password Reset Section */}
+        {isDemo ? <DemoReadonlyNote what="Change password" /> : (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -305,6 +309,7 @@ const AccountSettings = () => {
             </form>
           </CardContent>
         </Card>
+        )}
 
         {/* Two-step sign-in (Phase 25): set up in Settings → Security; the status is the real verified-factor state. */}
         <TwoStepSummary />

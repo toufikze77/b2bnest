@@ -1,5 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { serve as stdServe } from "https://deno.land/std@0.224.0/http/server.ts";
+import { guardedServe } from '../_shared/demo-guard.ts';
+// Demo read-only: a demo person is refused (403) before the handler runs (docs/demo-readonly).
+const serve = guardedServe(stdServe);
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { corsHeaders } from "../_shared/cors.ts";
 
