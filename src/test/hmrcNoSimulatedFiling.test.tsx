@@ -10,6 +10,8 @@ import { HMRC_FILING_UNAVAILABLE } from '@/components/hmrc/filingStatus';
 
 // HMRC filing is not built. No screen may simulate a successful filing, invent a reference, or record "submitted".
 vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast: vi.fn() }), toast: vi.fn() }));
+// HMRC P3: the Obligations screen reads the active company (none here, so it calls nothing).
+vi.mock('@/contexts/OrganizationContext', () => ({ useActiveOrganization: () => ({ organizationId: null, organization: null, memberships: [], loading: false }) }));
 
 const SRC = path.resolve(__dirname, '..');
 function files(dir: string): string[] {

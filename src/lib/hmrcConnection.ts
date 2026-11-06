@@ -31,6 +31,12 @@ export const HMRC_CODE_MESSAGES: Record<string, string> = {
   test_limit: 'You can run 10 HMRC tests an hour for this company. Please try again later.',
   hmrc_busy: 'HMRC is busy right now. Please try again in a minute.',
   scope_missing: 'Connect to HMRC again to run this test: the test needs one more permission from HMRC (test environment only).',
+  // HMRC P3: VAT obligations (same wording as supabase/functions/_shared/hmrc/errors.ts).
+  vrn_missing: 'Add your VAT number in Settings → HMRC first.',
+  obligations_limit: 'You can get VAT obligations 10 times an hour for this company. Please try again later.',
+  vrn_invalid: "HMRC didn't accept this VAT number. Check it in Settings → HMRC.",
+  vat_not_authorised: "HMRC says this HMRC sign-in can't see VAT for this VAT number. Check the VAT number, or connect again with the HMRC account that owns it.",
+  vat_insolvent: "HMRC can't show VAT obligations for this business through this service.",
 };
 export const messageFor = (code: string | undefined) => HMRC_CODE_MESSAGES[code ?? ''] ?? HMRC_CODE_MESSAGES.server_error;
 
@@ -49,7 +55,7 @@ export type HmrcStatus =
   | { kind: 'two_step' }
   | { kind: 'ended'; reason: 'trial_ended' | 'suspended' | 'plan_not_included' }
   | { kind: 'error' }
-  | { kind: 'ok'; canManage: boolean; connection: HmrcConnectionInfo | null };
+  | { kind: 'ok'; canManage: boolean; connection: HmrcConnectionInfo | null; production?: boolean };
 
 type DbError = { code?: string; message?: string } | null;
 const isMissing = (e: DbError) => !!e && (e.code === 'PGRST202' || e.code === '42883' || /could not find the function/i.test(e.message ?? ''));
@@ -69,7 +75,9 @@ export async function fetchHmrcStatus(companyId: string): Promise<HmrcStatus> {
     if (!d) return { kind: 'error' };
     if (d.access === 'trial_ended' || d.access === 'suspended' || d.access === 'plan_not_included') return { kind: 'ended', reason: d.access };
     const connection = (d.connections ?? []).find((c) => c.environment === 'sandbox') ?? null;
-    return { kind: 'ok', canManage: !!d.can_manage, connection };
+    // HMRC P3: a production connection can't exist yet (production is refused); if one ever does, say so.
+    const production = (d.connections ?? []).some((c) => c.environment === 'production' && c.status !== 'disconnected');
+    return { kind: 'ok', canManage: !!d.can_manage, connection, production };
   } catch {
     return { kind: 'error' };
   }
@@ -81,10 +89,13 @@ export interface FnResult {
   ok: boolean; code?: string; message?: string | null; url?: string; status?: string; company_id?: string;
   /** hmrc-test-call */
   kind?: string; result?: HmrcHeaderCheck; omitted?: string[]; sent?: string[]; hmrc_code?: string | null;
+  /** hmrc-vat-obligations */
+  obligations?: VatObligation[]; fetched_at?: string; vrn_last3?: string;
 }
+export interface VatObligation { periodKey: string; start: string; end: string; due: string; status: 'O' | 'F'; received: string | null }
 
 /** Calls one HMRC Edge Function and returns its JSON, or a not-set-up result when it isn't deployed yet. */
-export async function callHmrcFunction(name: 'hmrc-connect-start' | 'hmrc-connect-complete' | 'hmrc-disconnect' | 'hmrc-test-call', body: Record<string, unknown>): Promise<FnResult> {
+export async function callHmrcFunction(name: 'hmrc-connect-start' | 'hmrc-connect-complete' | 'hmrc-disconnect' | 'hmrc-test-call' | 'hmrc-vat-obligations', body: Record<string, unknown>): Promise<FnResult> {
   try {
     const { data, error } = await supabase.functions.invoke(name, { body });
     if (!error) return (data as FnResult) ?? { ok: false, code: 'server_error' };

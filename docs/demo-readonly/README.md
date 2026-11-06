@@ -106,7 +106,7 @@ All of them use one helper, `supabase/functions/_shared/demo-guard.ts`.
 | send-contact-email, send-document-email, send-invitation-email, send-task-notification, sync-note-to-email | **refuse** | They send email |
 | share-project, share-task | **refuse** | They share and send |
 | workflow-execute, workflow-send-email, workflow-linkedin-post, workflow-twitter-post | **refuse** | They run workflows, send and post |
-| hmrc-connect-start, hmrc-connect-complete, hmrc-disconnect, hmrc-test-call | **refuse** | HMRC connect, disconnect and test. Refused in the shared `serveHmrc` before any HMRC check; nothing else in HMRC changed. |
+| hmrc-connect-start, hmrc-connect-complete, hmrc-disconnect, hmrc-test-call, hmrc-vat-obligations (HMRC P3) | **refuse** | HMRC connect, disconnect and test. Refused in the shared `serveHmrc` before any HMRC check; nothing else in HMRC changed. |
 | sign-oauth-state, oauth-gmail-init, oauth-twitter-request | **refuse** | Start a connection |
 | oauth-facebook, oauth-gmail-callback, oauth-google-calendar, oauth-icloud-calendar, oauth-linkedin, oauth-onedrive, oauth-outlook-calendar, oauth-twitter | **refuse** (`demoRefusal`) | OAuth callbacks. The person comes from the signed state, and the check runs before tokens are stored. |
 | store-twitter-credentials, whatsapp-connect, whatsapp-disconnect, truelayer-integration | **refuse** | Connect or disconnect |

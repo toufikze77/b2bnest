@@ -10,7 +10,7 @@ const FIELDS: { key: keyof HMRCBusinessDetails; label: string; hint?: string }[]
   { key: 'companyName', label: 'Company name' },
   { key: 'companyNumber', label: 'Company number' },
   { key: 'utr', label: 'Unique Taxpayer Reference (UTR)' },
-  { key: 'vatNumber', label: 'VAT registration number' },
+  { key: 'vatNumber', label: 'VAT registration number', hint: 'Used to read VAT obligations from HMRC: 9 digits (GB and spaces are fine). In the test environment, use your HMRC test user\'s VAT number.' },
   { key: 'payeReference', label: 'Employer PAYE reference' },
 ];
 
@@ -42,7 +42,9 @@ export default function HMRCSettings({ showConnection = true }: { showConnection
             {FIELDS.map((f) => (
               <div key={f.key} className="space-y-1">
                 <Label htmlFor={`hmrc-${f.key}`}>{f.label}</Label>
-                <Input id={`hmrc-${f.key}`} value={details[f.key]} maxLength={120} onChange={(e) => setDetails((d) => ({ ...d, [f.key]: e.target.value }))} />
+                <Input id={`hmrc-${f.key}`} value={details[f.key]} maxLength={120} aria-describedby={f.hint ? `hmrc-${f.key}-hint` : undefined}
+                  onChange={(e) => setDetails((d) => ({ ...d, [f.key]: e.target.value }))} />
+                {f.hint && <p id={`hmrc-${f.key}-hint`} className="text-xs text-muted-foreground">{f.hint}</p>}
               </div>
             ))}
           </div>
