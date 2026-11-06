@@ -33,9 +33,11 @@ describe('supabase/functions', () => {
   });
 
   // send-document-email is what production already runs flattened (index.ts, handler.ts, wse_handler.ts, wse_smtp.ts).
+  // Demo read-only: send-document-email also carries the demo guard (docs/demo-readonly), so two shared files are added.
   it.each(['onboarding-email-sender', 'support-email-sender', 'send-document-email'])('%s flattens to the production layout', (name) => {
     const files = flattenFunction(name);
-    expect(Object.keys(files).sort()).toEqual(['handler.ts', 'index.ts', 'wse_handler.ts', 'wse_smtp.ts']);
+    const demo = name === 'send-document-email' ? ['shared_cors.ts', 'shared_demo-guard.ts'] : [];
+    expect(Object.keys(files).sort()).toEqual(['handler.ts', 'index.ts', ...demo, 'wse_handler.ts', 'wse_smtp.ts'].sort());
     expect(files['wse_smtp.ts']).toContain('from "./wse_handler.ts"');
     expect(files['wse_handler.ts']).toBe(fs.readFileSync(path.join(FUNCTIONS_DIR, 'workflow-send-email', 'handler.ts'), 'utf8'));
   });

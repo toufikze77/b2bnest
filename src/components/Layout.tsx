@@ -6,6 +6,7 @@ import { AppShell } from '@/components/shell/AppShell';
 import RouteFallback from '@/components/shell/RouteFallback';
 import { useAuth } from '@/hooks/useAuth';
 import { isAppShellPath } from '@/lib/appShellRoutes';
+import DemoBanner from '@/components/demo/DemoBanner';
 
 interface LayoutProps {
   children: ReactNode;
@@ -32,6 +33,7 @@ const Layout = ({ children }: LayoutProps) => {
   if (isAppRoute && user) {
     return (
       <div className="min-h-screen bg-background">
+        <DemoBanner />
         <AppShell>{children}</AppShell>
         <WelcomeTour />
       </div>
@@ -40,6 +42,7 @@ const Layout = ({ children }: LayoutProps) => {
 
   return (
     <div className="min-h-screen bg-background">
+      <DemoBanner />
       <Header />
       <main>{children}</main>
       <WelcomeTour />

@@ -1,7 +1,10 @@
 // NOT DEPLOYED (Phase 4b). Deploy only after the owner approves; see docs/phase4b-document-email/README.md.
 // Needs the document_email_log table (docs/phase4b-document-email/proposal.sql), DOCUMENT_EMAIL_ENABLED=true and the
 // account listed in DOCUMENT_EMAIL_ALLOWED_USERS (unset = nobody may send).
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { serve as stdServe } from "https://deno.land/std@0.190.0/http/server.ts";
+import { guardedServe } from '../_shared/demo-guard.ts';
+// Demo read-only: a demo person is refused (403) before the handler runs (docs/demo-readonly).
+const serve = guardedServe(stdServe);
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { makeHandler, type DocRow } from "./handler.ts";
 import { sendSmtp } from "../workflow-send-email/smtp.ts";

@@ -1,4 +1,5 @@
 import * as React from "react"
+import { demoToastProps } from "@/lib/demoMode"
 
 import type {
   ToastActionElement,
@@ -139,7 +140,9 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
-function toast({ ...props }: Toast) {
+function toast({ ...input }: Toast) {
+  // Demo read-only: a failure caused by the demo guard says so, in one place for every screen.
+  const props = demoToastProps(input)
   const id = genId()
 
   const update = (props: ToasterToast) =>

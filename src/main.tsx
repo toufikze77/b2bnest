@@ -3,6 +3,11 @@ import { supabaseConfig } from './integrations/supabase/config'
 import { MissingConfigScreen } from './components/MissingConfigScreen'
 import { isChunkLoadError, reloadOnceForNewVersion } from './lib/lazyPage'
 import './index.css'
+import { toast as sonnerToast } from 'sonner'
+import { installSonnerDemoMapping } from './lib/demoMode'
+
+// Demo read-only: sonner failure toasts caused by the demo guard say so (src/lib/demoMode.ts).
+installSonnerDemoMapping(sonnerToast);
 
 const root = createRoot(document.getElementById("root")!);
 

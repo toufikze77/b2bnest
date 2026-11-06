@@ -15,10 +15,13 @@ import { Button } from '@/components/ui/button';
 import { User, Bell, Building2, CreditCard, ShieldCheck, ArrowRight, Lock, Users, FileLock2 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { PageContainer } from '@/components/ui/page-container';
+import { useDemoMode } from '@/contexts/demoModeState';
+import { DemoReadonlyNote } from '@/components/demo/DemoBanner';
 
 const TABS = ['account', 'security', 'billing', 'notifications', 'hmrc', 'members', 'company-security', 'companies'] as const;
 
 const Settings = () => {
+  const { isDemo } = useDemoMode();
   const [params, setParams] = useSearchParams();
   const requested = params.get('tab');
   const tab = TABS.includes(requested as typeof TABS[number]) ? requested! : 'account';
@@ -53,9 +56,14 @@ const Settings = () => {
 
         <TabsContent value="account"><AccountSettings /></TabsContent>
         <TabsContent value="security"><AccountSecurity /></TabsContent>
-        <TabsContent value="members" className="space-y-4"><CompanyMembers /><InviteMembers /></TabsContent>
+        <TabsContent value="members" className="space-y-4"><CompanyMembers />{isDemo ? <DemoReadonlyNote what="Inviting members" /> : <InviteMembers />}</TabsContent>
         <TabsContent value="company-security"><CompanySecurity /></TabsContent>
-        <TabsContent value="billing"><BillingSettings /></TabsContent>
+        <TabsContent value="billing">
+          {/* Demo read-only: the plan is shown; its buttons are disabled (checkout and portal are refused by the server too). */}
+          {isDemo ? (
+            <div className="space-y-4"><DemoReadonlyNote what="Billing" /><fieldset disabled className="min-w-0" aria-label="Billing (view only)"><BillingSettings /></fieldset></div>
+          ) : <BillingSettings />}
+        </TabsContent>
         <TabsContent value="notifications" className="space-y-4"><InAppNotificationPreferences /><NotificationPreferences /><MarketingConsentSwitch /></TabsContent>
         <TabsContent value="hmrc"><HMRCSettings /></TabsContent>
         <TabsContent value="companies">

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { isDemoReadonlyError } from '@/lib/demoMode';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
@@ -29,7 +30,8 @@ export default function SupportPortal() {
     if (!user) return;
     (async () => {
       try {
-        await svc.claimInvitations();
+        // Demo read-only: a demo person's invitation is not claimed (the database refuses it); the portal still loads.
+        await svc.claimInvitations().catch((e: unknown) => { if (!isDemoReadonlyError(e)) throw e; });
         const rows = await svc.myCustomerCompanies(user.id);
         const s = (await Promise.all(rows.map((r) => svc.getSettings(r.organization_id)))).filter(Boolean) as svc.SupportSettings[];
         if (token !== latest.current) return;

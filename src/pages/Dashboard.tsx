@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
+import { useDemoMode } from '@/contexts/demoModeState';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import {
   ActivationStep, ADMIN_ROLES, buildActivationSteps, dismissKey, hasRole, projectDeadlines, ROTA_ROLES, summarizeProjects,
@@ -67,6 +68,7 @@ function StepList({ heading, note, steps }: { heading: string; note?: string; st
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { isDemo } = useDemoMode();
   const { organizationId, organization, loading: orgLoading } = useActiveOrganization();
   const data = useDashboardData(user?.id, organizationId);
   const role = organization?.role ?? null;
@@ -160,6 +162,8 @@ const Dashboard = () => {
               <Button ref={customiseBtn} variant="outline" className="min-h-touch" onClick={() => setCustomiseOpen(true)}>
                 <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />Customise dashboard
               </Button>
+              {/* Demo read-only: no Quick add for a demo person. */}
+              {!isDemo && (
               <Popover>
                 <PopoverTrigger asChild>
                   <Button className="min-h-touch"><Plus className="h-4 w-4" aria-hidden="true" />Quick add</Button>
@@ -178,6 +182,7 @@ const Dashboard = () => {
                   </nav>
                 </PopoverContent>
               </Popover>
+              )}
             </>
           )}
           className="mb-0"

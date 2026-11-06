@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 import { verifyOAuthState } from '../_shared/oauth-state.ts'
+import { demoRefusal } from '../_shared/demo-guard.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -39,6 +40,8 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+    // Demo read-only: never store a connection for a demo person (docs/demo-readonly).
+    { const demo = await demoRefusal(userId, corsHeaders); if (demo) return demo; }
 
     // Initialize Supabase client to get user's stored credentials
     const supabase = createClient(

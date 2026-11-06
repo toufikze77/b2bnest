@@ -2,6 +2,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { encrypt } from '../shared/crypto.ts';
 import { corsHeaders } from '../_shared/cors.ts';
 import { verifyOAuthState } from '../_shared/oauth-state.ts';
+import { demoRefusal } from '../_shared/demo-guard.ts'
 
 interface OneDriveOAuthResponse {
   access_token: string;
@@ -29,6 +30,8 @@ Deno.serve(async (req) => {
 
     let userId: string;
     try { userId = await verifyOAuthState(state); } catch { throw new Error('Invalid OAuth state'); }
+    // Demo read-only: never store a connection for a demo person (docs/demo-readonly).
+    { const demo = await demoRefusal(userId, corsHeaders); if (demo) return demo; }
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',

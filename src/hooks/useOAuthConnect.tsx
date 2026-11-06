@@ -1,5 +1,7 @@
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { DEMO_READONLY_MESSAGE, isDemoNow, isDemoReadonlyError } from '@/lib/demoMode';
 
 interface OAuthOptions {
   provider: 'slack' | 'notion' | 'trello' | 'google_calendar' | 'twitter' | 'linkedin' | 'facebook' | 'onedrive' | 'icloud_calendar' | 'outlook_calendar';
@@ -18,6 +20,8 @@ export const useOAuthConnect = () => {
     const { provider, redirectPath = '/settings', scope, authType = 'code', prompt, accessType, params = {}, clientId: providedClientId } = options;
 
     try {
+      // Demo read-only: no connections for a demo person (the Edge Functions refuse them too).
+      if (isDemoNow()) throw new Error(DEMO_READONLY_MESSAGE);
       const { data: { session } } = await supabase.auth.getSession();
       const user = session?.user;
       if (!user || !session) throw new Error('User not authenticated');
@@ -179,6 +183,7 @@ export const useOAuthConnect = () => {
 
       window.location.href = authUrl;
     } catch (error) {
+      if (isDemoReadonlyError(error)) { toast.error(DEMO_READONLY_MESSAGE); return; }
       console.error('OAuth error:', error);
     }
   }, []);

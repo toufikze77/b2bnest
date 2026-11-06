@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders } from '../_shared/cors.ts';
 import { verifyOAuthState } from '../_shared/oauth-state.ts';
+import { demoRefusal } from '../_shared/demo-guard.ts'
 
 interface GoogleOAuthResponse {
   access_token: string;
@@ -36,6 +37,8 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, Location: `${appBase}/business-tools/notepro?integration=gmail&status=error` },
       });
     }
+    // Demo read-only: never store a connection for a demo person (docs/demo-readonly).
+    { const demo = await demoRefusal(userId, corsHeaders); if (demo) return demo; }
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
