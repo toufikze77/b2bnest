@@ -2,12 +2,13 @@ import { Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDemoMode } from '@/contexts/demoModeState';
 import { supabase } from '@/integrations/supabase/client';
-import { DEMO_BANNER_TEXT, DEMO_READONLY_MESSAGE } from '@/lib/demoMode';
+import { DEMO_BANNER_TEXT, DEMO_READONLY_MESSAGE, SHOW_DEMO_BANNER } from '@/lib/demoMode';
 
 /** The calm "view only" banner, shown on every page while a demo person is signed in. Nothing for anyone else. */
 export function DemoBanner() {
   const { isDemo } = useDemoMode();
   const navigate = useNavigate();
+  if (!SHOW_DEMO_BANNER) return null;
   if (!isDemo) return null;
   const signUp = async () => {
     // Sign out of the shared demo login on this device only, then open the free sign-up.

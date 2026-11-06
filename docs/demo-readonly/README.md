@@ -122,7 +122,7 @@ All of them use one helper, `supabase/functions/_shared/demo-guard.ts`.
 
 ## Frontend
 - **`DemoModeProvider`** (`src/contexts/DemoModeContext.tsx`) calls `is_demo_readonly()` once for each signed-in person. If the call fails, the person is treated as not in demo mode; the database guard is the real protection.
-- **`DemoBanner`**: "Demo account: view only. Sign up free to try it with your own data." with **Sign up**.
+- **`DemoBanner`**: "Demo account: view only. Sign up free to try it with your own data." with **Sign up**. Switched off for now (`SHOW_DEMO_BANNER = false` in `src/lib/demoMode.ts`; internal-only demo).
   - Shown at the top of every page, in the app shell and on public pages.
   - Sticky, `role="status"`, wraps at phone width, light and dark.
   - Sign up signs out this device only, then opens the sign-up page.
