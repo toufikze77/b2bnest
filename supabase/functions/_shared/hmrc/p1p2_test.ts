@@ -144,6 +144,8 @@ function store(w: World): HmrcStore {
     async claimRefresh() { if (!w.connection || w.connection.status !== 'connected') return false; return true; },
     async audit(r) { w.audit.push({ event: r.event, reason: r.reason ?? null, user_id: r.user_id }); },
     async takeTestSlot(_c, u, _e, kind) { if (w.slots <= 0) return false; w.slots--; w.audit.push({ event: 'test_call', reason: kind, user_id: u }); return true; },
+    async takeObligationsSlot() { return true; },
+    async vatNumberFor() { return null; },
   };
 }
 const deps = (w: World, env = ENV) => ({

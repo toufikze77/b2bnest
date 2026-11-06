@@ -6,8 +6,9 @@
 //     errors (Reference guide → Errors, Rate limiting).
 // Retries: a 401 on a user token refreshes once and retries once, then marks the connection needs_reconnect. 429 and
 // 5xx are never retried. Logs carry the path, status and HMRC's error code only: never a token, an Authorization
-// header, a response body or personal data. HMRC's pages read do not name a correlation-id response header, so none is
-// read (not verified; see the README).
+// header, a response body or personal data. HMRC P3: the VAT (MTD) API documents an X-CorrelationId response header
+// (36 characters); when it looks like one it is logged, since HMRC support asks for it. A request whose path holds a
+// VAT number passes logPath, so the number never reaches a log.
 import { HMRC_ENDPOINTS, readConfig } from './config.ts';
 import { applicationToken } from './oauth.ts';
 import type { HmrcStore } from './store.ts';
@@ -26,6 +27,10 @@ export interface CallRequest {
   version: string;
   /** Fraud prevention headers (fraudHeaders.ts), sent as they are. */
   fraudHeaders?: Record<string, string>;
+  /** What the logs show instead of the path (for a path that holds a VAT number). */
+  logPath?: string;
+  /** HMRC P3: sandbox only, and only Gov-Test-Scenario (HMRC's test scenarios). Dropped outside the sandbox. */
+  testScenario?: string;
 }
 export type CallReason = 'not_configured' | 'not_connected' | 'needs_reconnect' | 'plan_not_included' | 'not_allowed'
   | 'hmrc_unauthorised' | 'hmrc_rate_limited' | 'hmrc_unavailable' | 'hmrc_error' | 'network';
@@ -54,6 +59,8 @@ export async function callHmrc(req: CallRequest, deps: CallDeps): Promise<CallRe
   if (!cfg.ok) return { ok: false, status: 0, reason: 'not_configured' };
   if (!/^\/[A-Za-z0-9/_.-]*$/.test(req.path) || !/^\d+\.\d+$/.test(req.version)) throw new Error('callHmrc: bad path or version');
   const url = new URL(HMRC_ENDPOINTS[cfg.config.environment].api + req.path);
+  const logPath = req.logPath ?? req.path;
+  if (req.testScenario !== undefined && !/^[A-Z0-9_]{1,60}$/.test(req.testScenario)) throw new Error('callHmrc: bad test scenario');
   for (const [k, v] of Object.entries(req.query ?? {})) url.searchParams.set(k, v);
 
   const tokenFor = async (force: boolean): Promise<string | CallResult | null> => {
@@ -75,6 +82,7 @@ export async function callHmrc(req: CallRequest, deps: CallDeps): Promise<CallRe
 
   const send = async (token: string | null) => {
     const headers: Record<string, string> = { Accept: `application/vnd.hmrc.${req.version}+json`, ...(req.fraudHeaders ?? {}) };
+    if (req.testScenario && cfg.config.environment === 'sandbox') headers['Gov-Test-Scenario'] = req.testScenario;
     if (token) headers.Authorization = `Bearer ${token}`;
     if (req.body !== undefined) headers['Content-Type'] = 'application/json';
     return deps.fetch(url.toString(), { method: req.method, headers, body: req.body === undefined ? undefined : JSON.stringify(req.body) });
@@ -83,7 +91,7 @@ export async function callHmrc(req: CallRequest, deps: CallDeps): Promise<CallRe
   let token = await tokenFor(false);
   if (token && typeof token === 'object') return token;
   let res: Response;
-  try { res = await send(token as string | null); } catch { deps.log('hmrc_call_failed', { path: req.path, reason: 'network' }); return { ok: false, status: 0, reason: 'network' }; }
+  try { res = await send(token as string | null); } catch { deps.log('hmrc_call_failed', { path: logPath, reason: 'network' }); return { ok: false, status: 0, reason: 'network' }; }
 
   if (res.status === 401 && req.tokenKind === 'user') {
     await res.body?.cancel().catch(() => {});
@@ -94,14 +102,15 @@ export async function callHmrc(req: CallRequest, deps: CallDeps): Promise<CallRe
       await res.body?.cancel().catch(() => {});
       await deps.store.updateConnection(req.companyId, cfg.config.environment, { status: 'needs_reconnect', refresh_lock_until: null });
       await deps.store.audit({ company_id: req.companyId, user_id: req.userId ?? null, environment: cfg.config.environment, event: 'refresh_failed', reason: 'hmrc_401_after_refresh' });
-      deps.log('hmrc_call', { path: req.path, status: 401, reason: 'needs_reconnect' });
+      deps.log('hmrc_call', { path: logPath, status: 401, reason: 'needs_reconnect' });
       return { ok: false, status: 401, reason: 'needs_reconnect' };
     }
   }
 
   const json = await res.json().catch(() => null) as Record<string, unknown> | null;
   const hmrcCode = res.ok ? undefined : safeCode(json?.code);
-  deps.log('hmrc_call', { path: req.path, status: res.status, code: hmrcCode ?? null });
+  const correlation = res.headers.get('x-correlationid');
+  deps.log('hmrc_call', { path: logPath, status: res.status, code: hmrcCode ?? null, ...(correlation && /^[0-9a-fA-F-]{36}$/.test(correlation) ? { correlation } : {}) });
   if (res.ok) return { ok: true, status: res.status, body: json ?? undefined };
   if (res.status === 429) return { ok: false, status: 429, hmrcCode, reason: 'hmrc_rate_limited' };
   if (res.status >= 500) return { ok: false, status: res.status, hmrcCode, reason: 'hmrc_unavailable' };

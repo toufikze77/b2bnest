@@ -4,7 +4,8 @@ import type { HmrcEnvironment } from './config.ts';
 
 // plan_not_included: a paying account whose plan is not Business or Scale (docs/hmrc-plan/proposal.sql).
 export type ManageRule = 'ok' | 'not_signed_in' | 'not_member' | 'not_admin' | 'trial_ended' | 'suspended' | 'plan_not_included';
-export type AuditEvent = 'connect_started' | 'connected' | 'refreshed' | 'refresh_failed' | 'disconnected' | 'refused' | 'test_call' | 'test_result';
+export type AuditEvent = 'connect_started' | 'connected' | 'refreshed' | 'refresh_failed' | 'disconnected' | 'refused' | 'test_call' | 'test_result'
+  | 'obligations_call' | 'obligations_result';
 export interface ConnectionRow {
   company_id: string;
   environment: HmrcEnvironment;
@@ -25,6 +26,13 @@ export interface HmrcStore {
   audit(row: { company_id: string; user_id: string | null; environment: HmrcEnvironment | null; event: AuditEvent; reason?: string | null }): Promise<void>;
   /** HMRC P1: one test call for the company, if under its hourly limit (writes the test_call audit row). */
   takeTestSlot(companyId: string, userId: string, environment: HmrcEnvironment, kind: string): Promise<boolean>;
+  /** HMRC P3: one obligations read for the company, if under its hourly limit (writes the obligations_call row). */
+  takeObligationsSlot(companyId: string, userId: string, environment: HmrcEnvironment, kind: string): Promise<boolean>;
+  /**
+   * HMRC P3: the company's saved VAT number (hmrc_settings.vat_number), as typed. The company's own row first
+   * (organization_id), otherwise the caller's own business details (no company set). Null when there is none.
+   */
+  vatNumberFor(companyId: string, userId: string): Promise<string | null>;
 }
 
 // The subset of the Supabase client used here (kept loose on purpose: the real client's generics are not needed).
@@ -76,6 +84,23 @@ export function supabaseStore(admin: Sb): HmrcStore {
       const { data, error } = await admin.rpc('hmrc_take_test_slot', { p_company: companyId, p_user: userId, p_environment: environment, p_kind: kind });
       must('hmrc_take_test_slot', error);
       return data === true;
+    },
+    async takeObligationsSlot(companyId, userId, environment, kind) {
+      const { data, error } = await admin.rpc('hmrc_take_obligations_slot', { p_company: companyId, p_user: userId, p_environment: environment, p_kind: kind });
+      must('hmrc_take_obligations_slot', error);
+      return data === true;
+    },
+    async vatNumberFor(companyId, userId) {
+      const own = await admin.from('hmrc_settings').select('vat_number').eq('organization_id', companyId)
+        .order('updated_at', { ascending: false }).limit(1).maybeSingle();
+      must('hmrc_settings select', own.error);
+      const v = (own.data as { vat_number?: string | null } | null)?.vat_number;
+      if (typeof v === 'string' && v.trim()) return v;
+      const mine = await admin.from('hmrc_settings').select('vat_number').eq('user_id', userId).is('organization_id', null)
+        .order('updated_at', { ascending: false }).limit(1).maybeSingle();
+      must('hmrc_settings select', mine.error);
+      const m = (mine.data as { vat_number?: string | null } | null)?.vat_number;
+      return typeof m === 'string' && m.trim() ? m : null;
     },
     async audit(row) {
       const { error } = await admin.from('hmrc_audit_log').insert({ reason: null, ...row });

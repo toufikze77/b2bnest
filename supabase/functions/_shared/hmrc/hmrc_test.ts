@@ -66,6 +66,8 @@ function store(w: World): HmrcStore {
     },
     async audit(r) { w.audit.push({ ...r }); },
     async takeTestSlot() { return true; },
+    async takeObligationsSlot() { return true; },
+    async vatNumberFor() { return null; },
   };
 }
 function deps(w: World, env = ENV): HandlerDeps {
