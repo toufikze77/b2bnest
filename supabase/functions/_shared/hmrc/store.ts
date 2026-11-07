@@ -29,10 +29,30 @@ export interface HmrcStore {
   /** HMRC P3: one obligations read for the company, if under its hourly limit (writes the obligations_call row). */
   takeObligationsSlot(companyId: string, userId: string, environment: HmrcEnvironment, kind: string): Promise<boolean>;
   /**
-   * HMRC P3: the company's saved VAT number (hmrc_settings.vat_number), as typed. The company's own row first
-   * (organization_id), otherwise the caller's own business details (no company set). Null when there is none.
+   * HMRC P3: the company's saved VAT number (hmrc_settings.vat_number), as typed. See pickVatNumber for the rule.
+   * Null when there is none.
    */
   vatNumberFor(companyId: string, userId: string): Promise<string | null>;
+}
+
+export interface VatRow { user_id: string; organization_id: string | null; vat_number: string | null; updated_at?: string | null }
+const hasVat = (r: VatRow) => typeof r.vat_number === 'string' && r.vat_number.trim() !== '';
+/**
+ * Which business details give the company's VAT number (docs/hmrc-p3/README.md, "Fixed after release"):
+ *   1. the caller's own row for this company;
+ *   2. otherwise the newest row for this company saved by someone who is now an owner or admin of it
+ *      (a row a member saved is never used);
+ *   3. otherwise the caller's own row with no company set (details saved before they belonged to a company).
+ * A row for another company is never used.
+ */
+export function pickVatNumber(companyId: string, userId: string, rows: VatRow[], adminIds: string[]): string | null {
+  const company = rows.filter((r) => r.organization_id === companyId && hasVat(r));
+  const own = company.find((r) => r.user_id === userId);
+  if (own) return own.vat_number;
+  const byAdmin = company.filter((r) => adminIds.includes(r.user_id)).sort((a, b) => String(b.updated_at ?? '').localeCompare(String(a.updated_at ?? '')))[0];
+  if (byAdmin) return byAdmin.vat_number;
+  const unassigned = rows.find((r) => r.user_id === userId && r.organization_id === null && hasVat(r));
+  return unassigned ? unassigned.vat_number : null;
 }
 
 // The subset of the Supabase client used here (kept loose on purpose: the real client's generics are not needed).
@@ -91,16 +111,15 @@ export function supabaseStore(admin: Sb): HmrcStore {
       return data === true;
     },
     async vatNumberFor(companyId, userId) {
-      const own = await admin.from('hmrc_settings').select('vat_number').eq('organization_id', companyId)
-        .order('updated_at', { ascending: false }).limit(1).maybeSingle();
-      must('hmrc_settings select', own.error);
-      const v = (own.data as { vat_number?: string | null } | null)?.vat_number;
-      if (typeof v === 'string' && v.trim()) return v;
-      const mine = await admin.from('hmrc_settings').select('vat_number').eq('user_id', userId).is('organization_id', null)
-        .order('updated_at', { ascending: false }).limit(1).maybeSingle();
-      must('hmrc_settings select', mine.error);
-      const m = (mine.data as { vat_number?: string | null } | null)?.vat_number;
-      return typeof m === 'string' && m.trim() ? m : null;
+      const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuid.test(companyId) || !uuid.test(userId)) return null; // both go into a filter string
+      const rows = await admin.from('hmrc_settings').select('user_id, organization_id, vat_number, updated_at')
+        .or(`organization_id.eq.${companyId},and(user_id.eq.${userId},organization_id.is.null)`);
+      must('hmrc_settings select', rows.error);
+      const admins = await admin.from('organization_members').select('user_id')
+        .eq('organization_id', companyId).in('role', ['owner', 'admin']).eq('is_active', true);
+      must('organization_members select', admins.error);
+      return pickVatNumber(companyId, userId, (rows.data ?? []) as VatRow[], ((admins.data ?? []) as { user_id: string }[]).map((a) => a.user_id));
     },
     async audit(row) {
       const { error } = await admin.from('hmrc_audit_log').insert({ reason: null, ...row });

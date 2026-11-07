@@ -47,31 +47,48 @@ export const hmrcService = {
     return data || [];
   },
 
-  async getBusinessDetails(): Promise<HMRCBusinessDetails> {
+  /**
+   * The business details for one company (Settings → HMRC). HMRC P3 fix (docs/hmrc-p3/README.md, "Fixed after
+   * release"): the details belong to a company. Your row for that company; if you have none yet, your old row with no
+   * company (shown once, so you can save it for this company). Never another company's row.
+   */
+  async getBusinessDetails(companyId: string): Promise<{ details: HMRCBusinessDetails; source: 'company' | 'unassigned' | 'none' }> {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return EMPTY;
-    const { data, error } = await supabase
-      .from('hmrc_settings')
-      .select('company_name, company_number, utr, vat_number, paye_reference')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    if (error || !data) return EMPTY;
+    if (!user || !companyId) return { details: EMPTY, source: 'none' };
+    const cols = 'company_name, company_number, utr, vat_number, paye_reference';
+    const own = await supabase.from('hmrc_settings').select(cols).eq('user_id', user.id).eq('organization_id', companyId).maybeSingle();
+    let data = own.error ? null : own.data;
+    let source: 'company' | 'unassigned' | 'none' = data ? 'company' : 'none';
+    if (!data && !own.error) {
+      const old = await supabase.from('hmrc_settings').select(cols).eq('user_id', user.id).is('organization_id', null)
+        .order('updated_at', { ascending: false }).limit(1).maybeSingle();
+      if (!old.error && old.data) { data = old.data; source = 'unassigned'; }
+    }
+    if (!data) return { details: EMPTY, source: 'none' };
     return {
-      companyName: data.company_name || '', companyNumber: data.company_number || '', utr: data.utr || '',
-      vatNumber: data.vat_number || '', payeReference: data.paye_reference || '',
+      source,
+      details: {
+        companyName: data.company_name || '', companyNumber: data.company_number || '', utr: data.utr || '',
+        vatNumber: data.vat_number || '', payeReference: data.paye_reference || '',
+      },
     };
   },
 
-  /** Saves the business details only. Returns false when the database update (docs/hmrc-p0) isn't applied yet. */
-  async saveBusinessDetails(d: HMRCBusinessDetails): Promise<{ ok: boolean; needsUpdate?: boolean }> {
+  /**
+   * Saves the business details for one company: updates your row for that company, otherwise creates it (with the
+   * company set). An old row with no company is left as it is. Returns needsUpdate when the database refuses.
+   */
+  async saveBusinessDetails(companyId: string, d: HMRCBusinessDetails): Promise<{ ok: boolean; needsUpdate?: boolean }> {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { ok: false };
+    if (!user || !companyId) return { ok: false };
     const row = { company_name: d.companyName, company_number: d.companyNumber, utr: d.utr, vat_number: d.vatNumber, paye_reference: d.payeReference };
-    const { data: existing } = await supabase.from('hmrc_settings').select('id').eq('user_id', user.id).maybeSingle();
+    const { data: existing, error: readError } = await supabase.from('hmrc_settings').select('id').eq('user_id', user.id).eq('organization_id', companyId).maybeSingle();
+    if (readError) return { ok: false };
     const { error } = existing
       ? await supabase.from('hmrc_settings').update(row).eq('id', existing.id)
       // Before docs/hmrc-p0 the credential columns are NOT NULL, so a first save fails: say so instead of crashing.
-      : await (supabase.from('hmrc_settings') as unknown as { insert: (r: unknown) => Promise<{ error: { code?: string } | null }> }).insert({ ...row, user_id: user.id });
+      : await (supabase.from('hmrc_settings') as unknown as { insert: (r: unknown) => Promise<{ error: { code?: string } | null }> })
+        .insert({ ...row, user_id: user.id, organization_id: companyId });
     if (!error) return { ok: true };
     return { ok: false, needsUpdate: error.code === '23502' || error.code === '42501' };
   },

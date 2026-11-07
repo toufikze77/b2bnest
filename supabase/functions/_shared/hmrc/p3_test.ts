@@ -1,7 +1,7 @@
 // HMRC P3 Deno tests: hmrc-vat-obligations (read only, sandbox only). HMRC is mocked: no network.
 import { assert, assertEquals } from 'https://deno.land/std@0.190.0/testing/asserts.ts';
 import { b64url, encryptToken, tokenAad } from './crypto.ts';
-import type { AuditEvent, ConnectionRow, HmrcStore, ManageRule } from './store.ts';
+import { pickVatNumber, type AuditEvent, type ConnectionRow, type HmrcStore, type ManageRule, type VatRow } from './store.ts';
 import { cleanVrn, dayOf, normalise, OBLIGATION_SCENARIOS, readQuery, vatObligations } from './vatObligations.ts';
 import { withDemoGuard } from '../demo-guard.ts';
 
@@ -262,4 +262,28 @@ Deno.test('a demo person is refused (403) before anything runs', async () => {
   assertEquals((await res.json()).code, 'demo_readonly');
   assertEquals(w.calls.length, 0);
   assertEquals(w.audit.length, 0);
+});
+
+// ------------------------------------------------------------------ whose VAT number (fixed after release, 7 Nov 2026)
+Deno.test('VAT number: each company its own; another company\'s row is never used; a no-company row is the only fallback', () => {
+  const A = '0d300000-0000-4000-8000-00000000000a', B = '0d300000-0000-4000-8000-00000000000b', C = '0d300000-0000-4000-8000-00000000000c';
+  const rows: VatRow[] = [
+    { user_id: OWNER, organization_id: A, vat_number: '111111111', updated_at: '2026-11-01' },
+    { user_id: OWNER, organization_id: B, vat_number: 'GB 222 2222 22', updated_at: '2026-11-02' },
+  ];
+  assertEquals(pickVatNumber(A, OWNER, rows, [OWNER]), '111111111');
+  assertEquals(pickVatNumber(B, OWNER, rows, [OWNER]), 'GB 222 2222 22');
+  assertEquals(pickVatNumber(C, OWNER, rows, [OWNER]), null, 'a row tagged to another company is never used');
+  const withLegacy = [...rows, { user_id: OWNER, organization_id: null, vat_number: '999999999' }];
+  assertEquals(pickVatNumber(C, OWNER, withLegacy, [OWNER]), '999999999', 'the caller\'s own no-company row is the only fallback');
+  assertEquals(pickVatNumber(A, OWNER, withLegacy, [OWNER]), '111111111', 'the company\'s own row comes first');
+  assertEquals(pickVatNumber(C, OWNER, [{ user_id: MEMBER, organization_id: null, vat_number: '999999999' }], [OWNER]), null, 'someone else\'s no-company row: never');
+  // Another owner or admin of the company saved it: used. A member saved it: never used.
+  assertEquals(pickVatNumber(A, OWNER, [{ user_id: SOLO, organization_id: A, vat_number: '333333333' }], [OWNER, SOLO]), '333333333');
+  assertEquals(pickVatNumber(A, OWNER, [{ user_id: MEMBER, organization_id: A, vat_number: '444444444' }], [OWNER]), null, 'a member\'s row is not used');
+  assertEquals(pickVatNumber(A, OWNER, [{ user_id: OWNER, organization_id: A, vat_number: '  ' }, { user_id: OWNER, organization_id: null, vat_number: '555555555' }], [OWNER]), '555555555', 'an empty company row falls back');
+  assertEquals(pickVatNumber(A, OWNER, [
+    { user_id: SOLO, organization_id: A, vat_number: '666666666', updated_at: '2026-11-01' },
+    { user_id: OUTSIDER, organization_id: A, vat_number: '777777777', updated_at: '2026-11-05' },
+  ], [OWNER, SOLO, OUTSIDER]), '777777777', 'the newest admin row');
 });

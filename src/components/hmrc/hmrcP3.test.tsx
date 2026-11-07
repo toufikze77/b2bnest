@@ -99,7 +99,7 @@ describe('HMRC Obligations tab', () => {
     show();
     const btn = await screen.findByRole('button', { name: 'Get VAT obligations' });
     for (const [body, text] of [
-      [{ ok: false, code: 'vrn_missing' }, 'Add your VAT number in Settings → HMRC first.'],
+      [{ ok: false, code: 'vrn_missing' }, 'Add your VAT number in Settings → HMRC for V Ltd first.'],
       [{ ok: false, code: 'obligations_limit' }, 'You can get VAT obligations 10 times an hour'],
       [{ ok: false, code: 'hmrc_refused', hmrc_code: 'ACCEPT_HEADER_INVALID' }, "HMRC didn't accept the request (ACCEPT_HEADER_INVALID)"],
     ] as const) {
