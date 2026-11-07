@@ -400,6 +400,12 @@ const BusinessFinanceAssistant = () => {
         notes: doc.notes,
         // The company logo, as in the preview. Also used for the emailed PDF (pdfBytes).
         logo_url: doc.logo_url,
+        // HMRC P4: a recorded invoice prints its VAT per treatment (the lines in items carry each line's VAT). A quote or
+        // an invoice that is not recorded has neither, and keeps the single tax line.
+        ...(docType === 'invoice' ? {
+          vat_status: (doc as Invoice & { vat_status?: string | null }).vat_status ?? null,
+          tax_point_date: (doc as Invoice & { tax_point_date?: string | null }).tax_point_date ?? null,
+        } : {}),
       },
       templateFor(docType),
       // The document's own currency; the PDF code is unchanged and treats a missing one as before.
