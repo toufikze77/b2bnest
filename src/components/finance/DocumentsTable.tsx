@@ -47,13 +47,15 @@ interface Props<D extends TableDoc> {
   onEmail?: (d: D) => void;
   /** HMRC P4: bump to show only invoices that need VAT details (from the Finance page's VAT panel). */
   vatFilterRequest?: number;
+  /** HMRC P4b: the company a document belongs to ("No company" when none); undefined hides the column. */
+  companyOf?: (d: D) => string;
 }
 
 const PHONE_PAGE = 25;
 const date = (d?: string | null) => (d ? formatDueDate(d) : '—');
 
 /** Quotes or invoices: search, status chips, row count, row actions, phone cards with 44px targets. */
-export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loading, error, onRetry, onNew, onView, onEdit, onDownload, onStatus, onArchive, onRestore, onDeleteForever, busyId, view: viewProp, onViewChange, emailFor, onEmail, vatFilterRequest }: Props<D>) {
+export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loading, error, onRetry, onNew, onView, onEdit, onDownload, onStatus, onArchive, onRestore, onDeleteForever, busyId, view: viewProp, onViewChange, emailFor, onEmail, vatFilterRequest, companyOf }: Props<D>) {
   const phone = usePhone();
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('all');
@@ -217,6 +219,7 @@ export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loadi
                           <span className="min-w-0 flex-1">
                             <span className="block truncate font-semibold text-foreground">{Noun} {numberOf(d)}</span>
                             <span className="block truncate text-small text-muted-foreground">{d.client_name || 'No client name'}</span>
+                            {companyOf && <span className="block truncate text-small text-muted-foreground">Company: {companyOf(d)}</span>}
                             <span className="block text-small text-muted-foreground">{archive ? `Archived ${archivedOn(d)}` : `${secondLabel}: ${date(secondDate(d))}`}</span>
                           </span>
                           <span className="flex shrink-0 flex-col items-end gap-1">
@@ -250,6 +253,7 @@ export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loadi
                       <button type="button" onClick={() => onView(d)} className="rounded-sm text-left font-semibold text-foreground hover:text-link hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring">{numberOf(d)}</button>
                     ) },
                     { id: 'client', header: 'Client', sortValue: (d) => d.client_name, cell: (d) => <span className="block max-w-[16rem] truncate">{d.client_name || <span className="text-muted-foreground">—</span>}</span> },
+                    ...(companyOf ? [{ id: 'company', header: 'Company', sortValue: (d: D) => companyOf(d), cell: (d: D) => <span className="block max-w-[12rem] truncate">{companyOf(d)}</span> }] : []),
                     { id: 'status', header: 'Status', sortValue: (d) => chipOf(d), cell: chip },
                     { id: 'amount', header: 'Amount', className: 'text-right', sortValue: (d) => Number(d.total_amount) || 0, cell: (d) => <span className="whitespace-nowrap tabular-nums">{amount(d)}</span> },
                     { id: 'date', header: 'Date', sortValue: (d) => d.created_at, cell: (d) => <span className="whitespace-nowrap">{date(d.created_at)}</span> },

@@ -16,6 +16,8 @@ import { CURRENCIES } from '@/utils/currencyUtils';
 import { formatMoney, normalizeCurrency } from '@/lib/money';
 import { useAccountCurrency } from '@/hooks/useAccountCurrency';
 import ImageUpload from '@/components/ImageUpload';
+import { useOptionalActiveOrganization } from '@/contexts/OrganizationContext';
+import { companyErrorMessage, isMissingCompanyColumn, withoutCompany } from '@/lib/financeCompany';
 import {
   DEFAULT_TREATMENT, fromPence, INVOICE_VAT_KEYS, isGbp, isMissingColumnError, isRecordedInvoice, isVatTreatment, lineNetPence, sumLines,
   treatmentsIn, VAT_RATES, VAT_SCHEME, VAT_TREATMENT_LABELS, VAT_TREATMENT_SHORT, VAT_TREATMENTS, type VatTreatment,
@@ -82,6 +84,16 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
   // HMRC P4 (invoices only): the tax point, the date VAT is counted (standard scheme: the invoice date).
   const [taxPointDate, setTaxPointDate] = useState(todayIso());
   const isInvoice = documentType === 'invoice';
+  // HMRC P4b: an invoice belongs to a company (organization_id). A new one starts with the active company; an older one
+  // with no company must have one chosen before its VAT is recorded. Quotes have no company link.
+  const org = useOptionalActiveOrganization();
+  const companies = org?.memberships ?? [];
+  const [companyId, setCompanyId] = useState<string>(editingDocument?.organization_id ?? org?.organizationId ?? '');
+  useEffect(() => {
+    setCompanyId(editingDocument ? editingDocument.organization_id ?? '' : org?.organizationId ?? '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingDocument?.id, org?.organizationId]);
+  const askCompany = isInvoice && companies.length > 0 && (!editingDocument || ('organization_id' in editingDocument && !editingDocument.organization_id));
 
   // Load products on mount and when the signed-in person changes (by id: a session refresh gives a new user object).
   useEffect(() => {
@@ -291,6 +303,10 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
       toast({ title: "Validation Error", description: "Choose a VAT treatment for every line.", variant: "destructive" });
       return;
     }
+    if (askCompany && !companyId) {
+      toast({ title: "Validation Error", description: "Choose the company this invoice belongs to.", variant: "destructive" });
+      return;
+    }
     if (isInvoice && !/^\d{4}-\d{2}-\d{2}$/.test(taxPointDate)) {
       toast({ title: "Validation Error", description: "Enter the tax point date (the date VAT is counted).", variant: "destructive" });
       return;
@@ -335,6 +351,7 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
           tax_point_date: taxPointDate,
           vat_scheme: VAT_SCHEME,
           vat_status: 'recorded',
+          ...(askCompany && companyId ? { organization_id: companyId } : {}),
         })
       };
 
@@ -358,6 +375,8 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
         return { data, error };
       };
       let result = await save(documentData);
+      // Before the HMRC P4b database update there is no organization_id column: save without it.
+      if (result.error && 'organization_id' in documentData && isMissingCompanyColumn(result.error)) result = await save(withoutCompany(documentData));
       // Before the HMRC P4 database update the three VAT columns don't exist: save without them (the lines keep their
       // VAT), and say the invoice will show as "VAT not recorded" until the update is applied and it is saved again.
       let vatColumnsMissing = false;
@@ -390,7 +409,7 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
       console.error('Error saving document:', error);
       toast({
         title: "Error",
-        description: "Failed to save document",
+        description: companyErrorMessage(error as { message?: string }) ?? "Failed to save document",
         variant: "destructive"
       });
     } finally {
@@ -577,6 +596,17 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
                 value={formData.due_date}
                 onChange={(e) => setFormData(prev => ({ ...prev, due_date: e.target.value }))}
               />
+            </div>
+          )}
+          {askCompany && (
+            <div>
+              <Label htmlFor="invoice_company">Company *</Label>
+              <select id="invoice_company" value={companyId} onChange={(e) => setCompanyId(e.target.value)} aria-describedby="invoice_company_help" required
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <option value="" disabled>Choose a company</option>
+                {companies.map((c) => <option key={c.organizationId} value={c.organizationId}>{c.name}</option>)}
+              </select>
+              <p id="invoice_company_help" className="mt-1 text-small text-muted-foreground">{editingDocument ? 'This invoice has no company yet. Choose the one it belongs to: its VAT is recorded for that company.' : 'The company this invoice belongs to.'}</p>
             </div>
           )}
           {isInvoice && (

@@ -21,6 +21,8 @@ import { FinanceReports } from '@/components/finance/FinanceReports';
 import { InvoiceStatusChip, QuoteStatusChip } from '@/components/finance/DocStatusChip';
 import { VatAttentionPanel } from '@/components/finance/VatAttentionPanel';
 import { ExpensesTab } from '@/components/finance/ExpensesTab';
+import { CompanyRecordsReview, type ReviewClient } from '@/components/finance/CompanyRecordsReview';
+import { companyLabel, hasCompanyColumn } from '@/lib/financeCompany';
 import { OutgoingsTab } from '@/components/finance/OutgoingsTab';
 import { ProductsTab } from '@/components/finance/ProductsTab';
 import { SuppliersTab } from '@/components/finance/SuppliersTab';
@@ -75,7 +77,7 @@ const BusinessFinanceAssistant = () => {
   const { user } = useAuth();
   // Account currency: '' when not set, and then amounts print as plain numbers (never "$").
   const accountCurrency = useAccountCurrency();
-  const { organization } = useActiveOrganization();
+  const { organization, organizationId = null, memberships = [] } = useActiveOrganization();
   const navigate = useNavigate();
   const { templateFor } = useDocumentTemplates();
   const [isLoading, setIsLoading] = useState(false);
@@ -608,7 +610,7 @@ const BusinessFinanceAssistant = () => {
     { label: 'Sales', tabs: [{ value: 'quotes', label: 'Quotes' }, { value: 'invoices', label: 'Invoices' }, { value: 'templates', label: 'Templates' }] },
     { label: 'Money out', tabs: [{ value: 'expenses', label: 'Expenses' }, { value: 'outgoings', label: 'Outgoings' }, { value: 'suppliers', label: 'Suppliers' }, { value: 'products', label: 'Products' }] },
     { label: 'Banking and payroll', tabs: [{ value: 'banking', label: 'Banking' }, { value: 'payroll', label: 'Payroll (UK)' }] },
-    { label: 'Insight', tabs: [{ value: 'reports', label: 'Reports' }, { value: 'analytics', label: 'Analytics' }] },
+    { label: 'Insight', tabs: [{ value: 'reports', label: 'Reports' }, { value: 'analytics', label: 'Analytics' }, { value: 'company-records', label: 'Company records' }] },
   ];
   const docState = { loading: firstLoad, error: docsError, onRetry: fetchData };
 
@@ -651,7 +653,8 @@ const BusinessFinanceAssistant = () => {
         ) : (<>
 
         {/* HMRC P4: records without VAT details (left out of VAT figures until fixed). Shown on every tab. */}
-        <VatAttentionPanel invoices={activeInvoices} expenses={expenses}
+        <VatAttentionPanel invoices={activeInvoices} expenses={expenses} organizationId={organizationId} companyName={organization?.name}
+          onOpenCompanyRecords={() => changeTab('company-records')}
           onOpenInvoices={() => { changeArchiveView('invoices', 'active'); changeTab('invoices'); setVatFocus((n) => ({ ...n, invoices: n.invoices + 1 })); }}
           onOpenExpenses={() => { changeTab('expenses'); setVatFocus((n) => ({ ...n, expenses: n.expenses + 1 })); }} />
 
@@ -700,7 +703,8 @@ const BusinessFinanceAssistant = () => {
             onView={handleViewDocument} onEdit={handleEditDocument} onDownload={handleDownloadDocument}
             onStatus={(d: Invoice, to) => { void handleStatusChange(d, to); }} onArchive={(d: Invoice) => setArchivingDoc(d)} onRestore={(d: Invoice) => { void handleRestore(d); }} onDeleteForever={(d: Invoice) => setDeletingDoc(d)} busyId={statusBusy}
             view={archiveViews.invoices ? 'archive' : 'active'} onViewChange={(v) => changeArchiveView('invoices', v)}
-            emailFor={emailFor} onEmail={openEmail} vatFilterRequest={vatFocus.invoices} />
+            emailFor={emailFor} onEmail={openEmail} vatFilterRequest={vatFocus.invoices}
+            companyOf={hasCompanyColumn(invoices) ? (d: Invoice) => companyLabel((d as Invoice & { organization_id?: string | null }).organization_id, memberships) : undefined} />
         </TabsContent>
 
         <TabsContent value="products" className="mt-0">
@@ -712,7 +716,8 @@ const BusinessFinanceAssistant = () => {
         </TabsContent>
 
         <TabsContent value="expenses" className="mt-0">
-          <ExpensesTab key={`expenses-${vatFocus.expenses}`} initialFilter={vatFocus.expenses ? 'vat_missing' : undefined} rows={expenses} suppliers={suppliers} {...moneyOutState('expenses', loadExpenses)} api={moneyOut('expenses')} onChanged={() => { void loadExpenses(); }} onDownload={downloadExpenses} />
+          <ExpensesTab key={`expenses-${vatFocus.expenses}`} initialFilter={vatFocus.expenses ? 'vat_missing' : undefined} rows={expenses} suppliers={suppliers} {...moneyOutState('expenses', loadExpenses)} api={moneyOut('expenses')} onChanged={() => { void loadExpenses(); }} onDownload={downloadExpenses}
+            companies={memberships} organizationId={organizationId} />
         </TabsContent>
 
         <TabsContent value="outgoings" className="mt-0">
@@ -797,6 +802,11 @@ const BusinessFinanceAssistant = () => {
 
         <TabsContent value="payroll" className="mt-0">
           <PayrollUK />
+        </TabsContent>
+
+        <TabsContent value="company-records" className="mt-0">
+          <CompanyRecordsReview client={supabase as unknown as ReviewClient} userId={user?.id ?? ''} invoices={invoices as never} expenses={expenses as never}
+            companies={memberships} organizationId={organizationId} accountCurrency={accountCurrency} onChanged={() => { void fetchData(); }} />
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-0">

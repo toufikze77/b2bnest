@@ -132,7 +132,7 @@
 - A one-off, owner-confirmed assignment for existing records, like the existing "Unassigned projects" review in Settings → Company data.
 - RLS by company membership.
 
-P4 deliberately did not add `organization_id` or change RLS.
+P4 deliberately did not add `organization_id` or change RLS. **Follow-up prepared:** `docs/hmrc-p4b/` (company link, unassigned review, owner decision on read access).
 
 ## Rollout order (owner)
 1. **The owner reviews `docs/hmrc-p4/proposal.sql`.**

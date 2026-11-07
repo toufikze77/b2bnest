@@ -13,20 +13,21 @@ import {
   VAT_TREATMENT_LABELS, VAT_TREATMENTS, vatFromForm, withOptionalVatColumns, type VatColumns,
 } from '@/lib/vat';
 import { toast } from 'sonner';
+import { companyLabel, hasCompanyColumn, withOptionalCompany, withoutCompany, type CompanyChoice } from '@/lib/financeCompany';
 import { VatNotRecordedBadge } from './VatBadges';
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
 import { RecordFormDialog } from './RecordFormDialog';
 import { RecordsTable } from './RecordsTable';
 import { useRecordEditor } from './useRecordEditor';
 
-export interface ExpenseRow extends VatColumns { id: string; description: string; category: string; amount: number; date: string; supplier_id: string | null; status: string | null }
+export interface ExpenseRow extends VatColumns { id: string; description: string; category: string; amount: number; date: string; supplier_id: string | null; status: string | null; organization_id?: string | null }
 export interface SupplierRef { id: string; name: string; is_active: boolean | null }
 
 const TONE: Record<string, 'warning' | 'info' | 'success'> = { pending: 'warning', approved: 'info', paid: 'success' };
 const today = () => new Date().toISOString().slice(0, 10);
 
 /** Expenses: add, edit, delete, search and filter. Expenses have no currency column: amounts are in the account currency. */
-export function ExpensesTab({ rows, suppliers, loading, error, onRetry, api, onChanged, onDownload, initialFilter }: {
+export function ExpensesTab({ rows, suppliers, loading, error, onRetry, api, onChanged, onDownload, initialFilter, companies = [], organizationId = null }: {
   rows: ExpenseRow[];
   suppliers: SupplierRef[];
   loading?: boolean;
@@ -37,6 +38,9 @@ export function ExpensesTab({ rows, suppliers, loading, error, onRetry, api, onC
   onDownload: () => void;
   /** HMRC P4: open the list on a filter (the Finance page's VAT panel uses 'vat_missing'). */
   initialFilter?: string;
+  /** HMRC P4b: the companies the person belongs to, and the active one (a new expense is saved with it). */
+  companies?: CompanyChoice[];
+  organizationId?: string | null;
 }) {
   const currency = useAccountCurrency();
   const money = (n: number) => formatMoney(n, currency, { cents: true });
@@ -45,16 +49,25 @@ export function ExpensesTab({ rows, suppliers, loading, error, onRetry, api, onC
   // HMRC P4: every save of an expense records its VAT (standard scheme): a treatment is required, so an older expense
   // can't be saved until one is chosen. Before the database update the VAT columns are dropped from the save and the
   // expense stays "VAT not recorded".
-  const vatApi = withOptionalVatColumns(api, MONEY_OUT_VAT_KEYS, () => toast.info('Saved without VAT details: they can be recorded after a database update.'));
+  // HMRC P4b: a new expense is saved with its company (organization_id); a create sends it only when one is chosen, and
+  // before the database update it is sent again without it.
+  const companyApi = withOptionalCompany({ ...api, create: (p: Parameters<MoneyOutApi['create']>[0]) => api.create(p.organization_id ? p : withoutCompany(p)) });
+  const vatApi = withOptionalVatColumns(companyApi, MONEY_OUT_VAT_KEYS, () => toast.info('Saved without VAT details: they can be recorded after a database update.'));
+  // The company column exists once rows carry the key. An older expense with no company must have one chosen before its
+  // VAT is recorded (the database requires it); nothing is chosen for the person.
+  const companyColumn = hasCompanyColumn(rows);
   const ed = useRecordEditor<ExpenseRow>({
-    spec: EXPENSE_VAT_FIELDS, api: vatApi, noun: 'expense', nameOf: (r) => r.description, onChanged,
-    blank: () => ({ description: '', category: '', category_custom: '', amount: '', date: today(), supplier_id: '', status: 'pending', ...blankExpenseVat() }),
+    spec: { ...EXPENSE_VAT_FIELDS, organization_id: { kind: 'optionalText', label: 'Company' } }, api: vatApi, noun: 'expense', nameOf: (r) => r.description, onChanged,
+    blank: () => ({ description: '', category: '', category_custom: '', amount: '', date: today(), supplier_id: '', status: 'pending', organization_id: organizationId ?? '', ...blankExpenseVat() }),
     toForm: (r, base) => expenseVatForm(r, base),
     // "Other (type your own)": the typed name becomes the category (an existing match is reused).
     validate: (v) => (v.category === CUSTOM_CATEGORY ? resolveCustomCategory(v.category_custom as string, categories).error ?? null : null)
+      ?? (askCompany && !v.organization_id ? 'Choose the company this expense belongs to.' : null)
       ?? (() => { const r = vatFromForm(v); return 'error' in r ? r.error : null; })(),
     prepare: (v) => prepareExpenseVat(v.category === CUSTOM_CATEGORY ? { ...v, category: resolveCustomCategory(v.category_custom as string, categories).value } : v),
   });
+  // Ask for the company on a new expense (the active one is chosen already) and on an older one that has none.
+  const askCompany = companies.length > 0 && (!ed.editing || (companyColumn && !ed.editing.organization_id));
   const usedCategories = categories.filter((c) => rows.some((r) => r.category === c.value));
   const statuses = withStored(EXPENSE_STATUSES, rows.map((r) => r.status));
   const supplierName = (id: string | null) => (id ? suppliers.find((s) => s.id === id)?.name ?? 'Unknown supplier' : '—');
@@ -92,10 +105,11 @@ export function ExpensesTab({ rows, suppliers, loading, error, onRetry, api, onC
           { id: 'supplier', header: 'Supplier', sortValue: (r) => supplierName(r.supplier_id), cell: (r) => supplierName(r.supplier_id) },
           { id: 'date', header: 'Date', sortValue: (r) => r.date, cell: (r) => <span className="whitespace-nowrap">{r.date ? formatDueDate(r.date) : '—'}</span> },
           { id: 'status', header: 'Status', sortValue: (r) => r.status, cell: status },
+          ...(companyColumn ? [{ id: 'company', header: 'Company', sortValue: (r: ExpenseRow) => companyLabel(r.organization_id, companies), cell: (r: ExpenseRow) => <span className="block max-w-[12rem] truncate">{companyLabel(r.organization_id, companies)}</span> }] : []),
           { id: 'vat', header: 'VAT', className: 'text-right', sortValue: (r) => Number(r.vat_amount) || 0, cell: vatCell },
           { id: 'amount', header: 'Amount', className: 'text-right', sortValue: (r) => Number(r.amount) || 0, cell: (r) => <span className="whitespace-nowrap tabular-nums">{money(Number(r.amount) || 0)}</span> },
         ]}
-        card={(r) => ({ title: r.description, lines: [`${labelOf(categories, r.category)} · ${r.date ? formatDueDate(r.date) : 'no date'}`, ...(r.supplier_id ? [supplierName(r.supplier_id)] : [])], chip: status(r), amount: money(Number(r.amount) || 0) })}
+        card={(r) => ({ title: r.description, lines: [`${labelOf(categories, r.category)} · ${r.date ? formatDueDate(r.date) : 'no date'}`, ...(r.supplier_id ? [supplierName(r.supplier_id)] : []), ...(companyColumn ? [`Company: ${companyLabel(r.organization_id, companies)}`] : [])], chip: status(r), amount: money(Number(r.amount) || 0) })}
       />
       <RecordFormDialog
         open={ed.formOpen} onOpenChange={ed.setFormOpen}
@@ -113,6 +127,8 @@ export function ExpensesTab({ rows, suppliers, loading, error, onRetry, api, onC
           ) : null;
         }}
         fields={[
+          ...(askCompany ? [{ key: 'organization_id', label: 'Company', type: 'select' as const, required: true, options: companies.map((c) => ({ value: c.organizationId, label: c.name })),
+            hint: ed.editing ? 'This expense has no company yet. Choose the one it belongs to: its VAT is recorded for that company.' : 'The company this expense belongs to.', wide: true }] : []),
           { key: 'description', label: 'Description', type: 'text', required: true, wide: true },
           { key: 'amount', label: `Amount${currency ? ` (${currency})` : ''}`, type: 'number', required: true },
           { key: 'vat_entry', label: 'The amount entered is', type: 'select', required: true, options: VAT_ENTRY_OPTIONS },

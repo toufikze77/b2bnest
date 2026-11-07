@@ -113,3 +113,7 @@ export const useActiveOrganization = () => {
   if (!ctx) throw new Error('useActiveOrganization must be used within an OrganizationProvider');
   return ctx;
 };
+
+/** The same as useActiveOrganization, but null outside an OrganizationProvider (for components also used without one). */
+// eslint-disable-next-line react-refresh/only-export-components
+export const useOptionalActiveOrganization = () => useContext(OrganizationContext) ?? null;
