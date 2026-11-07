@@ -39,6 +39,8 @@ interface Props<T extends { id: string }> {
   /** A second filter as a dropdown (e.g. expense category), for lists too long to show as chips. */
   selectFilter?: { label: string; allLabel: string; options: RecordFilter<T>[] };
   initialSort?: { id: string; dir: 'asc' | 'desc' };
+  /** The filter chip selected when the list opens (e.g. "VAT not recorded" from the Finance page's VAT panel). */
+  initialFilter?: string;
 }
 
 const PHONE_PAGE = 25;
@@ -47,7 +49,7 @@ const PHONE_PAGE = 25;
 export function RecordsTable<T extends { id: string }>(p: Props<T>) {
   const phone = usePhone();
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState(p.initialFilter ?? 'all');
   const [shown, setShown] = useState(PHONE_PAGE);
   const q = query.trim().toLowerCase();
   const [selectValue, setSelectValue] = useState('all');

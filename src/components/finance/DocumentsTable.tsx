@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Archive, ArchiveRestore, CheckCircle2, Download, Edit, Eye, Mail, MoreHorizontal, Plus, Search, Trash2, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,8 @@ import { CHIP_LABEL, FinDoc, invoiceStatus, quoteStatus } from '@/lib/financeSum
 import { formatMoney } from '@/lib/money';
 import { cn } from '@/lib/utils';
 import { InvoiceStatusChip, QuoteStatusChip } from './DocStatusChip';
+import { invoiceNeedsVat, isGbp } from '@/lib/vat';
+import { NotGbpBadge, VatNotRecordedBadge } from './VatBadges';
 
 export interface TableDoc extends FinDoc { valid_until?: string | null; archived_at?: string | null }
 
@@ -43,13 +45,15 @@ interface Props<D extends TableDoc> {
   /** "Email to customer": whether it can be used for this row (and why not), and what it opens. */
   emailFor?: (d: D) => EmailAvailability;
   onEmail?: (d: D) => void;
+  /** HMRC P4: bump to show only invoices that need VAT details (from the Finance page's VAT panel). */
+  vatFilterRequest?: number;
 }
 
 const PHONE_PAGE = 25;
 const date = (d?: string | null) => (d ? formatDueDate(d) : '—');
 
 /** Quotes or invoices: search, status chips, row count, row actions, phone cards with 44px targets. */
-export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loading, error, onRetry, onNew, onView, onEdit, onDownload, onStatus, onArchive, onRestore, onDeleteForever, busyId, view: viewProp, onViewChange, emailFor, onEmail }: Props<D>) {
+export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loading, error, onRetry, onNew, onView, onEdit, onDownload, onStatus, onArchive, onRestore, onDeleteForever, busyId, view: viewProp, onViewChange, emailFor, onEmail, vatFilterRequest }: Props<D>) {
   const phone = usePhone();
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('all');
@@ -64,6 +68,9 @@ export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loadi
   const noun = kind === 'quote' ? 'quote' : 'invoice';
   const Noun = kind === 'quote' ? 'Quote' : 'Invoice';
   const chipOf = (d: D) => (kind === 'invoice' ? invoiceStatus(d) : quoteStatus(d));
+  // HMRC P4: issued invoices without a VAT breakdown ("VAT not recorded"), for the filter chip and the tag.
+  const needsVat = (d: D) => kind === 'invoice' && invoiceNeedsVat(d as unknown as Parameters<typeof invoiceNeedsVat>[0]);
+  useEffect(() => { if (vatFilterRequest) { setOwnView('active'); setStatus('vat_missing'); } }, [vatFilterRequest]);
 
   const counts = useMemo(() => {
     const m = new Map<string, number>();
@@ -74,15 +81,19 @@ export function DocumentsTable<D extends TableDoc>({ kind, docs, numberOf, loadi
   const extra = kind === 'invoice' ? ['cancelled'] : ['other'];
   const filters = [{ value: 'all', label: 'All', n: activeDocs.length },
     ...[...base, ...extra.filter((c) => counts.get(c))].map((c) => ({ value: c, label: CHIP_LABEL[c as keyof typeof CHIP_LABEL], n: counts.get(c) ?? 0 }))];
+  const vatMissing = activeDocs.filter(needsVat).length;
+  if (kind === 'invoice' && (vatMissing > 0 || status === 'vat_missing')) filters.push({ value: 'vat_missing', label: 'VAT not recorded', n: vatMissing });
 
   const q = query.trim().toLowerCase();
-  const rows = listed.filter((d) => (archive || status === 'all' || chipOf(d) === status)
+  const rows = listed.filter((d) => (archive || status === 'all' || (status === 'vat_missing' ? needsVat(d) : chipOf(d) === status))
     && (!q || numberOf(d).toLowerCase().includes(q) || (d.client_name || '').toLowerCase().includes(q)));
   const filtered = !!q || (!archive && status !== 'all');
   const switchView = (v: 'active' | 'archive') => { if (onViewChange) onViewChange(v); else setOwnView(v); setStatus('all'); setShown(PHONE_PAGE); };
   const clear = () => { setQuery(''); setStatus('all'); setShown(PHONE_PAGE); };
   const amount = (d: D) => formatMoney(Number(d.total_amount) || 0, d.currency, { cents: true });
-  const chip = (d: D) => (kind === 'invoice' ? <InvoiceStatusChip doc={d} /> : <QuoteStatusChip doc={d} />);
+  const chip = (d: D) => (kind === 'invoice'
+    ? <span className="inline-flex flex-wrap items-center gap-1"><InvoiceStatusChip doc={d} />{needsVat(d) && <VatNotRecordedBadge />}{!isGbp(d.currency) && <NotGbpBadge currency={d.currency} />}</span>
+    : <QuoteStatusChip doc={d} />);
   const secondDate = (d: D) => (kind === 'invoice' ? d.due_date : d.valid_until);
   const secondLabel = kind === 'invoice' ? 'Due' : 'Valid until';
 

@@ -62,6 +62,8 @@ describe('QuoteInvoiceCreationSection currency', () => {
     const saved = vi.fn();
     const doc = { id: 'i1', invoice_number: 'INV-1', client_name: 'Acme Ltd', items: [{ id: '1', description: 'Work', quantity: 1, rate: 10, amount: 10 }], currency: 'USD', status: 'draft', tax_rate: 0 };
     render(<QuoteInvoiceCreationSection documentType="invoice" onDocumentSaved={saved} editingDocument={doc} />);
+    // HMRC P4: an invoice saved before per-line VAT needs a VAT treatment on each line when it is saved again.
+    fireEvent.change(screen.getByLabelText(/^VAT/), { target: { value: 'standard' } });
     fireEvent.click(screen.getByRole('button', { name: /Update Draft/ }));
     await waitFor(() => expect(saved).toHaveBeenCalled());
     expect(writes[0]).toMatchObject({ op: 'update', table: 'invoices', payload: { currency: 'USD' } });
