@@ -8,8 +8,10 @@ import type { DeleteOutcome } from './ConfirmDeleteDialog';
  * Add / Edit / Delete flow shared by the money-out tabs. Edit sends only changed fields; a failed
  * save or delete leaves the record as it was and returns the message to show in the dialog.
  */
-export function useRecordEditor<T extends { id: string }>({ spec, api, noun, nameOf, blank, onChanged, deleteProblem, toForm, prepare, validate, stateWords = ['active again', 'now inactive'] }: {
+export function useRecordEditor<T extends { id: string }>({ spec, specFor, api, noun, nameOf, blank, onChanged, deleteProblem, toForm, prepare, validate, stateWords = ['active again', 'now inactive'] }: {
   spec: FieldSpec;
+  /** The fields to save for these values, when they depend on the form (HMRC P4: VAT columns only once a treatment is chosen). */
+  specFor?: (values: FormValues) => FieldSpec;
   api: MoneyOutApi;
   noun: string;
   nameOf: (r: T) => string;
@@ -41,7 +43,8 @@ export function useRecordEditor<T extends { id: string }>({ spec, api, noun, nam
   const submit = async (values: FormValues): Promise<string | null> => {
     const problem = validate?.(values);
     if (problem) return problem;
-    const { payload, errors } = buildPayload(spec, prepare ? prepare(values) : values);
+    const ready = prepare ? prepare(values) : values;
+    const { payload, errors } = buildPayload(specFor ? specFor(ready) : spec, ready);
     if (errors.length) return errors.join(' ');
     if (editing) {
       const changes = changedFields(editing as unknown as Record<string, unknown>, payload);

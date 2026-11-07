@@ -19,6 +19,7 @@ import { FinanceOverview } from '@/components/finance/FinanceOverview';
 import { FinanceAnalytics } from '@/components/finance/FinanceAnalytics';
 import { FinanceReports } from '@/components/finance/FinanceReports';
 import { InvoiceStatusChip, QuoteStatusChip } from '@/components/finance/DocStatusChip';
+import { VatAttentionPanel } from '@/components/finance/VatAttentionPanel';
 import { ExpensesTab } from '@/components/finance/ExpensesTab';
 import { OutgoingsTab } from '@/components/finance/OutgoingsTab';
 import { ProductsTab } from '@/components/finance/ProductsTab';
@@ -82,6 +83,8 @@ const BusinessFinanceAssistant = () => {
   // The address bar is the source of truth for the tab, so a refresh lands where the user was.
   const tabFromUrl = (): FinanceTab => financeTabFromSearch(location.search);
   const [activeTab, setActiveTab] = useState<FinanceTab>(tabFromUrl);
+  // HMRC P4: bumped by the VAT panel to open a list filtered to "VAT not recorded".
+  const [vatFocus, setVatFocus] = useState({ invoices: 0, expenses: 0 });
   // On load, scroll the tab bar (it scrolls sideways on phones) so the active tab is visible.
   const tabListRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -636,6 +639,11 @@ const BusinessFinanceAssistant = () => {
           </div>
         ) : (<>
 
+        {/* HMRC P4: records without VAT details (left out of VAT figures until fixed). Shown on every tab. */}
+        <VatAttentionPanel invoices={activeInvoices} expenses={expenses}
+          onOpenInvoices={() => { changeArchiveView('invoices', 'active'); changeTab('invoices'); setVatFocus((n) => ({ ...n, invoices: n.invoices + 1 })); }}
+          onOpenExpenses={() => { changeTab('expenses'); setVatFocus((n) => ({ ...n, expenses: n.expenses + 1 })); }} />
+
         <TabsContent value="dashboard" className="mt-0">
           <FinanceOverview quotes={activeQuotes} invoices={activeInvoices} expenses={expenses} {...docState}
             numberOf={numberOf} onOpen={handleViewDocument} onNew={startNew} onOpenTab={changeTab} />
@@ -681,7 +689,7 @@ const BusinessFinanceAssistant = () => {
             onView={handleViewDocument} onEdit={handleEditDocument} onDownload={handleDownloadDocument}
             onStatus={(d: Invoice, to) => { void handleStatusChange(d, to); }} onArchive={(d: Invoice) => setArchivingDoc(d)} onRestore={(d: Invoice) => { void handleRestore(d); }} onDeleteForever={(d: Invoice) => setDeletingDoc(d)} busyId={statusBusy}
             view={archiveViews.invoices ? 'archive' : 'active'} onViewChange={(v) => changeArchiveView('invoices', v)}
-            emailFor={emailFor} onEmail={openEmail} />
+            emailFor={emailFor} onEmail={openEmail} vatFilterRequest={vatFocus.invoices} />
         </TabsContent>
 
         <TabsContent value="products" className="mt-0">
@@ -693,7 +701,7 @@ const BusinessFinanceAssistant = () => {
         </TabsContent>
 
         <TabsContent value="expenses" className="mt-0">
-          <ExpensesTab rows={expenses} suppliers={suppliers} {...moneyOutState('expenses', loadExpenses)} api={moneyOut('expenses')} onChanged={() => { void loadExpenses(); }} onDownload={downloadExpenses} />
+          <ExpensesTab key={`expenses-${vatFocus.expenses}`} initialFilter={vatFocus.expenses ? 'vat_missing' : undefined} rows={expenses} suppliers={suppliers} {...moneyOutState('expenses', loadExpenses)} api={moneyOut('expenses')} onChanged={() => { void loadExpenses(); }} onDownload={downloadExpenses} />
         </TabsContent>
 
         <TabsContent value="outgoings" className="mt-0">

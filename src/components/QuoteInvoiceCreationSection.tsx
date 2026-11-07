@@ -16,6 +16,13 @@ import { CURRENCIES } from '@/utils/currencyUtils';
 import { formatMoney, normalizeCurrency } from '@/lib/money';
 import { useAccountCurrency } from '@/hooks/useAccountCurrency';
 import ImageUpload from '@/components/ImageUpload';
+import {
+  DEFAULT_TREATMENT, fromPence, INVOICE_VAT_KEYS, isGbp, isMissingColumnError, isRecordedInvoice, isVatTreatment, lineNetPence, sumLines,
+  treatmentsIn, VAT_RATES, VAT_SCHEME, VAT_TREATMENT_LABELS, VAT_TREATMENT_SHORT, VAT_TREATMENTS, type VatTreatment,
+} from '@/lib/vat';
+
+type DocItem = { id: string; description: string; quantity: number; rate: number; amount: number; vat_treatment: VatTreatment | '' };
+const todayIso = () => new Date().toISOString().slice(0, 10);
 
 interface QuoteInvoiceCreationSectionProps {
   documentType: 'quote' | 'invoice';
@@ -64,9 +71,12 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
     currency: ''
   });
 
-  const [items, setItems] = useState([
-    { id: '1', description: '', quantity: 1, rate: 0, amount: 0 }
+  const [items, setItems] = useState<DocItem[]>([
+    { id: '1', description: '', quantity: 1, rate: 0, amount: 0, vat_treatment: DEFAULT_TREATMENT }
   ]);
+  // HMRC P4 (invoices only): the tax point, the date VAT is counted (standard scheme: the invoice date).
+  const [taxPointDate, setTaxPointDate] = useState(todayIso());
+  const isInvoice = documentType === 'invoice';
 
   // Load products on component mount
   useEffect(() => {
@@ -121,9 +131,13 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
           description: item.description || '',
           quantity: item.quantity || 1,
           rate: item.rate || 0,
-          amount: item.amount || 0
+          amount: item.amount || 0,
+          // An older invoice has no VAT treatment on its lines: the owner chooses one (nothing is guessed).
+          vat_treatment: isVatTreatment(item.vat_treatment) ? item.vat_treatment : '',
         })));
       }
+      // The tax point: as saved, or for an older invoice the date it was created in B2BNEST (shown, editable).
+      setTaxPointDate(editingDocument.tax_point_date || (editingDocument.created_at ? String(editingDocument.created_at).slice(0, 10) : todayIso()));
     } else {
       // Reset form for new document
       resetForm();
@@ -145,13 +159,16 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
       logo_url: '',
       currency: ''
     });
-    setItems([{ id: '1', description: '', quantity: 1, rate: 0, amount: 0 }]);
+    setItems([{ id: '1', description: '', quantity: 1, rate: 0, amount: 0, vat_treatment: DEFAULT_TREATMENT }]);
+    setTaxPointDate(todayIso());
     setSaveAsDraft(true);
     setLogoUrl('');
   };
 
+  // Line amounts in pence (quantity x unit price, rounded to the penny): no floating-point sums.
   const calculateItemAmount = (quantity: number, rate: number) => {
-    return quantity * rate;
+    const p = lineNetPence(quantity, rate);
+    return Number.isFinite(p) ? fromPence(p) : 0;
   };
 
   const updateItem = (id: string, field: string, value: any) => {
@@ -174,7 +191,8 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
       description: '',
       quantity: 1,
       rate: 0,
-      amount: 0
+      amount: 0,
+      vat_treatment: DEFAULT_TREATMENT
     }]);
   };
 
@@ -185,7 +203,8 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
       description: product.name + (product.description ? ` - ${product.description}` : ''),
       quantity: 1,
       rate: product.price,
-      amount: product.price
+      amount: calculateItemAmount(1, product.price),
+      vat_treatment: DEFAULT_TREATMENT
     }]);
   };
 
@@ -195,15 +214,22 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
     }
   };
 
+  // Quotes keep one tax rate for the document, as before. Invoices (HMRC P4): VAT per line, rounded per line, summed.
+  const vatLines = items.map((item) => ({ treatment: (item.vat_treatment || DEFAULT_TREATMENT) as VatTreatment, netPence: lineNetPence(item.quantity, item.rate) || 0 }));
+  const vatTotals = sumLines(vatLines);
   const calculateTotals = () => {
+    if (isInvoice) return { subtotal: fromPence(vatTotals.net), taxAmount: fromPence(vatTotals.vat), total: fromPence(vatTotals.gross) };
     const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
     const taxAmount = (subtotal * Number(formData.tax_rate)) / 100;
     const total = subtotal + taxAmount;
-    
+
     return { subtotal, taxAmount, total };
   };
 
   const { subtotal, taxAmount, total } = calculateTotals();
+  const lineTreatments = Array.from(new Set(items.map((i) => i.vat_treatment)));
+  const mixedRates = isInvoice && lineTreatments.length === 1 && lineTreatments[0] ? false : isInvoice;
+  const wasNotRecorded = isInvoice && !!editingDocument && !isRecordedInvoice(editingDocument);
   const currency = formData.currency || (editingDocument ? normalizeCurrency(editingDocument.currency) : accountCurrency);
   const fmt = (n: number) => formatMoney(n, currency, { cents: true });
   const currencyOptions = Array.from(new Set([...(accountCurrency ? [accountCurrency] : []), ...Object.keys(CURRENCIES), ...(currency ? [currency] : [])]));
@@ -230,9 +256,27 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
       return;
     }
     
+    if (isInvoice && items.some((item) => !item.vat_treatment)) {
+      toast({ title: "Validation Error", description: "Choose a VAT treatment for every line.", variant: "destructive" });
+      return;
+    }
+    if (isInvoice && !/^\d{4}-\d{2}-\d{2}$/.test(taxPointDate)) {
+      toast({ title: "Validation Error", description: "Enter the tax point date (the date VAT is counted).", variant: "destructive" });
+      return;
+    }
+
     setIsLoading(true);
-    
+
     try {
+      // HMRC P4: an invoice saves its VAT per line (treatment, rate, net, VAT, gross), the tax point and "recorded".
+      // tax_rate / tax_amount stay filled for older screens: tax_amount = the lines' VAT, tax_rate = the one rate if
+      // every line has the same treatment, otherwise 0 (mixed rates).
+      const invoiceItems = items.map((item, i) => {
+        const line = vatTotals.lines[i];
+        return { ...item, amount: fromPence(line.net), vat_treatment: line.treatment, vat_rate: VAT_RATES[line.treatment],
+          net: fromPence(line.net), vat: fromPence(line.vat), gross: fromPence(line.gross) };
+      });
+      const singleTreatment = lineTreatments.length === 1 && isVatTreatment(lineTreatments[0]) ? lineTreatments[0] : null;
       const documentData = {
         user_id: user.id,
         client_name: formData.client_name,
@@ -240,9 +284,9 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
         client_address: formData.client_address,
         company_name: formData.company_name,
         company_address: formData.company_address,
-        items: items,
+        items: isInvoice ? invoiceItems : items.map(({ vat_treatment: _t, ...rest }) => rest),
         subtotal: subtotal,
-        tax_rate: Number(formData.tax_rate),
+        tax_rate: isInvoice ? (singleTreatment ? VAT_RATES[singleTreatment] : 0) : Number(formData.tax_rate),
         tax_amount: taxAmount,
         total_amount: total,
         notes: formData.notes,
@@ -256,28 +300,41 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
         }),
         ...(documentType === 'invoice' && {
           due_date: formData.due_date || null,
-          invoice_number: editingDocument?.invoice_number || `INV-${Date.now()}`
+          invoice_number: editingDocument?.invoice_number || `INV-${Date.now()}`,
+          tax_point_date: taxPointDate,
+          vat_scheme: VAT_SCHEME,
+          vat_status: 'recorded',
         })
       };
 
-      let result;
-      if (editingDocument) {
-        // Update existing document
-        const { data, error } = await supabase
-          .from(documentType === 'quote' ? 'quotes' : 'invoices')
-          .update(documentData as any)
-          .eq('id', editingDocument.id)
-          .select()
-          .single();
-        result = { data, error };
-      } else {
+      const save = async (row: Record<string, unknown>) => {
+        if (editingDocument) {
+          // Update existing document
+          const { data, error } = await supabase
+            .from(documentType === 'quote' ? 'quotes' : 'invoices')
+            .update(row as any)
+            .eq('id', editingDocument.id)
+            .select()
+            .single();
+          return { data, error };
+        }
         // Create new document
         const { data, error } = await supabase
           .from(documentType === 'quote' ? 'quotes' : 'invoices')
-          .insert([documentData] as any)
+          .insert([row] as any)
           .select()
           .single();
-        result = { data, error };
+        return { data, error };
+      };
+      let result = await save(documentData);
+      // Before the HMRC P4 database update the three VAT columns don't exist: save without them (the lines keep their
+      // VAT), and say the invoice will show as "VAT not recorded" until the update is applied and it is saved again.
+      let vatColumnsMissing = false;
+      if (result.error && isInvoice && isMissingColumnError(result.error)) {
+        const legacy: Record<string, unknown> = { ...documentData };
+        for (const k of INVOICE_VAT_KEYS) delete legacy[k];
+        result = await save(legacy);
+        vatColumnsMissing = !result.error;
       }
 
       if (result.error) throw result.error;
@@ -286,7 +343,7 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
       const status = saveAsDraft ? 'draft' : 'sent';
       toast({
         title: "Success",
-        description: `${documentType.charAt(0).toUpperCase() + documentType.slice(1)} ${action} as ${status}.${status === 'sent' ? ' No email was sent from B2BNEST.' : ''}`
+        description: `${documentType.charAt(0).toUpperCase() + documentType.slice(1)} ${action} as ${status}.${status === 'sent' ? ' No email was sent from B2BNEST.' : ''}${vatColumnsMissing ? ' VAT details will be recorded after a database update.' : ''}`
       });
       
       onDocumentSaved();
@@ -439,7 +496,7 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
                 rows={3}
               />
             </div>
-            <div>
+            {!isInvoice && <div>
               <Label htmlFor="tax_rate">Tax Rate (%)</Label>
               <Input
                 id="tax_rate"
@@ -451,7 +508,7 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
                 onChange={(e) => setFormData(prev => ({ ...prev, tax_rate: e.target.value }))}
                 placeholder="0"
               />
-            </div>
+            </div>}
           </div>
         </div>
 
@@ -491,7 +548,22 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
               />
             </div>
           )}
+          {isInvoice && (
+            <div>
+              <Label htmlFor="tax_point_date">Tax point date (VAT) *</Label>
+              <Input id="tax_point_date" type="date" value={taxPointDate} onChange={(e) => setTaxPointDate(e.target.value)} aria-describedby="tax_point_help" required />
+              <p id="tax_point_help" className="mt-1 text-small text-muted-foreground">The date VAT is counted. On the standard scheme this is the invoice date.</p>
+            </div>
+          )}
         </div>
+        {isInvoice && wasNotRecorded && (
+          <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-50" data-testid="invoice-vat-not-recorded">
+            This invoice was saved before VAT was recorded per line. Check the tax point date and choose a VAT treatment for each line, then save to record its VAT.
+          </p>
+        )}
+        {isInvoice && currency && !isGbp(currency) && (
+          <p className="text-sm text-muted-foreground" data-testid="invoice-not-gbp">This invoice is in {currency}. Its VAT is kept as entered, but invoices not in GBP are left out of VAT returns until currency conversion exists.</p>
+        )}
 
         {/* Logo Upload */}
         <div className="space-y-4">
@@ -552,7 +624,7 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
           <div className="space-y-3">
             {items.map((item) => (
               <div key={item.id} className="grid grid-cols-12 gap-3 items-end">
-                <div className="col-span-5">
+                <div className={isInvoice ? 'col-span-12 md:col-span-3' : 'col-span-5'}>
                   <Label htmlFor={`desc-${item.id}`}>Description *</Label>
                   <Input
                     id={`desc-${item.id}`}
@@ -583,8 +655,18 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
                     onChange={(e) => updateItem(item.id, 'rate', Number(e.target.value))}
                   />
                 </div>
+                {isInvoice && (
+                  <div className="col-span-6 md:col-span-2">
+                    <Label htmlFor={`vat-${item.id}`}>VAT *</Label>
+                    <select id={`vat-${item.id}`} value={item.vat_treatment} onChange={(e) => updateItem(item.id, 'vat_treatment', e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                      {!item.vat_treatment && <option value="">Choose…</option>}
+                      {VAT_TREATMENTS.map((t) => <option key={t} value={t}>{VAT_TREATMENT_LABELS[t]}</option>)}
+                    </select>
+                  </div>
+                )}
                 <div className="col-span-2">
-                  <Label htmlFor={`amount-${item.id}`}>Amount</Label>
+                  <Label htmlFor={`amount-${item.id}`}>{isInvoice ? 'Net' : 'Amount'}</Label>
                   <Input
                     id={`amount-${item.id}`}
                     value={fmt(item.amount)}
@@ -610,10 +692,27 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
         {/* Totals */}
         <div className="space-y-2 pt-4 border-t">
           <div className="flex justify-between text-sm">
-            <span>Subtotal:</span>
+            <span>{isInvoice ? 'Net total:' : 'Subtotal:'}</span>
             <span>{fmt(subtotal)}</span>
           </div>
-          {Number(formData.tax_rate) > 0 && (
+          {isInvoice && (
+            <div className="space-y-1" data-testid="invoice-vat-groups">
+              {treatmentsIn(vatTotals).map((t) => {
+                const g = vatTotals.byTreatment[t]!;
+                return (
+                  <div key={t} className="flex justify-between text-sm text-muted-foreground">
+                    <span>{VAT_TREATMENT_SHORT[t]}: net {fmt(fromPence(g.net))}</span>
+                    <span>VAT {fmt(fromPence(g.vat))}</span>
+                  </div>
+                );
+              })}
+              <div className="flex justify-between text-sm">
+                <span>VAT total{mixedRates ? ' (mixed rates)' : ''}:</span>
+                <span>{fmt(taxAmount)}</span>
+              </div>
+            </div>
+          )}
+          {!isInvoice && Number(formData.tax_rate) > 0 && (
             <div className="flex justify-between text-sm">
               <span>Tax ({formData.tax_rate}%):</span>
               <span>{fmt(taxAmount)}</span>

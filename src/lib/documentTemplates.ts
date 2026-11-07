@@ -1,3 +1,4 @@
+import { vatGroupsOf, VAT_TREATMENT_SHORT } from '@/lib/vat';
 import jsPDF from 'jspdf';
 import { formatCurrency } from '@/utils/currencyUtils';
 
@@ -96,6 +97,9 @@ export interface RenderableDocument {
   tax_amount?: number | null;
   total_amount?: number | null;
   notes?: string | null;
+  /** HMRC P4 (invoices): present after the database update. */
+  vat_status?: string | null;
+  tax_point_date?: string | null;
 }
 
 const PAGE_W = 210;
@@ -293,7 +297,26 @@ export function renderDocumentPdf(
   pdf.text('Subtotal', totalsLeft, y);
   pdf.text(money(doc.subtotal ?? 0), right, y, { align: 'right' });
   y += 6;
-  if (Number(doc.tax_rate) > 0) {
+  // HMRC P4: a recorded invoice shows its VAT per treatment (net and VAT for each); others keep the single tax line.
+  const vatGroups = vatGroupsOf(doc);
+  if (vatGroups) {
+    pdf.setFontSize(9);
+    for (const g of vatGroups) {
+      pdf.text(`${VAT_TREATMENT_SHORT[g.treatment]} on ${money(g.net)}`, totalsLeft, y);
+      pdf.text(`VAT ${money(g.vat)}`, right, y, { align: 'right' });
+      y += 5;
+    }
+    pdf.setFontSize(10);
+    pdf.text('VAT total', totalsLeft, y);
+    pdf.text(money(doc.tax_amount ?? 0), right, y, { align: 'right' });
+    y += 6;
+    if (doc.tax_point_date) {
+      pdf.setFontSize(8);
+      pdf.text(`Tax point: ${new Date(`${doc.tax_point_date}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`, totalsLeft, y);
+      pdf.setFontSize(10);
+      y += 5;
+    }
+  } else if (Number(doc.tax_rate) > 0) {
     pdf.text(`Tax (${Number(doc.tax_rate)}%)`, totalsLeft, y);
     pdf.text(money(doc.tax_amount ?? 0), right, y, { align: 'right' });
     y += 6;

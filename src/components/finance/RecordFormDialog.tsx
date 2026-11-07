@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useId, useRef, useState } from 'react';
+import { FormEvent, ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -39,7 +39,7 @@ function groupOptions(options: NonNullable<FieldUi['options']>) {
  * One dialog for Add and Edit: the same fields, prefilled when editing. `onSubmit` returns an
  * error message to show inside the dialog (it then stays open and nothing is lost), or null.
  */
-export function RecordFormDialog({ open, onOpenChange, title, description, fields, initial, submitLabel, onSubmit }: {
+export function RecordFormDialog({ open, onOpenChange, title, description, fields, initial, submitLabel, onSubmit, summary }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
@@ -48,6 +48,8 @@ export function RecordFormDialog({ open, onOpenChange, title, description, field
   initial: FormValues;
   submitLabel: string;
   onSubmit: (values: FormValues) => Promise<string | null>;
+  /** A live summary under the fields, worked out from what is typed (e.g. net, VAT and total). */
+  summary?: (values: FormValues) => ReactNode;
 }) {
   const id = useId();
   const [values, setValues] = useState<FormValues>(initial);
@@ -127,6 +129,7 @@ export function RecordFormDialog({ open, onOpenChange, title, description, field
               );
             })}
           </div>
+          {summary && <div aria-live="polite">{summary(values)}</div>}
           {error && (
             <div role="alert" className="flex items-start gap-2 rounded-control border border-destructive/40 bg-destructive/5 p-3 text-body">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden="true" />
