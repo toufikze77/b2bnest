@@ -172,11 +172,43 @@ No new warnings. `hmrc_take_obligations_slot` is SECURITY INVOKER and service-ro
 2. Run `rollback.sql`. It drops the function and puts back the eight-event rule.
 3. If obligations audit rows exist (they stay, append-only), it refuses unless `SET app.hmrc_p3_force = 'on';`. Forced, the old rule comes back as NOT VALID.
 
+## Fixed after release (7 Nov 2026): business details belong to a company
+**What went wrong:**
+- Settings → HMRC read and saved the business details by person only (`hmrc_settings` by `user_id`, `.maybeSingle()`) and never set `organization_id`.
+- The same row was therefore shown under every company the person belongs to, and saved wherever that row happened to be tagged.
+- An owner saved a VAT number that landed on a row for another company, so **Get VAT obligations** for the connected company said the VAT number was missing.
+- Production was corrected by hand (one row re-tagged). This fix changes no data and needs no database change.
+
+**The rule now:**
+1. **Settings → HMRC shows the details of the company selected there** (the same company as the connection panel), with "Saving for: {company}".
+   - Switching company reloads the details, and the old company's details are cleared first.
+   - Owners and admins can save; members see the details read-only, with no save button.
+2. **Load:** your row for `(you, that company)`. If you have none, your old row with no company is shown, with a note asking you to save it for this company.
+3. **Save:** updates your row for that company, or creates it with `organization_id` set.
+   - An old no-company row is left as it is, and is never copied to other companies.
+   - The browser cannot move a row to another company (the existing column grants allow no `organization_id` update), and no grant or policy was widened.
+4. **The server** (`pickVatNumber` in `_shared/hmrc/store.ts`) picks the VAT number for HMRC calls in this order:
+   1. the caller's own row for the company;
+   2. otherwise the newest row for the company saved by someone who is now an owner or admin of it (a member's row is never used, although RLS lets members save their own);
+   3. otherwise the caller's own no-company row.
+
+   A row for another company is never used. If none fits, the result is "Add your VAT number in Settings → HMRC for {company} first."
+
+**Tests:**
+- Deno, in `p3_test.ts`:
+  - two companies each get their own number;
+  - another company's row is never used;
+  - the no-company row is the only fallback;
+  - a member's row is ignored.
+- vitest, in `hmrcBusinessDetails.test.tsx`:
+  - loads per company;
+  - switching company changes the shown number;
+  - saving updates or creates the company's own row;
+  - the old no-company row is shown once and left alone;
+  - a member cannot save.
+
 ## Risks
-- **The VAT number comes from `hmrc_settings`, which people write from the browser.**
-  - Any member could save a row for the company, and the server would then use that VAT number for the owner's request.
-  - HMRC only shows VAT accounts the connected HMRC sign-in can see, so the worst case is "not authorised".
-  - A company-level VAT number that only owners and admins can set would be cleaner, and is worth considering in P4.
+- **The VAT number comes from `hmrc_settings`, which people write from the browser.** Since the fix above, only rows saved by a current owner or admin of the company, or the caller's own no-company row, are used. RLS still lets a member save their own row for the company; it is ignored. Tightening the policy itself would be a database change, and is not needed for correctness.
 - **The VAT number and the connection must belong to the same HMRC test user**, or HMRC answers `CLIENT_OR_AGENT_NOT_AUTHORISED`.
 - **The sandbox data may have fixed dates** (2017/2018 in HMRC's examples), so "Open" may show old periods as "due date passed". That is HMRC's test data, not a B2BNEST calculation.
 - **Known header gaps** (as in P2): `Gov-Client-Public-Port` is omitted and should be raised with HMRC; `HMRC_VENDOR_PUBLIC_IP` is unset, so Vendor-Public-IP and Vendor-Forwarded are omitted.

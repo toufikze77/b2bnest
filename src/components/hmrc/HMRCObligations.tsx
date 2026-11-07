@@ -56,7 +56,10 @@ export default function HMRCObligations() {
     const r = await getVatObligations(organizationId, { status: filter, ...(filter === 'F' ? range : {}), ...(scenario ? { scenario } : {}) });
     setBusy(false);
     if (!r.ok) {
-      setSaid(r.code === 'hmrc_refused' ? `HMRC didn't accept the request${r.hmrc_code ? ` (${r.hmrc_code})` : ''}. Please try again later.` : r.message ?? messageFor(r.code));
+      setSaid(r.code === 'hmrc_refused' ? `HMRC didn't accept the request${r.hmrc_code ? ` (${r.hmrc_code})` : ''}. Please try again later.`
+        // The VAT number belongs to a company: say which one (docs/hmrc-p3, "Fixed after release").
+        : r.code === 'vrn_missing' ? `Add your VAT number in Settings → HMRC for ${organization?.name ?? 'this company'} first.`
+        : r.message ?? messageFor(r.code));
       return;
     }
     const list = r.obligations ?? [];
