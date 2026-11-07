@@ -9,7 +9,7 @@ import {
   DOCUMENT_TEMPLATES,
   DocumentTemplate,
   DocumentTemplateId,
-  renderDocumentPdf,
+  drawDocumentPdf,
 } from '@/lib/documentTemplates';
 import { useDocumentTemplates } from '@/hooks/useDocumentTemplates';
 
@@ -125,7 +125,7 @@ const TemplateGrid: React.FC<{
   currency: string;
 }> = ({ documentType, selected, onSelect, currency }) => {
   const previewPdf = (id: DocumentTemplateId) => {
-    const pdf = renderDocumentPdf({ ...SAMPLE, type: documentType }, id, currency);
+    const pdf = drawDocumentPdf({ ...SAMPLE, type: documentType }, id, currency);
     window.open(pdf.output('bloburl'), '_blank');
   };
 

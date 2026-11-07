@@ -128,7 +128,36 @@ describe('expense form: VAT', () => {
     expect(screen.getAllByTestId('vat-not-recorded').length).toBeGreaterThan(0);
     fireEvent.click(screen.getAllByRole('button', { name: 'Old train' })[0]);
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByTestId('expense-vat-none')).toBeInTheDocument();
+    expect(within(dialog).getByTestId('expense-vat-choose')).toHaveTextContent('Choose how VAT applies to this expense');
+  });
+
+  it('an old expense without a treatment can\'t be saved; once one is chosen it saves as recorded', async () => {
+    const db = fakeDb([{ ...oldRow }]);
+    render(<Tab db={db} />);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Old train' })[0]);
+    const dialog = await screen.findByRole('dialog');
+    // No "None" choice any more: the treatment is required.
+    fireEvent.pointerDown(within(dialog).getByRole('combobox', { name: /^VAT treatment/ }), { button: 0, pointerType: 'mouse' });
+    expect(screen.queryByRole('option', { name: 'None' })).toBeNull();
+    fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }));
+    expect(await within(dialog).findByText('Choose how VAT applies to this expense.', { selector: '[role="alert"], p' })).toBeInTheDocument();
+    expect(db.calls).toHaveLength(0);
+    await pickOption(dialog, /^VAT treatment/, 'Standard rate (20%)');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(db.calls).toHaveLength(1));
+    expect(db.calls[0].payload).toMatchObject({ net_amount: 10, vat_amount: 2, vat_treatment: 'standard', vat_rate: 20, vat_status: 'recorded', tax_point_date: '2026-10-15' });
+  });
+
+  it('a new expense starts on Standard 20% with the amount including VAT', async () => {
+    const db = fakeDb([]);
+    render(<Tab db={db} />);
+    const dialog = await addExpense('12');
+    expect(within(dialog).getByRole('combobox', { name: /^VAT treatment/ })).toHaveTextContent('Standard rate (20%)');
+    expect(within(dialog).getByRole('combobox', { name: /^The amount entered is/ })).toHaveTextContent('Including VAT');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Add expense' }));
+    await waitFor(() => expect(db.calls).toHaveLength(1));
+    expect(db.calls[0].payload).toMatchObject({ amount: 12, net_amount: 10, vat_amount: 2, vat_status: 'recorded' });
   });
 });
 

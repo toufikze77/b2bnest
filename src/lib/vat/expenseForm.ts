@@ -26,18 +26,19 @@ export const EXPENSE_VAT_FIELDS: FieldSpec = {
   vat_reclaimable: { kind: 'boolean', label: 'VAT reclaimable' },
 };
 
+/** Every save of an expense records its VAT: an older expense opened without a treatment must have one chosen. */
+export const EXPENSE_VAT_CHOOSE = 'Choose how VAT applies to this expense.';
+
 export type VatResult = { ok: true; treatment: VatTreatment; net: number; vat: number; gross: number } | { ok: false; error: string };
 
 /** Net, VAT and gross (pence) from what was typed. */
 export function vatFromForm(v: FormValues): VatResult {
   const treatment = v.vat_treatment;
-  if (!isVatTreatment(treatment)) return { ok: false, error: 'Choose the VAT treatment.' };
+  if (!isVatTreatment(treatment)) return { ok: false, error: EXPENSE_VAT_CHOOSE };
   return vatFor(treatment, v);
 }
-/** No treatment chosen (an older record left as "VAT not recorded"): nothing to record, and nothing to complain about. */
+/** Whether a treatment is chosen (an older expense opened for edit starts without one, and can't be saved until it has one). */
 export const vatChosen = (v: FormValues) => isVatTreatment(v.vat_treatment);
-/** The fields to save: with a treatment, the VAT columns too; without one, only the usual expense fields. */
-export const expenseSpecFor = (v: FormValues): FieldSpec => (vatChosen(v) ? EXPENSE_VAT_FIELDS : EXPENSE_FIELDS);
 
 function vatFor(treatment: VatTreatment, v: FormValues): VatResult {
   const entered = toPence(typeof v.amount === 'string' ? v.amount : String(v.amount ?? ''));
@@ -69,7 +70,7 @@ export function prepareExpenseVat(v: FormValues): FormValues {
   };
 }
 
-/** Form values for editing: the stored amount is the gross. An older record has no treatment, so one must be chosen. */
+/** Form values for editing: the stored amount is the gross. An older record has no treatment: it starts empty (nothing guessed) and one must be chosen. */
 export function expenseVatForm(row: VatColumns & { amount?: number | string | null }, base: FormValues): FormValues {
   const treatment = isVatTreatment(row.vat_treatment) ? row.vat_treatment : '';
   let override = '';

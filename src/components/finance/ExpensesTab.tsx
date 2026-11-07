@@ -9,7 +9,7 @@ import {
 import type { MoneyOutApi } from '@/lib/moneyOutApi';
 import { formatMoney } from '@/lib/money';
 import {
-  blankExpenseVat, EXPENSE_VAT_FIELDS, expenseSpecFor, expenseVatForm, vatChosen, fromPence, moneyOutNeedsVat, MONEY_OUT_VAT_KEYS, prepareExpenseVat, VAT_ENTRY_OPTIONS,
+  blankExpenseVat, EXPENSE_VAT_CHOOSE, EXPENSE_VAT_FIELDS, expenseVatForm, vatChosen, fromPence, moneyOutNeedsVat, MONEY_OUT_VAT_KEYS, prepareExpenseVat, VAT_ENTRY_OPTIONS,
   VAT_TREATMENT_LABELS, VAT_TREATMENTS, vatFromForm, withOptionalVatColumns, type VatColumns,
 } from '@/lib/vat';
 import { toast } from 'sonner';
@@ -42,16 +42,17 @@ export function ExpensesTab({ rows, suppliers, loading, error, onRetry, api, onC
   const money = (n: number) => formatMoney(n, currency, { cents: true });
   // Business headings plus any category already used on this user's expenses (legacy or typed).
   const categories = expenseCategoryOptions(rows.map((r) => r.category));
-  // HMRC P4: VAT on every saved expense (standard scheme). Before the database update the VAT columns are dropped from
-  // the save and the expense stays "VAT not recorded".
+  // HMRC P4: every save of an expense records its VAT (standard scheme): a treatment is required, so an older expense
+  // can't be saved until one is chosen. Before the database update the VAT columns are dropped from the save and the
+  // expense stays "VAT not recorded".
   const vatApi = withOptionalVatColumns(api, MONEY_OUT_VAT_KEYS, () => toast.info('Saved without VAT details: they can be recorded after a database update.'));
   const ed = useRecordEditor<ExpenseRow>({
-    spec: EXPENSE_VAT_FIELDS, specFor: expenseSpecFor, api: vatApi, noun: 'expense', nameOf: (r) => r.description, onChanged,
+    spec: EXPENSE_VAT_FIELDS, api: vatApi, noun: 'expense', nameOf: (r) => r.description, onChanged,
     blank: () => ({ description: '', category: '', category_custom: '', amount: '', date: today(), supplier_id: '', status: 'pending', ...blankExpenseVat() }),
     toForm: (r, base) => expenseVatForm(r, base),
     // "Other (type your own)": the typed name becomes the category (an existing match is reused).
     validate: (v) => (v.category === CUSTOM_CATEGORY ? resolveCustomCategory(v.category_custom as string, categories).error ?? null : null)
-      ?? (() => { if (!vatChosen(v)) return null; const r = vatFromForm(v); return 'error' in r ? r.error : null; })(),
+      ?? (() => { const r = vatFromForm(v); return 'error' in r ? r.error : null; })(),
     prepare: (v) => prepareExpenseVat(v.category === CUSTOM_CATEGORY ? { ...v, category: resolveCustomCategory(v.category_custom as string, categories).value } : v),
   });
   const usedCategories = categories.filter((c) => rows.some((r) => r.category === c.value));
@@ -103,7 +104,7 @@ export function ExpensesTab({ rows, suppliers, loading, error, onRetry, api, onC
         submitLabel={ed.editing ? 'Save changes' : 'Add expense'}
         initial={ed.initial} onSubmit={ed.submit}
         summary={(v) => {
-          if (!vatChosen(v)) return <p className="text-small text-muted-foreground" data-testid="expense-vat-none">No VAT treatment chosen: this expense stays “VAT not recorded”.</p>;
+          if (!vatChosen(v)) return <p className="rounded-control border border-border bg-muted/40 p-3 text-body" data-testid="expense-vat-choose">{EXPENSE_VAT_CHOOSE}</p>;
           const r = vatFromForm(v);
           return r.ok ? (
             <p className="rounded-control border border-border bg-muted/40 p-3 text-body" data-testid="expense-vat-summary">
@@ -115,8 +116,8 @@ export function ExpensesTab({ rows, suppliers, loading, error, onRetry, api, onC
           { key: 'description', label: 'Description', type: 'text', required: true, wide: true },
           { key: 'amount', label: `Amount${currency ? ` (${currency})` : ''}`, type: 'number', required: true },
           { key: 'vat_entry', label: 'The amount entered is', type: 'select', required: true, options: VAT_ENTRY_OPTIONS },
-          { key: 'vat_treatment', label: 'VAT treatment', type: 'select', options: VAT_TREATMENTS.map((t) => ({ value: t, label: VAT_TREATMENT_LABELS[t] })),
-            hint: 'Choose one to record this expense’s VAT. “None” keeps it as “VAT not recorded” (left out of VAT figures).' },
+          { key: 'vat_treatment', label: 'VAT treatment', type: 'select', required: true, options: VAT_TREATMENTS.map((t) => ({ value: t, label: VAT_TREATMENT_LABELS[t] })),
+            hint: 'Every expense records its VAT. Choose Zero rate, Exempt or Outside the scope of VAT when there is none.' },
           { key: 'vat_override', label: 'VAT on the receipt (optional)', type: 'number', hint: 'Leave empty to use the calculated VAT. It can differ by 1p at most (supplier rounding).' },
           { key: 'vat_reclaimable', label: 'VAT can be reclaimed', type: 'switch', hint: 'Turn off for costs whose VAT you can’t reclaim, such as business entertainment.' },
           { key: 'date', label: 'Date (VAT tax point)', type: 'date', required: true },
