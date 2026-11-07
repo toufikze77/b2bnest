@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -54,6 +54,11 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
   const [saveAsDraft, setSaveAsDraft] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
   const [logoUrl, setLogoUrl] = useState('');
+  // A new document starts with the logo from the latest invoice or quote (shown with "Use a different logo" / "Remove").
+  const [logoSuggested, setLogoSuggested] = useState(false);
+  const [resetCount, setResetCount] = useState(0);
+  const logoRef = useRef('');
+  logoRef.current = logoUrl;
   
   // Form state
   const [formData, setFormData] = useState({
@@ -78,10 +83,34 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
   const [taxPointDate, setTaxPointDate] = useState(todayIso());
   const isInvoice = documentType === 'invoice';
 
-  // Load products on component mount
+  // Load products on mount and when the signed-in person changes (by id: a session refresh gives a new user object).
   useEffect(() => {
     loadProducts();
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  // New document with no logo yet: use the logo of this person's latest invoice or quote (logo_url). Nothing is written.
+  useEffect(() => {
+    if (editingDocument || !user?.id) return;
+    let live = true;
+    const latest = async (table: 'invoices' | 'quotes') => {
+      const { data, error } = await supabase.from(table).select('logo_url, created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20);
+      if (error || !Array.isArray(data)) return null;
+      const row = (data as { logo_url?: string | null; created_at?: string }[]).find((r) => typeof r.logo_url === 'string' && r.logo_url.trim());
+      return row ? { url: row.logo_url as string, at: String(row.created_at ?? '') } : null;
+    };
+    (async () => {
+      try {
+        const found = (await Promise.all([latest('invoices'), latest('quotes')])).filter((x): x is { url: string; at: string } => !!x);
+        const pick = found.sort((a, b) => b.at.localeCompare(a.at))[0];
+        if (!live || !pick || logoRef.current) return;
+        setLogoUrl(pick.url);
+        setFormData((prev) => ({ ...prev, logo_url: pick.url }));
+        setLogoSuggested(true);
+      } catch { /* no suggestion: the uploader is shown as usual */ }
+    })();
+    return () => { live = false; };
+  }, [editingDocument, user?.id, resetCount]);
 
   const loadProducts = async () => {
     if (!user) return;
@@ -163,6 +192,8 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
     setTaxPointDate(todayIso());
     setSaveAsDraft(true);
     setLogoUrl('');
+    setLogoSuggested(false);
+    setResetCount((n) => n + 1);
   };
 
   // Line amounts in pence (quantity x unit price, rounded to the penny): no floating-point sums.
@@ -569,11 +600,20 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Company Logo</h3>
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+            {logoSuggested && logoUrl && (
+              <div className="mb-3 flex flex-wrap items-center gap-2 text-sm" data-testid="logo-suggested">
+                <span className="text-muted-foreground">Using the logo from your latest invoice or quote.</span>
+                <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('file-upload-user-avatars')?.click()}>Use a different logo</Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => { setLogoUrl(''); setFormData((prev) => ({ ...prev, logo_url: '' })); setLogoSuggested(false); }}>Remove</Button>
+              </div>
+            )}
             <ImageUpload
               onImageUploaded={(url) => {
                 setLogoUrl(url);
                 setFormData(prev => ({ ...prev, logo_url: url }));
+                setLogoSuggested(false);
               }}
+              userId={user?.id}
               bucket="user-avatars"
               currentImageUrl={logoUrl}
               accept="image/*"

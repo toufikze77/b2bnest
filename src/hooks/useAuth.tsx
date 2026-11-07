@@ -223,6 +223,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 };
 
+/** The signed-in user, or null when there is none or no AuthProvider (never throws). */
+export function useSignedInUser(): User | null {
+  return useContext(AuthContext)?.user ?? null;
+}
+
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === null) {

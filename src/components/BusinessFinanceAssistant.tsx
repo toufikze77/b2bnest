@@ -79,6 +79,10 @@ const BusinessFinanceAssistant = () => {
   const navigate = useNavigate();
   const { templateFor } = useDocumentTemplates();
   const [isLoading, setIsLoading] = useState(false);
+  // True once the first load has finished. A later reload (after a save, or a session refresh) never replaces the
+  // page or the lists with a spinner, so an open form keeps what was typed.
+  const [loadedOnce, setLoadedOnce] = useState(false);
+  const firstLoad = isLoading && !loadedOnce;
   const location = useLocation();
   // The address bar is the source of truth for the tab, so a refresh lands where the user was.
   const tabFromUrl = (): FinanceTab => financeTabFromSearch(location.search);
@@ -173,12 +177,14 @@ const BusinessFinanceAssistant = () => {
     }
   };
 
-  // Load data on component mount
+  // Load data on mount and when the signed-in person changes. Keyed on the id: Supabase gives a new user object when it
+  // refreshes the session (for example when the tab regains focus), and that must not reload the page.
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       fetchData();
     }
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const fetchData = async () => {
     try {
@@ -199,6 +205,7 @@ const BusinessFinanceAssistant = () => {
       toast.error('Failed to load data');
     } finally {
       setIsLoading(false);
+      setLoadedOnce(true);
     }
   };
 
@@ -542,10 +549,12 @@ const BusinessFinanceAssistant = () => {
   const activeQuotes = activeOnly(quotes);
   const activeInvoices = activeOnly(invoices);
 
+  // After a successful save, go to the matching list (the form already said what was saved, so no second toast).
   const handleDocumentSaved = () => {
+    const kind = editingDocument ? kindOf(editingDocument) : documentType;
     setEditingDocument(null);
     fetchData();
-    toast.success('Document saved successfully');
+    changeTab(kind === 'invoice' ? 'invoices' : 'quotes');
   };
 
   const handleDownloadDocument = async (doc: Quote | Invoice) => {
@@ -590,7 +599,7 @@ const BusinessFinanceAssistant = () => {
 
   // Money-out writes: every update and delete is filtered by id and the signed-in user (src/lib/moneyOutApi.ts).
   const moneyOut = (table: OwnedTable) => moneyOutApi(supabase as unknown as Parameters<typeof moneyOutApi>[0], user?.id ?? '', table);
-  const moneyOutState = (k: keyof typeof moneyOutError, reload: () => Promise<void>) => ({ loading: isLoading, error: moneyOutError[k], onRetry: () => { void reload(); } });
+  const moneyOutState = (k: keyof typeof moneyOutError, reload: () => Promise<void>) => ({ loading: firstLoad, error: moneyOutError[k], onRetry: () => { void reload(); } });
 
   const TAB_GROUPS: { label: string; tabs: { value: FinanceTab; label: string }[] }[] = [
     { label: 'Overview', tabs: [{ value: 'dashboard', label: 'Overview' }, { value: 'create', label: 'Create' }] },
@@ -599,7 +608,7 @@ const BusinessFinanceAssistant = () => {
     { label: 'Banking and payroll', tabs: [{ value: 'banking', label: 'Banking' }, { value: 'payroll', label: 'Payroll (UK)' }] },
     { label: 'Insight', tabs: [{ value: 'reports', label: 'Reports' }, { value: 'analytics', label: 'Analytics' }] },
   ];
-  const docState = { loading: isLoading, error: docsError, onRetry: fetchData };
+  const docState = { loading: firstLoad, error: docsError, onRetry: fetchData };
 
   // Tabs wraps the header, so the tab list on the navy strip controls the panels below it.
   return (
@@ -633,7 +642,7 @@ const BusinessFinanceAssistant = () => {
       />
 
       <div className="mx-auto w-full max-w-[1440px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-        {isLoading && !['dashboard', 'quotes', 'invoices', 'analytics', 'reports', 'products', 'suppliers', 'expenses', 'outgoings'].includes(activeTab) ? (
+        {firstLoad && !['dashboard', 'create', 'quotes', 'invoices', 'analytics', 'reports', 'products', 'suppliers', 'expenses', 'outgoings'].includes(activeTab) ? (
           <div className="flex min-h-[300px] items-center justify-center" role="status" aria-label="Loading">
             <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" aria-hidden="true" />
           </div>
