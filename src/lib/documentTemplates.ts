@@ -1,6 +1,7 @@
 import { vatGroupsOf, VAT_TREATMENT_SHORT } from '@/lib/vat';
 import jsPDF from 'jspdf';
 import { formatCurrency } from '@/utils/currencyUtils';
+import { fitLogo, loadPdfLogo, type LoadLogoOptions, type PdfLogo } from '@/lib/pdfLogo';
 
 export type DocumentTemplateId = 'classic' | 'modern' | 'minimal' | 'bold' | 'corporate';
 
@@ -100,6 +101,8 @@ export interface RenderableDocument {
   /** HMRC P4 (invoices): present after the database update. */
   vat_status?: string | null;
   tax_point_date?: string | null;
+  /** The company logo (a public image URL), drawn at the top left when it can be loaded. */
+  logo_url?: string | null;
 }
 
 const PAGE_W = 210;
@@ -119,12 +122,25 @@ const parseItems = (items: any): any[] => {
 const fmtDate = (v?: string | null) => (v ? new Date(v).toLocaleDateString() : '');
 
 /**
- * Renders a quote/invoice into a styled jsPDF document using the chosen template.
+ * Renders a quote/invoice into a styled jsPDF document using the chosen template. The logo (doc.logo_url) is loaded
+ * first; if it can't be loaded the PDF is made without it. Used for downloads and for the emailed PDF.
  */
-export function renderDocumentPdf(
+export async function renderDocumentPdf(
   doc: RenderableDocument,
   templateId: string | null | undefined,
   currency = 'GBP',
+  logoOptions?: LoadLogoOptions,
+): Promise<jsPDF> {
+  const logo = doc.logo_url ? await loadPdfLogo(doc.logo_url, logoOptions) : null;
+  return drawDocumentPdf(doc, templateId, currency, logo);
+}
+
+/** The drawing itself, with an already loaded logo (or none). Synchronous: the template preview uses it directly. */
+export function drawDocumentPdf(
+  doc: RenderableDocument,
+  templateId: string | null | undefined,
+  currency = 'GBP',
+  logo: PdfLogo | null = null,
 ): jsPDF {
   const t = getTemplate(templateId);
   const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -137,23 +153,30 @@ export function renderDocumentPdf(
   pdf.setFont(t.font, 'normal');
 
   // ---------- Header ----------
+  // The logo sits at the top left in a 40 x 18 mm box (aspect ratio kept). The company name and address move down
+  // only as far as needed to stay clear of it; the title stays at the top right, beside the logo.
+  const banded = t.headerStyle === 'band' || t.headerStyle === 'dark';
+  const logoTop = banded ? 5 : 8;
+  const fitted = logo ? fitLogo(logo.width, logo.height) : null;
+  const nameTop = banded ? 18 - 5.2 : 24 - 5;
+  const lift = fitted ? Math.max(0, logoTop + fitted.h + 3 - nameTop) : 0;
   let y = 0;
-  if (t.headerStyle === 'band' || t.headerStyle === 'dark') {
+  if (banded) {
     pdf.setFillColor(...t.accent);
-    pdf.rect(0, 0, PAGE_W, 38, 'F');
+    pdf.rect(0, 0, PAGE_W, 38 + lift, 'F');
     pdf.setTextColor(255, 255, 255);
     pdf.setFont(t.font, 'bold');
     pdf.setFontSize(20);
-    pdf.text(doc.company_name || 'Your Company', left, 18);
+    pdf.text(doc.company_name || 'Your Company', left, 18 + lift);
     pdf.setFont(t.font, 'normal');
     pdf.setFontSize(9);
     (doc.company_address || '').split('\n').slice(0, 2).forEach((line, i) => {
-      pdf.text(line, left, 25 + i * 4.5);
+      pdf.text(line, left, 25 + lift + i * 4.5);
     });
     pdf.setFont(t.font, 'bold');
     pdf.setFontSize(22);
     pdf.text(t.uppercaseTitle ? title.toUpperCase() : title, right, 20, { align: 'right' });
-    y = 50;
+    y = 50 + lift;
   } else {
     if (t.headerStyle === 'sidebar') {
       pdf.setFillColor(...t.accent);
@@ -162,12 +185,12 @@ export function renderDocumentPdf(
     pdf.setTextColor(...t.accent);
     pdf.setFont(t.font, 'bold');
     pdf.setFontSize(19);
-    pdf.text(doc.company_name || 'Your Company', left, 24);
+    pdf.text(doc.company_name || 'Your Company', left, 24 + lift);
     pdf.setTextColor(...t.ink);
     pdf.setFont(t.font, 'normal');
     pdf.setFontSize(9);
     (doc.company_address || '').split('\n').slice(0, 2).forEach((line, i) => {
-      pdf.text(line, left, 30 + i * 4.5);
+      pdf.text(line, left, 30 + lift + i * 4.5);
     });
     pdf.setTextColor(...t.accent);
     pdf.setFont(t.font, 'bold');
@@ -176,13 +199,20 @@ export function renderDocumentPdf(
     if (t.headerStyle === 'rule') {
       pdf.setDrawColor(...t.accent);
       pdf.setLineWidth(0.8);
-      pdf.line(left, 42, right, 42);
+      pdf.line(left, 42 + lift, right, 42 + lift);
     } else if (t.headerStyle === 'plain') {
       pdf.setDrawColor(220, 220, 220);
       pdf.setLineWidth(0.2);
-      pdf.line(left, 42, right, 42);
+      pdf.line(left, 42 + lift, right, 42 + lift);
     }
-    y = 52;
+    y = 52 + lift;
+  }
+  if (logo && fitted) {
+    try {
+      pdf.addImage(logo.dataUrl, logo.format, left, logoTop, fitted.w, fitted.h);
+    } catch {
+      /* an image jsPDF can't read: the PDF is still made, without the logo */
+    }
   }
 
   // ---------- Meta + parties ----------

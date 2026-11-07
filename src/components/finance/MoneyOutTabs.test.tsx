@@ -70,9 +70,11 @@ const supplierRows = () => [
   { id: 's1', name: 'Northern Rail', contact_person: null, email: 'rail@example.com', phone: null, website: null, payment_terms: 'Net 30', address: null, is_active: true },
   { id: 's2', name: 'Paper & Co', contact_person: 'Ann', email: null, phone: null, website: null, payment_terms: 'Net 14', address: null, is_active: true },
 ];
+// Every save of an expense records its VAT, so these rows already have it (standard rate, amounts including VAT).
+const vat = (net: number, vatAmount: number, date: string) => ({ net_amount: net, vat_amount: vatAmount, vat_treatment: 'standard', vat_rate: 20, vat_status: 'recorded', vat_scheme: 'standard', tax_point_date: date, vat_reclaimable: true });
 const expenseRows = () => [
-  { id: 'e1', description: 'Train to Leeds', category: 'transport', amount: 64.5, date: '2026-10-15', supplier_id: 's1', status: 'paid' },
-  { id: 'e2', description: 'Printer paper', category: 'office', amount: 23.99, date: '2026-10-05', supplier_id: null, status: 'pending' },
+  { id: 'e1', description: 'Train to Leeds', category: 'transport', amount: 64.5, date: '2026-10-15', supplier_id: 's1', status: 'paid', ...vat(53.75, 10.75, '2026-10-15') },
+  { id: 'e2', description: 'Printer paper', category: 'office', amount: 23.99, date: '2026-10-05', supplier_id: null, status: 'pending', ...vat(19.99, 4, '2026-10-05') },
 ];
 
 describe('ExpensesTab', () => {
@@ -98,7 +100,7 @@ describe('ExpensesTab', () => {
     fireEvent.change(within(dialog).getByLabelText(/Amount/), { target: { value: '70' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(db.calls).toEqual([{ table: 'expenses', op: 'update', payload: { amount: 70 }, filters: [['id', 'e1'], ['user_id', 'u1']] }]);
+    expect(db.calls).toEqual([{ table: 'expenses', op: 'update', payload: { amount: 70, net_amount: 58.33, vat_amount: 11.67 }, filters: [['id', 'e1'], ['user_id', 'u1']] }]); // the VAT follows the amount
     expect(tableRows()[0]).toContain('£70.00');
     expect(toast.success).toHaveBeenCalledWith('Expense “Train to Leeds” saved');
   });

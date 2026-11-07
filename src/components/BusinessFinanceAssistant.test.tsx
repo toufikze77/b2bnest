@@ -17,9 +17,10 @@ vi.mock('@/components/documents/DocumentTemplatePicker', () => ({ default: () =>
 vi.mock('@/components/finance/FinanceAnalytics', () => ({ FinanceAnalytics: () => <div>Analytics stand-in</div> }));
 // The real PDF layout is not under test: a tiny stand-in PDF with the same output()/save() calls.
 const pdfSave = vi.hoisted(() => vi.fn());
+const pdfRender = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/documentTemplates', async (orig) => ({
   ...(await orig<object>()),
-  renderDocumentPdf: () => ({ output: () => new TextEncoder().encode('%PDF-1.4 stand-in').buffer, save: pdfSave }),
+  renderDocumentPdf: async (...args: unknown[]) => { pdfRender(...args); return { output: () => new TextEncoder().encode('%PDF-1.4 stand-in').buffer, save: pdfSave }; },
 }));
 
 /**
@@ -311,7 +312,7 @@ describe('Archive, restore, delete forever', () => {
 
 describe('Email to customer', () => {
   const emailable = (id: string, status: string, extra: Record<string, unknown> = {}) => ({
-    ...invoice(id, status, 1250, '2026-11-01'), client_email: 'accounts@client.example', client_name: 'Priya Shah', company_name: 'Acme Trading Ltd', ...extra,
+    ...invoice(id, status, 1250, '2026-11-01'), client_email: 'accounts@client.example', client_name: 'Priya Shah', company_name: 'Acme Trading Ltd', logo_url: 'https://cdn.example/logo.png', ...extra,
   });
   const ok = () => Promise.resolve({ data: { success: true, status: 'accepted_by_provider', sent: 'accepted', recipient: 'accounts@client.example' }, error: null });
   const fails = (body: Record<string, unknown>) => () => Promise.resolve({ data: null, error: { context: { json: async () => body } } });
@@ -328,7 +329,7 @@ describe('Email to customer', () => {
     return dialog;
   };
   const SENDER = 'notifications@b2bnest.online';
-  beforeEach(() => { db.emailAccess = { configured: true, sender: SENDER }; db.rows = { invoices: [emailable('1001', 'draft')], quotes: [] }; pdfSave.mockClear(); });
+  beforeEach(() => { db.emailAccess = { configured: true, sender: SENDER }; db.rows = { invoices: [emailable('1001', 'draft')], quotes: [] }; pdfSave.mockClear(); pdfRender.mockClear(); });
 
   it('not configured: the menu says "not available yet" with the reason, and choosing it sends nothing', async () => {
     db.emailAccess = { configured: false, reason: 'not_configured' };
@@ -414,6 +415,9 @@ describe('Email to customer', () => {
     expect(Object.keys(post.body!).sort()).toEqual(['id', 'kind', 'message', 'pdf_base64', 'subject']);
     expect(post.body).toMatchObject({ kind: 'invoice', id: '1001', subject: 'Invoice INV-1001 from Acme Trading Ltd', message: 'Hi Priya, invoice attached.' });
     expect(atob(post.body!.pdf_base64 as string)).toBe('%PDF-1.4 stand-in');
+    // The emailed PDF is built by the same function as the download, with the company logo.
+    expect(pdfRender).toHaveBeenCalledTimes(1);
+    expect(pdfRender.mock.calls[0][0]).toMatchObject({ type: 'invoice', number: 'INV-1001', logo_url: 'https://cdn.example/logo.png' });
     await act(async () => { answer((await ok())); });
     await waitFor(() => expect(db.writes).toEqual([{ table: 'invoices', op: 'update', payload: { status: 'sent' }, filters: [['id', '1001'], ['user_id', 'u1']] }]));
     expect(toast.success).toHaveBeenCalledWith('Email sent to accounts@client.example. Your mail provider accepted it.');
@@ -434,6 +438,7 @@ describe('Email to customer', () => {
     expect(toast.success).not.toHaveBeenCalled();
     fireEvent.click(within(alert).getByRole('button', { name: 'Download PDF and send it yourself' }));
     await waitFor(() => expect(pdfSave).toHaveBeenCalledWith('invoice_INV-1001.pdf'));
+    expect(pdfRender.mock.calls.at(-1)![0]).toMatchObject({ logo_url: 'https://cdn.example/logo.png' }); // the download has the logo too
     expect(within(dialog).getByRole('button', { name: 'Send email' })).toBeEnabled(); // can retry
   });
 

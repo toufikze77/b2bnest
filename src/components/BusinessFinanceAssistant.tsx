@@ -396,6 +396,8 @@ const BusinessFinanceAssistant = () => {
         tax_amount: Number(doc.tax_amount) || 0,
         total_amount: Number(doc.total_amount) || 0,
         notes: doc.notes,
+        // The company logo, as in the preview. Also used for the emailed PDF (pdfBytes).
+        logo_url: doc.logo_url,
       },
       templateFor(docType),
       // The document's own currency; the PDF code is unchanged and treats a missing one as before.
