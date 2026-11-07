@@ -86,3 +86,61 @@ New tests:
   - an ended session shows the expired screen.
 - **`src/lib/passwordRecovery.test.ts` (4).**
 - **`src/pages/Auth.test.tsx` (+1):** the "Password updated" message.
+
+---
+
+# Part 2: a reset link that survives email link scanners
+
+## Why
+- **What the Supabase auth logs show (7 Nov 2026):** every time a reset email was requested (`POST /auth/v1/recover`, 200), the one-time link was opened by an automatic visitor 2 to 3 seconds later: `GET /auth/v1/verify?token=…&type=recovery`, user agent `Chrome/113.0.0.0 Windows`, not the owner's browser.
+- **That visit uses up the token.** When the owner then clicked, Supabase answered "403: Email link is invalid or has expired / One-time token not found".
+- **This is an email link scanner, not an expired link.** While the email link is the plain `{{ .ConfirmationURL }}`, which verifies on a simple GET, every reset fails the same way.
+
+## What changed
+- **`/reset-password` supports the scanner-proof link** `https://www.b2bnest.online/reset-password?token_hash=<hash>&type=recovery`:
+  - **Nothing is verified on load.** The page shows "Reset your password. Click the button to continue." with a **Continue** button. A scanner that only loads the page doesn't click, so the token stays unused. supabase-js does not act on `token_hash` by itself.
+  - **On Continue** (once, however many clicks), the page calls `supabase.auth.verifyOtp({ token_hash, type: 'recovery' })`. The hash leaves the address bar at that moment (`history.replaceState`). It is never logged or shown.
+  - **Success:** the recovery session exists and the same new-password form shows, with the same rules. Someone with two-step sign-in enters their code first, as before.
+  - **Failure:** the existing "This link has expired or was already used. Request a new one." with the **Request a new link** button.
+- **The older formats still work:** `#access_token=…&type=recovery`, `?code=` and the errors in the hash. Emails already sent, and the current template, keep working until the template is switched.
+- **Forgot-password screen:**
+  - it now says "If the link says expired, wait 60 seconds and request one new link, then click it once.";
+  - after sending, it shows "Check your spam folder; Gmail may fold repeat emails (click the three dots).";
+  - Supabase's limit of one email a minute per address (429, "you can only request this after N seconds") is shown as "A link was sent less than a minute ago. Wait 60 seconds, then request one new link."
+
+## Owner step, after this is published
+1. **Site URL:** in the Supabase Dashboard → Authentication → URL Configuration, check that **Site URL** is `https://www.b2bnest.online`.
+2. **Template:** in Authentication → Emails → **Reset password**, replace the link with:
+   ```html
+   <p><a href="{{ .SiteURL }}/reset-password?token_hash={{ .TokenHash }}&type=recovery">Reset Password</a></p>
+   ```
+3. **Save.** No redirect-URL change is needed for this link: it goes straight to the site, not through `/auth/v1/verify`.
+
+Publish the frontend **before** switching the template. The old page doesn't know `token_hash`.
+
+## Owner test steps (after the template change)
+1. **Request a link:** sign out, open `https://www.b2bnest.online/forgot-password`, enter your email and send. Requesting again within 60 seconds is refused by Supabase (429): wait a minute between requests.
+2. **Wait first:** wait at least 10 seconds after the email arrives, so a scanner can open it first.
+3. **Click the link once.** Expect "Reset your password. Click the button to continue." The address bar still shows the link.
+4. **Press Continue.** Expect the **Reset Your Password** form. The address bar now shows only `/reset-password`.
+5. **Change the password:** enter a new password twice and press **Update Password**. Expect the sign-in page with "Password updated, please sign in." Then sign in with the new password.
+6. **Use the link again:** open the same email link again and press Continue. Expect "This link has expired or was already used." and **Request a new link**.
+7. **Optional check:** the Supabase auth logs should show a `GET /reset-password…` page load from the scanner, but **no** `/auth/v1/verify` call until you press Continue.
+
+## Checks (part 2)
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit -p tsconfig.app.json` | clean |
+| `npx eslint .` | 509 (baseline 510) |
+| `npx vitest run` | 172 files, 1,610 tests, exit 0, no "Unhandled" |
+| `npm run build` | OK |
+
+New tests:
+- **`ResetPassword.test.tsx` (+4):**
+  - `token_hash`: no verify on load, the Continue button shows, and the hash is never rendered;
+  - one `verifyOtp({ token_hash, type: 'recovery' })` call even on a double click, then the hash leaves the URL and the form shows;
+  - failure shows the expired message and the new-link button;
+  - the form rules are unchanged after Continue.
+  - The old hash and code tests are unchanged and still pass.
+- **`passwordRecovery.test.ts` (+1).**
+- **`ForgotPassword.test.tsx` (3, new):** the 60-second hint, the spam/Gmail hint, and the 429 message.

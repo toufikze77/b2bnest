@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,10 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import {
-  cleanRecoveryUrl, clearRecoveryMark, hasRecoveryMark, initialRecoveryLink, markRecovery, mergeLinks, passwordUpdateMessage, readRecoveryLink,
+  cleanRecoveryUrl, clearRecoveryMark, hasRecoveryMark, initialRecoveryLink, markRecovery, mergeLinks, passwordUpdateMessage, readRecoveryLink, tokenHashFromUrl,
 } from '@/lib/passwordRecovery';
 
-type View = 'checking' | 'form' | 'expired' | 'invalid' | 'home';
+type View = 'confirm' | 'checking' | 'form' | 'expired' | 'invalid' | 'home';
 /** How long to wait for Supabase to finish reading a link before saying it is invalid. */
 export const LINK_CHECK_MS = 6000;
 
@@ -37,13 +37,21 @@ const Shell = ({ children }: { children: React.ReactNode }) => (
 const ResetPassword = () => {
   const { updatePassword } = useAuth();
   const navigate = useNavigate();
-  const [view, setView] = useState<View>('checking');
+  // A scanner-proof link (?token_hash=…&type=recovery) waits for the person to press Continue: nothing is verified on
+  // load, so an email scanner that only opens the page leaves the one-time token unused.
+  const [view, setView] = useState<View>(() => {
+    const link = readRecoveryLink(window.location.href);
+    return link.hasTokenHash && !link.error ? 'confirm' : 'checking';
+  });
+  const [verifying, setVerifying] = useState(false);
+  const verifyStarted = useRef(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
   useEffect(() => {
+    if (view === 'confirm') return;
     let done = false;
     const finish = (v: View) => {
       if (done) return;
@@ -85,9 +93,41 @@ const ResetPassword = () => {
       } catch { finish('invalid'); }
     }, LINK_CHECK_MS);
     return () => { done = true; subscription.unsubscribe(); clearTimeout(timer); };
+    // Runs once on load (a confirm page never starts the automatic checks).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const continueReset = async () => {
+    if (verifyStarted.current) return; // one verification only, however many clicks
+    verifyStarted.current = true;
+    setVerifying(true);
+    const tokenHash = tokenHashFromUrl(window.location.href);
+    cleanRecoveryUrl(); // the hash leaves the address bar as soon as it has been read
+    if (!tokenHash) { setView('invalid'); return; }
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' });
+      if (!error && data?.session) { markRecovery(); setView('form'); return; }
+    } catch { /* shown as an expired or used link */ }
+    setView('expired');
+  };
+
   if (view === 'home') return <Navigate to="/" replace />;
+
+  if (view === 'confirm') {
+    return (
+      <Shell>
+        <CardHeader>
+          <CardTitle>Reset your password</CardTitle>
+          <CardDescription>Click the button to continue.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button className="w-full" onClick={() => { void continueReset(); }} disabled={verifying}>
+            {verifying ? 'Checking your link…' : 'Continue'}
+          </Button>
+        </CardContent>
+      </Shell>
+    );
+  }
 
   if (view === 'checking') {
     return (
