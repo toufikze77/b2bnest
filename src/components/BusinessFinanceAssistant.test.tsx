@@ -574,8 +574,8 @@ describe('The tab stays on refresh', () => {
     await waitFor(() => expect(screen.getByTestId('url').textContent).toBe('?tool=business-finance-assistant&tab=invoices&payroll=history'));
   });
 
-  it('a fresh load at any of the 13 tab values opens that tab', async () => {
-    const label: Record<string, string> = { dashboard: 'Overview', payroll: 'Payroll (UK)' };
+  it('a fresh load at any of the 14 tab values opens that tab', async () => {
+    const label: Record<string, string> = { dashboard: 'Overview', payroll: 'Payroll (UK)', 'company-records': 'Company records' };
     for (const tab of FINANCE_TABS) {
       const { unmount } = renderAt(`?tool=business-finance-assistant&tab=${tab}`);
       expect(activeTab()).toBe(label[tab] ?? tab.charAt(0).toUpperCase() + tab.slice(1));
