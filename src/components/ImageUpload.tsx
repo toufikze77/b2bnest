@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useSignedInUser } from '@/hooks/useAuth';
 
 interface ImageUploadProps {
   onImageUploaded: (url: string) => void;
@@ -27,6 +28,10 @@ const ImageUpload = ({
   accept = "image/*",
   label = "Upload Image"
 }: ImageUploadProps) => {
+  // The upload goes to the signed-in person's own folder (`<user id>/…`, which the storage policy expects). A caller
+  // may pass userId; otherwise the signed-in user is used, so no form can forget it.
+  const signedIn = useSignedInUser();
+  const ownerId = userId ?? signedIn?.id;
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -36,7 +41,7 @@ const ImageUpload = ({
   }, [currentImageUrl]);
 
   const uploadImage = async (file: File) => {
-    if (!userId) {
+    if (!ownerId) {
       toast({
         title: "Error",
         description: "You must be logged in to upload images.",
@@ -58,7 +63,7 @@ const ImageUpload = ({
 
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${userId}/${Date.now()}.${fileExt}`;
+      const fileName = `${ownerId}/${Date.now()}.${fileExt}`;
 
       const { data, error } = await supabase.storage
         .from(bucket)
