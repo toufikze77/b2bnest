@@ -246,6 +246,12 @@ export function drawDocumentPdf(
   if (doc.type === 'quote' && doc.valid_until) meta.push(['Valid until', fmtDate(doc.valid_until)]);
   if (doc.type === 'invoice' && doc.due_date) meta.push(['Due date', fmtDate(doc.due_date)]);
   if (doc.status) meta.push(['Status', String(doc.status)]);
+  // HMRC P4: a recorded invoice (full VAT per line, adding up to the stored totals) prints its VAT per treatment and
+  // its tax point. Anything else (an older invoice, a quote) keeps the single tax line: no VAT is worked out for it.
+  const vatGroups = doc.type === 'invoice' ? vatGroupsOf(doc) : null;
+  if (vatGroups && doc.tax_point_date) {
+    meta.push(['Tax point', new Date(`${doc.tax_point_date}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })]);
+  }
 
   let rightY = y + 6;
   pdf.setFontSize(9);
@@ -317,7 +323,9 @@ export function drawDocumentPdf(
 
   // ---------- Totals ----------
   y += 8;
-  if (y > 240) {
+  // Keep the totals block on one page: subtotal, one 2-line row per VAT treatment (up to five), VAT total and TOTAL.
+  const totalsHeight = 6 + (vatGroups ? vatGroups.length * 9.5 + 6 : 6) + 13;
+  if (y > 240 || y + totalsHeight > 280) {
     pdf.addPage();
     y = MARGIN + 10;
   }
@@ -327,25 +335,21 @@ export function drawDocumentPdf(
   pdf.text('Subtotal', totalsLeft, y);
   pdf.text(money(doc.subtotal ?? 0), right, y, { align: 'right' });
   y += 6;
-  // HMRC P4: a recorded invoice shows its VAT per treatment (net and VAT for each); others keep the single tax line.
-  const vatGroups = vatGroupsOf(doc);
+  // HMRC P4: net, VAT and gross for each treatment present (the same groups and labels as the on-screen preview).
   if (vatGroups) {
-    pdf.setFontSize(9);
     for (const g of vatGroups) {
-      pdf.text(`${VAT_TREATMENT_SHORT[g.treatment]} on ${money(g.net)}`, totalsLeft, y);
-      pdf.text(`VAT ${money(g.vat)}`, right, y, { align: 'right' });
+      pdf.setFontSize(9);
+      pdf.text(VAT_TREATMENT_SHORT[g.treatment], totalsLeft, y);
+      pdf.text(`Net ${money(g.net)}`, right, y, { align: 'right' });
+      y += 4.5;
+      pdf.setFontSize(8);
+      pdf.text(`VAT ${money(g.vat)} · Gross ${money(g.gross)}`, right, y, { align: 'right' });
       y += 5;
     }
     pdf.setFontSize(10);
     pdf.text('VAT total', totalsLeft, y);
     pdf.text(money(doc.tax_amount ?? 0), right, y, { align: 'right' });
     y += 6;
-    if (doc.tax_point_date) {
-      pdf.setFontSize(8);
-      pdf.text(`Tax point: ${new Date(`${doc.tax_point_date}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`, totalsLeft, y);
-      pdf.setFontSize(10);
-      y += 5;
-    }
   } else if (Number(doc.tax_rate) > 0) {
     pdf.text(`Tax (${Number(doc.tax_rate)}%)`, totalsLeft, y);
     pdf.text(money(doc.tax_amount ?? 0), right, y, { align: 'right' });

@@ -418,6 +418,9 @@ describe('Email to customer', () => {
     // The emailed PDF is built by the same function as the download, with the company logo.
     expect(pdfRender).toHaveBeenCalledTimes(1);
     expect(pdfRender.mock.calls[0][0]).toMatchObject({ type: 'invoice', number: 'INV-1001', logo_url: 'https://cdn.example/logo.png' });
+    // The VAT status and tax point reach the renderer, so a recorded invoice prints its VAT per treatment.
+    expect(pdfRender.mock.calls[0][0]).toHaveProperty('vat_status');
+    expect(pdfRender.mock.calls[0][0]).toHaveProperty('tax_point_date');
     await act(async () => { answer((await ok())); });
     await waitFor(() => expect(db.writes).toEqual([{ table: 'invoices', op: 'update', payload: { status: 'sent' }, filters: [['id', '1001'], ['user_id', 'u1']] }]));
     expect(toast.success).toHaveBeenCalledWith('Email sent to accounts@client.example. Your mail provider accepted it.');
