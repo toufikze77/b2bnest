@@ -3,6 +3,8 @@ import type { Database } from './types';
 import { brokeredPreviewStorage } from './previewAuthStorage';
 import { supabaseConfig } from './config';
 import { demoAwareFetch } from '@/lib/demoMode';
+// Imported before the client is created, so the reset link is read before supabase-js clears it (see the file).
+import { initialRecoveryLink, markRecovery } from '@/lib/passwordRecovery';
 
 // Public values only: the project URL and the publishable (anon) key, from .env.production (or Vercel's settings).
 // When they are missing, importing this module must not throw (main.tsx shows a readable "can't start" screen instead),
@@ -40,3 +42,11 @@ export const supabase: SupabaseClient<Database> = supabaseConfig.ok
       global: { fetch: demoAwareFetch((...args: Parameters<typeof fetch>) => fetch(...args)) },
     })
   : unconfigured();
+
+// Password reset: supabase-js fires PASSWORD_RECOVERY right after reading the link, usually before the reset page has
+// mounted. Note it here (no token kept) so /reset-password can show the form.
+if (supabaseConfig.ok) {
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && initialRecoveryLink.isRecovery)) markRecovery();
+  });
+}

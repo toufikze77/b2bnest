@@ -253,6 +253,11 @@ const Auth = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  {isLogin && searchParams.get('reset') === 'done' && (
+                    <p role="status" data-testid="password-updated" className="mb-4 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-900">
+                      Password updated, please sign in.
+                    </p>
+                  )}
                   {isLogin && suspendedNotice && (
                     <p role="alert" className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-foreground">
                       This account has been suspended. <Link to="/contact" className="font-semibold underline underline-offset-4">Contact us.</Link>

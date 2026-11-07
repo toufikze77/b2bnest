@@ -45,3 +45,10 @@ describe('Sign in: suspended (banned) account', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 });
+
+describe('Sign in after a password reset', () => {
+  it('?reset=done says the password was updated', () => {
+    render(<MemoryRouter initialEntries={['/auth?reset=done']}><Auth /></MemoryRouter>);
+    expect(screen.getByTestId('password-updated')).toHaveTextContent('Password updated, please sign in.');
+  });
+});
