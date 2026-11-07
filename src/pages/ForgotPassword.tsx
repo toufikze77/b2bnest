@@ -21,9 +21,11 @@ const ForgotPassword = () => {
     const { error } = await resetPassword(email);
 
     if (error) {
+      // Supabase allows one reset email a minute per address (429 "only request this after N seconds").
+      const tooSoon = error.status === 429 || /after \d+ seconds/i.test(error.message ?? '');
       toast({
-        title: "Error sending reset email",
-        description: error.message,
+        title: tooSoon ? "Please wait a moment" : "Error sending reset email",
+        description: tooSoon ? "A link was sent less than a minute ago. Wait 60 seconds, then request one new link." : error.message,
         variant: "destructive",
       });
     } else {
@@ -54,6 +56,9 @@ const ForgotPassword = () => {
             <p className="text-sm text-gray-600">
               If you don't see the email, check your spam folder or try again with a different email address.
             </p>
+            <p className="text-sm text-gray-600" data-testid="reset-email-hint">
+              Check your spam folder; Gmail may fold repeat emails (click the three dots).
+            </p>
             <div className="space-y-2">
               <Button
                 onClick={() => setEmailSent(false)}
@@ -83,6 +88,9 @@ const ForgotPassword = () => {
           <CardDescription>
             Enter your email address and we'll send you instructions to reset your password.
           </CardDescription>
+          <p className="text-sm text-gray-600" data-testid="reset-expired-hint">
+            If the link says expired, wait 60 seconds and request one new link, then click it once.
+          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

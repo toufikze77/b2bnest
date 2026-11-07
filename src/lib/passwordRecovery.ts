@@ -1,4 +1,6 @@
-// Password reset links. Supabase's email link goes through /auth/v1/verify and comes back to /reset-password with the
+// Password reset links. The scanner-proof form, ?token_hash=…&type=recovery (the owner's email template), is NOT
+// verified on load: email link scanners open links automatically, and a GET that verified would use the one-time token
+// up. It is verified only when the person presses Continue (ResetPassword.tsx). Supabase's email link goes through /auth/v1/verify and comes back to /reset-password with the
 // recovery session in the URL hash (#access_token=…&type=recovery), a ?code= (PKCE flow), or an error
 // (#error=access_denied&error_code=otp_expired&error_description=…). supabase-js reads the hash as soon as the client is
 // created, clears it and fires PASSWORD_RECOVERY, usually before the (lazy) reset page has mounted. So the facts about
@@ -12,10 +14,12 @@ export interface RecoveryLink {
   hasTokens: boolean;
   /** A PKCE ?code= was present. */
   hasCode: boolean;
+  /** A scanner-proof link (?token_hash=…&type=recovery): verified only when the person clicks Continue. */
+  hasTokenHash: boolean;
   error: { code: string; description: string } | null;
 }
 
-export const NO_LINK: RecoveryLink = { isRecovery: false, hasTokens: false, hasCode: false, error: null };
+export const NO_LINK: RecoveryLink = { isRecovery: false, hasTokens: false, hasCode: false, hasTokenHash: false, error: null };
 
 export function readRecoveryLink(href: string): RecoveryLink {
   let url: URL;
@@ -25,11 +29,12 @@ export function readRecoveryLink(href: string): RecoveryLink {
   const error = p.get('error') || p.get('error_code') || p.get('error_description')
     ? { code: p.get('error_code') || p.get('error') || 'unknown', description: p.get('error_description') || '' }
     : null;
-  return { isRecovery: p.get('type') === 'recovery', hasTokens: !!p.get('access_token'), hasCode: !!p.get('code'), error };
+  return { isRecovery: p.get('type') === 'recovery', hasTokens: !!p.get('access_token'), hasCode: !!p.get('code'), hasTokenHash: !!p.get('token_hash') && p.get('type') === 'recovery', error };
 }
 
 export const mergeLinks = (a: RecoveryLink, b: RecoveryLink): RecoveryLink => ({
-  isRecovery: a.isRecovery || b.isRecovery, hasTokens: a.hasTokens || b.hasTokens, hasCode: a.hasCode || b.hasCode, error: a.error ?? b.error,
+  isRecovery: a.isRecovery || b.isRecovery, hasTokens: a.hasTokens || b.hasTokens, hasCode: a.hasCode || b.hasCode,
+  hasTokenHash: a.hasTokenHash || b.hasTokenHash, error: a.error ?? b.error,
 });
 
 /** The link as it was when the app started (read before the Supabase client clears it). Only on /reset-password. */
@@ -71,4 +76,12 @@ export function passwordUpdateMessage(e: { message?: string; code?: string; stat
   if (code === 'same_password') return { kind: 'other', text: 'Your new password must be different from your old one.' };
   if (code === 'weak_password') return { kind: 'other', text: message || 'Choose a stronger password.' };
   return { kind: 'other', text: message || 'Your password could not be changed. Please try again.' };
+}
+
+/** The token_hash of a scanner-proof link in the current address, or null. Read only when the person clicks Continue. */
+export function tokenHashFromUrl(href: string): string | null {
+  try {
+    const u = new URL(href);
+    return u.searchParams.get('type') === 'recovery' ? u.searchParams.get('token_hash') : null;
+  } catch { return null; }
 }

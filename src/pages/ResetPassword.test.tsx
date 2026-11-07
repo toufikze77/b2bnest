@@ -8,6 +8,7 @@ const st = vi.hoisted(() => ({
   session: null as null | { user: { id: string } },
   listeners: [] as ((event: string, session: unknown) => void)[],
   exchange: vi.fn(),
+  verify: vi.fn(),
   signOut: vi.fn(async () => ({ error: null })),
   updatePassword: vi.fn(async () => ({ error: null as null | { message?: string; code?: string } })),
 }));
@@ -23,6 +24,7 @@ vi.mock('@/integrations/supabase/client', () => ({
         return { data: { subscription: { unsubscribe: () => { st.listeners = st.listeners.filter((l) => l !== cb); } } } };
       },
       exchangeCodeForSession: (code: string) => st.exchange(code),
+      verifyOtp: (args: unknown) => st.verify(args),
       signOut: st.signOut,
     },
   },
@@ -53,7 +55,7 @@ const fillAndSubmit = (a: string, b: string) => {
 };
 
 beforeEach(() => {
-  st.session = null; st.listeners = []; st.exchange.mockReset(); st.signOut.mockClear(); st.updatePassword.mockReset();
+  st.session = null; st.listeners = []; st.exchange.mockReset(); st.verify.mockReset(); st.signOut.mockClear(); st.updatePassword.mockReset();
   st.updatePassword.mockResolvedValue({ error: null });
   toast.mockClear(); sessionStorage.clear();
 });
@@ -134,6 +136,55 @@ describe('reset link', () => {
     open(`/reset-password#access_token=${SECRET}&type=recovery`);
     await act(async () => { await vi.advanceTimersByTimeAsync(6500); });
     expect(screen.getByText('Invalid Reset Link')).toBeInTheDocument();
+  });
+});
+
+describe('scanner-proof link (?token_hash=…&type=recovery)', () => {
+  const HASH = 'pkce_0123456789abcdefSECRETHASH';
+  it('nothing is verified on load: a short page with a Continue button, and the hash is never shown', async () => {
+    open(`/reset-password?token_hash=${HASH}&type=recovery`);
+    expect(screen.getByText('Reset your password')).toBeInTheDocument();
+    expect(screen.getByText('Click the button to continue.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
+    await new Promise((r) => setTimeout(r, 30));
+    expect(st.verify).not.toHaveBeenCalled();
+    expect(st.exchange).not.toHaveBeenCalled();
+    expect(document.body.innerHTML).not.toContain(HASH);
+  });
+
+  it('Continue verifies once (even on a double click), the hash leaves the address bar, then the form shows', async () => {
+    let answer!: (v: unknown) => void;
+    st.verify.mockReturnValue(new Promise((r) => { answer = r; }));
+    open(`/reset-password?token_hash=${HASH}&type=recovery`);
+    const button = screen.getByRole('button', { name: 'Continue' });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    expect(st.verify).toHaveBeenCalledTimes(1);
+    expect(st.verify).toHaveBeenCalledWith({ token_hash: HASH, type: 'recovery' });
+    expect(window.location.search).toBe('');
+    await act(async () => { answer({ data: { session: { user: { id: 'u1' } } }, error: null }); });
+    expect(await screen.findByText('Reset Your Password')).toBeInTheDocument();
+    expect(st.verify).toHaveBeenCalledTimes(1);
+    expect(document.body.innerHTML).not.toContain(HASH);
+  });
+
+  it('a used or expired token: the expired message and the button to request a new link', async () => {
+    st.verify.mockResolvedValue({ data: { session: null }, error: { code: 'otp_expired', message: 'Email link is invalid or has expired' } });
+    open(`/reset-password?token_hash=${HASH}&type=recovery`);
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(await screen.findByTestId('reset-link-problem')).toHaveTextContent('This link has expired or was already used. Request a new one.');
+    expect(screen.getByRole('link', { name: 'Request a new link' })).toHaveAttribute('href', '/forgot-password');
+  });
+
+  it('the new-password form after Continue has the same rules', async () => {
+    st.verify.mockResolvedValue({ data: { session: { user: { id: 'u1' } } }, error: null });
+    open(`/reset-password?token_hash=${HASH}&type=recovery`);
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await screen.findByText('Reset Your Password');
+    fillAndSubmit('abc', 'abc');
+    expect(toast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Password too short' }));
+    fillAndSubmit('new-password-1', 'new-password-1');
+    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('/auth?reset=done'));
   });
 });
 
