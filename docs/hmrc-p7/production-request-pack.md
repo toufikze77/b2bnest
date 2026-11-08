@@ -21,7 +21,7 @@ Ready-to-paste answers, built only from what this repository proves.
 | Privacy policy URL | https://www.b2bnest.online/privacy | `src/App.tsx`. **NOT DONE: the page doesn't yet describe HMRC data, fraud prevention data, processors or retention** (draft: `privacy-wording.md`) |
 | Terms URL | https://www.b2bnest.online/terms | `src/App.tsx`. **NOT DONE: no HMRC-specific terms reviewed** (owner and adviser) |
 | Responsible individual | [Name, role, email: OWNER TO FILL IN] | **NOT DONE** |
-| Security contact | security@b2bnest.online, published in `/.well-known/security.txt` | `public/.well-known/security.txt`. **NOT DONE: the owner must confirm the mailbox exists and is read** |
+| Security contact | info@b2bnest.online, published in `/.well-known/security.txt` | `public/.well-known/security.txt`. Confirmed by the owner. **Still to do: make sure someone reads it and answers security reports promptly** |
 
 ## 2. Software
 

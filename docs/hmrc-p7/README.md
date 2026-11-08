@@ -1,8 +1,7 @@
 # HMRC P7a: production gaps audit
 
-> **OWNER TO CONFIRM THE MAILBOX EXISTS:** `security@b2bnest.online` is published in `public/.well-known/security.txt`
-> as a placeholder. Before this is deployed, make sure the mailbox exists and someone reads it. Otherwise change the
-> `Contact:` line. The file expires on 2027-11-08: renew it before then.
+> **Security contact:** Confirmed by the owner: info@b2bnest.online. Still to do: make sure someone reads it and answers
+> security reports promptly. It is published in `public/.well-known/security.txt`, which expires on 2027-11-08: renew it before then.
 
 **What this PR is:** an audit, small safe fixes and documents.
 
@@ -54,7 +53,7 @@ Production was only read, for function names, column names, row counts and the p
 
 ## Owner decisions
 
-1. Confirm the security mailbox (above), and name the incident lead and the responsible individual.
+1. Make sure someone reads info@b2bnest.online and answers security reports promptly (above), and name the incident lead and the responsible individual.
 2. Retention for `hmrc_vat_submissions` and `hmrc_audit_log`. The proposal is 6 years, with an adviser.
 3. Privacy policy wording (`privacy-wording.md`), with an adviser. Then update the live page in a separate PR.
 4. Whether the `SecurityGuide` claims are true: a DPO, compliance audits, privacy impact assessments, data processing agreements.

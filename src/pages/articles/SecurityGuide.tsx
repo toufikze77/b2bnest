@@ -363,7 +363,7 @@ const SecurityGuide = () => {
 
               <div className="mt-6 p-4 bg-background rounded-lg">
                 <p className="text-sm text-muted-foreground">
-                  <strong>Report Security Issues:</strong> If you discover a security vulnerability, please contact security@b2bnest.online immediately. Do not post publicly.
+                  <strong>Report Security Issues:</strong> If you discover a security vulnerability, please contact info@b2bnest.online immediately. Do not post publicly.
                 </p>
               </div>
             </CardContent>

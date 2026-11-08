@@ -1,7 +1,7 @@
 # Security
 
 This page states only what has been checked, how, and when. It makes no score or certification claim.
-To report a security problem, email the address in [`/.well-known/security.txt`](public/.well-known/security.txt) (security@b2bnest.online; see `docs/hmrc-p7/README.md` for the owner check) or the owner at the address on the site's contact page; please don't open a public issue.
+To report a security problem, email the address in [`/.well-known/security.txt`](public/.well-known/security.txt) (info@b2bnest.online, confirmed by the owner) or the owner at the address on the site's contact page; please don't open a public issue.
 
 ## Checked facts (read-only queries on production `gvftvswyrevummbvyhxa`, 2026-10-23)
 
