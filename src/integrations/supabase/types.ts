@@ -1686,6 +1686,92 @@ export type Database = {
           },
         ]
       }
+      hmrc_vat_submissions: {
+        Row: {
+          charge_ref_number: string | null
+          completed_at: string | null
+          environment: string
+          error_code: string | null
+          error_message: string | null
+          figures: Json
+          figures_hash: string
+          form_bundle_number: string | null
+          http_status: number | null
+          id: string
+          organization_id: string
+          payment_indicator: string | null
+          period_end: string
+          period_key: string
+          period_start: string
+          processing_date: string | null
+          request_id: string
+          status: string
+          submitted_at: string
+          submitted_by: string
+          submitted_by_name: string | null
+          test_scenario: string | null
+          vrn_last3: string | null
+        }
+        Insert: {
+          charge_ref_number?: string | null
+          completed_at?: string | null
+          environment?: string
+          error_code?: string | null
+          error_message?: string | null
+          figures: Json
+          figures_hash: string
+          form_bundle_number?: string | null
+          http_status?: number | null
+          id?: string
+          organization_id: string
+          payment_indicator?: string | null
+          period_end: string
+          period_key: string
+          period_start: string
+          processing_date?: string | null
+          request_id: string
+          status?: string
+          submitted_at?: string
+          submitted_by: string
+          submitted_by_name?: string | null
+          test_scenario?: string | null
+          vrn_last3?: string | null
+        }
+        Update: {
+          charge_ref_number?: string | null
+          completed_at?: string | null
+          environment?: string
+          error_code?: string | null
+          error_message?: string | null
+          figures?: Json
+          figures_hash?: string
+          form_bundle_number?: string | null
+          http_status?: number | null
+          id?: string
+          organization_id?: string
+          payment_indicator?: string | null
+          period_end?: string
+          period_key?: string
+          period_start?: string
+          processing_date?: string | null
+          request_id?: string
+          status?: string
+          submitted_at?: string
+          submitted_by?: string
+          submitted_by_name?: string | null
+          test_scenario?: string | null
+          vrn_last3?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hmrc_vat_submissions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_audit_logs: {
         Row: {
           action: string
@@ -6871,6 +6957,27 @@ export type Database = {
         Args: { p_company: string; p_limit?: number }
         Returns: Json
       }
+      hmrc_begin_vat_submission: {
+        Args: {
+          p_company: string
+          p_environment: string
+          p_figures: Json
+          p_figures_hash: string
+          p_limit?: number
+          p_period_end: string
+          p_period_key: string
+          p_period_start: string
+          p_request_id: string
+          p_test_scenario: string
+          p_user: string
+          p_user_name: string
+          p_vrn_last3: string
+        }
+        Returns: {
+          result: string
+          submission_id: string
+        }[]
+      }
       hmrc_can_manage: { Args: { p_company: string }; Returns: boolean }
       hmrc_claim_refresh: {
         Args: { p_company: string; p_environment: string; p_seconds?: number }
@@ -7321,6 +7428,19 @@ export type Database = {
           net: number
           record_type: string
           vat: number
+        }[]
+      }
+      vat_company_return_preview: {
+        Args: { p_from: string; p_organization_id: string; p_to: string }
+        Returns: {
+          net: number
+          reason: string
+          records: number
+          row_kind: string
+          source: string
+          treatment: string
+          vat: number
+          vat_not_reclaimable: number
         }[]
       }
       vat_records_needing_attention: {
