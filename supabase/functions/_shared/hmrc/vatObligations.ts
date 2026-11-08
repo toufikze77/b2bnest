@@ -146,7 +146,6 @@ export async function vatObligations(req: { authHeader: string | null; headers: 
     if (r.reason === 'hmrc_rate_limited') return busy(r.retryAfter);
     if (r.reason === 'hmrc_unavailable' || r.reason === 'network') return fail('hmrc_unavailable');
     if (r.hmrcCode === 'INVALID_SCOPE') return fail('scope_missing');
-    if (r.hmrcCode === 'NOT_SIGNED_UP_TO_MTD') return fail('vat_not_signed_up');
     if (r.hmrcCode === 'CLIENT_OR_AGENT_NOT_AUTHORISED') return fail('vat_not_authorised');
     if (r.hmrcCode === 'RULE_INSOLVENT_TRADER') return fail('vat_insolvent');
     if (r.hmrcCode === 'VRN_INVALID') return fail('vrn_invalid');

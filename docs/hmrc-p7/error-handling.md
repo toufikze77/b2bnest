@@ -11,7 +11,52 @@ repository. Error codes marked *(memory)* are **to confirm with HMRC's API docum
 - A VAT return POST is never retried automatically: `noRetry: true`, so a 401 is not refreshed and resent.
 - No HMRC response body, token or code is logged or returned to the browser. Only our own codes and plain messages go back.
 
-## Case by case
+## Verification of the codes (HMRC P7c, 8 Nov 2026)
+
+**Source checked:** HMRC's published VAT (MTD) API 1.0 definition, from HMRC's own repository:
+https://github.com/hmrc/vat-api/blob/main/resources/public/api/conf/1.0/application.yaml (OpenAPI 3.0.3), read
+8 Nov 2026.
+
+**Pages that could not be fetched** from the session doing the check, so these are not verified there:
+- https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/vat-api/1.0
+- HMRC's general "Reference guide" error list
+
+The general platform codes below are therefore still marked **(memory, not verified)**.
+
+| Code | HMRC's definition (8 Nov 2026) | What we did |
+| --- | --- | --- |
+| `VRN_INVALID` (400) | Documented for POST returns and GET obligations | Kept |
+| `PERIOD_KEY_INVALID` (400) | Documented for POST returns, at the top level and nested | Kept |
+| `INVALID_REQUEST` (400) | Documented for POST returns, **with a nested `errors` list**: `PERIOD_KEY_INVALID`, `VAT_TOTAL_VALUE`, `VAT_NET_VALUE`, `INVALID_NUMERIC_VALUE`, `INVALID_MONETARY_AMOUNT`, `MANDATORY_FIELD_MISSING` | **Changed:** `api.ts` now reads the nested codes (codes only), and `vatSubmit.ts` uses the most useful one for the message, so "the boxes do not add up" now actually appears |
+| `VAT_TOTAL_VALUE`, `VAT_NET_VALUE`, `INVALID_NUMERIC_VALUE`, `INVALID_MONETARY_AMOUNT` | Documented, **nested** inside `INVALID_REQUEST` (not top level) | Kept; now matched when nested |
+| `MANDATORY_FIELD_MISSING` | Documented, nested | **Added**: "HMRC said a box was missing from the return. Nothing was filed." |
+| `NOT_FINALISED`, `DUPLICATE_SUBMISSION`, `TAX_PERIOD_NOT_ENDED`, `CLIENT_OR_AGENT_NOT_AUTHORISED`, `RULE_INSOLVENT_TRADER` (403) | Documented for POST returns | Kept |
+| `INVALID_DATE_FROM`, `INVALID_DATE_TO`, `INVALID_DATE_RANGE`, `INVALID_STATUS` (400) | Documented for GET obligations | Handled as `bad_request`. We validate the dates first, so they shouldn't reach HMRC |
+| `CLIENT_OR_AGENT_NOT_AUTHORISED`, `RULE_INSOLVENT_TRADER` (403), `NOT_FOUND` (404) | Documented for GET obligations | Kept in `vatObligations.ts`. **Added** to the obligations read inside "prepare" (`vatSubmit.ts`), which used to say "couldn't be reached" for them |
+| `NOT_SIGNED_UP_TO_MTD` | **Not in the VAT API definition** | **Removed** (code `vat_not_signed_up` removed). It now gets the general refusal |
+| `RETURN_ALREADY_RECEIVED` | **Not in the definition** | **Removed**. `DUPLICATE_SUBMISSION` is HMRC's documented code |
+| `INVALID_PERIODKEY`, `INSOLVENT_TRADER` | **Sandbox `Gov-Test-Scenario` names only**, not response codes (the codes are `PERIOD_KEY_INVALID`, `RULE_INSOLVENT_TRADER`) | **Removed** from the error map |
+| `NOT_FOUND` on POST returns | Documented for obligations and other GET endpoints, not for POST returns | Kept as a harmless mapping |
+| `INVALID_CREDENTIALS` (401) | Appears in the definition (on another endpoint), so it is a real HMRC code | Already handled: refresh once on reads, never a second POST |
+| `MATCHING_RESOURCE_NOT_FOUND` (404) | In the definition only for financial-details; otherwise a general platform error | Kept, **(memory, not verified)** |
+| `INVALID_SCOPE` (401/403), `MESSAGE_THROTTLED_OUT` (429) | General platform errors, not in this definition | Kept, **(memory, not verified)** |
+| Sandbox scenarios for POST returns | Documented: `INVALID_VRN`, `INVALID_PERIODKEY`, `INVALID_PAYLOAD`, `DUPLICATE_SUBMISSION`, `TAX_PERIOD_NOT_ENDED`, `INSOLVENT_TRADER` | **Changed** the picker (server and screen) to exactly this list. `NOT_FOUND` was not a POST scenario and is removed |
+
+**Unchanged on purpose:**
+- a VAT return POST is never retried automatically;
+- a 5xx, network error or timeout on submit is still recorded as **unknown** with "Check with HMRC".
+
+**Tests:** `supabase/functions/_shared/hmrc/p6_test.ts`, the three "P7c:" tests:
+- undocumented codes get the general rejection;
+- nested `INVALID_REQUEST` reasons give the right words, with one POST only;
+- the scenario list matches HMRC's.
+
+`p3_test.ts` also covers an undocumented 403 on obligations, which is a plain refusal.
+
+**Redeploy needed:** `hmrc-vat-submit`, `hmrc-vat-obligations` and `hmrc-test-call`. All three use the shared
+`_shared/hmrc` code that changed.
+
+## Case by case (P7a; see the verification above for the codes)
 
 | Case | What the code does | What the person sees | P7a change |
 | --- | --- | --- | --- |
@@ -47,7 +92,7 @@ repository. Error codes marked *(memory)* are **to confirm with HMRC's API docum
 
 ## Follow-ups (not done here)
 
-1. Verify every *(memory)* code, and the 409 meaning, against HMRC's VAT (MTD) API documentation.
+1. Done 8 Nov 2026 for the VAT API definition (above). Still open: HMRC's general reference guide (`INVALID_SCOPE`, `MATCHING_RESOURCE_NOT_FOUND`, `MESSAGE_THROTTLED_OUT`) and the meaning of a 409, from developer.service.hmrc.gov.uk.
 2. 409: a specific message once the code is known.
 3. Obligations: say "some items from HMRC couldn't be read" when `normalise` drops any.
 4. 503 on a POST: consider showing "HMRC asked us to wait N minutes before checking" from `Retry-After`.

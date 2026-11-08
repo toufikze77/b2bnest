@@ -25,6 +25,8 @@ Production was only read, for function names, column names, row counts and the p
 | [`privacy-wording.md`](privacy-wording.md) | Draft privacy paragraphs (not live), with every legal claim marked "adviser to confirm" |
 | [`accessibility.md`](accessibility.md) | Quick WCAG AA audit of the VAT screens, the fixes made, and what's left |
 | [`production-request-pack.md`](production-request-pack.md) | Ready-to-paste answers for HMRC, with every gap marked NOT DONE |
+| [`security-self-check.md`](security-self-check.md) | HMRC P7c: our own security checks with free tools (dependencies, secrets, headers, OWASP review, advisor). Not an independent penetration test |
+| [`accountant-and-pentest-options.md`](accountant-and-pentest-options.md) | HMRC P7c: low-cost ways to get the VAT box rules checked by an accountant and an independent security test later |
 
 ## Fixed in code
 
@@ -32,6 +34,9 @@ Production was only read, for function names, column names, row counts and the p
 - `Retry-After` is read on a 429 or 503 (`api.ts` `retryAfterSeconds`). People see "Please try again in N seconds/minutes" (`errors.ts` `busy`) on obligations, submit and test calls.
 - `NOT_SIGNED_UP_TO_MTD` has its own message, `vat_not_signed_up`.
 - New submit codes: `RETURN_ALREADY_RECEIVED`, `NOT_FINALISED`, `INVALID_NUMERIC_VALUE`, `VAT_TOTAL_VALUE`, `VAT_NET_VALUE` and `MATCHING_RESOURCE_NOT_FOUND`. These are from memory and still to be verified.
+- **Corrected in HMRC P7c (8 Nov 2026):** checked against HMRC's published VAT API definition. `NOT_SIGNED_UP_TO_MTD` and
+  `RETURN_ALREADY_RECEIVED` are not in it and were removed. The box-total codes are nested inside `INVALID_REQUEST` and
+  are now read from there. See `error-handling.md`, "Verification of the codes".
 - The obligations read had no timeout; it now has 20 s.
 - An accepted return with an unreadable receipt now says so (`receipt_complete: false`, audit `accepted_no_receipt`).
 

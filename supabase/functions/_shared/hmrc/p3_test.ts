@@ -289,16 +289,16 @@ Deno.test('VAT number: each company its own; another company\'s row is never use
 });
 
 // ------------------------------------------------------------------ HMRC P7a: error handling gaps closed
-Deno.test('P7a: obligations: 429 says when to try again (Retry-After), NOT_SIGNED_UP_TO_MTD has its own words, 503 and a timeout are "couldn\'t be reached"', async () => {
+Deno.test('P7a: obligations: 429 says when to try again (Retry-After), an undocumented 403 is a plain refusal, 503 and a timeout are "couldn\'t be reached"', async () => {
   const busyW = await world({ api: () => Response.json({ code: 'MESSAGE_THROTTLED_OUT' }, { status: 429, headers: { 'Retry-After': '300' } }) });
   const b = await run(busyW, OWNER);
   assertEquals([b.status, b.body.code, b.body.retry_after], [503, 'hmrc_busy', 300]);
   assertEquals(b.body.message, 'HMRC is busy right now. Please try again in 5 minutes.');
   const plain = await run(await world({ api: () => Response.json({ code: 'MESSAGE_THROTTLED_OUT' }, { status: 429 }) }), OWNER);
   assertEquals(plain.body.message, 'HMRC is busy right now. Please try again in a minute.', 'no Retry-After: the old wording');
+  // HMRC P7c: NOT_SIGNED_UP_TO_MTD is not in HMRC's VAT API definition, so it gets the general refusal.
   const signedUp = await run(await world({ api: () => Response.json({ code: 'NOT_SIGNED_UP_TO_MTD' }, { status: 403 }) }), OWNER);
-  assertEquals(signedUp.body.code, 'vat_not_signed_up');
-  assert(String(signedUp.body.message).includes("isn't signed up for Making Tax Digital for VAT"));
+  assertEquals([signedUp.status, signedUp.body.code], [502, 'hmrc_refused']);
   const down = await run(await world({ api: () => new Response('', { status: 503 }) }), OWNER);
   assertEquals(down.body.code, 'hmrc_unavailable');
   const w = await world({ api: () => { throw new DOMException('timed out', 'TimeoutError'); } });

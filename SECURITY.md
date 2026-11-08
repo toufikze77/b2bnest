@@ -35,6 +35,12 @@ To report a security problem, email the address in [`/.well-known/security.txt`]
 - Public browser settings (`VITE_SUPABASE_URL`, the publishable key) are committed on purpose; they are not secrets.
   Server secrets live in Supabase Edge Function secrets. `src/test/envProduction.test.ts` fails if anything else is added.
 
+## Self-assessment (not an independent penetration test)
+
+`docs/hmrc-p7/security-self-check.md` (8 Nov 2026) records what we ran ourselves with free tools: `npm audit`, a secrets
+scan of the repository and its history, the configured security headers, a static OWASP Top 10 review of the HMRC and
+data-rights Edge Functions, and the Supabase advisor results. No independent penetration test has been done.
+
 ## Automated checks in this repository
 
 - CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) on every pull request and push to `main`: `npm ci`, type check,
