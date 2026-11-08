@@ -7,7 +7,7 @@
 **The short answer:**
 - **There is no self-service export or deletion of an account or a company.** Production has no export, erase or
   delete-account function, and the app has no such button.
-- Requests go by email to `privacy@b2bnest.online` (`src/pages/articles/SecurityGuide.tsx`), handled by hand.
+- Requests go by email to `info@b2bnest.online` (`src/pages/articles/SecurityGuide.tsx`), handled by hand.
 - Admins can export platform-wide CSVs (`src/pages/admin/AdminExport.tsx`). That is an admin tool, not a customer export.
 
 ## Separation and encryption
@@ -69,9 +69,5 @@ policy decision, so it is listed, not built.
 3. A company deletion flow that copes with `ON DELETE RESTRICT` on submissions: archive the company, keep its HMRC records for the retention period.
 4. Revoke the HMRC grant at disconnect. No revoke endpoint was verified in P0. **To confirm with HMRC.**
 5. Drop `hmrc_integrations` (0 rows, plain-text token columns). Review the unused `hmrc_settings` fields (UTR, PAYE reference, `client_secret`, currently empty).
-6. `src/pages/articles/SecurityGuide.tsx` claims things this audit couldn't prove:
-   - a Data Protection Officer;
-   - "regular compliance audits";
-   - "privacy impact assessments conducted";
-   - data processing agreements.
-   The owner must confirm these or remove them (see `privacy-wording.md`).
+6. Done: `src/pages/articles/SecurityGuide.tsx` no longer claims a data protection officer, compliance audits, impact
+   assessments or processing agreements, and says export and deletion are by email (`src/test/noUnprovenPrivacyClaims.test.ts`).
