@@ -39,9 +39,17 @@ describe('no unproven privacy or compliance claims in the pages', () => {
 
   it('the Security Guide sends data requests to info@b2bnest.online and promises one month, not self-service', () => {
     const text = fs.readFileSync(GUIDE, 'utf8');
-    expect(text).toContain('Email info@b2bnest.online with your request');
+    expect(text).toContain('email info@b2bnest.online with your request');
     expect(text).toContain('Questions about your data? Email info@b2bnest.online.');
     expect(text).toContain('We respond within one month');
     expect(text).not.toMatch(/Export all data|Access your data at any time|respond within 30 days/);
+  });
+
+  // HMRC P7b: retention periods are the Privacy Policy's job; the article made unproven "30 days" / "90 days" claims.
+  it('the Security Guide states no retention period of its own (no "30 days" or "90 days")', () => {
+    const text = fs.readFileSync(GUIDE, 'utf8');
+    expect(text).not.toMatch(/\b(30|90|thirty|ninety)[\s-]days?\b/i);
+    expect(text).toContain('We keep data only as long as needed to run the service and meet legal requirements, as set out in our Privacy Policy.');
+    expect(text).toContain('For anything else, or if that isn\'t available to you, email info@b2bnest.online with your request');
   });
 });

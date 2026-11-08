@@ -20,7 +20,7 @@ Ready-to-paste answers, built only from what this repository proves.
 | Website | https://www.b2bnest.online | `index.html`, `public/sitemap.xml` |
 | Privacy policy URL | https://www.b2bnest.online/privacy | `src/App.tsx`. **NOT DONE: the page doesn't yet describe HMRC data, fraud prevention data, processors or retention** (draft: `privacy-wording.md`) |
 | Terms URL | https://www.b2bnest.online/terms | `src/App.tsx`. **NOT DONE: no HMRC-specific terms reviewed** (owner and adviser) |
-| Responsible individual | [Name, role, email: OWNER TO FILL IN] | **NOT DONE** |
+| Responsible individual | Toufik Zemri, director of Edeals Master Ltd (owner decision, 9 Nov 2026); contact info@b2bnest.online | Owner decision recorded in `docs/hmrc-p7b/README.md` |
 | Security contact | info@b2bnest.online, published in `/.well-known/security.txt` | `public/.well-known/security.txt`. Confirmed by the owner. **Still to do: make sure someone reads it and answers security reports promptly** |
 
 ## 2. Software
@@ -67,9 +67,9 @@ See `error-handling.md`. **NOT DONE: the error codes marked "(memory)" are not v
 | Access control | Owners and admins only; two-step sign-in (TOTP) required for HMRC actions; demo accounts refused; rate limits | `handlers.ts`, `vatObligations.ts`, `_shared/demo-guard.ts` |
 | Audit | An append-only HMRC audit log (codes only); immutable VAT submission records | `docs/hmrc-p0/proposal.sql`, `docs/hmrc-p6/proposal.sql` |
 | Secrets handling | No secret in the repo (`src/test/envProduction.test.ts`); CI checks on every PR | `.github/workflows/ci.yml` |
-| UK GDPR rights | Requests by email; disconnect deletes tokens. **NOT DONE: no self-service export or deletion** (`data-rights.md`) | — |
-| Retention | **NOT DONE: owner and adviser to decide** (proposed 6 years, `data-rights.md`) | — |
-| Breach process | One page: tell HMRC immediately, the ICO within 72 hours | `incident-response.md`. **NOT DONE: incident lead not named; no breach log set up** |
+| UK GDPR rights | Self-service in Settings → Your data: download my data, download company data (owners and admins), close a company (owners), delete my account; email info@b2bnest.online as a fallback. Disconnect deletes tokens. **NOT DONE: the HMRC P7b SQL is not applied and the three Edge Functions are not deployed** | `docs/hmrc-p7b/`, `supabase/functions/_shared/data-rights/`, `src/components/settings/YourData.tsx` |
+| Retention | B2BNEST keeps its minimal HMRC record (VAT returns sent, HMRC activity log) for 6 years (owner decision; adviser to confirm); sandbox records 12 months. The purge is written and tested (`hmrc_purge_expired_audit`, dry run by default). **NOT DONE: SQL not applied; the purge is not scheduled** | `docs/hmrc-p7b/proposal.sql` |
+| Breach process | One page: tell HMRC immediately, the ICO within 72 hours. Incident lead: Toufik Zemri (owner decision) | `incident-response.md`. **NOT DONE: no breach log set up yet** |
 | Penetration test | **NOT DONE: no penetration test has been carried out.** Don't claim one | — |
 | Accessibility | A quick manual audit of the VAT screens, with small fixes | `accessibility.md`. **NOT DONE: no WCAG AA conformance claim; no axe or screen reader test** |
 | Supabase advisor findings | Open WARNs: leaked-password protection off, Postgres patches pending, and security definer functions to review | `SECURITY.md` |

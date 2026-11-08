@@ -5,9 +5,10 @@
 - read-only queries on production `gvftvswyrevummbvyhxa` on 2026-11-08: function names, column names and row counts only (no values were read).
 
 **The short answer:**
-- **There is no self-service export or deletion of an account or a company.** Production has no export, erase or
-  delete-account function, and the app has no such button.
-- Requests go by email to `info@b2bnest.online` (`src/pages/articles/SecurityGuide.tsx`), handled by hand.
+- **HMRC P7b (built, SQL pending apply):** Settings → Your data offers "Download my data", "Download company data"
+  (owners and admins), "Close this company" (owners) and "Delete my account". The Edge Functions `data-export`,
+  `account-delete` and `company-close` and the SQL in `docs/hmrc-p7b/` are written and tested, NOT applied or deployed.
+  Until they are, the buttons say "not available yet" and requests go by email to `info@b2bnest.online`, handled by hand.
 - Admins can export platform-wide CSVs (`src/pages/admin/AdminExport.tsx`). That is an admin tool, not a customer export.
 
 ## Separation and encryption
@@ -60,14 +61,14 @@ policy decision, so it is listed, not built.
 
 ## Follow-ups
 
-1. A self-service "Download my data" (account) and "Download company data" (owner), as JSON/CSV per table. Needs a
-   security definer export function per scope. SQL.
-2. An account deletion flow:
-   - removes `auth.users` and personal rows;
-   - keeps the HMRC records, as decided above;
-   - makes sure the person isn't the last owner of a company. SQL plus an Edge Function.
-3. A company deletion flow that copes with `ON DELETE RESTRICT` on submissions: archive the company, keep its HMRC records for the retention period.
-4. Revoke the HMRC grant at disconnect. No revoke endpoint was verified in P0. **To confirm with HMRC.**
-5. Drop `hmrc_integrations` (0 rows, plain-text token columns). Review the unused `hmrc_settings` fields (UTR, PAYE reference, `client_secret`, currently empty).
+1. Built, SQL pending apply (HMRC P7b): "Download my data" and "Download company data", one ZIP with JSON per table and
+   CSV for invoices, expenses, bills and VAT returns sent (`supabase/functions/_shared/data-rights/`, `docs/hmrc-p7b/`).
+2. Built, SQL pending apply (HMRC P7b): account deletion, refused for the last owner of a company with other members, a
+   live paid subscription, or the payer of a company that stays; the HMRC record keeps the opaque id and "Deleted user".
+3. Built, SQL pending apply (HMRC P7b): company closure without weakening `ON DELETE RESTRICT`: the company becomes a
+   hidden, unusable "Closed company" shell until the retention purge (`hmrc_purge_expired_audit`, not scheduled).
+4. Still open: revoke the HMRC grant at disconnect. No revoke endpoint was verified in P0. **To confirm with HMRC.**
+5. Built, SQL pending apply (HMRC P7b): `hmrc_integrations` is dropped (rollback recreates it empty). Still open: the
+   unused `hmrc_settings` fields (UTR, PAYE reference, `client_secret`, currently empty) are an owner decision.
 6. Done: `src/pages/articles/SecurityGuide.tsx` no longer claims a data protection officer, compliance audits, impact
-   assessments or processing agreements, and says export and deletion are by email (`src/test/noUnprovenPrivacyClaims.test.ts`).
+   assessments or processing agreements, nor its own retention periods (`src/test/noUnprovenPrivacyClaims.test.ts`).

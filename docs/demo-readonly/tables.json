@@ -152,6 +152,8 @@
   "demo_readonly_users": "Created by this proposal. No client privileges at all; only the owner (SQL editor) or the service role writes it."
  },
  "not_in_production": {
+  "data_rights_requests": "HMRC P7b, prepared and not applied yet; docs/hmrc-p7b/proposal.sql gives it the a0_demo_readonly_guard trigger.",
+  "_data_rights_gate": "HMRC P7b, prepared and not applied yet; docs/hmrc-p7b/proposal.sql gives it the a0_demo_readonly_guard trigger.",
   "calendar_events": "Created by an old migration; not in production on 6 Nov 2026 (dropped).",
   "goals": "Created by an old migration; not in production on 6 Nov 2026 (dropped).",
   "staging_cost_test_runs": "Created by an old migration; not in production on 6 Nov 2026.",

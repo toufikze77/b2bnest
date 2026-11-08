@@ -9,16 +9,17 @@ import CompanyMembers from '@/components/settings/CompanyMembers';
 import InviteMembers from '@/components/settings/InviteMembers';
 import CompanySecurity from '@/components/settings/CompanySecurity';
 import BillingSettings from '@/components/billing/BillingSettings';
+import YourData from '@/components/settings/YourData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { User, Bell, Building2, CreditCard, ShieldCheck, ArrowRight, Lock, Users, FileLock2 } from 'lucide-react';
+import { User, Bell, Building2, CreditCard, ShieldCheck, ArrowRight, Lock, Users, FileLock2, Database } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { PageContainer } from '@/components/ui/page-container';
 import { useDemoMode } from '@/contexts/demoModeState';
 import { DemoReadonlyNote } from '@/components/demo/DemoBanner';
 
-const TABS = ['account', 'security', 'billing', 'notifications', 'hmrc', 'members', 'company-security', 'companies'] as const;
+const TABS = ['account', 'security', 'billing', 'notifications', 'hmrc', 'members', 'company-security', 'companies', 'data'] as const;
 
 const Settings = () => {
   const { isDemo } = useDemoMode();
@@ -51,6 +52,7 @@ const Settings = () => {
             <TabsTrigger value="members" className="gap-2"><Users className="h-4 w-4" />Members &amp; roles</TabsTrigger>
             <TabsTrigger value="company-security" className="gap-2"><FileLock2 className="h-4 w-4" />Company security</TabsTrigger>
             <TabsTrigger value="companies" className="gap-2"><ShieldCheck className="h-4 w-4" />Company data</TabsTrigger>
+            <TabsTrigger value="data" className="gap-2"><Database className="h-4 w-4" />Your data</TabsTrigger>
           </TabsList>
         </div>
 
@@ -66,6 +68,7 @@ const Settings = () => {
         </TabsContent>
         <TabsContent value="notifications" className="space-y-4"><InAppNotificationPreferences /><NotificationPreferences /><MarketingConsentSwitch /></TabsContent>
         <TabsContent value="hmrc"><HMRCSettings /></TabsContent>
+        <TabsContent value="data"><YourData /></TabsContent>
         <TabsContent value="companies">
           <Card>
             <CardHeader>
