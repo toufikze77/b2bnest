@@ -18,6 +18,7 @@ import {
 } from '@/lib/vat';
 import { HMRCFilingBanner } from '@/components/hmrc/filingStatus';
 import HMRCVATSubmit, { type SubmitAccess } from '@/components/hmrc/HMRCVATSubmit';
+import HMRCVATAccount, { HMRCDeadlineBanner } from '@/components/hmrc/HMRCVATReads';
 
 const FINANCE = '/business-tools?tool=business-finance-assistant';
 const linkCls = 'font-medium text-primary underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
@@ -67,10 +68,12 @@ export default function HMRCVATReturns() {
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<PreviewFailure | null>(null);
   const [result, setResult] = useState<{ boxes: ReturnBoxes; from: string; to: string; confirmed: boolean } | null>(null);
+  // HMRC P8: the open obligations already read on this page (either button), for the deadline reminder. No extra call.
+  const [seenOpen, setSeenOpen] = useState<VatObligation[] | null>(null);
 
   useEffect(() => {
     let live = true;
-    setStatus(null); setResult(null); setFailure(null); setObligations(null); setObligationKey('');
+    setStatus(null); setResult(null); setFailure(null); setObligations(null); setObligationKey(''); setSeenOpen(null);
     if (organizationId && !isDemo) void fetchHmrcStatus(organizationId).then((s) => { if (live) setStatus(s); });
     return () => { live = false; };
   }, [organizationId, isDemo]);
@@ -93,6 +96,7 @@ export default function HMRCVATReturns() {
     const list = [...(open.ok ? open.obligations ?? [] : []), ...(done.ok ? done.obligations ?? [] : [])].sort((a, b) => b.start.localeCompare(a.start));
     if (!open.ok && !done.ok) { setObligationsNote(`HMRC's obligations couldn't be read (${open.message ?? messageFor(open.code)}). Choose dates instead: the period is then not confirmed by HMRC.`); return; }
     setObligations(list);
+    if (open.ok) setSeenOpen(open.obligations ?? []);
     if (!list.length) setObligationsNote('HMRC returned no VAT obligations. Choose dates instead: the period is then not confirmed by HMRC.');
     else setObligationKey(list[0].periodKey);
   };
@@ -148,6 +152,7 @@ export default function HMRCVATReturns() {
 
       {blocked ?? (
         <>
+          <HMRCDeadlineBanner obligations={seenOpen} />
           <Card>
             <CardHeader><CardTitle className="text-lg">Period</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -201,7 +206,9 @@ export default function HMRCVATReturns() {
           )}
           {result && <Preview result={result} onDownload={download} />}
           {/* HMRC P6: submitting to HMRC's TEST environment (owners and admins; production is never offered). */}
-          {organizationId && <HMRCVATSubmit companyId={organizationId} companyName={company} access={submitAccess} />}
+          {organizationId && <HMRCVATSubmit companyId={organizationId} companyName={company} access={submitAccess} onObligations={setSeenOpen} />}
+          {/* HMRC P8: what HMRC holds (liabilities, payments, penalties), read live from the test environment. */}
+          {organizationId && <HMRCVATAccount companyId={organizationId} ready={connected} />}
         </>
       )}
     </div>

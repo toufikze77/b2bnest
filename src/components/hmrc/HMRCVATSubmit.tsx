@@ -15,6 +15,8 @@ import {
   type Prepared, type SubmissionRecord, type Submitted,
 } from '@/lib/hmrcVatSubmit';
 import { LEFT_OUT_TEXT } from '@/lib/vat';
+import { CHECK_NOT_ADVICE, lastAccepted, preSubmitChecks } from '@/lib/hmrcVatReads';
+import { CheckWithHmrc, HMRCVATReceipt } from '@/components/hmrc/HMRCVATReads';
 
 const linkCls = 'font-medium text-primary underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 const selectCls = 'flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
@@ -29,7 +31,11 @@ export type SubmitAccess = 'ready' | 'not_connected' | 'scope_missing';
  * figures, checks a signed confirmation, and records every attempt permanently (hmrc_vat_submissions). Owners and
  * admins only (the parent screen shows this only to them); nothing here is filed with HMRC for real.
  */
-export default function HMRCVATSubmit({ companyId, companyName, access }: { companyId: string; companyName: string; access: SubmitAccess }) {
+export default function HMRCVATSubmit({ companyId, companyName, access, onObligations }: {
+  companyId: string; companyName: string; access: SubmitAccess;
+  /** HMRC P8: the open obligations this section read, for the deadline reminder (no extra HMRC call). */
+  onObligations?: (list: VatObligation[]) => void;
+}) {
   const [obligations, setObligations] = useState<VatObligation[] | null>(null);
   const [loadingOb, setLoadingOb] = useState(false);
   const [periodKey, setPeriodKey] = useState('');
@@ -58,7 +64,13 @@ export default function HMRCVATSubmit({ companyId, companyName, access }: { comp
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   };
-  const historyBlock = <History history={history} onReload={() => { void loadHistory(); }} onDownload={download} />;
+  const [receiptFor, setReceiptFor] = useState<SubmissionRecord | null>(null);
+  const historyBlock = (
+    <>
+      <History history={history} onReload={() => { void loadHistory(); }} onDownload={download} companyId={companyId} canCheck={access !== 'not_connected'} onReceipt={setReceiptFor} />
+      {receiptFor && <HMRCVATReceipt row={receiptFor} companyName={companyName} onClose={() => setReceiptFor(null)} />}
+    </>
+  );
 
   if (access === 'not_connected') {
     return (
@@ -84,6 +96,7 @@ export default function HMRCVATSubmit({ companyId, companyName, access }: { comp
     if (!r.ok) { setSaid(r.message ?? messageFor(r.code)); return; }
     const open = (r.obligations ?? []).filter((o) => o.status === 'O');
     setObligations(open);
+    onObligations?.(open);
     setPeriodKey(open[0]?.periodKey ?? '');
     if (!open.length) setSaid('HMRC shows no open VAT obligations for this company.');
   };
@@ -97,7 +110,10 @@ export default function HMRCVATSubmit({ companyId, companyName, access }: { comp
     setPrepared(r);
   };
 
-  const ready = !!prepared?.confirmation_token && declared && typedKey.trim() === periodKey;
+  // HMRC P8: checks before submitting. Only what HMRC itself rejects blocks; the rest warns.
+  const checks = preSubmitChecks(prepared?.figures, lastAccepted(history?.rows, periodKey)?.figures);
+  const checkBlocks = checks.some((c) => c.block);
+  const ready = !!prepared?.confirmation_token && declared && typedKey.trim() === periodKey && !checkBlocks;
   const submit = async () => {
     if (!ready || sending.current || !prepared?.confirmation_token) return;
     sending.current = true; // one submission per click sequence, however fast the clicks
@@ -166,6 +182,16 @@ export default function HMRCVATSubmit({ companyId, companyName, access }: { comp
               {prepared.boxes.leftOut.map((l) => <li key={`${l.source}-${l.reason}`}>{l.records} {l.source}: {LEFT_OUT_TEXT[l.reason]}</li>)}
             </ul>
           )}
+          {checks.length > 0 && (
+            <Alert role="status" data-testid="vats-checks" className="border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-50">
+              <AlertOctagon className="h-4 w-4" aria-hidden />
+              <AlertTitle>{checkBlocks ? 'HMRC would reject this return' : 'Check these figures before you submit'}</AlertTitle>
+              <AlertDescription>
+                <ul className="list-disc pl-5">{checks.map((c) => <li key={c.message} data-testid={`vats-check-${c.rule}`}>{c.message}</li>)}</ul>
+                <p className="mt-1 text-xs">{CHECK_NOT_ADVICE}</p>
+              </AlertDescription>
+            </Alert>
+          )}
           {prepared.blocking && prepared.blocking.length > 0 ? (
             <Alert role="alert" data-testid="vats-blocking">
               <AlertOctagon className="h-4 w-4" aria-hidden />
@@ -205,7 +231,10 @@ export default function HMRCVATSubmit({ companyId, companyName, access }: { comp
   );
 }
 
-function History({ history, onReload, onDownload }: { history: { rows: SubmissionRecord[]; notAvailable?: boolean; error?: boolean } | null; onReload: () => void; onDownload: (r: SubmissionRecord) => void }) {
+function History({ history, onReload, onDownload, companyId, canCheck, onReceipt }: {
+  history: { rows: SubmissionRecord[]; notAvailable?: boolean; error?: boolean } | null; onReload: () => void; onDownload: (r: SubmissionRecord) => void;
+  companyId: string; canCheck: boolean; onReceipt: (r: SubmissionRecord) => void;
+}) {
   return (
       <div className="space-y-2" data-testid="vats-history">
         <h4 className="text-sm font-semibold">Submission history (test environment)</h4>
@@ -217,7 +246,7 @@ function History({ history, onReload, onDownload }: { history: { rows: Submissio
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] text-left text-sm">
                 <caption className="sr-only">VAT return submissions to HMRC's test environment</caption>
-                <thead><tr className="border-b text-muted-foreground"><th scope="col" className="py-1 pr-2">Period</th><th scope="col" className="py-1 pr-2">Submitted</th><th scope="col" className="py-1 pr-2">By</th><th scope="col" className="py-1 pr-2">Status</th><th scope="col" className="py-1 pr-2">Receipt</th><th scope="col" className="py-1 pr-2">Scenario</th><th scope="col" className="py-1"><span className="sr-only">Download</span></th></tr></thead>
+                <thead><tr className="border-b text-muted-foreground"><th scope="col" className="py-1 pr-2">Period</th><th scope="col" className="py-1 pr-2">Submitted</th><th scope="col" className="py-1 pr-2">By</th><th scope="col" className="py-1 pr-2">Status</th><th scope="col" className="py-1 pr-2">Receipt</th><th scope="col" className="py-1 pr-2">Scenario</th><th scope="col" className="py-1"><span className="sr-only">Actions</span></th></tr></thead>
                 <tbody>
                   {history.rows.map((r) => (
                     <tr key={r.id} className="border-b align-top" data-testid="vats-history-row">
@@ -227,7 +256,15 @@ function History({ history, onReload, onDownload }: { history: { rows: Submissio
                       <td className="py-1 pr-2"><Badge variant="outline">{STATUS_TEXT[r.status]}</Badge>{r.status === 'rejected' && r.error_message && <span className="block text-xs text-muted-foreground">{r.error_message}</span>}</td>
                       <td className="py-1 pr-2 text-xs">{r.form_bundle_number ? <>Form bundle {r.form_bundle_number}{r.processing_date && <> · {when(r.processing_date)}</>}{r.payment_indicator && <> · {r.payment_indicator}</>}</> : '—'}</td>
                       <td className="py-1 pr-2 text-xs">{r.test_scenario ?? '—'}</td>
-                      <td className="py-1"><Button variant="ghost" size="sm" onClick={() => onDownload(r)} aria-label={`Download receipt for ${r.period_key}`}><Download className="h-4 w-4" aria-hidden /></Button></td>
+                      <td className="space-y-1 py-1">
+                        <Button variant="ghost" size="sm" onClick={() => onDownload(r)} aria-label={`Download receipt for ${r.period_key}`}><Download className="h-4 w-4" aria-hidden /></Button>
+                        {r.status === 'accepted' && (
+                          <>
+                            <Button variant="outline" size="sm" onClick={() => onReceipt(r)} data-testid="vats-receipt-open">Receipt</Button>
+                            {canCheck && <CheckWithHmrc companyId={companyId} row={r} />}
+                          </>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

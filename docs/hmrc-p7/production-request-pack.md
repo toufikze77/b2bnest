@@ -63,13 +63,24 @@ HMRC's reply (paste below when it arrives, with the date; no tokens or ids from 
 | --- | --- | --- |
 | Product | B2BNEST: a web application for UK small businesses (invoices, expenses, VAT records, VAT return preview and submission) | `docs/hmrc-plan` |
 | Connection method | `WEB_APP_VIA_SERVER` | `supabase/functions/_shared/hmrc/fraudHeaders.ts` |
-| APIs used | VAT (MTD) 1.0: `GET /organisations/vat/{vrn}/obligations` and `POST /organisations/vat/{vrn}/returns`. Sandbox only: Hello World 1.0 and Test Fraud Prevention Headers 1.0 | `vatObligations.ts`, `vatSubmit.ts`, `testCall.ts` |
-| APIs **not** used | VAT liabilities, payments, view return; Income Tax (ITSA); PAYE / RTI; Corporation Tax | Not in the code. Don't tick them |
-| Scopes | `read:vat`, `write:vat` (plus `hello` in the sandbox only) | `config.ts` `HMRC_VAT_SCOPES`, `scopesFor` |
+| APIs used | VAT (MTD) 1.0: `GET /organisations/vat/{vrn}/obligations` and `POST /organisations/vat/{vrn}/returns`. **HMRC P8 (built, not yet deployed):** `GET /organisations/vat/{vrn}/returns/{periodKey}` (view return), `GET …/liabilities`, `GET …/payments`, `GET …/penalties`. Sandbox only: Hello World 1.0 and Test Fraud Prevention Headers 1.0 | `vatObligations.ts`, `vatSubmit.ts`, `vatReads.ts`, `testCall.ts` |
+| APIs **not** used | VAT financial details and customer information (verified, not built); Income Tax (ITSA); PAYE / RTI; Corporation Tax | Not in the code. Don't tick them |
+| Scopes | `read:vat`, `write:vat` (plus `hello` in the sandbox only). **HMRC P8 adds no scope:** the four reads use `read:vat` | `config.ts` `HMRC_VAT_SCOPES`, `scopesFor`; `docs/hmrc-p8/README.md` |
 | Who can use it | Business and Scale plans (and the trial). Company owners and admins only, with two-step sign-in | `hmrc_manage_allowed` (P0/P1 SQL), `handlers.ts` `canManage` |
 | Agents | No: B2BNEST acts for the business itself, not as an agent | — |
 | Box rules | The nine boxes are worked out from per-line VAT on invoices and expenses (standard scheme only). **NOT DONE: the box rules are not verified by an accountant or against every HMRC rule** (`docs/hmrc-p5/README.md`, `src/lib/vat/returnRules.ts`). Low-cost options: `accountant-and-pentest-options.md` | — |
 | End-to-end in the sandbox | **DONE (8 Nov 2026, owner):** connect → obligations → prepare → submit → receipt → history. HMRC's sandbox **accepted** the return for period **18A1**, form bundle **529735553360**, stored with its figures hash. A second submit for the same period was **refused as already accepted**. | `docs/hmrc-p6/README.md`; `hmrc_vat_submissions` (immutable) |
+
+### HMRC P8 reads (8 Nov 2026: built and tested, NOT deployed, SQL NOT applied)
+
+| Question | Answer | Proof |
+| --- | --- | --- |
+| Endpoints | View return, liabilities, payments, penalties (GET only). Verified against HMRC's VAT API 1.0 definition on 8 Nov 2026 | `docs/hmrc-p8/README.md` §0 |
+| Sandbox scenarios offered | View return: `DATE_RANGE_TOO_LARGE`, `INSOLVENT_TRADER`. Liabilities: `SINGLE_LIABILITY`, `MULTIPLE_LIABILITIES`, `SINGLE_LIABILITY_2018_19`, `MULTIPLE_LIABILITIES_2018_19`, `INSOLVENT_TRADER`. Payments: `SINGLE_PAYMENT`, `MULTIPLE_PAYMENTS`, `SINGLE_PAYMENT_2018_19`, `MULTIPLE_PAYMENTS_2018_19`, `INSOLVENT_TRADER`. Penalties: the ten HMRC documents | `vatReads.ts` |
+| Audit actions | `vat_return_view_call` / `_result`, `vat_liabilities_call` / `_result`, `vat_payments_call` / `_result`, `vat_penalties_call` / `_result` (codes only) | `docs/hmrc-p8/proposal.sql` |
+| Rate limit | 10 an hour per company for each read | `hmrc_take_read_slot` |
+| What is stored | Nothing that HMRC returns. Read live each time | `vatReads.ts` |
+| Sandbox test | **NOT DONE** (after rollout; owner steps in `docs/hmrc-p8/README.md` §2) | — |
 
 ## 3. Fraud prevention headers
 

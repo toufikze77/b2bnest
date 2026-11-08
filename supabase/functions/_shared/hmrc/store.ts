@@ -7,7 +7,10 @@ export type ManageRule = 'ok' | 'not_signed_in' | 'not_member' | 'not_admin' | '
 export type AuditEvent = 'connect_started' | 'connected' | 'refreshed' | 'refresh_failed' | 'disconnected' | 'refused' | 'test_call' | 'test_result'
   | 'obligations_call' | 'obligations_result'
   // HMRC P6 (docs/hmrc-p6/proposal.sql)
-  | 'vat_submit_start' | 'vat_submit_result' | 'vat_submit_unknown' | 'vat_submit_check' | 'fraud_validate';
+  | 'vat_submit_start' | 'vat_submit_result' | 'vat_submit_unknown' | 'vat_submit_check' | 'fraud_validate'
+  // HMRC P8 (docs/hmrc-p8/proposal.sql): the <kind>_call rows are written by hmrc_take_read_slot.
+  | 'vat_return_view_call' | 'vat_return_view_result' | 'vat_liabilities_call' | 'vat_liabilities_result'
+  | 'vat_payments_call' | 'vat_payments_result' | 'vat_penalties_call' | 'vat_penalties_result';
 export interface ConnectionRow {
   company_id: string;
   environment: HmrcEnvironment;

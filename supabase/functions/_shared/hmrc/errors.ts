@@ -4,7 +4,9 @@ export type HmrcErrorCode =
   | 'not_configured' | 'unauthorized' | 'two_step_required' | 'not_member' | 'not_admin' | 'trial_ended' | 'suspended' | 'plan_not_included'
   | 'bad_request' | 'bad_state' | 'hmrc_refused' | 'hmrc_unavailable' | 'not_connected' | 'needs_reconnect' | 'server_error'
   | 'test_limit' | 'hmrc_busy' | 'scope_missing'
-  | 'vrn_missing' | 'obligations_limit' | 'vrn_invalid' | 'vat_not_authorised' | 'vat_insolvent';
+  | 'vrn_missing' | 'obligations_limit' | 'vrn_invalid' | 'vat_not_authorised' | 'vat_insolvent'
+  // HMRC P8: reading what HMRC holds.
+  | 'not_available' | 'read_limit' | 'not_submitted' | 'return_not_found' | 'dates_invalid';
 
 export const HMRC_MESSAGES: Record<HmrcErrorCode, string> = {
   not_configured: "HMRC connection isn't set up yet.",
@@ -31,11 +33,18 @@ export const HMRC_MESSAGES: Record<HmrcErrorCode, string> = {
   vrn_invalid: "HMRC didn't accept this VAT number. Check it in Settings → HMRC.",
   vat_not_authorised: "HMRC says this HMRC sign-in can't see VAT for this VAT number. Check the VAT number, or connect again with the HMRC account that owns it.",
   vat_insolvent: "HMRC can't show VAT obligations for this business through this service.",
+  // HMRC P8 (docs/hmrc-p8/README.md).
+  not_available: "This isn't available yet.",
+  read_limit: 'You can do this 10 times an hour for this company. Please try again later.',
+  not_submitted: "There's no accepted return for this period sent through B2BNEST, so there's nothing to compare.",
+  return_not_found: 'HMRC has no return for this period.',
+  dates_invalid: "HMRC didn't accept these dates. Choose dates up to today, at most 365 days apart.",
 };
 export const HMRC_STATUS: Record<HmrcErrorCode, number> = {
   not_configured: 503, unauthorized: 401, two_step_required: 403, not_member: 403, not_admin: 403, trial_ended: 403, suspended: 403, plan_not_included: 403,
   bad_request: 400, bad_state: 400, hmrc_refused: 502, hmrc_unavailable: 502, not_connected: 409, needs_reconnect: 409, server_error: 500, test_limit: 429, hmrc_busy: 503, scope_missing: 409,
   vrn_missing: 409, obligations_limit: 429, vrn_invalid: 422, vat_not_authorised: 403, vat_insolvent: 422,
+  not_available: 503, read_limit: 429, not_submitted: 409, return_not_found: 409, dates_invalid: 400,
 };
 export type HandlerResult = { status: number; body: Record<string, unknown> };
 export const fail = (code: HmrcErrorCode): HandlerResult => ({ status: HMRC_STATUS[code], body: { ok: false, code, message: HMRC_MESSAGES[code] } });

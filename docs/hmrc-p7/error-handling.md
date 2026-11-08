@@ -56,6 +56,27 @@ The general platform codes below are therefore still marked **(memory, not verif
 **Redeploy needed:** `hmrc-vat-submit`, `hmrc-vat-obligations` and `hmrc-test-call`. All three use the shared
 `_shared/hmrc` code that changed.
 
+## HMRC P8 reads (verified 8 Nov 2026)
+
+**Source:** https://raw.githubusercontent.com/hmrc/vat-api/main/resources/public/api/conf/1.0/application.yaml, read
+8 Nov 2026. Mapping in `supabase/functions/_shared/hmrc/vatReads.ts`, tests in `_shared/hmrc/p8_test.ts`.
+
+| Endpoint | Code (HTTP) | What the person sees |
+| --- | --- | --- |
+| All four | `VRN_INVALID` (400) | "HMRC didn't accept this VAT number…" (`vrn_invalid`) |
+| All four | `CLIENT_OR_AGENT_NOT_AUTHORISED` (403) | `vat_not_authorised` |
+| View return, liabilities, payments | `RULE_INSOLVENT_TRADER` (403) | `vat_insolvent` |
+| View return | `PERIOD_KEY_INVALID` (400), `DATE_RANGE_TOO_LARGE` (403) | `bad_request` |
+| View return | `NOT_FOUND` (404) | "HMRC has no return for this period." (`return_not_found`) |
+| Liabilities, payments | `DATE_FROM_INVALID`, `DATE_TO_INVALID`, `DATE_RANGE_INVALID` (400), also when nested in `errors` | "HMRC didn't accept these dates…" (`dates_invalid`) |
+| Liabilities, payments | `NOT_FOUND` (404) | An empty list ("HMRC shows no liabilities / payments for these dates") |
+| Penalties | any 404 (not documented) | `hmrc_refused` |
+| All four | 429 | "HMRC is busy… try again in N seconds/minutes" (`Retry-After`) |
+| All four | 5xx, network error, 20 s timeout | "HMRC couldn't be reached." Never retried |
+| All four | 401 | One token refresh and one repeat of the GET (as for obligations), then "connect again" |
+| All four | Our own limit (10 an hour per company per read) | `read_limit` |
+| All four | P8 SQL not applied, or function not deployed | "This isn't available yet." (`not_available`) |
+
 ## Case by case (P7a; see the verification above for the codes)
 
 | Case | What the code does | What the person sees | P7a change |
