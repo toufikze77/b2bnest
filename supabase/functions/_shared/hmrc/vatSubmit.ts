@@ -23,15 +23,21 @@ import { computeReturnBoxes, type PreviewRow, type ReturnBoxes } from '../vat/re
 // docs/hmrc-p6/README.md lists each one.
 /** POST /organisations/vat/{vrn}/returns, scope write:vat, Accept application/vnd.hmrc.1.0+json. NOT VERIFIED. */
 export const VAT_RETURN_API = { version: '1.0', path: (vrn: string) => `/organisations/vat/${vrn}/returns`, logPath: '/organisations/vat/{vrn}/returns', scope: 'write:vat' } as const;
-/** Sandbox Gov-Test-Scenario values for this endpoint (owner's test picker). NOT VERIFIED. */
-export const SUBMIT_SCENARIOS = ['DUPLICATE_SUBMISSION', 'TAX_PERIOD_NOT_ENDED', 'INVALID_PERIODKEY', 'INSOLVENT_TRADER', 'NOT_FOUND'] as const;
-/** HMRC's error codes for a submission → a stable code of ours and plain words. NOT VERIFIED. */
+/** Sandbox Gov-Test-Scenario values for this endpoint (owner's test picker). HMRC P7c: verified 8 Nov 2026 against HMRC's
+ *  published definition (github.com/hmrc/vat-api, resources/public/api/conf/1.0/application.yaml). */
+export const SUBMIT_SCENARIOS = ['INVALID_VRN', 'INVALID_PERIODKEY', 'INVALID_PAYLOAD', 'DUPLICATE_SUBMISSION', 'TAX_PERIOD_NOT_ENDED', 'INSOLVENT_TRADER'] as const;
+/**
+ * HMRC's error codes for a submission → a stable code of ours and plain words. HMRC P7c: checked 8 Nov 2026 against the
+ * same definition (docs/hmrc-p7/error-handling.md). Documented for POST returns: 400 VRN_INVALID, PERIOD_KEY_INVALID,
+ * INVALID_REQUEST (with a nested errors list: PERIOD_KEY_INVALID, VAT_TOTAL_VALUE, VAT_NET_VALUE, INVALID_NUMERIC_VALUE,
+ * INVALID_MONETARY_AMOUNT, MANDATORY_FIELD_MISSING); 403 NOT_FINALISED, DUPLICATE_SUBMISSION, TAX_PERIOD_NOT_ENDED,
+ * CLIENT_OR_AGENT_NOT_AUTHORISED, RULE_INSOLVENT_TRADER. NOT_FOUND, INVALID_SCOPE and MATCHING_RESOURCE_NOT_FOUND are
+ * HMRC's general platform errors (the reference guide could not be fetched): kept, marked "memory, not verified".
+ */
 export const HMRC_SUBMIT_ERRORS: Record<string, { code: string; message: string }> = {
   DUPLICATE_SUBMISSION: { code: 'duplicate_submission', message: 'HMRC says a return for this period has already been submitted.' },
   TAX_PERIOD_NOT_ENDED: { code: 'period_not_ended', message: "HMRC says this VAT period hasn't ended yet. Submit it after the period ends." },
-  INVALID_PERIODKEY: { code: 'invalid_period_key', message: "HMRC didn't recognise this VAT period." },
   PERIOD_KEY_INVALID: { code: 'invalid_period_key', message: "HMRC didn't recognise this VAT period." },
-  INSOLVENT_TRADER: { code: 'insolvent_trader', message: "HMRC can't accept a VAT return for this business through this service." },
   RULE_INSOLVENT_TRADER: { code: 'insolvent_trader', message: "HMRC can't accept a VAT return for this business through this service." },
   NOT_FOUND: { code: 'not_found', message: "HMRC couldn't find this VAT registration or period." },
   VRN_INVALID: { code: 'vrn_invalid', message: "HMRC didn't accept this VAT number. Check it in Settings → HMRC." },
@@ -39,15 +45,15 @@ export const HMRC_SUBMIT_ERRORS: Record<string, { code: string; message: string 
   INVALID_SCOPE: { code: 'scope_missing', message: 'Connect to HMRC again: submitting a VAT return needs one more permission (test environment only).' },
   INVALID_REQUEST: { code: 'invalid_return', message: 'HMRC said the return is not in the right form. Nothing was filed.' },
   INVALID_MONETARY_AMOUNT: { code: 'invalid_return', message: 'HMRC said the return is not in the right form. Nothing was filed.' },
-  // HMRC P7a: more codes HMRC's error handling may send (from memory, NOT VERIFIED).
-  NOT_SIGNED_UP_TO_MTD: { code: 'vat_not_signed_up', message: "HMRC says this VAT number isn't signed up for Making Tax Digital for VAT. Nothing was filed." },
-  RETURN_ALREADY_RECEIVED: { code: 'duplicate_submission', message: 'HMRC says a return for this period has already been submitted.' },
   NOT_FINALISED: { code: 'invalid_return', message: 'HMRC said the return is not in the right form. Nothing was filed.' },
   INVALID_NUMERIC_VALUE: { code: 'invalid_return', message: 'HMRC said the return is not in the right form. Nothing was filed.' },
   VAT_TOTAL_VALUE: { code: 'invalid_return', message: 'HMRC said the boxes do not add up. Nothing was filed.' },
   VAT_NET_VALUE: { code: 'invalid_return', message: 'HMRC said the boxes do not add up. Nothing was filed.' },
+  MANDATORY_FIELD_MISSING: { code: 'invalid_return', message: 'HMRC said a box was missing from the return. Nothing was filed.' },
   MATCHING_RESOURCE_NOT_FOUND: { code: 'not_found', message: "HMRC couldn't find this VAT registration or period." },
 };
+/** Nested codes inside INVALID_REQUEST, most useful first ("the boxes do not add up" before a general format error). */
+export const NESTED_PRIORITY = ['VAT_TOTAL_VALUE', 'VAT_NET_VALUE', 'PERIOD_KEY_INVALID', 'MANDATORY_FIELD_MISSING', 'INVALID_NUMERIC_VALUE', 'INVALID_MONETARY_AMOUNT'] as const;
 // ---------------------------------------------------------------------------------------------------------------------
 
 export const CONFIRM_SECRET_ENV = 'HMRC_VAT_CONFIRM_SECRET';
@@ -204,7 +210,10 @@ async function obligations(ctx: Ctx, deps: SubmitDeps, q: Record<string, string>
   if (r.reason === 'needs_reconnect') return { ok: false, result: fail('needs_reconnect') };
   if (r.reason === 'hmrc_rate_limited') return { ok: false, result: busy(r.retryAfter) };
   if (r.hmrcCode === 'INVALID_SCOPE') return { ok: false, result: failS('scope_missing') };
-  if (r.hmrcCode === 'NOT_SIGNED_UP_TO_MTD') return { ok: false, result: fail('vat_not_signed_up') };
+  // HMRC P7c: the obligations codes HMRC documents (as in vatObligations.ts), not "couldn't be reached".
+  if (r.hmrcCode === 'CLIENT_OR_AGENT_NOT_AUTHORISED') return { ok: false, result: fail('vat_not_authorised') };
+  if (r.hmrcCode === 'RULE_INSOLVENT_TRADER') return { ok: false, result: fail('vat_insolvent') };
+  if (r.hmrcCode === 'VRN_INVALID') return { ok: false, result: fail('vrn_invalid') };
   return { ok: false, result: fail('hmrc_unavailable') };
 }
 
@@ -331,7 +340,9 @@ export async function vatSubmit(req: { authHeader: string | null; headers: Heade
     return done({ ...base, status: 'unknown', submission_id: id, message: SUBMIT_MESSAGES.outcome_unknown });
   }
   // A clear refusal (or the request never left: a token that couldn't be refreshed).
-  const mapped = r.hmrcCode ? HMRC_SUBMIT_ERRORS[r.hmrcCode] : undefined;
+  // HMRC P7c: INVALID_REQUEST carries the real reasons in a nested list; the most useful one gives the words.
+  const nested = r.hmrcCode === 'INVALID_REQUEST' ? NESTED_PRIORITY.find((c) => r.hmrcErrors?.includes(c)) : undefined;
+  const mapped = nested ? HMRC_SUBMIT_ERRORS[nested] : r.hmrcCode ? HMRC_SUBMIT_ERRORS[r.hmrcCode] : undefined;
   const code = mapped?.code
     ?? (r.status === 0 ? 'not_sent' : r.status === 429 ? 'hmrc_busy' : r.status === 401 || r.reason === 'needs_reconnect' ? 'hmrc_unauthorised' : r.status === 400 ? 'invalid_return' : (lowerCode(r.hmrcCode) || 'hmrc_rejected'));
   const wait = r.status === 429 && r.retryAfter ? (r.retryAfter < 120 ? `${r.retryAfter} seconds` : `${Math.ceil(r.retryAfter / 60)} minutes`) : null;

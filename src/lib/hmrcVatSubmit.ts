@@ -9,7 +9,7 @@ import type { ReturnBoxes } from '@/lib/vat';
 export const TEST_ENV_BANNER = 'TEST ENVIRONMENT. Nothing here is filed with HMRC for real.';
 export const DECLARATION = "I confirm that the information in this return is correct and complete to the best of my knowledge. I understand this is a submission to HMRC's test environment.";
 /** The same allow-list as the server (supabase/functions/_shared/hmrc/vatSubmit.ts). Sandbox only. */
-export const SUBMIT_SCENARIOS = ['DUPLICATE_SUBMISSION', 'TAX_PERIOD_NOT_ENDED', 'INVALID_PERIODKEY', 'INSOLVENT_TRADER', 'NOT_FOUND'] as const;
+export const SUBMIT_SCENARIOS = ['INVALID_VRN', 'INVALID_PERIODKEY', 'INVALID_PAYLOAD', 'DUPLICATE_SUBMISSION', 'TAX_PERIOD_NOT_ENDED', 'INSOLVENT_TRADER'] as const;
 
 export interface ReturnFigures {
   periodKey: string; vatDueSales: number; vatDueAcquisitions: number; totalVatDue: number; vatReclaimedCurrPeriod: number; netVatDue: number;

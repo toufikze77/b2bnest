@@ -414,20 +414,43 @@ Deno.test('P7a: a 429 with Retry-After on submit is a clear rejection that says 
   assertEquals(posts(w).length, 1);
 });
 
-Deno.test('P7a: 403 NOT_SIGNED_UP_TO_MTD and RETURN_ALREADY_RECEIVED get their own plain words; 409 is a clear rejection', async () => {
-  for (const [code, status, expected] of [['NOT_SIGNED_UP_TO_MTD', 403, 'vat_not_signed_up'], ['RETURN_ALREADY_RECEIVED', 403, 'duplicate_submission'], ['SOMETHING_NEW', 409, 'something_new']] as const) {
+Deno.test('P7c: codes HMRC does not document for VAT (NOT_SIGNED_UP_TO_MTD, RETURN_ALREADY_RECEIVED) get the general rejection; 409 too', async () => {
+  for (const [code, status, expected] of [['NOT_SIGNED_UP_TO_MTD', 403, 'not_signed_up_to_mtd'], ['RETURN_ALREADY_RECEIVED', 403, 'return_already_received'], ['SOMETHING_NEW', 409, 'something_new']] as const) {
     const w = await world({ post: async () => Response.json({ code }, { status }) });
     const r = await submit(w, (await prepare(w)).confirmation_token);
     assertEquals([r.body.status, r.body.code], ['rejected', expected], code);
+    assert(!(code in HMRC_SUBMIT_ERRORS), `${code} is not mapped any more`);
     assertEquals(posts(w).length, 1);
   }
-  // On the obligations read (before anything is sent):
-  const w2 = await world();
-  const deps2 = deps(w2);
-  const origFetch = deps2.fetch;
-  deps2.fetch = async (input, init) => (String(input).includes('/obligations') ? Response.json({ code: 'NOT_SIGNED_UP_TO_MTD' }, { status: 403 }) : origFetch(input, init));
-  const r2 = await vatSubmit({ authHeader: `Bearer ${jwt(OWNER)}`, headers: new Headers(), body: { company_id: CO, period_key: '18A1', action: 'prepare' } }, deps2);
-  assertEquals(r2.body.code, 'vat_not_signed_up');
+  // On the obligations read (before anything is sent), HMRC's documented obligations codes keep their own words:
+  for (const [code, status, expected] of [['CLIENT_OR_AGENT_NOT_AUTHORISED', 403, 'vat_not_authorised'], ['RULE_INSOLVENT_TRADER', 403, 'vat_insolvent'],
+      ['VRN_INVALID', 400, 'vrn_invalid'], ['NOT_SIGNED_UP_TO_MTD', 403, 'hmrc_unavailable']] as const) {
+    const w2 = await world();
+    const deps2 = deps(w2);
+    const origFetch = deps2.fetch;
+    deps2.fetch = async (input, init) => (String(input).includes('/obligations') ? Response.json({ code }, { status }) : origFetch(input, init));
+    const r2 = await vatSubmit({ authHeader: `Bearer ${jwt(OWNER)}`, headers: new Headers(), body: { company_id: CO, period_key: '18A1', action: 'prepare' } }, deps2);
+    assertEquals(r2.body.code, expected, code);
+  }
+});
+
+Deno.test('P7c: INVALID_REQUEST gives the words of its nested reason (as HMRC documents it); nothing is retried', async () => {
+  for (const [nested, words] of [[['INVALID_NUMERIC_VALUE', 'VAT_TOTAL_VALUE'], 'HMRC said the boxes do not add up. Nothing was filed.'],
+      [['MANDATORY_FIELD_MISSING'], 'HMRC said a box was missing from the return. Nothing was filed.'],
+      [['PERIOD_KEY_INVALID'], "HMRC didn't recognise this VAT period."],
+      [[], 'HMRC said the return is not in the right form. Nothing was filed.']] as const) {
+    const body = { code: 'INVALID_REQUEST', message: 'Invalid request', errors: nested.map((c) => ({ code: c, message: 'raw', path: '/x' })) };
+    const w = await world({ post: async () => Response.json(body, { status: 400 }) });
+    const r = await submit(w, (await prepare(w)).confirmation_token);
+    assertEquals([r.body.status, r.body.message], ['rejected', words], nested.join(','));
+    assert(!JSON.stringify(r.body).includes('raw'));
+    assertEquals(posts(w).length, 1);
+  }
+});
+
+Deno.test('P7c: the sandbox scenario list is HMRC\'s documented list for POST returns', () => {
+  assertEquals([...SUBMIT_SCENARIOS], ['INVALID_VRN', 'INVALID_PERIODKEY', 'INVALID_PAYLOAD', 'DUPLICATE_SUBMISSION', 'TAX_PERIOD_NOT_ENDED', 'INSOLVENT_TRADER']);
+  for (const scenarioOnly of ['INVALID_VRN', 'INVALID_PERIODKEY', 'INVALID_PAYLOAD', 'INSOLVENT_TRADER']) assert(!(scenarioOnly in HMRC_SUBMIT_ERRORS), `${scenarioOnly} is a scenario name, not an error code`);
 });
 
 Deno.test('P7a: a 201 whose body can\'t be read is still accepted, and the person is told the receipt couldn\'t be read', async () => {

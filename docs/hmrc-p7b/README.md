@@ -1,8 +1,12 @@
 # HMRC P7b: customer data export, account and company closure, retention purge, old table clean-up
 
-**Status:** written and tested, NOT applied. No SQL has been run on production, no Edge Function is deployed, no job is
-scheduled. Production was only read: names, columns, foreign keys, triggers, policies and row counts, never values.
-HMRC stays sandbox only; the production refusal is unchanged. Stripe is untouched.
+**Status (8 Nov 2026): applied and deployed.**
+- The SQL is applied to production: 148 public tables, `hmrc_integrations` dropped, request log, closed-company
+  support, purge function present.
+- `data-export` (v3), `account-delete` (v2) and `company-close` (v2) are deployed with JWT verification on.
+- The owner tested the export for both scopes, including the authenticator code prompt.
+- **The retention purge is not scheduled** (owner decision still open).
+- HMRC stays sandbox only; the production refusal is unchanged. Stripe is untouched.
 
 ## Decisions already made by the owner
 
