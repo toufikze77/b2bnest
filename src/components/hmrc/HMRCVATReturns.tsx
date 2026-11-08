@@ -17,6 +17,7 @@ import {
   VAT_TREATMENT_SHORT, type LeftOut, type ReturnBoxes, type TreatmentTotal,
 } from '@/lib/vat';
 import { HMRCFilingBanner } from '@/components/hmrc/filingStatus';
+import HMRCVATSubmit, { type SubmitAccess } from '@/components/hmrc/HMRCVATSubmit';
 
 const FINANCE = '/business-tools?tool=business-finance-assistant';
 const linkCls = 'font-medium text-primary underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
@@ -76,6 +77,9 @@ export default function HMRCVATReturns() {
 
   const connected = status?.kind === 'ok' && !status.production && !!status.connection && status.connection.status === 'connected'
     && status.connection.scopes.includes('read:vat') && status.canManage;
+  const conn = status?.kind === 'ok' && !status.production ? status.connection : null;
+  const submitAccess: SubmitAccess = !conn || conn.status !== 'connected' ? 'not_connected'
+    : conn.scopes.includes('read:vat') && conn.scopes.includes('write:vat') ? 'ready' : 'scope_missing';
   const chosen = obligations?.find((o) => o.periodKey === obligationKey) ?? null;
   const period = mode === 'obligation' && chosen ? { from: chosen.start, to: chosen.end } : range;
   const days = rangeDays(period.from, period.to);
@@ -195,6 +199,8 @@ export default function HMRCVATReturns() {
             </Alert>
           )}
           {result && <Preview result={result} onDownload={download} />}
+          {/* HMRC P6: submitting to HMRC's TEST environment (owners and admins; production is never offered). */}
+          {organizationId && <HMRCVATSubmit companyId={organizationId} companyName={company} access={submitAccess} />}
         </>
       )}
     </div>

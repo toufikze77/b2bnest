@@ -150,3 +150,13 @@ Deno.test("HMRC P5: the VAT return preview is described as a preview, standard s
   assert(hmrc.includes("not verified against HMRC's guidance"));
   assertEquals(/ready (for|to) (file|Making Tax Digital)|MTD[- ]ready|MTD compliant/i.test(text.replace("Never say B2BNEST is ready for Making Tax Digital", "")), false);
 });
+
+Deno.test("HMRC P6: submission is to the test environment only, recorded permanently, and 'unknown' means check, not resubmit", () => {
+  const hmrc = section("HMRC (UK tax)");
+  assert(hmrc.includes("TEST ENVIRONMENT ONLY"));
+  assert(hmrc.includes("nothing is filed for real"));
+  assert(hmrc.includes("every attempt is recorded permanently"));
+  assert(hmrc.includes("must use \"Check with HMRC\", not submit again"));
+  assert(hmrc.includes("HMRC filing is not available yet"));
+  assertEquals(/files VAT returns with HMRC for real\./.test(hmrc.replace("Never say B2BNEST files VAT returns with HMRC for real.", "")), false);
+});

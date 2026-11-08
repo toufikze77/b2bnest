@@ -110,7 +110,7 @@ const REFUSE = [
   'activate-trial', 'ai-assistant', 'business-insights', 'change-subscription-plan', 'create-ai-topup-checkout', 'create-coinbase-charge',
   'create-payment', 'create-subscription-checkout', 'create-subscription-invoice', 'customer-portal', 'firecrawl-scrape',
   'generate-legal-document', 'generate-template', 'google-calendar-sync', 'hmrc-connect-complete', 'hmrc-connect-start', 'hmrc-disconnect',
-  'hmrc-test-call', 'hmrc-vat-obligations', 'notion-sync', 'oauth-facebook', 'oauth-gmail-callback', 'oauth-gmail-init', 'oauth-google-calendar',
+  'hmrc-test-call', 'hmrc-vat-obligations', 'hmrc-vat-submit', 'notion-sync', 'oauth-facebook', 'oauth-gmail-callback', 'oauth-gmail-init', 'oauth-google-calendar',
   'oauth-icloud-calendar', 'oauth-linkedin', 'oauth-onedrive', 'oauth-outlook-calendar', 'oauth-twitter', 'oauth-twitter-request',
   'send-contact-email', 'send-document-email', 'send-invitation-email', 'send-task-notification', 'share-project', 'share-task',
   'sign-oauth-state', 'store-twitter-credentials', 'sync-note-to-email', 'trello-import', 'truelayer-integration', 'whatsapp-connect',

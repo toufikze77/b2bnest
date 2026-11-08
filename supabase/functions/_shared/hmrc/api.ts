@@ -31,6 +31,10 @@ export interface CallRequest {
   logPath?: string;
   /** HMRC P3: sandbox only, and only Gov-Test-Scenario (HMRC's test scenarios). Dropped outside the sandbox. */
   testScenario?: string;
+  /** HMRC P6: never send the request twice (a VAT return): a 401 is not refreshed-and-retried. */
+  noRetry?: boolean;
+  /** HMRC P6: give up waiting after this long (the outcome is then unknown to the caller). */
+  timeoutMs?: number;
 }
 export type CallReason = 'not_configured' | 'not_connected' | 'needs_reconnect' | 'plan_not_included' | 'not_allowed'
   | 'hmrc_unauthorised' | 'hmrc_rate_limited' | 'hmrc_unavailable' | 'hmrc_error' | 'network';
@@ -85,7 +89,8 @@ export async function callHmrc(req: CallRequest, deps: CallDeps): Promise<CallRe
     if (req.testScenario && cfg.config.environment === 'sandbox') headers['Gov-Test-Scenario'] = req.testScenario;
     if (token) headers.Authorization = `Bearer ${token}`;
     if (req.body !== undefined) headers['Content-Type'] = 'application/json';
-    return deps.fetch(url.toString(), { method: req.method, headers, body: req.body === undefined ? undefined : JSON.stringify(req.body) });
+    const signal = req.timeoutMs ? AbortSignal.timeout(req.timeoutMs) : undefined;
+    return deps.fetch(url.toString(), { method: req.method, headers, body: req.body === undefined ? undefined : JSON.stringify(req.body), ...(signal ? { signal } : {}) });
   };
 
   let token = await tokenFor(false);
@@ -93,7 +98,7 @@ export async function callHmrc(req: CallRequest, deps: CallDeps): Promise<CallRe
   let res: Response;
   try { res = await send(token as string | null); } catch { deps.log('hmrc_call_failed', { path: logPath, reason: 'network' }); return { ok: false, status: 0, reason: 'network' }; }
 
-  if (res.status === 401 && req.tokenKind === 'user') {
+  if (res.status === 401 && req.tokenKind === 'user' && !req.noRetry) {
     await res.body?.cancel().catch(() => {});
     token = await tokenFor(true);
     if (token && typeof token === 'object') return token;
