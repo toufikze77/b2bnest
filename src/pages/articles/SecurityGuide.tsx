@@ -138,9 +138,9 @@ const SecurityGuide = () => {
               <div>
                 <h3 className="font-semibold mb-2">Your Data Rights</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li>Access your data at any time</li>
-                  <li>Export all data in standard formats</li>
-                  <li>Request data deletion</li>
+                  <li>Ask for a copy of your data: email us and we will help</li>
+                  <li>Ask for your data in a machine-readable format: email us and we will help</li>
+                  <li>Ask us to delete your data: email us and we will help</li>
                   <li>Correct inaccurate information</li>
                   <li>Opt-out of marketing communications</li>
                 </ul>
@@ -165,10 +165,10 @@ const SecurityGuide = () => {
               <div>
                 <h3 className="font-semibold mb-2">GDPR Rights</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li><strong>Right to Access:</strong> View all your personal data we hold</li>
+                  <li><strong>Right to Access:</strong> Ask for a copy of the personal data we hold about you</li>
                   <li><strong>Right to Rectification:</strong> Correct inaccurate data</li>
-                  <li><strong>Right to Erasure:</strong> Request deletion of your data</li>
-                  <li><strong>Right to Portability:</strong> Export data in machine-readable format</li>
+                  <li><strong>Right to Erasure:</strong> Ask us to delete your data (email us and we will help)</li>
+                  <li><strong>Right to Portability:</strong> Ask for your data in a machine-readable format (email us and we will help)</li>
                   <li><strong>Right to Object:</strong> Opt-out of certain data processing</li>
                   <li><strong>Right to Restriction:</strong> Limit how we process your data</li>
                 </ul>
@@ -177,9 +177,9 @@ const SecurityGuide = () => {
               <div>
                 <h3 className="font-semibold mb-2">How to Exercise Your Rights</h3>
                 <ol className="list-decimal list-inside text-muted-foreground space-y-2 ml-4">
-                  <li>Email privacy@b2bnest.online with your request</li>
+                  <li>Email info@b2bnest.online with your request</li>
                   <li>Verify your identity (for security)</li>
-                  <li>We respond within 30 days</li>
+                  <li>We respond within one month</li>
                   <li>Receive confirmation and action taken</li>
                 </ol>
               </div>
@@ -187,17 +187,15 @@ const SecurityGuide = () => {
               <div>
                 <h3 className="font-semibold mb-2">Data Processing</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li>Lawful basis for processing documented</li>
-                  <li>Data processing agreements with third parties</li>
-                  <li>Regular compliance audits</li>
-                  <li>Designated Data Protection Officer (DPO)</li>
-                  <li>Privacy impact assessments conducted</li>
+                  <li>We explain how we use your data in our Privacy Policy</li>
+                  <li>We use trusted service providers to run B2BNEST (for example hosting, payments and email) and review how they handle data</li>
+                  <li>We review our security and data protection practices as the product grows</li>
                 </ul>
               </div>
 
               <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg">
                 <p className="text-sm text-muted-foreground">
-                  <strong>Contact our DPO:</strong> For GDPR inquiries, contact our Data Protection Officer at dpo@b2bnest.online
+                  Questions about your data? Email info@b2bnest.online.
                 </p>
               </div>
             </CardContent>

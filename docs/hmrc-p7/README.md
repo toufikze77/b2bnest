@@ -56,7 +56,7 @@ Production was only read, for function names, column names, row counts and the p
 1. Make sure someone reads info@b2bnest.online and answers security reports promptly (above), and name the incident lead and the responsible individual.
 2. Retention for `hmrc_vat_submissions` and `hmrc_audit_log`. The proposal is 6 years, with an adviser.
 3. Privacy policy wording (`privacy-wording.md`), with an adviser. Then update the live page in a separate PR.
-4. Whether the `SecurityGuide` claims are true: a DPO, compliance audits, privacy impact assessments, data processing agreements.
+4. Done: the unproven `SecurityGuide` claims (data protection officer, compliance audits, impact assessments, processing agreements) were removed.
 5. Send the port question to HMRC (`public-port.md`). Decide on a fixed outbound IP (`HMRC_VENDOR_PUBLIC_IP`) or say it can't be provided.
 6. Run the sandbox fraud-header validation and a full end-to-end run, and keep the results.
 7. An accountant review of the box rules.

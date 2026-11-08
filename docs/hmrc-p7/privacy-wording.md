@@ -87,7 +87,7 @@ You can ask for:
 - processing to be limited;
 - your data to be moved to another service.
 
-You can also object to processing. Email privacy@b2bnest.online. We will reply within one month **(adviser to confirm)**.
+You can also object to processing. Email info@b2bnest.online. We will reply within one month **(adviser to confirm)**.
 
 We can't delete VAT return records or the HMRC security log while we must keep them by law. We will tell you when that
 applies **(adviser to confirm: Article 17(3)(b))**.
@@ -97,8 +97,7 @@ You can complain to the Information Commissioner's Office (ico.org.uk).
 ---
 
 **Also for the owner (not wording):**
-- `src/pages/articles/SecurityGuide.tsx` mentions a Data Protection Officer (`dpo@b2bnest.online`), "regular compliance
-  audits", "privacy impact assessments conducted" and "data processing agreements with third parties". Keep these
-  only if they are true.
+- Done: `src/pages/articles/SecurityGuide.tsx` no longer claims a data protection officer, compliance audits, impact
+  assessments or data processing agreements, and uses info@b2bnest.online (the only confirmed mailbox).
 - HMRC asks for a privacy policy URL and a terms URL for production. Today they are `https://www.b2bnest.online/privacy`
   and `https://www.b2bnest.online/terms` (routes in `src/App.tsx`). Their content needs the wording above first.
