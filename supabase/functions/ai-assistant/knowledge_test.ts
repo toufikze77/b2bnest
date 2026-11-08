@@ -141,3 +141,12 @@ Deno.test("Phase 37: top-up packs, 12 months, after monthly, no roll-over, subsc
   assert(text.includes("100 credits £5, 300 credits £12, 1,000 credits £35"));
   for (const s of ["last 12 months", "used after the monthly credits", "don't roll over", "subscribers on their own paid plan only", "prices as shown"]) assert(text.includes(s), s);
 });
+
+Deno.test("HMRC P5: the VAT return preview is described as a preview, standard scheme only, not verified, nothing filed", () => {
+  const hmrc = section("HMRC (UK tax)");
+  assert(hmrc.includes("VAT return preview"));
+  assert(hmrc.includes("nothing is sent to HMRC, nothing is filed and nothing is stored"));
+  assert(hmrc.includes("Standard scheme only"));
+  assert(hmrc.includes("not verified against HMRC's guidance"));
+  assertEquals(/ready (for|to) (file|Making Tax Digital)|MTD[- ]ready|MTD compliant/i.test(text.replace("Never say B2BNEST is ready for Making Tax Digital", "")), false);
+});

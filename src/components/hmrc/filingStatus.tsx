@@ -13,12 +13,13 @@ export const PREVIEW_ONLY = 'Preview only';
 export const EXAMPLE_FIGURES = 'Example figures to show the layout. They are not your data and have not been sent anywhere.';
 const BANNER_ID = 'hmrc-filing-unavailable';
 
-export function HMRCFilingBanner() {
+/** `description` replaces the "example figures" line on a screen that shows the person's own figures. */
+export function HMRCFilingBanner({ title = HMRC_FILING_UNAVAILABLE, description }: { title?: string; description?: string } = {}) {
   return (
     <Alert role="note" id={BANNER_ID} className="border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-50">
       <AlertTriangle className="h-4 w-4" />
-      <AlertTitle>{HMRC_FILING_UNAVAILABLE}</AlertTitle>
-      <AlertDescription>{EXAMPLE_FIGURES} File with HMRC directly or through your accountant.</AlertDescription>
+      <AlertTitle>{title}</AlertTitle>
+      <AlertDescription>{description ?? `${EXAMPLE_FIGURES} File with HMRC directly or through your accountant.`}</AlertDescription>
     </Alert>
   );
 }
