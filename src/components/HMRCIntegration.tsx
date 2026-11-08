@@ -74,7 +74,7 @@ const HMRCIntegration = () => {
       <div className="mb-6"><HMRCConnectionPanel /></div>
 
       <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 max-w-3xl">
+        <TabsList className="grid h-auto w-full grid-cols-2 md:grid-cols-6 max-w-3xl">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="vat">VAT Returns</TabsTrigger>
           <TabsTrigger value="payroll">Payroll</TabsTrigger>

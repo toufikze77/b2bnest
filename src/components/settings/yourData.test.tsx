@@ -158,4 +158,52 @@ describe('Settings → Your data', () => {
     expect(await screen.findByTestId('data-close-company-error')).toHaveTextContent("This isn't available yet");
     expect(screen.queryByTestId('data-close-company-confirm')).toBeNull();
   });
+
+  it('download: reauth_required opens the password prompt; a correct password retries the download once', async () => {
+    st.download.mockResolvedValueOnce({ ok: false, code: 'reauth_required', message: 'x', confirm_with: 'sign_in' })
+      .mockResolvedValueOnce({ ok: true, filename: 'b2bnest-my-data-2026-11-09.zip' });
+    st.confirm.mockResolvedValue(null);
+    render(<YourData />);
+    fireEvent.click(within(screen.getByTestId('data-download-account')).getByRole('button'));
+    const dialog = await screen.findByTestId('data-download-confirm');
+    expect(dialog).toHaveTextContent('For your security, enter your password to download your data.');
+    const field = within(dialog).getByLabelText('Your password');
+    expect(field).toHaveAttribute('type', 'password');
+    expect(screen.getByTestId('data-download-confirm-go')).toBeDisabled();
+    fireEvent.change(field, { target: { value: 'right-pass' } });
+    fireEvent.click(screen.getByTestId('data-download-confirm-go'));
+    expect(await screen.findByTestId('data-download-account-said')).toHaveTextContent('Downloaded b2bnest-my-data-2026-11-09.zip');
+    expect(st.confirm).toHaveBeenCalledWith('sign_in', { email: 'ann@example.test', password: 'right-pass' });
+    expect(st.download).toHaveBeenCalledTimes(2);
+    expect(screen.queryByTestId('data-download-confirm')).toBeNull();
+  });
+
+  it('download: a wrong password shows an error and downloads nothing', async () => {
+    st.download.mockResolvedValue({ ok: false, code: 'reauth_required', message: 'x', confirm_with: 'sign_in' });
+    st.confirm.mockResolvedValue("That password didn't work.");
+    render(<YourData />);
+    fireEvent.click(within(screen.getByTestId('data-download-account')).getByRole('button'));
+    const dialog = await screen.findByTestId('data-download-confirm');
+    fireEvent.change(within(dialog).getByLabelText('Your password'), { target: { value: 'wrong' } });
+    fireEvent.click(screen.getByTestId('data-download-confirm-go'));
+    expect(await screen.findByTestId('data-download-confirm-error')).toHaveTextContent("That password didn't work.");
+    expect(st.download).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('data-download-account-said')).toBeNull();
+  });
+
+  it('company download: authenticator users are asked for a code; a second refusal is explained, not looped', async () => {
+    st.role = 'admin';
+    st.download.mockResolvedValue({ ok: false, code: 'reauth_required', message: 'x', confirm_with: 'authenticator' });
+    st.confirm.mockResolvedValue(null);
+    render(<YourData />);
+    fireEvent.click(within(screen.getByTestId('data-download-company')).getByRole('button'));
+    const dialog = await screen.findByTestId('data-download-confirm');
+    expect(dialog).toHaveTextContent('enter the code from your authenticator app to download your data');
+    fireEvent.change(within(dialog).getByLabelText(/Code from your authenticator app/), { target: { value: '123 456' } });
+    fireEvent.click(screen.getByTestId('data-download-confirm-go'));
+    expect(await screen.findByTestId('data-download-company-said')).toHaveTextContent("We still couldn't confirm it is you");
+    expect(st.confirm).toHaveBeenCalledWith('authenticator', { code: '123456' });
+    expect(st.download).toHaveBeenCalledTimes(2);
+    expect(st.download).toHaveBeenLastCalledWith('company', 'org-x');
+  });
 });
