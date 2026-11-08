@@ -297,3 +297,24 @@ Deno.test('company close: owners only; typed name, download tick and fresh sign-
   w.rpc.data_rights_close_company = () => ({ result: 'already_closed' });
   assertEquals((await call(ATOTP, { action: 'check', company_id: X })).status, 409);
 });
+
+Deno.test('export needs a fresh sign-in (10 minutes) for both scopes: refused before any slot or read, logged', async () => {
+  for (const [t, scope, body] of [[CSTALE, 'account', { scope: 'account' }], [ASTALE, 'company', { scope: 'company', company_id: X }], [ASTALE, 'account', { scope: 'account' }]] as const) {
+    const w = world();
+    const r = await dataExport({ authHeader: auth(t), body }, deps(w));
+    assertEquals([r.status, r.body?.code], [401, 'reauth_required'], scope);
+    assertEquals(r.body?.confirm_with, t === ASTALE ? 'authenticator' : 'sign_in');
+    assertEquals(r.bytes, undefined);
+    assert(!w.rpcs.some((x) => x.fn === 'data_rights_take_slot'), 'no request slot taken');
+    assertEquals(w.reads.length, 0, 'nothing read');
+    assert(w.logs.some((l) => l.startsWith('export_refused') && l.includes('reauth_required')), 'the refusal is logged');
+  }
+});
+
+Deno.test('export with a fresh sign-in works for both scopes', async () => {
+  const w = world();
+  assertEquals((await dataExport({ authHeader: auth(CFRESH), body: { scope: 'account' } }, deps(w))).status, 200);
+  assertEquals((await dataExport({ authHeader: auth(ATOTP), body: { scope: 'account' } }, deps(w))).status, 200);
+  assertEquals((await dataExport({ authHeader: auth(ATOTP), body: { scope: 'company', company_id: X } }, deps(w))).status, 200);
+  assertEquals(w.rpcs.filter((x) => x.fn === 'data_rights_take_slot').length, 3);
+});

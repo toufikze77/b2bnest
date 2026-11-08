@@ -42,19 +42,18 @@ const Settings = () => {
       />
 
       <Tabs value={tab} onValueChange={onTabChange} className="space-y-6">
-        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          <TabsList className="inline-flex w-max">
-            <TabsTrigger value="account" className="gap-2"><User className="h-4 w-4" />Account</TabsTrigger>
-            <TabsTrigger value="security" className="gap-2"><Lock className="h-4 w-4" />Security</TabsTrigger>
-            <TabsTrigger value="billing" className="gap-2"><CreditCard className="h-4 w-4" />Billing</TabsTrigger>
-            <TabsTrigger value="notifications" className="gap-2"><Bell className="h-4 w-4" />Notifications</TabsTrigger>
-            <TabsTrigger value="hmrc" className="gap-2"><Building2 className="h-4 w-4" />HMRC</TabsTrigger>
-            <TabsTrigger value="members" className="gap-2"><Users className="h-4 w-4" />Members &amp; roles</TabsTrigger>
-            <TabsTrigger value="company-security" className="gap-2"><FileLock2 className="h-4 w-4" />Company security</TabsTrigger>
-            <TabsTrigger value="companies" className="gap-2"><ShieldCheck className="h-4 w-4" />Company data</TabsTrigger>
-            <TabsTrigger value="data" className="gap-2"><Database className="h-4 w-4" />Your data</TabsTrigger>
-          </TabsList>
-        </div>
+        {/* Every tab visible: the list wraps onto more rows instead of hiding tabs behind a horizontal scrollbar. */}
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1" data-testid="settings-tabs">
+          <TabsTrigger value="account" className="gap-2"><User className="h-4 w-4" />Account</TabsTrigger>
+          <TabsTrigger value="security" className="gap-2"><Lock className="h-4 w-4" />Security</TabsTrigger>
+          <TabsTrigger value="billing" className="gap-2"><CreditCard className="h-4 w-4" />Billing</TabsTrigger>
+          <TabsTrigger value="notifications" className="gap-2"><Bell className="h-4 w-4" />Notifications</TabsTrigger>
+          <TabsTrigger value="hmrc" className="gap-2"><Building2 className="h-4 w-4" />HMRC</TabsTrigger>
+          <TabsTrigger value="members" className="gap-2"><Users className="h-4 w-4" />Members &amp; roles</TabsTrigger>
+          <TabsTrigger value="company-security" className="gap-2"><FileLock2 className="h-4 w-4" />Company security</TabsTrigger>
+          <TabsTrigger value="companies" className="gap-2"><ShieldCheck className="h-4 w-4" />Company data</TabsTrigger>
+          <TabsTrigger value="data" className="gap-2"><Database className="h-4 w-4" />Your data</TabsTrigger>
+        </TabsList>
 
         <TabsContent value="account"><AccountSettings /></TabsContent>
         <TabsContent value="security"><AccountSecurity /></TabsContent>

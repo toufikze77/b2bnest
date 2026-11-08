@@ -30,6 +30,12 @@ Both downloads are one ZIP file: `README.txt` (what is in it, and what is left o
 `manifest.json` (row counts) and `files.json` (uploaded files, each with a link that works for **1 hour**; the files'
 bytes are not copied). Exports work on every plan and after a trial ends.
 
+**Both downloads need a fresh sign-in in the last 10 minutes**, like deletion: anyone at an unlocked computer could
+otherwise take all of a company's data. `data-export` answers `reauth_required` (before any request slot is taken or
+anything is read, and logged as `export_refused`). The screen then asks for the password (or the authenticator code
+for people who use one), checks it with Supabase Auth in the browser, and retries the download once. The password is
+never sent to our functions, logged or kept.
+
 | | Download my data (anyone) | Download company data (owners and admins) |
 | --- | --- | --- |
 | Who | The person signed in | Owners and admins of the active company |
@@ -137,7 +143,10 @@ older `app.ai_ledger_purge` switch on `ai_credit_ledger` (see Findings). `test.s
 
 Use a test account and a test company, never a real customer's.
 
-1. **Export.** Sign in as the test owner. Go to Settings → Your data and choose **Download my data**. Open the ZIP and
+1. **Export.** Sign in as the test owner, then wait more than 10 minutes. Go to Settings → Your data and choose
+   **Download my data**. A box asks "For your security, enter your password to download your data." (people who use
+   an authenticator app are asked for its code instead). Enter a wrong password first: you see an error and nothing
+   downloads. Then enter the right one: the download starts. Straight after signing in, no box appears. Open the ZIP and
    check:
    - `README.txt` explains each file;
    - `account/profiles.json` is you;

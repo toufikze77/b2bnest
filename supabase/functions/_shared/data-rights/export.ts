@@ -1,10 +1,11 @@
 // HMRC P7b: "Download my data" (scope account) and "Download company data" (scope company, owners and admins).
+// Both need a fresh sign-in in the last 10 minutes (authenticator code for people who use one), like deletion.
 // Account rows are read with the person's own sign-in (RLS) wherever a browser read policy exists; company rows with the
 // service role after the owner/admin check, always filtered by that one company. Sensitive columns never leave
 // (tables.ts SENSITIVE_COLUMN). Files are listed with links valid for 1 hour; their bytes are not copied.
 // Exports work on every plan and after a trial ends: people must always be able to take their data with them.
 import { toCsv } from './csv.ts';
-import { type DrDeps, type DrResult, fail, finish, isMissing, isUuid, takeSlot, whoIsAsking } from './core.ts';
+import { type DrDeps, type DrResult, fail, finish, isFresh, isMissing, isUuid, takeSlot, whoIsAsking } from './core.ts';
 import {
   ACCOUNT_BUCKETS, ACCOUNT_TABLES, COMPANY_BUCKETS, COMPANY_CHILD_TABLES, COMPANY_TABLES, NOT_EXPORTED, redact, SIGNED_URL_SECONDS,
 } from './tables.ts';
@@ -80,6 +81,12 @@ export async function dataExport(req: { authHeader: string | null; body: Record<
     if (r.error) return fail(500, 'server_error');
     if (r.data === 'closed') return fail(403, 'company_closed');
     if (r.data !== 'owner' && r.data !== 'admin') return fail(403, 'not_admin');
+  }
+  // A download of everything is sensitive too (an unlocked computer): the same fresh sign-in as for deletion, checked
+  // before a request slot is taken or anything is read. Audited in the function log (no slot, so no request row).
+  if (!isFresh(who, deps.now())) {
+    deps.log('export_refused', { scope, reason: 'reauth_required' });
+    return fail(401, 'reauth_required', { confirm_with: who.usesTotp ? 'authenticator' : 'sign_in' });
   }
   const slot = await takeSlot(deps, who.userId, company as string | null, scope === 'account' ? 'export_account' : 'export_company', EXPORTS_PER_HOUR);
   if (typeof slot !== 'string') return slot;

@@ -4,6 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
@@ -58,6 +59,7 @@ export default function YourData() {
         text="A ZIP file with your personal data: your profile, settings and preferences, marketing choices, AI conversations, and the records you keep yourself (for example notes, quotes, contacts, products, suppliers and payroll). Uploaded pictures are listed with download links that work for 1 hour. It usually takes less than a minute."
         button="Download my data"
         disabled={isDemo}
+        email={user?.email ?? null}
         run={() => downloadData('account')}
       />
 
@@ -68,6 +70,7 @@ export default function YourData() {
           text="A ZIP file with everything this company keeps in B2BNEST: invoices, expenses, bills, projects, tasks, rota and holiday, support tickets, HMRC settings, the record of each VAT return sent to HMRC's test environment (the nine boxes and HMRC's receipt) and the HMRC connection status (never its tokens). Invoices, expenses, bills and VAT returns sent are also included as CSV for spreadsheets. Owners and admins only."
           button="Download company data"
           disabled={isDemo}
+          email={user?.email ?? null}
           run={() => downloadData('company', organizationId)}
         />
       )}
@@ -84,9 +87,87 @@ export default function YourData() {
   );
 }
 
-function DownloadCard(p: { testId: string; title: string; text: string; button: string; disabled: boolean; run: () => Promise<{ ok: true; filename: string } | Failure> }) {
+type DownloadRun = () => Promise<{ ok: true; filename: string } | Failure>;
+
+/**
+ * A download needs a fresh sign-in too (the server decides: it answers reauth_required when the last sign-in is older
+ * than 10 minutes). Then this asks for the password, or the authenticator code for people who use one, and retries the
+ * download once. The password is only handed to Supabase Auth (confirmIdentity) and never kept.
+ */
+function useConfirmedDownload(run: DownloadRun, email: string | null) {
   const [busy, setBusy] = useState(false);
   const [said, setSaid] = useState<{ ok: boolean; text: string } | null>(null);
+  const [ask, setAsk] = useState<'authenticator' | 'sign_in' | null>(null);
+  const show = (r: Awaited<ReturnType<DownloadRun>>) =>
+    setSaid(failed(r) ? { ok: false, text: r.message } : { ok: true, text: `Downloaded ${r.filename}. Keep it somewhere safe.` });
+  const start = async () => {
+    setBusy(true); setSaid(null);
+    const r = await run();
+    setBusy(false);
+    if (failed(r) && r.code === 'reauth_required') { setAsk(r.confirm_with ?? 'sign_in'); return; }
+    show(r);
+  };
+  const retry = async () => {
+    setAsk(null); setBusy(true);
+    const r = await run();
+    setBusy(false);
+    if (failed(r) && r.code === 'reauth_required') {
+      setSaid({ ok: false, text: "We still couldn't confirm it is you. Sign out, sign in again, then try once more." });
+      return;
+    }
+    show(r);
+  };
+  const dialog = <ConfirmDownloadDialog how={ask} email={email} onCancel={() => setAsk(null)} onConfirmed={() => { void retry(); }} />;
+  return { busy, said, start, dialog };
+}
+
+function ConfirmDownloadDialog({ how, email, onCancel, onConfirmed }: {
+  how: 'authenticator' | 'sign_in' | null; email: string | null; onCancel: () => void; onConfirmed: () => void;
+}) {
+  const id = useId();
+  const [secret, setSecret] = useState('');
+  const [checking, setChecking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const close = () => { setSecret(''); setError(null); onCancel(); };
+  const totp = how === 'authenticator';
+  const ready = totp ? cleanCode(secret).length === 6 : secret.length > 0;
+  return (
+    <Dialog open={how !== null} onOpenChange={(o) => { if (!o) close(); }}>
+      <DialogContent data-testid="data-download-confirm">
+        <DialogHeader>
+          <DialogTitle>Confirm it's you</DialogTitle>
+          <DialogDescription>
+            {totp ? 'For your security, enter the code from your authenticator app to download your data.' : 'For your security, enter your password to download your data.'}
+          </DialogDescription>
+        </DialogHeader>
+        <form className="space-y-2" onSubmit={async (e) => {
+          e.preventDefault();
+          if (!ready || checking || !how) return;
+          setChecking(true); setError(null);
+          const problem = await confirmIdentity(how, totp ? { code: cleanCode(secret) } : { email, password: secret });
+          setChecking(false);
+          if (problem) { setError(problem); return; }
+          setSecret('');
+          onConfirmed();
+        }}>
+          <Label htmlFor={`${id}-secret`}>{totp ? 'Code from your authenticator app' : 'Your password'}</Label>
+          <Input id={`${id}-secret`} value={secret} autoFocus onChange={(e) => setSecret(totp ? cleanCode(e.target.value) : e.target.value)}
+            type={totp ? 'text' : 'password'} inputMode={totp ? 'numeric' : undefined} autoComplete={totp ? 'one-time-code' : 'current-password'} />
+          {error && <p className="text-sm" role="alert" data-testid="data-download-confirm-error">{error}</p>}
+          <DialogFooter className="gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={close}>Cancel</Button>
+            <Button type="submit" disabled={!ready || checking} data-testid="data-download-confirm-go">
+              {checking && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}Confirm and download
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DownloadCard(p: { testId: string; title: string; text: string; button: string; disabled: boolean; email: string | null; run: DownloadRun }) {
+  const d = useConfirmedDownload(p.run, p.email);
   return (
     <Card data-testid={p.testId}>
       <CardHeader>
@@ -94,16 +175,12 @@ function DownloadCard(p: { testId: string; title: string; text: string; button: 
         <CardDescription>{p.text}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
-        <Button type="button" variant="outline" disabled={busy || p.disabled} onClick={async () => {
-          setBusy(true); setSaid(null);
-          const r = await p.run();
-          setBusy(false);
-          setSaid(failed(r) ? { ok: false, text: r.message } : { ok: true, text: `Downloaded ${r.filename}. Keep it somewhere safe.` });
-        }}>
-          {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : <Download className="mr-2 h-4 w-4" aria-hidden />}
-          {busy ? 'Preparing your file…' : p.button}
+        <Button type="button" variant="outline" disabled={d.busy || p.disabled} onClick={() => { void d.start(); }}>
+          {d.busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : <Download className="mr-2 h-4 w-4" aria-hidden />}
+          {d.busy ? 'Preparing your file…' : p.button}
         </Button>
-        {said && <p className="text-sm" role={said.ok ? 'status' : 'alert'} data-testid={`${p.testId}-said`}>{said.text}</p>}
+        {d.said && <p className="text-sm" role={d.said.ok ? 'status' : 'alert'} data-testid={`${p.testId}-said`}>{d.said.text}</p>}
+        {d.dialog}
       </CardContent>
     </Card>
   );
@@ -190,7 +267,7 @@ function CloseCompanyCard({ companyId, companyName, email }: { companyId: string
             <ConfirmStep
               testId="data-close-company-confirm" confirmWith={ok.confirm_with} email={email} expected={ok.name}
               typedLabel={`Type the company name (${ok.name}) to confirm`} actionLabel="Close the company"
-              exportOffer={<DownloadInline label="Download company data first" run={() => downloadData('company', companyId)} />}
+              exportOffer={<DownloadInline label="Download company data first" email={email} run={() => downloadData('company', companyId)} />}
               onConfirm={() => closeCompany(companyId, ok.name)} onDone={(m) => setClosed(m || 'The company is closed.')}
             />
           </>
@@ -237,7 +314,7 @@ function DeleteAccountCard({ email, onDeleted }: { email: string | null; onDelet
             <ConfirmStep
               testId="data-delete-account-confirm" confirmWith={ok.confirm_with} email={email} expected={email ?? ''}
               typedLabel="Type your email address to confirm" actionLabel="Delete my account"
-              exportOffer={<DownloadInline label="Download my data first" run={() => downloadData('account')} />}
+              exportOffer={<DownloadInline label="Download my data first" email={email} run={() => downloadData('account')} />}
               onConfirm={() => deleteAccount(email ?? '')} onDone={(m) => onDeleted(m || ACCOUNT_DELETED)}
             />
           </>
@@ -247,15 +324,15 @@ function DeleteAccountCard({ email, onDeleted }: { email: string | null; onDelet
   );
 }
 
-function DownloadInline({ label, run }: { label: string; run: () => Promise<{ ok: true; filename: string } | Failure> }) {
-  const [busy, setBusy] = useState(false);
-  const [said, setSaid] = useState<string | null>(null);
+function DownloadInline({ label, run, email }: { label: string; run: DownloadRun; email: string | null }) {
+  const d = useConfirmedDownload(run, email);
   return (
     <div className="space-y-1">
-      <Button type="button" variant="secondary" size="sm" disabled={busy} onClick={async () => { setBusy(true); const r = await run(); setBusy(false); setSaid(failed(r) ? r.message : `Downloaded ${r.filename}.`); }}>
-        {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : <Download className="mr-2 h-4 w-4" aria-hidden />}{label}
+      <Button type="button" variant="secondary" size="sm" disabled={d.busy} onClick={() => { void d.start(); }}>
+        {d.busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : <Download className="mr-2 h-4 w-4" aria-hidden />}{label}
       </Button>
-      {said && <p className="text-xs" role="status">{said}</p>}
+      {d.said && <p className="text-xs" role={d.said.ok ? 'status' : 'alert'}>{d.said.text}</p>}
+      {d.dialog}
     </div>
   );
 }
