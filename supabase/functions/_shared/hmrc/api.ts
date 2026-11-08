@@ -46,6 +46,8 @@ export interface CallResult {
   reason?: CallReason;
   /** The parsed JSON body, only for a successful call. */
   body?: unknown;
+  /** HMRC P7a: seconds from a Retry-After header on 429 / 503 (1 to 3600), when HMRC sent one. */
+  retryAfter?: number;
 }
 export interface CallDeps {
   env: (k: string) => string | undefined;
@@ -57,6 +59,13 @@ export interface CallDeps {
 }
 
 const safeCode = (v: unknown) => (typeof v === 'string' && /^[A-Z0-9_]{1,60}$/.test(v) ? v : undefined);
+/** Retry-After as seconds (a number of seconds or an HTTP date), kept between 1 and 3600; undefined otherwise. */
+export function retryAfterSeconds(v: string | null, now: Date): number | undefined {
+  if (!v) return undefined;
+  const t = v.trim();
+  const secs = /^\d{1,6}$/.test(t) ? Number(t) : (() => { const d = Date.parse(t); return Number.isNaN(d) ? NaN : Math.ceil((d - now.getTime()) / 1000); })();
+  return Number.isFinite(secs) && secs >= 1 ? Math.min(secs, 3600) : undefined;
+}
 
 export async function callHmrc(req: CallRequest, deps: CallDeps): Promise<CallResult> {
   const cfg = readConfig(deps.env);
@@ -117,8 +126,9 @@ export async function callHmrc(req: CallRequest, deps: CallDeps): Promise<CallRe
   const correlation = res.headers.get('x-correlationid');
   deps.log('hmrc_call', { path: logPath, status: res.status, code: hmrcCode ?? null, ...(correlation && /^[0-9a-fA-F-]{36}$/.test(correlation) ? { correlation } : {}) });
   if (res.ok) return { ok: true, status: res.status, body: json ?? undefined };
-  if (res.status === 429) return { ok: false, status: 429, hmrcCode, reason: 'hmrc_rate_limited' };
-  if (res.status >= 500) return { ok: false, status: res.status, hmrcCode, reason: 'hmrc_unavailable' };
+  const retryAfter = res.status === 429 || res.status === 503 ? retryAfterSeconds(res.headers.get('retry-after'), deps.now()) : undefined;
+  if (res.status === 429) return { ok: false, status: 429, hmrcCode, reason: 'hmrc_rate_limited', ...(retryAfter ? { retryAfter } : {}) };
+  if (res.status >= 500) return { ok: false, status: res.status, hmrcCode, reason: 'hmrc_unavailable', ...(retryAfter ? { retryAfter } : {}) };
   if (res.status === 401 || res.status === 403) return { ok: false, status: res.status, hmrcCode, reason: 'hmrc_unauthorised' };
   return { ok: false, status: res.status, hmrcCode, reason: 'hmrc_error' };
 }

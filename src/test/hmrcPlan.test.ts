@@ -34,7 +34,7 @@ describe('HMRC by plan', () => {
     expect(tools).toContain("Filing is not available yet. Included in Business and Scale, and during the 14-day trial.");
     expect(tools).toContain("'Business and Scale plans']");
     const help = read('src/pages/Help.tsx');
-    expect(help).toMatch(/HMRC Integration is included in the Business and Scale plans, and every new account can use it during the 14-day trial; Solo doesn't include it\. Only the connection is available: filing with HMRC is not available yet\./);
+    expect(help).toMatch(/HMRC Integration is included in the Business and Scale plans, and every new account can use it during the 14-day trial; Solo doesn't include it\. Only HMRC's test environment \(sandbox\) is available: you can try VAT obligations and a test VAT return, but nothing is filed with HMRC for real\./);
     const knowledge = read('supabase/functions/ai-assistant/knowledge.ts');
     expect(knowledge).toMatch(/HMRC Integration is included in the Business and Scale plans and during the 14-day trial; Solo does not include it/);
     expect(knowledge).toMatch(/HMRC filing is not available yet/);

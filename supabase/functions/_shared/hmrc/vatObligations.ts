@@ -12,7 +12,7 @@
 // Never logged or returned: a token, an HMRC response body, or the VAT number beyond its last 3 digits.
 import { readConfig } from './config.ts';
 import { canManage, type CallerDeps, identify, isUuid } from './caller.ts';
-import { done, fail, type HandlerResult } from './errors.ts';
+import { busy, done, fail, type HandlerResult } from './errors.ts';
 import { buildFraudHeaders, clientIpFrom, publicIp, readBrowserFraudData } from './fraudHeaders.ts';
 import { sha256Hex } from './crypto.ts';
 import { callHmrc, type CallDeps } from './api.ts';
@@ -25,6 +25,8 @@ export const OBLIGATION_SCENARIOS = [
   'MONTHLY_NONE_MET', 'MONTHLY_ONE_MET', 'NOT_FOUND',
 ] as const;
 export const MAX_RANGE_DAYS = 366;
+/** HMRC P7a: a read that hangs is given up after this long (then "HMRC couldn't be reached"). */
+export const OBLIGATIONS_TIMEOUT_MS = 20_000;
 
 export interface Obligation { periodKey: string; start: string; end: string; due: string; status: 'O' | 'F'; received: string | null }
 export interface VatDeps extends CallDeps { caller: CallerDeps }
@@ -128,7 +130,7 @@ export async function vatObligations(req: { authHeader: string | null; headers: 
 
   const r = await callHmrc({
     companyId, userId: who.userId, method: 'GET', path: OBLIGATIONS_API.path(vrn), logPath: OBLIGATIONS_API.logPath, query: q,
-    version: OBLIGATIONS_API.version, tokenKind: 'user', fraudHeaders: fraud.headers, testScenario: query.scenario,
+    version: OBLIGATIONS_API.version, tokenKind: 'user', fraudHeaders: fraud.headers, testScenario: query.scenario, timeoutMs: OBLIGATIONS_TIMEOUT_MS,
   }, deps);
   const notFound = !r.ok && r.status === 404 && (r.hmrcCode === 'NOT_FOUND' || !r.hmrcCode);
   const outcome = r.ok ? 'ok' : notFound ? 'not_found' : (lowerCode(r.hmrcCode) || r.reason || String(r.status));
@@ -141,9 +143,10 @@ export async function vatObligations(req: { authHeader: string | null; headers: 
     if (r.reason === 'needs_reconnect') return fail('needs_reconnect');
     if (r.reason === 'not_connected') return fail('not_connected');
     if (r.reason === 'plan_not_included') return fail('plan_not_included');
-    if (r.reason === 'hmrc_rate_limited') return fail('hmrc_busy');
+    if (r.reason === 'hmrc_rate_limited') return busy(r.retryAfter);
     if (r.reason === 'hmrc_unavailable' || r.reason === 'network') return fail('hmrc_unavailable');
     if (r.hmrcCode === 'INVALID_SCOPE') return fail('scope_missing');
+    if (r.hmrcCode === 'NOT_SIGNED_UP_TO_MTD') return fail('vat_not_signed_up');
     if (r.hmrcCode === 'CLIENT_OR_AGENT_NOT_AUTHORISED') return fail('vat_not_authorised');
     if (r.hmrcCode === 'RULE_INSOLVENT_TRADER') return fail('vat_insolvent');
     if (r.hmrcCode === 'VRN_INVALID') return fail('vrn_invalid');

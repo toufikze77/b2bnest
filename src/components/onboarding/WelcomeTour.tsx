@@ -84,7 +84,7 @@ const STEPS: TourStep[] = [
   {
     icon: Briefcase,
     title: 'UK payroll & HMRC 💼',
-    body: 'PAYE payroll with UK tax and NI rates, payslips and HMRC-ready submissions — with checks that flag anomalies before you file.',
+    body: 'PAYE payroll with UK tax and NI rates and payslips. Payroll is not sent to HMRC from B2BNEST.',
     cta: { label: 'See payroll', to: '/business-tools' },
     accent: 'from-teal-500/20 to-teal-500/5',
   },

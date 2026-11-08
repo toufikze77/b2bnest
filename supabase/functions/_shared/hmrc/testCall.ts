@@ -8,7 +8,7 @@
 // (test_call) and one after (test_result: kind + status code). Fraud prevention headers go on every call.
 import { readConfig } from './config.ts';
 import { canManage, type CallerDeps, identify, isUuid } from './caller.ts';
-import { done, fail, type HandlerResult } from './errors.ts';
+import { busy, done, fail, type HandlerResult } from './errors.ts';
 import { buildFraudHeaders, clientIpFrom, publicIp, readBrowserFraudData } from './fraudHeaders.ts';
 import { sha256Hex } from './crypto.ts';
 import { callHmrc, type CallDeps, type CallResult } from './api.ts';
@@ -85,7 +85,7 @@ export async function testCall(req: { authHeader: string | null; headers: Header
     if (r.reason === 'needs_reconnect') return fail('needs_reconnect');
     if (r.reason === 'not_connected') return fail('not_connected');
     if (r.reason === 'plan_not_included') return fail('plan_not_included');
-    if (r.reason === 'hmrc_rate_limited') return fail('hmrc_busy');
+    if (r.reason === 'hmrc_rate_limited') return busy(r.retryAfter);
     if (r.reason === 'hmrc_unauthorised' && r.hmrcCode === 'INVALID_SCOPE') return fail('scope_missing');
     return { status: 502, body: { ok: false, code: 'hmrc_refused', message: "HMRC didn't accept the test call.", hmrc_code: r.hmrcCode ?? null, http_status: r.status } };
   }

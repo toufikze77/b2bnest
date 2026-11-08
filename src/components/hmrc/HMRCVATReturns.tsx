@@ -151,7 +151,8 @@ export default function HMRCVATReturns() {
           <Card>
             <CardHeader><CardTitle className="text-lg">Period</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <fieldset className="flex flex-wrap gap-4" aria-label="How to choose the period">
+              <fieldset className="flex flex-wrap gap-4">
+                <legend className="sr-only">How to choose the period</legend>
                 <label className="flex items-center gap-2 text-sm">
                   <input type="radio" name="vatr-mode" checked={mode === 'dates'} onChange={() => setMode('dates')} />Choose dates
                 </label>
@@ -162,8 +163,8 @@ export default function HMRCVATReturns() {
               </fieldset>
               {mode === 'dates' ? (
                 <div className="grid gap-3 sm:grid-cols-2 lg:max-w-xl">
-                  <div className="space-y-1"><Label htmlFor="vatr-from">From</Label><Input id="vatr-from" type="date" value={range.from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} /></div>
-                  <div className="space-y-1"><Label htmlFor="vatr-to">To</Label><Input id="vatr-to" type="date" value={range.to} onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))} /></div>
+                  <div className="space-y-1"><Label htmlFor="vatr-from">From</Label><Input id="vatr-from" type="date" aria-invalid={!!periodError} aria-describedby={periodError ? 'vatr-period-error' : undefined} value={range.from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} /></div>
+                  <div className="space-y-1"><Label htmlFor="vatr-to">To</Label><Input id="vatr-to" type="date" aria-invalid={!!periodError} aria-describedby={periodError ? 'vatr-period-error' : undefined} value={range.to} onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))} /></div>
                 </div>
               ) : (
                 <div className="space-y-2 lg:max-w-xl">
@@ -182,7 +183,7 @@ export default function HMRCVATReturns() {
                 </div>
               )}
               {mode === 'dates' && <p className="text-xs text-muted-foreground" data-testid="vatr-not-confirmed">Dates you choose are not confirmed by HMRC.</p>}
-              {periodError && <p className="text-sm text-destructive" data-testid="vatr-period-error">{periodError}</p>}
+              {periodError && <p id="vatr-period-error" role="alert" className="text-sm text-destructive" data-testid="vatr-period-error">{periodError}</p>}
               <Button type="button" onClick={() => { void show(); }} disabled={busy || !!periodError || (mode === 'obligation' && !chosen)} data-testid="vatr-show">
                 {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}Show the preview
               </Button>
@@ -191,7 +192,7 @@ export default function HMRCVATReturns() {
 
           {failure && (
             <Alert role="alert" data-testid={`vatr-failure-${failure}`}>
-              <AlertTriangle className="h-4 w-4" />
+              <AlertTriangle className="h-4 w-4" aria-hidden />
               <AlertDescription>
                 {failureText(failure, company)}
                 {failure === 'error' && <Button variant="link" className="h-auto p-0 pl-2" onClick={() => { void show(); }}>Try again</Button>}

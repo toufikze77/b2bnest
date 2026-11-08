@@ -56,7 +56,7 @@ const marketingMaterials = [
     src: promoHmrcIntegration,
     title: "HMRC Integration",
     category: "Business Tools",
-    description: "Connect your finances and stay compliant with HMRC-ready workflows.",
+    description: "Connect to HMRC's test environment (sandbox only) and try VAT obligations and a test VAT return. Nothing is sent to HMRC for real.",
   },
   {
     src: promoRoiCalculator,

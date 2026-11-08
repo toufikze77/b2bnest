@@ -1,7 +1,7 @@
 # Security
 
 This page states only what has been checked, how, and when. It makes no score or certification claim.
-To report a security problem, email the owner at the address on the site's contact page; please don't open a public issue.
+To report a security problem, email the address in [`/.well-known/security.txt`](public/.well-known/security.txt) (security@b2bnest.online; see `docs/hmrc-p7/README.md` for the owner check) or the owner at the address on the site's contact page; please don't open a public issue.
 
 ## Checked facts (read-only queries on production `gvftvswyrevummbvyhxa`, 2026-10-23)
 
@@ -25,9 +25,10 @@ To report a security problem, email the owner at the address on the site's conta
 
 - **Two-step sign-in is not enforced.** Signing in needs only a password. The screens say so; the design for real
   enforcement is in [`docs/phase11a/mfa-design.md`](docs/phase11a/mfa-design.md).
-- **HMRC filing is not built.** Nothing is sent to HMRC. HMRC access/refresh tokens and the HMRC client secret are read
-  into the browser through RPCs (`get_hmrc_tokens`, `get_hmrc_client_secret`), see `src/services/hmrcService.ts`. This
-  should move server-side before any filing is built.
+- **HMRC: test environment (sandbox) only.** Nothing is filed with HMRC for real; production is refused in code
+  (`supabase/functions/_shared/hmrc/config.ts`). HMRC tokens are encrypted (AES-256-GCM) and used only inside Edge
+  Functions; the old browser RPCs `get_hmrc_tokens` and `get_hmrc_client_secret` no longer exist in production
+  (checked read-only, 2026-11-08). See [`docs/hmrc-p7/`](docs/hmrc-p7/README.md) for what is still missing before production.
 - **Plan user and admin limits are listed but not applied yet.** The plans and limits come from one catalogue
   (`src/lib/plans.ts`, matched by `supabase/functions/_shared/plans.ts`); enforcing the limits is a separate, approved
   database step prepared in [`docs/phase11b/`](docs/phase11b/README.md).

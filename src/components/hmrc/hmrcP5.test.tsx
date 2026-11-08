@@ -192,6 +192,13 @@ describe('the preview', () => {
     await setDates('2026-09-30', '2026-07-01');
     expect(screen.getByTestId('vatr-period-error')).toBeInTheDocument();
     expect(screen.getByTestId('vatr-show')).toBeDisabled();
+    // P7a: the error is announced and tied to both date fields, not shown by colour alone.
+    expect(screen.getByTestId('vatr-period-error')).toHaveAttribute('role', 'alert');
+    for (const label of ['From', 'To']) {
+      expect(screen.getByLabelText(label)).toHaveAttribute('aria-invalid', 'true');
+      expect(screen.getByLabelText(label)).toHaveAttribute('aria-describedby', 'vatr-period-error');
+    }
+    expect(screen.getByRole('group', { name: 'How to choose the period' })).toBeInTheDocument();
   });
 
   it('connected: an HMRC obligation sets the period (open and fulfilled are read); a failed read falls back to dates', async () => {

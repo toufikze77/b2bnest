@@ -37,6 +37,8 @@ export const HMRC_CODE_MESSAGES: Record<string, string> = {
   vrn_invalid: "HMRC didn't accept this VAT number. Check it in Settings → HMRC.",
   vat_not_authorised: "HMRC says this HMRC sign-in can't see VAT for this VAT number. Check the VAT number, or connect again with the HMRC account that owns it.",
   vat_insolvent: "HMRC can't show VAT obligations for this business through this service.",
+  // HMRC P7a (same wording as supabase/functions/_shared/hmrc/errors.ts).
+  vat_not_signed_up: "HMRC says this VAT number isn't signed up for Making Tax Digital for VAT. The business needs to sign up with HMRC first.",
 };
 export const messageFor = (code: string | undefined) => HMRC_CODE_MESSAGES[code ?? ''] ?? HMRC_CODE_MESSAGES.server_error;
 

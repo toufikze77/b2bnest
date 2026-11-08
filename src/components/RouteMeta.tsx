@@ -78,7 +78,7 @@ const ROUTE_META: Record<string, Meta> = {
   },
   '/knowledge-base/financial-tools': {
     title: 'Financial Tools Guide | Invoicing, Payroll & Cash Flow',
-    description: 'Guide to B2BNest financial tools covering invoicing, expenses, payroll, cash-flow forecasting and HMRC-ready reporting.',
+    description: 'Guide to B2BNest financial tools covering invoicing, expenses, payroll, cash-flow forecasting and VAT records.',
   },
   '/knowledge-base/workflows': {
     title: 'Workflows Guide | B2BNest Workflow Studio',
