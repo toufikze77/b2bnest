@@ -218,6 +218,30 @@ describe('submit section', () => {
   });
 });
 
+describe('P7a: accessibility of the submit section', () => {
+  it('a disabled Submit says why; the hint goes once the declaration and key are done', async () => {
+    await toPrepared();
+    const submit = screen.getByTestId('vats-submit');
+    expect(submit).toHaveAttribute('aria-describedby', 'vats-submit-hint');
+    expect(screen.getByTestId('vats-submit-hint')).toHaveTextContent('Tick the declaration and type the period key');
+    confirm();
+    expect(submit).not.toHaveAttribute('aria-describedby');
+    expect(screen.queryByTestId('vats-submit-hint')).toBeNull();
+  });
+
+  it('the result takes focus (the submit button is gone) and is announced; an incomplete receipt says so', async () => {
+    st.submit.mockResolvedValue({ ok: true, status: 'accepted', receipt_complete: false, message: "HMRC accepted the return, but its receipt couldn't be read in full.",
+      receipt: { processing_date: null, payment_indicator: null, form_bundle_number: null, charge_ref_number: null } });
+    await toPrepared();
+    confirm();
+    fireEvent.click(screen.getByTestId('vats-submit'));
+    const ok = await screen.findByTestId('vats-accepted');
+    expect(ok).toHaveAttribute('role', 'status');
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('vats-result')));
+    expect(screen.getByTestId('vats-receipt-incomplete')).toHaveTextContent("receipt couldn't be read in full");
+  });
+});
+
 describe('receipt CSV', () => {
   it('the period, the nine boxes as sent, the receipt and the times; no token or full VAT number', () => {
     const csv = receiptCsv(ROW);

@@ -392,3 +392,62 @@ Deno.test('bad input: unknown action or a malformed period key', async () => {
   assertEquals((await call(w, OWNER, { action: 'prepare', company_id: 'not-a-uuid' })).body.code, 'bad_request');
   assertEquals(w.calls.length, 0);
 });
+
+// ------------------------------------------------------------------ HMRC P7a: error handling gaps closed
+import { retryAfterSeconds } from './api.ts';
+
+Deno.test('P7a: Retry-After is read as seconds or an HTTP date, kept between 1 and 3600', () => {
+  const now = new Date('2026-11-08T10:00:00Z');
+  assertEquals(retryAfterSeconds('30', now), 30);
+  assertEquals(retryAfterSeconds('0', now), undefined);
+  assertEquals(retryAfterSeconds('999999', now), 3600);
+  assertEquals(retryAfterSeconds('Sun, 08 Nov 2026 10:02:00 GMT', now), 120);
+  assertEquals(retryAfterSeconds('yesterday', now), undefined);
+  assertEquals(retryAfterSeconds(null, now), undefined);
+});
+
+Deno.test('P7a: a 429 with Retry-After on submit is a clear rejection that says when to try again; still one POST', async () => {
+  const w = await world({ post: async () => Response.json({ code: 'MESSAGE_THROTTLED_OUT' }, { status: 429, headers: { 'Retry-After': '45' } }) });
+  const r = await submit(w, (await prepare(w)).confirmation_token);
+  assertEquals([r.body.status, r.body.code, r.body.retry_after], ['rejected', 'hmrc_busy', 45]);
+  assertEquals(r.body.message, 'HMRC is busy right now. Nothing was filed. Please try again in 45 seconds.');
+  assertEquals(posts(w).length, 1);
+});
+
+Deno.test('P7a: 403 NOT_SIGNED_UP_TO_MTD and RETURN_ALREADY_RECEIVED get their own plain words; 409 is a clear rejection', async () => {
+  for (const [code, status, expected] of [['NOT_SIGNED_UP_TO_MTD', 403, 'vat_not_signed_up'], ['RETURN_ALREADY_RECEIVED', 403, 'duplicate_submission'], ['SOMETHING_NEW', 409, 'something_new']] as const) {
+    const w = await world({ post: async () => Response.json({ code }, { status }) });
+    const r = await submit(w, (await prepare(w)).confirmation_token);
+    assertEquals([r.body.status, r.body.code], ['rejected', expected], code);
+    assertEquals(posts(w).length, 1);
+  }
+  // On the obligations read (before anything is sent):
+  const w2 = await world();
+  const deps2 = deps(w2);
+  const origFetch = deps2.fetch;
+  deps2.fetch = async (input, init) => (String(input).includes('/obligations') ? Response.json({ code: 'NOT_SIGNED_UP_TO_MTD' }, { status: 403 }) : origFetch(input, init));
+  const r2 = await vatSubmit({ authHeader: `Bearer ${jwt(OWNER)}`, headers: new Headers(), body: { company_id: CO, period_key: '18A1', action: 'prepare' } }, deps2);
+  assertEquals(r2.body.code, 'vat_not_signed_up');
+});
+
+Deno.test('P7a: a 201 whose body can\'t be read is still accepted, and the person is told the receipt couldn\'t be read', async () => {
+  const w = await world({ post: async () => new Response('not json', { status: 201 }) });
+  const r = await submit(w, (await prepare(w)).confirmation_token);
+  assertEquals(r.body.status, 'accepted');
+  assertEquals(r.body.receipt_complete, false);
+  assert(String(r.body.message).includes("receipt couldn't be read"));
+  assertEquals(w.submissions[0].status, 'accepted');
+  assertEquals(w.audit.at(-1), { event: 'vat_submit_result', reason: 'accepted_no_receipt' });
+});
+
+Deno.test('P7a: every HMRC call from the submit flow has a timeout (the obligations read and the POST)', async () => {
+  const w = await world();
+  const signals: (AbortSignal | undefined)[] = [];
+  const d = deps(w);
+  const f = d.fetch;
+  d.fetch = async (input, init) => { if (!String(input).endsWith('/oauth/token')) signals.push((init as { signal?: AbortSignal } | undefined)?.signal ?? undefined); return f(input, init); };
+  const p = await vatSubmit({ authHeader: `Bearer ${jwt(OWNER)}`, headers: new Headers(), body: { company_id: CO, period_key: '18A1', action: 'prepare' } }, d);
+  await vatSubmit({ authHeader: `Bearer ${jwt(OWNER)}`, headers: new Headers(), body: { company_id: CO, period_key: '18A1', action: 'submit', declaration: true, confirmation_token: p.body.confirmation_token } }, d);
+  assert(signals.length >= 3, String(signals.length));
+  assert(signals.every((s) => s instanceof AbortSignal), 'each call carries an abort signal');
+});

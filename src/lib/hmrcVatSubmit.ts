@@ -28,7 +28,7 @@ export interface Prepared extends FnResult {
   confirmation_token?: string | null; expires_at?: string; declaration?: string; live_status?: string | null;
 }
 export interface Receipt { processing_date: string | null; payment_indicator: 'DD' | 'BANK' | null; form_bundle_number: string | null; charge_ref_number: string | null }
-export interface Submitted extends FnResult { submission_id?: string; receipt?: Receipt; receipt_known?: boolean }
+export interface Submitted extends FnResult { submission_id?: string; receipt?: Receipt; receipt_known?: boolean; receipt_complete?: boolean; retry_after?: number }
 
 const body = (companyId: string, periodKey: string, extra: Record<string, unknown>) => ({ company_id: companyId, period_key: periodKey, fraud: collectHmrcFraudData(), ...extra });
 export const prepareReturn = (companyId: string, periodKey: string) => callHmrcFunction('hmrc-vat-submit', body(companyId, periodKey, { action: 'prepare' })) as Promise<Prepared>;

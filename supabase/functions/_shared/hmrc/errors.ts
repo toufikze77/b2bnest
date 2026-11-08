@@ -4,7 +4,9 @@ export type HmrcErrorCode =
   | 'not_configured' | 'unauthorized' | 'two_step_required' | 'not_member' | 'not_admin' | 'trial_ended' | 'suspended' | 'plan_not_included'
   | 'bad_request' | 'bad_state' | 'hmrc_refused' | 'hmrc_unavailable' | 'not_connected' | 'needs_reconnect' | 'server_error'
   | 'test_limit' | 'hmrc_busy' | 'scope_missing'
-  | 'vrn_missing' | 'obligations_limit' | 'vrn_invalid' | 'vat_not_authorised' | 'vat_insolvent';
+  | 'vrn_missing' | 'obligations_limit' | 'vrn_invalid' | 'vat_not_authorised' | 'vat_insolvent'
+  // HMRC P7a
+  | 'vat_not_signed_up';
 
 export const HMRC_MESSAGES: Record<HmrcErrorCode, string> = {
   not_configured: "HMRC connection isn't set up yet.",
@@ -31,12 +33,21 @@ export const HMRC_MESSAGES: Record<HmrcErrorCode, string> = {
   vrn_invalid: "HMRC didn't accept this VAT number. Check it in Settings → HMRC.",
   vat_not_authorised: "HMRC says this HMRC sign-in can't see VAT for this VAT number. Check the VAT number, or connect again with the HMRC account that owns it.",
   vat_insolvent: "HMRC can't show VAT obligations for this business through this service.",
+  // HMRC P7a (403 NOT_SIGNED_UP_TO_MTD; not verified against HMRC's pages).
+  vat_not_signed_up: "HMRC says this VAT number isn't signed up for Making Tax Digital for VAT. The business needs to sign up with HMRC first.",
 };
 export const HMRC_STATUS: Record<HmrcErrorCode, number> = {
   not_configured: 503, unauthorized: 401, two_step_required: 403, not_member: 403, not_admin: 403, trial_ended: 403, suspended: 403, plan_not_included: 403,
   bad_request: 400, bad_state: 400, hmrc_refused: 502, hmrc_unavailable: 502, not_connected: 409, needs_reconnect: 409, server_error: 500, test_limit: 429, hmrc_busy: 503, scope_missing: 409,
-  vrn_missing: 409, obligations_limit: 429, vrn_invalid: 422, vat_not_authorised: 403, vat_insolvent: 422,
+  vrn_missing: 409, obligations_limit: 429, vrn_invalid: 422, vat_not_authorised: 403, vat_insolvent: 422, vat_not_signed_up: 403,
 };
 export type HandlerResult = { status: number; body: Record<string, unknown> };
 export const fail = (code: HmrcErrorCode): HandlerResult => ({ status: HMRC_STATUS[code], body: { ok: false, code, message: HMRC_MESSAGES[code] } });
+/** HMRC P7a: "busy" with HMRC's Retry-After, when it sent one (the person retries; nothing retries on its own). */
+export const busy = (retryAfter?: number): HandlerResult => {
+  const r = fail('hmrc_busy');
+  if (!retryAfter) return r;
+  const wait = retryAfter < 120 ? `${retryAfter} seconds` : `${Math.ceil(retryAfter / 60)} minutes`;
+  return { status: r.status, body: { ...r.body, retry_after: retryAfter, message: `HMRC is busy right now. Please try again in ${wait}.` } };
+};
 export const done = (body: Record<string, unknown>): HandlerResult => ({ status: 200, body: { ok: true, ...body } });

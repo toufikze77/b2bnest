@@ -11,11 +11,11 @@
 // Never logged or returned: a token, a bearer value, the full VAT number, or an HMRC response body.
 import { readConfig } from './config.ts';
 import { canManage, type CallerDeps, identify, isUuid, jwtFrom } from './caller.ts';
-import { done, fail, type HandlerResult } from './errors.ts';
+import { busy, done, fail, type HandlerResult } from './errors.ts';
 import { buildFraudHeaders, clientIpFrom, publicIp, readBrowserFraudData } from './fraudHeaders.ts';
 import { b64url, sha256Hex } from './crypto.ts';
 import { callHmrc, type CallDeps } from './api.ts';
-import { cleanVrn, normalise, OBLIGATIONS_API, vrnLast3, type Obligation } from './vatObligations.ts';
+import { cleanVrn, normalise, OBLIGATIONS_API, OBLIGATIONS_TIMEOUT_MS, vrnLast3, type Obligation } from './vatObligations.ts';
 import { computeReturnBoxes, type PreviewRow, type ReturnBoxes } from '../vat/returnBoxes.ts';
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -39,6 +39,14 @@ export const HMRC_SUBMIT_ERRORS: Record<string, { code: string; message: string 
   INVALID_SCOPE: { code: 'scope_missing', message: 'Connect to HMRC again: submitting a VAT return needs one more permission (test environment only).' },
   INVALID_REQUEST: { code: 'invalid_return', message: 'HMRC said the return is not in the right form. Nothing was filed.' },
   INVALID_MONETARY_AMOUNT: { code: 'invalid_return', message: 'HMRC said the return is not in the right form. Nothing was filed.' },
+  // HMRC P7a: more codes HMRC's error handling may send (from memory, NOT VERIFIED).
+  NOT_SIGNED_UP_TO_MTD: { code: 'vat_not_signed_up', message: "HMRC says this VAT number isn't signed up for Making Tax Digital for VAT. Nothing was filed." },
+  RETURN_ALREADY_RECEIVED: { code: 'duplicate_submission', message: 'HMRC says a return for this period has already been submitted.' },
+  NOT_FINALISED: { code: 'invalid_return', message: 'HMRC said the return is not in the right form. Nothing was filed.' },
+  INVALID_NUMERIC_VALUE: { code: 'invalid_return', message: 'HMRC said the return is not in the right form. Nothing was filed.' },
+  VAT_TOTAL_VALUE: { code: 'invalid_return', message: 'HMRC said the boxes do not add up. Nothing was filed.' },
+  VAT_NET_VALUE: { code: 'invalid_return', message: 'HMRC said the boxes do not add up. Nothing was filed.' },
+  MATCHING_RESOURCE_NOT_FOUND: { code: 'not_found', message: "HMRC couldn't find this VAT registration or period." },
 };
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -190,12 +198,13 @@ async function context(req: { authHeader: string | null; headers: Headers; body:
 
 async function obligations(ctx: Ctx, deps: SubmitDeps, q: Record<string, string>): Promise<{ ok: true; list: Obligation[] } | { ok: false; result: HandlerResult }> {
   const r = await callHmrc({ companyId: ctx.companyId, userId: ctx.userId, method: 'GET', path: OBLIGATIONS_API.path(ctx.vrn), logPath: OBLIGATIONS_API.logPath,
-    query: q, version: OBLIGATIONS_API.version, tokenKind: 'user', fraudHeaders: ctx.fraud }, deps);
+    query: q, version: OBLIGATIONS_API.version, tokenKind: 'user', fraudHeaders: ctx.fraud, timeoutMs: OBLIGATIONS_TIMEOUT_MS }, deps);
   if (r.ok) return { ok: true, list: normalise(r.body).obligations };
   if (r.status === 404 && (!r.hmrcCode || r.hmrcCode === 'NOT_FOUND')) return { ok: true, list: [] };
   if (r.reason === 'needs_reconnect') return { ok: false, result: fail('needs_reconnect') };
-  if (r.reason === 'hmrc_rate_limited') return { ok: false, result: fail('hmrc_busy') };
+  if (r.reason === 'hmrc_rate_limited') return { ok: false, result: busy(r.retryAfter) };
   if (r.hmrcCode === 'INVALID_SCOPE') return { ok: false, result: failS('scope_missing') };
+  if (r.hmrcCode === 'NOT_SIGNED_UP_TO_MTD') return { ok: false, result: fail('vat_not_signed_up') };
   return { ok: false, result: fail('hmrc_unavailable') };
 }
 
@@ -308,8 +317,11 @@ export async function vatSubmit(req: { authHeader: string | null; headers: Heade
       charge_ref_number: str(b.chargeRefNumber, /^[A-Za-z0-9]{1,40}$/),
     };
     await deps.submissions.finish(id, { status: 'accepted', http_status: r.status, ...receipt });
-    await deps.store.audit({ company_id: ctx.companyId, user_id: ctx.userId, environment: ctx.env, event: 'vat_submit_result', reason: 'accepted' });
-    return done({ ...base, status: 'accepted', submission_id: id, receipt, figures: w.body });
+    // A 201 whose body can't be read is still accepted; the person is told the receipt couldn't be read.
+    const receiptComplete = !!receipt.processing_date && !!receipt.form_bundle_number;
+    await deps.store.audit({ company_id: ctx.companyId, user_id: ctx.userId, environment: ctx.env, event: 'vat_submit_result', reason: receiptComplete ? 'accepted' : 'accepted_no_receipt' });
+    return done({ ...base, status: 'accepted', submission_id: id, receipt, receipt_complete: receiptComplete, figures: w.body,
+      ...(receiptComplete ? {} : { message: "HMRC's test environment accepted the return, but its receipt couldn't be read. Check the obligation with HMRC." }) });
   }
   // Sent (or maybe sent) but no clear answer: a network error, a timeout or a 5xx. Never retried automatically.
   if (r.reason === 'network' || (r.reason === 'hmrc_unavailable' && r.status >= 500)) {
@@ -322,8 +334,9 @@ export async function vatSubmit(req: { authHeader: string | null; headers: Heade
   const mapped = r.hmrcCode ? HMRC_SUBMIT_ERRORS[r.hmrcCode] : undefined;
   const code = mapped?.code
     ?? (r.status === 0 ? 'not_sent' : r.status === 429 ? 'hmrc_busy' : r.status === 401 || r.reason === 'needs_reconnect' ? 'hmrc_unauthorised' : r.status === 400 ? 'invalid_return' : (lowerCode(r.hmrcCode) || 'hmrc_rejected'));
-  const message = mapped?.message ?? SUBMIT_MESSAGES[code] ?? SUBMIT_MESSAGES.hmrc_rejected;
+  const wait = r.status === 429 && r.retryAfter ? (r.retryAfter < 120 ? `${r.retryAfter} seconds` : `${Math.ceil(r.retryAfter / 60)} minutes`) : null;
+  const message = mapped?.message ?? (wait ? `HMRC is busy right now. Nothing was filed. Please try again in ${wait}.` : null) ?? SUBMIT_MESSAGES[code] ?? SUBMIT_MESSAGES.hmrc_rejected;
   await deps.submissions.finish(id, { status: 'rejected', http_status: r.status || null, error_code: code.slice(0, 60), error_message: message.slice(0, 300) });
   await deps.store.audit({ company_id: ctx.companyId, user_id: ctx.userId, environment: ctx.env, event: 'vat_submit_result', reason: code.slice(0, 60) });
-  return done({ ...base, status: 'rejected', submission_id: id, code, message, hmrc_code: r.hmrcCode ?? null, http_status: r.status });
+  return done({ ...base, status: 'rejected', submission_id: id, code, message, hmrc_code: r.hmrcCode ?? null, http_status: r.status, ...(r.retryAfter ? { retry_after: r.retryAfter } : {}) });
 }

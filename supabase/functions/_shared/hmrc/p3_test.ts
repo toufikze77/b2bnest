@@ -287,3 +287,32 @@ Deno.test('VAT number: each company its own; another company\'s row is never use
     { user_id: OUTSIDER, organization_id: A, vat_number: '777777777', updated_at: '2026-11-05' },
   ], [OWNER, SOLO, OUTSIDER]), '777777777', 'the newest admin row');
 });
+
+// ------------------------------------------------------------------ HMRC P7a: error handling gaps closed
+Deno.test('P7a: obligations: 429 says when to try again (Retry-After), NOT_SIGNED_UP_TO_MTD has its own words, 503 and a timeout are "couldn\'t be reached"', async () => {
+  const busyW = await world({ api: () => Response.json({ code: 'MESSAGE_THROTTLED_OUT' }, { status: 429, headers: { 'Retry-After': '300' } }) });
+  const b = await run(busyW, OWNER);
+  assertEquals([b.status, b.body.code, b.body.retry_after], [503, 'hmrc_busy', 300]);
+  assertEquals(b.body.message, 'HMRC is busy right now. Please try again in 5 minutes.');
+  const plain = await run(await world({ api: () => Response.json({ code: 'MESSAGE_THROTTLED_OUT' }, { status: 429 }) }), OWNER);
+  assertEquals(plain.body.message, 'HMRC is busy right now. Please try again in a minute.', 'no Retry-After: the old wording');
+  const signedUp = await run(await world({ api: () => Response.json({ code: 'NOT_SIGNED_UP_TO_MTD' }, { status: 403 }) }), OWNER);
+  assertEquals(signedUp.body.code, 'vat_not_signed_up');
+  assert(String(signedUp.body.message).includes("isn't signed up for Making Tax Digital for VAT"));
+  const down = await run(await world({ api: () => new Response('', { status: 503 }) }), OWNER);
+  assertEquals(down.body.code, 'hmrc_unavailable');
+  const w = await world({ api: () => { throw new DOMException('timed out', 'TimeoutError'); } });
+  const t = await run(w, OWNER);
+  assertEquals(t.body.code, 'hmrc_unavailable');
+  noSecrets(w);
+});
+
+Deno.test('P7a: the obligations GET carries a timeout signal', async () => {
+  const w = await world();
+  const d = deps(w);
+  let signal: AbortSignal | undefined;
+  const f = d.fetch;
+  d.fetch = async (input: string | URL | Request, init?: RequestInit) => { if (String(input).includes('/obligations')) signal = init?.signal ?? undefined; return f(input, init); };
+  await vatObligations({ authHeader: `Bearer ${jwt(OWNER)}`, headers: new Headers(), body: { company_id: CO } }, d);
+  assert(signal instanceof AbortSignal);
+});

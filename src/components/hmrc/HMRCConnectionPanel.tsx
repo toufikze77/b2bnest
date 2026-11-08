@@ -108,7 +108,7 @@ export default function HMRCConnectionPanel() {
               <p className="text-sm text-muted-foreground" data-testid="hmrc-member-note">Ask an owner or admin of {organization?.name ?? 'your company'} to connect or disconnect HMRC.</p>
             )}
             {status.canManage && state === 'connected' && organizationId && <HMRCTestTools companyId={organizationId} />}
-            <p className="text-xs text-muted-foreground">Connecting lets B2BNEST read and, in later steps, send VAT information for this company. Filing is not available yet.</p>
+            <p className="text-xs text-muted-foreground">Connecting lets B2BNEST read VAT obligations and send test VAT returns for this company in HMRC's test environment. Filing is not available yet.</p>
           </div>
         );
       }

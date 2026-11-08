@@ -43,6 +43,9 @@ export default function HMRCVATSubmit({ companyId, companyName, access }: { comp
   const [result, setResult] = useState<Submitted | null>(null);
   const [said, setSaid] = useState('');
   const [checking, setChecking] = useState(false);
+  // P7a (WCAG 2.4.3): the submit button disappears once a result arrives, so focus moves to the result instead of being lost.
+  const resultRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (result) resultRef.current?.focus(); }, [result]);
   const [history, setHistory] = useState<{ rows: SubmissionRecord[]; notAvailable?: boolean; error?: boolean } | null>(null);
 
   const loadHistory = useCallback(async () => { setHistory(await fetchSubmissions(companyId)); }, [companyId]);
@@ -165,7 +168,7 @@ export default function HMRCVATSubmit({ companyId, companyName, access }: { comp
           )}
           {prepared.blocking && prepared.blocking.length > 0 ? (
             <Alert role="alert" data-testid="vats-blocking">
-              <AlertOctagon className="h-4 w-4" />
+              <AlertOctagon className="h-4 w-4" aria-hidden />
               <AlertTitle>This return can't be submitted yet</AlertTitle>
               <AlertDescription><ul className="list-disc pl-5">{(prepared.blocking_messages ?? prepared.blocking).map((m) => <li key={m}>{m}</li>)}</ul></AlertDescription>
             </Alert>
@@ -179,7 +182,8 @@ export default function HMRCVATSubmit({ companyId, companyName, access }: { comp
                 <Label htmlFor="vats-typed-key">Type the period key ({periodKey}) to confirm</Label>
                 <Input id="vats-typed-key" value={typedKey} onChange={(e) => setTypedKey(e.target.value)} autoComplete="off" />
               </div>
-              <Button type="button" onClick={() => { void submit(); }} disabled={!ready || submitting} data-testid="vats-submit">
+              {!ready && !submitting && <p id="vats-submit-hint" className="text-xs text-muted-foreground" data-testid="vats-submit-hint">Tick the declaration and type the period key to turn on the submit button.</p>}
+              <Button type="button" onClick={() => { void submit(); }} disabled={!ready || submitting} aria-describedby={!ready && !submitting ? 'vats-submit-hint' : undefined} data-testid="vats-submit">
                 {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : <Send className="mr-2 h-4 w-4" aria-hidden />}
                 {submitting ? 'Submitting to the test environment…' : 'Submit to HMRC (test environment)'}
               </Button>
@@ -188,7 +192,7 @@ export default function HMRCVATSubmit({ companyId, companyName, access }: { comp
         </div>
       )}
 
-      {result && <ResultCard result={result} checking={checking} onCheck={(c) => { void check(c); }} />}
+      {result && <div ref={resultRef} tabIndex={-1} className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" data-testid="vats-result"><ResultCard result={result} checking={checking} onCheck={(c) => { void check(c); }} /></div>}
 
       <details className="rounded-md border p-3" data-testid="vats-fraud">
         <summary className="cursor-pointer text-sm font-medium">Validate fraud prevention headers (test environment)</summary>
@@ -240,7 +244,7 @@ function Section({ children }: { children: React.ReactNode }) {
       <CardHeader className="space-y-3">
         <CardTitle className="text-lg">Submit to HMRC (test environment)</CardTitle>
         <Alert role="note" className="border-red-300 bg-red-50 text-red-950 dark:border-red-800 dark:bg-red-950/40 dark:text-red-50" data-testid="vats-banner">
-          <AlertOctagon className="h-4 w-4" />
+          <AlertOctagon className="h-4 w-4" aria-hidden />
           <AlertTitle>{TEST_ENV_BANNER}</AlertTitle>
           <AlertDescription>Submissions go to HMRC's sandbox with test data. Every attempt is recorded permanently in the history below.</AlertDescription>
         </Alert>
@@ -253,8 +257,8 @@ function Section({ children }: { children: React.ReactNode }) {
 function ResultCard({ result, checking, onCheck }: { result: Submitted; checking: boolean; onCheck: (confirmNotReceived: boolean) => void }) {
   if (result.status === 'accepted') {
     return (
-      <Alert data-testid="vats-accepted" className="border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-50">
-        <CheckCircle2 className="h-4 w-4" />
+      <Alert role="status" data-testid="vats-accepted" className="border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-50">
+        <CheckCircle2 className="h-4 w-4" aria-hidden />
         <AlertTitle>HMRC's test environment accepted the return</AlertTitle>
         <AlertDescription>
           {result.receipt ? (
@@ -263,6 +267,7 @@ function ResultCard({ result, checking, onCheck }: { result: Submitted; checking
               <li>Form bundle number: {result.receipt.form_bundle_number ?? '—'}</li>
               <li>Payment indicator: {result.receipt.payment_indicator ?? '—'}</li>
               {result.receipt.charge_ref_number && <li>Charge reference: {result.receipt.charge_ref_number}</li>}
+              {result.receipt_complete === false && result.message && <li data-testid="vats-receipt-incomplete">{result.message}</li>}
             </ul>
           ) : <p>{result.message}</p>}
         </AlertDescription>
@@ -272,7 +277,7 @@ function ResultCard({ result, checking, onCheck }: { result: Submitted; checking
   if (result.status === 'rejected') {
     return (
       <Alert role="alert" data-testid="vats-rejected">
-        <XCircle className="h-4 w-4" />
+        <XCircle className="h-4 w-4" aria-hidden />
         <AlertTitle>Not accepted</AlertTitle>
         <AlertDescription>{result.message}</AlertDescription>
       </Alert>
@@ -281,7 +286,7 @@ function ResultCard({ result, checking, onCheck }: { result: Submitted; checking
   // unknown, or still open after a check
   return (
     <Alert role="alert" data-testid="vats-unknown" className="border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-50">
-      <HelpCircle className="h-4 w-4" />
+      <HelpCircle className="h-4 w-4" aria-hidden />
       <AlertTitle>{result.status === 'still_open' ? 'HMRC still shows this period as open' : "We don't know if HMRC received it"}</AlertTitle>
       <AlertDescription className="space-y-2">
         <p>{result.status === 'still_open' ? result.message : 'Do not submit again. Check with HMRC.'}</p>
