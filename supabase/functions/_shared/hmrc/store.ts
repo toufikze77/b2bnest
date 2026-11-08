@@ -5,7 +5,9 @@ import type { HmrcEnvironment } from './config.ts';
 // plan_not_included: a paying account whose plan is not Business or Scale (docs/hmrc-plan/proposal.sql).
 export type ManageRule = 'ok' | 'not_signed_in' | 'not_member' | 'not_admin' | 'trial_ended' | 'suspended' | 'plan_not_included';
 export type AuditEvent = 'connect_started' | 'connected' | 'refreshed' | 'refresh_failed' | 'disconnected' | 'refused' | 'test_call' | 'test_result'
-  | 'obligations_call' | 'obligations_result';
+  | 'obligations_call' | 'obligations_result'
+  // HMRC P6 (docs/hmrc-p6/proposal.sql)
+  | 'vat_submit_start' | 'vat_submit_result' | 'vat_submit_unknown' | 'vat_submit_check' | 'fraud_validate';
 export interface ConnectionRow {
   company_id: string;
   environment: HmrcEnvironment;

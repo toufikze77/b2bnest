@@ -95,7 +95,7 @@ export interface FnResult {
 export interface VatObligation { periodKey: string; start: string; end: string; due: string; status: 'O' | 'F'; received: string | null }
 
 /** Calls one HMRC Edge Function and returns its JSON, or a not-set-up result when it isn't deployed yet. */
-export async function callHmrcFunction(name: 'hmrc-connect-start' | 'hmrc-connect-complete' | 'hmrc-disconnect' | 'hmrc-test-call' | 'hmrc-vat-obligations', body: Record<string, unknown>): Promise<FnResult> {
+export async function callHmrcFunction(name: 'hmrc-connect-start' | 'hmrc-connect-complete' | 'hmrc-disconnect' | 'hmrc-test-call' | 'hmrc-vat-obligations' | 'hmrc-vat-submit', body: Record<string, unknown>): Promise<FnResult> {
   try {
     const { data, error } = await supabase.functions.invoke(name, { body });
     if (!error) return (data as FnResult) ?? { ok: false, code: 'server_error' };
