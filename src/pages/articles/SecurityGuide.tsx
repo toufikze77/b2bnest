@@ -129,8 +129,7 @@ const SecurityGuide = () => {
                 <h3 className="font-semibold mb-2">Data Retention</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
                   <li>Active account data: Retained while account is active</li>
-                  <li>Deleted data: Permanently removed within 30 days</li>
-                  <li>Backups: Retained for 90 days</li>
+                  <li>We keep data only as long as needed to run the service and meet legal requirements, as set out in our Privacy Policy.</li>
                   <li>Legal requirements: As mandated by law (e.g., tax records)</li>
                 </ul>
               </div>
@@ -138,9 +137,9 @@ const SecurityGuide = () => {
               <div>
                 <h3 className="font-semibold mb-2">Your Data Rights</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
-                  <li>Ask for a copy of your data: email us and we will help</li>
-                  <li>Ask for your data in a machine-readable format: email us and we will help</li>
-                  <li>Ask us to delete your data: email us and we will help</li>
+                  <li>Download a copy of your data in Settings → Your data, or email us and we will help</li>
+                  <li>Get your data in a machine-readable format (JSON and CSV in the same download), or email us and we will help</li>
+                  <li>Delete your account, or close a company you own, in Settings → Your data, or email us and we will help</li>
                   <li>Correct inaccurate information</li>
                   <li>Opt-out of marketing communications</li>
                 </ul>
@@ -177,7 +176,8 @@ const SecurityGuide = () => {
               <div>
                 <h3 className="font-semibold mb-2">How to Exercise Your Rights</h3>
                 <ol className="list-decimal list-inside text-muted-foreground space-y-2 ml-4">
-                  <li>Email info@b2bnest.online with your request</li>
+                  <li>Use Settings → Your data to download your data, close a company you own or delete your account</li>
+                  <li>For anything else, or if that isn't available to you, email info@b2bnest.online with your request</li>
                   <li>Verify your identity (for security)</li>
                   <li>We respond within one month</li>
                   <li>Receive confirmation and action taken</li>

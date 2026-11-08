@@ -24,6 +24,15 @@ verify_jwt = true
 [functions.hmrc-vat-submit]
 verify_jwt = true
 
+[functions.data-export]
+verify_jwt = true
+
+[functions.account-delete]
+verify_jwt = true
+
+[functions.company-close]
+verify_jwt = true
+
 [functions.b2b-form-submit]
 verify_jwt = false
 
