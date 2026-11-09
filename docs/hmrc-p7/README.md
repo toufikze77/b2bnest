@@ -26,6 +26,7 @@ Production was only read, for function names, column names, row counts and the p
 | [`accessibility.md`](accessibility.md) | Quick WCAG AA audit of the VAT screens, the fixes made, and what's left |
 | [`production-request-pack.md`](production-request-pack.md) | Ready-to-paste answers for HMRC, with every gap marked NOT DONE |
 | [`security-self-check.md`](security-self-check.md) | HMRC P7c: our own security checks with free tools (dependencies, secrets, headers, OWASP review, advisor). Not an independent penetration test |
+| [`../hmrc-p7d/README.md`](../hmrc-p7d/README.md) | HMRC P7d: narrowed Edge Function CORS, the review of the 18 anon-callable database helpers (SQL not applied), the live Privacy Policy wording |
 | [`../hmrc-p8/README.md`](../hmrc-p8/README.md) | HMRC P8: view return, liabilities, payments, penalties, receipt, reminders, pre-submit checks (verified endpoints; SQL not applied; functions not deployed) |
 | [`accountant-and-pentest-options.md`](accountant-and-pentest-options.md) | HMRC P7c: low-cost ways to get the VAT box rules checked by an accountant and an independent security test later |
 

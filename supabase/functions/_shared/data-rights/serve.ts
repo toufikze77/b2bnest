@@ -1,7 +1,7 @@
 // HMRC P7b: the real dependencies and the HTTP wrapper for data-export, account-delete and company-close.
 // Nothing here logs a request body, a header, a token or a row.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { corsHeaders } from '../cors.ts';
+import { corsFor, preflight } from '../cors.ts';
 import { guardedDenoServe } from '../demo-guard.ts';
 import { isDemoReadonly } from '../demo-guard.ts';
 import type { DrDeps, DrResult } from './core.ts';
@@ -68,24 +68,30 @@ export function realDrDeps(name: string): DrDeps {
   };
 }
 
-const json = (r: DrResult) => new Response(JSON.stringify(r.body ?? {}), { status: r.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+const json = (req: Request, r: DrResult) => new Response(JSON.stringify(r.body ?? {}), { status: r.status, headers: { ...corsFor(req), 'Content-Type': 'application/json' } });
+
+/** The request handler the three data-rights functions share. HMRC P7d: CORS narrowed to the allowed origins. */
+export function dataRightsHttp(name: string, handler: (req: { authHeader: string | null; body: Record<string, unknown> }, deps: DrDeps) => Promise<DrResult>,
+  depsFor: (name: string) => DrDeps = realDrDeps) {
+  return async (req: Request): Promise<Response> => {
+    if (req.method === 'OPTIONS') return preflight(req);
+    if (req.method !== 'POST') return json(req, fail(405, 'bad_request'));
+    try {
+      const body = await req.json().catch(() => ({}));
+      const r = await handler({ authHeader: req.headers.get('Authorization'), body: body && typeof body === 'object' ? body : {} }, depsFor(name));
+      if (r.bytes) {
+        return new Response(r.bytes, { status: r.status, headers: { ...corsFor(req), 'Content-Type': 'application/octet-stream',
+          'Content-Disposition': `attachment; filename="${r.filename ?? 'b2bnest-data.zip'}"`, 'Access-Control-Expose-Headers': 'Content-Disposition', 'Cache-Control': 'no-store' } });
+      }
+      return json(req, r);
+    } catch (e) {
+      console.error(`[${name}] error ${e instanceof Error ? e.name : 'unknown'}`);
+      return json(req, fail(500, 'server_error'));
+    }
+  };
+}
 
 export function serveDataRights(name: string, handler: (req: { authHeader: string | null; body: Record<string, unknown> }, deps: DrDeps) => Promise<DrResult>) {
   // Demo read-only: a demo person is refused (403) before anything runs (docs/demo-readonly); the handler checks again.
-  guardedDenoServe(async (req) => {
-    if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
-    if (req.method !== 'POST') return json(fail(405, 'bad_request'));
-    try {
-      const body = await req.json().catch(() => ({}));
-      const r = await handler({ authHeader: req.headers.get('Authorization'), body: body && typeof body === 'object' ? body : {} }, realDrDeps(name));
-      if (r.bytes) {
-        return new Response(r.bytes, { status: r.status, headers: { ...corsHeaders, 'Content-Type': 'application/octet-stream',
-          'Content-Disposition': `attachment; filename="${r.filename ?? 'b2bnest-data.zip'}"`, 'Access-Control-Expose-Headers': 'Content-Disposition', 'Cache-Control': 'no-store' } });
-      }
-      return json(r);
-    } catch (e) {
-      console.error(`[${name}] error ${e instanceof Error ? e.name : 'unknown'}`);
-      return json(fail(500, 'server_error'));
-    }
-  });
+  guardedDenoServe(dataRightsHttp(name, handler), { headersFor: (req) => corsFor(req) });
 }

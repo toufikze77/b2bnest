@@ -1,10 +1,23 @@
-# Privacy policy: draft wording for HMRC features (not live)
+# Privacy policy: wording for HMRC features
 
-**Draft only.** The live page (`src/pages/PrivacyPolicy.tsx`) is unchanged.
+**Published in the live page on 9 Nov 2026 (HMRC P7d, `src/pages/PrivacyPolicy.tsx`), except the items listed as not
+published below.** The live page uses plain purposes ("to provide the service your business asked for", "to keep
+security and tax records") and names no legal article.
 
-- Every legal claim is marked **(adviser to confirm)**.
-- Facts are taken from the code, with the file named.
-- The live page today names no processors and says nothing about HMRC.
+**Not published, and why:**
+1. **Named legal bases** (UK GDPR Article 6(1)(b), (c), (f) and Article 17(3)(b) below): still "adviser to confirm".
+   The live page describes the purpose in plain words instead.
+2. **The processor table**, except Supabase (database, sign-in, storage; London region checked 8 Nov 2026) and Stripe
+   (payments). Which of Vercel, Resend, OpenAI, Firecrawl, TrueLayer and Twilio are live, and whether a data processing
+   agreement is in place with each, is for the owner to confirm. The owner says the site is hosted by Lovable, not
+   Vercel, so Vercel is not named.
+3. **Where Edge Functions run**: not confirmed with Supabase.
+4. **International transfers** (adequacy regulations, IDTA or Addendum): adviser to confirm per provider.
+5. **Automatic deletion at the end of the retention period**: the purge exists (`hmrc_purge_expired_audit`) but is **not
+   scheduled**, so the live page states the retention period and doesn't promise deletion on a date.
+6. The marked draft text below is kept as the source; it still carries its "(adviser to confirm)" markers.
+
+Facts are taken from the code, with the file named.
 
 ---
 

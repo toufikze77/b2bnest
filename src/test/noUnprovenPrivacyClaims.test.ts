@@ -52,4 +52,16 @@ describe('no unproven privacy or compliance claims in the pages', () => {
     expect(text).toContain('We keep data only as long as needed to run the service and meet legal requirements, as set out in our Privacy Policy.');
     expect(text).toContain('For anything else, or if that isn\'t available to you, email info@b2bnest.online with your request');
   });
+
+  // HMRC P7d: the live Privacy Policy states only what the code and database support.
+  it('the Privacy Policy has no adviser markers, no DPO and no unproven "30 days" / "90 days" retention claims', () => {
+    const text = fs.readFileSync(path.join(PAGES, 'PrivacyPolicy.tsx'), 'utf8');
+    expect(text).not.toMatch(/\(adviser/i);
+    expect(text).not.toMatch(/\bDPO\b|Data Protection Officer/i);
+    expect(text).not.toMatch(/\b(30|90|thirty|ninety)[\s-]days?\b/i);
+    expect(text).not.toMatch(/Article \d|6\(1\)|17\(3\)/); // no UK GDPR article named as a legal basis
+    expect(text).not.toMatch(/backup|security audits|SSL technology/i); // no unproven backup or audit claims
+    expect(text).not.toMatch(/admin@b2bnest|privacy@b2bnest/i);
+    expect(text).toContain('info@b2bnest.online');
+  });
 });

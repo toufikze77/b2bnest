@@ -3,8 +3,9 @@
 // account listed in DOCUMENT_EMAIL_ALLOWED_USERS (unset = nobody may send).
 import { serve as stdServe } from "https://deno.land/std@0.190.0/http/server.ts";
 import { guardedServe } from '../_shared/demo-guard.ts';
+import { corsFor } from '../_shared/cors.ts'; // HMRC P7d: the demo refusal gets the narrowed CORS headers too
 // Demo read-only: a demo person is refused (403) before the handler runs (docs/demo-readonly).
-const serve = guardedServe(stdServe);
+const serve = guardedServe(stdServe, { headersFor: (req) => corsFor(req) });
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { makeHandler, type DocRow } from "./handler.ts";
 import { sendSmtp } from "../workflow-send-email/smtp.ts";

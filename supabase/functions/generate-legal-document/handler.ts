@@ -18,6 +18,7 @@ import {
   DATA_COLLECTED_OPTIONS, DETAILS_MAX, docTypeById, FIELD_MAX, fieldLabel, JURISDICTIONS,
   type DocKind, type DocType, type FieldId, type Jurisdiction,
 } from "./catalogue.ts";
+import { withNarrowCors } from "../_shared/cors.ts";
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -203,6 +204,10 @@ export async function readDocument(res: Response): Promise<string | null> {
 export const FEATURE = "legal_document" as const;
 
 export function makeHandler(deps: Deps) {
+  return withNarrowCors(makeInnerHandler(deps)); // HMRC P7d: CORS narrowed to the allowed origins
+}
+
+function makeInnerHandler(deps: Deps) {
   const log = deps.log ?? ((level, message, meta) => (level === "error" ? console.error : console.log)(`generate-legal-document: ${message}`, meta ?? {}));
   return async (req: Request): Promise<Response> => {
     if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
