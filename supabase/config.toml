@@ -24,6 +24,19 @@ verify_jwt = true
 [functions.hmrc-vat-submit]
 verify_jwt = true
 
+# HMRC P8: read what HMRC holds (sandbox only, GET only). JWT stays on.
+[functions.hmrc-vat-return-view]
+verify_jwt = true
+
+[functions.hmrc-vat-liabilities]
+verify_jwt = true
+
+[functions.hmrc-vat-payments]
+verify_jwt = true
+
+[functions.hmrc-vat-penalties]
+verify_jwt = true
+
 [functions.data-export]
 verify_jwt = true
 

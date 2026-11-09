@@ -72,7 +72,8 @@ export function retryAfterSeconds(v: string | null, now: Date): number | undefin
 export async function callHmrc(req: CallRequest, deps: CallDeps): Promise<CallResult> {
   const cfg = readConfig(deps.env);
   if (!cfg.ok) return { ok: false, status: 0, reason: 'not_configured' };
-  if (!/^\/[A-Za-z0-9/_.-]*$/.test(req.path) || !/^\d+\.\d+$/.test(req.version)) throw new Error('callHmrc: bad path or version');
+  // HMRC P8: %XX allowed, for a period key with # (sent as %23).
+  if (!/^\/(?:[A-Za-z0-9/_.-]|%[0-9A-F]{2})*$/.test(req.path) || !/^\d+\.\d+$/.test(req.version)) throw new Error('callHmrc: bad path or version');
   const url = new URL(HMRC_ENDPOINTS[cfg.config.environment].api + req.path);
   const logPath = req.logPath ?? req.path;
   if (req.testScenario !== undefined && !/^[A-Z0-9_]{1,60}$/.test(req.testScenario)) throw new Error('callHmrc: bad test scenario');

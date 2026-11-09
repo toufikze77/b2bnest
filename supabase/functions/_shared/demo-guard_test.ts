@@ -110,7 +110,7 @@ const REFUSE = [
   'activate-trial', 'ai-assistant', 'business-insights', 'change-subscription-plan', 'create-ai-topup-checkout', 'create-coinbase-charge',
   'create-payment', 'create-subscription-checkout', 'create-subscription-invoice', 'customer-portal', 'firecrawl-scrape',
   'generate-legal-document', 'generate-template', 'google-calendar-sync', 'hmrc-connect-complete', 'hmrc-connect-start', 'hmrc-disconnect',
-  'hmrc-test-call', 'hmrc-vat-obligations', 'hmrc-vat-submit', 'data-export', 'account-delete', 'company-close', 'notion-sync', 'oauth-facebook', 'oauth-gmail-callback', 'oauth-gmail-init', 'oauth-google-calendar',
+  'hmrc-test-call', 'hmrc-vat-obligations', 'hmrc-vat-submit', 'hmrc-vat-return-view', 'hmrc-vat-liabilities', 'hmrc-vat-payments', 'hmrc-vat-penalties', 'data-export', 'account-delete', 'company-close', 'notion-sync', 'oauth-facebook', 'oauth-gmail-callback', 'oauth-gmail-init', 'oauth-google-calendar',
   'oauth-icloud-calendar', 'oauth-linkedin', 'oauth-onedrive', 'oauth-outlook-calendar', 'oauth-twitter', 'oauth-twitter-request',
   'send-contact-email', 'send-document-email', 'send-invitation-email', 'send-task-notification', 'share-project', 'share-task',
   'sign-oauth-state', 'store-twitter-credentials', 'sync-note-to-email', 'trello-import', 'truelayer-integration', 'whatsapp-connect',
@@ -150,9 +150,11 @@ Deno.test('every refused function calls the demo guard, and has no unguarded ser
   assert(/guardedDenoServe\(/.test(hmrcServe) && !/\bDeno\.serve\(/.test(hmrcServe), 'hmrc serve wrapper');
   const drServe = await Deno.readTextFile(new URL('./data-rights/serve.ts', import.meta.url));
   assert(/guardedDenoServe\(/.test(drServe) && !/\bDeno\.serve\(/.test(drServe), 'data-rights serve wrapper');
+  const readServe = await Deno.readTextFile(new URL('./hmrc/readServe.ts', import.meta.url));
+  assert(/guardedDenoServe\(/.test(readServe) && !/\bDeno\.serve\(/.test(readServe), 'HMRC P8 read serve wrapper');
   for (const d of REFUSE) {
     const src = await Deno.readTextFile(new URL(`../${d}/index.ts`, import.meta.url));
-    const viaHmrc = /serveHmrc\(|serveDataRights\(/.test(src);
+    const viaHmrc = /serveHmrc\(|serveDataRights\(|serveVatRead\(/.test(src);
     assert(viaHmrc || GUARD.test(src), `${d}: no demo guard`);
     if (/verifyOAuthState\(/.test(src)) {
       // OAuth callbacks arrive from the provider without the person's JWT: the person comes from the signed state.

@@ -440,3 +440,12 @@ input[type="text"]:focus:not(:focus-visible) {
   body.print-crm-report #crm-reports .overflow-x-auto { overflow: visible; }
   body.print-crm-report #crm-reports button { display: none !important; }
 }
+
+/* HMRC P8: the receipt for a test-environment return. "Print or save as PDF" prints only the receipt (browser print, no library). */
+@media print {
+  body.print-hmrc-receipt * { visibility: hidden; }
+  body.print-hmrc-receipt #hmrc-receipt, body.print-hmrc-receipt #hmrc-receipt * { visibility: visible; }
+  body.print-hmrc-receipt #hmrc-receipt { position: absolute; inset: 0 auto auto 0; width: 100%; padding: 0; border: 0; box-shadow: none; color: #000; background: #fff; }
+  body.print-hmrc-receipt #hmrc-receipt button { display: none !important; }
+  body.print-hmrc-receipt #hmrc-receipt table { break-inside: avoid; }
+}

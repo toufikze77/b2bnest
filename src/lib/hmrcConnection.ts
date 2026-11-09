@@ -38,6 +38,12 @@ export const HMRC_CODE_MESSAGES: Record<string, string> = {
   vat_not_authorised: "HMRC says this HMRC sign-in can't see VAT for this VAT number. Check the VAT number, or connect again with the HMRC account that owns it.",
   vat_insolvent: "HMRC can't show VAT obligations for this business through this service.",
   // HMRC P7a (same wording as supabase/functions/_shared/hmrc/errors.ts).
+  // HMRC P8: reading what HMRC holds (same wording as supabase/functions/_shared/hmrc/errors.ts).
+  not_available: "This isn't available yet.",
+  read_limit: 'You can do this 10 times an hour for this company. Please try again later.',
+  not_submitted: "There's no accepted return for this period sent through B2BNEST, so there's nothing to compare.",
+  return_not_found: 'HMRC has no return for this period.',
+  dates_invalid: "HMRC didn't accept these dates. Choose dates up to today, at most 365 days apart.",
 };
 export const messageFor = (code: string | undefined) => HMRC_CODE_MESSAGES[code ?? ''] ?? HMRC_CODE_MESSAGES.server_error;
 

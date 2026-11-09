@@ -48,6 +48,12 @@ with a legal obligation and HMRC's terms of use **(adviser to confirm: Article 6
 tax and security records (legal obligation, Article 6(1)(c), and legitimate interests, Article 6(1)(f)) **(adviser to
 confirm)**.
 
+**What HMRC shows you (HMRC P8, once deployed):** when you check what HMRC holds for a return, or look at what you
+owe, what HMRC received or your penalties, B2BNEST reads it from HMRC at that moment and shows it to you. **Nothing
+new is stored**: not the amounts, not the penalties, not HMRC's copy of the return. Only a security log entry is kept
+that the check happened and its result code (for example "matches"), never an amount. The receipt is built from the
+record of the return you sent, without asking HMRC again.
+
 **How long:** VAT return records and the HMRC security log are kept for [6 years after the end of the VAT period]
 **(owner and adviser to decide; see `data-rights.md`)**. Connection tokens are kept only while you stay connected.
 
