@@ -92,21 +92,25 @@ export async function demoRefusal(userId: string | null, headers: Record<string,
 type AnyHandler = (req: Request, ...rest: never[]) => Response | Promise<Response>;
 
 /** Wraps a function's handler: a demo person's request is refused before the handler runs. CORS preflight passes. */
-export function withDemoGuard<H extends AnyHandler>(handler: H, opts: { headers?: Record<string, string>; deps?: DemoGuardDeps } = {}): H {
+// HMRC P7d: headersFor gives the refusal the same narrowed CORS headers as the function (corsFor); without it the
+// refusal keeps the old headers, so functions not yet migrated behave exactly as before.
+export interface DemoGuardOpts { headers?: Record<string, string>; headersFor?: (req: Request) => Record<string, string>; deps?: DemoGuardDeps }
+export function withDemoGuard<H extends AnyHandler>(handler: H, opts: DemoGuardOpts = {}): H {
   const guarded = async (req: Request, ...rest: never[]) => {
     if (req.method === 'OPTIONS') return await handler(req, ...rest);
-    const refusal = await demoRefusal(signedInSubject(req.headers.get('authorization')), opts.headers ?? corsHeaders, opts.deps ?? realDeps);
+    const headers = opts.headersFor ? opts.headersFor(req) : opts.headers ?? corsHeaders;
+    const refusal = await demoRefusal(signedInSubject(req.headers.get('authorization')), headers, opts.deps ?? realDeps);
     return refusal ?? await handler(req, ...rest);
   };
   return guarded as unknown as H;
 }
 
 /** For functions using std's serve: `const serve = guardedServe(stdServe);` */
-export function guardedServe<S extends (handler: never, ...rest: never[]) => unknown>(serveFn: S): S {
-  return ((handler: AnyHandler, ...rest: never[]) => serveFn(withDemoGuard(handler) as never, ...rest)) as unknown as S;
+export function guardedServe<S extends (handler: never, ...rest: never[]) => unknown>(serveFn: S, opts: Omit<DemoGuardOpts, 'deps'> = {}): S {
+  return ((handler: AnyHandler, ...rest: never[]) => serveFn(withDemoGuard(handler, opts) as never, ...rest)) as unknown as S;
 }
 
 /** For functions using Deno.serve(handler). */
-export function guardedDenoServe(handler: AnyHandler) {
-  return Deno.serve(withDemoGuard(handler) as unknown as Deno.ServeHandler);
+export function guardedDenoServe(handler: AnyHandler, opts: Omit<DemoGuardOpts, 'deps'> = {}) {
+  return Deno.serve(withDemoGuard(handler, opts) as unknown as Deno.ServeHandler);
 }

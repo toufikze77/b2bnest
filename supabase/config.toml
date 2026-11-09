@@ -111,6 +111,11 @@ verify_jwt = true
 [functions.check-subscription]
 verify_jwt = true
 
+# HMRC P7d: production showed verify_jwt off for this function (read 9 Nov 2026); the handler already refuses a request
+# without a valid token, so turning the gateway check on changes nothing for a signed-in person.
+[functions.change-subscription-plan]
+verify_jwt = true
+
 # Phase 10: in supabase/functions, NOT deployed. Service-role callers only (the handler also checks the key);
 # both stay off until ONBOARDING_EMAIL_ENABLED / SUPPORT_EMAIL_ENABLED is exactly "true".
 [functions.onboarding-email-sender]

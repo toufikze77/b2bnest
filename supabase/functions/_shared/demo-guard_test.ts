@@ -151,10 +151,10 @@ Deno.test('every refused function calls the demo guard, and has no unguarded ser
   const drServe = await Deno.readTextFile(new URL('./data-rights/serve.ts', import.meta.url));
   assert(/guardedDenoServe\(/.test(drServe) && !/\bDeno\.serve\(/.test(drServe), 'data-rights serve wrapper');
   const readServe = await Deno.readTextFile(new URL('./hmrc/readServe.ts', import.meta.url));
-  assert(/guardedDenoServe\(/.test(readServe) && !/\bDeno\.serve\(/.test(readServe), 'HMRC P8 read serve wrapper');
+  assert(/serveHmrcRequest\(/.test(readServe) && !/\bDeno\.serve\(/.test(readServe), 'HMRC P8 read serve wrapper (through the guarded HMRC wrapper)');
   for (const d of REFUSE) {
     const src = await Deno.readTextFile(new URL(`../${d}/index.ts`, import.meta.url));
-    const viaHmrc = /serveHmrc\(|serveDataRights\(|serveVatRead\(/.test(src);
+    const viaHmrc = /serveHmrc\(|serveHmrcRequest\(|serveDataRights\(|serveVatRead\(/.test(src);
     assert(viaHmrc || GUARD.test(src), `${d}: no demo guard`);
     if (/verifyOAuthState\(/.test(src)) {
       // OAuth callbacks arrive from the provider without the person's JWT: the person comes from the signed state.

@@ -1,7 +1,8 @@
 import { serve as stdServe } from "https://deno.land/std@0.168.0/http/server.ts";
 import { guardedServe } from '../_shared/demo-guard.ts';
+import { corsFor } from '../_shared/cors.ts'; // HMRC P7d: the demo refusal gets the narrowed CORS headers too
 // Demo read-only: a demo person is refused (403) before the handler runs (docs/demo-readonly).
-const serve = guardedServe(stdServe);
+const serve = guardedServe(stdServe, { headersFor: (req) => corsFor(req) });
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkAccess } from "../_shared/access.ts";
 import { makeHandler } from "./handler.ts";

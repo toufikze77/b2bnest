@@ -1,14 +1,15 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { corsFor, preflight } from "../_shared/cors.ts"; // HMRC P7d: CORS narrowed to the allowed origins
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { corsHeaders } from "../_shared/cors.ts";
 import { BAN_DURATION, setUserBan } from "./handler.ts";
 
 // verify_jwt = true (supabase/config.toml). Not deployed by this change; see docs/phase12c/README.md for the order.
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+const jsonWith = (cors: Record<string, string>) => (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return preflight(req);
+  const json = jsonWith(corsFor(req));
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
   try {
     const authHeader = req.headers.get("Authorization") ?? "";

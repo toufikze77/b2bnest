@@ -11,6 +11,7 @@
 // - The document status is never changed here. The browser records "sent" only after a success reply.
 import { classifySmtpError, corsHeaders, redactEmails, resolveSmtp, sanitizeError, type SmtpConfig } from "../workflow-send-email/handler.ts";
 import { buildMixedMessage, type MixedMail } from "../workflow-send-email/smtp.ts";
+import { withNarrowCors } from "../_shared/cors.ts";
 
 export type Kind = "invoice" | "quote";
 export interface DocRow {
@@ -181,6 +182,10 @@ export function describeFailure(e: unknown): { stage: string; code: string; mess
 }
 
 export function makeHandler(deps: Deps) {
+  return withNarrowCors(makeInnerHandler(deps), { methods: 'GET, POST, OPTIONS' }); // HMRC P7d: CORS narrowed
+}
+
+function makeInnerHandler(deps: Deps) {
   return async (req: Request): Promise<Response> => {
     if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
     if (req.method !== "GET" && req.method !== "POST") return json(405, { success: false, error: "Method not allowed." });

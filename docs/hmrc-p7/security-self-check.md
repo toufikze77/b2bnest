@@ -68,9 +68,13 @@ Or enter the address at securityheaders.com and paste the grade here.
 **Follow-ups:**
 - If any of the six headers are missing on the live site, ask Lovable support how to set them, or serve the site
   where `vercel.json` applies.
-- **Edge Function CORS** is `Access-Control-Allow-Origin: *` (`supabase/functions/_shared/cors.ts`). Every call is
-  authenticated with a Bearer token, not a cookie, so another site can't act as a signed-in person. Even so, narrowing
-  the origin to `https://www.b2bnest.online` (plus the preview hosts) is a cheap hardening step.
+- **Edge Function CORS: narrowed in HMRC P7d (9 Nov 2026), in code, NOT yet deployed.** `corsFor(req)` in
+  `supabase/functions/_shared/cors.ts` echoes the Origin only for `https://www.b2bnest.online`, `https://b2bnest.online`
+  and any origins in the optional `CORS_ALLOWED_ORIGINS` secret (plus localhost only with `CORS_ALLOW_LOCALHOST=1`),
+  and always sends `Vary: Origin`. Migrated: every `hmrc-*` function, `data-export`, `account-delete`, `company-close`,
+  the billing functions, `check-subscription`, `admin-set-user-ban`, `admin-reset-mfa`, `send-document-email` and
+  `generate-legal-document`. The other functions still send `*` (list and reasons: `docs/hmrc-p7d/README.md`). Every
+  call is still authenticated with a Bearer token, not a cookie, so CORS is defence in depth.
 
 ## 4. Static review: HMRC and data-rights Edge Functions against the OWASP Top 10 (2021)
 
@@ -105,12 +109,15 @@ traces never reach the browser (the `fail()` helpers; the "HMRC's own text is ne
 | --- | --- |
 | Postgres has outstanding security patches | **Upgrade pending** (owner, Supabase dashboard → Settings → Infrastructure) |
 | Leaked-password protection is off | **Needs a paid Supabase plan**; off until then |
-| Many SECURITY DEFINER functions executable by `authenticated`, and 18 by `anon` | By design: each checks the caller inside (for example invitation preview by token, public forms). **Follow-up:** review the 18 `anon`-callable functions one by one and record why each must be public |
+| Many SECURITY DEFINER functions executable by `authenticated`, and 18 by `anon` | **Reviewed one by one in HMRC P7d (9 Nov 2026):** `docs/hmrc-p7d/README.md`. SQL prepared, **NOT applied**, to revoke `anon` from 5 (`is_project_member`, `is_team_member`, `owns_team`, `user_can_access_project`, `get_invitation_by_token`). 7 role helpers are kept because policies for the `public` role (which includes `anon`) evaluate them; 6 are fine as they are. **Follow-up:** rewrite those public-role policies `TO authenticated`, then revoke the 7 |
 | 21 tables with RLS on and no policy | By design: server-only tables (outboxes, the HMRC audit log, the request log, the gate) that the browser must not read |
 
 ## 6. Summary
 
 - **Done ourselves:** dependency audit, secrets scan (repository and history), configured-headers review, static
   OWASP review with test references, and the advisor review.
-- **Not done:** an independent penetration test; measuring the live headers; the zod 4 and vitest upgrades; narrowing
-  CORS; the review of the 18 `anon` functions; the Postgres upgrade.
+- **Done in HMRC P7d (code and SQL prepared, not deployed or applied):** narrowed CORS on the browser-called sensitive
+  functions; the review of the 18 `anon` functions.
+- **Not done:** an independent penetration test; measuring the live headers; the zod 4 and vitest upgrades; CORS on the
+  remaining functions; deploying the CORS change and applying the P7d SQL; the 7 kept helpers (policy rewrite first);
+  the Postgres upgrade.
