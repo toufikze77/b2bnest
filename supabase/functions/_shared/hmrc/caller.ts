@@ -3,12 +3,19 @@
 // person has a verified authenticator; and the company rule (owner or admin, trial or paid, not suspended).
 import type { HmrcErrorCode } from './errors.ts';
 import type { HmrcStore } from './store.ts';
+import type { HmrcAccess } from './access.ts';
 
 export interface CallerDeps {
   /** Verifies the access token with Supabase Auth; null when it is not a valid session. */
   getUser(jwt: string): Promise<{ id: string } | null>;
   /** The person's MFA factors (Supabase Auth admin API). */
   listFactors(userId: string): Promise<{ id?: string; factor_type: string; status: string; created_at?: string }[]>;
+  /**
+   * HMRC hide switch: 'hidden' refuses the person before anything else happens. The real functions always provide it
+   * (serve.ts realDeps, read with the service role by access.ts, which fails closed). Left out only by older unit tests,
+   * which then keep today's behaviour.
+   */
+  hmrcAccess?(userId: string): Promise<HmrcAccess>;
 }
 /** totpAt: when this session's authenticator code was entered (from the verified session token), if it was. */
 export interface Caller { userId: string; aal: string | null; totpAt: Date | null; totpFactorIds: string[] }
@@ -38,11 +45,20 @@ export function totpTimeOf(jwt: string): Date | null {
   return typeof t?.timestamp === 'number' && t.timestamp > 0 ? new Date(t.timestamp * 1000) : null;
 }
 
-export async function identify(authHeader: string | null, deps: CallerDeps): Promise<Caller | HmrcErrorCode> {
+/**
+ * opts.allowWhenHidden: only hmrc-disconnect passes it, so anyone already connected can always remove their HMRC tokens,
+ * even while the HMRC features are hidden from customers.
+ */
+export async function identify(authHeader: string | null, deps: CallerDeps, opts: { allowWhenHidden?: boolean } = {}): Promise<Caller | HmrcErrorCode> {
   const jwt = jwtFrom(authHeader);
   if (!jwt) return 'unauthorized';
   const user = await deps.getUser(jwt).catch(() => null);
   if (!user?.id) return 'unauthorized';
+  // HMRC hide switch: before any HMRC call, token read, state or audit row. A failed read counts as hidden.
+  if (!opts.allowWhenHidden && deps.hmrcAccess) {
+    const access = await deps.hmrcAccess(user.id).catch(() => 'hidden' as const);
+    if (access === 'hidden') return 'hmrc_unavailable_for_now';
+  }
   const aal = aalOf(jwt);
   const factors = await deps.listFactors(user.id);
   const verified = factors.filter((f) => f.factor_type === 'totp' && f.status === 'verified');

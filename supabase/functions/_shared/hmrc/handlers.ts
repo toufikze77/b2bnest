@@ -95,7 +95,8 @@ export async function connectComplete(authHeader: string | null, body: Body, dep
 export async function disconnect(authHeader: string | null, body: Body, deps: HandlerDeps): Promise<HandlerResult> {
   const environment = readEnvironment(deps.env);
   if (environment === 'production_not_enabled') return fail('not_configured');
-  const who = await identify(authHeader, deps.caller);
+  // HMRC hide switch: disconnect stays open, so a connected customer can always delete their HMRC tokens.
+  const who = await identify(authHeader, deps.caller, { allowWhenHidden: true });
   if (typeof who === 'string') return fail(who);
   const companyId = body.company_id;
   if (!isUuid(companyId)) return fail('bad_request');

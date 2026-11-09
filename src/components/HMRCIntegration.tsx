@@ -33,9 +33,12 @@ import HMRCObligations from '@/components/hmrc/HMRCObligations';
 import HMRCSettings from '@/components/hmrc/HMRCSettings';
 import HMRCSubmissionLogs from '@/components/hmrc/HMRCSubmissionLogs';
 import { HMRCFilingBanner, PREVIEW_ONLY } from '@/components/hmrc/filingStatus';
+import HMRCHiddenNotice from '@/components/hmrc/HMRCHiddenNotice';
+import { useHmrcCustomerAccess } from '@/lib/hmrcAccess';
 
 const HMRCIntegration = () => {
   const { user } = useAuth();
+  const hmrc = useHmrcCustomerAccess();
 
   if (!user) {
     return (
@@ -53,6 +56,27 @@ const HMRCIntegration = () => {
             </p>
           </CardHeader>
         </Card>
+      </div>
+    );
+  }
+
+  // HMRC hide switch (docs/hmrc-hide/README.md): while HMRC is hidden from this person, only the VAT return preview and
+  // its CSV stay (they don't talk to HMRC), with one calm line where the HMRC connection was.
+  if (hmrc.loading) {
+    return <div className="max-w-7xl mx-auto p-6"><p className="text-sm text-muted-foreground" data-testid="hmrc-access-loading">Loading…</p></div>;
+  }
+  if (!hmrc.canUse) {
+    return (
+      <div className="max-w-7xl mx-auto p-6 space-y-6" data-testid="hmrc-hidden-page">
+        <div>
+          <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
+            <Building2 className="h-8 w-8 text-green-600" />
+            VAT return
+          </h1>
+          <p className="text-muted-foreground">Prepare your VAT return figures from your records and download them.</p>
+        </div>
+        <HMRCHiddenNotice />
+        <HMRCVATReturns hideNotice />
       </div>
     );
   }

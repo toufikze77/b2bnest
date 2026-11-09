@@ -44,6 +44,8 @@ export const HMRC_CODE_MESSAGES: Record<string, string> = {
   not_submitted: "There's no accepted return for this period sent through B2BNEST, so there's nothing to compare.",
   return_not_found: 'HMRC has no return for this period.',
   dates_invalid: "HMRC didn't accept these dates. Choose dates up to today, at most 365 days apart.",
+  // HMRC hide switch (docs/hmrc-hide/README.md).
+  hmrc_unavailable_for_now: "HMRC filing isn't available yet.",
 };
 export const messageFor = (code: string | undefined) => HMRC_CODE_MESSAGES[code ?? ''] ?? HMRC_CODE_MESSAGES.server_error;
 

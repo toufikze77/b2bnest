@@ -13,6 +13,8 @@ const st = vi.hoisted(() => ({
   rpc: null as null | ((args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>),
   obligations: vi.fn(),
 }));
+// HMRC hide switch: these tests cover the HMRC features as shown (visible); the hidden state is in hmrcHide.test.tsx.
+vi.mock('@/lib/hmrcAccess', async (orig) => ({ ...(await orig<object>()), useHmrcCustomerAccess: () => ({ loading: false, state: 'visible', tester: false, canUse: true }) }));
 vi.mock('@/contexts/OrganizationContext', () => ({ useActiveOrganization: () => st.org }));
 vi.mock('@/contexts/demoModeState', () => ({ useDemoMode: () => ({ isDemo: st.demo, loading: false }) }));
 vi.mock('@/lib/hmrcConnection', async (orig) => ({ ...(await orig<object>()), fetchHmrcStatus: async () => st.status }));

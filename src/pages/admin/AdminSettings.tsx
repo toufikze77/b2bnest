@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import HMRCAccessControl from '@/components/admin/HMRCAccessControl';
 
 const TOGGLES: { key: string; label: string; description: string }[] = [
   { key: 'maintenance_mode', label: 'Maintenance mode', description: 'Show a maintenance notice to non-admin users.' },
@@ -58,6 +59,8 @@ export default function AdminSettings() {
       <AdminPageHeader title="Settings" description="Platform-wide configuration. Changes apply to every tenant." />
 
       <div className="grid gap-4 lg:grid-cols-2">
+        {/* HMRC hide switch (docs/hmrc-hide/README.md): written through hmrc_set_customer_access, never the generic upsert. */}
+        <HMRCAccessControl />
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Feature switches</CardTitle>

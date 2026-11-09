@@ -37,6 +37,7 @@ import { isFreeTool } from '@/lib/freeTools';
 import { FinanceAssistantPromo } from '@/components/freeTools/Promos';
 import { TrialEndedNote } from '@/components/freeTools/FreeToolAccount';
 import { useAccess } from '@/hooks/useAccess';
+import { HMRC_COMING_SOON, useHmrcCustomerAccess } from '@/lib/hmrcAccess';
 
 type ToolType = 'overview' | 'notepro' | 'cost-calculator' | 'setup-checklist' | 'compliance' | 'best-practices' | 'integrations' | 'business-resources' | 'project-management' | 'crm' | 'todo-list' | 'qr-code-generator' | 'coupon-generator' | 'time-tracker' | 'cash-flow-tracker' | 'goal-tracker' | 'roi-calculator' | 'contract-generator' | 'privacy-policy-generator' | 'customer-survey-builder' | 'business-finance-assistant' | 'currency-converter' | 'hmrc-integration' | 'workflow-studio' | 'lead-generation' | 'employee-rota';
 
@@ -60,6 +61,8 @@ const BusinessTools = () => {
   const { isPremium } = useSubscription();
   const { user } = useAuth();
   const access = useAccess();
+  // HMRC hide switch: read only for the tools list, where the HMRC card's wording depends on it.
+  const hmrcAccess = useHmrcCustomerAccess(currentTool === 'overview' && !!user && !access.suspended);
   const { favorites, toggleFavorite, isFavorited } = useFavoriteTools();
 
   // Phase 29: a normal React Router push (no hand-made history entries), so Back and Forward stay inside the app.
@@ -104,7 +107,9 @@ const BusinessTools = () => {
       color: 'bg-gradient-to-r from-purple-600 to-pink-600',
       benefits: ['Rich text editing', 'Tags & categories', 'Search & archive', 'Favorites & templates']
     },
-    {
+    // HMRC hide switch (docs/hmrc-hide/README.md): while HMRC is hidden from this person the card offers the VAT return
+    // preview only, with the same short note.
+    hmrcAccess.canUse ? {
       id: 'hmrc-integration' as ToolType,
       title: 'HMRC Integration Suite',
       // docs/hmrc-plan: a Business and Scale feature (and on the 14-day trial), worded like Workflow Studio.
@@ -112,6 +117,13 @@ const BusinessTools = () => {
       icon: Building2,
       color: 'bg-gradient-to-r from-green-600 to-blue-600',
       benefits: ['HMRC connection (test environment)', 'VAT, payroll and tax return previews', 'Filing: not available yet', 'Business and Scale plans']
+    } : {
+      id: 'hmrc-integration' as ToolType,
+      title: 'VAT return preview',
+      description: `Work out your VAT return figures from your records and download them. ${HMRC_COMING_SOON.split('.')[0]}. Included in Business and Scale, and during the 14-day trial.`,
+      icon: Building2,
+      color: 'bg-gradient-to-r from-green-600 to-blue-600',
+      benefits: ['VAT return preview from your records', 'Download as CSV', 'Business and Scale plans']
     },
     {
       id: 'workflow-studio' as ToolType,

@@ -18,6 +18,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PageContainer } from '@/components/ui/page-container';
 import { useDemoMode } from '@/contexts/demoModeState';
 import { DemoReadonlyNote } from '@/components/demo/DemoBanner';
+import { useHmrcCustomerAccess } from '@/lib/hmrcAccess';
 
 const TABS = ['account', 'security', 'billing', 'notifications', 'hmrc', 'members', 'company-security', 'companies', 'data'] as const;
 
@@ -25,7 +26,10 @@ const Settings = () => {
   const { isDemo } = useDemoMode();
   const [params, setParams] = useSearchParams();
   const requested = params.get('tab');
-  const tab = TABS.includes(requested as typeof TABS[number]) ? requested! : 'account';
+  // HMRC hide switch: the HMRC tab is gone while HMRC is hidden from this person (tab=hmrc then opens Account).
+  const hmrc = useHmrcCustomerAccess();
+  const tabs = TABS.filter((t) => t !== 'hmrc' || hmrc.canUse);
+  const tab = tabs.includes(requested as typeof TABS[number]) ? requested! : 'account';
 
   const onTabChange = (value: string) => {
     const next = new URLSearchParams(params);
@@ -48,7 +52,7 @@ const Settings = () => {
           <TabsTrigger value="security" className="gap-2"><Lock className="h-4 w-4" />Security</TabsTrigger>
           <TabsTrigger value="billing" className="gap-2"><CreditCard className="h-4 w-4" />Billing</TabsTrigger>
           <TabsTrigger value="notifications" className="gap-2"><Bell className="h-4 w-4" />Notifications</TabsTrigger>
-          <TabsTrigger value="hmrc" className="gap-2"><Building2 className="h-4 w-4" />HMRC</TabsTrigger>
+          {hmrc.canUse && <TabsTrigger value="hmrc" className="gap-2"><Building2 className="h-4 w-4" />HMRC</TabsTrigger>}
           <TabsTrigger value="members" className="gap-2"><Users className="h-4 w-4" />Members &amp; roles</TabsTrigger>
           <TabsTrigger value="company-security" className="gap-2"><FileLock2 className="h-4 w-4" />Company security</TabsTrigger>
           <TabsTrigger value="companies" className="gap-2"><ShieldCheck className="h-4 w-4" />Company data</TabsTrigger>
@@ -66,7 +70,7 @@ const Settings = () => {
           ) : <BillingSettings />}
         </TabsContent>
         <TabsContent value="notifications" className="space-y-4"><InAppNotificationPreferences /><NotificationPreferences /><MarketingConsentSwitch /></TabsContent>
-        <TabsContent value="hmrc"><HMRCSettings /></TabsContent>
+        {hmrc.canUse && <TabsContent value="hmrc"><HMRCSettings /></TabsContent>}
         <TabsContent value="data"><YourData /></TabsContent>
         <TabsContent value="companies">
           <Card>

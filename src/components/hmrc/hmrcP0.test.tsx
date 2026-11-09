@@ -9,6 +9,8 @@ const st = vi.hoisted(() => ({
   memberships: [{ organizationId: '0d100000-0000-4000-8000-000000000001', name: 'A Ltd', role: 'owner' }],
   rpcCalls: [] as [string, unknown][],
 }));
+// HMRC hide switch: these tests cover the HMRC features as shown (visible); the hidden state is in hmrcHide.test.tsx.
+vi.mock('@/lib/hmrcAccess', async (orig) => ({ ...(await orig<object>()), useHmrcCustomerAccess: () => ({ loading: false, state: 'visible', tester: false, canUse: true }) }));
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     rpc: async (fn: string, args: unknown) => { st.rpcCalls.push([fn, args]); return st.rpc; },
