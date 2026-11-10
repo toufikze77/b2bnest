@@ -40,6 +40,7 @@ import { EmailDocumentDialog } from '@/components/finance/EmailDocumentDialog';
 import { TabbedPageHeader, tabStripDividerClass, tabStripListClass, tabStripTriggerClass } from '@/components/ui/tabbed-page-header';
 import { documentEmailApi, EmailAccess, emailAvailability, SendResult, SENT_NOT_SAVED, SENT_TOAST } from '@/lib/documentEmail';
 import { Tables } from '@/integrations/supabase/types';
+import { LedgerTab } from '@/components/finance/ledger/LedgerTab';
 // Type definitions
 type Quote = Tables<'quotes'>;
 type Invoice = Tables<'invoices'>;
@@ -617,6 +618,8 @@ const BusinessFinanceAssistant = () => {
     { label: 'Money out', tabs: [{ value: 'expenses', label: 'Expenses' }, { value: 'outgoings', label: 'Outgoings' }, { value: 'suppliers', label: 'Suppliers' }, { value: 'products', label: 'Products' }] },
     { label: 'Banking and payroll', tabs: [{ value: 'banking', label: 'Banking' }, { value: 'payroll', label: 'Payroll (UK)' }] },
     { label: 'Insight', tabs: [{ value: 'reports', label: 'Reports' }, { value: 'analytics', label: 'Analytics' }, { value: 'company-records', label: 'Company records' }] },
+    // Finance phase 2 (docs/ledger): plan-gated and decided by the database; the tab itself always shows.
+    { label: 'Bookkeeping', tabs: [{ value: 'ledger', label: 'Ledger' }] },
   ];
   const docState = { loading: firstLoad, error: docsError, onRetry: fetchData };
 
@@ -652,7 +655,7 @@ const BusinessFinanceAssistant = () => {
       />
 
       <div className="mx-auto w-full max-w-[1440px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-        {firstLoad && !['dashboard', 'create', 'quotes', 'invoices', 'analytics', 'reports', 'products', 'suppliers', 'expenses', 'outgoings'].includes(activeTab) ? (
+        {firstLoad && !['dashboard', 'create', 'quotes', 'invoices', 'analytics', 'reports', 'products', 'suppliers', 'expenses', 'outgoings', 'ledger'].includes(activeTab) ? (
           <div className="flex min-h-[300px] items-center justify-center" role="status" aria-label="Loading">
             <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" aria-hidden="true" />
           </div>
@@ -813,6 +816,10 @@ const BusinessFinanceAssistant = () => {
         <TabsContent value="company-records" className="mt-0">
           <CompanyRecordsReview client={supabase as unknown as ReviewClient} userId={user?.id ?? ''} invoices={invoices as never} expenses={expenses as never}
             companies={memberships} organizationId={organizationId} accountCurrency={accountCurrency} onChanged={() => { void fetchData(); }} />
+        </TabsContent>
+
+        <TabsContent value="ledger" className="mt-0">
+          {activeTab === 'ledger' && <LedgerTab organizationId={organizationId} />}
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-0">

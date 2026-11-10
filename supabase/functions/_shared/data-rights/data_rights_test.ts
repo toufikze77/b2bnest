@@ -62,6 +62,11 @@ function world(): World {
         { id: 's2', organization_id: Y, period_key: '18A1', figures: { netVatDue: 9 } }],
       hmrc_settings: [{ id: 'h1', user_id: A, organization_id: X, vat_number: 'GB123456789', client_id: 'cid', client_secret: 'shh' }],
       projects: [{ id: 'p1', user_id: A, organization_id: X, name: 'X project' }],
+      journal_entries: [{ id: 'j1', organization_id: X, entry_date: '2026-04-01', memo: 'Opening balances', source_type: 'opening_balance', posted_by: A, posted_by_name: 'Ann' },
+        { id: 'j2', organization_id: Y, entry_date: '2026-04-01', memo: 'Y-SECRET-JOURNAL', source_type: 'manual', posted_by: 'someone' }],
+      journal_lines: [{ id: 'jl1', entry_id: 'j1', organization_id: X, account_id: 'a1', line_no: 1, debit: '1500.00', credit: '0.00' },
+        { id: 'jl2', entry_id: 'j1', organization_id: X, account_id: 'a2', line_no: 2, debit: '0.00', credit: '1500.00' },
+        { id: 'jl3', entry_id: 'j2', organization_id: Y, account_id: 'a9', line_no: 1, debit: '7.00', credit: '0.00', description: 'Y-SECRET-LINE' }],
       project_members: [{ id: 'pm1', project_id: 'p1', user_id: C }, { id: 'pm2', project_id: 'p-other', user_id: 'someone' }],
     },
     missing: new Set(),
@@ -201,10 +206,14 @@ Deno.test('export company: owners and admins only; that company\'s rows only; HM
   assertEquals(JSON.parse(files.get('company/organization_members.json')!).length, 2);
   assertEquals(JSON.parse(files.get('company/project_members.json')!).map((m: { id: string }) => m.id), ['pm1']);
   assertStringIncludes(files.get('company/vat_submissions.csv')!, '18A1');
+  // Finance phase 2 ledger: journals as JSON and the journal lines as a CSV, this company's only.
+  assertEquals(JSON.parse(files.get('company/journal_entries.json')!).map((j: { id: string }) => j.id), ['j1']);
+  assertEquals(JSON.parse(files.get('company/journal_lines.json')!).map((l: { id: string }) => l.id), ['jl1', 'jl2']);
+  assertStringIncludes(files.get('company/journal_lines.csv')!, '1500.00');
   assertStringIncludes(files.get('company/invoices.csv')!, `"'=HYPERLINK(""x"")"`);
   assertEquals(JSON.parse(files.get('files.json')!).map((l: { path: string }) => l.path), [`${X}/t1/a.pdf`]);
   const all = [...files.values()].join('\n');
-  for (const bad of ['v1.x.y.z', 'Y-SECRET-INVOICE', 'Company Y', 'shh', 'cid', `${Y}/t9`]) assert(!all.includes(bad), bad);
+  for (const bad of ['v1.x.y.z', 'Y-SECRET-INVOICE', 'Y-SECRET-JOURNAL', 'Y-SECRET-LINE', 'Company Y', 'shh', 'cid', `${Y}/t9`]) assert(!all.includes(bad), bad);
   assert(w.reads.filter((x) => x.table !== 'project_members' && !['project_activities', 'todo_subtasks', 'todo_comments', 'todo_history', 'team_members'].includes(x.table))
     .every((x) => x.as === 'service' && x.filter.eq.length === 1 && x.filter.eq[0][1] === X), 'every company read is filtered by company X');
   assertEquals(w.reads.find((x) => x.table === 'hmrc_connections')?.select, COMPANY_TABLES.find((t) => t.table === 'hmrc_connections')?.select);

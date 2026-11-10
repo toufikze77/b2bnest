@@ -158,6 +158,10 @@
   "goals": "Created by an old migration; not in production on 6 Nov 2026 (dropped).",
   "staging_cost_test_runs": "Created by an old migration; not in production on 6 Nov 2026.",
   "work_requests": "Created by an old migration; not in production on 6 Nov 2026.",
-  "hmrc_vat_submissions": "HMRC P6 (docs/hmrc-p6/proposal.sql), prepared and not applied yet. It creates the table with its own a0_demo_readonly_guard trigger, and the P6 test suite runs check-coverage.sql against it. Move it to guarded when the demo lists are next regenerated."
+  "hmrc_vat_submissions": "HMRC P6 (docs/hmrc-p6/proposal.sql), prepared and not applied yet. It creates the table with its own a0_demo_readonly_guard trigger, and the P6 test suite runs check-coverage.sql against it. Move it to guarded when the demo lists are next regenerated.",
+  "ledger_settings": "Finance phase 2 (docs/ledger/proposal.sql), prepared and not applied yet. It creates the table with its own a0_demo_readonly_guard trigger, and docs/ledger/run-test.sh runs check-coverage.sql against it. Move it to guarded when the demo lists are next regenerated.",
+  "ledger_accounts": "Finance phase 2 (docs/ledger/proposal.sql), prepared and not applied yet. It creates the table with its own a0_demo_readonly_guard trigger, and docs/ledger/run-test.sh runs check-coverage.sql against it. Move it to guarded when the demo lists are next regenerated.",
+  "journal_entries": "Finance phase 2 (docs/ledger/proposal.sql), prepared and not applied yet. It creates the table with its own a0_demo_readonly_guard trigger, and docs/ledger/run-test.sh runs check-coverage.sql against it. Move it to guarded when the demo lists are next regenerated.",
+  "journal_lines": "Finance phase 2 (docs/ledger/proposal.sql), prepared and not applied yet. It creates the table with its own a0_demo_readonly_guard trigger, and docs/ledger/run-test.sh runs check-coverage.sql against it. Move it to guarded when the demo lists are next regenerated."
  }
 }
