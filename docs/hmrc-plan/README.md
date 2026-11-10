@@ -131,3 +131,6 @@ No new warnings. The same three authenticated-callable SECURITY DEFINER function
 - **Old Edge Function deploys** still refuse Solo accounts but answer without a 403 or a message until redeployed (step 2). The database refuses either way.
 - **Plan keys are not shared in code.** The plan rule is written in SQL, and the frontend copy isn't driven by `WORKFLOW_PLAN_KEYS`. A test checks the SQL uses exactly those keys, but a shared HMRC rule module like `workflow-access.ts` wasn't added, because the server already decides.
 - **Onboarding's "HMRC connection settings" line is unchanged.** It makes no plan claim.
+
+## Finance expansion: phase 2 ledger foundation
+The Finance ledger (chart of accounts, balanced journals, trial balance) reuses this plan rule, `hmrc_manage_allowed`, for Business, Scale and the trial. It sends nothing to HMRC. See [docs/ledger/README.md](../ledger/README.md).

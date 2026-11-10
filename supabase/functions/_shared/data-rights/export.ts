@@ -40,7 +40,7 @@ function readme(scope: 'account' | 'company', when: Date, notes: Record<string, 
     '--------------------',
     scope === 'account'
       ? 'One JSON file per table under account/, with only the rows about you. Records that belong to a company (for example invoices tagged to a company) are in that company\'s download, which an owner or admin can make.'
-      : 'One JSON file per table under company/, with this company\'s rows only. invoices.csv, expenses.csv, bills.csv and vat_submissions.csv are the same data for spreadsheets. vat_submissions holds the nine boxes exactly as sent to HMRC and HMRC\'s receipt.',
+      : 'One JSON file per table under company/, with this company\'s rows only. invoices.csv, expenses.csv, bills.csv, vat_submissions.csv and journal_lines.csv (when present) are the same data for spreadsheets. vat_submissions holds the nine boxes exactly as sent to HMRC and HMRC\'s receipt. journal_entries and journal_lines are your bookkeeping ledger.',
     'files.json lists your uploaded files with a download link for each. The links stop working 1 hour after this file was made: download the files you need straight away, or make a new export later.',
     'manifest.json lists every table with how many rows it holds.',
     '',
@@ -127,7 +127,7 @@ export async function dataExport(req: { authHeader: string | null; body: Record<
         }
         add('company', c.table, rows, c.omit, note);
       }
-      for (const [t, name] of [['invoices', 'invoices'], ['expenses', 'expenses'], ['bills', 'bills'], ['hmrc_vat_submissions', 'vat_submissions']] as const) {
+      for (const [t, name] of [['invoices', 'invoices'], ['expenses', 'expenses'], ['bills', 'bills'], ['hmrc_vat_submissions', 'vat_submissions'], ['journal_lines', 'journal_lines']] as const) {
         if (kept[t]?.length) files.push({ name: `company/${name}.csv`, data: toCsv(kept[t]) });
       }
     }

@@ -96,6 +96,11 @@ export const COMPANY_TABLES: CompanyTable[] = [
   { table: 'hmrc_connections', by: 'company_id', select: 'environment,status,scopes,connected_at,expires_at,updated_at' },
   // B2BNEST's HMRC trail for this company (event codes only).
   { table: 'hmrc_audit_log', by: 'company_id' },
+  // Finance phase 2 ledger (docs/ledger): the company's chart of accounts and its journals. journal_lines is also a CSV.
+  { table: 'ledger_settings', by: 'organization_id' },
+  { table: 'ledger_accounts', by: 'organization_id' },
+  { table: 'journal_entries', by: 'organization_id' },
+  { table: 'journal_lines', by: 'organization_id', csv: true },
 ];
 
 export const COMPANY_CHILD_TABLES: CompanyChildTable[] = [
@@ -113,7 +118,6 @@ export const NOT_EXPORTED: Record<string, string> = {
   user_2fa_settings: 'Two-step sign-in secrets: never exported, for your security.',
   user_2fa_attempts: 'Two-step sign-in attempt counters: security records, never exported.',
   hmrc_oauth_states: 'Short-lived HMRC sign-in state that expires within minutes; it holds no lasting data.',
-  hmrc_integrations: 'An old, empty table removed by HMRC P7b.',
   demo_readonly_users: 'An internal switch that makes the demo account view only.',
   trial_email_outbox: 'A short-lived queue of emails waiting to be sent; what was sent is in trial_email_log.',
   onboarding_email_outbox: 'A short-lived queue of emails waiting to be sent.',

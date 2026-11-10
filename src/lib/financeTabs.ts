@@ -3,8 +3,8 @@
  * Before Phase 3b, clicking a tab only changed React state; a refresh then re-read whatever
  * `?tab=` the user first arrived with (often `create`, from "New invoice" / "New quote").
  */
-export type FinanceTab = 'dashboard' | 'create' | 'quotes' | 'invoices' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'banking' | 'payroll' | 'reports' | 'analytics' | 'templates' | 'company-records';
-export const FINANCE_TABS: FinanceTab[] = ['dashboard', 'create', 'quotes', 'invoices', 'products', 'suppliers', 'expenses', 'outgoings', 'banking', 'payroll', 'reports', 'analytics', 'templates', 'company-records'];
+export type FinanceTab = 'dashboard' | 'create' | 'quotes' | 'invoices' | 'products' | 'suppliers' | 'expenses' | 'outgoings' | 'banking' | 'payroll' | 'reports' | 'analytics' | 'templates' | 'company-records' | 'ledger';
+export const FINANCE_TABS: FinanceTab[] = ['dashboard', 'create', 'quotes', 'invoices', 'products', 'suppliers', 'expenses', 'outgoings', 'banking', 'payroll', 'reports', 'analytics', 'templates', 'company-records', 'ledger'];
 
 /** The tab named in the URL; missing or unknown values land on Overview (dashboard), never Create. */
 export function financeTabFromSearch(search: string): FinanceTab {
