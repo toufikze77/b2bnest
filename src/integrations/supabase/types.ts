@@ -14,6 +14,21 @@ export type Database = {
   }
   public: {
     Tables: {
+      _data_rights_gate: {
+        Row: {
+          kind: string
+          txid: number
+        }
+        Insert: {
+          kind: string
+          txid: number
+        }
+        Update: {
+          kind?: string
+          txid?: number
+        }
+        Relationships: []
+      }
       admin_audit_logs: {
         Row: {
           action: string
@@ -999,6 +1014,39 @@ export type Database = {
           },
         ]
       }
+      data_rights_requests: {
+        Row: {
+          created_at: string
+          finished_at: string | null
+          id: string
+          kind: string
+          organization_id: string | null
+          reason: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          kind: string
+          organization_id?: string | null
+          reason?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          organization_id?: string | null
+          reason?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       demo_readonly_users: {
         Row: {
           created_at: string
@@ -1438,62 +1486,6 @@ export type Database = {
           {
             foreignKeyName: "hmrc_connections_company_id_fkey"
             columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      hmrc_integrations: {
-        Row: {
-          access_token: string
-          connected_at: string | null
-          created_at: string | null
-          expires_at: string | null
-          id: string
-          is_connected: boolean | null
-          last_refreshed_at: string | null
-          organization_id: string | null
-          refresh_token: string | null
-          scope: string | null
-          token_type: string | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          access_token: string
-          connected_at?: string | null
-          created_at?: string | null
-          expires_at?: string | null
-          id?: string
-          is_connected?: boolean | null
-          last_refreshed_at?: string | null
-          organization_id?: string | null
-          refresh_token?: string | null
-          scope?: string | null
-          token_type?: string | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          access_token?: string
-          connected_at?: string | null
-          created_at?: string | null
-          expires_at?: string | null
-          id?: string
-          is_connected?: boolean | null
-          last_refreshed_at?: string | null
-          organization_id?: string | null
-          refresh_token?: string | null
-          scope?: string | null
-          token_type?: string | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "hmrc_integrations_organization_id_fkey"
-            columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
@@ -2656,6 +2648,7 @@ export type Database = {
       }
       organizations: {
         Row: {
+          closed_at: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -2672,6 +2665,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          closed_at?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -2688,6 +2682,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          closed_at?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -6481,6 +6476,22 @@ export type Database = {
           next_expiry: string
         }[]
       }
+      _data_rights_close_org: {
+        Args: { p_actor: string; p_company: string }
+        Returns: number
+      }
+      _data_rights_company_tables: {
+        Args: never
+        Returns: {
+          col: string
+          tbl: unknown
+        }[]
+      }
+      _data_rights_gate_is_open: { Args: { p_kind: string }; Returns: boolean }
+      _data_rights_gate_set: {
+        Args: { p_kind: string; p_open: boolean }
+        Returns: undefined
+      }
       _leave_slot_from: { Args: { d: string; half: string }; Returns: number }
       _leave_slot_to: { Args: { d: string; half: string }; Returns: number }
       _leave_working_days: {
@@ -6773,6 +6784,39 @@ export type Database = {
         Returns: string
       }
       create_team_with_owner: { Args: { p_name: string }; Returns: string }
+      data_rights_close_company: {
+        Args: {
+          p_check_only?: boolean
+          p_company: string
+          p_request?: string
+          p_user: string
+        }
+        Returns: Json
+      }
+      data_rights_company_role: {
+        Args: { p_company: string; p_user: string }
+        Returns: string
+      }
+      data_rights_delete_account: {
+        Args: { p_check_only?: boolean; p_request?: string; p_user: string }
+        Returns: Json
+      }
+      data_rights_finish: {
+        Args: { p_reason?: string; p_request: string; p_status: string }
+        Returns: boolean
+      }
+      data_rights_take_slot: {
+        Args: {
+          p_company: string
+          p_kind: string
+          p_limit?: number
+          p_user: string
+        }
+        Returns: {
+          request_id: string
+          result: string
+        }[]
+      }
       decrypt_banking_data: {
         Args: { encrypted_data: string }
         Returns: string
@@ -6991,11 +7035,37 @@ export type Database = {
           environment: string
         }[]
       }
+      hmrc_customer_access_status: {
+        Args: never
+        Returns: {
+          state: string
+          updated_at: string
+          updated_by_email: string
+        }[]
+      }
       hmrc_manage_allowed: {
         Args: { p_company: string; p_user: string }
         Returns: string
       }
+      hmrc_purge_expired_audit: {
+        Args: { p_dry_run?: boolean }
+        Returns: {
+          item: string
+          rows: number
+        }[]
+      }
+      hmrc_set_customer_access: { Args: { p_state: string }; Returns: string }
       hmrc_take_obligations_slot: {
+        Args: {
+          p_company: string
+          p_environment: string
+          p_kind: string
+          p_limit?: number
+          p_user: string
+        }
+        Returns: boolean
+      }
+      hmrc_take_read_slot: {
         Args: {
           p_company: string
           p_environment: string
