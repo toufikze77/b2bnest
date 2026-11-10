@@ -54,8 +54,8 @@ BEGIN
       ('public._data_rights_gate_is_open(text)', 'b22b22eda6bd86e8ff363a6a58bfe3a3'),
       ('public._data_rights_closed_company_guard()', '2ec2d8630e284aed65d010c61a442a53'),
       ('public._data_rights_company_tables()', 'c4497fd5fa0245618d1168f9c19bffe1'),
-      ('public._data_rights_close_org(uuid,uuid)', 'b0c5e82fc596390a6275b53524947531'),
-      ('public.data_rights_delete_account(uuid,uuid,boolean)', 'f46c70bbcc8b82f0c6a7dc26f9308446')) x(fn, h) LOOP
+      ('public._data_rights_close_org(uuid,uuid)', '6c379a1d11b0e469c13ec57e4f054678'),
+      ('public.data_rights_delete_account(uuid,uuid,boolean)', '6cb32ccf51387b535ab6aebf2e748417')) x(fn, h) LOOP
     IF NOT EXISTS (SELECT 1 FROM pg_proc WHERE oid = to_regprocedure(r.fn)
                     AND r.h IN (md5(prosrc), md5(regexp_replace(prosrc, E'\\n[ \\t]*--[^\\n]*', '', 'g')))) THEN
       RAISE EXCEPTION '% differs from the body this was written against (or is missing)', r.fn;

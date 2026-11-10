@@ -8,9 +8,7 @@ This adds a double-entry ledger to Finance:
 
 It is a bookkeeping tool. Every ledger screen says: "Bookkeeping tool. Not accounting, tax or legal advice."
 
-**Status: prepared, not applied.**
-- The SQL in this folder has not been run on production. I can only read production.
-- The production facts below come from the repository. The owner's assistant re-checks them against production before applying.
+**Status: applied to production on 10 Nov 2026** (see "Applied 10 Nov 2026" below).
 - Nothing here talks to HMRC. The HMRC hide switch, HMRC functions and fraud headers are not touched.
 
 ## Owner decisions this follows
@@ -133,10 +131,31 @@ Lines are JSON: `[{"account_code": "1200", "debit": "1500.00", "credit": "0.00"}
 ### Production facts the guard checks (from the repository, 10 Nov 2026)
 - **No ledger tables:** none of the four tables exists.
 - **The 148 public tables:** md5 of the sorted names is `ca2f5c858ee858f9b3f7c14131e00b9f`.
-- **Helper bodies:** `md5(prosrc)` of each helper it relies on matches. A body with its whole-line comments removed is also accepted. The helpers are:
+- **Helper bodies:** `md5(prosrc)` of each helper it relies on matches. A body with its whole-line comments removed is also accepted. The expected hashes for `_data_rights_close_org` (`6c379a1d11b0e469c13ec57e4f054678`) and `data_rights_delete_account` (`6cb32ccf51387b535ab6aebf2e748417`) are of the comment-stripped bodies, because that is how production stores them. The helpers are:
   - `hmrc_manage_allowed`, `user_is_organization_member`, `require_aal2_if_enrolled`, `mfa_ok`, `demo_readonly_guard`;
   - `_data_rights_gate_is_open`, `_data_rights_closed_company_guard`, `_data_rights_company_tables`, `_data_rights_close_org`, `data_rights_delete_account`.
 - **Columns:** the `audit_logs` columns and `organizations.closed_at` exist.
+
+## Applied 10 Nov 2026
+As reported by the owner's assistant:
+- **SQL:** `proposal.sql` was applied to production.
+  - **Guard fix:** the first two attempts were refused by the guard. Production stores `_data_rights_close_org` and `data_rights_delete_account` without their whole-line comments, so the repository's raw-body hashes didn't match.
+  - **Hashes used:** it was applied with these expected hashes, and this folder now carries the same values:
+    - `public._data_rights_close_org(uuid,uuid)`: `6c379a1d11b0e469c13ec57e4f054678` (was `b0c5e82fc596390a6275b53524947531`);
+    - `public.data_rights_delete_account(uuid,uuid,boolean)`: `6cb32ccf51387b535ab6aebf2e748417` (was `f46c70bbcc8b82f0c6a7dc26f9308446`).
+  - **Guard rule unchanged:** a body is accepted when the md5 of the raw body, or of the body with whole-line comments removed, equals the expected hash.
+  - **Local tests:** the local chain installs the repository bodies with comments, so `run-test.sh` compares those two helpers comment-stripped.
+- **Tables verified:**
+  - RLS is on;
+  - there are no direct write grants;
+  - anon is denied.
+- **Edge Functions deployed** with JWT verification on:
+  - `data-export` v5;
+  - `account-delete` v4;
+  - `company-close` v4.
+- **Owner test steps:** steps 1 to 7 passed.
+  - The Solo upgrade note was not tested on a real Solo account. The SQL suite covers it.
+- **Applying twice:** running `proposal.sql` a second time is refused ("Finance phase 2 ledger already exists"). `run-test.sh` checks this ("second apply refused").
 
 ## Owner steps
 1. **Review** this README, `proposal.sql` and the PR.
