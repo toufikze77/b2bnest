@@ -119,7 +119,7 @@ const BusinessTools = () => {
       benefits: ['HMRC connection (test environment)', 'VAT, payroll and tax return previews', 'Filing: not available yet', 'Business and Scale plans']
     } : {
       id: 'hmrc-integration' as ToolType,
-      title: 'VAT return preview',
+      title: 'VAT Return',
       description: `Work out your VAT return figures from your records and download them. ${HMRC_COMING_SOON.split('.')[0]}. Included in Business and Scale, and during the 14-day trial.`,
       icon: Building2,
       color: 'bg-gradient-to-r from-green-600 to-blue-600',
