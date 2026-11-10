@@ -7,6 +7,7 @@ import type { HandlerDeps } from './handlers.ts';
 import type { HandlerResult } from './errors.ts';
 import { fail } from './errors.ts';
 import { supabaseStore } from './store.ts';
+import { readHmrcAccess } from './access.ts';
 
 /** HMRC P7d: the answer, with CORS narrowed to the allowed origins (corsFor). */
 export const hmrcJson = (req: Request, r: HandlerResult) =>
@@ -32,6 +33,8 @@ export function realDeps(name: string): HandlerDeps {
         if (error) throw new Error('listFactors failed');
         return (data?.factors ?? []) as { factor_type: string; status: string }[];
       },
+      // HMRC hide switch: read with the service role every time (no cache), fail closed.
+      hmrcAccess: (userId) => readHmrcAccess(admin as unknown as Parameters<typeof readHmrcAccess>[0], userId),
     },
   };
 }

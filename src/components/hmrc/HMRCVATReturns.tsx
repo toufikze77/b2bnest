@@ -19,6 +19,8 @@ import {
 import { HMRCFilingBanner } from '@/components/hmrc/filingStatus';
 import HMRCVATSubmit, { type SubmitAccess } from '@/components/hmrc/HMRCVATSubmit';
 import HMRCVATAccount, { HMRCDeadlineBanner } from '@/components/hmrc/HMRCVATReads';
+import HMRCHiddenNotice from '@/components/hmrc/HMRCHiddenNotice';
+import { useHmrcCustomerAccess } from '@/lib/hmrcAccess';
 
 const FINANCE = '/business-tools?tool=business-finance-assistant';
 const linkCls = 'font-medium text-primary underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
@@ -53,11 +55,14 @@ const failureText = (k: PreviewFailure, company: string): string => ({
  * and why. Nothing is sent to HMRC, nothing is stored, and there is no submit button. Standard scheme only; the rules
  * are not verified against HMRC (src/lib/vat/returnRules.ts).
  */
-export default function HMRCVATReturns() {
+export default function HMRCVATReturns({ hideNotice = false }: { hideNotice?: boolean } = {}) {
   const { organizationId, organization, memberships, loading: orgLoading } = useActiveOrganization();
   const { isDemo } = useDemoMode();
   const company = organization?.name ?? 'this company';
   const isAdmin = organization?.role === 'owner' || organization?.role === 'admin';
+  // HMRC hide switch: while hidden, only the preview and its CSV stay (nothing here talks to HMRC).
+  const hmrc = useHmrcCustomerAccess();
+  const hmrcOn = hmrc.canUse;
   const [status, setStatus] = useState<HmrcStatus | null>(null);
   const [mode, setMode] = useState<'dates' | 'obligation'>('dates');
   const [range, setRange] = useState(previousQuarter());
@@ -84,7 +89,7 @@ export default function HMRCVATReturns() {
   const submitAccess: SubmitAccess = !conn || conn.status !== 'connected' ? 'not_connected'
     : conn.scopes.includes('read:vat') && conn.scopes.includes('write:vat') ? 'ready' : 'scope_missing';
   const chosen = obligations?.find((o) => o.periodKey === obligationKey) ?? null;
-  const period = mode === 'obligation' && chosen ? { from: chosen.start, to: chosen.end } : range;
+  const period = hmrcOn && mode === 'obligation' && chosen ? { from: chosen.start, to: chosen.end } : range;
   const days = rangeDays(period.from, period.to);
   const periodError = days === null || days < 1 ? 'Choose a start date on or before the end date.' : '';
 
@@ -107,7 +112,7 @@ export default function HMRCVATReturns() {
     const r = await fetchReturnPreview(organizationId, period.from, period.to);
     setBusy(false);
     if ('kind' in r) { setFailure(r.kind); return; }
-    setResult({ boxes: computeReturnBoxes(r.rows), from: period.from, to: period.to, confirmed: mode === 'obligation' && !!chosen });
+    setResult({ boxes: computeReturnBoxes(r.rows), from: period.from, to: period.to, confirmed: hmrcOn && mode === 'obligation' && !!chosen });
   };
 
   const download = () => {
@@ -152,11 +157,11 @@ export default function HMRCVATReturns() {
 
       {blocked ?? (
         <>
-          <HMRCDeadlineBanner obligations={seenOpen} />
+          {hmrcOn && <HMRCDeadlineBanner obligations={seenOpen} />}
           <Card>
             <CardHeader><CardTitle className="text-lg">Period</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <fieldset className="flex flex-wrap gap-4">
+              {hmrcOn && <fieldset className="flex flex-wrap gap-4">
                 <legend className="sr-only">How to choose the period</legend>
                 <label className="flex items-center gap-2 text-sm">
                   <input type="radio" name="vatr-mode" checked={mode === 'dates'} onChange={() => setMode('dates')} />Choose dates
@@ -165,8 +170,8 @@ export default function HMRCVATReturns() {
                   <input type="radio" name="vatr-mode" checked={mode === 'obligation'} onChange={() => setMode('obligation')} disabled={!connected} />
                   Use an HMRC obligation{!connected && ' (connect this company to HMRC first)'}
                 </label>
-              </fieldset>
-              {mode === 'dates' ? (
+              </fieldset>}
+              {mode === 'dates' || !hmrcOn ? (
                 <div className="grid gap-3 sm:grid-cols-2 lg:max-w-xl">
                   <div className="space-y-1"><Label htmlFor="vatr-from">From</Label><Input id="vatr-from" type="date" aria-invalid={!!periodError} aria-describedby={periodError ? 'vatr-period-error' : undefined} value={range.from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} /></div>
                   <div className="space-y-1"><Label htmlFor="vatr-to">To</Label><Input id="vatr-to" type="date" aria-invalid={!!periodError} aria-describedby={periodError ? 'vatr-period-error' : undefined} value={range.to} onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))} /></div>
@@ -187,9 +192,9 @@ export default function HMRCVATReturns() {
                   {obligationsNote && <p className="text-sm" role="status" data-testid="vatr-obligations-note">{obligationsNote}</p>}
                 </div>
               )}
-              {mode === 'dates' && <p className="text-xs text-muted-foreground" data-testid="vatr-not-confirmed">Dates you choose are not confirmed by HMRC.</p>}
+              {(mode === 'dates' || !hmrcOn) && <p className="text-xs text-muted-foreground" data-testid="vatr-not-confirmed">Dates you choose are not confirmed by HMRC.</p>}
               {periodError && <p id="vatr-period-error" role="alert" className="text-sm text-destructive" data-testid="vatr-period-error">{periodError}</p>}
-              <Button type="button" onClick={() => { void show(); }} disabled={busy || !!periodError || (mode === 'obligation' && !chosen)} data-testid="vatr-show">
+              <Button type="button" onClick={() => { void show(); }} disabled={busy || !!periodError || (hmrcOn && mode === 'obligation' && !chosen)} data-testid="vatr-show">
                 {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}Show the preview
               </Button>
             </CardContent>
@@ -206,9 +211,11 @@ export default function HMRCVATReturns() {
           )}
           {result && <Preview result={result} onDownload={download} />}
           {/* HMRC P6: submitting to HMRC's TEST environment (owners and admins; production is never offered). */}
-          {organizationId && <HMRCVATSubmit companyId={organizationId} companyName={company} access={submitAccess} onObligations={setSeenOpen} />}
+          {organizationId && hmrcOn && <HMRCVATSubmit companyId={organizationId} companyName={company} access={submitAccess} onObligations={setSeenOpen} />}
           {/* HMRC P8: what HMRC holds (liabilities, payments, penalties), read live from the test environment. */}
-          {organizationId && <HMRCVATAccount companyId={organizationId} ready={connected} />}
+          {organizationId && hmrcOn && <HMRCVATAccount companyId={organizationId} ready={connected} />}
+          {/* HMRC hide switch: one calm line instead of the HMRC pieces (and Disconnect for a company still connected). */}
+          {!hmrc.loading && !hmrcOn && !hideNotice && <HMRCHiddenNotice testId="vatr-coming-soon" />}
         </>
       )}
     </div>

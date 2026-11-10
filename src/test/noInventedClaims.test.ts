@@ -40,7 +40,9 @@ const BANNED: { what: string; re: RegExp; allow?: RegExp }[] = [
   { what: 'AI Studio overclaim', re: /automate complex workflows|More Relevant Content|Faster Task Completion|Reduced Manual Work|AI personalization settings|full power of AI-driven business automation|Customize your AI experience/i },
   // Phase 21 (owner decision): no promise unless the code does it today. Phase 25 made two-step sign-in real, so its
   // "coming soon" line is gone too and there is no exception left.
-  { what: '"coming soon" promise', re: /coming soon/i },
+  // HMRC hide switch (owner decision, 9 Nov 2026): the one exact sentence shown while HMRC is hidden from customers
+  // (src/lib/hmrcAccess.ts HMRC_COMING_SOON). No date, no other promise.
+  { what: '"coming soon" promise', re: /coming soon/i, allow: /'Sending VAT returns to HMRC straight from B2BNEST is coming soon\. You can still prepare your figures and download them\.'/ },
   // Phase 25: two-step sign-in is real now; the old "not active yet" wording must not come back anywhere.
   { what: 'stale "two-step not active" wording', re: /two-step sign-in is not active|not active yet\. Signing in needs only|TWO_STEP_NOT_ACTIVE|TWO_STEP_COMING_SOON/i },
   { what: 'unbuilt collaboration / payroll / VAT claim', re: /video conferenc|team chat|P45 and P60 generation|Workplace pension compliance|Student loan deductions|Statutory payments \(SSP, SMP, SPP\)<|Flat Rate Scheme support|Reverse charge transactions|Internal rate of return|auto-calculates based on your data|Connect your first account|mentioned you|Powered by GPT-4|would be calculated here in production|planned, not available/i, allow: /There is no team chat/ },

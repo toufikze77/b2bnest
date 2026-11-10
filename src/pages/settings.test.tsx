@@ -3,7 +3,9 @@ import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 // The tab panels are not under test here: each is a stub.
-const { stub } = vi.hoisted(() => ({ stub: (name: string) => ({ default: () => <div data-testid={`panel-${name}`}>{name}</div> }) }));
+const { stub, hmrc } = vi.hoisted(() => ({ stub: (name: string) => ({ default: () => <div data-testid={`panel-${name}`}>{name}</div> }), hmrc: { canUse: true } }));
+// HMRC hide switch: visible by default here; the last test hides it.
+vi.mock('@/lib/hmrcAccess', async (orig) => ({ ...(await orig<object>()), useHmrcCustomerAccess: () => ({ loading: false, state: hmrc.canUse ? 'visible' : 'hidden', tester: false, canUse: hmrc.canUse }) }));
 vi.mock('@/components/AccountSettings', () => stub('account'));
 vi.mock('@/components/NotificationPreferences', () => stub('notifications'));
 vi.mock('@/components/InAppNotificationPreferences', () => stub('in-app'));
@@ -40,5 +42,16 @@ describe('Settings tabs', () => {
     unmount();
     at('/settings');
     expect(screen.getByRole('tab', { name: 'Account' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('HMRC hidden from this person: no HMRC tab, and ?tab=hmrc opens Account', () => {
+    hmrc.canUse = false;
+    try {
+      at('/settings?tab=hmrc');
+      const list = screen.getByTestId('settings-tabs');
+      expect(within(list).getAllByRole('tab').map((t) => t.textContent)).toEqual(TABS.filter((t) => t !== 'HMRC'));
+      expect(screen.getByRole('tab', { name: 'Account' })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.queryByTestId('panel-hmrc')).toBeNull();
+    } finally { hmrc.canUse = true; }
   });
 });

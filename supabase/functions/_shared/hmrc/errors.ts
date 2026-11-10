@@ -6,7 +6,9 @@ export type HmrcErrorCode =
   | 'test_limit' | 'hmrc_busy' | 'scope_missing'
   | 'vrn_missing' | 'obligations_limit' | 'vrn_invalid' | 'vat_not_authorised' | 'vat_insolvent'
   // HMRC P8: reading what HMRC holds.
-  | 'not_available' | 'read_limit' | 'not_submitted' | 'return_not_found' | 'dates_invalid';
+  | 'not_available' | 'read_limit' | 'not_submitted' | 'return_not_found' | 'dates_invalid'
+  // HMRC hide switch (docs/hmrc-hide/README.md).
+  | 'hmrc_unavailable_for_now';
 
 export const HMRC_MESSAGES: Record<HmrcErrorCode, string> = {
   not_configured: "HMRC connection isn't set up yet.",
@@ -39,12 +41,14 @@ export const HMRC_MESSAGES: Record<HmrcErrorCode, string> = {
   not_submitted: "There's no accepted return for this period sent through B2BNEST, so there's nothing to compare.",
   return_not_found: 'HMRC has no return for this period.',
   dates_invalid: "HMRC didn't accept these dates. Choose dates up to today, at most 365 days apart.",
+  hmrc_unavailable_for_now: "HMRC filing isn't available yet.",
 };
 export const HMRC_STATUS: Record<HmrcErrorCode, number> = {
   not_configured: 503, unauthorized: 401, two_step_required: 403, not_member: 403, not_admin: 403, trial_ended: 403, suspended: 403, plan_not_included: 403,
   bad_request: 400, bad_state: 400, hmrc_refused: 502, hmrc_unavailable: 502, not_connected: 409, needs_reconnect: 409, server_error: 500, test_limit: 429, hmrc_busy: 503, scope_missing: 409,
   vrn_missing: 409, obligations_limit: 429, vrn_invalid: 422, vat_not_authorised: 403, vat_insolvent: 422,
   not_available: 503, read_limit: 429, not_submitted: 409, return_not_found: 409, dates_invalid: 400,
+  hmrc_unavailable_for_now: 403,
 };
 export type HandlerResult = { status: number; body: Record<string, unknown> };
 export const fail = (code: HmrcErrorCode): HandlerResult => ({ status: HMRC_STATUS[code], body: { ok: false, code, message: HMRC_MESSAGES[code] } });

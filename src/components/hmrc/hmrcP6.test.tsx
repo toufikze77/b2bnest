@@ -11,6 +11,8 @@ const st = vi.hoisted(() => ({
     memberships: [{ organizationId: 'org-x', name: 'Company X', role: 'owner' }], loading: false },
   demo: false, status: null as unknown,
 }));
+// HMRC hide switch: these tests cover the HMRC features as shown (visible); the hidden state is in hmrcHide.test.tsx.
+vi.mock('@/lib/hmrcAccess', async (orig) => ({ ...(await orig<object>()), useHmrcCustomerAccess: () => ({ loading: false, state: 'visible', tester: false, canUse: true }) }));
 vi.mock('@/lib/hmrcVatSubmit', async (orig) => ({
   ...(await orig<object>()),
   prepareReturn: (...a: unknown[]) => st.prepare(...a), submitReturn: (...a: unknown[]) => st.submit(...a), checkReturn: (...a: unknown[]) => st.check(...a),

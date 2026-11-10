@@ -9,6 +9,8 @@ import HMRCObligations from '@/components/hmrc/HMRCObligations';
 import { HMRC_FILING_UNAVAILABLE } from '@/components/hmrc/filingStatus';
 
 // HMRC filing is not built. No screen may simulate a successful filing, invent a reference, or record "submitted".
+// HMRC hide switch: these tests cover the HMRC features as shown (visible); the hidden state is in hmrcHide.test.tsx.
+vi.mock('@/lib/hmrcAccess', async (orig) => ({ ...(await orig<object>()), useHmrcCustomerAccess: () => ({ loading: false, state: 'visible', tester: false, canUse: true }) }));
 vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast: vi.fn() }), toast: vi.fn() }));
 // HMRC P3: the Obligations screen reads the active company (none here, so it calls nothing).
 vi.mock('@/contexts/OrganizationContext', () => ({ useActiveOrganization: () => ({ organizationId: null, organization: null, memberships: [], loading: false }) }));
