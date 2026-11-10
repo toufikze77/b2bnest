@@ -15,12 +15,14 @@ import { LedgerSetup } from './LedgerSetup';
 import { LedgerChart } from './LedgerChart';
 import { LedgerJournals } from './LedgerJournals';
 import { LedgerTrialBalance } from './LedgerTrialBalance';
+import { LedgerAuto } from './LedgerAuto';
+import { journalSources } from '@/lib/ledgerAuto';
 
 type State =
   | { kind: 'loading' }
   | { kind: 'not_available' }
   | { kind: 'error'; message: string }
-  | { kind: 'ready'; status: LedgerStatus; accounts: LedgerAccount[]; journals: JournalEntry[] };
+  | { kind: 'ready'; status: LedgerStatus; accounts: LedgerAccount[]; journals: JournalEntry[]; sources: Map<string, string> };
 
 const UPGRADE_ACCESS = ['plan_not_included', 'trial_ended'];
 
@@ -36,14 +38,16 @@ export function LedgerTab({ organizationId, api: injected, isDemo: demoProp }: {
     setState({ kind: 'loading' });
     const s = await api.status(organizationId);
     if (!s.ok) { const code = codeOf(s); setState(code === 'NOT_AVAILABLE' ? { kind: 'not_available' } : { kind: 'error', message: ledgerMessage(code) }); return; }
-    if (s.data.access !== 'ok' || !s.data.set_up) { setState({ kind: 'ready', status: s.data, accounts: [], journals: [] }); return; }
+    if (s.data.access !== 'ok' || !s.data.set_up) { setState({ kind: 'ready', status: s.data, accounts: [], journals: [], sources: new Map() }); return; }
     const [a, j] = await Promise.all([api.accounts(organizationId), api.journals(organizationId)]);
     if (!a.ok || !j.ok) {
       const code = codeOf(!a.ok ? a : j);
       setState(code === 'NOT_AVAILABLE' ? { kind: 'not_available' } : { kind: 'error', message: ledgerMessage(code) });
       return;
     }
-    setState({ kind: 'ready', status: s.data, accounts: a.data, journals: j.data });
+    // Finance phase 3a: which journals were posted from invoices. Before that SQL is applied this read fails: no labels.
+    const links = await api.postings(organizationId);
+    setState({ kind: 'ready', status: s.data, accounts: a.data, journals: j.data, sources: journalSources(links.ok ? links.data : []) });
   }, [api, organizationId, isDemo]);
 
   useEffect(() => { void load(); }, [load]);
@@ -56,7 +60,7 @@ export function LedgerTab({ organizationId, api: injected, isDemo: demoProp }: {
     if (state.kind === 'error') {
       return <div className="space-y-2"><p role="alert" className="text-destructive">{state.message}</p><Button variant="outline" onClick={() => { void load(); }}>Try again</Button></div>;
     }
-    const { status, accounts, journals } = state;
+    const { status, accounts, journals, sources } = state;
     if (status.access !== 'ok') {
       return (
         <div data-testid="ledger-upgrade" className="space-y-2">
@@ -80,15 +84,19 @@ export function LedgerTab({ organizationId, api: injected, isDemo: demoProp }: {
           <TabsTrigger value="journals">Journals</TabsTrigger>
           <TabsTrigger value="accounts">Chart of accounts</TabsTrigger>
           <TabsTrigger value="trial-balance">Trial balance</TabsTrigger>
+          <TabsTrigger value="automatic">Automatic postings</TabsTrigger>
         </TabsList>
         <TabsContent value="journals" className="mt-4">
-          <LedgerJournals api={api} organizationId={organizationId} accounts={accounts} canPost={status.can_post} journals={journals} onChanged={() => { void load(); }} />
+          <LedgerJournals api={api} organizationId={organizationId} accounts={accounts} canPost={status.can_post} journals={journals} sources={sources} onChanged={() => { void load(); }} />
         </TabsContent>
         <TabsContent value="accounts" className="mt-4">
           <LedgerChart api={api} organizationId={organizationId} accounts={accounts} canPost={status.can_post} onChanged={() => { void load(); }} />
         </TabsContent>
         <TabsContent value="trial-balance" className="mt-4">
           <LedgerTrialBalance api={api} organizationId={organizationId} />
+        </TabsContent>
+        <TabsContent value="automatic" className="mt-4">
+          {section === 'automatic' && <LedgerAuto api={api} organizationId={organizationId} onPosted={() => { void load(); }} />}
         </TabsContent>
       </Tabs>
     );

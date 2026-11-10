@@ -101,6 +101,11 @@ export const COMPANY_TABLES: CompanyTable[] = [
   { table: 'ledger_accounts', by: 'organization_id' },
   { table: 'journal_entries', by: 'organization_id' },
   { table: 'journal_lines', by: 'organization_id', csv: true },
+  // Finance phase 3a (docs/ledger-auto): the automatic-postings switch, which journal posted which invoice, and the
+  // invoices that need attention.
+  { table: 'ledger_auto_settings', by: 'organization_id' },
+  { table: 'ledger_postings', by: 'organization_id' },
+  { table: 'ledger_post_issues', by: 'organization_id' },
 ];
 
 export const COMPANY_CHILD_TABLES: CompanyChildTable[] = [
@@ -125,6 +130,7 @@ export const NOT_EXPORTED: Record<string, string> = {
   phase12_subscribers_backup: 'A one-off internal copy taken during a 2026 migration; your live record is in subscribers.',
   job_postings: 'Linked to the old public companies directory, not to your B2BNEST company; it holds no personal column.',
   _data_rights_gate: 'An internal, always-empty table used by the deletion and purge functions.',
+  ledger_post_queue: 'A short-lived list of invoices waiting to be posted to the ledger; what was posted is in ledger_postings.',
 };
 
 /** Column names that never leave B2BNEST, whatever the table: tokens, secrets, passwords, codes, keys and payment-provider references. */

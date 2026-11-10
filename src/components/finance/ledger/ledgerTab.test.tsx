@@ -39,6 +39,14 @@ function fakeApi(o: Partial<Record<keyof LedgerApi, unknown>> = {}) {
       { id: 'l1', entry_id: 'j2', account_id: 'a-rent', line_no: 1, debit: '250.00', credit: '0.00', description: null },
       { id: 'l2', entry_id: 'j2', account_id: 'a-bank', line_no: 2, debit: 0, credit: 250, description: null },
     ])),
+    // Finance phase 3a reads: by default as before its SQL is applied (not available), so phase 2 screens must still work.
+    postings: vi.fn(() => Promise.resolve({ ok: false as const, code: 'NOT_AVAILABLE' })),
+    issues: vi.fn(() => Promise.resolve({ ok: false as const, code: 'NOT_AVAILABLE' })),
+    autoStatus: vi.fn(() => Promise.resolve({ ok: false as const, code: 'NOT_AVAILABLE' })),
+    autoPreview: vi.fn(() => Promise.resolve({ ok: false as const, code: 'NOT_AVAILABLE' })),
+    autoSet: vi.fn(() => Promise.resolve({ ok: false as const, code: 'NOT_AVAILABLE' })),
+    autoCatchUp: vi.fn(() => Promise.resolve({ ok: false as const, code: 'NOT_AVAILABLE' })),
+    autoRun: vi.fn(() => Promise.resolve({ ok: false as const, code: 'NOT_AVAILABLE' })),
     ...o,
   };
   return api as unknown as LedgerApi & Record<string, ReturnType<typeof vi.fn>>;
@@ -67,6 +75,8 @@ describe('Ledger tab: states', () => {
     expect(note).toHaveTextContent('The ledger is included in the Business and Scale plans, and during the 14-day trial.');
     expect(within(note).getByRole('link', { name: 'See plans on the Pricing page' })).toHaveAttribute('href', '/pricing');
     expect(api.accounts).not.toHaveBeenCalled();
+    expect(screen.queryByRole('tab', { name: 'Automatic postings' })).toBeNull();
+    expect(api.autoStatus).not.toHaveBeenCalled();
   });
 
   it('trial ended: the upgrade note', async () => {
@@ -80,6 +90,8 @@ describe('Ledger tab: states', () => {
     expect(screen.getByTestId('ledger-demo')).toHaveTextContent('This is a demo account. It is view only.');
     expect(api.status).not.toHaveBeenCalled();
     expect(screen.queryByRole('button')).toBeNull();
+    expect(api.autoStatus).not.toHaveBeenCalled();
+    expect(api.autoSet).not.toHaveBeenCalled();
   });
 
   it('a member who is not an owner or admin can read but has no write buttons', async () => {
@@ -279,5 +291,110 @@ describe('Ledger tab: trial balance', () => {
     show(fakeApi({ trialBalance: vi.fn(() => ok([{ account_id: 'a-bank', code: '1200', name: 'Bank', type: 'asset', is_active: true, debit: '1.00', credit: 0 }])) }));
     fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Trial balance' }));
     expect(await screen.findByTestId('tb-check')).toHaveTextContent("Debits and credits don't agree.");
+  });
+});
+
+describe('Ledger tab: automatic postings (phase 3a)', () => {
+  const autoStatus = (o: Record<string, unknown> = {}) => ({ access: 'ok', can_manage: true, set_up: true, invoices_enabled: false, enabled_at: null, waiting: 0, open_issues: 0, ...o });
+  const preview = { invoices_to_post: 4, invoices_total: 30600, payments_to_post: 1, payments_total: 5000, to_reverse: 0, already_posted: 0, not_issued: 2,
+    skipped: { before_start: 1, currency_not_gbp: 1 } };
+  const withAuto = (o: Partial<Record<keyof LedgerApi, unknown>> = {}) => fakeApi({
+    autoStatus: vi.fn(() => ok(autoStatus())), autoPreview: vi.fn(() => ok(preview)), issues: vi.fn(() => ok([])),
+    autoSet: vi.fn(() => ok(autoStatus({ invoices_enabled: true, enabled_at: '2026-03-03T10:00:00Z' }))),
+    autoCatchUp: vi.fn(() => ok({ queued: 9, processed: 9, failed: 0, dropped: 0, remaining: 0 })), ...o });
+  const openAuto = async () => { fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Automatic postings' })); };
+
+  it('says "not available yet" when the phase 3a SQL is not applied (and the rest of the ledger still works)', async () => {
+    show(fakeApi());
+    await openAuto();
+    expect(await screen.findByTestId('auto-not-available')).toHaveTextContent('Automatic postings are not available yet.');
+  });
+
+  it('off by default: the switch, the plain explanation with the worked example, the VAT scheme note and the preview', async () => {
+    show(withAuto());
+    await openAuto();
+    expect(await screen.findByTestId('auto-state')).toHaveTextContent('Off');
+    expect(screen.getByRole('switch', { name: 'Post invoices to the ledger automatically' })).not.toBeChecked();
+    expect(screen.getByText(/Dr Debtors £120\.00, Cr Sales £100\.00, Cr VAT control £20\.00/)).toBeInTheDocument();
+    expect(screen.getByText(/VAT scheme rules .* are not applied yet/)).toBeInTheDocument();
+    const table = screen.getByRole('table', { name: 'What would be posted' });
+    expect(table).toHaveTextContent('Invoices to post4£306.00');
+    expect(table).toHaveTextContent('Payments to post1£50.00');
+    expect(table).toHaveTextContent('Skipped: Dated before the ledger start date.1');
+    expect(table).toHaveTextContent('Skipped: Not in pounds (GBP). Only GBP invoices are posted.1');
+    expect(screen.queryByRole('button', { name: 'Post existing invoices' })).toBeNull();
+    expect(screen.getByText('Switch automatic postings on to post existing invoices.')).toBeInTheDocument();
+  });
+
+  it('switching on calls the RPC and shows "On since"', async () => {
+    const api = withAuto();
+    show(api);
+    await openAuto();
+    vi.mocked(api.autoStatus).mockImplementation(() => ok(autoStatus({ invoices_enabled: true, enabled_at: '2026-03-03T10:00:00Z' })));
+    const sw = await screen.findByRole('switch', { name: 'Post invoices to the ledger automatically' });
+    await act(async () => { fireEvent.click(sw); });
+    expect(api.autoSet).toHaveBeenCalledWith(ORG, true);
+    expect(await screen.findByTestId('auto-state')).toHaveTextContent('On since 3 March 2026');
+    expect(screen.getByRole('status')).toHaveTextContent('Automatic postings are on.');
+  });
+
+  it('catch-up asks for confirmation with the counts, totals and the reversal-only warning', async () => {
+    const api = withAuto({ autoStatus: vi.fn(() => ok(autoStatus({ invoices_enabled: true, enabled_at: '2026-03-03T10:00:00Z' }))) });
+    show(api);
+    await openAuto();
+    fireEvent.click(await screen.findByRole('button', { name: 'Post existing invoices' }));
+    const box = screen.getByTestId('auto-confirm');
+    expect(box).toHaveTextContent('This posts 4 invoice journals (£306.00) and 1 payment journal (£50.00).');
+    expect(box).toHaveTextContent('Once posted, a journal cannot be edited or deleted. It can only be reversed.');
+    expect(api.autoCatchUp).not.toHaveBeenCalled();
+    fireEvent.click(within(box).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByTestId('auto-confirm')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Post existing invoices' }));
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Yes, post them' })); });
+    expect(api.autoCatchUp).toHaveBeenCalledWith(ORG);
+    expect(await screen.findByRole('status')).toHaveTextContent('Looked at 9 invoices.');
+  });
+
+  it('a plain member sees the state and the preview but cannot switch or post', async () => {
+    show(withAuto({ autoStatus: vi.fn(() => ok(autoStatus({ can_manage: false, invoices_enabled: true }))) }));
+    await openAuto();
+    expect(await screen.findByRole('switch')).toBeDisabled();
+    expect(screen.getByText('Only an owner or admin of this company can change this.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Post existing invoices' })).toBeNull();
+  });
+
+  it('refusals are shown in words', async () => {
+    show(withAuto({ autoSet: vi.fn(() => Promise.resolve({ ok: false as const, code: 'MFA_REQUIRED' })) }));
+    await openAuto();
+    const sw = await screen.findByRole('switch');
+    await act(async () => { fireEvent.click(sw); });
+    expect(screen.getByRole('alert')).toHaveTextContent('Two-step sign-in is on for your account.');
+  });
+
+  it('the needs-attention list: plain reasons and a link to the invoices', async () => {
+    show(withAuto({ issues: vi.fn(() => ok([
+      { id: 'i1', source_id: 'x', source_label: 'INV-0012', kind: 'invoice_issued', reason_code: 'amounts_do_not_add_up', created_at: '2026-03-01' },
+      { id: 'i2', source_id: 'y', source_label: 'INV-0013', kind: 'invoice_paid', reason_code: 'paid_date_missing', created_at: '2026-03-01' }])) }));
+    await openAuto();
+    const list = await screen.findByRole('list', { name: 'Needs attention' });
+    expect(list).toHaveTextContent("Invoice INV-0012The subtotal and VAT don't add up to the total.");
+    expect(list).toHaveTextContent('Payment INV-0013Marked paid, but with no paid date.');
+    expect(within(list).getAllByRole('link')[0]).toHaveAttribute('href', '/business-tools?tool=business-finance-assistant&tab=invoices');
+  });
+
+  it('journals show their source, and an automatic journal keeps the usual Reverse', async () => {
+    const auto: JournalEntry = { id: 'j5', entry_date: '2026-02-01', memo: 'Invoice INV-0012 issued', reason: 'Automatic posting', source_type: 'auto_invoice',
+      reverses_entry_id: null, posted_by_name: 'Automatic posting', posted_at: '2026-02-01T10:00:00Z' };
+    const api = fakeApi({ journals: vi.fn(() => ok([...journals, auto])),
+      postings: vi.fn(() => ok([{ entry_id: 'j5', reversal_entry_id: null, source_label: 'INV-0012', kind: 'invoice_issued' }])) });
+    show(api);
+    const table = await screen.findByRole('table', { name: 'Journals' });
+    await waitFor(() => expect(table).toHaveTextContent('Automatic: invoiceInvoice INV-0012'));
+    fireEvent.click(screen.getByRole('button', { name: 'Invoice INV-0012 issued' }));
+    expect(await screen.findByTestId('journal-source')).toHaveTextContent('Source: Invoice INV-0012');
+    fireEvent.click(screen.getByRole('button', { name: 'Reverse' }));
+    fireEvent.change(screen.getByLabelText('Reason for reversing (required)'), { target: { value: 'Wrong customer' } });
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Post the reversal' })); });
+    expect(api.reverse).toHaveBeenCalledWith('j5', 'Wrong customer');
   });
 });

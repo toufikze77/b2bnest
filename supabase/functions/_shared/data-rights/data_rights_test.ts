@@ -67,6 +67,12 @@ function world(): World {
       journal_lines: [{ id: 'jl1', entry_id: 'j1', organization_id: X, account_id: 'a1', line_no: 1, debit: '1500.00', credit: '0.00' },
         { id: 'jl2', entry_id: 'j1', organization_id: X, account_id: 'a2', line_no: 2, debit: '0.00', credit: '1500.00' },
         { id: 'jl3', entry_id: 'j2', organization_id: Y, account_id: 'a9', line_no: 1, debit: '7.00', credit: '0.00', description: 'Y-SECRET-LINE' }],
+      ledger_auto_settings: [{ organization_id: X, invoices_enabled: true, enabled_by: A }, { organization_id: Y, invoices_enabled: true }],
+      ledger_postings: [{ id: 'lp1', organization_id: X, source_table: 'invoices', source_id: 'i2', source_label: 'INV-X1', kind: 'invoice_issued', entry_id: 'j1' },
+        { id: 'lp2', organization_id: Y, source_table: 'invoices', source_id: 'i4', source_label: 'Y-SECRET-POSTING', kind: 'invoice_issued', entry_id: 'j2' }],
+      ledger_post_issues: [{ id: 'li1', organization_id: X, source_table: 'invoices', source_id: 'i3', source_label: 'X-C', kind: 'invoice_issued', reason_code: 'before_start' },
+        { id: 'li2', organization_id: Y, source_table: 'invoices', source_id: 'i4', source_label: 'Y-SECRET-ISSUE', kind: 'invoice_issued', reason_code: 'zero_total' }],
+      ledger_post_queue: [{ id: 1, organization_id: X, source_table: 'invoices', source_id: 'i2' }],
       project_members: [{ id: 'pm1', project_id: 'p1', user_id: C }, { id: 'pm2', project_id: 'p-other', user_id: 'someone' }],
     },
     missing: new Set(),
@@ -210,10 +216,15 @@ Deno.test('export company: owners and admins only; that company\'s rows only; HM
   assertEquals(JSON.parse(files.get('company/journal_entries.json')!).map((j: { id: string }) => j.id), ['j1']);
   assertEquals(JSON.parse(files.get('company/journal_lines.json')!).map((l: { id: string }) => l.id), ['jl1', 'jl2']);
   assertStringIncludes(files.get('company/journal_lines.csv')!, '1500.00');
+  // Finance phase 3a: the switch, the postings and the needs-attention rows, this company's only; the queue is not exported.
+  assertEquals(JSON.parse(files.get('company/ledger_postings.json')!).map((l: { id: string }) => l.id), ['lp1']);
+  assertEquals(JSON.parse(files.get('company/ledger_post_issues.json')!).map((l: { id: string }) => l.id), ['li1']);
+  assertEquals(JSON.parse(files.get('company/ledger_auto_settings.json')!).length, 1);
+  assert(!files.has('company/ledger_post_queue.json'), 'the short-lived queue is not exported');
   assertStringIncludes(files.get('company/invoices.csv')!, `"'=HYPERLINK(""x"")"`);
   assertEquals(JSON.parse(files.get('files.json')!).map((l: { path: string }) => l.path), [`${X}/t1/a.pdf`]);
   const all = [...files.values()].join('\n');
-  for (const bad of ['v1.x.y.z', 'Y-SECRET-INVOICE', 'Y-SECRET-JOURNAL', 'Y-SECRET-LINE', 'Company Y', 'shh', 'cid', `${Y}/t9`]) assert(!all.includes(bad), bad);
+  for (const bad of ['v1.x.y.z', 'Y-SECRET-INVOICE', 'Y-SECRET-JOURNAL', 'Y-SECRET-LINE', 'Y-SECRET-POSTING', 'Y-SECRET-ISSUE', 'Company Y', 'shh', 'cid', `${Y}/t9`]) assert(!all.includes(bad), bad);
   assert(w.reads.filter((x) => x.table !== 'project_members' && !['project_activities', 'todo_subtasks', 'todo_comments', 'todo_history', 'team_members'].includes(x.table))
     .every((x) => x.as === 'service' && x.filter.eq.length === 1 && x.filter.eq[0][1] === X), 'every company read is filtered by company X');
   assertEquals(w.reads.find((x) => x.table === 'hmrc_connections')?.select, COMPANY_TABLES.find((t) => t.table === 'hmrc_connections')?.select);
