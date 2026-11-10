@@ -4,6 +4,7 @@
 // "The ledger is not available yet." instead of failing.
 import { supabase } from '@/integrations/supabase/client';
 import { ledgerCode, type AccountType, type LedgerAccount, type TrialBalanceRow } from '@/lib/ledger';
+import type { AutoPreview, AutoRun, AutoStatus, PostingIssue, PostingLink } from '@/lib/ledgerAuto';
 
 type DbError = { code?: string; message?: string } | null;
 type Rpc = (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: DbError }>;
@@ -11,6 +12,7 @@ type Query = {
   select: (cols: string) => Query;
   eq: (col: string, v: unknown) => Query;
   in: (col: string, v: unknown[]) => Query;
+  is: (col: string, v: null) => Query;
   order: (col: string, o?: { ascending?: boolean }) => Query;
   limit: (n: number) => Query;
   then: Promise<{ data: unknown; error: DbError }>['then'];
@@ -35,7 +37,8 @@ export interface JournalEntry {
   entry_date: string;
   memo: string;
   reason: string | null;
-  source_type: 'manual' | 'opening_balance' | 'reversal';
+  source_type: 'manual' | 'opening_balance' | 'reversal' | 'auto_invoice' | 'auto_invoice_payment';
+  source_id?: string | null;
   reverses_entry_id: string | null;
   posted_by_name: string | null;
   posted_at: string;
@@ -81,10 +84,20 @@ export function ledgerApi(client: LedgerClient = supabase as unknown as LedgerCl
     accounts: (org: string) => read<LedgerAccount[]>(client.from('ledger_accounts').select('id,code,name,type,is_system,system_key,is_active')
       .eq('organization_id', org).order('code')),
     journals: (org: string) => read<JournalEntry[]>(client.from('journal_entries')
-      .select('id,entry_date,memo,reason,source_type,reverses_entry_id,posted_by_name,posted_at')
+      .select('id,entry_date,memo,reason,source_type,source_id,reverses_entry_id,posted_by_name,posted_at')
       .eq('organization_id', org).order('entry_date', { ascending: false }).order('posted_at', { ascending: false }).limit(500)),
     lines: (entry: string) => read<JournalLine[]>(client.from('journal_lines').select('id,entry_id,account_id,line_no,debit,credit,description')
       .eq('entry_id', entry).order('line_no')),
+    // Finance phase 3a: automatic postings (docs/ledger-auto). Before that SQL is applied these answer NOT_AVAILABLE.
+    autoStatus: (org: string) => call<AutoStatus>('ledger_auto_status', { p_org: org }),
+    autoSet: (org: string, enabled: boolean) => call<AutoStatus>('ledger_auto_set', { p_org: org, p_enabled: enabled }),
+    autoPreview: (org: string) => call<AutoPreview>('ledger_auto_preview', { p_org: org }),
+    autoCatchUp: (org: string) => call<AutoRun & { queued: number }>('ledger_auto_catch_up', { p_org: org }),
+    autoRun: (org: string) => call<AutoRun>('ledger_auto_run', { p_org: org }),
+    postings: (org: string) => read<PostingLink[]>(client.from('ledger_postings').select('entry_id,reversal_entry_id,source_label,kind')
+      .eq('organization_id', org).limit(5000)),
+    issues: (org: string) => read<PostingIssue[]>(client.from('ledger_post_issues').select('id,source_id,source_label,kind,reason_code,created_at')
+      .eq('organization_id', org).is('resolved_at', null).order('created_at', { ascending: false }).limit(500)),
   };
 }
 export type LedgerApi = ReturnType<typeof ledgerApi>;

@@ -10,11 +10,15 @@ import { checkManualJournal, formatPence, LEDGER_POSTED_WARNING, ledgerMessage, 
 import { codeOf, type JournalEntry, type JournalLine, type LedgerApi } from '@/lib/ledgerApi';
 import { JournalGrid } from './JournalGrid';
 
-const SOURCE_LABELS: Record<JournalEntry['source_type'], string> = { manual: 'Manual', opening_balance: 'Opening balances', reversal: 'Reversal' };
+const SOURCE_LABELS: Record<JournalEntry['source_type'], string> = {
+  manual: 'Manual', opening_balance: 'Opening balances', reversal: 'Reversal', auto_invoice: 'Automatic: invoice', auto_invoice_payment: 'Automatic: payment',
+};
 const today = () => new Date().toISOString().slice(0, 10);
 
 /** The journals: list, detail, a new manual journal and Reverse. There is no edit or delete. */
-export function LedgerJournals({ api, organizationId, accounts, canPost, journals, onChanged }: {
+export function LedgerJournals({ api, organizationId, accounts, canPost, journals, onChanged, sources }: {
+  /** Finance phase 3a: "Invoice INV-0012" for automatic journals and their reversals (empty before that SQL). */
+  sources?: Map<string, string>;
   api: LedgerApi; organizationId: string; accounts: LedgerAccount[]; canPost: boolean; journals: JournalEntry[]; onChanged: () => void;
 }) {
   const [view, setView] = useState<{ kind: 'list' } | { kind: 'new' } | { kind: 'detail'; id: string }>({ kind: 'list' });
@@ -27,7 +31,7 @@ export function LedgerJournals({ api, organizationId, accounts, canPost, journal
   if (view.kind === 'detail') {
     const entry = journals.find((j) => j.id === view.id);
     if (entry) {
-      return <JournalDetail api={api} entry={entry} accounts={accounts} canReverse={canPost && entry.source_type !== 'reversal' && !reversedIds.has(entry.id)}
+      return <JournalDetail api={api} entry={entry} source={sources?.get(entry.id)} accounts={accounts} canReverse={canPost && entry.source_type !== 'reversal' && !reversedIds.has(entry.id)}
         reversed={reversedIds.has(entry.id)} onBack={() => setView({ kind: 'list' })} onReversed={() => { setView({ kind: 'list' }); onChanged(); }} />;
     }
   }
@@ -39,7 +43,7 @@ export function LedgerJournals({ api, organizationId, accounts, canPost, journal
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] text-sm" aria-label="Journals">
-            <thead><tr className="text-left text-muted-foreground"><th className="py-2 pr-2 font-medium">Date</th><th className="py-2 pr-2 font-medium">Description</th><th className="py-2 pr-2 font-medium">Type</th><th className="py-2 font-medium">Posted by</th></tr></thead>
+            <thead><tr className="text-left text-muted-foreground"><th className="py-2 pr-2 font-medium">Date</th><th className="py-2 pr-2 font-medium">Description</th><th className="py-2 pr-2 font-medium">Type</th><th className="py-2 pr-2 font-medium">Source</th><th className="py-2 font-medium">Posted by</th></tr></thead>
             <tbody className="divide-y">
               {journals.map((j) => (
                 <tr key={j.id}>
@@ -49,6 +53,7 @@ export function LedgerJournals({ api, organizationId, accounts, canPost, journal
                     {reversedIds.has(j.id) && <Badge variant="outline" className="ml-2">Reversed</Badge>}
                   </td>
                   <td className="py-2 pr-2">{SOURCE_LABELS[j.source_type] ?? j.source_type}</td>
+                  <td className="py-2 pr-2">{sources?.get(j.id) ?? ''}</td>
                   <td className="py-2">{j.posted_by_name ?? ''}</td>
                 </tr>
               ))}
@@ -106,7 +111,8 @@ function NewJournal({ api, organizationId, accounts, onCancel, onPosted }: {
   );
 }
 
-function JournalDetail({ api, entry, accounts, canReverse, reversed, onBack, onReversed }: {
+function JournalDetail({ api, entry, source, accounts, canReverse, reversed, onBack, onReversed }: {
+  source?: string;
   api: LedgerApi; entry: JournalEntry; accounts: LedgerAccount[]; canReverse: boolean; reversed: boolean; onBack: () => void; onReversed: () => void;
 }) {
   const [lines, setLines] = useState<JournalLine[] | null>(null);
@@ -138,6 +144,7 @@ function JournalDetail({ api, entry, accounts, canReverse, reversed, onBack, onR
         <div className="space-y-1">
           <p><strong>Date:</strong> {entry.entry_date}</p>
           <p><strong>Type:</strong> {SOURCE_LABELS[entry.source_type] ?? entry.source_type}{reversed ? ' (reversed)' : ''}</p>
+          {source && <p data-testid="journal-source"><strong>Source:</strong> {source}</p>}
           {entry.reason && <p><strong>Reason:</strong> {entry.reason}</p>}
           {entry.posted_by_name && <p><strong>Posted by:</strong> {entry.posted_by_name}</p>}
         </div>
