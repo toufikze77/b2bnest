@@ -15,8 +15,8 @@ export async function runWaitingPostings(api: AutoRunApi, org: string, maxRuns =
   try {
     const s = await api.autoStatus(org);
     if (!('data' in s) || !s.data) return 0;
-    const { invoices_enabled, can_manage, waiting } = s.data;
-    if (!invoices_enabled || !can_manage || !(waiting > 0)) return 0;
+    const { invoices_enabled, bills_enabled, can_manage, waiting } = s.data;
+    if (!(invoices_enabled || bills_enabled) || !can_manage || !(waiting > 0)) return 0;
     let runs = 0;
     for (let i = 0; i < maxRuns; i++) {
       const r = await api.autoRun(org);
@@ -60,6 +60,27 @@ export function runLedgerAutoSoon(organizationId: string | null | undefined, dep
       } catch { /* silent by design */ }
     }, delay));
   } catch { /* silent by design */ }
+}
+
+/**
+ * Finance phase 3b: the same, for the expense writes (create, edit, delete). Each successful write calls
+ * runLedgerAutoSoon for the record's company (both companies when a record moves). The result is returned unchanged.
+ */
+export function withLedgerAutoRun<A extends { create: (p: P) => Promise<{ error: unknown }>; update: (id: string, p: P) => Promise<{ error: unknown }>;
+  remove: (id: string) => Promise<{ error: unknown }> }, P extends Record<string, unknown>>(api: A, orgOf: (id: string) => string | null | undefined,
+  soon: (org: string | null | undefined) => void = runLedgerAutoSoon): A {
+  const orgIn = (p: P) => (typeof p.organization_id === 'string' && p.organization_id ? p.organization_id : null);
+  return {
+    ...api,
+    create: async (p: P) => { const r = await api.create(p); if (!r.error) soon(orgIn(p)); return r; },
+    update: async (id: string, p: P) => {
+      const before = orgOf(id);
+      const r = await api.update(id, p);
+      if (!r.error) { soon(before); const after = orgIn(p); if (after && after !== before) soon(after); }
+      return r;
+    },
+    remove: async (id: string) => { const before = orgOf(id); const r = await api.remove(id); if (!r.error) soon(before); return r; },
+  };
 }
 
 /** Tests only. */

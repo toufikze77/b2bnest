@@ -42,6 +42,7 @@ function fakeApi(o: Partial<Record<keyof LedgerApi, unknown>> = {}) {
     ])),
     // Finance phase 3a reads: by default as before its SQL is applied (not available), so phase 2 screens must still work.
     postings: vi.fn(() => Promise.resolve({ ok: false as const, code: 'NOT_AVAILABLE' })),
+    categoryMap: vi.fn(() => Promise.resolve({ ok: false as const, code: 'NOT_AVAILABLE' })),
     issues: vi.fn(() => Promise.resolve({ ok: false as const, code: 'NOT_AVAILABLE' })),
     autoStatus: vi.fn(() => Promise.resolve({ ok: false as const, code: 'NOT_AVAILABLE' })),
     autoPreview: vi.fn(() => Promise.resolve({ ok: false as const, code: 'NOT_AVAILABLE' })),
@@ -539,5 +540,119 @@ describe('Ledger tab: the automatic-postings switch', () => {
     await openAt(autoApi(managerOn({ waiting: 3, can_manage: false })));
     await screen.findByTestId('auto-waiting');
     expect(screen.queryByRole('button', { name: 'Post now' })).toBeNull();
+  });
+});
+
+// ------------------------------------------------------------------ Finance phase 3b: bills and expenses
+describe('Ledger tab: automatic postings for bills and expenses', () => {
+  const billsPreview = { bills_to_post: 4, bills_total: 25000, bill_payments_to_post: 1, bill_payments_total: 6000, expenses_to_post: 4, expenses_total: 9600,
+    to_reverse: 0, already_posted: 0, not_posted: 3, skipped: { category_not_mapped: 1, vat_details_missing: 1 } };
+  const travel = { id: 'a-travel', code: '7400', name: 'Travel', type: 'expense' as const, is_system: false, system_key: null, is_active: true };
+  const billsApi = (status: Record<string, unknown>, o: Partial<Record<keyof LedgerApi, unknown>> = {}) => autoApi(status, {
+    autoPreview: vi.fn(() => ok({ ...emptyPreview, bills_and_expenses: billsPreview })),
+    accounts: vi.fn(() => ok([...accounts, travel])),
+    categoryMap: vi.fn(() => ok([{ category_key: 'travel', account_id: 'a-travel', is_default: true }, { category_key: 'utilities', account_id: null, is_default: true }])),
+    ...o });
+  const openAt = async (api: LedgerApi, assurance?: { refresh: () => Promise<void> }) => {
+    const ui = <MemoryRouter initialEntries={['/x?ledger=automatic']}><LedgerTab organizationId={ORG} api={api} isDemo={false} /></MemoryRouter>;
+    render(assurance ? <AssuranceContext.Provider value={{ ...signedOutAssurance, ...assurance }}>{ui}</AssuranceContext.Provider> : ui);
+    return screen.findByRole('switch', { name: 'Post bills and expenses to the ledger automatically' });
+  };
+
+  it('before the 3b SQL is applied: "not available yet", and the invoice switch still works', async () => {
+    render(<MemoryRouter initialEntries={['/x?ledger=automatic']}><LedgerTab organizationId={ORG} api={autoApi(managerOn())} isDemo={false} /></MemoryRouter>);
+    expect(await screen.findByTestId('auto-bills-not-available')).toHaveTextContent('Automatic postings for bills and expenses are not available yet.');
+    expect(screen.getByRole('switch', { name: 'Post invoices to the ledger automatically' })).toBeInTheDocument();
+  });
+
+  it('off: the switch, the worked example, the preview rows and the mapping (read only)', async () => {
+    const sw = await openAt(billsApi(managerOn({ bills_enabled: false })));
+    expect(sw).not.toBeChecked();
+    expect(screen.getByTestId('auto-bills-state')).toHaveTextContent('Off');
+    expect(screen.getByTestId('auto-bills')).toHaveTextContent('Dr the expense account £100.00, Dr VAT control £20.00, Cr Creditors £120.00');
+    const table = screen.getByRole('table', { name: 'Bills and expenses that would be posted' });
+    expect(table).toHaveTextContent('Bills to post4£250.00');
+    expect(table).toHaveTextContent('Bill payments to post1£60.00');
+    expect(table).toHaveTextContent('Expenses to post4£96.00');
+    expect(table).toHaveTextContent('Skipped: Its category has no ledger account yet.1');
+    expect(table).toHaveTextContent('Skipped: Its VAT details are not recorded yet');
+    expect(screen.queryByRole('button', { name: 'Post existing bills and expenses' })).toBeNull();
+    const map = await screen.findByRole('table', { name: 'Category mapping' });
+    expect(map).toHaveTextContent('travel7400 Travel');
+    expect(map).toHaveTextContent('utilitiesNot mapped');
+    expect(within(map).queryByRole('button')).toBeNull();
+  });
+
+  it('one click sends one call naming the bills switch; busy while it runs; then the result', async () => {
+    let finish: (v: unknown) => void = () => {};
+    const api = billsApi(managerOn({ bills_enabled: false }), { autoSet: vi.fn(() => new Promise((r) => { finish = r; })) });
+    const sw = await openAt(api);
+    fireEvent.click(sw);
+    fireEvent.click(sw);
+    expect(api.autoSet).toHaveBeenCalledTimes(1);
+    expect(api.autoSet).toHaveBeenCalledWith(ORG, true, 'bills_and_expenses');
+    await waitFor(() => expect(sw).toBeDisabled());
+    expect(screen.getByTestId('auto-bills-state')).toHaveTextContent('Saving…');
+    vi.mocked(api.autoStatus).mockImplementation(() => ok(managerOn({ bills_enabled: true })));
+    await act(async () => { finish({ ok: true, data: managerOn({ bills_enabled: true }) }); });
+    expect(await screen.findByText('Bills and expenses now post automatically.')).toBeInTheDocument();
+    expect(screen.getByTestId('auto-bills-state')).toHaveTextContent('On');
+  });
+
+  it('switching off asks first; the catch-up confirms with the numbers', async () => {
+    const api = billsApi(managerOn({ bills_enabled: true }), {
+      autoSet: vi.fn(() => ok(managerOn({ bills_enabled: false }))),
+      autoCatchUp: vi.fn(() => ok({ queued: 16, processed: 16, failed: 0, dropped: 0, remaining: 0 })) });
+    const sw = await openAt(api);
+    fireEvent.click(screen.getByRole('button', { name: 'Post existing bills and expenses' }));
+    const box = screen.getByTestId('auto-bills-confirm');
+    expect(box).toHaveTextContent('This posts 4 bill journals (£250.00), 1 bill payment (£60.00) and 4 expense journals (£96.00).');
+    expect(box).toHaveTextContent('Once posted, a journal cannot be edited or deleted. It can only be reversed.');
+    await act(async () => { fireEvent.click(within(box).getByRole('button', { name: 'Yes, post them' })); });
+    expect(api.autoCatchUp).toHaveBeenCalledWith(ORG, 'bills_and_expenses');
+    expect(await screen.findByText('Looked at 16 bills and expenses.')).toBeInTheDocument();
+    fireEvent.click(sw);
+    expect(screen.getByTestId('auto-bills-off-confirm')).toHaveTextContent('Stop posting bills and expenses? Existing journals are kept.');
+    expect(api.autoSet).not.toHaveBeenCalled();
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Stop' })); });
+    expect(api.autoSet).toHaveBeenCalledWith(ORG, false, 'bills_and_expenses');
+  });
+
+  it('a plain member: read only', async () => {
+    const sw = await openAt(billsApi(managerOn({ bills_enabled: true, can_manage: false })));
+    expect(sw).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Post existing bills and expenses' })).toBeNull();
+  });
+
+  it('MFA_REQUIRED on the bills switch: the plain message and the usual two-step check', async () => {
+    const refresh = vi.fn(() => Promise.resolve());
+    const sw = await openAt(billsApi(managerOn({ bills_enabled: false }), { autoSet: vi.fn(() => Promise.resolve({ ok: false as const, code: 'MFA_REQUIRED' })) }), { refresh });
+    await act(async () => { fireEvent.click(sw); });
+    expect(within(screen.getByTestId('auto-bills')).getByRole('alert')).toHaveTextContent('Confirm with your authenticator app, then try again.');
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('needs attention covers bills and expenses, with a link to where each is fixed', async () => {
+    await openAt(billsApi(managerOn({ bills_enabled: true }), { issues: vi.fn(() => ok([
+      { id: 'i1', source_table: 'bills', source_id: 'b', source_label: 'BILL-0012', kind: 'bill_received', reason_code: 'category_not_mapped', created_at: '2026-03-01' },
+      { id: 'i2', source_table: 'expenses', source_id: 'e', source_label: 'Travel', kind: 'expense', reason_code: 'vat_details_missing', created_at: '2026-03-01' }])) }));
+    const list = await screen.findByRole('list', { name: 'Needs attention' });
+    expect(list).toHaveTextContent('Bill BILL-0012Its category has no ledger account yet.');
+    expect(list).toHaveTextContent('Expense: TravelIts VAT details are not recorded yet');
+    const links = within(list).getAllByRole('link');
+    expect(links[0]).toHaveAttribute('href', '/business-tools?tool=business-finance-assistant&tab=company-records');
+    expect(links[1]).toHaveAttribute('href', '/business-tools?tool=business-finance-assistant&tab=expenses');
+  });
+
+  it('journals show "Bill …" and "Expense: …" as their source', async () => {
+    const bill: JournalEntry = { id: 'jb', entry_date: '2026-02-01', memo: 'Bill BILL-0012 from Acme received', reason: 'Automatic posting', source_type: 'auto_bill',
+      reverses_entry_id: null, posted_by_name: 'Automatic posting', posted_at: '2026-02-01T10:00:00Z' };
+    const exp: JournalEntry = { ...bill, id: 'je', memo: 'Expense: Travel 14 Feb', source_type: 'auto_expense' };
+    show(fakeApi({ journals: vi.fn(() => ok([bill, exp])), postings: vi.fn(() => ok([
+      { entry_id: 'jb', reversal_entry_id: null, source_label: 'BILL-0012', kind: 'bill_received' },
+      { entry_id: 'je', reversal_entry_id: null, source_label: 'Travel', kind: 'expense' }])) }));
+    const table = await screen.findByRole('table', { name: 'Journals' });
+    await waitFor(() => expect(table).toHaveTextContent('Automatic: billBill BILL-0012'));
+    expect(table).toHaveTextContent('Automatic: expenseExpense: Travel');
   });
 });

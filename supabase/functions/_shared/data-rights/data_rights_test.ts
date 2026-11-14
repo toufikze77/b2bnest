@@ -73,6 +73,7 @@ function world(): World {
       ledger_post_issues: [{ id: 'li1', organization_id: X, source_table: 'invoices', source_id: 'i3', source_label: 'X-C', kind: 'invoice_issued', reason_code: 'before_start' },
         { id: 'li2', organization_id: Y, source_table: 'invoices', source_id: 'i4', source_label: 'Y-SECRET-ISSUE', kind: 'invoice_issued', reason_code: 'zero_total' }],
       ledger_post_queue: [{ id: 1, organization_id: X, source_table: 'invoices', source_id: 'i2' }],
+      ledger_category_map: [{ organization_id: X, category_key: 'travel', account_id: 'a7400' }, { organization_id: Y, category_key: 'y-secret-category', account_id: 'a1' }],
       project_members: [{ id: 'pm1', project_id: 'p1', user_id: C }, { id: 'pm2', project_id: 'p-other', user_id: 'someone' }],
     },
     missing: new Set(),
@@ -221,10 +222,12 @@ Deno.test('export company: owners and admins only; that company\'s rows only; HM
   assertEquals(JSON.parse(files.get('company/ledger_post_issues.json')!).map((l: { id: string }) => l.id), ['li1']);
   assertEquals(JSON.parse(files.get('company/ledger_auto_settings.json')!).length, 1);
   assert(!files.has('company/ledger_post_queue.json'), 'the short-lived queue is not exported');
+  // Finance phase 3b: the category map, this company's only.
+  assertEquals(JSON.parse(files.get('company/ledger_category_map.json')!).map((m: { category_key: string }) => m.category_key), ['travel']);
   assertStringIncludes(files.get('company/invoices.csv')!, `"'=HYPERLINK(""x"")"`);
   assertEquals(JSON.parse(files.get('files.json')!).map((l: { path: string }) => l.path), [`${X}/t1/a.pdf`]);
   const all = [...files.values()].join('\n');
-  for (const bad of ['v1.x.y.z', 'Y-SECRET-INVOICE', 'Y-SECRET-JOURNAL', 'Y-SECRET-LINE', 'Y-SECRET-POSTING', 'Y-SECRET-ISSUE', 'Company Y', 'shh', 'cid', `${Y}/t9`]) assert(!all.includes(bad), bad);
+  for (const bad of ['v1.x.y.z', 'Y-SECRET-INVOICE', 'Y-SECRET-JOURNAL', 'Y-SECRET-LINE', 'Y-SECRET-POSTING', 'Y-SECRET-ISSUE', 'y-secret-category', 'Company Y', 'shh', 'cid', `${Y}/t9`]) assert(!all.includes(bad), bad);
   assert(w.reads.filter((x) => x.table !== 'project_members' && !['project_activities', 'todo_subtasks', 'todo_comments', 'todo_history', 'team_members'].includes(x.table))
     .every((x) => x.as === 'service' && x.filter.eq.length === 1 && x.filter.eq[0][1] === X), 'every company read is filtered by company X');
   assertEquals(w.reads.find((x) => x.table === 'hmrc_connections')?.select, COMPANY_TABLES.find((t) => t.table === 'hmrc_connections')?.select);

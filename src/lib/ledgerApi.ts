@@ -4,7 +4,7 @@
 // "The ledger is not available yet." instead of failing.
 import { supabase } from '@/integrations/supabase/client';
 import { ledgerCode, type AccountType, type LedgerAccount, type TrialBalanceRow } from '@/lib/ledger';
-import type { AutoPreview, AutoRun, AutoStatus, PostingIssue, PostingLink } from '@/lib/ledgerAuto';
+import type { AutoPreview, AutoRun, AutoStatus, CategoryMapRow, PostingIssue, PostingLink } from '@/lib/ledgerAuto';
 
 type DbError = { code?: string; message?: string } | null;
 type Rpc = (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: DbError }>;
@@ -37,7 +37,7 @@ export interface JournalEntry {
   entry_date: string;
   memo: string;
   reason: string | null;
-  source_type: 'manual' | 'opening_balance' | 'reversal' | 'auto_invoice' | 'auto_invoice_payment';
+  source_type: 'manual' | 'opening_balance' | 'reversal' | 'auto_invoice' | 'auto_invoice_payment' | 'auto_bill' | 'auto_bill_payment' | 'auto_expense';
   source_id?: string | null;
   reverses_entry_id: string | null;
   posted_by_name: string | null;
@@ -90,14 +90,20 @@ export function ledgerApi(client: LedgerClient = supabase as unknown as LedgerCl
       .eq('entry_id', entry).order('line_no')),
     // Finance phase 3a: automatic postings (docs/ledger-auto). Before that SQL is applied these answer NOT_AVAILABLE.
     autoStatus: (org: string) => call<AutoStatus>('ledger_auto_status', { p_org: org }),
-    autoSet: (org: string, enabled: boolean) => call<AutoStatus>('ledger_auto_set', { p_org: org, p_enabled: enabled }),
+    /** 'invoices' uses the phase 3a call unchanged; 'bills_and_expenses' (phase 3b) names the switch. */
+    autoSet: (org: string, enabled: boolean, which: 'invoices' | 'bills_and_expenses' = 'invoices') =>
+      call<AutoStatus>('ledger_auto_set', which === 'invoices' ? { p_org: org, p_enabled: enabled } : { p_org: org, p_enabled: enabled, p_switch: which }),
     autoPreview: (org: string) => call<AutoPreview>('ledger_auto_preview', { p_org: org }),
-    autoCatchUp: (org: string) => call<AutoRun & { queued: number }>('ledger_auto_catch_up', { p_org: org }),
+    autoCatchUp: (org: string, which: 'invoices' | 'bills_and_expenses' = 'invoices') =>
+      call<AutoRun & { queued: number }>('ledger_auto_catch_up', which === 'invoices' ? { p_org: org } : { p_org: org, p_switch: which }),
     autoRun: (org: string) => call<AutoRun>('ledger_auto_run', { p_org: org }),
     postings: (org: string) => read<PostingLink[]>(client.from('ledger_postings').select('entry_id,reversal_entry_id,source_label,kind')
       .eq('organization_id', org).limit(5000)),
-    issues: (org: string) => read<PostingIssue[]>(client.from('ledger_post_issues').select('id,source_id,source_label,kind,reason_code,created_at')
+    issues: (org: string) => read<PostingIssue[]>(client.from('ledger_post_issues').select('id,source_table,source_id,source_label,kind,reason_code,created_at')
       .eq('organization_id', org).is('resolved_at', null).order('created_at', { ascending: false }).limit(500)),
+    // Finance phase 3b: which account each bill and expense category posts to (read only in this release).
+    categoryMap: (org: string) => read<CategoryMapRow[]>(client.from('ledger_category_map').select('category_key,account_id,is_default')
+      .eq('organization_id', org).order('category_key')),
   };
 }
 export type LedgerApi = ReturnType<typeof ledgerApi>;

@@ -137,3 +137,6 @@ The Finance ledger (chart of accounts, balanced journals, trial balance) reuses 
 
 ## Finance expansion: phase 3a
 Automatic ledger postings for invoices and invoice payments use the same plan rule (through phase 2's `_ledger_rule`): Business, Scale and the trial, off by default per company. Nothing is sent to HMRC. See [docs/ledger-auto/README.md](../ledger-auto/README.md).
+
+## Finance expansion: phase 3b
+Automatic ledger postings for bills and expenses use the same plan rule (through phase 2's `_ledger_rule`): Business, Scale and the trial, off by default per company, one switch for bills and expenses beside the invoice switch. Nothing is sent to HMRC. See [docs/ledger-auto-bills/README.md](../ledger-auto-bills/README.md).

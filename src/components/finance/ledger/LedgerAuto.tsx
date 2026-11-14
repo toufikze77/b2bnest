@@ -3,6 +3,7 @@
 // Every rule is decided by the database; this screen only shows what it is told.
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { LedgerAutoBills } from './LedgerAutoBills';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,11 +12,10 @@ import { AssuranceContext } from '@/hooks/useAssurance';
 import { formatPence, LEDGER_POSTED_WARNING, ledgerMessage } from '@/lib/ledger';
 import { codeOf, type LedgerApi, type Result } from '@/lib/ledgerApi';
 import {
-  AUTO_MFA_MESSAGE, AUTO_NOT_AVAILABLE, AUTO_OFF_CONFIRM, AUTO_OFF_DONE, AUTO_ON_DONE, AUTO_SWITCH_LABEL, AUTO_VAT_SCHEME_NOTE, autoStateText, invoicePosting, ISSUE_KIND_LABELS, issueReason,
+  AUTO_MFA_MESSAGE, AUTO_NOT_AVAILABLE, AUTO_OFF_CONFIRM, AUTO_OFF_DONE, AUTO_ON_DONE, AUTO_SWITCH_LABEL, AUTO_VAT_SCHEME_NOTE, autoStateText, invoicePosting, ISSUE_KIND_LABELS, issueReason, SOURCE_LINKS, sourceOfKind,
   type AutoPreview, type AutoStatus, type PostingIssue,
 } from '@/lib/ledgerAuto';
 
-const INVOICES_LINK = '/business-tools?tool=business-finance-assistant&tab=invoices';
 const ACCOUNT_NAMES: Record<string, string> = { debtors: 'Debtors', sales: 'Sales', vat_control: 'VAT control', bank: 'Bank' };
 
 // The worked example on the screen comes from the same rule the tests check.
@@ -171,20 +171,28 @@ export function LedgerAuto({ api, organizationId, onPosted, refreshKey = 0 }: {
         </CardContent>
       </Card>
 
+      {/* Finance phase 3b: bills and expenses (only once its SQL is applied: the status then has bills_enabled). */}
+      {status.bills_enabled === undefined
+        ? <p className="text-muted-foreground" data-testid="auto-bills-not-available">Automatic postings for bills and expenses are not available yet.</p>
+        : <LedgerAutoBills api={api} organizationId={organizationId} status={status} preview={preview?.bills_and_expenses} onChanged={load} onPosted={onPosted} />}
+
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Needs attention</CardTitle></CardHeader>
         <CardContent>
           {issues.length === 0 ? <p className="text-muted-foreground">Nothing needs attention.</p> : (
             <>
-              <p className="mb-2">These invoices were not posted. Fix the invoice and it is looked at again automatically.</p>
+              <p className="mb-2">These records were not posted. Fix the record and it is looked at again automatically.</p>
               <ul className="divide-y" aria-label="Needs attention">
-                {issues.map((i) => (
-                  <li key={i.id} className="flex flex-wrap items-center gap-2 py-2">
-                    <span className="font-medium">{ISSUE_KIND_LABELS[i.kind] ?? 'Invoice'} {i.source_label ?? ''}</span>
-                    <span className="flex-1">{issueReason(i.reason_code)}</span>
-                    <Link to={INVOICES_LINK} className="text-primary underline">Open invoices<span className="sr-only"> for {i.source_label ?? 'this invoice'}</span></Link>
-                  </li>
-                ))}
+                {issues.map((i) => {
+                  const link = SOURCE_LINKS[i.source_table ?? sourceOfKind(i.kind)];
+                  return (
+                    <li key={i.id} className="flex flex-wrap items-center gap-2 py-2">
+                      <span className="font-medium">{ISSUE_KIND_LABELS[i.kind] ?? 'Invoice'} {i.source_label ?? ''}</span>
+                      <span className="flex-1">{issueReason(i.reason_code)}</span>
+                      <Link to={link.to} className="text-primary underline">{link.text}<span className="sr-only"> for {i.source_label ?? 'this record'}</span></Link>
+                    </li>
+                  );
+                })}
               </ul>
             </>
           )}
