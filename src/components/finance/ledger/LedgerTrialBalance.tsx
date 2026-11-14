@@ -7,7 +7,7 @@ import { codeOf, type LedgerApi } from '@/lib/ledgerApi';
 const today = () => new Date().toISOString().slice(0, 10);
 
 /** The trial balance at any date: each account's balance on its side, and whether the totals agree. */
-export function LedgerTrialBalance({ api, organizationId }: { api: LedgerApi; organizationId: string }) {
+export function LedgerTrialBalance({ api, organizationId, refreshKey = 0 }: { api: LedgerApi; organizationId: string; refreshKey?: number }) {
   const [asOf, setAsOf] = useState(today());
   const [state, setState] = useState<{ kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ok'; tb: ReturnType<typeof trialBalance> }>({ kind: 'loading' });
 
@@ -17,7 +17,7 @@ export function LedgerTrialBalance({ api, organizationId }: { api: LedgerApi; or
     setState(r.ok ? { kind: 'ok', tb: trialBalance(r.data ?? []) } : { kind: 'error', message: ledgerMessage(codeOf(r)) });
   }, [api, organizationId]);
 
-  useEffect(() => { if (asOf) void load(asOf); }, [asOf, load]);
+  useEffect(() => { if (asOf) void load(asOf); }, [asOf, load, refreshKey]);
 
   return (
     <div className="space-y-4 text-sm">

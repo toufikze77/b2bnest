@@ -59,3 +59,22 @@ export function searchWithArchive(search: string, tab: ArchiveTab, on: boolean):
   if (value) p.set('archive', value); else p.delete('archive');
   return p.toString();
 }
+
+/**
+ * The Ledger tab's section lives in `?ledger=` (Finance phase 3a follow-up), so a refresh, Back and Forward keep it.
+ * Missing or unknown values land on Journals.
+ */
+export type LedgerSection = 'journals' | 'accounts' | 'trial-balance' | 'automatic';
+export const LEDGER_SECTIONS: LedgerSection[] = ['journals', 'accounts', 'trial-balance', 'automatic'];
+
+export function ledgerSectionFromSearch(search: string): LedgerSection {
+  const s = new URLSearchParams(search).get('ledger') as LedgerSection | null;
+  return s && LEDGER_SECTIONS.includes(s) ? s : 'journals';
+}
+
+/** The query string after switching the Ledger section; every other param (tab=, tool=, …) is kept. */
+export function searchWithLedgerSection(search: string, section: LedgerSection): string {
+  const p = new URLSearchParams(search);
+  p.set('ledger', section);
+  return p.toString();
+}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { runLedgerAutoSoon } from '@/lib/ledgerAutoRun';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -388,6 +389,8 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
       }
 
       if (result.error) throw result.error;
+      // Ledger automatic postings: post this invoice straight away (fire and forget; never affects this flow).
+      if (isInvoice) runLedgerAutoSoon((result.data as { organization_id?: string | null } | null)?.organization_id ?? editingDocument?.organization_id);
 
       const action = editingDocument ? 'updated' : 'created';
       const status = saveAsDraft ? 'draft' : 'sent';
@@ -432,6 +435,7 @@ const QuoteInvoiceCreationSection: React.FC<QuoteInvoiceCreationSectionProps> = 
         .eq('id', editingDocument.id);
 
       if (error) throw error;
+      if (documentType === 'invoice') runLedgerAutoSoon(editingDocument.organization_id);
 
       toast({
         title: "Success",

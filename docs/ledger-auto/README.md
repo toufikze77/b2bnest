@@ -164,6 +164,29 @@ The same pattern as phase 2.
 - **Before the SQL is applied:** the tab says "Automatic postings are not available yet.", and the rest of the ledger works as before.
 - **Other states:** Solo, trial ended and demo never see the tab (phase 2's gate); members see it read only.
 
+## Instant posting (front end only, added after phase 3a)
+Nothing changed in the database: the invoice trigger still queues every change, and the pg_cron job (`b2bnest-ledger-auto-queue`; every 5 minutes as scheduled in production) still posts the queue. That job remains the safety net. The screens now also call the existing RPC `ledger_auto_run` sooner, through `src/lib/ledgerAutoRun.ts`:
+
+- **Opening the Ledger tab, and opening (or coming back to) Journals, Trial balance or Automatic postings.**
+  - If `ledger_auto_status` says the switch is on, the person can manage it, and something is waiting, the screen runs `ledger_auto_run`, then reloads.
+  - It runs at most 3 times (up to 200 invoices each) while invoices remain.
+- **After an invoice is created, edited, sent, marked paid or unpaid, archived, restored, reverted to draft, deleted, or linked to a company.**
+  - `runLedgerAutoSoon(organizationId)` waits about 1.5 s, so the trigger has queued the row. Then it runs once, under the same three conditions.
+  - It is fire and forget: it never blocks, delays or shows anything in the invoice flow, and every error is swallowed.
+  - A burst of saves makes one call per company per 3 s.
+- **Who never triggers a run:**
+  - demo accounts: nothing is called at all;
+  - plain members: they stop at the status check, since `can_manage` is false, so `ledger_auto_run` is never called for them.
+
+The Ledger section is kept in the URL (`?ledger=journals|accounts|trial-balance|automatic`; anything else means Journals), so a refresh, Back and Forward keep it.
+
+Changes to the switch:
+- one click sends exactly one `ledger_auto_set`;
+- while that call runs, the switch shows "Saving…" and is disabled;
+- switching off asks "Stop automatic postings? Existing journals are kept." first;
+- a two-step refusal (`MFA_REQUIRED`) shows "Confirm with your authenticator app, then try again.", and re-checks the session with the app's usual two-step check (Phase 25), which shows the code screen when needed;
+- "Post now" shows for a manager whenever invoices are waiting.
+
 ## Files
 | File | What |
 |---|---|

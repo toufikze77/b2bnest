@@ -4,6 +4,10 @@
 import { toPence } from '@/lib/ledger';
 
 export const AUTO_SWITCH_LABEL = 'Post invoices to the ledger automatically';
+export const AUTO_ON_DONE = 'Automatic postings are on.';
+export const AUTO_OFF_DONE = 'Automatic postings are off. Existing journals are kept.';
+export const AUTO_OFF_CONFIRM = 'Stop automatic postings? Existing journals are kept.';
+export const AUTO_MFA_MESSAGE = 'Confirm with your authenticator app, then try again.';
 export const AUTO_NOT_AVAILABLE = 'Automatic postings are not available yet.';
 export const AUTO_VAT_SCHEME_NOTE =
   "VAT scheme rules (such as cash accounting or the flat rate scheme) are not applied yet: each journal posts the VAT the invoice records.";

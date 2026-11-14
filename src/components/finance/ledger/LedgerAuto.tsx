@@ -1,16 +1,17 @@
 // Finance phase 3a: the "Automatic postings" section of the Ledger tab (docs/ledger-auto/README.md). The switch, a
 // preview of what posting existing invoices would do, the catch-up with a confirmation, and the needs-attention list.
 // Every rule is decided by the database; this screen only shows what it is told.
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
+import { AssuranceContext } from '@/hooks/useAssurance';
 import { formatPence, LEDGER_POSTED_WARNING, ledgerMessage } from '@/lib/ledger';
 import { codeOf, type LedgerApi, type Result } from '@/lib/ledgerApi';
 import {
-  AUTO_NOT_AVAILABLE, AUTO_SWITCH_LABEL, AUTO_VAT_SCHEME_NOTE, autoStateText, invoicePosting, ISSUE_KIND_LABELS, issueReason,
+  AUTO_MFA_MESSAGE, AUTO_NOT_AVAILABLE, AUTO_OFF_CONFIRM, AUTO_OFF_DONE, AUTO_ON_DONE, AUTO_SWITCH_LABEL, AUTO_VAT_SCHEME_NOTE, autoStateText, invoicePosting, ISSUE_KIND_LABELS, issueReason,
   type AutoPreview, type AutoStatus, type PostingIssue,
 } from '@/lib/ledgerAuto';
 
@@ -29,10 +30,17 @@ type State =
   | { kind: 'error'; message: string }
   | { kind: 'ready'; status: AutoStatus; preview: AutoPreview | null; issues: PostingIssue[] };
 
-export function LedgerAuto({ api, organizationId, onPosted }: { api: LedgerApi; organizationId: string; onPosted: () => void }) {
+export function LedgerAuto({ api, organizationId, onPosted, refreshKey = 0 }: {
+  api: LedgerApi; organizationId: string; onPosted: () => void; refreshKey?: number;
+}) {
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [confirmOff, setConfirmOff] = useState(false);
+  // One call at a time, whatever the screen shows: a second click (or a change event fired twice) is ignored.
+  const inFlight = useRef(false);
+  // The app's own two-step step-up (Phase 25): re-checking the session shows the authenticator code screen when needed.
+  const assurance = useContext(AssuranceContext);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,16 +55,31 @@ export function LedgerAuto({ api, organizationId, onPosted }: { api: LedgerApi; 
     setState({ kind: 'ready', status: s.data, preview: p.ok ? p.data : null, issues: i.ok ? i.data : [] });
   }, [api, organizationId]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void load(); }, [load, refreshKey]);
 
-  const act = async <T,>(fn: () => Promise<Result<T>>, done: (r: T) => string | null) => {
+  /** posts: the call may have posted journals, so the whole Ledger reloads (quietly); otherwise only this screen. */
+  const act = async <T,>(fn: () => Promise<Result<T>>, done: (r: T) => string | null, posts: boolean) => {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setBusy(true); setError(null); setMessage(null);
-    const r = await fn();
-    setBusy(false);
-    if (!('data' in r)) { setError(ledgerMessage(codeOf(r))); return; }
-    setMessage(done(r.data));
-    await load();
-    onPosted();
+    try {
+      const r = await fn();
+      if (!('data' in r)) {
+        const code = codeOf(r);
+        if (code === 'MFA_REQUIRED') { setError(AUTO_MFA_MESSAGE); void assurance?.refresh().catch(() => undefined); } else setError(ledgerMessage(code));
+        return;
+      }
+      setMessage(done(r.data));
+      if (posts) onPosted(); else await load();
+    } finally {
+      inFlight.current = false;
+      setBusy(false);
+    }
+  };
+  const setSwitch = (on: boolean) => {
+    if (inFlight.current || busy) return;
+    if (!on) { setConfirmOff(true); return; } // switching off asks first; switching on doesn't
+    void act(() => api.autoSet(organizationId, true), () => AUTO_ON_DONE, false);
   };
 
   if (state.kind === 'loading') return <p role="status">Loading…</p>;
@@ -77,11 +100,19 @@ export function LedgerAuto({ api, organizationId, onPosted }: { api: LedgerApi; 
         <CardHeader className="pb-2"><CardTitle className="text-base">Invoices</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-wrap items-center gap-3">
-            <Switch id="auto-invoices" checked={status.invoices_enabled} disabled={!status.can_manage || busy}
-              onCheckedChange={(on) => { void act(() => api.autoSet(organizationId, on), () => (on ? 'Automatic postings are on.' : 'Automatic postings are off. Journals already posted stay as they are.')); }} />
+            <Switch id="auto-invoices" checked={status.invoices_enabled} disabled={!status.can_manage || busy || confirmOff} aria-busy={busy}
+              onCheckedChange={setSwitch} />
             <label htmlFor="auto-invoices" className="font-medium">{AUTO_SWITCH_LABEL}</label>
-            <span data-testid="auto-state" className="text-muted-foreground">{autoStateText(status)}</span>
+            <span data-testid="auto-state" className="text-muted-foreground">{busy ? 'Saving…' : autoStateText(status)}</span>
           </div>
+          {confirmOff && (
+            <div className="flex flex-wrap items-center gap-2 rounded-md border p-3" data-testid="auto-off-confirm">
+              <span>{AUTO_OFF_CONFIRM}</span>
+              <Button size="sm" variant="destructive" disabled={busy}
+                onClick={() => { setConfirmOff(false); void act(() => api.autoSet(organizationId, false), () => AUTO_OFF_DONE, false); }}>Stop</Button>
+              <Button size="sm" variant="outline" disabled={busy} onClick={() => setConfirmOff(false)}>Keep on</Button>
+            </div>
+          )}
           <p>
             When this is on, sending an invoice posts it to the ledger, and marking it paid posts the payment. For example, an invoice of
             {' '}£100.00 plus £20.00 VAT posts: {exampleText}. Drafts are never posted. If an invoice changes after it was posted, its journal
@@ -89,7 +120,12 @@ export function LedgerAuto({ api, organizationId, onPosted }: { api: LedgerApi; 
           </p>
           <p className="text-muted-foreground">{AUTO_VAT_SCHEME_NOTE}</p>
           {!status.can_manage && <p className="text-muted-foreground">Only an owner or admin of this company can change this.</p>}
-          {status.waiting > 0 && <p data-testid="auto-waiting">{status.waiting} invoice{status.waiting === 1 ? '' : 's'} waiting to be posted.</p>}
+          {status.waiting > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <p data-testid="auto-waiting">{status.waiting} invoice{status.waiting === 1 ? '' : 's'} waiting to be posted.</p>
+              {status.can_manage && <Button size="sm" variant="outline" disabled={busy} onClick={() => { void act(() => api.autoRun(organizationId), runText, true); }}>Post now</Button>}
+            </div>
+          )}
           {message && <p role="status" className="text-green-700">{message}</p>}
           {error && <p role="alert" className="text-destructive">{error}</p>}
         </CardContent>
@@ -115,7 +151,6 @@ export function LedgerAuto({ api, organizationId, onPosted }: { api: LedgerApi; 
           {canRun && !confirming && (
             <div className="flex flex-wrap gap-2">
               <Button disabled={busy || toPost === 0} onClick={() => setConfirming(true)}>Post existing invoices</Button>
-              {status.waiting > 0 && <Button variant="outline" disabled={busy} onClick={() => { void act(() => api.autoRun(organizationId), runText); }}>Post now</Button>}
             </div>
           )}
           {status.can_manage && !status.invoices_enabled && <p className="text-muted-foreground">Switch automatic postings on to post existing invoices.</p>}
@@ -128,7 +163,7 @@ export function LedgerAuto({ api, organizationId, onPosted }: { api: LedgerApi; 
               </p>
               <Alert><AlertDescription>{LEDGER_POSTED_WARNING}</AlertDescription></Alert>
               <div className="flex gap-2">
-                <Button disabled={busy} onClick={() => { setConfirming(false); void act(() => api.autoCatchUp(organizationId), runText); }}>{busy ? 'Posting…' : 'Yes, post them'}</Button>
+                <Button disabled={busy} onClick={() => { setConfirming(false); void act(() => api.autoCatchUp(organizationId), runText, true); }}>{busy ? 'Posting…' : 'Yes, post them'}</Button>
                 <Button variant="outline" disabled={busy} onClick={() => setConfirming(false)}>Cancel</Button>
               </div>
             </div>
