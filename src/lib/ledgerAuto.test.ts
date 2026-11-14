@@ -44,10 +44,12 @@ describe('automatic posting maths (integer pence)', () => {
 
 describe('screen helpers', () => {
   it('every reason code in the SQL has plain wording', () => {
-    const sql = readFileSync('docs/ledger-auto/proposal.sql', 'utf8');
-    const block = sql.slice(sql.indexOf('CONSTRAINT lpi_reason'), sql.indexOf('created_at', sql.indexOf('CONSTRAINT lpi_reason')));
+    // The latest CHECK (phase 3b widens the phase 3a list).
+    const sql = readFileSync('docs/ledger-auto-bills/proposal.sql', 'utf8');
+    const start = sql.indexOf('ADD CONSTRAINT lpi_reason');
+    const block = sql.slice(start, sql.indexOf(';', start));
     const codes = [...block.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
-    expect(codes.length).toBe(12);
+    expect(codes.length).toBe(16);
     expect(codes.sort()).toEqual(Object.keys(ISSUE_REASONS).sort());
     expect(issueReason('before_start')).toBe('Dated before the ledger start date.');
     expect(issueReason('???')).toBe('Needs checking.');

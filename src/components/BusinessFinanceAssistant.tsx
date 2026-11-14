@@ -41,7 +41,7 @@ import { TabbedPageHeader, tabStripDividerClass, tabStripListClass, tabStripTrig
 import { documentEmailApi, EmailAccess, emailAvailability, SendResult, SENT_NOT_SAVED, SENT_TOAST } from '@/lib/documentEmail';
 import { Tables } from '@/integrations/supabase/types';
 import { LedgerTab } from '@/components/finance/ledger/LedgerTab';
-import { runLedgerAutoSoon } from '@/lib/ledgerAutoRun';
+import { runLedgerAutoSoon, withLedgerAutoRun } from '@/lib/ledgerAutoRun';
 // Type definitions
 type Quote = Tables<'quotes'>;
 type Invoice = Tables<'invoices'>;
@@ -730,7 +730,7 @@ const BusinessFinanceAssistant = () => {
         </TabsContent>
 
         <TabsContent value="expenses" className="mt-0">
-          <ExpensesTab key={`expenses-${vatFocus.expenses}`} initialFilter={vatFocus.expenses ? 'vat_missing' : undefined} rows={expenses} suppliers={suppliers} {...moneyOutState('expenses', loadExpenses)} api={moneyOut('expenses')} onChanged={() => { void loadExpenses(); }} onDownload={downloadExpenses}
+          <ExpensesTab key={`expenses-${vatFocus.expenses}`} initialFilter={vatFocus.expenses ? 'vat_missing' : undefined} rows={expenses} suppliers={suppliers} {...moneyOutState('expenses', loadExpenses)} api={withLedgerAutoRun(moneyOut('expenses'), (id) => expenses.find((e) => e.id === id)?.organization_id)} onChanged={() => { void loadExpenses(); }} onDownload={downloadExpenses}
             companies={memberships} organizationId={organizationId} />
         </TabsContent>
 

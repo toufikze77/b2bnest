@@ -20,6 +20,8 @@ export interface AutoStatus {
   enabled_at: string | null;
   waiting: number;
   open_issues: number;
+  /** Finance phase 3b (absent before its SQL is applied). */
+  bills_enabled?: boolean;
 }
 export interface AutoPreview {
   invoices_to_post: number;
@@ -30,10 +32,20 @@ export interface AutoPreview {
   already_posted: number;
   not_issued: number;
   skipped: Record<string, number>;
+  /** Finance phase 3b (absent before its SQL is applied). */
+  bills_and_expenses?: RecordsPreview;
 }
 export interface AutoRun { processed: number; failed: number; dropped: number; remaining: number }
-export interface PostingLink { entry_id: string; reversal_entry_id: string | null; source_label: string | null; kind: 'invoice_issued' | 'invoice_paid' }
-export interface PostingIssue { id: string; source_id: string; source_label: string | null; kind: 'invoice_issued' | 'invoice_paid'; reason_code: string; created_at: string }
+export type PostingKind = 'invoice_issued' | 'invoice_paid' | 'bill_received' | 'bill_paid' | 'expense';
+export type PostingSource = 'invoices' | 'bills' | 'expenses';
+export interface PostingLink { entry_id: string; reversal_entry_id: string | null; source_label: string | null; kind: PostingKind }
+export interface PostingIssue { id: string; source_table?: PostingSource; source_id: string; source_label: string | null; kind: PostingKind; reason_code: string; created_at: string }
+/** Finance phase 3b: the bills-and-expenses part of ledger_auto_preview (whole pence). */
+export interface RecordsPreview {
+  bills_to_post: number; bills_total: number; bill_payments_to_post: number; bill_payments_total: number;
+  expenses_to_post: number; expenses_total: number; to_reverse: number; already_posted: number; not_posted: number; skipped: Record<string, number>;
+}
+export interface CategoryMapRow { category_key: string; account_id: string | null; is_default: boolean }
 
 /** Plain reasons for the needs-attention list (the reason codes of ledger_post_issues). */
 export const ISSUE_REASONS: Record<string, string> = {
@@ -46,12 +58,27 @@ export const ISSUE_REASONS: Record<string, string> = {
   negative_amount: 'An amount is negative (credit notes are not posted yet).',
   currency_not_gbp: 'Not in pounds (GBP). Only GBP invoices are posted.',
   paid_date_missing: 'Marked paid, but with no paid date.',
-  issue_not_posted: "The payment can't post because the invoice itself isn't posted.",
-  reversal_period_locked: "The invoice changed, but its journal is in a locked period, so it can't be reversed.",
-  processing_failed: "Couldn't be posted after several tries. Check the invoice, then save it again.",
+  issue_not_posted: "The payment can't post because the record itself isn't posted.",
+  reversal_period_locked: "The record changed, but its journal is in a locked period, so it can't be reversed.",
+  processing_failed: "Couldn't be posted after several tries. Check the record, then save it again.",
+  // Finance phase 3b (bills and expenses)
+  vat_details_missing: 'Its VAT details are not recorded yet (Company records helps add them).',
+  category_not_mapped: 'Its category has no ledger account yet.',
+  category_account_missing: "Its category's ledger account was deleted.",
+  category_account_inactive: "Its category's ledger account is inactive.",
 };
 export const issueReason = (code: string) => ISSUE_REASONS[code] ?? 'Needs checking.';
-export const ISSUE_KIND_LABELS: Record<string, string> = { invoice_issued: 'Invoice', invoice_paid: 'Payment' };
+export const ISSUE_KIND_LABELS: Record<string, string> = {
+  invoice_issued: 'Invoice', invoice_paid: 'Payment', bill_received: 'Bill', bill_paid: 'Bill payment', expense: 'Expense:',
+};
+const FINANCE = '/business-tools?tool=business-finance-assistant';
+/** Where to fix a record: invoices and expenses have their own tab; bills are edited in Company records. */
+export const SOURCE_LINKS: Record<PostingSource, { to: string; text: string }> = {
+  invoices: { to: `${FINANCE}&tab=invoices`, text: 'Open invoices' },
+  expenses: { to: `${FINANCE}&tab=expenses`, text: 'Open expenses' },
+  bills: { to: `${FINANCE}&tab=company-records`, text: 'Open company records' },
+};
+export const sourceOfKind = (k: string): PostingSource => (k.startsWith('bill') ? 'bills' : k === 'expense' ? 'expenses' : 'invoices');
 
 export interface InvoiceAmounts { status: string | null; currency: string | null; subtotal: number | string | null; tax_amount: number | string | null; total_amount: number | string | null }
 export type PostingLine = { account: 'debtors' | 'sales' | 'vat_control' | 'bank'; debit: number; credit: number };
@@ -93,7 +120,8 @@ export function exactPence(v: number | string | null | undefined): number | null
 export function journalSources(links: PostingLink[]): Map<string, string> {
   const m = new Map<string, string>();
   for (const l of links) {
-    const label = `Invoice ${l.source_label ?? ''}`.trim();
+    const name = l.source_label ?? '';
+    const label = (l.kind === 'expense' ? `Expense: ${name}` : l.kind.startsWith('bill') ? `Bill ${name}` : `Invoice ${name}`).trim();
     m.set(l.entry_id, label);
     if (l.reversal_entry_id) m.set(l.reversal_entry_id, label);
   }
@@ -106,4 +134,53 @@ export function autoStateText(s: Pick<AutoStatus, 'invoices_enabled' | 'enabled_
   if (!s.enabled_at) return 'On';
   const d = new Date(s.enabled_at);
   return Number.isNaN(d.getTime()) ? 'On' : `On since ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/London' })}`;
+}
+
+// ------------------------------------------------------------------ Finance phase 3b: bills and expenses
+
+export const BILLS_SWITCH_LABEL = 'Post bills and expenses to the ledger automatically';
+export const BILLS_ON_DONE = 'Bills and expenses now post automatically.';
+export const BILLS_OFF_DONE = 'Bills and expenses no longer post automatically. Existing journals are kept.';
+export const BILLS_OFF_CONFIRM = 'Stop posting bills and expenses? Existing journals are kept.';
+
+/** "Software and subscriptions" -> software_and_subscriptions (the database's _ledger_auto_category_key). */
+export const categoryKey = (c: string | null | undefined) =>
+  (c ?? '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 60);
+
+export interface MoneyOutAmounts {
+  status: string | null; amount: number | string | null; net_amount: number | string | null; vat_amount: number | string | null;
+  vat_status: string | null; vat_reclaimable: boolean;
+}
+export type CostLine = { account: 'expense' | 'vat_control' | 'creditors' | 'bank'; debit: number; credit: number };
+
+/** The shared rule for a bill or an expense: Dr expense = net (+ VAT if not reclaimable), Dr VAT control = reclaimable VAT, Cr `credit` = gross. */
+function costPosting(r: MoneyOutAmounts, credit: 'creditors' | 'bank'): { lines: CostLine[] } | { reason: string } {
+  if (r.amount === null || r.amount === '') return { reason: 'amounts_missing' };
+  if (r.vat_status !== 'recorded' || r.net_amount === null || r.vat_amount === null || r.net_amount === '' || r.vat_amount === '') return { reason: 'vat_details_missing' };
+  const gross = exactPence(r.amount); const net = exactPence(r.net_amount); const vat = exactPence(r.vat_amount);
+  if (gross === null || net === null || vat === null) return { reason: 'not_whole_pence' };
+  if (gross < 0 || net < 0 || vat < 0) return { reason: 'negative_amount' };
+  if (gross === 0) return { reason: 'zero_total' };
+  if (net + vat !== gross) return { reason: 'amounts_do_not_add_up' };
+  const reclaim = r.vat_reclaimable && vat > 0;
+  const lines: CostLine[] = [
+    { account: 'expense', debit: net + (reclaim ? 0 : vat), credit: 0 },
+    { account: 'vat_control', debit: reclaim ? vat : 0, credit: 0 },
+    { account: credit, debit: 0, credit: gross },
+  ];
+  return { lines: lines.filter((l) => l.debit > 0 || l.credit > 0) };
+}
+
+/** A bill as received (pending, overdue or paid): Cr Creditors = gross. Cancelled bills never post. */
+export function billPosting(b: MoneyOutAmounts & { currency: string | null }): { lines: CostLine[] } | { reason: string } | { none: true } {
+  if (!['pending', 'overdue', 'paid'].includes((b.status ?? '').trim().toLowerCase())) return { none: true };
+  if ((b.currency ?? '').trim().toUpperCase() !== 'GBP') return { reason: 'currency_not_gbp' };
+  return costPosting(b, 'creditors');
+}
+
+/** An approved or paid expense (money already spent): Cr Bank = gross. Pending, rejected and other expenses never post. */
+export function expensePosting(e: MoneyOutAmounts, accountCurrency: string | null): { lines: CostLine[] } | { reason: string } | { none: true } {
+  if (!['approved', 'paid'].includes((e.status ?? '').trim().toLowerCase())) return { none: true };
+  if ((accountCurrency ?? '').trim().toUpperCase() !== 'GBP') return { reason: 'currency_not_gbp' };
+  return costPosting(e, 'bank');
 }

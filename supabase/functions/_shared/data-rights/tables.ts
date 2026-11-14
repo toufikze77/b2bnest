@@ -106,6 +106,8 @@ export const COMPANY_TABLES: CompanyTable[] = [
   { table: 'ledger_auto_settings', by: 'organization_id' },
   { table: 'ledger_postings', by: 'organization_id' },
   { table: 'ledger_post_issues', by: 'organization_id' },
+  // Finance phase 3b (docs/ledger-auto-bills): which ledger account each bill and expense category posts to.
+  { table: 'ledger_category_map', by: 'organization_id' },
 ];
 
 export const COMPANY_CHILD_TABLES: CompanyChildTable[] = [
