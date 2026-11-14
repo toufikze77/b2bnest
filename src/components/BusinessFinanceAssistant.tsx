@@ -41,6 +41,7 @@ import { TabbedPageHeader, tabStripDividerClass, tabStripListClass, tabStripTrig
 import { documentEmailApi, EmailAccess, emailAvailability, SendResult, SENT_NOT_SAVED, SENT_TOAST } from '@/lib/documentEmail';
 import { Tables } from '@/integrations/supabase/types';
 import { LedgerTab } from '@/components/finance/ledger/LedgerTab';
+import { runLedgerAutoSoon } from '@/lib/ledgerAutoRun';
 // Type definitions
 type Quote = Tables<'quotes'>;
 type Invoice = Tables<'invoices'>;
@@ -468,6 +469,8 @@ const BusinessFinanceAssistant = () => {
     setStatusBusy(null);
     if (error) { patchDoc(kind, doc.id, before); toast.error(failMessage); return false; }
     reloadDocs(kind);
+    // Ledger automatic postings: post this change straight away (fire and forget; never affects this flow).
+    if (kind === 'invoice') runLedgerAutoSoon((doc as Invoice).organization_id);
     return true;
   };
 
@@ -518,6 +521,7 @@ const BusinessFinanceAssistant = () => {
     setDeletingDoc(null);
     toast.success(`${kind === 'quote' ? 'Quote' : 'Invoice'} ${number} deleted forever`);
     reloadDocs(kind);
+    if (kind === 'invoice') runLedgerAutoSoon((deletingDoc as Invoice).organization_id);
     return null;
   };
   const archiveText = archivingDoc ? archiveWording(kindOf(archivingDoc), numberOf(archivingDoc)) : null;
@@ -550,6 +554,7 @@ const BusinessFinanceAssistant = () => {
       if (error) { toast.error(SENT_NOT_SAVED); return r; }
       patchDoc(kind, doc.id, payload);
       reloadDocs(kind);
+      if (kind === 'invoice') runLedgerAutoSoon((doc as Invoice).organization_id);
     } else setEmailingDoc(null);
     toast.success(SENT_TOAST(r.recipient));
     return r;

@@ -1,5 +1,6 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
+import { AssuranceContext, signedOutAssurance } from '@/hooks/useAssurance';
 import { describe, expect, it, vi } from 'vitest';
 import type { LedgerAccount } from '@/lib/ledger';
 import type { JournalEntry, LedgerApi, LedgerStatus } from '@/lib/ledgerApi';
@@ -326,18 +327,6 @@ describe('Ledger tab: automatic postings (phase 3a)', () => {
     expect(screen.getByText('Switch automatic postings on to post existing invoices.')).toBeInTheDocument();
   });
 
-  it('switching on calls the RPC and shows "On since"', async () => {
-    const api = withAuto();
-    show(api);
-    await openAuto();
-    vi.mocked(api.autoStatus).mockImplementation(() => ok(autoStatus({ invoices_enabled: true, enabled_at: '2026-03-03T10:00:00Z' })));
-    const sw = await screen.findByRole('switch', { name: 'Post invoices to the ledger automatically' });
-    await act(async () => { fireEvent.click(sw); });
-    expect(api.autoSet).toHaveBeenCalledWith(ORG, true);
-    expect(await screen.findByTestId('auto-state')).toHaveTextContent('On since 3 March 2026');
-    expect(screen.getByRole('status')).toHaveTextContent('Automatic postings are on.');
-  });
-
   it('catch-up asks for confirmation with the counts, totals and the reversal-only warning', async () => {
     const api = withAuto({ autoStatus: vi.fn(() => ok(autoStatus({ invoices_enabled: true, enabled_at: '2026-03-03T10:00:00Z' }))) });
     show(api);
@@ -361,14 +350,6 @@ describe('Ledger tab: automatic postings (phase 3a)', () => {
     expect(await screen.findByRole('switch')).toBeDisabled();
     expect(screen.getByText('Only an owner or admin of this company can change this.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Post existing invoices' })).toBeNull();
-  });
-
-  it('refusals are shown in words', async () => {
-    show(withAuto({ autoSet: vi.fn(() => Promise.resolve({ ok: false as const, code: 'MFA_REQUIRED' })) }));
-    await openAuto();
-    const sw = await screen.findByRole('switch');
-    await act(async () => { fireEvent.click(sw); });
-    expect(screen.getByRole('alert')).toHaveTextContent('Two-step sign-in is on for your account.');
   });
 
   it('the needs-attention list: plain reasons and a link to the invoices', async () => {
@@ -396,5 +377,167 @@ describe('Ledger tab: automatic postings (phase 3a)', () => {
     fireEvent.change(screen.getByLabelText('Reason for reversing (required)'), { target: { value: 'Wrong customer' } });
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Post the reversal' })); });
     expect(api.reverse).toHaveBeenCalledWith('j5', 'Wrong customer');
+  });
+});
+
+// ------------------------------------------------------------------ follow-up: post straight away, URL section, switch
+const managerOn = (o: Record<string, unknown> = {}) => ({ access: 'ok', can_manage: true, set_up: true, invoices_enabled: true, enabled_at: '2026-03-03T10:00:00Z', waiting: 0, open_issues: 0, ...o });
+const emptyPreview = { invoices_to_post: 0, invoices_total: 0, payments_to_post: 0, payments_total: 0, to_reverse: 0, already_posted: 0, not_issued: 0, skipped: {} };
+const autoApi = (status: Record<string, unknown>, o: Partial<Record<keyof LedgerApi, unknown>> = {}) => fakeApi({
+  autoStatus: vi.fn(() => ok(status)), autoPreview: vi.fn(() => ok(emptyPreview)), issues: vi.fn(() => ok([])),
+  autoRun: vi.fn(() => ok({ processed: 2, failed: 0, dropped: 0, remaining: 0 })), ...o });
+function Loc() { const l = useLocation(); return <div data-testid="loc">{l.search}</div>; }
+function Back() { const n = useNavigate(); return <button type="button" onClick={() => n(-1)}>Browser back</button>; }
+const showAt = (api: LedgerApi, search: string) =>
+  render(<MemoryRouter initialEntries={[`/business-tools${search}`]}><LedgerTab organizationId={ORG} api={api} isDemo={false} /><Loc /><Back /></MemoryRouter>);
+const selected = (name: string) => screen.getByRole('tab', { name }).getAttribute('aria-selected') === 'true';
+
+describe('Ledger tab: post waiting invoices straight away', () => {
+  it('a manager with the switch on and invoices waiting: one run on load, before the journals are read', async () => {
+    const api = autoApi(managerOn({ waiting: 2 }));
+    show(api);
+    await screen.findByRole('table', { name: 'Journals' });
+    expect(api.autoRun).toHaveBeenCalledTimes(1);
+    expect(api.autoRun).toHaveBeenCalledWith(ORG);
+    expect(vi.mocked(api.journals).mock.invocationCallOrder[0]).toBeGreaterThan(vi.mocked(api.autoRun).mock.invocationCallOrder[0]);
+  });
+
+  it('at most three runs while invoices remain (each posts up to 200)', async () => {
+    const api = autoApi(managerOn({ waiting: 900 }), { autoRun: vi.fn(() => ok({ processed: 200, failed: 0, dropped: 0, remaining: 700 })) });
+    show(api);
+    await screen.findByRole('table', { name: 'Journals' });
+    expect(api.autoRun).toHaveBeenCalledTimes(3);
+  });
+
+  it('never for a plain member, with the switch off, with nothing waiting, or before the SQL is applied', async () => {
+    for (const api of [autoApi(managerOn({ waiting: 2, can_manage: false })), autoApi(managerOn({ waiting: 2, invoices_enabled: false })),
+      autoApi(managerOn({ waiting: 0 })), fakeApi()]) {
+      const { unmount } = show(api);
+      await screen.findByRole('table', { name: 'Journals' });
+      expect(api.autoRun).not.toHaveBeenCalled();
+      unmount();
+    }
+  });
+
+  it('never for the demo account (nothing is asked at all)', () => {
+    const api = autoApi(managerOn({ waiting: 2 }));
+    show(api, true);
+    expect(api.autoStatus).not.toHaveBeenCalled();
+    expect(api.autoRun).not.toHaveBeenCalled();
+  });
+
+  it('opening Trial balance or Automatic postings runs again and reloads; Chart of accounts does not', async () => {
+    const api = autoApi(managerOn({ waiting: 1 }));
+    show(api);
+    await screen.findByRole('table', { name: 'Journals' });
+    expect(api.autoRun).toHaveBeenCalledTimes(1);
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Chart of accounts' }));
+    await screen.findByTestId('account-7100');
+    expect(api.autoRun).toHaveBeenCalledTimes(1);
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Trial balance' }));
+    await waitFor(() => expect(api.autoRun).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(api.journals).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(vi.mocked(api.trialBalance).mock.calls.length).toBeGreaterThanOrEqual(2));
+  });
+});
+
+describe('Ledger tab: the section is kept in the URL', () => {
+  it('opens on the section in ?ledger= and keeps the other params', async () => {
+    showAt(fakeApi(), '?tool=business-finance-assistant&tab=ledger&ledger=trial-balance');
+    await screen.findByTestId('tb-check');
+    expect(selected('Trial balance')).toBe(true);
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Chart of accounts' }));
+    await waitFor(() => expect(screen.getByTestId('loc').textContent).toBe('?tool=business-finance-assistant&tab=ledger&ledger=accounts'));
+    expect(selected('Chart of accounts')).toBe(true);
+  });
+
+  it('an unknown or missing value falls back to Journals', async () => {
+    showAt(fakeApi(), '?tab=ledger&ledger=nonsense');
+    await screen.findByRole('table', { name: 'Journals' });
+    expect(selected('Journals')).toBe(true);
+  });
+
+  it('Back returns to the previous section', async () => {
+    showAt(fakeApi(), '?tab=ledger');
+    await screen.findByRole('table', { name: 'Journals' });
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Trial balance' }));
+    await screen.findByTestId('tb-check');
+    expect(screen.getByTestId('loc').textContent).toBe('?tab=ledger&ledger=trial-balance');
+    fireEvent.click(screen.getByRole('button', { name: 'Browser back' }));
+    await waitFor(() => expect(screen.getByTestId('loc').textContent).toBe('?tab=ledger'));
+    await waitFor(() => expect(selected('Journals')).toBe(true));
+    expect(screen.getByTestId('loc').textContent).toBe('?tab=ledger');
+  });
+});
+
+describe('Ledger tab: the automatic-postings switch', () => {
+  const openAt = async (api: LedgerApi, assurance?: { refresh: () => Promise<void> }) => {
+    const ui = <MemoryRouter initialEntries={['/x?ledger=automatic']}><LedgerTab organizationId={ORG} api={api} isDemo={false} /></MemoryRouter>;
+    render(assurance ? <AssuranceContext.Provider value={{ ...signedOutAssurance, ...assurance }}>{ui}</AssuranceContext.Provider> : ui);
+    return screen.findByRole('switch', { name: 'Post invoices to the ledger automatically' });
+  };
+
+  it('one click sends exactly one call; while it runs the switch is busy and further clicks are ignored', async () => {
+    let finish: (v: unknown) => void = () => {};
+    const api = autoApi(managerOn({ invoices_enabled: false, enabled_at: null }), { autoSet: vi.fn(() => new Promise((r) => { finish = r; })) });
+    const sw = await openAt(api);
+    fireEvent.click(sw);
+    expect(api.autoSet).toHaveBeenCalledTimes(1);
+    expect(api.autoSet).toHaveBeenCalledWith(ORG, true);
+    await waitFor(() => expect(sw).toBeDisabled());
+    expect(sw).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByTestId('auto-state')).toHaveTextContent('Saving…');
+    fireEvent.click(sw); fireEvent.click(sw);
+    expect(api.autoSet).toHaveBeenCalledTimes(1);
+    vi.mocked(api.autoStatus).mockImplementation(() => ok(managerOn()));
+    await act(async () => { finish({ ok: true, data: managerOn() }); });
+    expect(await screen.findByText('Automatic postings are on.')).toBeInTheDocument();
+    expect(screen.getByTestId('auto-state')).toHaveTextContent('On since 3 March 2026');
+    expect(sw).not.toBeDisabled();
+    expect(api.autoSet).toHaveBeenCalledTimes(1);
+  });
+
+  it('switching off asks first; "Keep on" sends nothing; "Stop" sends one call', async () => {
+    const api = autoApi(managerOn(), { autoSet: vi.fn(() => ok(managerOn({ invoices_enabled: false }))) });
+    const sw = await openAt(api);
+    fireEvent.click(sw);
+    expect(screen.getByTestId('auto-off-confirm')).toHaveTextContent('Stop automatic postings? Existing journals are kept.');
+    expect(api.autoSet).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Keep on' }));
+    expect(screen.queryByTestId('auto-off-confirm')).toBeNull();
+    expect(api.autoSet).not.toHaveBeenCalled();
+    fireEvent.click(sw);
+    vi.mocked(api.autoStatus).mockImplementation(() => ok(managerOn({ invoices_enabled: false })));
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Stop' })); });
+    expect(api.autoSet).toHaveBeenCalledTimes(1);
+    expect(api.autoSet).toHaveBeenCalledWith(ORG, false);
+    expect(await screen.findByText('Automatic postings are off. Existing journals are kept.')).toBeInTheDocument();
+  });
+
+  it('MFA_REQUIRED: a plain message, and the app re-checks two-step sign-in (its usual code screen)', async () => {
+    const refresh = vi.fn(() => Promise.resolve());
+    const api = autoApi(managerOn({ invoices_enabled: false }), { autoSet: vi.fn(() => Promise.resolve({ ok: false as const, code: 'MFA_REQUIRED' })) });
+    const sw = await openAt(api, { refresh });
+    await act(async () => { fireEvent.click(sw); });
+    expect(screen.getByRole('alert')).toHaveTextContent('Confirm with your authenticator app, then try again.');
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('other refusals are shown in words', async () => {
+    const api = autoApi(managerOn({ invoices_enabled: false }), { autoSet: vi.fn(() => Promise.resolve({ ok: false as const, code: 'NOT_ADMIN' })) });
+    const sw = await openAt(api);
+    await act(async () => { fireEvent.click(sw); });
+    expect(screen.getByRole('alert')).toHaveTextContent('Only an owner or admin of this company can change the ledger.');
+  });
+
+  it('"Post now" shows for a manager whenever invoices are waiting, never for a plain member', async () => {
+    const api = autoApi(managerOn({ waiting: 3 }), { autoRun: vi.fn(() => ok({ processed: 0, failed: 0, dropped: 0, remaining: 3 })) });
+    await openAt(api);
+    expect(await screen.findByTestId('auto-waiting')).toHaveTextContent('3 invoices waiting to be posted.');
+    expect(screen.getByRole('button', { name: 'Post now' })).toBeInTheDocument();
+    cleanup();
+    await openAt(autoApi(managerOn({ waiting: 3, can_manage: false })));
+    await screen.findByTestId('auto-waiting');
+    expect(screen.queryByRole('button', { name: 'Post now' })).toBeNull();
   });
 });

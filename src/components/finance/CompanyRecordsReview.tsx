@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { runLedgerAutoSoon } from '@/lib/ledgerAutoRun';
 import { Building2, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -126,6 +127,7 @@ export function CompanyRecordsReview({ client, userId, invoices, expenses, compa
         if (r.error) { failed += ids.length; message = companyErrorMessage(r.error) ?? message; continue; }
         const n = Array.isArray(r.data) ? r.data.length : 0;
         done += n; failed += ids.length - n;
+        if (kind === 'invoice' && n > 0) runLedgerAutoSoon(company);
       } catch { failed += ids.length; }
     }
     setBusy(false); setConfirmAssign(false);
@@ -145,6 +147,7 @@ export function CompanyRecordsReview({ client, userId, invoices, expenses, compa
         const r = await client.from(KIND_TABLE[c.kind]).update(payload).eq('id', c.id).eq('user_id', userId).select('id');
         const ok = !r.error && Array.isArray(r.data) && r.data.length === 1;
         if (ok) done += 1; else { failed += 1; message = (r.error ? companyErrorMessage(r.error) : null) ?? message; }
+        if (ok && c.kind === 'invoice') runLedgerAutoSoon(row?.organizationId ?? (typeof payload.organization_id === 'string' ? payload.organization_id : null));
       } catch { failed += 1; }
     }
     setBusy(false); setVatConfirm(false); setVatOpen(false);
