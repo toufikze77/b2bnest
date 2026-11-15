@@ -108,6 +108,11 @@ export const COMPANY_TABLES: CompanyTable[] = [
   { table: 'ledger_post_issues', by: 'organization_id' },
   // Finance phase 3b (docs/ledger-auto-bills): which ledger account each bill and expense category posts to.
   { table: 'ledger_category_map', by: 'organization_id' },
+  // Finance phase 3c-1 (docs/ledger-bank): bank accounts (name and last four digits), statement imports, and the
+  // imported statement lines with what each matched (JSON; a CSV would need the data-export function, out of scope here).
+  { table: 'ledger_bank_accounts', by: 'organization_id' },
+  { table: 'ledger_bank_imports', by: 'organization_id' },
+  { table: 'ledger_bank_lines', by: 'organization_id' },
 ];
 
 export const COMPANY_CHILD_TABLES: CompanyChildTable[] = [

@@ -307,6 +307,21 @@ export const LEDGER_MESSAGES: Record<string, string> = {
   ACCOUNT_USED: 'This account has journal lines, so it can only be made inactive.',
   NOT_FOUND: "That wasn't found. Refresh and try again.",
   APPEND_ONLY: 'Posted journals cannot be edited or deleted. Reverse them instead.',
+  BAD_REQUEST: 'Something in the request is missing. Refresh and try again.',
+  // Finance phase 3c-1: bank statements.
+  BANK_BAD_NAME: 'Give the bank account a name of up to 80 characters.',
+  BANK_BAD_LAST4: 'The last 4 digits are exactly four numbers (never the full account number).',
+  BANK_NAME_TAKEN: 'There is already a bank account with that name.',
+  BANK_ACCOUNT_LIMIT: 'A company can have up to 10 bank accounts.',
+  BANK_ACCOUNT_INACTIVE: 'This bank account is inactive. Make it active to import a statement.',
+  BANK_NOT_BANK_ACCOUNT: "The ledger's Bank account (1200) wasn't found.",
+  BANK_TOO_MANY_ROWS: 'At most 2,000 lines can be sent at once.',
+  BANK_ALREADY_MATCHED: 'That line or payment is already matched. Unmatch it first.',
+  BANK_IGNORED: 'That line is ignored. Un-ignore it first.',
+  BANK_NOT_A_PAYMENT: 'Only an invoice payment, a bill payment or an expense can be matched.',
+  BANK_POSTING_REVERSED: 'That payment was reversed in the ledger, so it can no longer be matched.',
+  BANK_AMOUNT_DIFFERS: 'The amount or direction (money in or out) differs from the payment.',
+  BANK_TOO_FAR_APART: 'The line and the payment are more than 31 days apart.',
 };
 
 type DbError = { code?: string; message?: string } | null | undefined;
