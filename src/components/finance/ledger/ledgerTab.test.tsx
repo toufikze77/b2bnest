@@ -578,8 +578,12 @@ describe('Ledger tab: automatic postings for bills and expenses', () => {
     expect(table).toHaveTextContent('Skipped: Its VAT details are not recorded yet');
     expect(screen.queryByRole('button', { name: 'Post existing bills and expenses' })).toBeNull();
     const map = await screen.findByRole('table', { name: 'Category mapping' });
-    expect(map).toHaveTextContent('travel7400 Travel');
-    expect(map).toHaveTextContent('utilitiesNot mapped');
+    expect(map).toHaveTextContent('Travel (travel)7400 Travel');
+    expect(map).toHaveTextContent('Utilities (utilities)Not mapped');
+    const unmapped = screen.getByTestId('auto-bills-unmapped');
+    expect(unmapped).toHaveTextContent('Deliberately not mapped');
+    expect(unmapped).toHaveTextContent('Wages and salaries: payroll comes later. (wages_salaries)');
+    expect(unmapped).toHaveTextContent('Equipment and tools: it may be a fixed asset. (equipment_tools)');
     expect(within(map).queryByRole('button')).toBeNull();
   });
 

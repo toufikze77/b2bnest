@@ -114,4 +114,33 @@ fresh
 $P -c "ALTER TABLE public.ledger_postings DROP CONSTRAINT lp_kind; ALTER TABLE public.ledger_postings ADD CONSTRAINT lp_kind CHECK (kind IN ('invoice_issued', 'invoice_paid', 'other'))" >/dev/null
 $P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/proposal.sql 2>&1 | grep -q 'lp_kind differs' && echo "PASS|a changed 3a CHECK is refused" || echo "FAIL|check drift"
 $P -At -c "select case when to_regclass('public.ledger_category_map') is null then 'PASS|nothing was applied by the refused runs' else 'FAIL|partial apply' end"
+
+echo "== follow-up (15 Nov 2026): complete the category mapping (docs/ledger-auto-bills/followup-categories.sql)"
+fresh
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/followup-categories.sql 2>&1 | grep -q 'ledger_category_map is missing' && echo "PASS|follow-up refused before phase 3b is applied" || echo "FAIL|follow-up without 3b"
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/proposal.sql >/dev/null 2>&1 || echo "FAIL|3b apply for the follow-up"
+$P -At -c "select case when md5(string_agg(relname, ',' order by relname)) = 'e8b4d718206034884fa5766884b831d5' and count(*) = 157
+  then 'PASS|after phase 3b: the 157 tables = production on 15 Nov 2026' else 'FAIL|table set after 3b' end from pg_class where relnamespace = 'public'::regnamespace and relkind in ('r','p')"
+fns() { $P -At -c "select string_agg(md5(prosrc), ',' order by proname) from pg_proc where proname in ('_ledger_auto_default_categories', '_ledger_auto_expense_plan')"; }
+before=$(fns)
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/test-category-map-before.sql >/dev/null 2>&1 || { echo "FAIL|follow-up setup"; $P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/test-category-map-before.sql 2>&1 | grep ERROR | head -3; }
+$P -At -c "select case when (select count(*) from public.ledger_post_issues where reason_code = 'category_not_mapped' and resolved_at is null) = 6
+  then 'PASS|before the follow-up: transport, wages, equipment, taxes, the Equipment bill (F) and transport (G) are held' else 'FAIL|setup issues' end"
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/followup-categories.sql >/dev/null 2>&1 && echo "PASS|the follow-up applies" || { echo "FAIL|follow-up apply"; $P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/followup-categories.sql 2>&1 | grep ERROR | head -3; }
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/test-category-map.sql 2>&1 | sed -n 's/.*\(PASS|.*\)/\1/p; s/.*\(FAIL|.*\)/\1/p; /ERROR/p'
+state() { $P -At -c "select (select count(*) from public.ledger_category_map) || '|' || (select count(*) from public.ledger_post_queue) || '|' || (select count(*) from public.journal_entries) || '|' ||
+  (select string_agg(md5(prosrc), ',' order by proname) from pg_proc where proname in ('_ledger_auto_default_categories', '_ledger_auto_expense_plan'))"; }
+s1=$(state)
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/followup-categories.sql >/dev/null 2>&1 && [ "$(state)" = "$s1" ] && echo "PASS|a second apply passes the guard and changes nothing (map rows, queue, journals, functions)" || echo "FAIL|second apply"
+after=$(fns)
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/followup-rollback.sql >/dev/null 2>&1 || { echo "FAIL|follow-up rollback"; $P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/followup-rollback.sql 2>&1 | grep ERROR | head -3; }
+[ "$(fns)" = "$before" ] && [ "$after" != "$before" ] && echo "PASS|rollback restores the exact phase 3b bodies of both functions" || echo "FAIL|rollback bodies"
+$P -At -c "select case when (select count(*) from public.ledger_category_map where category_key = 'transport') = 2 then 'PASS|the added map rows are left in place (harmless)' else 'FAIL|map rows after rollback' end"
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/followup-rollback.sql 2>&1 | grep -q 'is not applied' && echo "PASS|rollback refused when the follow-up is not applied" || echo "FAIL|rollback twice"
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/followup-categories.sql >/dev/null 2>&1 && echo "PASS|re-apply after rollback works" || echo "FAIL|re-apply follow-up"
+fresh
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/proposal.sql >/dev/null 2>&1
+$P -c "CREATE OR REPLACE FUNCTION public._ledger_auto_category_key(p_category text) RETURNS text LANGUAGE sql IMMUTABLE SET search_path TO '' AS 'SELECT lower(p_category)'" >/dev/null
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/followup-categories.sql 2>&1 | grep -q '_ledger_auto_category_key.*differs' && echo "PASS|follow-up: a changed helper is refused" || echo "FAIL|follow-up drift"
+$P -At -c "select case when not exists (select 1 from public._ledger_auto_default_categories() where category_key = 'transport') then 'PASS|nothing was applied by the refused follow-up' else 'FAIL|partial follow-up' end"
 $R "$BIN/pg_ctl" -D $D stop >/dev/null 2>&1

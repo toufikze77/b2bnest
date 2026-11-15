@@ -286,6 +286,96 @@ Cross-tenant tests: A's people can't read, switch, preview or catch up B, and th
 - **Assumed statuses.** The expense status reading is an assumption (above).
 - **Volume.** The preview reads every bill and expense of the company; that is fine at today's volumes.
 
+## Applied state / follow-up (15 Nov 2026)
+Phase 3b (#102) is applied in production and was tested by the owner on a test company.
+
+**The gap found.** The standard category mapping was written against category words that don't match what the app stores:
+- the app saves the values in `EXPENSE_CATEGORY_GROUPS` (`src/lib/moneyOut.ts`), for example `transport`, `rent_rates`, `postage_delivery`;
+- so an expense in "Travel and transport" (stored as `transport`) was held as "category not mapped".
+
+**The follow-up is prepared and not applied:** `followup-categories.sql`, one transaction. It changes only the following, and nothing else (no table, no other function, no plan, price, Stripe or HMRC change, and the "VAT details missing" behaviour stays as it is).
+
+1. **`_ledger_auto_default_categories()`** (CREATE OR REPLACE, same signature) keeps all 27 rows and adds the app's values. The new rows are mapped as follows:
+
+   | Account | Categories added |
+   |---|---|
+   | 7400 Travel | `transport`, `vehicle_running`, `fuel`, `food` |
+   | 7100 Rent and rates | `rent_rates` |
+   | 7500 Office costs | `postage_delivery` |
+   | 7900 Bank charges | `bank_finance_charges` |
+   | 8200 Other overheads | `entertainment`, `repairs_maintenance`, `marketing_advertising`, `training_courses`, `licences_memberships` |
+   | Cost of sales (system key) | `subcontractors` |
+
+   - That makes 40 rows.
+   - The bill categories seen in production (Design, Insurance, Marketing, Postage, Software) were already covered, apart from Equipment (below).
+2. **Backfill.**
+   - For every company that already has a category map, `_ledger_auto_seed_category_map` adds the missing keys with `ON CONFLICT DO NOTHING`. A row that exists, including a company's own change, is never changed or deleted.
+   - Then every bill or expense held as "category not mapped" gets one queue row, if:
+     - its company has bills and expenses switched on, and
+     - its category now has a map row.
+   - It then posts on the next run, either the queue job or opening the Ledger.
+   - Posted history is never touched.
+3. **Readable expense memo.** `_ledger_auto_expense_plan` writes "Expense: Office costs 14 Nov", not "Expense: office_costs 14 Nov": underscores become spaces, and the first letter is a capital.
+   - Nothing else in the function changes.
+   - `version_hash` is unchanged, so no posted expense is reversed or posted again.
+   - Journals already posted keep their old memo, because history is not edited.
+
+**Deliberately not mapped.** Records in these categories stay under Needs attention, and the screen lists them:
+
+| Category | Why |
+|---|---|
+| `wages_salaries` | Payroll comes in a later phase, with its own rules. |
+| `taxes_duties` | A person needs to decide where each one goes (for example Corporation Tax, VAT, duties). |
+| `equipment_tools`, and the bill category `Equipment` | It may be a fixed asset rather than a cost. |
+| `shopping`, `health` | Old category values with no business meaning to map. |
+
+The same list is in `src/lib/ledgerAuto.ts` (`UNMAPPED_CATEGORIES`). A Vitest test fails if the app gains a category that is neither mapped nor in this list.
+
+**Guard.** The script refuses unless production matches:
+- the 157 tables after phase 3b (md5 `e8b4d718206034884fa5766884b831d5`, recomputed locally from the 3b chain);
+- `ledger_category_map` exists;
+- the six functions it relies on match the production hashes (raw, without whole-line comments, or without any comment):
+
+  | Function | Production hash |
+  |---|---|
+  | `_ledger_auto_default_categories` | `576f7ee4…` |
+  | `_ledger_auto_seed_category_map` | `2f9d0d01…` |
+  | `_ledger_auto_expense_plan` | `0bf69794…` |
+  | `_ledger_auto_bill_plan` | `4387a60c…` (production stores it without comments, as found in phase 3b) |
+  | `_ledger_auto_category_account` | `73f5badd…` |
+  | `_ledger_auto_category_key` | `147e4f38…` |
+
+**A second apply is a harmless no-op.**
+- The guard also accepts the follow-up bodies of the two replaced functions.
+- `CREATE OR REPLACE` sets the same bodies.
+- The backfill inserts nothing.
+- No record is queued, because each newly mapped held record was already queued.
+- The suite checks that the map, the queue, the journals and the functions are identical after a second apply.
+
+**Rollback.** `followup-rollback.sql` puts both functions back to their exact phase 3b bodies; the suite checks this.
+- The map rows the follow-up added are harmless and left in place: they are ordinary map rows, and removing them could undo a company's own choice.
+- Journals posted meanwhile stay.
+
+**Tests.** `run-test.sh` has a follow-up section: a committed "before" state (`test-category-map-before.sql`), the follow-up, then `test-category-map.sql` in a rolled-back transaction. It checks that:
+- every app category is mapped to an existing account or deliberately unmapped;
+- `transport` posts to 7400;
+- a held `category_not_mapped` expense is queued and posts, and its issue resolves;
+- `equipment_tools`, `wages_salaries`, `taxes_duties` and the Equipment bill stay held;
+- a company whose switch is off is not queued;
+- the company's own map rows survive;
+- the new memo is readable, and an expense posted before is neither reversed nor posted again;
+- a second apply is a no-op;
+- the rollback restores both functions;
+- drift is refused.
+
+**Owner steps:**
+1. **Review** `followup-categories.sql` and this section.
+2. **The owner's assistant verifies the production facts above**, and after your approval applies `docs/ledger-auto-bills/followup-categories.sql` in the Supabase SQL editor. If the guard refuses, stop.
+3. **Publish** the front end. The mapping view now shows a plain label for each category and the list of deliberately unmapped categories.
+   - No Edge Function needs redeploying.
+
+**Still open (a separate owner decision):** records without recorded VAT details stay held as "VAT details missing", as before.
+
 ## Not in this PR
 - bank items (3c);
 - credit notes and refunds;

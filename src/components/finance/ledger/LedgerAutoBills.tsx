@@ -10,7 +10,7 @@ import { AssuranceContext } from '@/hooks/useAssurance';
 import { formatPence, LEDGER_POSTED_WARNING, ledgerMessage, type LedgerAccount } from '@/lib/ledger';
 import { codeOf, type LedgerApi, type Result } from '@/lib/ledgerApi';
 import {
-  AUTO_MFA_MESSAGE, AUTO_VAT_SCHEME_NOTE, BILLS_OFF_CONFIRM, BILLS_OFF_DONE, BILLS_ON_DONE, BILLS_SWITCH_LABEL, billPosting, issueReason,
+  AUTO_MFA_MESSAGE, AUTO_VAT_SCHEME_NOTE, BILLS_OFF_CONFIRM, BILLS_OFF_DONE, BILLS_ON_DONE, BILLS_SWITCH_LABEL, billPosting, categoryLabel, issueReason, UNMAPPED_CATEGORIES,
   type AutoStatus, type CategoryMapRow, type RecordsPreview,
 } from '@/lib/ledgerAuto';
 
@@ -144,10 +144,21 @@ export function LedgerAutoBills({ api, organizationId, status, preview, onChange
               <table className="w-full max-w-lg" aria-label="Category mapping">
                 <thead><tr className="text-left text-muted-foreground"><th className="py-1 pr-2 font-medium">Category</th><th className="py-1 font-medium">Account</th></tr></thead>
                 <tbody className="divide-y">
-                  {map.rows.map((r) => <tr key={r.category_key}><td className="py-1 pr-2">{r.category_key.replace(/_/g, ' ')}</td><td className="py-1">{accountName(r.account_id)}</td></tr>)}
+                  {map.rows.map((r) => (
+                    <tr key={r.category_key}>
+                      <td className="py-1 pr-2">{categoryLabel(r.category_key)} <span className="text-muted-foreground">({r.category_key})</span></td>
+                      <td className="py-1">{accountName(r.account_id)}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             )}
+          <div className="text-muted-foreground" data-testid="auto-bills-unmapped">
+            <p>Deliberately not mapped (records in these categories wait under Needs attention until someone decides):</p>
+            <ul className="list-disc pl-5">
+              {Object.entries(UNMAPPED_CATEGORIES).map(([key, why]) => <li key={key}>{why} <span>({key})</span></li>)}
+            </ul>
+          </div>
         </div>
       </CardContent>
     </Card>
