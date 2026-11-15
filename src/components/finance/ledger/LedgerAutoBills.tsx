@@ -9,8 +9,10 @@ import { Switch } from '@/components/ui/switch';
 import { AssuranceContext } from '@/hooks/useAssurance';
 import { formatPence, LEDGER_POSTED_WARNING, ledgerMessage, type LedgerAccount } from '@/lib/ledger';
 import { codeOf, type LedgerApi, type Result } from '@/lib/ledgerApi';
+import { runLedgerAutoSoon } from '@/lib/ledgerAutoRun';
 import {
   AUTO_MFA_MESSAGE, AUTO_VAT_SCHEME_NOTE, BILLS_OFF_CONFIRM, BILLS_OFF_DONE, BILLS_ON_DONE, BILLS_SWITCH_LABEL, billPosting, categoryLabel, issueReason, UNMAPPED_CATEGORIES,
+  VAT_REGISTERED_FROM_LABEL, VAT_REGISTERED_HELP, VAT_REGISTERED_LABEL, vatRegisteredConfirmText,
   type AutoStatus, type CategoryMapRow, type RecordsPreview,
 } from '@/lib/ledgerAuto';
 
@@ -33,6 +35,19 @@ export function LedgerAutoBills({ api, organizationId, status, preview, onChange
   const inFlight = useRef(false);
   const assurance = useContext(AssuranceContext);
   const enabled = !!status.bills_enabled;
+  // Finance phase 3b follow-up 2: the VAT registered setting (only once its SQL is applied).
+  const vatKnown = status.vat_registered !== undefined;
+  const registered = !!status.vat_registered;
+  const [vatPending, setVatPending] = useState<boolean | null>(null);
+  const [vatFrom, setVatFrom] = useState('');
+  const held = preview?.skipped.vat_details_missing ?? 0;
+  const saveVat = (yes: boolean) => {
+    setVatPending(null);
+    void act(() => api.vatRegisteredSet(organizationId, yes, yes ? vatFrom || null : null), () => {
+      runLedgerAutoSoon(organizationId); // held records post straight away when switching to No (silent, never blocks)
+      return yes ? 'Saved: this company is VAT registered.' : 'Saved: this company is not VAT registered.';
+    }, false);
+  };
 
   const loadMap = useCallback(async () => {
     const [m, a] = await Promise.all([api.categoryMap(organizationId), api.accounts(organizationId)]);
@@ -95,6 +110,38 @@ export function LedgerAutoBills({ api, organizationId, status, preview, onChange
           cost instead. Changes are reversed and posted again; nothing is edited or deleted.
         </p>
         <p className="text-muted-foreground">{AUTO_VAT_SCHEME_NOTE}</p>
+        {vatKnown && (
+          <fieldset className="space-y-2 rounded-md border p-3" data-testid="vat-registered">
+            <legend className="px-1 font-medium">{VAT_REGISTERED_LABEL}</legend>
+            <p className="text-muted-foreground">{VAT_REGISTERED_HELP}</p>
+            <div className="flex flex-wrap gap-4">
+              {[{ v: true, label: 'Yes' }, { v: false, label: 'No' }].map((o) => (
+                <label key={o.label} className="flex items-center gap-2">
+                  <input type="radio" name="vat-registered" checked={(vatPending ?? registered) === o.v} aria-busy={busy}
+                    disabled={!status.can_manage || busy}
+                    onChange={() => { if (!busy && o.v !== registered) { setVatPending(o.v); setVatFrom(''); } else setVatPending(null); }} />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+            {registered && vatPending === null && status.vat_registered_from && <p>Registered from {status.vat_registered_from}.</p>}
+            {vatPending !== null && (
+              <div className="space-y-2" data-testid="vat-registered-confirm">
+                {vatPending && (
+                  <label className="flex flex-wrap items-center gap-2">
+                    {VAT_REGISTERED_FROM_LABEL} (optional)
+                    <input type="date" value={vatFrom} onChange={(e) => setVatFrom(e.target.value)} className="h-9 rounded-md border px-2" />
+                  </label>
+                )}
+                <p>{vatRegisteredConfirmText(vatPending, held)}</p>
+                <div className="flex gap-2">
+                  <Button size="sm" disabled={busy} onClick={() => saveVat(vatPending)}>{vatPending ? 'Yes, we are VAT registered' : 'No, we are not VAT registered'}</Button>
+                  <Button size="sm" variant="outline" disabled={busy} onClick={() => setVatPending(null)}>Cancel</Button>
+                </div>
+              </div>
+            )}
+          </fieldset>
+        )}
         {!status.can_manage && <p className="text-muted-foreground">Only an owner or admin of this company can change this.</p>}
         {message && <p role="status" className="text-green-700">{message}</p>}
         {error && <p role="alert" className="text-destructive">{error}</p>}

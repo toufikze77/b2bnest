@@ -97,6 +97,9 @@ export function ledgerApi(client: LedgerClient = supabase as unknown as LedgerCl
     autoCatchUp: (org: string, which: 'invoices' | 'bills_and_expenses' = 'invoices') =>
       call<AutoRun & { queued: number }>('ledger_auto_catch_up', which === 'invoices' ? { p_org: org } : { p_org: org, p_switch: which }),
     autoRun: (org: string) => call<AutoRun>('ledger_auto_run', { p_org: org }),
+    /** Finance phase 3b follow-up 2: is this company VAT registered (and from when)? */
+    vatRegisteredSet: (org: string, registered: boolean, from?: string | null) =>
+      call<AutoStatus>('ledger_vat_registered_set', { p_org: org, p_registered: registered, ...(registered && from ? { p_from: from } : {}) }),
     postings: (org: string) => read<PostingLink[]>(client.from('ledger_postings').select('entry_id,reversal_entry_id,source_label,kind')
       .eq('organization_id', org).limit(5000)),
     issues: (org: string) => read<PostingIssue[]>(client.from('ledger_post_issues').select('id,source_table,source_id,source_label,kind,reason_code,created_at')

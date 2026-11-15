@@ -374,7 +374,140 @@ The same list is in `src/lib/ledgerAuto.ts` (`UNMAPPED_CATEGORIES`). A Vitest te
 3. **Publish** the front end. The mapping view now shows a plain label for each category and the list of deliberately unmapped categories.
    - No Edge Function needs redeploying.
 
-**Still open (a separate owner decision):** records without recorded VAT details stay held as "VAT details missing", as before.
+**Still open (a separate owner decision):** records without recorded VAT details stay held as "VAT details missing", as before. (Addressed by the VAT registered follow-up below.)
+
+## Applied state / VAT registered (15 Nov 2026)
+The category follow-up (#103) is applied in production. It closed the "category not mapped" gap. One gap was left open: a bill or expense with no recorded VAT is held as "VAT details missing", even for a company that is not VAT registered and so has no VAT to record.
+
+**The follow-up is prepared and not applied:** `vat-registered.sql`, one transaction.
+
+**Where the setting lives.** The app has no company "VAT registered" field today:
+- `hmrc_settings` holds `vat_number` and `vat_scheme`, but a VAT number is not the same as a yes/no answer, and those rows belong to the HMRC screens;
+- `ledger_auto_settings` already holds the company's automatic-postings choices and is written only through RPCs.
+
+So the setting is two new columns on `ledger_auto_settings`:
+- `vat_registered boolean NOT NULL DEFAULT false`;
+- `vat_registered_from date`, optional, checked to be a sensible date.
+
+Adding columns keeps the table set at 157 tables, so the table guard of every earlier script still holds.
+
+**The rules** (in `_ledger_auto_bill_plan` and `_ledger_auto_expense_plan`; every other reason, and their order, is unchanged):
+1. **Recorded VAT** (`vat_status = 'recorded'` with net and VAT present) posts exactly as before, whatever the setting.
+2. **Otherwise, if the company is not VAT registered** (or the record's date is before `vat_registered_from`), it posts at the full amount: net = gross, VAT = 0, no VAT line. The memo is unchanged.
+3. **Otherwise** it is held as `vat_details_missing`, as before.
+
+Notes on the rules:
+- The other checks (currency, category map, period lock, posting date and so on) still apply.
+- `amounts_do_not_add_up` is checked only when net and VAT are present.
+- `version_hash` does not include the setting, so flipping it never reverses or reposts anything by itself.
+
+**Posted journals are kept when the switch changes.** Take a no-VAT posting that already exists for a record:
+- the plan sees a live posting whose hash matches the record's no-VAT version;
+- it keeps that posting, even after the company switches to Yes.
+
+So switching to Yes, or a catch-up after it, reverses nothing. If the record is edited after the switch to Yes, that is a new version: it is reversed and held as "VAT details missing", as for any edited record.
+
+**Switching.** `ledger_vat_registered_set(p_org, p_registered, p_from DEFAULT NULL)` is the only way to change the setting.
+- It is SECURITY DEFINER with `search_path = ''`, and only `authenticated` (and `service_role`) may call it.
+- It has the same permission checks as the automatic-postings switch: managers only, the MFA rule, the demo and closed-company guards (`_ledger_require_writer`).
+- It writes one audit entry per real change (`ledger.vat_registered_on` / `ledger.vat_registered_off`). Saving the same answer again writes nothing.
+- Switching to **No** queues the company's held `vat_details_missing` bills and expenses, as queue rows only, when bills and expenses are switched on. They post on the next run.
+- Switching to **Yes** reverses nothing.
+
+`ledger_auto_status` gains `vat_registered` and `vat_registered_from`. Only keys are added; the existing keys are unchanged.
+
+**Backfill.** The script sets Yes (from no date) for each open company that has any of:
+- an HMRC connection row;
+- a saved VAT number;
+- an invoice, bill or expense with recorded VAT above zero.
+
+Every other company keeps the default, No. Closed companies are left alone. To see the counts, run the read-only query at the end of `vat-registered.sql`. It was read on 15 Nov 2026 and showed:
+
+| By rule | Companies |
+|---|---|
+| An HMRC connection row (all sandbox, none production) | 3 |
+| A saved VAT number | 1 |
+| Recorded VAT above zero | 4 |
+| **Total set to Yes** (some match more than one rule) | **6** of 13 open |
+
+Run it again just before applying, because the numbers change as people use the app.
+
+**Please check: the test company.** The owner's test company has records with recorded VAT, so the rule above sets it to **Yes**.
+- The rule was followed as written, because Yes is the safe answer: it only holds records, never posts them without VAT.
+- If the test company is not VAT registered, switch it to No on the Ledger tab after applying. Its held records then post at the full amount.
+
+**Functions:**
+- **replaced:** `_ledger_auto_bill_plan`, `_ledger_auto_expense_plan`, `ledger_auto_status`;
+- **new:** `_ledger_auto_vat_registered` (internal, no grants), `ledger_vat_registered_set`.
+
+Nothing else changes: no plan, price, Stripe, HMRC function, VAT return, invoice posting, category map or cron job.
+
+**Guard.** The script refuses unless production matches:
+- the 157 tables (md5 `e8b4d718206034884fa5766884b831d5`);
+- `ledger_category_map` exists and the two new columns do not;
+- the owner-supplied hashes:
+  - `_ledger_auto_default_categories` `e1a07fa1…` or `94525011…`;
+  - `_ledger_auto_expense_plan` `8de9e2eb…` or `8f25c172…`;
+  - `_ledger_auto_bill_plan` `4387a60c…`;
+  - `_ledger_auto_seed_category_map` `2f9d0d01…`;
+  - `_ledger_auto_category_account` `73f5badd…`;
+  - `_ledger_auto_category_key` `147e4f38…`;
+- the TODO-confirm hashes, computed from the repo's 3a/3b bodies. Please confirm them against production before applying; the guard fails closed if they differ:
+
+  | Function | Hash (TODO-confirm) |
+  |---|---|
+  | `ledger_auto_status(uuid)` | `c121ba47cf2db074a0079c13a46f51f0` |
+  | `ledger_auto_set(uuid,boolean,text)` | `c1ee07297290a8876ea025c953c8f018` |
+  | `ledger_auto_set(uuid,boolean)` | `f3e0cb8a7a63783b9539f62c4a579624` |
+  | `_ledger_require_writer(uuid)` | `75ecf4a981581daae33e90dc554f01c4` |
+  | `_ledger_auto_want(text,date,text,text,jsonb,bigint,text,text)` | `293c38523e4f9b1e4547e36a17a6af00` |
+
+- the `hmrc_connections.company_id` and `hmrc_settings.vat_number` columns, which the backfill reads.
+
+**A second apply is refused** ("already exists (applied twice?)"). It is not a no-op, because running the backfill again could overwrite a company's own choice.
+
+**Rollback.** `vat-registered-rollback.sql`:
+- refuses if the follow-up is not applied;
+- puts the bill plan, the expense plan and `ledger_auto_status` back to their exact earlier bodies, and drops the two new functions;
+- leaves the two columns in place: they are harmless, and dropping them would lose each company's answer if the follow-up is applied again.
+
+Journals posted meanwhile stay.
+
+**Tests.** `run-test.sh` has a VAT-registered section:
+- a committed "before" state (`test-vat-registered-before.sql`, nine companies, one for each backfill case);
+- the follow-up, a backfill check, then `test-vat-registered.sql` in a rolled-back transaction.
+
+It checks:
+- the status defaults and the existing keys;
+- the RPC: permissions, the MFA rule, demo and closed companies, bad dates, and one audit row per real change;
+- a not-registered company:
+  - a no-VAT bill posts, then its payment;
+  - recorded VAT is kept;
+  - an expense posts;
+  - other holds still apply, and so does the period lock;
+- a registered company holds unrecorded records and posts recorded ones;
+- the "registered from" date rule;
+- switching No, Yes, No, Yes with catch-ups adds no journals and leaves the hashes unchanged;
+- an edited record is reversed and held;
+- a second apply is refused;
+- the rollback restores the bodies and keeps the columns;
+- drift is refused.
+
+The phase 3b suite still runs before this section. It is not re-run on top of this section, because its "held as VAT details missing" checks assume the old behaviour.
+
+**Front end** (`LedgerAutoBills.tsx`, `src/lib/ledgerAuto.ts`):
+- the question "Is this company VAT registered?" (Yes / No, default No), with help text;
+- an optional "Registered from" date, shown only for Yes;
+- a confirmation step that, for No, says how many held records will post (from the preview);
+- after saving, the instant run (`runLedgerAutoSoon`).
+
+The scheme note and the "VAT details missing" reason now explain the setting.
+
+**Owner steps:**
+1. **Review** `vat-registered.sql` and this section.
+2. **The owner's assistant verifies the production facts above** (the TODO-confirm hashes and the backfill counts), and after your approval applies `docs/ledger-auto-bills/vat-registered.sql` in the Supabase SQL editor. If the guard refuses, stop.
+3. **Publish** the front end. No Edge Function needs redeploying.
+4. If the test company is not VAT registered, switch it to No on the Ledger tab.
 
 ## Not in this PR
 - bank items (3c);
