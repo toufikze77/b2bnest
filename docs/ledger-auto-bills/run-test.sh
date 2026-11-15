@@ -143,4 +143,35 @@ $P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/proposal.sql >/dev/null 2>&1
 $P -c "CREATE OR REPLACE FUNCTION public._ledger_auto_category_key(p_category text) RETURNS text LANGUAGE sql IMMUTABLE SET search_path TO '' AS 'SELECT lower(p_category)'" >/dev/null
 $P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/followup-categories.sql 2>&1 | grep -q '_ledger_auto_category_key.*differs' && echo "PASS|follow-up: a changed helper is refused" || echo "FAIL|follow-up drift"
 $P -At -c "select case when not exists (select 1 from public._ledger_auto_default_categories() where category_key = 'transport') then 'PASS|nothing was applied by the refused follow-up' else 'FAIL|partial follow-up' end"
+
+echo "== follow-up 2 (15 Nov 2026): is this company VAT registered? (docs/ledger-auto-bills/vat-registered.sql)"
+fresh
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/proposal.sql >/dev/null 2>&1 || echo "FAIL|3b apply for follow-up 2"
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/vat-registered.sql 2>&1 | grep -q '_ledger_auto_.*differs' && echo "PASS|refused until the #103 follow-up is applied" || echo "FAIL|vat-registered without #103"
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/followup-categories.sql >/dev/null 2>&1 || echo "FAIL|#103 apply for follow-up 2"
+vfns() { $P -At -c "select string_agg(md5(prosrc), ',' order by proname) from pg_proc where proname in ('_ledger_auto_bill_plan', '_ledger_auto_expense_plan', 'ledger_auto_status')"; }
+vbefore=$(vfns)
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/test-vat-registered-before.sql >/dev/null 2>&1 || { echo "FAIL|follow-up 2 setup"; $P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/test-vat-registered-before.sql 2>&1 | grep ERROR | head -3; }
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/vat-registered.sql >/dev/null 2>&1 && echo "PASS|follow-up 2 applies" || { echo "FAIL|follow-up 2 apply"; $P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/vat-registered.sql 2>&1 | grep ERROR | head -3; }
+$P -At -c "select case when (select string_agg(right(organization_id::text, 1), '' order by organization_id) from public.ledger_auto_settings where vat_registered and organization_id::text like '0fe10000%') = '12345'
+  and not exists (select 1 from public.ledger_auto_settings where organization_id::text like '0fe10000%' and right(organization_id::text, 1) in ('6', '7', '8', '9'))
+  then 'PASS|backfill: Yes for an HMRC connection row, a VAT number, recorded VAT on an invoice, a bill or an expense; No for unrecorded only, zero VAT, a closed company, a blank VAT number'
+  else 'FAIL|backfill: ' || coalesce((select string_agg(organization_id::text || '=' || vat_registered, ' ') from public.ledger_auto_settings where organization_id::text like '0fe10000%'), 'none') end"
+$P -At -c "select case when (select count(*) from public.ledger_auto_settings where vat_registered_from is not null) = 0 then 'PASS|backfilled companies have no registration date' else 'FAIL|backfill dates' end"
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/test-vat-registered.sql 2>&1 | sed -n 's/.*\(PASS|.*\)/\1/p; s/.*\(FAIL|.*\)/\1/p; /ERROR/p'
+# (The phase 3b suite above runs before follow-up 2: once applied, its not-registered test companies post unrecorded
+#  bills on purpose, so that suite's "VAT details missing" checks describe the earlier rule.)
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/vat-registered.sql 2>&1 | grep -q 'already exists' && echo "PASS|a second apply is refused (it must not run the backfill again)" || echo "FAIL|follow-up 2 second apply"
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/vat-registered-rollback.sql >/dev/null 2>&1 || { echo "FAIL|follow-up 2 rollback"; $P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/vat-registered-rollback.sql 2>&1 | grep ERROR | head -3; }
+[ "$(vfns)" = "$vbefore" ] && echo "PASS|rollback restores the exact bodies of the bill plan, the expense plan and the status" || echo "FAIL|follow-up 2 rollback bodies"
+$P -At -c "select case when to_regprocedure('public.ledger_vat_registered_set(uuid,boolean,date)') is null and to_regprocedure('public._ledger_auto_vat_registered(uuid,date)') is null
+  and exists (select 1 from pg_attribute where attrelid = 'public.ledger_auto_settings'::regclass and attname = 'vat_registered' and not attisdropped)
+  then 'PASS|rollback drops the two functions and leaves the columns in place (harmless)' else 'FAIL|rollback objects' end"
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/vat-registered-rollback.sql 2>&1 | grep -q 'is not applied' && echo "PASS|rollback refused when follow-up 2 is not applied" || echo "FAIL|follow-up 2 rollback twice"
+fresh
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/proposal.sql >/dev/null 2>&1; $P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/followup-categories.sql >/dev/null 2>&1
+$P -c "CREATE OR REPLACE FUNCTION public._ledger_require_writer(p_org uuid) RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path TO '' AS 'SELECT NULL::void'" >/dev/null
+$P -v ON_ERROR_STOP=1 -f docs/ledger-auto-bills/vat-registered.sql 2>&1 | grep -q '_ledger_require_writer.*differs' && echo "PASS|follow-up 2: a changed guarded function is refused" || echo "FAIL|follow-up 2 drift"
+$P -At -c "select case when not exists (select 1 from pg_attribute where attrelid = 'public.ledger_auto_settings'::regclass and attname = 'vat_registered' and not attisdropped)
+  then 'PASS|nothing was applied by the refused follow-up 2' else 'FAIL|partial follow-up 2' end"
 $R "$BIN/pg_ctl" -D $D stop >/dev/null 2>&1

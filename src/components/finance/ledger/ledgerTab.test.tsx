@@ -43,6 +43,7 @@ function fakeApi(o: Partial<Record<keyof LedgerApi, unknown>> = {}) {
     // Finance phase 3a reads: by default as before its SQL is applied (not available), so phase 2 screens must still work.
     postings: vi.fn(() => Promise.resolve({ ok: false as const, code: 'NOT_AVAILABLE' })),
     categoryMap: vi.fn(() => Promise.resolve({ ok: false as const, code: 'NOT_AVAILABLE' })),
+    vatRegisteredSet: vi.fn(() => Promise.resolve({ ok: false as const, code: 'NOT_AVAILABLE' })),
     issues: vi.fn(() => Promise.resolve({ ok: false as const, code: 'NOT_AVAILABLE' })),
     autoStatus: vi.fn(() => Promise.resolve({ ok: false as const, code: 'NOT_AVAILABLE' })),
     autoPreview: vi.fn(() => Promise.resolve({ ok: false as const, code: 'NOT_AVAILABLE' })),
@@ -575,7 +576,7 @@ describe('Ledger tab: automatic postings for bills and expenses', () => {
     expect(table).toHaveTextContent('Bill payments to post1£60.00');
     expect(table).toHaveTextContent('Expenses to post4£96.00');
     expect(table).toHaveTextContent('Skipped: Its category has no ledger account yet.1');
-    expect(table).toHaveTextContent('Skipped: Its VAT details are not recorded yet');
+    expect(table).toHaveTextContent("Skipped: Its VAT isn't recorded and the company is marked VAT registered");
     expect(screen.queryByRole('button', { name: 'Post existing bills and expenses' })).toBeNull();
     const map = await screen.findByRole('table', { name: 'Category mapping' });
     expect(map).toHaveTextContent('Travel (travel)7400 Travel');
@@ -642,7 +643,7 @@ describe('Ledger tab: automatic postings for bills and expenses', () => {
       { id: 'i2', source_table: 'expenses', source_id: 'e', source_label: 'Travel', kind: 'expense', reason_code: 'vat_details_missing', created_at: '2026-03-01' }])) }));
     const list = await screen.findByRole('list', { name: 'Needs attention' });
     expect(list).toHaveTextContent('Bill BILL-0012Its category has no ledger account yet.');
-    expect(list).toHaveTextContent('Expense: TravelIts VAT details are not recorded yet');
+    expect(list).toHaveTextContent("Expense: TravelIts VAT isn't recorded and the company is marked VAT registered");
     const links = within(list).getAllByRole('link');
     expect(links[0]).toHaveAttribute('href', '/business-tools?tool=business-finance-assistant&tab=company-records');
     expect(links[1]).toHaveAttribute('href', '/business-tools?tool=business-finance-assistant&tab=expenses');
@@ -658,5 +659,83 @@ describe('Ledger tab: automatic postings for bills and expenses', () => {
     const table = await screen.findByRole('table', { name: 'Journals' });
     await waitFor(() => expect(table).toHaveTextContent('Automatic: billBill BILL-0012'));
     expect(table).toHaveTextContent('Automatic: expenseExpense: Travel');
+  });
+});
+
+// ------------------------------------------------------------------ Finance phase 3b follow-up 2: VAT registered
+describe('Ledger tab: is this company VAT registered?', () => {
+  const vatPreview = { bills_to_post: 0, bills_total: 0, bill_payments_to_post: 0, bill_payments_total: 0, expenses_to_post: 0, expenses_total: 0,
+    to_reverse: 0, already_posted: 0, not_posted: 0, skipped: { vat_details_missing: 3 } };
+  const vatApi = (status: Record<string, unknown>, o: Partial<Record<keyof LedgerApi, unknown>> = {}) => autoApi(status, {
+    autoPreview: vi.fn(() => ok({ ...emptyPreview, bills_and_expenses: vatPreview })), categoryMap: vi.fn(() => ok([])), ...o });
+  const openAt = async (api: LedgerApi) => {
+    render(<MemoryRouter initialEntries={['/x?ledger=automatic']}><LedgerTab organizationId={ORG} api={api} isDemo={false} /></MemoryRouter>);
+    await screen.findByRole('switch', { name: 'Post bills and expenses to the ledger automatically' });
+  };
+
+  it('not shown before its SQL is applied (the status has no vat_registered)', async () => {
+    await openAt(vatApi(managerOn({ bills_enabled: true })));
+    expect(screen.queryByTestId('vat-registered')).toBeNull();
+  });
+
+  it('the label, the help text, and No by default', async () => {
+    await openAt(vatApi(managerOn({ bills_enabled: true, vat_registered: false, vat_registered_from: null })));
+    const box = screen.getByTestId('vat-registered');
+    expect(within(box).getByText('Is this company VAT registered?')).toBeInTheDocument();
+    expect(box).toHaveTextContent('If you are not VAT registered, bills and expenses post at their full amount with no VAT. If you are, each one needs its VAT recorded first.');
+    expect(within(box).getByRole('radio', { name: 'No' })).toBeChecked();
+    expect(within(box).getByRole('radio', { name: 'Yes' })).not.toBeChecked();
+    expect(screen.queryByLabelText(/Registered from/)).toBeNull();
+  });
+
+  it('Yes: the confirmation, an optional date, then exactly one call', async () => {
+    let finish: (v: unknown) => void = () => {};
+    const api = vatApi(managerOn({ bills_enabled: true, vat_registered: false }), { vatRegisteredSet: vi.fn(() => new Promise((r) => { finish = r; })) });
+    await openAt(api);
+    fireEvent.click(screen.getByRole('radio', { name: 'Yes' }));
+    const box = screen.getByTestId('vat-registered-confirm');
+    expect(box).toHaveTextContent('From now on, bills and expenses need their VAT recorded before they post. Nothing already posted is changed.');
+    expect(api.vatRegisteredSet).not.toHaveBeenCalled();
+    fireEvent.change(within(box).getByLabelText(/Registered from/), { target: { value: '2026-03-01' } });
+    fireEvent.click(within(box).getByRole('button', { name: 'Yes, we are VAT registered' }));
+    expect(api.vatRegisteredSet).toHaveBeenCalledTimes(1);
+    expect(api.vatRegisteredSet).toHaveBeenCalledWith(ORG, true, '2026-03-01');
+    await waitFor(() => expect(screen.getByRole('radio', { name: 'No' })).toBeDisabled());
+    vi.mocked(api.autoStatus).mockImplementation(() => ok(managerOn({ bills_enabled: true, vat_registered: true, vat_registered_from: '2026-03-01' })));
+    await act(async () => { finish({ ok: true, data: managerOn({ bills_enabled: true, vat_registered: true, vat_registered_from: '2026-03-01' }) }); });
+    expect(await screen.findByText('Saved: this company is VAT registered.')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Yes' })).toBeChecked();
+    expect(screen.getByTestId('vat-registered')).toHaveTextContent('Registered from 2026-03-01.');
+  });
+
+  it('No: the confirmation says how many held records will post; Cancel sends nothing', async () => {
+    const api = vatApi(managerOn({ bills_enabled: true, vat_registered: true }), { vatRegisteredSet: vi.fn(() => ok(managerOn({ bills_enabled: true, vat_registered: false }))) });
+    await openAt(api);
+    fireEvent.click(screen.getByRole('radio', { name: 'No' }));
+    expect(screen.getByTestId('vat-registered-confirm')).toHaveTextContent('3 records are waiting for VAT details and will post at the full amount, with no VAT, on the next run.');
+    expect(screen.queryByLabelText(/Registered from/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(api.vatRegisteredSet).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('radio', { name: 'No' }));
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'No, we are not VAT registered' })); });
+    expect(api.vatRegisteredSet).toHaveBeenCalledWith(ORG, false, null);
+  });
+
+  it('a plain member sees the answer but can\'t change it; MFA_REQUIRED gets the plain message', async () => {
+    await openAt(vatApi(managerOn({ bills_enabled: true, vat_registered: true, can_manage: false })));
+    expect(screen.getByRole('radio', { name: 'Yes' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'No' })).toBeDisabled();
+    cleanup();
+    await openAt(vatApi(managerOn({ bills_enabled: true, vat_registered: false }), { vatRegisteredSet: vi.fn(() => Promise.resolve({ ok: false as const, code: 'MFA_REQUIRED' })) }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Yes' }));
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Yes, we are VAT registered' })); });
+    expect(within(screen.getByTestId('auto-bills')).getByRole('alert')).toHaveTextContent('Confirm with your authenticator app, then try again.');
+  });
+
+  it('a registered company still shows the missing-VAT reason under Needs attention', async () => {
+    await openAt(vatApi(managerOn({ bills_enabled: true, vat_registered: true }), { issues: vi.fn(() => ok([
+      { id: 'i1', source_table: 'bills', source_id: 'b', source_label: 'B-1', kind: 'bill_received', reason_code: 'vat_details_missing', created_at: '2026-03-01' }])) }));
+    const list = await screen.findByRole('list', { name: 'Needs attention' });
+    expect(list).toHaveTextContent("Bill B-1Its VAT isn't recorded and the company is marked VAT registered. Record the VAT (Company records helps), or mark the company as not VAT registered.");
   });
 });

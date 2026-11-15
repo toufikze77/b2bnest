@@ -11,7 +11,7 @@ export const AUTO_OFF_CONFIRM = 'Stop automatic postings? Existing journals are 
 export const AUTO_MFA_MESSAGE = 'Confirm with your authenticator app, then try again.';
 export const AUTO_NOT_AVAILABLE = 'Automatic postings are not available yet.';
 export const AUTO_VAT_SCHEME_NOTE =
-  "VAT scheme rules (such as cash accounting or the flat rate scheme) are not applied yet: each journal posts the VAT the invoice records.";
+  "VAT scheme rules (such as cash accounting or the flat rate scheme) are not applied yet: each journal posts the VAT the record holds. A company that is not VAT registered posts its bills and expenses at their full amount, with no VAT.";
 
 export interface AutoStatus {
   access: string;
@@ -23,6 +23,9 @@ export interface AutoStatus {
   open_issues: number;
   /** Finance phase 3b (absent before its SQL is applied). */
   bills_enabled?: boolean;
+  /** Finance phase 3b follow-up 2 (absent before its SQL is applied). */
+  vat_registered?: boolean;
+  vat_registered_from?: string | null;
 }
 export interface AutoPreview {
   invoices_to_post: number;
@@ -63,7 +66,7 @@ export const ISSUE_REASONS: Record<string, string> = {
   reversal_period_locked: "The record changed, but its journal is in a locked period, so it can't be reversed.",
   processing_failed: "Couldn't be posted after several tries. Check the record, then save it again.",
   // Finance phase 3b (bills and expenses)
-  vat_details_missing: 'Its VAT details are not recorded yet (Company records helps add them).',
+  vat_details_missing: "Its VAT isn't recorded and the company is marked VAT registered. Record the VAT (Company records helps), or mark the company as not VAT registered.",
   category_not_mapped: 'Its category has no ledger account yet.',
   category_account_missing: "Its category's ledger account was deleted.",
   category_account_inactive: "Its category's ledger account is inactive.",
@@ -206,4 +209,20 @@ export function categoryLabel(key: string): string {
   if (own) return own.label;
   const words = key.replace(/_/g, ' ').trim();
   return words ? words.charAt(0).toUpperCase() + words.slice(1) : key;
+}
+
+// ------------------------------------------------------------------ Finance phase 3b follow-up 2: VAT registered
+export const VAT_REGISTERED_LABEL = 'Is this company VAT registered?';
+export const VAT_REGISTERED_HELP =
+  'If you are not VAT registered, bills and expenses post at their full amount with no VAT. If you are, each one needs its VAT recorded first.';
+export const VAT_REGISTERED_FROM_LABEL = 'Registered from';
+
+/** What switching the setting does, for the confirmation (held = records waiting for VAT details, from the preview). */
+export function vatRegisteredConfirmText(toRegistered: boolean, held: number): string {
+  if (toRegistered) {
+    return 'From now on, bills and expenses need their VAT recorded before they post. Nothing already posted is changed.';
+  }
+  const waiting = held === 0 ? 'No records are waiting for VAT details.'
+    : `${held} ${held === 1 ? 'record is' : 'records are'} waiting for VAT details and will post at the full amount, with no VAT, on the next run.`;
+  return `Bills and expenses without recorded VAT will post at their full amount, with no VAT. ${waiting} Nothing already posted is changed.`;
 }

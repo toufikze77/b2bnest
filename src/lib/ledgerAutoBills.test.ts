@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { billPosting, categoryKey, categoryLabel, expensePosting, journalSources, SOURCE_LINKS, sourceOfKind, UNMAPPED_CATEGORIES } from './ledgerAuto';
 import { EXPENSE_CATEGORY_GROUPS } from './moneyOut';
+import { AUTO_VAT_SCHEME_NOTE, issueReason, VAT_REGISTERED_HELP, VAT_REGISTERED_LABEL, vatRegisteredConfirmText } from './ledgerAuto';
 import { runWaitingPostings, withLedgerAutoRun } from './ledgerAutoRun';
 
 const rec = (o: Record<string, unknown> = {}) => ({ status: 'pending', currency: 'GBP', amount: '120.00', net_amount: '100.00', vat_amount: '20.00',
@@ -118,5 +119,21 @@ describe('category mapping follow-up: every app category has a decision', () => 
     expect(categoryLabel('transport')).toBe('Travel and transport');
     expect(categoryLabel('office_costs')).toBe('Office costs');
     expect(categoryLabel('meals_and_entertainment')).toBe('Meals and entertainment');
+  });
+});
+
+describe('VAT registered: wording', () => {
+  it('the label, the help text and the scheme note', () => {
+    expect(VAT_REGISTERED_LABEL).toBe('Is this company VAT registered?');
+    expect(VAT_REGISTERED_HELP).toBe('If you are not VAT registered, bills and expenses post at their full amount with no VAT. If you are, each one needs its VAT recorded first.');
+    expect(AUTO_VAT_SCHEME_NOTE).toContain('not VAT registered posts its bills and expenses at their full amount, with no VAT');
+  });
+  it('the missing-VAT reason tells the user both ways out', () => {
+    expect(issueReason('vat_details_missing')).toBe("Its VAT isn't recorded and the company is marked VAT registered. Record the VAT (Company records helps), or mark the company as not VAT registered.");
+  });
+  it('the confirmation text, both ways', () => {
+    expect(vatRegisteredConfirmText(true, 5)).toBe('From now on, bills and expenses need their VAT recorded before they post. Nothing already posted is changed.');
+    expect(vatRegisteredConfirmText(false, 1)).toContain('1 record is waiting for VAT details and will post at the full amount');
+    expect(vatRegisteredConfirmText(false, 0)).toContain('No records are waiting for VAT details.');
   });
 });
