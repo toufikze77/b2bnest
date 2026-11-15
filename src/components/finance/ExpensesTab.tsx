@@ -11,7 +11,9 @@ import { formatMoney } from '@/lib/money';
 import {
   blankExpenseVat, EXPENSE_VAT_CHOOSE, EXPENSE_VAT_FIELDS, expenseVatForm, vatChosen, fromPence, moneyOutNeedsVat, MONEY_OUT_VAT_KEYS, prepareExpenseVat, VAT_ENTRY_OPTIONS,
   VAT_TREATMENT_LABELS, VAT_TREATMENTS, vatFromForm, withOptionalVatColumns, type VatColumns,
+  EXPENSE_VAT_RECORDED_NOTE, expenseVatMode, vatFreeExpenseValues, type VatRegistrationLookup,
 } from '@/lib/vat';
+import type { FormValues } from '@/lib/moneyOut';
 import { toast } from 'sonner';
 import { companyLabel, hasCompanyColumn, withOptionalCompany, withoutCompany, type CompanyChoice } from '@/lib/financeCompany';
 import { VatNotRecordedBadge } from './VatBadges';
@@ -27,7 +29,7 @@ const TONE: Record<string, 'warning' | 'info' | 'success'> = { pending: 'warning
 const today = () => new Date().toISOString().slice(0, 10);
 
 /** Expenses: add, edit, delete, search and filter. Expenses have no currency column: amounts are in the account currency. */
-export function ExpensesTab({ rows, suppliers, loading, error, onRetry, api, onChanged, onDownload, initialFilter, companies = [], organizationId = null }: {
+export function ExpensesTab({ rows, suppliers, loading, error, onRetry, api, onChanged, onDownload, initialFilter, companies = [], organizationId = null, vatRegistration }: {
   rows: ExpenseRow[];
   suppliers: SupplierRef[];
   loading?: boolean;
@@ -41,6 +43,8 @@ export function ExpensesTab({ rows, suppliers, loading, error, onRetry, api, onC
   /** HMRC P4b: the companies the person belongs to, and the active one (a new expense is saved with it). */
   companies?: CompanyChoice[];
   organizationId?: string | null;
+  /** Finance phase 3b follow-up 2: is a company VAT registered (undefined = unknown, so every VAT question is asked)? */
+  vatRegistration?: VatRegistrationLookup;
 }) {
   const currency = useAccountCurrency();
   const money = (n: number) => formatMoney(n, currency, { cents: true });
@@ -56,6 +60,12 @@ export function ExpensesTab({ rows, suppliers, loading, error, onRetry, api, onC
   // The company column exists once rows carry the key. An older expense with no company must have one chosen before its
   // VAT is recorded (the database requires it); nothing is chosen for the person.
   const companyColumn = hasCompanyColumn(rows);
+  // Finance phase 3b follow-up 2: a company that isn't VAT registered on the expense's date gets no VAT questions, and the
+  // expense is saved VAT-free (Outside the scope of VAT, not reclaimable). Re-worked out from the form's company and date
+  // on every change. An expense already recorded with VAT keeps the full form; an unknown status keeps it too.
+  const vatModeOf = (v: FormValues) => expenseVatMode(vatRegistration?.(String(v.organization_id || '')), String(v.date || ''), ed.editing);
+  const vatValues = (v: FormValues) => (vatModeOf(v) === 'none' ? vatFreeExpenseValues(v, ed.editing) : v);
+  const showVat = (v: FormValues) => vatModeOf(v) !== 'none';
   const ed = useRecordEditor<ExpenseRow>({
     spec: { ...EXPENSE_VAT_FIELDS, organization_id: { kind: 'optionalText', label: 'Company' } }, api: vatApi, noun: 'expense', nameOf: (r) => r.description, onChanged,
     blank: () => ({ description: '', category: '', category_custom: '', amount: '', date: today(), supplier_id: '', status: 'pending', organization_id: organizationId ?? '', ...blankExpenseVat() }),
@@ -63,8 +73,8 @@ export function ExpensesTab({ rows, suppliers, loading, error, onRetry, api, onC
     // "Other (type your own)": the typed name becomes the category (an existing match is reused).
     validate: (v) => (v.category === CUSTOM_CATEGORY ? resolveCustomCategory(v.category_custom as string, categories).error ?? null : null)
       ?? (askCompany && !v.organization_id ? 'Choose the company this expense belongs to.' : null)
-      ?? (() => { const r = vatFromForm(v); return 'error' in r ? r.error : null; })(),
-    prepare: (v) => prepareExpenseVat(v.category === CUSTOM_CATEGORY ? { ...v, category: resolveCustomCategory(v.category_custom as string, categories).value } : v),
+      ?? (() => { const r = vatFromForm(vatValues(v)); return 'error' in r ? r.error : null; })(),
+    prepare: (v) => prepareExpenseVat(vatValues(v.category === CUSTOM_CATEGORY ? { ...v, category: resolveCustomCategory(v.category_custom as string, categories).value } : v)),
   });
   // Ask for the company on a new expense (the active one is chosen already) and on an older one that has none.
   const askCompany = companies.length > 0 && (!ed.editing || (companyColumn && !ed.editing.organization_id));
@@ -118,24 +128,34 @@ export function ExpensesTab({ rows, suppliers, loading, error, onRetry, api, onC
         submitLabel={ed.editing ? 'Save changes' : 'Add expense'}
         initial={ed.initial} onSubmit={ed.submit}
         summary={(v) => {
-          if (!vatChosen(v)) return <p className="rounded-control border border-border bg-muted/40 p-3 text-body" data-testid="expense-vat-choose">{EXPENSE_VAT_CHOOSE}</p>;
+          const mode = vatModeOf(v);
+          if (mode === 'none') {
+            const free = vatFromForm(vatValues(v));
+            return free.ok ? (
+              <p className="rounded-control border border-border bg-muted/40 p-3 text-body" data-testid="expense-novat-summary">
+                Amount <strong className="tabular-nums">{money(fromPence(free.gross))}</strong>. No VAT: the company isn’t VAT registered on this date.
+              </p>
+            ) : null;
+          }
+          const note = mode === 'recorded' ? <p className="mb-2 text-body text-muted-foreground" data-testid="expense-vat-recorded-note">{EXPENSE_VAT_RECORDED_NOTE}</p> : null;
+          if (!vatChosen(v)) return <>{note} <p className="rounded-control border border-border bg-muted/40 p-3 text-body" data-testid="expense-vat-choose">{EXPENSE_VAT_CHOOSE}</p></>;
           const r = vatFromForm(v);
-          return r.ok ? (
+          return r.ok ? (<>{note}
             <p className="rounded-control border border-border bg-muted/40 p-3 text-body" data-testid="expense-vat-summary">
               Net <strong className="tabular-nums">{money(fromPence(r.net))}</strong> · VAT <strong className="tabular-nums">{money(fromPence(r.vat))}</strong> · Total <strong className="tabular-nums">{money(fromPence(r.gross))}</strong>
-            </p>
-          ) : null;
+            </p></>
+          ) : note;
         }}
         fields={[
           ...(askCompany ? [{ key: 'organization_id', label: 'Company', type: 'select' as const, required: true, options: companies.map((c) => ({ value: c.organizationId, label: c.name })),
             hint: ed.editing ? 'This expense has no company yet. Choose the one it belongs to: its VAT is recorded for that company.' : 'The company this expense belongs to.', wide: true }] : []),
           { key: 'description', label: 'Description', type: 'text', required: true, wide: true },
           { key: 'amount', label: `Amount${currency ? ` (${currency})` : ''}`, type: 'number', required: true },
-          { key: 'vat_entry', label: 'The amount entered is', type: 'select', required: true, options: VAT_ENTRY_OPTIONS },
+          { key: 'vat_entry', label: 'The amount entered is', type: 'select', required: true, options: VAT_ENTRY_OPTIONS, show: showVat },
           { key: 'vat_treatment', label: 'VAT treatment', type: 'select', required: true, options: VAT_TREATMENTS.map((t) => ({ value: t, label: VAT_TREATMENT_LABELS[t] })),
-            hint: 'Every expense records its VAT. Choose Zero rate, Exempt or Outside the scope of VAT when there is none.' },
-          { key: 'vat_override', label: 'VAT on the receipt (optional)', type: 'number', hint: 'Leave empty to use the calculated VAT. It can differ by 1p at most (supplier rounding).' },
-          { key: 'vat_reclaimable', label: 'VAT can be reclaimed', type: 'switch', hint: 'Turn off for costs whose VAT you can’t reclaim, such as business entertainment.' },
+            hint: 'Every expense records its VAT. Choose Zero rate, Exempt or Outside the scope of VAT when there is none.', show: showVat },
+          { key: 'vat_override', label: 'VAT on the receipt (optional)', type: 'number', hint: 'Leave empty to use the calculated VAT. It can differ by 1p at most (supplier rounding).', show: showVat },
+          { key: 'vat_reclaimable', label: 'VAT can be reclaimed', type: 'switch', hint: 'Turn off for costs whose VAT you can’t reclaim, such as business entertainment.', show: showVat },
           { key: 'date', label: 'Date (VAT tax point)', type: 'date', required: true },
           { key: 'category', label: 'Category', type: 'select', required: true, options: [...categories, { value: CUSTOM_CATEGORY, label: 'Other (type your own)', group: 'Other' }] },
           { key: 'category_custom', label: 'New category name', type: 'text', required: true, maxLength: CUSTOM_CATEGORY_MAX, show: (v) => v.category === CUSTOM_CATEGORY,
