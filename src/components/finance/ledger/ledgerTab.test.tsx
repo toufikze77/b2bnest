@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { LedgerAccount } from '@/lib/ledger';
 import type { JournalEntry, LedgerApi, LedgerStatus } from '@/lib/ledgerApi';
 import { LedgerTab } from './LedgerTab';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const ORG = 'org-1';
 const status = (o: Partial<LedgerStatus> = {}): LedgerStatus => ({
@@ -706,6 +707,17 @@ describe('Ledger tab: is this company VAT registered?', () => {
     expect(await screen.findByText('Saved: this company is VAT registered.')).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'Yes' })).toBeChecked();
     expect(screen.getByTestId('vat-registered')).toHaveTextContent('Registered from 2026-03-01.');
+  });
+
+  it('after saving, the expense form\'s cached answer for this company is read again', async () => {
+    const client = new QueryClient();
+    const spy = vi.spyOn(client, 'invalidateQueries');
+    const api = vatApi(managerOn({ bills_enabled: true, vat_registered: true }), { vatRegisteredSet: vi.fn(() => ok(managerOn({ bills_enabled: true, vat_registered: false }))) });
+    render(<QueryClientProvider client={client}><MemoryRouter initialEntries={['/x?ledger=automatic']}><LedgerTab organizationId={ORG} api={api} isDemo={false} /></MemoryRouter></QueryClientProvider>);
+    await screen.findByRole('switch', { name: 'Post bills and expenses to the ledger automatically' });
+    fireEvent.click(screen.getByRole('radio', { name: 'No' }));
+    fireEvent.click(within(screen.getByTestId('vat-registered-confirm')).getByRole('button', { name: 'No, we are not VAT registered' }));
+    await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: ['vat-registration', ORG] }));
   });
 
   it('No: the confirmation says how many held records will post; Cancel sends nothing', async () => {

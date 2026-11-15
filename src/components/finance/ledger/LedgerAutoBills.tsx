@@ -6,7 +6,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
+import { QueryClientContext } from '@tanstack/react-query';
 import { AssuranceContext } from '@/hooks/useAssurance';
+import { invalidateVatRegistration } from '@/hooks/useVatRegistration';
 import { formatPence, LEDGER_POSTED_WARNING, ledgerMessage, type LedgerAccount } from '@/lib/ledger';
 import { codeOf, type LedgerApi, type Result } from '@/lib/ledgerApi';
 import { runLedgerAutoSoon } from '@/lib/ledgerAutoRun';
@@ -41,9 +43,11 @@ export function LedgerAutoBills({ api, organizationId, status, preview, onChange
   const [vatPending, setVatPending] = useState<boolean | null>(null);
   const [vatFrom, setVatFrom] = useState('');
   const held = preview?.skipped.vat_details_missing ?? 0;
+  const queryClient = useContext(QueryClientContext); // the expense form's cached answer (absent outside the app, e.g. tests)
   const saveVat = (yes: boolean) => {
     setVatPending(null);
     void act(() => api.vatRegisteredSet(organizationId, yes, yes ? vatFrom || null : null), () => {
+      invalidateVatRegistration(queryClient, organizationId); // the expense form asks the right questions straight away
       runLedgerAutoSoon(organizationId); // held records post straight away when switching to No (silent, never blocks)
       return yes ? 'Saved: this company is VAT registered.' : 'Saved: this company is not VAT registered.';
     }, false);

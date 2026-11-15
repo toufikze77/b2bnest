@@ -42,6 +42,7 @@ import { documentEmailApi, EmailAccess, emailAvailability, SendResult, SENT_NOT_
 import { Tables } from '@/integrations/supabase/types';
 import { LedgerTab } from '@/components/finance/ledger/LedgerTab';
 import { runLedgerAutoSoon, withLedgerAutoRun } from '@/lib/ledgerAutoRun';
+import { useVatRegistration } from '@/hooks/useVatRegistration';
 // Type definitions
 type Quote = Tables<'quotes'>;
 type Invoice = Tables<'invoices'>;
@@ -80,6 +81,8 @@ const BusinessFinanceAssistant = () => {
   // Account currency: '' when not set, and then amounts print as plain numbers (never "$").
   const accountCurrency = useAccountCurrency();
   const { organization, organizationId = null, memberships = [] } = useActiveOrganization();
+  // Finance phase 3b follow-up 2: which companies are VAT registered (the expense form skips VAT questions for the others).
+  const vatRegistration = useVatRegistration([organizationId, ...memberships.map((m) => m.organizationId)]);
   const navigate = useNavigate();
   const { templateFor } = useDocumentTemplates();
   const [isLoading, setIsLoading] = useState(false);
@@ -731,7 +734,7 @@ const BusinessFinanceAssistant = () => {
 
         <TabsContent value="expenses" className="mt-0">
           <ExpensesTab key={`expenses-${vatFocus.expenses}`} initialFilter={vatFocus.expenses ? 'vat_missing' : undefined} rows={expenses} suppliers={suppliers} {...moneyOutState('expenses', loadExpenses)} api={withLedgerAutoRun(moneyOut('expenses'), (id) => expenses.find((e) => e.id === id)?.organization_id)} onChanged={() => { void loadExpenses(); }} onDownload={downloadExpenses}
-            companies={memberships} organizationId={organizationId} />
+            companies={memberships} organizationId={organizationId} vatRegistration={vatRegistration} />
         </TabsContent>
 
         <TabsContent value="outgoings" className="mt-0">

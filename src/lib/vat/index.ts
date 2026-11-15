@@ -4,3 +4,4 @@ export * from './records';
 export * from './expenseForm';
 export * from './returnRules';
 export * from './returnBoxes';
+export * from './registration';
