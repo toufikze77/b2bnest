@@ -74,6 +74,10 @@ function world(): World {
         { id: 'li2', organization_id: Y, source_table: 'invoices', source_id: 'i4', source_label: 'Y-SECRET-ISSUE', kind: 'invoice_issued', reason_code: 'zero_total' }],
       ledger_post_queue: [{ id: 1, organization_id: X, source_table: 'invoices', source_id: 'i2' }],
       ledger_category_map: [{ organization_id: X, category_key: 'travel', account_id: 'a7400' }, { organization_id: Y, category_key: 'y-secret-category', account_id: 'a1' }],
+      ledger_bank_accounts: [{ id: 'ba1', organization_id: X, name: 'Main', last4: '1234' }, { id: 'ba2', organization_id: Y, name: 'Y-SECRET-BANK', last4: '9999' }],
+      ledger_bank_imports: [{ id: 'bi1', organization_id: X, bank_account_id: 'ba1', file_name: 'march.csv', row_count: 1 }],
+      ledger_bank_lines: [{ id: 'bl1', organization_id: X, bank_account_id: 'ba1', import_id: 'bi1', line_date: '2026-03-06', description: 'ACME PAYMENT', amount_pence: 12000, status: 'matched' },
+        { id: 'bl2', organization_id: Y, bank_account_id: 'ba2', import_id: 'bi9', line_date: '2026-03-06', description: 'Y-SECRET-STATEMENT-LINE', amount_pence: -100, status: 'unmatched' }],
       project_members: [{ id: 'pm1', project_id: 'p1', user_id: C }, { id: 'pm2', project_id: 'p-other', user_id: 'someone' }],
     },
     missing: new Set(),
@@ -224,10 +228,14 @@ Deno.test('export company: owners and admins only; that company\'s rows only; HM
   assert(!files.has('company/ledger_post_queue.json'), 'the short-lived queue is not exported');
   // Finance phase 3b: the category map, this company's only.
   assertEquals(JSON.parse(files.get('company/ledger_category_map.json')!).map((m: { category_key: string }) => m.category_key), ['travel']);
+  // Finance phase 3c-1: bank accounts, imports and statement lines, this company's only.
+  assertEquals(JSON.parse(files.get('company/ledger_bank_accounts.json')!).map((b: { id: string }) => b.id), ['ba1']);
+  assertEquals(JSON.parse(files.get('company/ledger_bank_imports.json')!).map((b: { id: string }) => b.id), ['bi1']);
+  assertEquals(JSON.parse(files.get('company/ledger_bank_lines.json')!).map((b: { id: string }) => b.id), ['bl1']);
   assertStringIncludes(files.get('company/invoices.csv')!, `"'=HYPERLINK(""x"")"`);
   assertEquals(JSON.parse(files.get('files.json')!).map((l: { path: string }) => l.path), [`${X}/t1/a.pdf`]);
   const all = [...files.values()].join('\n');
-  for (const bad of ['v1.x.y.z', 'Y-SECRET-INVOICE', 'Y-SECRET-JOURNAL', 'Y-SECRET-LINE', 'Y-SECRET-POSTING', 'Y-SECRET-ISSUE', 'y-secret-category', 'Company Y', 'shh', 'cid', `${Y}/t9`]) assert(!all.includes(bad), bad);
+  for (const bad of ['v1.x.y.z', 'Y-SECRET-INVOICE', 'Y-SECRET-JOURNAL', 'Y-SECRET-LINE', 'Y-SECRET-POSTING', 'Y-SECRET-ISSUE', 'y-secret-category', 'Y-SECRET-BANK', 'Y-SECRET-STATEMENT-LINE', 'Company Y', 'shh', 'cid', `${Y}/t9`]) assert(!all.includes(bad), bad);
   assert(w.reads.filter((x) => x.table !== 'project_members' && !['project_activities', 'todo_subtasks', 'todo_comments', 'todo_history', 'team_members'].includes(x.table))
     .every((x) => x.as === 'service' && x.filter.eq.length === 1 && x.filter.eq[0][1] === X), 'every company read is filtered by company X');
   assertEquals(w.reads.find((x) => x.table === 'hmrc_connections')?.select, COMPANY_TABLES.find((t) => t.table === 'hmrc_connections')?.select);

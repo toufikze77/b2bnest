@@ -5,6 +5,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ledgerCode, type AccountType, type LedgerAccount, type TrialBalanceRow } from '@/lib/ledger';
 import type { AutoPreview, AutoRun, AutoStatus, CategoryMapRow, PostingIssue, PostingLink } from '@/lib/ledgerAuto';
+import type { BankImportResult, BankOverview, IgnoreReason } from '@/lib/ledgerBank';
+import type { BankRow } from '@/lib/bankCsv';
 
 type DbError = { code?: string; message?: string } | null;
 type Rpc = (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: DbError }>;
@@ -107,6 +109,20 @@ export function ledgerApi(client: LedgerClient = supabase as unknown as LedgerCl
     // Finance phase 3b: which account each bill and expense category posts to (read only in this release).
     categoryMap: (org: string) => read<CategoryMapRow[]>(client.from('ledger_category_map').select('category_key,account_id,is_default')
       .eq('organization_id', org).order('category_key')),
+    // Finance phase 3c-1: bank statements (docs/ledger-bank). Before that SQL is applied these answer NOT_AVAILABLE.
+    bankOverview: (org: string, account?: string | null, asAt?: string | null, page = 0) =>
+      call<BankOverview>('ledger_bank_overview', { p_org: org, p_bank_account: account ?? null, p_as_at: asAt ?? null, p_page: page }),
+    bankAccountSave: (org: string, f: { id?: string | null; name: string; last4?: string | null; active?: boolean | null }) =>
+      call<{ result: 'created' | 'updated' | 'unchanged'; id: string }>('ledger_bank_account_save', {
+        p_org: org, p_id: f.id ?? null, p_name: f.name.trim(), p_last4: f.last4?.trim() || null, p_active: f.active ?? null,
+      }),
+    bankImport: (org: string, account: string, fileName: string, rows: BankRow[]) =>
+      call<BankImportResult>('ledger_bank_import', { p_org: org, p_bank_account: account, p_file_name: fileName, p_rows: rows }),
+    bankMatchRun: (org: string, account: string) => call<{ matched: number; unlinked: number }>('ledger_bank_match_run', { p_org: org, p_bank_account: account }),
+    bankMatch: (org: string, line: string, posting: string) => call<{ result: string }>('ledger_bank_match', { p_org: org, p_line: line, p_posting: posting }),
+    bankUnmatch: (org: string, line: string) => call<{ result: string }>('ledger_bank_unmatch', { p_org: org, p_line: line }),
+    bankIgnore: (org: string, line: string, reason: IgnoreReason) => call<{ result: string }>('ledger_bank_ignore', { p_org: org, p_line: line, p_reason: reason }),
+    bankUnignore: (org: string, line: string) => call<{ result: string }>('ledger_bank_unignore', { p_org: org, p_line: line }),
   };
 }
 export type LedgerApi = ReturnType<typeof ledgerApi>;

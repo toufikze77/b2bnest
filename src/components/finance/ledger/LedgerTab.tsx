@@ -16,6 +16,7 @@ import { LedgerChart } from './LedgerChart';
 import { LedgerJournals } from './LedgerJournals';
 import { LedgerTrialBalance } from './LedgerTrialBalance';
 import { LedgerAuto } from './LedgerAuto';
+import { LedgerBank } from './LedgerBank';
 import { journalSources } from '@/lib/ledgerAuto';
 import { runWaitingPostings } from '@/lib/ledgerAutoRun';
 import { ledgerSectionFromSearch, searchWithLedgerSection, type LedgerSection } from '@/lib/financeTabs';
@@ -27,8 +28,8 @@ type State =
   | { kind: 'ready'; status: LedgerStatus; accounts: LedgerAccount[]; journals: JournalEntry[]; sources: Map<string, string> };
 
 const UPGRADE_ACCESS = ['plan_not_included', 'trial_ended'];
-/** Opening these sections first posts any invoices waiting in the queue (owners and admins, switch on). */
-const RUN_SECTIONS: LedgerSection[] = ['journals', 'trial-balance', 'automatic'];
+/** Opening these sections first posts any invoices waiting in the queue (owners and admins, switch on), so Bank matches against them. */
+const RUN_SECTIONS: LedgerSection[] = ['journals', 'trial-balance', 'automatic', 'bank'];
 
 export function LedgerTab({ organizationId, api: injected, isDemo: demoProp }: { organizationId: string | null; api?: LedgerApi; isDemo?: boolean }) {
   const demo = useDemoMode();
@@ -115,6 +116,7 @@ export function LedgerTab({ organizationId, api: injected, isDemo: demoProp }: {
           <TabsTrigger value="accounts">Chart of accounts</TabsTrigger>
           <TabsTrigger value="trial-balance">Trial balance</TabsTrigger>
           <TabsTrigger value="automatic">Automatic postings</TabsTrigger>
+          <TabsTrigger value="bank">Bank</TabsTrigger>
         </TabsList>
         <TabsContent value="journals" className="mt-4">
           <LedgerJournals api={api} organizationId={organizationId} accounts={accounts} canPost={status.can_post} journals={journals} sources={sources} onChanged={reloadQuietly} />
@@ -127,6 +129,9 @@ export function LedgerTab({ organizationId, api: injected, isDemo: demoProp }: {
         </TabsContent>
         <TabsContent value="automatic" className="mt-4">
           {section === 'automatic' && <LedgerAuto api={api} organizationId={organizationId} refreshKey={refreshKey} onPosted={reloadQuietly} />}
+        </TabsContent>
+        <TabsContent value="bank" className="mt-4">
+          {section === 'bank' && <LedgerBank api={api} organizationId={organizationId} refreshKey={refreshKey} />}
         </TabsContent>
       </Tabs>
     );
