@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
-import { billPosting, categoryKey, expensePosting, journalSources, SOURCE_LINKS, sourceOfKind } from './ledgerAuto';
+import { billPosting, categoryKey, categoryLabel, expensePosting, journalSources, SOURCE_LINKS, sourceOfKind, UNMAPPED_CATEGORIES } from './ledgerAuto';
+import { EXPENSE_CATEGORY_GROUPS } from './moneyOut';
 import { runWaitingPostings, withLedgerAutoRun } from './ledgerAutoRun';
 
 const rec = (o: Record<string, unknown> = {}) => ({ status: 'pending', currency: 'GBP', amount: '120.00', net_amount: '100.00', vat_amount: '20.00',
@@ -92,5 +93,30 @@ describe('instant posting for bills and expenses', () => {
     expect(await api.remove('e1')).toEqual({ error: { message: 'nope' } });
     expect(soon.mock.calls.map((c) => c[0])).toEqual(['org-a', null, 'org-a', 'org-b']);
     expect(base.create).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('category mapping follow-up: every app category has a decision', () => {
+  const followup = readFileSync('docs/ledger-auto-bills/followup-categories.sql', 'utf8');
+  const block = followup.slice(followup.indexOf('CREATE OR REPLACE FUNCTION public._ledger_auto_default_categories'), followup.indexOf(') AS d(category_key, code, system_key)'));
+  const mapped = new Set([...block.matchAll(/\('([a-z_]+)', /g)].map((m) => m[1]));
+  const appValues = EXPENSE_CATEGORY_GROUPS.flatMap((g) => g.options.map((o) => o.value));
+
+  it('each category in EXPENSE_CATEGORY_GROUPS is mapped or deliberately unmapped (a new one fails here until decided)', () => {
+    expect(mapped.size).toBe(40);
+    const undecided = appValues.filter((v) => !mapped.has(categoryKey(v)) && !(categoryKey(v) in UNMAPPED_CATEGORIES));
+    expect(undecided).toEqual([]);
+    for (const k of Object.keys(UNMAPPED_CATEGORIES)) expect(mapped.has(k), k).toBe(false);
+  });
+  it('the SQL test checks the same app list and the same unmapped list', () => {
+    const t = readFileSync('docs/ledger-auto-bills/test-category-map.sql', 'utf8');
+    const arr = (name: string) => [...t.slice(t.indexOf('ARRAY[', t.indexOf(name))).split('];')[0].matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
+    expect(arr('v_app text[]').sort()).toEqual([...appValues].sort());
+    expect(arr('v_unmapped text[]').sort()).toEqual(Object.keys(UNMAPPED_CATEGORIES).sort());
+  });
+  it('plain labels: the app\'s own label, else the key in words', () => {
+    expect(categoryLabel('transport')).toBe('Travel and transport');
+    expect(categoryLabel('office_costs')).toBe('Office costs');
+    expect(categoryLabel('meals_and_entertainment')).toBe('Meals and entertainment');
   });
 });

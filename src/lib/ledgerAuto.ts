@@ -2,6 +2,7 @@
 // database decides what posts (docs/ledger-auto/proposal.sql); invoicePosting() mirrors its rules so the screen can
 // explain them, and is tested in integer pence (never a float comparison).
 import { toPence } from '@/lib/ledger';
+import { EXPENSE_CATEGORIES } from '@/lib/moneyOut';
 
 export const AUTO_SWITCH_LABEL = 'Post invoices to the ledger automatically';
 export const AUTO_ON_DONE = 'Automatic postings are on.';
@@ -183,4 +184,26 @@ export function expensePosting(e: MoneyOutAmounts, accountCurrency: string | nul
   if (!['approved', 'paid'].includes((e.status ?? '').trim().toLowerCase())) return { none: true };
   if ((accountCurrency ?? '').trim().toUpperCase() !== 'GBP') return { reason: 'currency_not_gbp' };
   return costPosting(e, 'bank');
+}
+
+/**
+ * Categories deliberately left out of the standard mapping (docs/ledger-auto-bills/README.md, "Applied state /
+ * follow-up"): records in them stay under Needs attention until a person decides. Kept in step with the SQL and with
+ * EXPENSE_CATEGORY_GROUPS by src/lib/ledgerAutoBills.test.ts, so a new app category can't arrive without a decision.
+ */
+export const UNMAPPED_CATEGORIES: Record<string, string> = {
+  wages_salaries: 'Wages and salaries: payroll comes later.',
+  taxes_duties: 'Taxes and duties: a person needs to decide where each one goes.',
+  equipment_tools: 'Equipment and tools: it may be a fixed asset.',
+  equipment: 'Equipment (bills): it may be a fixed asset.',
+  shopping: 'Shopping (an old category): no business meaning to map.',
+  health: 'Health and medical (an old category): no business meaning to map.',
+};
+
+/** A plain label for a category key: the app's own label where it has one, else the key in words. */
+export function categoryLabel(key: string): string {
+  const own = EXPENSE_CATEGORIES.find((c) => c.value === key);
+  if (own) return own.label;
+  const words = key.replace(/_/g, ' ').trim();
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : key;
 }
