@@ -17,6 +17,7 @@ import { LedgerJournals } from './LedgerJournals';
 import { LedgerTrialBalance } from './LedgerTrialBalance';
 import { LedgerAuto } from './LedgerAuto';
 import { LedgerBank } from './LedgerBank';
+import { LedgerReports } from './LedgerReports';
 import { journalSources } from '@/lib/ledgerAuto';
 import { runWaitingPostings } from '@/lib/ledgerAutoRun';
 import { ledgerSectionFromSearch, searchWithLedgerSection, type LedgerSection } from '@/lib/financeTabs';
@@ -29,7 +30,7 @@ type State =
 
 const UPGRADE_ACCESS = ['plan_not_included', 'trial_ended'];
 /** Opening these sections first posts any invoices waiting in the queue (owners and admins, switch on), so Bank matches against them. */
-const RUN_SECTIONS: LedgerSection[] = ['journals', 'trial-balance', 'automatic', 'bank'];
+const RUN_SECTIONS: LedgerSection[] = ['journals', 'trial-balance', 'reports', 'automatic', 'bank'];
 
 export function LedgerTab({ organizationId, api: injected, isDemo: demoProp }: { organizationId: string | null; api?: LedgerApi; isDemo?: boolean }) {
   const demo = useDemoMode();
@@ -115,6 +116,7 @@ export function LedgerTab({ organizationId, api: injected, isDemo: demoProp }: {
           <TabsTrigger value="journals">Journals</TabsTrigger>
           <TabsTrigger value="accounts">Chart of accounts</TabsTrigger>
           <TabsTrigger value="trial-balance">Trial balance</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="automatic">Automatic postings</TabsTrigger>
           <TabsTrigger value="bank">Bank</TabsTrigger>
         </TabsList>
@@ -126,6 +128,9 @@ export function LedgerTab({ organizationId, api: injected, isDemo: demoProp }: {
         </TabsContent>
         <TabsContent value="trial-balance" className="mt-4">
           <LedgerTrialBalance api={api} organizationId={organizationId} refreshKey={refreshKey} />
+        </TabsContent>
+        <TabsContent value="reports" className="mt-4">
+          {section === 'reports' && <LedgerReports api={api} organizationId={organizationId} accounts={accounts} startDate={status.start_date} refreshKey={refreshKey} />}
         </TabsContent>
         <TabsContent value="automatic" className="mt-4">
           {section === 'automatic' && <LedgerAuto api={api} organizationId={organizationId} refreshKey={refreshKey} onPosted={reloadQuietly} />}

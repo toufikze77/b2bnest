@@ -7,6 +7,7 @@ import { ledgerCode, type AccountType, type LedgerAccount, type TrialBalanceRow 
 import type { AutoPreview, AutoRun, AutoStatus, CategoryMapRow, PostingIssue, PostingLink } from '@/lib/ledgerAuto';
 import type { BankImportResult, BankOverview, IgnoreReason } from '@/lib/ledgerBank';
 import type { BankRow } from '@/lib/bankCsv';
+import type { AccountDetail, BsRow, Completeness, PlRow } from '@/lib/ledgerReports';
 
 type DbError = { code?: string; message?: string } | null;
 type Rpc = (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: DbError }>;
@@ -109,6 +110,12 @@ export function ledgerApi(client: LedgerClient = supabase as unknown as LedgerCl
     // Finance phase 3b: which account each bill and expense category posts to (read only in this release).
     categoryMap: (org: string) => read<CategoryMapRow[]>(client.from('ledger_category_map').select('category_key,account_id,is_default')
       .eq('organization_id', org).order('category_key')),
+    // Finance phase 4: reports from the ledger (docs/ledger-reports), read only. Before that SQL is applied: NOT_AVAILABLE.
+    reportProfitLoss: (org: string, from: string, to: string) => call<PlRow[]>('ledger_report_profit_loss', { p_org: org, p_from: from, p_to: to }),
+    reportBalanceSheet: (org: string, asOf: string) => call<BsRow[]>('ledger_report_balance_sheet', { p_org: org, p_as_of: asOf }),
+    reportAccountDetail: (org: string, account: string, from: string, to: string) =>
+      call<AccountDetail>('ledger_report_account_detail', { p_org: org, p_account: account, p_from: from, p_to: to }),
+    reportCompleteness: (org: string) => call<Completeness>('ledger_report_completeness', { p_org: org }),
     // Finance phase 3c-1: bank statements (docs/ledger-bank). Before that SQL is applied these answer NOT_AVAILABLE.
     bankOverview: (org: string, account?: string | null, asAt?: string | null, page = 0) =>
       call<BankOverview>('ledger_bank_overview', { p_org: org, p_bank_account: account ?? null, p_as_at: asAt ?? null, p_page: page }),
