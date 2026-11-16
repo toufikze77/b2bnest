@@ -449,3 +449,13 @@ input[type="text"]:focus:not(:focus-visible) {
   body.print-hmrc-receipt #hmrc-receipt button { display: none !important; }
   body.print-hmrc-receipt #hmrc-receipt table { break-inside: avoid; }
 }
+
+/* Finance phase 4: ledger reports "Print" prints only the report and its disclaimer (browser print, no library). */
+@media print {
+  body.print-ledger-report * { visibility: hidden; }
+  body.print-ledger-report #ledger-report, body.print-ledger-report #ledger-report * { visibility: visible; }
+  body.print-ledger-report #ledger-report { position: absolute; inset: 0 auto auto 0; width: 100%; padding: 0; color: #000; background: #fff; }
+  body.print-ledger-report #ledger-report .no-print, body.print-ledger-report #ledger-report button { display: none !important; }
+  body.print-ledger-report #ledger-report table { break-inside: auto; }
+  body.print-ledger-report #ledger-report tr { break-inside: avoid; }
+}

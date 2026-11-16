@@ -308,6 +308,7 @@ export const LEDGER_MESSAGES: Record<string, string> = {
   NOT_FOUND: "That wasn't found. Refresh and try again.",
   APPEND_ONLY: 'Posted journals cannot be edited or deleted. Reverse them instead.',
   BAD_REQUEST: 'Something in the request is missing. Refresh and try again.',
+  BAD_RANGE: 'Choose a start date on or before the end date, and a period of 5 years or less.',
   // Finance phase 3c-1: bank statements.
   BANK_BAD_NAME: 'Give the bank account a name of up to 80 characters.',
   BANK_BAD_LAST4: 'The last 4 digits are exactly four numbers (never the full account number).',
