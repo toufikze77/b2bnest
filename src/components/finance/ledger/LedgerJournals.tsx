@@ -12,7 +12,7 @@ import { JournalGrid } from './JournalGrid';
 
 const SOURCE_LABELS: Record<JournalEntry['source_type'], string> = {
   manual: 'Manual', opening_balance: 'Opening balances', reversal: 'Reversal', auto_invoice: 'Automatic: invoice', auto_invoice_payment: 'Automatic: payment',
-  auto_bill: 'Automatic: bill', auto_bill_payment: 'Automatic: bill payment', auto_expense: 'Automatic: expense',
+  auto_bill: 'Automatic: bill', auto_bill_payment: 'Automatic: bill payment', auto_expense: 'Automatic: expense', bank_line: 'Bank statement line',
 };
 const today = () => new Date().toISOString().slice(0, 10);
 
