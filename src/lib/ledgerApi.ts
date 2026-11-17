@@ -40,7 +40,7 @@ export interface JournalEntry {
   entry_date: string;
   memo: string;
   reason: string | null;
-  source_type: 'manual' | 'opening_balance' | 'reversal' | 'auto_invoice' | 'auto_invoice_payment' | 'auto_bill' | 'auto_bill_payment' | 'auto_expense';
+  source_type: 'manual' | 'opening_balance' | 'reversal' | 'auto_invoice' | 'auto_invoice_payment' | 'auto_bill' | 'auto_bill_payment' | 'auto_expense' | 'bank_line';
   source_id?: string | null;
   reverses_entry_id: string | null;
   posted_by_name: string | null;
@@ -125,11 +125,18 @@ export function ledgerApi(client: LedgerClient = supabase as unknown as LedgerCl
       }),
     bankImport: (org: string, account: string, fileName: string, rows: BankRow[]) =>
       call<BankImportResult>('ledger_bank_import', { p_org: org, p_bank_account: account, p_file_name: fileName, p_rows: rows }),
-    bankMatchRun: (org: string, account: string) => call<{ matched: number; unlinked: number }>('ledger_bank_match_run', { p_org: org, p_bank_account: account }),
+    bankMatchRun: (org: string, account: string) => call<{ matched: number; unlinked: number; unposted?: number }>('ledger_bank_match_run', { p_org: org, p_bank_account: account }),
     bankMatch: (org: string, line: string, posting: string) => call<{ result: string }>('ledger_bank_match', { p_org: org, p_line: line, p_posting: posting }),
     bankUnmatch: (org: string, line: string) => call<{ result: string }>('ledger_bank_unmatch', { p_org: org, p_line: line }),
     bankIgnore: (org: string, line: string, reason: IgnoreReason) => call<{ result: string }>('ledger_bank_ignore', { p_org: org, p_line: line, p_reason: reason }),
     bankUnignore: (org: string, line: string) => call<{ result: string }>('ledger_bank_unignore', { p_org: org, p_line: line }),
+    // Finance phase 3c-2: post unmatched lines to the ledger (docs/ledger-bank-post).
+    bankPost: (org: string, line: string, account: string, key?: string) =>
+      call<{ result: 'posted' | 'unchanged'; line_id: string; entry_id: string }>('ledger_bank_post', { p_org: org, p_line: line, p_account: account, p_idempotency_key: key ?? null }),
+    bankPostMany: (org: string, account: string, lines: string[]) =>
+      call<{ result: string; posted: number; unchanged: number; entry_ids: string[] }>('ledger_bank_post_many', { p_org: org, p_account: account, p_lines: lines }),
+    bankUnpost: (org: string, line: string) =>
+      call<{ result: string; how: 'reversed' | 'already_reversed'; reversal_date: string | null; reversal_dated: 'line_date' | 'today' | null }>('ledger_bank_unpost', { p_org: org, p_line: line }),
   };
 }
 export type LedgerApi = ReturnType<typeof ledgerApi>;

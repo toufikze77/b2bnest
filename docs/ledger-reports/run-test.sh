@@ -57,14 +57,14 @@ SQL
 same() { $P -At -c "select case when tl.fingerprint() = (select fp from tl.before) then 'PASS|$1' else 'FAIL|$1' end"; }
 # Everything except the new report functions: every other function body and grant, and every table, column, constraint,
 # index, trigger, grant and policy (the fingerprint above, with the four new functions left out).
-other() { $P -At -c "select md5(string_agg(p.oid::regprocedure::text || ':' || md5(p.prosrc) || ':' || coalesce(p.proacl::text, ''), ',' order by 1)) from pg_proc p
+other() { $P -At -c "select md5(string_agg(p.oid::regprocedure::text || ':' || md5(p.prosrc) || ':' || coalesce(p.proacl::text, ''), ',' order by p.oid::regprocedure::text || ':' || md5(p.prosrc) || ':' || coalesce(p.proacl::text, ''))) from pg_proc p
   where p.pronamespace = 'public'::regnamespace and p.proname not like 'ledger_report_%'"; }
 catalog() { $P -At -c "select md5(concat_ws('|',
-  (select string_agg(c.relname || '.' || a.attname || ':' || format_type(a.atttypid, a.atttypmod), ',' order by 1) from pg_class c join pg_attribute a on a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped where c.relnamespace = 'public'::regnamespace),
-  (select string_agg(conrelid::regclass::text || conname || pg_get_constraintdef(oid), ',' order by 1) from pg_constraint where connamespace = 'public'::regnamespace),
-  (select string_agg(tgrelid::regclass::text || tgname, ',' order by 1) from pg_trigger t join pg_class c on c.oid = t.tgrelid where c.relnamespace = 'public'::regnamespace and not tgisinternal),
-  (select string_agg(tablename || policyname || coalesce(qual, '') || coalesce(with_check, ''), ',' order by 1) from pg_policies where schemaname = 'public'),
-  (select string_agg(relname || coalesce(relacl::text, '') || relrowsecurity::text, ',' order by 1) from pg_class where relnamespace = 'public'::regnamespace)))"; }
+  (select string_agg(c.relname || '.' || a.attname || ':' || format_type(a.atttypid, a.atttypmod), ',' order by c.relname || '.' || a.attname || ':' || format_type(a.atttypid, a.atttypmod)) from pg_class c join pg_attribute a on a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped where c.relnamespace = 'public'::regnamespace),
+  (select string_agg(conrelid::regclass::text || conname || pg_get_constraintdef(oid), ',' order by conrelid::regclass::text || conname || pg_get_constraintdef(oid)) from pg_constraint where connamespace = 'public'::regnamespace),
+  (select string_agg(tgrelid::regclass::text || tgname, ',' order by tgrelid::regclass::text || tgname) from pg_trigger t join pg_class c on c.oid = t.tgrelid where c.relnamespace = 'public'::regnamespace and not tgisinternal),
+  (select string_agg(tablename || policyname || coalesce(qual, '') || coalesce(with_check, ''), ',' order by tablename || policyname || coalesce(qual, '') || coalesce(with_check, '')) from pg_policies where schemaname = 'public'),
+  (select string_agg(relname || coalesce(relacl::text, '') || relrowsecurity::text, ',' order by relname || coalesce(relacl::text, '') || relrowsecurity::text) from pg_class where relnamespace = 'public'::regnamespace)))"; }
 o1=$(other); c1=$(catalog)
 
 echo "== apply, then an empty rollback restores the exact state"

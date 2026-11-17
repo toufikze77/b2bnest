@@ -41,6 +41,7 @@ function bankApi(o: Partial<Record<keyof LedgerApi, unknown>> = {}) {
     bankUnmatch: vi.fn(() => ok({ result: 'unmatched' })),
     bankIgnore: vi.fn(() => ok({ result: 'ignored' })),
     bankUnignore: vi.fn(() => ok({ result: 'unmatched' })),
+    accounts: vi.fn(() => ok([])),
     ...o,
   } as unknown as LedgerApi & Record<string, ReturnType<typeof vi.fn>>;
 }
@@ -51,7 +52,7 @@ describe('Bank: reading', () => {
   it('says plainly that it never changes the ledger; shows the summary and counts', async () => {
     show(bankApi());
     expect(await screen.findByTestId('bank-never-posts')).toHaveTextContent(BANK_NEVER_POSTS);
-    expect(BANK_NEVER_POSTS).toBe('Importing and matching never changes your ledger. Lines that match nothing stay here until a later release lets you post them.');
+    expect(BANK_NEVER_POSTS).toBe('Importing and matching never change your ledger. Posting a line you choose does, and you can undo it.');
     expect(screen.getByTestId('bank-ledger-balance')).toHaveTextContent('£12,499.00');
     expect(screen.getByTestId('bank-statement-balance')).toHaveTextContent('£12,000.12 (2026-03-28)');
     expect(screen.getByTestId('bank-difference')).toHaveTextContent('-£498.88');

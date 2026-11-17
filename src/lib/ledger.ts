@@ -323,6 +323,13 @@ export const LEDGER_MESSAGES: Record<string, string> = {
   BANK_POSTING_REVERSED: 'That payment was reversed in the ledger, so it can no longer be matched.',
   BANK_AMOUNT_DIFFERS: 'The amount or direction (money in or out) differs from the payment.',
   BANK_TOO_FAR_APART: 'The line and the payment are more than 31 days apart.',
+  // Finance phase 3c-2: posting bank lines.
+  BANK_ALREADY_POSTED: 'That line is already posted to another account. Undo it first, then post it again.',
+  BANK_NOT_POSTED: "That line isn't posted, so there is nothing to undo.",
+  BANK_ACCOUNT_NOT_ALLOWED: "That account can't take a bank line. Use a manual journal for this.",
+  BANK_TOO_MANY_LINES: 'Post at most 50 lines at once.',
+  BANK_KEY_USED: 'That was already posted. Refresh and try again.',
+  BANK_NOT_ITS_JOURNAL: 'Something went wrong. Please try again.',
 };
 
 type DbError = { code?: string; message?: string } | null | undefined;

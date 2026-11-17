@@ -138,7 +138,7 @@ export const money = (pence: number) => formatPence(pence);
 
 export const SOURCE_TYPE_LABELS: Record<string, string> = {
   manual: 'Manual journal', opening_balance: 'Opening balance', reversal: 'Reversal', auto_invoice: 'Invoice', auto_invoice_payment: 'Invoice payment',
-  auto_bill: 'Bill', auto_bill_payment: 'Bill payment', auto_expense: 'Expense',
+  auto_bill: 'Bill', auto_bill_payment: 'Bill payment', auto_expense: 'Expense', bank_line: 'Bank statement line',
 };
 /** "Invoice INV-12", "Manual journal", "Reversal". */
 export const sourceText = (r: Pick<DetailRow, 'source_type' | 'source_label'>) =>

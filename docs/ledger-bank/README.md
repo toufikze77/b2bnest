@@ -237,8 +237,10 @@ The ledger itself was never changed, so nothing else needs undoing. The audit ro
    - Before the SQL is applied, the Bank section says "Bank statement import is not available yet."
    - No Edge Function changes.
 
-## What 3c-2 will add (not in this PR)
-- Posting unmatched lines (bank fees, interest, transfers between accounts, owner loans) as journals, after a person confirms.
-- Each such line becomes `posted`, with a link to its journal.
-- Rules a company can reuse ("always post 'BANK FEE' to Bank charges").
-- Possibly a period lock tied to a reconciled statement.
+## What 3c-2 added (done: docs/ledger-bank-post)
+Finance phase 3c-2 is prepared in `docs/ledger-bank-post/` (see its README):
+- **Posting:** a manager posts an unmatched line (a bank fee, interest, a transfer, owner money) as one balanced two-line journal against a counter account they choose, after confirming. A line can also be posted in a batch of up to 50.
+- **Status:** each such line becomes `posted`, linked to its journal.
+- **Undo** reverses the journal and returns the line to unmatched.
+
+Still later: rules a company can reuse ("always post 'BANK FEE' to Bank charges"), and a period lock tied to a reconciled statement.

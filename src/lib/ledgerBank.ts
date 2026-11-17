@@ -7,7 +7,11 @@ export interface BankSuggestion { posting_id: string; kind: PaymentKind; source_
 export interface BankLine { id: string; line_date: string; description: string; amount_pence: number; balance_pence?: number | null; external_ref?: string | null; suggestions?: BankSuggestion[] }
 export interface MatchedLine extends BankLine { match_kind: 'auto' | 'manual'; posting_id: string; kind: PaymentKind; source_label: string | null; entry_date: string }
 export interface IgnoredLine extends BankLine { ignore_reason: IgnoreReason }
-export interface BrokenLine extends BankLine { reason: 'match_broken'; posting_id: string; kind: PaymentKind; source_label: string | null; entry_date: string }
+export interface BrokenLine extends BankLine {
+  reason: 'match_broken' | 'post_broken'; posting_id?: string; kind?: PaymentKind; source_label?: string | null; entry_date?: string;
+  entry_id?: string; account_code?: string | null; account_name?: string | null;
+}
+export interface PostedLine extends BankLine { account_id: string; account_code: string; account_name: string; entry_id: string; posted_at: string }
 export interface OpenPayment { posting_id: string; kind: PaymentKind; source_label: string | null; entry_date: string; amount_pence: number }
 export interface Reconciliation {
   as_at: string; ledger_balance_pence: number; statement_balance_pence: number | null; statement_balance_date: string | null;
@@ -15,8 +19,8 @@ export interface Reconciliation {
 }
 export interface BankOverview {
   access: string; can_manage: boolean; set_up: boolean; accounts: BankAccountRow[]; bank_account_id?: string | null; as_at?: string;
-  counts?: { unmatched: number; matched: number; ignored: number; needs_attention: number };
-  unmatched?: BankLine[]; matched?: MatchedLine[]; ignored?: IgnoredLine[]; needs_attention?: BrokenLine[]; unmatched_payments?: OpenPayment[];
+  counts?: { unmatched: number; matched: number; ignored: number; needs_attention: number; posted?: number };
+  unmatched?: BankLine[]; matched?: MatchedLine[]; ignored?: IgnoredLine[]; posted?: PostedLine[]; needs_attention?: BrokenLine[]; unmatched_payments?: OpenPayment[];
   imports?: { id: string; file_name: string | null; row_count: number; first_date: string; last_date: string; created_at: string }[];
   covered_from?: string | null; covered_to?: string | null; reconciliation?: Reconciliation;
 }
@@ -28,7 +32,8 @@ export type PaymentKind = 'invoice_paid' | 'bill_paid' | 'expense';
 export type IgnoreReason = 'not_business' | 'handle_later';
 
 export const BANK_INTRO = 'Import your bank statement and match each line to a payment already in your ledger.';
-export const BANK_NEVER_POSTS = 'Importing and matching never changes your ledger. Lines that match nothing stay here until a later release lets you post them.';
+/** Finance phase 3c-2: importing and matching still post nothing; posting a chosen line does (and can be undone). */
+export const BANK_NEVER_POSTS = 'Importing and matching never change your ledger. Posting a line you choose does, and you can undo it.';
 export const BANK_FILE_PRIVACY = 'The file is read in your browser. Only each line\'s date, description, amount, balance and reference are saved; the file itself is not uploaded.';
 export const BANK_DIFFERENCE_NOTE = 'The difference includes anything not yet imported or not yet in the ledger, for example bank fees, interest, or a payment recorded on another date.';
 export const BANK_SHARED_NOTE = 'Your bank accounts share one Bank account in the ledger, so the ledger balance covers all of them.';
