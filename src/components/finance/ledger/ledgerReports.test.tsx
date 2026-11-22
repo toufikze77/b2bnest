@@ -196,7 +196,7 @@ describe('Reports: balance sheet', () => {
     expect(screen.getByTestId('bs-net-assets')).toHaveTextContent('Net assets£5,899.70');
     expect(screen.getByTestId('bs-equity')).toHaveTextContent('Total equity£5,899.70');
     expect(within(t).getByText('Profit for the period (not yet closed to retained earnings)')).toBeInTheDocument();
-    expect(screen.getByText(/There is no year-end close yet/)).toBeInTheDocument();
+    expect(screen.getByText(/since the last closed year end, or since your books started if no year is closed/)).toBeInTheDocument();
     expect(screen.getByTestId('bs-check')).toHaveTextContent('Assets and liabilities agree.');
     const link = within(t).getByRole('link', { name: '1200 Bank' });
     expect(Object.fromEntries(new URLSearchParams((link.getAttribute('href') ?? '').split('?')[1]))).toMatchObject({ report: 'account', account: 'a1200', from: '2026-01-01', to: '2026-03-31' });
@@ -267,14 +267,15 @@ describe('Ledger tab: the Reports section', () => {
     accounts: vi.fn(() => ok(accounts)), journals: vi.fn(() => ok([])), postings: vi.fn(() => fail('NOT_AVAILABLE')),
     autoStatus: vi.fn(() => fail('NOT_AVAILABLE')), trialBalance: vi.fn(() => ok([])),
   }) as unknown as LedgerApi;
-  it('sits between Trial balance and Automatic postings, is kept in the URL, and a member can read it (no write actions here)', async () => {
+  it('sits between Trial balance and Year end (then Automatic postings), is kept in the URL, and a member can read it (no write actions here)', async () => {
     const api = tabApi({ can_post: false });
     render(<MemoryRouter initialEntries={['/business-tools?tab=ledger&ledger=reports']}><LedgerTab organizationId={ORG} api={api} isDemo={false} /></MemoryRouter>);
     expect(await screen.findByRole('table', { name: 'Profit and loss' })).toBeInTheDocument();
     expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(expect.arrayContaining(['Trial balance', 'Reports', 'Automatic postings']));
     const names = screen.getAllByRole('tab').map((t) => t.textContent);
     expect(names.indexOf('Reports')).toBe(names.indexOf('Trial balance') + 1);
-    expect(names.indexOf('Automatic postings')).toBe(names.indexOf('Reports') + 1);
+    expect(names.indexOf('Year end')).toBe(names.indexOf('Reports') + 1);
+    expect(names.indexOf('Automatic postings')).toBe(names.indexOf('Year end') + 1);
     expect(screen.getByRole('tab', { name: 'Reports' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByTestId('ledger-disclaimer')).toHaveTextContent(LEDGER_DISCLAIMER);
     expect(screen.getByText(/You can view the ledger. Only an owner or admin can change it./)).toBeInTheDocument();

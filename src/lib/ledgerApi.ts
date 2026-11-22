@@ -8,6 +8,7 @@ import type { AutoPreview, AutoRun, AutoStatus, CategoryMapRow, PostingIssue, Po
 import type { BankImportResult, BankOverview, IgnoreReason } from '@/lib/ledgerBank';
 import type { BankRow } from '@/lib/bankCsv';
 import type { AccountDetail, BsRow, Completeness, PlRow } from '@/lib/ledgerReports';
+import type { YearEndPreview, YearEndStatus } from '@/lib/ledgerYearEnd';
 
 type DbError = { code?: string; message?: string } | null;
 type Rpc = (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: DbError }>;
@@ -40,7 +41,7 @@ export interface JournalEntry {
   entry_date: string;
   memo: string;
   reason: string | null;
-  source_type: 'manual' | 'opening_balance' | 'reversal' | 'auto_invoice' | 'auto_invoice_payment' | 'auto_bill' | 'auto_bill_payment' | 'auto_expense' | 'bank_line';
+  source_type: 'manual' | 'opening_balance' | 'reversal' | 'auto_invoice' | 'auto_invoice_payment' | 'auto_bill' | 'auto_bill_payment' | 'auto_expense' | 'bank_line' | 'year_end';
   source_id?: string | null;
   reverses_entry_id: string | null;
   posted_by_name: string | null;
@@ -137,6 +138,17 @@ export function ledgerApi(client: LedgerClient = supabase as unknown as LedgerCl
       call<{ result: string; posted: number; unchanged: number; entry_ids: string[] }>('ledger_bank_post_many', { p_org: org, p_account: account, p_lines: lines }),
     bankUnpost: (org: string, line: string) =>
       call<{ result: string; how: 'reversed' | 'already_reversed'; reversal_date: string | null; reversal_dated: 'line_date' | 'today' | null }>('ledger_bank_unpost', { p_org: org, p_line: line }),
+    // Finance phase 5: financial year end (docs/ledger-year-end). Before that SQL is applied these answer NOT_AVAILABLE.
+    yearEndStatus: (org: string) => call<YearEndStatus>('ledger_year_end_status', { p_org: org }),
+    yearEndSet: (org: string, month: number, day: number) =>
+      call<{ result: 'saved' | 'unchanged'; first_year_end?: string }>('ledger_year_end_set', { p_org: org, p_month: month, p_day: day }),
+    yearEndPreview: (org: string, yearEnd: string) => call<YearEndPreview>('ledger_year_end_preview', { p_org: org, p_year_end: yearEnd }),
+    yearEndClose: (org: string, yearEnd: string, acknowledge: boolean) =>
+      call<{ result: 'closed' | 'unchanged'; year_end: string; entry_id?: string | null; profit?: number | string; locked_through: string }>('ledger_year_end_close', {
+        p_org: org, p_year_end: yearEnd, p_acknowledge: acknowledge,
+      }),
+    yearEndReopen: (org: string, yearEnd: string) =>
+      call<{ result: 'reopened'; year_end: string; reversal_entry_id: string | null; locked_through: string | null }>('ledger_year_end_reopen', { p_org: org, p_year_end: yearEnd }),
   };
 }
 export type LedgerApi = ReturnType<typeof ledgerApi>;

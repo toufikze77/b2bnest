@@ -23,7 +23,7 @@ export type ReportView = 'profit-loss' | 'balance-sheet' | 'account';
 export const REPORT_VIEWS: ReportView[] = ['profit-loss', 'balance-sheet', 'account'];
 export const REPORT_VIEW_LABELS: Record<ReportView, string> = { 'profit-loss': 'Profit and loss', 'balance-sheet': 'Balance sheet', account: 'Account detail' };
 export const PL_ROW_CODE = 'PL';
-export const PL_ROW_EXPLAINED = 'There is no year-end close yet, so the profit or loss made since your books started is shown here, as part of equity. It is what makes the balance sheet balance.';
+export const PL_ROW_EXPLAINED = 'The profit or loss not yet closed to Retained earnings: since the last closed year end, or since your books started if no year is closed. It is shown here, as part of equity, and is what makes the balance sheet balance.';
 export const REPORTS_EMPTY = 'No postings in this period yet.';
 export const BS_AGREE = 'Assets and liabilities agree.';
 export const BS_DISAGREE = "Assets and liabilities don't agree. Please tell us at info@b2bnest.online.";
@@ -139,6 +139,7 @@ export const money = (pence: number) => formatPence(pence);
 export const SOURCE_TYPE_LABELS: Record<string, string> = {
   manual: 'Manual journal', opening_balance: 'Opening balance', reversal: 'Reversal', auto_invoice: 'Invoice', auto_invoice_payment: 'Invoice payment',
   auto_bill: 'Bill', auto_bill_payment: 'Bill payment', auto_expense: 'Expense', bank_line: 'Bank statement line',
+  year_end: 'Year end close',
 };
 /** "Invoice INV-12", "Manual journal", "Reversal". */
 export const sourceText = (r: Pick<DetailRow, 'source_type' | 'source_label'>) =>

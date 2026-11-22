@@ -18,6 +18,7 @@ import { LedgerTrialBalance } from './LedgerTrialBalance';
 import { LedgerAuto } from './LedgerAuto';
 import { LedgerBank } from './LedgerBank';
 import { LedgerReports } from './LedgerReports';
+import { LedgerYearEnd } from './LedgerYearEnd';
 import { journalSources } from '@/lib/ledgerAuto';
 import { runWaitingPostings } from '@/lib/ledgerAutoRun';
 import { ledgerSectionFromSearch, searchWithLedgerSection, type LedgerSection } from '@/lib/financeTabs';
@@ -117,6 +118,7 @@ export function LedgerTab({ organizationId, api: injected, isDemo: demoProp }: {
           <TabsTrigger value="accounts">Chart of accounts</TabsTrigger>
           <TabsTrigger value="trial-balance">Trial balance</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
+          <TabsTrigger value="year-end">Year end</TabsTrigger>
           <TabsTrigger value="automatic">Automatic postings</TabsTrigger>
           <TabsTrigger value="bank">Bank</TabsTrigger>
         </TabsList>
@@ -131,6 +133,9 @@ export function LedgerTab({ organizationId, api: injected, isDemo: demoProp }: {
         </TabsContent>
         <TabsContent value="reports" className="mt-4">
           {section === 'reports' && <LedgerReports api={api} organizationId={organizationId} accounts={accounts} startDate={status.start_date} refreshKey={refreshKey} />}
+        </TabsContent>
+        <TabsContent value="year-end" className="mt-4">
+          {section === 'year-end' && <LedgerYearEnd api={api} organizationId={organizationId} refreshKey={refreshKey} onChanged={reloadQuietly} />}
         </TabsContent>
         <TabsContent value="automatic" className="mt-4">
           {section === 'automatic' && <LedgerAuto api={api} organizationId={organizationId} refreshKey={refreshKey} onPosted={reloadQuietly} />}
