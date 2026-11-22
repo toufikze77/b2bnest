@@ -271,6 +271,31 @@ npx.cmd supabase functions deploy workflow-twitter-post --project-ref gvftvswyre
 7. **Payments:** open a Stripe checkout (`create-payment`); don't pay.
 8. **Public forms, while signed out:** the contact form, `/forms/b2b`, `/forms/work-request`.
 
+**JWT setting on deploy (22 Nov 2026).** `supabase functions deploy` takes `verify_jwt` from `supabase/config.toml`. Where a function has no entry it uses `true`.
+
+In production, 22 functions run with `verify_jwt = false` and had no entry, so a plain deploy would have silently turned the gateway check on. That could break two-step sign-in, the public work-request form and OAuth starts. `config.toml` now records them as `false`, as production has them:
+- activate-trial, ai-assistant, business-insights;
+- create-coinbase-charge, create-payment;
+- firecrawl-scrape, generate-template;
+- google-calendar-sync, notion-sync, trello-import, truelayer-integration;
+- oauth-gmail-init, oauth-outlook-init, sign-oauth-state, store-twitter-credentials;
+- public-work-request, send-2fa-email;
+- share-project, share-task;
+- whatsapp-connect, whatsapp-disconnect, workflow-execute.
+
+Each of these checks the caller itself, except two:
+- `public-work-request` is public by design, with a limit of 20 requests per IP per day;
+- `oauth-outlook-init` has **no check of its own**. It only builds a Microsoft sign-in URL, and its callback refuses an unsigned state, so it can't link a mailbox. It is recorded as production has it; the owner decides what to do with it.
+
+`src/test/edgeFunctions.test.ts` keeps the production list (with its date) and fails if any of those functions loses its `false` entry.
+
+Also `false` in production with no entry yet, and left as is pending the owner's decision:
+- `oauth-gmail-callback`, `oauth-google-calendar` (OAuth callbacks);
+- `slack-commands`, `slack-interactions` (Slack calls them);
+- `sync-note-to-email`.
+
+A plain deploy of any of these would turn the check on, so pass `--no-verify-jwt` when deploying them until they are recorded.
+
 ## 2. The 18 SECURITY DEFINER functions `anon` can run
 
 **How each was checked**, on production (read-only, 9 Nov 2026):

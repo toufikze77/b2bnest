@@ -72,3 +72,50 @@ describe('supabase/functions', () => {
     expect(src.slice(check, check + 200)).toContain('json(access.status, access.body)');
   });
 });
+
+// ---------------------------------------------------------------------------------------------------------------------
+// verify_jwt: the deploy CLI takes it from config.toml and defaults to TRUE when a function has no entry. These are the
+// functions production runs with verify_jwt = false (owner-maintained list; read with list_edge_functions on
+// 22 Nov 2026). Each must have an explicit `verify_jwt = false` entry, or a plain deploy turns the gateway check on.
+// Also false in production on 22 Nov 2026 but not yet recorded in config.toml (owner to decide; see the PR):
+// oauth-gmail-callback, oauth-google-calendar, slack-commands, slack-interactions, sync-note-to-email.
+// ---------------------------------------------------------------------------------------------------------------------
+const PRODUCTION_VERIFY_JWT_FALSE = [
+  'activate-trial', 'ai-assistant', 'b2b-form-submit', 'business-insights', 'create-coinbase-charge', 'create-payment', 'firecrawl-scrape',
+  'generate-template', 'get-oauth-config', 'google-calendar-sync', 'notion-sync', 'oauth-facebook', 'oauth-gmail-init', 'oauth-icloud-calendar',
+  'oauth-linkedin', 'oauth-onedrive', 'oauth-outlook-calendar', 'oauth-outlook-init', 'oauth-twitter', 'oauth-twitter-request', 'public-work-request',
+  'send-2fa-email', 'share-project', 'share-task', 'sign-oauth-state', 'store-twitter-credentials', 'stripe-webhook', 'trello-import',
+  'truelayer-integration', 'verify-2fa-code', 'whatsapp-connect', 'whatsapp-disconnect', 'workflow-execute',
+];
+/** verify_jwt per [functions.<name>] section (undefined when the function has no entry or no verify_jwt line). */
+function verifyJwtSettings(toml: string): Map<string, boolean> {
+  const out = new Map<string, boolean>();
+  for (const m of toml.matchAll(/^\[functions\.([^\]]+)\]\s*\n((?:(?!\[)[^\n]*\n?)*)/gm)) {
+    const v = /^\s*verify_jwt\s*=\s*(true|false)\s*$/m.exec(m[2]);
+    if (v) out.set(m[1], v[1] === 'true');
+  }
+  return out;
+}
+const servesRequests = (name: string) => {
+  const index = path.join(FUNCTIONS_DIR, name, 'index.ts');
+  return fs.existsSync(index) && /\bserve\b|Deno\.serve|Serve(Narrow)?\(/.test(fs.readFileSync(index, 'utf8'));
+};
+
+describe('config.toml verify_jwt mirrors production', () => {
+  const settings = verifyJwtSettings(config);
+  it('reads the settings (sanity)', () => {
+    expect(settings.get('stripe-webhook')).toBe(false);
+    expect(settings.get('data-export')).toBe(true);
+    expect(verifyJwtSettings('[functions.a]\nverify_jwt = false\n\n[functions.b]\nverify_jwt = true\n')).toEqual(new Map([['a', false], ['b', true]]));
+  });
+  it('every function production runs with verify_jwt = false has an explicit false entry', () => {
+    const wrong = PRODUCTION_VERIFY_JWT_FALSE.filter((f) => folders.includes(f) && servesRequests(f) && settings.get(f) !== false);
+    expect(wrong).toEqual([]);
+  });
+  it('the list names real functions that serve requests', () => {
+    expect(PRODUCTION_VERIFY_JWT_FALSE.filter((f) => !folders.includes(f) || !servesRequests(f))).toEqual([]);
+  });
+  it('each function has at most one entry', () => {
+    expect(configured.filter((f, i) => configured.indexOf(f) !== i)).toEqual([]);
+  });
+});
