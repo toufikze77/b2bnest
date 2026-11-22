@@ -138,3 +138,80 @@ verify_jwt = true
 # Phase 30: AI contracts and legal notices (10 AI credits each). Caller's JWT required; the function checks access and credits.
 [functions.generate-legal-document]
 verify_jwt = true
+
+# ---------------------------------------------------------------------------------------------------------------------
+# verify_jwt = false: mirrors production on 22 Nov 2026 (list_edge_functions). These had no entry here, so a plain
+# `supabase functions deploy <name>` would have used the default (true) and silently turned the gateway JWT check on.
+# This function checks the caller itself; do not remove without reading its handler.
+# Repo check: src/test/edgeFunctions.test.ts (PRODUCTION_VERIFY_JWT_FALSE). Notes per function: docs/hmrc-p7d/README.md.
+# ---------------------------------------------------------------------------------------------------------------------
+# Signed-in features: each handler verifies the caller's token itself (getUser / getClaims) and answers 401 without one.
+[functions.activate-trial]
+verify_jwt = false
+
+[functions.ai-assistant]
+verify_jwt = false
+
+[functions.business-insights]
+verify_jwt = false
+
+[functions.create-coinbase-charge]
+verify_jwt = false
+
+[functions.create-payment]
+verify_jwt = false
+
+[functions.firecrawl-scrape]
+verify_jwt = false
+
+[functions.generate-template]
+verify_jwt = false
+
+[functions.google-calendar-sync]
+verify_jwt = false
+
+[functions.notion-sync]
+verify_jwt = false
+
+[functions.send-2fa-email]
+verify_jwt = false
+
+[functions.share-project]
+verify_jwt = false
+
+[functions.share-task]
+verify_jwt = false
+
+[functions.store-twitter-credentials]
+verify_jwt = false
+
+[functions.trello-import]
+verify_jwt = false
+
+[functions.truelayer-integration]
+verify_jwt = false
+
+[functions.whatsapp-connect]
+verify_jwt = false
+
+[functions.whatsapp-disconnect]
+verify_jwt = false
+
+[functions.workflow-execute]
+verify_jwt = false
+
+# OAuth starts: oauth-gmail-init and sign-oauth-state verify the caller's token; oauth-outlook-init has NO caller check
+# of its own (owner finding, 22 Nov 2026: it only builds a Microsoft sign-in URL, and its callback refuses an unsigned
+# state, so it can't link a mailbox; recorded as production has it, not changed here).
+[functions.oauth-gmail-init]
+verify_jwt = false
+
+[functions.oauth-outlook-init]
+verify_jwt = false
+
+[functions.sign-oauth-state]
+verify_jwt = false
+
+# Public by design: the public work-request form (no sign-in), with input checks and a 20-per-IP-per-day limit.
+[functions.public-work-request]
+verify_jwt = false
