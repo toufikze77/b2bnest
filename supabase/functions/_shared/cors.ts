@@ -64,7 +64,7 @@ export const preflight = (req: Request, opts: { methods?: string; env?: Env } = 
  * HMRC P7d: wraps a handler that still builds its answers with the old headers. A preflight is answered by
  * `preflight(req)`; every other answer has its CORS headers replaced by corsFor(req) (body and status unchanged).
  */
-export function withNarrowCors(handler: (req: Request) => Promise<Response>, opts: { methods?: string; env?: Env } = {}) {
+export function withNarrowCors(handler: (req: Request) => Response | Promise<Response>, opts: { methods?: string; env?: Env } = {}) {
   return async (req: Request): Promise<Response> => {
     if (req.method === 'OPTIONS') return preflight(req, opts);
     const res = await handler(req);
@@ -74,3 +74,16 @@ export function withNarrowCors(handler: (req: Request) => Promise<Response>, opt
     return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
   };
 }
+
+/**
+ * Edge Functions CORS batch A: narrows a whole function by wrapping the serve function it already uses, so every
+ * answer it gives (success, error, early return, rate limit, demo refusal when the guard sits inside) goes through
+ * withNarrowCors. Status and body are unchanged; only the Access-Control-* headers are replaced.
+ *   std serve:       const serve = guardedServe(narrowServe(stdServe, { methods }));   // demo guard inside: refusals narrowed too
+ *   Deno.serve:      narrowDenoServe({ methods })(async (req) => { ... });
+ */
+export function narrowServe<S extends (handler: never, ...rest: never[]) => unknown>(serveFn: S, opts: { methods?: string; env?: Env } = {}): S {
+  return ((handler: (req: Request) => Response | Promise<Response>, ...rest: never[]) => serveFn(withNarrowCors(handler, opts) as never, ...rest)) as unknown as S;
+}
+export const narrowDenoServe = (opts: { methods?: string; env?: Env } = {}) =>
+  (handler: (req: Request) => Response | Promise<Response>) => Deno.serve(withNarrowCors(handler, opts));

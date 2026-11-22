@@ -8,7 +8,7 @@
 //   change the `sub` without breaking the signature, which the function (and the gateway's verify_jwt) still checks.
 // - demoRefusal(userId): for functions that learn the person another way (OAuth callbacks: the signed state).
 // Nothing here logs a token, an id or a body.
-import { corsHeaders } from './cors.ts';
+import { corsHeaders, withNarrowCors } from './cors.ts';
 
 export const DEMO_READONLY_MESSAGE = 'This is a demo account. It is view only.';
 export const DEMO_READONLY_CODE = 'demo_readonly';
@@ -114,3 +114,10 @@ export function guardedServe<S extends (handler: never, ...rest: never[]) => unk
 export function guardedDenoServe(handler: AnyHandler, opts: Omit<DemoGuardOpts, 'deps'> = {}) {
   return Deno.serve(withDemoGuard(handler, opts) as unknown as Deno.ServeHandler);
 }
+
+/**
+ * Edge Functions CORS batch A: guardedDenoServe with the narrowed CORS of _shared/cors.ts (corsFor) on every answer,
+ * the demo refusal included (the guard sits inside the CORS wrapper). Use: guardedDenoServeNarrow({ methods })(handler).
+ */
+export const guardedDenoServeNarrow = (cors: { methods?: string } = {}) => (handler: AnyHandler, opts: Omit<DemoGuardOpts, 'deps'> = {}) =>
+  Deno.serve(withNarrowCors(withDemoGuard(handler, opts) as unknown as (req: Request) => Promise<Response>, cors) as unknown as Deno.ServeHandler);

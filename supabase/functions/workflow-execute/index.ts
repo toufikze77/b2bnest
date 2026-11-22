@@ -1,13 +1,14 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { makeHandler, memoryRateLimit } from './handler.ts';
-import { guardedDenoServe } from '../_shared/demo-guard.ts'; // Demo read-only: demo people get 403 (docs/demo-readonly)
+import { guardedDenoServeNarrow } from '../_shared/demo-guard.ts'; // Edge Functions CORS batch A (docs/hmrc-p7d/README.md): answers carry the narrowed CORS headers (corsFor), never '*'.
+// Demo read-only: demo people get 403 (docs/demo-readonly)
 
 const url = Deno.env.get('SUPABASE_URL')!;
 // Run-log rows are written with the service role: since Phase 15 a browser session may only record skipped steps.
 const service = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
 const asUser = (auth: string) => createClient(url, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: auth } } });
 
-guardedDenoServe(makeHandler({
+guardedDenoServeNarrow({ methods: 'POST, OPTIONS' })(makeHandler({
   getUserId: async (auth) => {
     const { data, error } = await asUser(auth).auth.getClaims(auth.replace('Bearer ', ''));
     return error || !data?.claims?.sub ? null : data.claims.sub;

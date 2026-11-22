@@ -1,13 +1,14 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createHandler } from './handler.ts';
-import { guardedDenoServe } from '../_shared/demo-guard.ts'; // Demo read-only: demo people get 403 (docs/demo-readonly)
+import { guardedDenoServeNarrow } from '../_shared/demo-guard.ts'; // Edge Functions CORS batch A (docs/hmrc-p7d/README.md): answers carry the narrowed CORS headers (corsFor), never '*'.
+// Demo read-only: demo people get 403 (docs/demo-readonly)
 
 const url = Deno.env.get('SUPABASE_URL')!;
 const anon = Deno.env.get('SUPABASE_ANON_KEY')!;
 const service = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
 
-guardedDenoServe(createHandler({
+guardedDenoServeNarrow()(createHandler({
   corsHeaders,
   openaiUrl: 'https://api.openai.com/v1/chat/completions',
   openaiKey: Deno.env.get('OPENAI_API_KEY'),
