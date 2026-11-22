@@ -130,6 +130,64 @@ describe('Reports: profit and loss', () => {
   });
 });
 
+describe('Reports: clearer shortcuts and account links', () => {
+  const LABELS = ['This month', 'Last month', 'This quarter', 'This tax year', 'Last tax year', 'Since the books started'];
+  it('the quick choices are real buttons, labelled, and the one matching the range is pressed', async () => {
+    show(reportsApi(), '?ledger=reports&report=profit-loss&from=2026-01-01&to=' + new Date().toISOString().slice(0, 10));
+    await screen.findByRole('table', { name: 'Profit and loss' });
+    const group = screen.getByRole('group', { name: 'Quick choices' });
+    expect(group).toHaveTextContent('Quick choices:');
+    const buttons = within(group).getAllByRole('button');
+    expect(buttons.map((b) => b.textContent)).toEqual(LABELS);
+    expect(within(group).getByRole('button', { name: 'Since the books started' })).toHaveAttribute('aria-pressed', 'true');
+    expect(buttons.filter((b) => b.getAttribute('aria-pressed') === 'true')).toHaveLength(1);
+  });
+  it('"Since the books started" sets From to the start date and To to today, and then shows as pressed', async () => {
+    show(reportsApi());
+    await screen.findByRole('table', { name: 'Profit and loss' });
+    const since = within(screen.getByRole('group', { name: 'Quick choices' })).getByRole('button', { name: 'Since the books started' });
+    expect(since).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(since);
+    await waitFor(() => expect(loc().get('from')).toBe('2026-01-01'));
+    expect(loc().get('to')).toBe(new Date().toISOString().slice(0, 10));
+    await waitFor(() => expect(within(screen.getByRole('group', { name: 'Quick choices' })).getByRole('button', { name: 'Since the books started' })).toHaveAttribute('aria-pressed', 'true'));
+  });
+  it('account names in profit and loss are visible links with a title and the range in the href; the help line shows', async () => {
+    show(reportsApi());
+    const t = await screen.findByRole('table', { name: 'Profit and loss' });
+    const link = within(t).getByRole('link', { name: '4000 Sales' });
+    expect(link).toHaveAttribute('title', 'See every posting on this account');
+    expect(link.className).toContain('underline');
+    expect(Object.fromEntries(new URLSearchParams((link.getAttribute('href') ?? '').split('?')[1]))).toMatchObject({ report: 'account', account: 'a4000', from: '2026-01-01', to: '2026-03-31' });
+    expect(within(t).getAllByRole('link').every((l) => l.getAttribute('title') === 'See every posting on this account')).toBe(true);
+    expect(screen.getByTestId('report-help')).toHaveTextContent('Click an account name to see every posting on it.');
+  });
+  it('balance sheet: links with the title, the profit line is not a link, the help line shows', async () => {
+    show(reportsApi(), '?ledger=reports&report=balance-sheet&as_of=2026-03-31');
+    const t = await screen.findByRole('table', { name: 'Balance sheet' });
+    expect(within(t).getByRole('link', { name: '1200 Bank' })).toHaveAttribute('title', 'See every posting on this account');
+    expect(within(t).queryByRole('link', { name: /Profit for the period/ })).toBeNull();
+    expect(screen.getByTestId('report-help')).toHaveTextContent('Click an account name to see every posting on it.');
+  });
+  it('account detail has no help line', async () => {
+    show(reportsApi(), '?ledger=reports&report=account&account=a1200&from=2026-01-01&to=2026-03-31');
+    await screen.findByRole('table', { name: 'Account detail' });
+    expect(screen.queryByTestId('report-help')).toBeNull();
+  });
+  it('the CSV has neither the help line nor the chevrons; both are hidden when printing', async () => {
+    downloads.length = 0;
+    show(reportsApi());
+    await screen.findByRole('table', { name: 'Profit and loss' });
+    fireEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+    const text = await downloads[0].blob.text();
+    expect(text).not.toContain('Click an account name');
+    expect(text).not.toContain('›');
+    expect(screen.getByTestId('report-help')).toHaveClass('no-print');
+    expect(screen.getByTestId('quick-choices').closest('.no-print')).not.toBeNull();
+    expect(screen.getAllByText('›').every((c) => c.classList.contains('no-print') && c.getAttribute('aria-hidden') === 'true')).toBe(true);
+  });
+});
+
 describe('Reports: balance sheet', () => {
   it('fixed and current assets, liabilities, net assets, equity with the profit line explained, and the check', async () => {
     show(reportsApi(), '?ledger=reports&report=balance-sheet&as_of=2026-03-31');
