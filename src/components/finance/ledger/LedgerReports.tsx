@@ -1,7 +1,7 @@
 // Finance phase 4: the "Reports" section of the Ledger tab (docs/ledger-reports/README.md). Profit and loss, balance
 // sheet and account detail, computed by the database from the ledger only. Read only: members can open everything;
 // there is nothing to change here. The chosen report, dates and account are in the URL, so a refresh or Back keeps them.
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -137,6 +137,18 @@ function useReport<T>(fetcher: () => Promise<{ ok: true; data: T } | { ok: false
 }
 const Status = ({ s }: { s: Load<unknown> }) => (s.kind === 'loading' || s.kind === 'idle' ? <p role="status">Loading…</p>
   : s.kind === 'error' ? <p role="alert" className="text-destructive">{s.message}</p> : null);
+/** A visible link to the account's detail (always underlined in the link colour; the chevron is on screen only). */
+const DRILL_TITLE = 'See every posting on this account';
+const REPORT_HELP = 'Click an account name to see every posting on it.';
+function AccountLink({ to, children }: { to: { search: string }; children: ReactNode }) {
+  return (
+    <Link to={to} title={DRILL_TITLE}
+      className="rounded-sm text-link underline decoration-link decoration-1 underline-offset-2 hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1">
+      {children}<span aria-hidden="true" className="no-print ml-1 hidden no-underline sm:inline-block">›</span>
+    </Link>
+  );
+}
+const Help = () => <p className="no-print text-sm text-muted-foreground" data-testid="report-help">{REPORT_HELP}</p>;
 const Amount = ({ pence, strong }: { pence: number; strong?: boolean }) => (
   <td className={`py-1 text-right tabular-nums ${strong ? 'font-semibold' : ''}`}>{money(pence)}</td>
 );
@@ -153,7 +165,7 @@ function ProfitLossView({ api, organizationId, accounts, startDate, from, to, re
   const pl = s.kind === 'ok' ? groupProfitLoss(s.data, accounts, showEmpty) : null;
   const rows = (xs: Line[]) => xs.map((l) => (
     <tr key={l.account_id ?? l.code}>
-      <td className="py-1 pr-2"><Link className="hover:underline" to={drill(l.account_id as string)}>{l.code} {l.name}</Link></td><Amount pence={l.pence} />
+      <td className="py-1 pr-2"><AccountLink to={drill(l.account_id as string)}>{l.code} {l.name}</AccountLink></td><Amount pence={l.pence} />
     </tr>
   ));
   const total = (label: string, pence: number, testId?: string) => (
@@ -163,13 +175,20 @@ function ProfitLossView({ api, organizationId, accounts, startDate, from, to, re
   return (
     <div className="space-y-3" data-testid="report-profit-loss">
       <h3 className="text-base font-semibold">Profit and loss, {ukDate(from)} to {ukDate(to)}</h3>
+      <Help />
       <div className="no-print flex flex-wrap items-end gap-3">
         <DateField id="pl-from" label="From" value={from} onChange={(v) => setRange(v, to)} />
         <DateField id="pl-to" label="To" value={to} onChange={(v) => setRange(from, v)} />
-        <div className="flex flex-wrap gap-1" aria-label="Quick choices">
-          {(Object.keys(QUICK_RANGE_LABELS) as QuickRange[]).map((q) => (
-            <Button key={q} variant="ghost" size="sm" onClick={() => { const r = quickRange(q, new Date().toISOString().slice(0, 10), startDate); setRange(r.from, r.to); }}>{QUICK_RANGE_LABELS[q]}</Button>
-          ))}
+        <div className="flex w-full basis-full flex-wrap items-center gap-1.5" role="group" aria-label="Quick choices" data-testid="quick-choices">
+          <span className="mr-1 text-xs text-muted-foreground">Quick choices:</span>
+          {(Object.keys(QUICK_RANGE_LABELS) as QuickRange[]).map((q) => {
+            const today = new Date().toISOString().slice(0, 10);
+            const r = quickRange(q, today, startDate);
+            const on = r.from === from && r.to === to;
+            return (
+              <Button key={q} variant={on ? 'secondary' : 'outline'} size="sm" aria-pressed={on} onClick={() => setRange(r.from, r.to)}>{QUICK_RANGE_LABELS[q]}</Button>
+            );
+          })}
         </div>
         <label className="flex items-center gap-2"><input type="checkbox" checked={showEmpty} onChange={(e) => setShowEmpty(e.target.checked)} />Show empty accounts</label>
       </div>
@@ -208,7 +227,7 @@ function BalanceSheetView({ api, organizationId, asOf, refreshKey, setAsOf, dril
   const bs = s.kind === 'ok' ? groupBalanceSheet(s.data) : null;
   const rows = (xs: Line[]) => xs.map((l) => (
     <tr key={l.account_id ?? l.code}>
-      <td className="py-1 pr-2">{l.code === PL_ROW_CODE ? <span>{l.name}</span> : <Link className="hover:underline" to={drill(l.account_id as string)}>{l.code} {l.name}</Link>}</td>
+      <td className="py-1 pr-2">{l.code === PL_ROW_CODE ? <span>{l.name}</span> : <AccountLink to={drill(l.account_id as string)}>{l.code} {l.name}</AccountLink>}</td>
       <Amount pence={l.pence} />
     </tr>
   ));
@@ -220,6 +239,7 @@ function BalanceSheetView({ api, organizationId, asOf, refreshKey, setAsOf, dril
   return (
     <div className="space-y-3" data-testid="report-balance-sheet">
       <h3 className="text-base font-semibold">Balance sheet as at {ukDate(asOf)}</h3>
+      <Help />
       <div className="no-print"><DateField id="bs-as-of" label="As at" value={asOf} onChange={setAsOf} /></div>
       <Status s={s} />
       {bs && (
