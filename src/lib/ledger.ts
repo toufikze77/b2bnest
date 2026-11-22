@@ -286,7 +286,7 @@ export const LEDGER_MESSAGES: Record<string, string> = {
   BAD_MODE: 'Choose how to start: fresh, or with opening balances.',
   BAD_DATE: 'Choose a valid date.',
   BEFORE_START: 'The date is before the ledger start date.',
-  PERIOD_LOCKED: 'That date is in a locked period.',
+  PERIOD_LOCKED: 'That date is in a locked period. Closed years are locked.',
   OPENING_DATE: 'Opening balances are dated the start date.',
   BAD_MEMO: 'Add a description of up to 200 characters.',
   BAD_REASON: 'The reason is up to 500 characters.',
@@ -330,6 +330,20 @@ export const LEDGER_MESSAGES: Record<string, string> = {
   BANK_TOO_MANY_LINES: 'Post at most 50 lines at once.',
   BANK_KEY_USED: 'That was already posted. Refresh and try again.',
   BANK_NOT_ITS_JOURNAL: 'Something went wrong. Please try again.',
+  // Finance phase 5: financial year end.
+  LOCK_BACKWARDS: 'A locked period stays locked. Only re-opening the most recent closed year (Ledger, Year end) unlocks it.',
+  YEAR_END_NOT_SET: 'Set the financial year end first (Ledger, Year end).',
+  YEAR_END_BAD_DATE: "That isn't one of this company's year-end dates.",
+  YEAR_END_FIXED: "The financial year end can't change once a year is closed. Re-open the closed years first.",
+  YEAR_END_OUT_OF_ORDER: 'Close the earlier year first. Years close in order.',
+  YEAR_END_FUTURE: "That year hasn't ended yet.",
+  YEAR_END_NEEDS_ACK: 'Some items for this year are still waiting, held or unmatched. Tick the boxes to confirm you understand, then close the year.',
+  YEAR_END_INACTIVE_ACCOUNT: 'An inactive income or expense account has a balance in this year. Make it active again, then close the year.',
+  YEAR_END_NO_RETAINED_EARNINGS: 'The Retained earnings account (3200) is missing or inactive.',
+  YEAR_END_NOT_CLOSED: "That year isn't closed.",
+  YEAR_END_NOT_LATEST: 'Only the most recent closed year can be re-opened. Re-open the later year first.',
+  YEAR_END_ONLY_BY_CLOSE: 'A year-end journal is posted only by closing the year (Ledger, Year end).',
+  YEAR_END_REOPEN_ONLY: 'A year-end close is undone only by re-opening the year (Ledger, Year end).',
 };
 
 type DbError = { code?: string; message?: string } | null | undefined;

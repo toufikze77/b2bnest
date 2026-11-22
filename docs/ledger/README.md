@@ -231,10 +231,10 @@ As reported by the owner's assistant:
 ## Not in this PR
 - automatic postings (invoices, expenses, bills, payroll, VAT, bank feeds);
 - reports from the ledger (P&L, balance sheet);
-- year-end;
+- year-end (added in Finance phase 5: docs/ledger-year-end, which closes a year to Retained earnings and locks it);
 - tax;
 - multi-currency;
 - budgets;
 - attachments;
-- a period-lock screen;
+- a period-lock screen (Finance phase 5 moves the lock by closing a year; there is still no screen to lock part of a year);
 - editing or deleting journals (by design).

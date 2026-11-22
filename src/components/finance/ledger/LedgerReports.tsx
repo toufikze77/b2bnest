@@ -17,6 +17,7 @@ import {
   rangeProblem, REPORT_VIEW_LABELS, REPORT_VIEWS, reportParamsFromSearch, REPORTS_EMPTY, searchWithReport, sourceText, startsBeforeBooks, ukDate,
   type AccountDetail, type BsRow, type Completeness, type Line, type PlRow, type QuickRange, type ReportParams, type ReportView,
 } from '@/lib/ledgerReports';
+import { financialYearRanges } from '@/lib/ledgerYearEnd';
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 type Load<T> = { kind: 'idle' } | { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ok'; data: T };
@@ -53,6 +54,17 @@ export function LedgerReports({ api, organizationId, accounts, startDate, refres
     return () => { live = false; };
   }, [api, organizationId, refreshKey]);
   const notes = completenessNotes(completeness);
+  // Finance phase 5: the company's financial year end, for the "This/Last financial year" quick choices (none until set,
+  // or before that SQL is applied).
+  const [yearEnd, setYearEnd] = useState<{ month: number; day: number } | null>(null);
+  useEffect(() => {
+    let live = true;
+    if (typeof api.yearEndStatus !== 'function') return undefined;
+    void api.yearEndStatus(organizationId).then((r) => {
+      if (live) setYearEnd(r.ok && r.data.year_end_month && r.data.year_end_day ? { month: r.data.year_end_month, day: r.data.year_end_day } : null);
+    });
+    return () => { live = false; };
+  }, [api, organizationId, refreshKey]);
 
   return (
     <div className="space-y-4 text-sm">
@@ -79,7 +91,7 @@ export function LedgerReports({ api, organizationId, accounts, startDate, refres
       )}
       <div id="ledger-report" className="space-y-3">
         {params.view === 'profit-loss' && (
-          <ProfitLossView api={api} organizationId={organizationId} accounts={sorted} startDate={startDate} from={from} to={to} refreshKey={refreshKey}
+          <ProfitLossView api={api} organizationId={organizationId} accounts={sorted} startDate={startDate} from={from} to={to} refreshKey={refreshKey} yearEnd={yearEnd}
             setRange={(f, t) => go({ from: f, to: t })} drill={(id) => linkTo({ view: 'account', account: id, from, to })} />
         )}
         {params.view === 'balance-sheet' && (
@@ -155,8 +167,9 @@ const Amount = ({ pence, strong }: { pence: number; strong?: boolean }) => (
 
 // ------------------------------------------------------------------ profit and loss
 
-function ProfitLossView({ api, organizationId, accounts, startDate, from, to, refreshKey, setRange, drill }: {
+function ProfitLossView({ api, organizationId, accounts, startDate, from, to, refreshKey, yearEnd, setRange, drill }: {
   api: LedgerApi; organizationId: string; accounts: LedgerAccount[]; startDate: string | null; from: string; to: string; refreshKey: number;
+  yearEnd?: { month: number; day: number } | null;
   setRange: (f: string, t: string) => void; drill: (id: string) => { search: string };
 }) {
   const [showEmpty, setShowEmpty] = useState(false);
@@ -189,6 +202,13 @@ function ProfitLossView({ api, organizationId, accounts, startDate, from, to, re
               <Button key={q} variant={on ? 'secondary' : 'outline'} size="sm" aria-pressed={on} onClick={() => setRange(r.from, r.to)}>{QUICK_RANGE_LABELS[q]}</Button>
             );
           })}
+          {yearEnd && startDate && (() => {
+            const fy = financialYearRanges(new Date().toISOString().slice(0, 10), startDate, yearEnd.month, yearEnd.day);
+            return ([['This financial year', fy.thisYear], ['Last financial year', fy.lastYear]] as const).map(([label, r]) => r && (
+              <Button key={label} variant={r.from === from && r.to === to ? 'secondary' : 'outline'} size="sm" aria-pressed={r.from === from && r.to === to}
+                onClick={() => setRange(r.from, r.to)}>{label}</Button>
+            ));
+          })()}
         </div>
         <label className="flex items-center gap-2"><input type="checkbox" checked={showEmpty} onChange={(e) => setShowEmpty(e.target.checked)} />Show empty accounts</label>
       </div>

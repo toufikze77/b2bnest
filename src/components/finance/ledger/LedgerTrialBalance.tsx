@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatPence, ledgerMessage, trialBalance } from '@/lib/ledger';
 import { codeOf, type LedgerApi } from '@/lib/ledgerApi';
+import { TB_AFTER_CLOSE_NOTE } from '@/lib/ledgerYearEnd';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -45,6 +46,7 @@ export function LedgerTrialBalance({ api, organizationId, refreshKey = 0 }: { ap
           <p role="status" data-testid="tb-check" className={state.tb.balanced ? 'font-medium text-green-700' : 'font-medium text-destructive'}>
             {state.tb.balanced ? 'Debits and credits agree.' : "Debits and credits don't agree. Please tell us at info@b2bnest.online."}
           </p>
+          <p className="text-sm text-muted-foreground" data-testid="tb-year-end-note">{TB_AFTER_CLOSE_NOTE}</p>
         </>
       )}
     </div>

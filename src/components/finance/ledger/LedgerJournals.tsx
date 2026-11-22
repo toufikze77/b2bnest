@@ -13,6 +13,7 @@ import { JournalGrid } from './JournalGrid';
 const SOURCE_LABELS: Record<JournalEntry['source_type'], string> = {
   manual: 'Manual', opening_balance: 'Opening balances', reversal: 'Reversal', auto_invoice: 'Automatic: invoice', auto_invoice_payment: 'Automatic: payment',
   auto_bill: 'Automatic: bill', auto_bill_payment: 'Automatic: bill payment', auto_expense: 'Automatic: expense', bank_line: 'Bank statement line',
+  year_end: 'Year end close',
 };
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -32,7 +33,7 @@ export function LedgerJournals({ api, organizationId, accounts, canPost, journal
   if (view.kind === 'detail') {
     const entry = journals.find((j) => j.id === view.id);
     if (entry) {
-      return <JournalDetail api={api} entry={entry} source={sources?.get(entry.id)} accounts={accounts} canReverse={canPost && entry.source_type !== 'reversal' && !reversedIds.has(entry.id)}
+      return <JournalDetail api={api} entry={entry} source={sources?.get(entry.id)} accounts={accounts} canReverse={canPost && entry.source_type !== 'reversal' && entry.source_type !== 'year_end' && !reversedIds.has(entry.id)}
         reversed={reversedIds.has(entry.id)} onBack={() => setView({ kind: 'list' })} onReversed={() => { setView({ kind: 'list' }); onChanged(); }} />;
     }
   }
