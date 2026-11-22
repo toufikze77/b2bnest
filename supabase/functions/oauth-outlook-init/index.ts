@@ -1,7 +1,8 @@
+import { narrowDenoServe } from '../_shared/cors.ts'; // Edge Functions CORS batch A (docs/hmrc-p7d/README.md): answers carry the narrowed CORS headers (corsFor), never '*'.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders } from '../_shared/cors.ts';
 
-Deno.serve(async (req) => {
+narrowDenoServe()(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }

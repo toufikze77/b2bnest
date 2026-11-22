@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { guardedDenoServe } from '../_shared/demo-guard.ts'; // Demo read-only: demo people get 403 (docs/demo-readonly)
+import { guardedDenoServeNarrow } from '../_shared/demo-guard.ts'; // Edge Functions CORS batch A (docs/hmrc-p7d/README.md): answers carry the narrowed CORS headers (corsFor), never '*'.
+// Demo read-only: demo people get 403 (docs/demo-readonly)
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,7 +15,7 @@ function json(body: unknown, status = 200) {
   });
 }
 
-guardedDenoServe(async (req) => {
+guardedDenoServeNarrow({ methods: 'POST, OPTIONS' })(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
 

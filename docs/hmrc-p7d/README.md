@@ -47,7 +47,7 @@ The full Deno suite passes with 513 tests.
 
 ### The 65 files that used the old CORS headers
 
-18 migrated, 16 left as is, 31 follow-ups.
+18 migrated, 16 left as is, 31 follow-ups (as of HMRC P7d, 9 Nov 2026). **Update 22 Nov 2026 (CORS batch A):** the follow-ups are migrated, and the OAuth callbacks and webhooks stay on `*` with their reasons; see "CORS batch A" below.
 
 | File | Decision |
 | --- | --- |
@@ -56,69 +56,220 @@ The full Deno suite passes with 513 tests.
 | `_shared/demo-guard.ts` | migrated where asked: new `headersFor` option, so a migrated function's demo refusal carries the narrowed headers; without it the refusal is unchanged |
 | `_shared/hmrc/readServe.ts` | migrated (`hmrc-vat-return-view`, `-liabilities`, `-payments`, `-penalties`) |
 | `_shared/hmrc/serve.ts` | migrated (`hmrc-connect-start`, `hmrc-connect-complete`, `hmrc-disconnect` and the shared `serveHmrcRequest`) |
-| `activate-trial/index.ts` | follow-up |
+| `activate-trial/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
 | `admin-reset-mfa/index.ts` | migrated |
 | `admin-set-user-ban/index.ts` | migrated |
-| `ai-assistant/handler.ts` | follow-up |
-| `b2b-form-submit/index.ts` | follow-up (public form for signed-out visitors) |
-| `business-insights/handler.ts` | follow-up |
+| `ai-assistant/handler.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `b2b-form-submit/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `business-insights/handler.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
 | `change-subscription-plan/index.ts` | migrated |
 | `check-subscription/index.ts` | migrated (runs on page load, so `www` and the bare domain are both allowed) |
 | `create-ai-topup-checkout/index.ts` | migrated |
-| `create-coinbase-charge/index.ts` | follow-up (browser-called; Coinbase payments to retest) |
-| `create-payment/index.ts` | follow-up (browser-called payment) |
+| `create-coinbase-charge/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `create-payment/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
 | `create-subscription-checkout/index.ts` | migrated |
 | `create-subscription-invoice/index.ts` | migrated |
 | `customer-portal/index.ts` | migrated |
-| `firecrawl-scrape/index.ts` | follow-up |
+| `firecrawl-scrape/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
 | `generate-legal-document/handler.ts` | migrated (wrapped with `withNarrowCors`) |
-| `generate-template/handler.ts` | follow-up |
-| `generate-template/index.ts` | follow-up |
-| `get-oauth-config/index.ts` | follow-up (read only) |
-| `google-calendar-sync/index.ts` | follow-up |
+| `generate-template/handler.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `generate-template/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `get-oauth-config/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `google-calendar-sync/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
 | `hmrc-test-call/index.ts` | migrated |
 | `hmrc-vat-obligations/index.ts` | migrated |
 | `hmrc-vat-submit/index.ts` | migrated |
-| `notion-sync/index.ts` | follow-up |
+| `notion-sync/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
 | `oauth-facebook/index.ts` | left as is, because it is an OAuth callback from Meta |
 | `oauth-gmail-callback/index.ts` | left as is, because it is an OAuth callback from Google |
-| `oauth-gmail-init/index.ts` | left as is, because it starts the Google OAuth flow; changed together with its callback later |
+| `oauth-gmail-init/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
 | `oauth-google-calendar/index.ts` | left as is, because it is an OAuth callback from Google |
 | `oauth-icloud-calendar/index.ts` | left as is, because it handles the calendar provider's OAuth callback |
 | `oauth-linkedin/index.ts` | left as is, because it is an OAuth callback from LinkedIn |
 | `oauth-onedrive/index.ts` | left as is, because it is an OAuth callback from Microsoft |
 | `oauth-outlook-calendar/index.ts` | left as is, because it is an OAuth callback from Microsoft |
-| `oauth-outlook-init/index.ts` | left as is, because it starts the Microsoft OAuth flow; changed together with its callback later |
-| `oauth-twitter-request/index.ts` | left as is, because it starts the X OAuth flow with a provider callback; changed together with its callback later |
+| `oauth-outlook-init/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `oauth-twitter-request/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
 | `oauth-twitter/index.ts` | left as is, because it is part of the X (Twitter) OAuth flow |
-| `public-work-request/index.ts` | follow-up (public form for signed-out visitors) |
-| `send-2fa-email/index.ts` | follow-up (sign-in path: a mistake would lock people out, so it gets its own change and a sign-in test) |
-| `send-contact-email/index.ts` | follow-up (public contact form) |
+| `public-work-request/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `send-2fa-email/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `send-contact-email/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
 | `send-document-email/handler.ts` | migrated (wrapped with `withNarrowCors`; GET and POST) |
-| `send-invitation-email/index.ts` | follow-up |
-| `send-task-notification/index.ts` | follow-up |
-| `share-project/index.ts` | follow-up |
-| `share-task/index.ts` | follow-up |
-| `sign-oauth-state/index.ts` | follow-up (OAuth start helper) |
+| `send-invitation-email/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `send-task-notification/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `share-project/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `share-task/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `sign-oauth-state/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
 | `slack-commands/index.ts` | left as is, because Slack's servers call it (signed) |
 | `slack-interactions/index.ts` | left as is, because Slack's servers call it (signed) |
-| `store-twitter-credentials/index.ts` | follow-up |
+| `store-twitter-credentials/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
 | `stripe-webhook/handler.ts` | left as is, because Stripe's servers call it (signed); CORS does not apply |
 | `stripe-webhook/index.ts` | left as is, because Stripe's servers call it (signed) |
-| `sync-note-to-email/index.ts` | follow-up |
-| `trello-import/index.ts` | follow-up |
-| `truelayer-integration/index.ts` | left as is, because it handles TrueLayer's OAuth redirect |
-| `verify-2fa-code/index.ts` | follow-up (sign-in path, as above) |
-| `whatsapp-connect/index.ts` | follow-up (browser-called; WhatsApp/Twilio side to check first) |
-| `whatsapp-disconnect/index.ts` | follow-up (browser-called) |
-| `workflow-execute/handler.ts` | follow-up |
-| `workflow-linkedin-post/handler.ts` | follow-up |
-| `workflow-send-email/handler.ts` | follow-up (its exported `corsHeaders` is still imported by `send-document-email`, whose answers are now re-headed) |
-| `workflow-send-email/request.ts` | follow-up |
-| `workflow-twitter-post/handler.ts` | follow-up |
+| `sync-note-to-email/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `trello-import/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `truelayer-integration/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `verify-2fa-code/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `whatsapp-connect/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `whatsapp-disconnect/index.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `workflow-execute/handler.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `workflow-linkedin-post/handler.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `workflow-send-email/handler.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `workflow-send-email/request.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
+| `workflow-twitter-post/handler.ts` | migrated in CORS batch A (22 Nov 2026): its `index.ts` serves through a narrow CORS wrapper; see "CORS batch A" below |
 
 The HMRC functions `hmrc-connect-start`, `hmrc-connect-complete`, `hmrc-disconnect` and the four HMRC P8 reads don't
 mention CORS themselves. They are migrated through `_shared/hmrc/serve.ts` and `readServe.ts`.
+
+## CORS batch A (22 Nov 2026): the remaining browser-called functions
+
+Every function that still sent `Access-Control-Allow-Origin: *` was classified. Searched: the inline string and
+`corsHeaders`, in `index.ts`, `handler.ts` and `request.ts`. How the app calls each one was read in `src/`.
+- **Changed:** 33 functions now answer with `corsFor(req)`:
+  - the B2BNEST origin is echoed when it is on the allow-list, with `Vary: Origin`;
+  - a foreign origin gets no allow-origin header.
+- **Kept on `*`:** 11 functions, each with its reason below.
+- **Already narrowed:** 2 functions (HMRC P7d).
+
+Nothing else changes:
+- status codes, bodies, auth, `verify_jwt`, `config.toml` and the front end;
+- no SQL and no database change.
+
+**How.**
+- **Each changed function changes only its serve line:**
+  - `const serve = guardedServe(narrowServe(stdServe))`: the demo guard sits inside the CORS wrapper, so its 403 is narrowed too;
+  - `narrowServe(stdServe)`;
+  - `guardedDenoServeNarrow({ methods })(handler)`;
+  - `narrowDenoServe()(handler)`.
+- **What the wrapper does:** it is `_shared/cors.ts` `withNarrowCors`. It answers the OPTIONS preflight with `preflight(req)`, and replaces the `Access-Control-*` headers on every other answer: success, errors, early returns, rate limits and demo refusals.
+- **Kept as they were:** status, body and every other header.
+- **The handlers are untouched:** their own `*` headers and OPTIONS branches still exist in the code, but the wrapper replaces them (the OPTIONS branch is never reached).
+- **Methods:** `whatsapp-connect`, `whatsapp-disconnect` and `workflow-execute` keep `POST, OPTIONS`. The others use the helper's default, `POST, GET, OPTIONS`. They sent no `Allow-Methods` before, so the browser allowed GET and POST; this is the same set.
+- **New shared helpers** (additive; nothing that existed changed behaviour): `narrowServe` and `narrowDenoServe` in `_shared/cors.ts`, and `guardedDenoServeNarrow` in `_shared/demo-guard.ts`.
+
+**Classification.**
+- **A:** browser, signed-in app calls.
+- **B:** server to server.
+- **C:** public, or a provider redirect. The C functions on our own pages are migrated; the OAuth callbacks are kept (never changed without a connect test).
+
+| Function | Class | Changed | `verify_jwt` | Reason |
+| --- | --- | --- | --- | --- |
+| `activate-trial` | A | yes | true (default) | Signed-in JWT call (trial start). Retired from the app (phase 12), still deployed: narrowing costs nothing. |
+| `ai-assistant` | A | yes | true (default) | AI Studio / Business Advisor, `supabase.functions.invoke` with the JWT. |
+| `b2b-form-submit` | C → migrated | yes | **false** | Public form, but only on our own page `/forms/b2b` (no embed code, no third-party site posts to it), so `*` has no real reason. |
+| `business-insights` | A | yes | true (default) | Intelligent Analytics, `invoke` with the JWT. |
+| `create-coinbase-charge` | A | yes | true (default) | Signed-in payment call. Unused since the crypto retirement (30 Sep 2026), still deployed. |
+| `create-payment` | A | yes | true (default) | Stripe checkout from `StripeCheckout.tsx`, `invoke` with the JWT. |
+| `firecrawl-scrape` | A | yes | true (default) | Firecrawl tool, `invoke` with the JWT. |
+| `generate-template` | A | yes | true (default) | AI template generator (`aiTemplateService.ts`), `invoke` with the JWT. Its index used supabase-js's own `*` headers; now re-headed. |
+| `get-oauth-config` | A | yes | **false** | Read-only OAuth client config, read by `useOAuthConnect.tsx` from the app before redirecting. Not a redirect target. |
+| `google-calendar-sync` | A | yes | true (default) | Integrations page, `invoke` with the JWT. |
+| `notion-sync` | A | yes | true (default) | Integrations page, `invoke` with the JWT. |
+| `oauth-gmail-init` | A | yes | true (default) | Starts Gmail OAuth from Note Pro (`invoke` with the JWT) and returns the URL; Google redirects to `oauth-gmail-callback`, which keeps `*`. |
+| `oauth-outlook-init` | A | yes | true (default) | Starts Outlook OAuth from Note Pro (`invoke`); the provider never calls it. |
+| `oauth-twitter-request` | A | yes | **false** | Starts X OAuth from the app (`useOAuthConnect.tsx`, `invoke`); X redirects to `oauth-twitter`, which keeps `*`. |
+| `public-work-request` | C → migrated | yes | true (default) | Public work-request form, only on our own page `/forms/work-request`; no third-party caller. |
+| `send-2fa-email` | A | yes | true (default) | Sign-in step: `useAuth.tsx` invokes it from our site. **Sign-in path: test it first after deploy.** |
+| `send-contact-email` | C → migrated | yes | true | Public contact form (`ContactForm.tsx`) on our own site only. |
+| `send-invitation-email` | A | yes | true | Signed-in call. The app no longer calls it (phase 10 senders); only a server-side e2e test does, which sends no Origin and is unaffected. |
+| `send-task-notification` | A | yes | true | Tasks (`taskNotificationService.ts`), `invoke` with the JWT. |
+| `share-project` | A | yes | true (default) | Share project dialog, `invoke` with the JWT. |
+| `share-task` | A | yes | true (default) | Share task dialog, `invoke` with the JWT. |
+| `sign-oauth-state` | A | yes | true (default) | OAuth start helper, `invoke` with the JWT from `useOAuthConnect.tsx`; never a redirect target. |
+| `store-twitter-credentials` | A | yes | true (default) | X connect card, `invoke` with the JWT. |
+| `sync-note-to-email` | A | yes | true (default) | Note Pro, `invoke` with the JWT. |
+| `trello-import` | A | yes | true (default) | Integrations page, `invoke` with the JWT. |
+| `truelayer-integration` | A | yes | true (default) | Browser call with actions (auth URL, token exchange). TrueLayer redirects to the **app page** `/business-tools`, never to this function. Not called by the app today. |
+| `verify-2fa-code` | A | yes | **false** | Sign-in step: `useAuth.tsx` invokes it from our site. **Sign-in path: test it first after deploy.** |
+| `whatsapp-connect` | A | yes | true (default) | WhatsApp settings, `invoke` with the JWT. Methods kept: POST, OPTIONS. |
+| `whatsapp-disconnect` | A | yes | true (default) | WhatsApp settings, `invoke` with the JWT. Methods kept: POST, OPTIONS. |
+| `workflow-execute` | A | yes | true (default) | Workflows and WhatsApp settings, `invoke` with the JWT. Methods kept: POST, OPTIONS. |
+| `workflow-linkedin-post` | A | yes | true | Workflow step, `invoke` with the JWT. |
+| `workflow-send-email` | A | yes | true | Workflow step and email check, `invoke` with the JWT. (Its `handler.ts` still exports `corsHeaders` for `send-document-email`, which re-heads it; unchanged.) |
+| `workflow-twitter-post` | A | yes | true | Workflow step, `invoke` with the JWT. |
+| `oauth-facebook` | C | no | — | C, kept: Meta redirects the browser here (registered redirect URI, see `ConnectionModal.tsx`). |
+| `oauth-gmail-callback` | C | no | — | C, kept: Google redirects the browser here. |
+| `oauth-google-calendar` | C | no | — | C, kept: Google redirects the browser here (registered redirect URI). |
+| `oauth-icloud-calendar` | C | no | — | C, kept: the provider redirects the browser here (registered redirect URI). |
+| `oauth-linkedin` | C | no | — | C, kept: LinkedIn redirects the browser here (registered redirect URI). |
+| `oauth-onedrive` | C | no | — | C, kept: Microsoft redirects the browser here (registered redirect URI). |
+| `oauth-outlook-calendar` | C | no | — | C, kept: Microsoft redirects the browser here (registered redirect URI). |
+| `oauth-twitter` | C | no | — | C, kept: X redirects the browser here (OAuth callback). |
+| `slack-commands` | B | no | — | B, kept: Slack's servers call it (signed); no browser, CORS never applies. |
+| `slack-interactions` | B | no | — | B, kept: Slack's servers call it (signed); no browser. |
+| `stripe-webhook` | B | no | — | B, kept: Stripe's servers call it (signed, raw body); no browser. Not touched. |
+| `generate-legal-document` | A | no (already narrowed in HMRC P7d) | true | Its handler is wrapped with `withNarrowCors`. |
+| `send-document-email` | A | no (already narrowed in HMRC P7d) | true | Its handler is wrapped with `withNarrowCors`. |
+
+**OAuth callbacks kept on `*`.**
+- **CORS doesn't affect the redirects:** a provider redirect is a page navigation, and CORS doesn't apply to navigations.
+- **The same functions are also called from the app:** `useOAuthConnect.tsx` and `ConnectionModal.tsx` call some of them, for example to start a connection.
+- **Next step:** they can be narrowed in a later batch, after a real connect test per provider.
+
+**Tests** (`supabase/functions/_shared/cors_batch_a_test.ts`):
+- **What it checks:**
+  - an allowed origin (www and the bare domain) is echoed with `Vary: Origin`; a foreign origin, and look-alikes, get no allow-origin;
+  - OPTIONS works for allowed and foreign origins, with each function's methods;
+  - success, error, early-return (401) and rate-limit (429) answers keep their status, body and other headers;
+  - no Origin (server to server) works as before;
+  - `CORS_ALLOWED_ORIGINS` adds an origin;
+  - the demo refusal is narrowed;
+  - the real handlers of ai-assistant, business-insights, workflow-execute, workflow-linkedin-post, workflow-send-email, workflow-twitter-post and generate-template give the same status and body, wrapped or not;
+  - a coverage check: every batch A `index.ts` serves through a wrapper, and every function that still sends `*` is listed above with a reason.
+- **Results:** all Edge Function tests pass (534) with Deno 2.1.4 locally. To run them here, deno.land and esm.sh were mapped to jsr and npm, local-only; nothing in the repo changed for that.
+- **Type check:** 29 of the 33 changed `index.ts` files type-check. The other 4 (`google-calendar-sync`, `notion-sync`, `trello-import`, `oauth-twitter-request`) have errors on lines this change doesn't touch: `getClaims` on the supabase-js version used, an untyped `catch (error)`, and a redeclared `authHeader`.
+
+**Deploy (PowerShell).** Redeploy only the changed functions; never `--no-verify-jwt`. The `verify_jwt` setting comes from `config.toml`, unchanged. These four have `verify_jwt = false` today, so please confirm each still shows "Verify JWT: off" in the dashboard after deploying: `b2b-form-submit`, `get-oauth-config`, `oauth-twitter-request`, `verify-2fa-code`.
+
+```powershell
+npx.cmd supabase functions deploy activate-trial --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy ai-assistant --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy b2b-form-submit --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy business-insights --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy create-coinbase-charge --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy create-payment --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy firecrawl-scrape --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy generate-template --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy get-oauth-config --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy google-calendar-sync --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy notion-sync --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy oauth-gmail-init --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy oauth-outlook-init --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy oauth-twitter-request --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy public-work-request --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy send-2fa-email --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy send-contact-email --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy send-invitation-email --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy send-task-notification --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy share-project --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy share-task --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy sign-oauth-state --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy store-twitter-credentials --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy sync-note-to-email --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy trello-import --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy truelayer-integration --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy verify-2fa-code --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy whatsapp-connect --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy whatsapp-disconnect --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy workflow-execute --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy workflow-linkedin-post --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy workflow-send-email --project-ref gvftvswyrevummbvyhxa --use-api
+npx.cmd supabase functions deploy workflow-twitter-post --project-ref gvftvswyrevummbvyhxa --use-api
+```
+
+**Secret.** `CORS_ALLOWED_ORIGINS` is **not needed** for www.b2bnest.online or b2bnest.online. Set it only if you also use the app from another host, for example `https://b2bnest.lovable.app` or a Lovable preview `https://id-preview--<project-id>.lovable.app`. Until then, those hosts can't read these functions' answers.
+
+**After deploying: check in the browser** (on https://www.b2bnest.online, and once on https://b2bnest.online). In DevTools → Network, the answer should show `access-control-allow-origin` equal to the page's origin.
+1. **Sign in with two-step email codes first:** `send-2fa-email`, `verify-2fa-code`. If it fails, redeploy the previous version of those two straight away.
+2. **AI:** AI Studio chat (`ai-assistant`), Intelligent Analytics (`business-insights`), the template generator (`generate-template`).
+3. **Tasks and projects:** share a task and a project; a task notification.
+4. **Integrations page:**
+   - Google Calendar sync, Notion sync, Trello import, Firecrawl;
+   - start an X, Gmail or Outlook connection (stop at the provider's page);
+   - WhatsApp connect and disconnect.
+5. **Note Pro:** sync a note to email.
+6. **Workflows:** run a workflow with an email step (the email check), and a LinkedIn or X step if connected.
+7. **Payments:** open a Stripe checkout (`create-payment`); don't pay.
+8. **Public forms, while signed out:** the contact form, `/forms/b2b`, `/forms/work-request`.
 
 ## 2. The 18 SECURITY DEFINER functions `anon` can run
 

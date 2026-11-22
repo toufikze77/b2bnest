@@ -1,8 +1,9 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve as stdServe } from "https://deno.land/std@0.168.0/http/server.ts";
 import { guardedServe } from '../_shared/demo-guard.ts';
+import { narrowServe } from '../_shared/cors.ts'; // Edge Functions CORS batch A (docs/hmrc-p7d/README.md): answers carry the narrowed CORS headers (corsFor), never '*'.
 // Demo read-only: a demo person is refused (403) before the handler runs (docs/demo-readonly).
-const serve = guardedServe(stdServe);
+const serve = guardedServe(narrowServe(stdServe));
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { checkAccess } from '../_shared/access.ts';
 import { makeHandler } from './handler.ts';

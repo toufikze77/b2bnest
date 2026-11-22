@@ -1,8 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 import { corsHeaders } from '../_shared/cors.ts'
-import { guardedDenoServe } from '../_shared/demo-guard.ts'; // Demo read-only: demo people get 403 (docs/demo-readonly)
+import { guardedDenoServeNarrow } from '../_shared/demo-guard.ts'; // Edge Functions CORS batch A (docs/hmrc-p7d/README.md): answers carry the narrowed CORS headers (corsFor), never '*'.
+// Demo read-only: demo people get 403 (docs/demo-readonly)
 
-guardedDenoServe(async (req) => {
+guardedDenoServeNarrow()(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }

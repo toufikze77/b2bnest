@@ -133,7 +133,7 @@ const NOT_REFUSED: Record<string, string> = {
   'trial-email-sender': 'scheduled sender with the service role',
   'support-email-sender': 'scheduled sender with the service role; support_* writes are guarded in the database',
 };
-const GUARD = /\b(guardedServe|guardedDenoServe|demoRefusal)\(/;
+const GUARD = /\b(guardedServe|guardedDenoServe|guardedDenoServeNarrow|demoRefusal)\(/; // + CORS batch A's narrowed Deno.serve guard
 
 Deno.test('every Edge Function has a demo decision', async () => {
   const dirs: string[] = [];

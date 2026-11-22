@@ -1,4 +1,7 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { serve as stdServe } from "https://deno.land/std@0.190.0/http/server.ts";
+import { narrowServe } from '../_shared/cors.ts';
+// Edge Functions CORS batch A (docs/hmrc-p7d/README.md): answers carry the narrowed CORS headers (corsFor), never '*'.
+const serve = narrowServe(stdServe);
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.2";
 
 const corsHeaders = {

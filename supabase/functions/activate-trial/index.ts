@@ -1,8 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve as stdServe } from "https://deno.land/std@0.224.0/http/server.ts";
 import { guardedServe } from '../_shared/demo-guard.ts';
+import { narrowServe } from '../_shared/cors.ts'; // Edge Functions CORS batch A (docs/hmrc-p7d/README.md): answers carry the narrowed CORS headers (corsFor), never '*'.
 // Demo read-only: a demo person is refused (403) before the handler runs (docs/demo-readonly).
-const serve = guardedServe(stdServe);
+const serve = guardedServe(narrowServe(stdServe));
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { corsHeaders } from "../_shared/cors.ts";
 
