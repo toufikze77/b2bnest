@@ -51,17 +51,10 @@ export default function OneDriveConnectCard({ userId }: Props) {
     setLoading(true);
     try {
       // Store credentials in user_integrations
-      const { error } = await supabase
-        .from('user_integrations')
-        .upsert({
-          user_id: userId,
-          integration_name: 'onedrive',
-          is_connected: false,
-          metadata: {
-            client_id: credentials.clientId,
-            client_secret: credentials.clientSecret,
-          },
-        });
+      // user_integrations is written only server-side (no INSERT/UPDATE policy for users): store-oauth-client.
+      const { error } = await supabase.functions.invoke('store-oauth-client', {
+        body: { provider: 'onedrive', credentials: { client_id: credentials.clientId, client_secret: credentials.clientSecret } },
+      });
 
       if (error) throw error;
 

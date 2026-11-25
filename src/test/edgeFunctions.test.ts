@@ -86,6 +86,8 @@ const PRODUCTION_VERIFY_JWT_FALSE = [
   'oauth-linkedin', 'oauth-onedrive', 'oauth-outlook-calendar', 'oauth-outlook-init', 'oauth-twitter', 'oauth-twitter-request', 'public-work-request',
   'send-2fa-email', 'share-project', 'share-task', 'sign-oauth-state', 'store-twitter-credentials', 'stripe-webhook', 'trello-import',
   'truelayer-integration', 'verify-2fa-code', 'whatsapp-connect', 'whatsapp-disconnect', 'workflow-execute',
+  // Added 25 Nov 2026, not yet deployed: deploy it with this setting (it checks the caller's token itself).
+  'store-oauth-client',
 ];
 /** verify_jwt per [functions.<name>] section (undefined when the function has no entry or no verify_jwt line). */
 function verifyJwtSettings(toml: string): Map<string, boolean> {
