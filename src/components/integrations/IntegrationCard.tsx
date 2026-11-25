@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Loader2, ExternalLink } from "lucide-react";
 import { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
 interface IntegrationCardProps {
   icon: LucideIcon;
@@ -14,6 +15,8 @@ interface IntegrationCardProps {
   onConnect: () => void;
   onDisconnect: () => void;
   docsUrl?: string;
+  /** Shown under the buttons while connected (for example Google Calendar's "Sync now"). */
+  extra?: ReactNode;
 }
 
 export const IntegrationCard = ({
@@ -26,6 +29,7 @@ export const IntegrationCard = ({
   onConnect,
   onDisconnect,
   docsUrl,
+  extra,
 }: IntegrationCardProps) => {
   return (
     <Card className="hover:shadow-lg transition-shadow">
@@ -88,6 +92,7 @@ export const IntegrationCard = ({
             </Button>
           )}
         </div>
+        {connected && extra && <div className="mt-3">{extra}</div>}
       </CardContent>
     </Card>
   );

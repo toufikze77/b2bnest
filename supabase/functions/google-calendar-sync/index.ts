@@ -1,11 +1,21 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
-import { getValidToken } from '../shared/token-refresh.ts'
+import { getValidToken, refreshIntegrationToken } from '../shared/token-refresh.ts'
 import { guardedDenoServeNarrow } from '../_shared/demo-guard.ts'; // Edge Functions CORS batch A (docs/hmrc-p7d/README.md): answers carry the narrowed CORS headers (corsFor), never '*'.
 // Demo read-only: demo people get 403 (docs/demo-readonly)
+import { PROVIDER, type EventLink, type SyncTask } from './plan.ts'
+import { addCounts, emptyCounts, syncTask, syncUser, type Counts, type LinkStore } from './sync.ts'
+import { googleApi } from './google.ts'
+import { syncAllRefusal } from './secret.ts'
+// Google Calendar sync (docs/google-calendar-sync/README.md): one all-day event per open task with a due date, kept in
+// step through calendar_event_links (service role only). Actions:
+//   sync_tasks              the signed-in person's tasks (the "Sync now" button)
+//   sync_task (create_event) one task, after it was created, edited, completed or deleted in the app
+//   forget_links            Google Calendar was disconnected: drop this person's links (their events are left alone)
+//   sync_all                every connected person; only with the x-calendar-sync-secret header (pg_cron), never a sign-in
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-calendar-sync-secret',
 }
 
 const supabase = createClient(
@@ -13,17 +23,32 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 )
 
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+const TASK_COLUMNS = 'id,title,description,due_date,priority,status,completed_at,archived_at'
+/** sync_all stops starting new people after this long (the next run continues). */
+const SYNC_ALL_BUDGET_MS = 100_000
+
 guardedDenoServeNarrow()(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
+    const body = await req.json().catch(() => ({}))
+    const action = body?.action ?? 'sync_tasks'
+
+    // The catch-up: the server secret only (constant time). A person's sign-in is never enough.
+    if (action === 'sync_all') {
+      const refusal = syncAllRefusal(req, Deno.env.get('CALENDAR_SYNC_CRON_SECRET'), corsHeaders)
+      if (refusal) return refusal
+      return await syncAll()
+    }
+
     const authHeader = req.headers.get('Authorization')
     if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return json({ error: 'Unauthorized' }, 401)
     }
     const authClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -34,193 +59,129 @@ guardedDenoServeNarrow()(async (req) => {
     // getUser(token): the supabase-js pinned above predates getClaims, which threw "is not a function".
     const { data: userData, error: userError } = await authClient.auth.getUser(token)
     if (userError || !userData?.user?.id) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return json({ error: 'Unauthorized' }, 401)
     }
     const user_id = userData.user.id
-
-    const body = await req.json().catch(() => ({}))
-    const action = body.action ?? 'sync_tasks'
 
     if (action === 'sync_tasks') {
       return await syncTasksToCalendar(user_id)
     }
 
-    if (action === 'create_event') {
-      const task_id = body.task_id
-      return await createCalendarEvent(user_id, task_id)
+    if (action === 'sync_task' || action === 'create_event') {
+      const task_id = typeof body.task_id === 'string' ? body.task_id : ''
+      if (!/^[0-9a-f-]{36}$/i.test(task_id)) return json({ error: 'Missing task_id' }, 400)
+      return await syncOneTask(user_id, task_id)
     }
 
-    return new Response(
-      JSON.stringify({ error: 'Unknown action' }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    if (action === 'forget_links') {
+      const { error } = await supabase.from('calendar_event_links').delete().eq('user_id', user_id).eq('provider', PROVIDER)
+      if (error) {
+        console.error('google-calendar-sync: forget_links failed', error.code)
+        return json({ error: 'Failed to forget links' }, 500)
+      }
+      return json({ success: true })
+    }
+
+    return json({ error: 'Unknown action' }, 400)
 
   } catch (error) {
-    console.error('Calendar sync error:', error)
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    console.error('Calendar sync error:', error instanceof Error ? error.message : 'unknown')
+    return json({ error: 'Internal server error' }, 500)
   }
 })
 
-async function syncTasksToCalendar(userId: string) {
-  try {
-    const token = await getValidToken(userId, 'google_calendar')
-    if (!token) {
-      return new Response(
-        JSON.stringify({ error: 'Google Calendar not connected' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Get tasks with due dates that aren't completed
-    const { data: tasks, error } = await supabase
-      .from('todos')
-      .select('*')
-      .eq('user_id', userId)
-      .neq('status', 'completed')
-      .not('due_date', 'is', null)
-
-    if (error) {
-      console.error('Error fetching tasks:', error)
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch tasks' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    if (!tasks || tasks.length === 0) {
-      return new Response(
-        JSON.stringify({ message: 'No tasks with due dates found' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const results = []
-    
-    for (const task of tasks) {
-      try {
-        const event = await createEventFromTask(token, task)
-        if (event) {
-          results.push({ task_id: task.id, event_id: event.id, status: 'created' })
-        }
-      } catch (error) {
-        console.error(`Error creating event for task ${task.id}:`, error)
-        results.push({ task_id: task.id, status: 'error', error: error.message })
-      }
-    }
-
-    return new Response(
-      JSON.stringify({ 
-        message: `Synced ${results.filter(r => r.status === 'created').length} tasks to calendar`,
-        results 
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-
-  } catch (error) {
-    console.error('Error syncing tasks to calendar:', error)
-    return new Response(
-      JSON.stringify({ error: 'Failed to sync tasks' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+/** The link rows of one person (service role). */
+function linkStore(userId: string): LinkStore {
+  return {
+    async get(taskId) {
+      const { data } = await supabase.from('calendar_event_links').select('task_id,external_event_id,content_hash')
+        .eq('user_id', userId).eq('provider', PROVIDER).eq('task_id', taskId).maybeSingle()
+      return (data as EventLink | null) ?? null
+    },
+    async all() {
+      const { data, error } = await supabase.from('calendar_event_links').select('task_id,external_event_id,content_hash')
+        .eq('user_id', userId).eq('provider', PROVIDER)
+      if (error) throw new Error('links_unreadable')
+      return (data ?? []) as EventLink[]
+    },
+    async save(link) {
+      const { error } = await supabase.from('calendar_event_links').upsert(
+        { user_id: userId, provider: PROVIDER, task_id: link.task_id, external_event_id: link.external_event_id, content_hash: link.content_hash, synced_at: new Date().toISOString() },
+        { onConflict: 'user_id,task_id,provider' })
+      // The task was deleted meanwhile (foreign key): nothing to keep.
+      if (error && error.code !== '23503') console.error('google-calendar-sync: link not saved', error.code)
+    },
+    async remove(taskId) {
+      await supabase.from('calendar_event_links').delete().eq('user_id', userId).eq('provider', PROVIDER).eq('task_id', taskId)
+    },
   }
 }
 
-async function createCalendarEvent(userId: string, taskId: string) {
-  try {
-    const token = await getValidToken(userId, 'google_calendar')
-    if (!token) {
-      return new Response(
-        JSON.stringify({ error: 'Google Calendar not connected' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const { data: task, error } = await supabase
-      .from('todos')
-      .select('*')
-      .eq('id', taskId)
-      .eq('user_id', userId)
-      .single()
-
-    if (error || !task) {
-      return new Response(
-        JSON.stringify({ error: 'Task not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const event = await createEventFromTask(token, task)
-    
-    if (!event) {
-      return new Response(
-        JSON.stringify({ error: 'Failed to create calendar event' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    return new Response(
-      JSON.stringify({ event_id: event.id, message: 'Calendar event created' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-
-  } catch (error) {
-    console.error('Error creating calendar event:', error)
-    return new Response(
-      JSON.stringify({ error: 'Failed to create event' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-  }
+/** Google for one person, or null when Google Calendar isn't connected. */
+async function googleFor(userId: string) {
+  const token = await getValidToken(userId, PROVIDER)
+  if (!token) return null
+  return googleApi({ token, userId, refresh: () => refreshIntegrationToken(userId, 'google_calendar') })
 }
 
-async function createEventFromTask(token: string, task: any) {
-  try {
-    const dueDate = new Date(task.due_date)
-    const startTime = new Date(dueDate.getTime() - (2 * 60 * 60 * 1000)) // 2 hours before due
-    
-    const eventData = {
-      summary: `📋 ${task.title}`,
-      description: task.description || 'Task reminder from Louvable',
-      start: {
-        dateTime: startTime.toISOString(),
-        timeZone: 'UTC',
-      },
-      end: {
-        dateTime: dueDate.toISOString(),
-        timeZone: 'UTC',
-      },
-      reminders: {
-        useDefault: false,
-        overrides: [
-          { method: 'email', minutes: 60 },
-          { method: 'popup', minutes: 30 },
-        ],
-      },
-      colorId: task.priority === 'high' ? '11' : task.priority === 'medium' ? '5' : '2', // Red, Yellow, Green
-    }
-
-    const response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(eventData),
-    })
-
-    if (!response.ok) {
-      const error = await response.text()
-      console.error('Google Calendar API error:', error)
-      return null
-    }
-
-    return await response.json()
-  } catch (error) {
-    console.error('Error creating event from task:', error)
+/** Open tasks with a due date of one person (the ones that should have an event). */
+async function openTasks(userId: string): Promise<SyncTask[] | null> {
+  const { data, error } = await supabase.from('todos').select(TASK_COLUMNS)
+    .eq('user_id', userId).not('due_date', 'is', null).is('archived_at', null).is('completed_at', null).neq('status', 'done')
+  if (error) {
+    console.error('google-calendar-sync: tasks unreadable', error.code)
     return null
   }
+  return (data ?? []) as SyncTask[]
+}
+
+const result = (c: Counts, extra: Record<string, unknown> = {}) => ({ success: true, ...c, ...extra })
+
+async function syncTasksToCalendar(userId: string) {
+  const google = await googleFor(userId)
+  if (!google) return json({ error: 'Google Calendar not connected' }, 400)
+  const tasks = await openTasks(userId)
+  if (!tasks) return json({ error: 'Failed to fetch tasks' }, 500)
+  try {
+    return json(result(await syncUser(tasks, userId, google, linkStore(userId))))
+  } catch {
+    return json({ error: 'Failed to sync tasks' }, 500)
+  }
+}
+
+async function syncOneTask(userId: string, taskId: string) {
+  const google = await googleFor(userId)
+  if (!google) return json({ error: 'Google Calendar not connected' }, 400)
+  const { data, error } = await supabase.from('todos').select(TASK_COLUMNS).eq('id', taskId).eq('user_id', userId).maybeSingle()
+  if (error) return json({ error: 'Failed to fetch task' }, 500)
+  // Not found: deleted (or not this person's). Its event, if any, is found by its marker and removed.
+  return json(result(await syncTask(taskId, (data as SyncTask | null) ?? null, userId, google, linkStore(userId))))
+}
+
+async function syncAll() {
+  const started = Date.now()
+  const { data: rows, error } = await supabase.from('user_integrations').select('user_id')
+    .eq('integration_name', PROVIDER).eq('is_connected', true)
+  if (error) return json({ error: 'Failed to list connections' }, 500)
+  const users = [...new Set((rows ?? []).map((r: { user_id: string }) => r.user_id))]
+  // Links of people who are no longer connected (a disconnect whose forget_links call was lost).
+  const { data: stale } = await supabase.from('calendar_event_links').select('user_id').eq('provider', PROVIDER)
+  const gone = [...new Set((stale ?? []).map((r: { user_id: string }) => r.user_id))].filter((u) => !users.includes(u))
+  if (gone.length) await supabase.from('calendar_event_links').delete().eq('provider', PROVIDER).in('user_id', gone)
+
+  let total = emptyCounts()
+  let done = 0, skippedUsers = 0
+  for (const userId of users) {
+    if (Date.now() - started > SYNC_ALL_BUDGET_MS) break
+    const google = await googleFor(userId)
+    const tasks = google ? await openTasks(userId) : null
+    if (!google || !tasks) { skippedUsers++; done++; continue }
+    try {
+      total = addCounts(total, await syncUser(tasks, userId, google, linkStore(userId)))
+    } catch {
+      total.failed++
+    }
+    done++
+  }
+  return json(result(total, { users: done, users_skipped: skippedUsers, more: done < users.length, links_forgotten_for: gone.length }))
 }

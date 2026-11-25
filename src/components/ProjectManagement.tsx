@@ -1,4 +1,5 @@
 import { deleteTaskConfirmed } from '@/lib/deleteTask';
+import { syncTaskToCalendar } from '@/lib/calendarSync';
 import { completionPatch } from '@/lib/dashboardData';
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -735,6 +736,7 @@ const ProjectManagement = () => {
     }
     
     if (data) setCalendarEvents(prev => [...prev, data as unknown as CalendarEventItem]);
+    void syncTaskToCalendar((data as { id?: string } | null)?.id);
   };
 
   // Check access after hooks are initialized
@@ -1055,6 +1057,7 @@ const ProjectManagement = () => {
         .single();
 
       if (error) throw error;
+      void syncTaskToCalendar(data?.id);
 
       // Fetch assignee display name
       let assigneeName = 'Unassigned';
@@ -1320,6 +1323,7 @@ const ProjectManagement = () => {
         .eq('id', taskId);
 
       if (error) throw error;
+      void syncTaskToCalendar(taskId);
 
       // Update local state
       setTasks(prev => prev.map(task => {
@@ -1606,6 +1610,7 @@ const ProjectManagement = () => {
     }
     setShowEditTask(false);
     setEditingTask(null);
+    void syncTaskToCalendar(taskId);
     toast({ title: 'Task updated' });
     await loadTasks();
   };
@@ -1817,6 +1822,7 @@ const ProjectManagement = () => {
         ? await supabase.from('todos').update(payload).eq('id', editingEvent.id).eq('organization_id', tenant.organizationId).select().single()
         : await supabase.from('todos').insert({ ...payload, status: 'todo', priority: 'medium' }).select().single();
       if (result.error) throw result.error;
+      void syncTaskToCalendar((result.data as { id?: string } | null)?.id);
       await Promise.all([loadTasks(), fetchCalendarEvents()]);
       setEventDialogOpen(false);
     } catch (error) {
@@ -2780,6 +2786,7 @@ const ProjectManagement = () => {
               .eq('id', taskId);
 
             if (!error) {
+              void syncTaskToCalendar(taskId);
               setTasks(prev => prev.map(t => 
                 t.id === taskId ? { ...t, ...updates } : t
               ));
