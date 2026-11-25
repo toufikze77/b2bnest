@@ -5,6 +5,8 @@ import { useOAuthConnect } from '@/hooks/useOAuthConnect';
 import { toast } from 'sonner';
 import { IntegrationCard } from './IntegrationCard';
 import { ConnectionModal } from './ConnectionModal';
+import { SyncToCalendarButton } from '@/components/IntegrationButtons';
+import { forgetCalendarLinks } from '@/lib/calendarSync';
 
 interface Props {
   userId: string;
@@ -90,6 +92,8 @@ const GoogleCalendarConnectCard = ({ userId }: Props) => {
   const handleDisconnect = async () => {
     setLoading(true);
     try {
+      // Forget which Google event belongs to which task; the events themselves stay in Google Calendar.
+      await forgetCalendarLinks();
       const { error } = await supabase
         .from('user_integrations')
         .delete()
@@ -121,6 +125,7 @@ const GoogleCalendarConnectCard = ({ userId }: Props) => {
         onConnect={() => setShowModal(true)}
         onDisconnect={handleDisconnect}
         docsUrl="https://developers.google.com/calendar"
+        extra={<SyncToCalendarButton />}
       />
       
       <ConnectionModal

@@ -58,6 +58,8 @@ export const ACCOUNT_TABLES: AccountTable[] = [
   { table: 'master_access', by: 'user_id', via: 'service' },
   { table: 'trial_email_log', by: 'user_id', via: 'service' },
   { table: 'user_integrations', by: 'user_id', via: 'service' },
+  // Google Calendar sync (docs/google-calendar-sync): which Google event belongs to which task. No browser policy.
+  { table: 'calendar_event_links', by: 'user_id', via: 'service' },
   { table: 'hmrc_settings', by: 'user_id', via: 'service', personalOnly: 'organization_id', omit: ['client_id'] },
 ];
 

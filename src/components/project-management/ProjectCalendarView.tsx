@@ -22,6 +22,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSam
 import { cn } from '@/lib/utils';
 import { toDay } from '@/lib/workFilters';
 import { CalendarAgenda } from './CalendarAgenda';
+import { SyncToCalendarButton } from '@/components/IntegrationButtons';
 
 interface Task {
   id: string;
@@ -235,7 +236,11 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({
               </span>
             </CardTitle>
             
-            <p className="text-sm text-muted-foreground">Tasks follow the filters above; calendar events always show.</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-sm text-muted-foreground">Tasks follow the filters above; calendar events always show.</p>
+              {/* Google Calendar: only when connected. Tasks with a due date also sync automatically. */}
+              <SyncToCalendarButton onlyWhenConnected />
+            </div>
           </div>
         </CardHeader>
 

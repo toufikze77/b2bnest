@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { syncTaskToCalendar } from '@/lib/calendarSync';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveOrganization } from '@/contexts/OrganizationContext';
@@ -142,6 +143,9 @@ const TodoList = () => {
         }
       }
 
+      // Google Calendar (only when connected; never blocks the task).
+      void syncTaskToCalendar(data?.id);
+
       toast({
         title: "Success",
         description: "Task created successfully!"
@@ -201,6 +205,8 @@ const TodoList = () => {
         }
       }
 
+      void syncTaskToCalendar(id);
+
       toast({
         title: "Success",
         description: "Task updated successfully!"
@@ -228,6 +234,8 @@ const TodoList = () => {
         .eq('user_id', user.id);
 
       if (error) throw error;
+
+      void syncTaskToCalendar(id);
 
       toast({
         title: "Success",

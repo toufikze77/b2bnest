@@ -1,4 +1,5 @@
 import { completionPatch, formatDueDate } from '@/lib/dashboardData';
+import { syncTaskToCalendar } from '@/lib/calendarSync';
 import { FilterBar } from '@/components/data/FilterBar';
 import { PriorityBadge, StatusBadge } from '@/components/data/StatusBadge';
 import { NoResults } from '@/components/ui/states';
@@ -116,7 +117,7 @@ export default function WorkspaceView() {
       .eq('organization_id', organizationId)
       .select('id');
     const ok = !error && Array.isArray(data) && data.length === 1;
-    if (ok) return;
+    if (ok) { void syncTaskToCalendar(task.id); return; }
     // Roll back only this task, only in its original context, and only if no
     // newer edit to the same task has been made since.
     if (taskVersion.current.get(task.id) === version) patchTask(key, task.id, { status: previous });

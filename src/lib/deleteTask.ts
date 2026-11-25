@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { syncTaskToCalendar } from '@/lib/calendarSync';
 
 export class TaskDeleteError extends Error {}
 
@@ -16,4 +17,6 @@ export async function deleteTaskConfirmed(taskId: string, organizationId: string
   if (!data || data.length !== 1) {
     throw new TaskDeleteError('The task was not deleted. You may not have permission (only its creator, assignee or a company admin can delete it), or it was already removed. Refresh and try again.');
   }
+  // Google Calendar: remove its event (only when connected; never blocks or fails the delete).
+  void syncTaskToCalendar(taskId);
 }
