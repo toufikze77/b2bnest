@@ -25,15 +25,16 @@ guardedDenoServeNarrow()(async (req) => {
     );
 
     const token = authHeader.replace('Bearer ', '');
-    const { data, error } = await supabase.auth.getClaims(token);
-    if (error || !data?.claims?.sub) {
+    // getUser(token): the supabase-js pinned above predates getClaims, which threw "is not a function".
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data?.user?.id) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const state = await signOAuthState(data.claims.sub as string);
+    const state = await signOAuthState(data.user.id);
     return new Response(JSON.stringify({ state }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

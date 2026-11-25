@@ -121,3 +121,35 @@ describe('config.toml verify_jwt mirrors production', () => {
     expect(configured.filter((f, i) => configured.indexOf(f) !== i)).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------------------------------------------------
+// auth.getClaims exists only in recent supabase-js. On an older pinned client it throws "getClaims is not a function"
+// (sign-oauth-state answered 500 on every call, 25 Nov 2026, so every Connect button stopped). A function that calls
+// it must import supabase-js 2.58 or later (or the unpinned @2); otherwise use auth.getUser(token).
+// ---------------------------------------------------------------------------------------------------------------------
+const MIN_GETCLAIMS = [2, 58] as const;
+/** Pinned supabase-js versions in a source file: esm.sh / npm / jsr specifiers ("2" alone counts as current). */
+function supabaseJsVersions(src: string): string[] {
+  return [...src.matchAll(/supabase-js@(\d+(?:\.\d+){0,2})/g)].map((m) => m[1]);
+}
+function olderThanMin(v: string): boolean {
+  const [maj, min = Number.POSITIVE_INFINITY] = v.split('.').map(Number);
+  return maj < MIN_GETCLAIMS[0] || (maj === MIN_GETCLAIMS[0] && min < MIN_GETCLAIMS[1]);
+}
+
+describe('auth.getClaims needs a recent supabase-js', () => {
+  it('reads versions (sanity)', () => {
+    expect(supabaseJsVersions("import x from 'https://esm.sh/@supabase/supabase-js@2.45.0'; import 'npm:@supabase/supabase-js@2'")).toEqual(['2.45.0', '2']);
+    expect(['2.45.0', '2.39.3', '2.50.2', '2.57.9'].map(olderThanMin)).toEqual([true, true, true, true]);
+    expect(['2', '2.58.0', '2.60.1', '3.0.0'].map(olderThanMin)).toEqual([false, false, false, false]);
+  });
+  it('no function calls auth.getClaims while importing supabase-js older than 2.58', () => {
+    const bad = folders.filter((name) => {
+      const index = path.join(FUNCTIONS_DIR, name, 'index.ts');
+      if (!fs.existsSync(index)) return false;
+      const src = fs.readFileSync(index, 'utf8');
+      return /\.auth\s*\.\s*getClaims\s*\(/.test(src) && supabaseJsVersions(src).some(olderThanMin);
+    });
+    expect(bad).toEqual([]);
+  });
+});

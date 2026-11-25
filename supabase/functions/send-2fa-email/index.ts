@@ -51,16 +51,18 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    // getUser(token): the supabase-js pinned above predates getClaims, which threw "is not a function".
+    // The email comes from the user object (it was the token's email claim).
+    const { data: userData, error: userError } = await supabaseAuth.auth.getUser(token);
+    if (userError || !userData?.user) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    const callerUserId = claimsData.claims.sub as string;
-    const callerEmail = (claimsData.claims.email as string | undefined)?.toLowerCase();
+    const callerUserId = userData.user.id;
+    const callerEmail = userData.user.email?.toLowerCase();
 
     const { email, type, name }: Email2FARequest = await req.json();
 
