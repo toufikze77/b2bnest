@@ -28,13 +28,14 @@ guardedDenoServeNarrow()(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     )
     const token = authHeader.replace('Bearer ', '')
-    const { data, error } = await supabase.auth.getClaims(token)
-    if (error || !data?.claims?.sub) {
+    // getUser(token): the supabase-js pinned above predates getClaims, which threw "is not a function".
+    const { data, error } = await supabase.auth.getUser(token)
+    if (error || !data?.user?.id) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
-    const userId = data.claims.sub as string
+    const userId = data.user.id
 
     const consumerKey = Deno.env.get('TWITTER_CONSUMER_KEY')
     const consumerSecret = Deno.env.get('TWITTER_CONSUMER_SECRET')

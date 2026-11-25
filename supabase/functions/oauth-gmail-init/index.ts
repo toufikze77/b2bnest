@@ -23,14 +23,15 @@ guardedDenoServeNarrow()(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
     const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims?.sub) {
+    // getUser(token): the supabase-js pinned above predates getClaims, which threw "is not a function".
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    if (userError || !userData?.user?.id) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const userId = claimsData.claims.sub as string;
+    const userId = userData.user.id;
 
     // Use platform-level OAuth credentials for multi-tenant setup
     const clientId = Deno.env.get('GOOGLE_CLIENT_ID');

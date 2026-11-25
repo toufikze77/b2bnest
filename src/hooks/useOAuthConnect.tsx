@@ -3,6 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { DEMO_READONLY_MESSAGE, isDemoNow, isDemoReadonlyError } from '@/lib/demoMode';
 
+/** Shown when a connection can't be started (anything but the demo refusal, which has its own message). */
+export const OAUTH_START_FAILED = 'Could not start the connection. Please try again.';
+
 interface OAuthOptions {
   provider: 'slack' | 'notion' | 'trello' | 'google_calendar' | 'twitter' | 'linkedin' | 'facebook' | 'onedrive' | 'icloud_calendar' | 'outlook_calendar';
   redirectPath?: string;
@@ -185,6 +188,8 @@ export const useOAuthConnect = () => {
     } catch (error) {
       if (isDemoReadonlyError(error)) { toast.error(DEMO_READONLY_MESSAGE); return; }
       console.error('OAuth error:', error);
+      // Never fail silently: a Connect button that does nothing looks broken (for example when sign-oauth-state fails).
+      toast.error(OAUTH_START_FAILED);
     }
   }, []);
 
