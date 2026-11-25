@@ -55,17 +55,10 @@ const FacebookConnectCard = ({ userId }: Props) => {
     setLoading(true);
     try {
       // Store credentials first
-      const { error: storeError } = await supabase
-        .from('user_integrations')
-        .upsert({
-          user_id: userId,
-          integration_name: 'facebook',
-          metadata: {
-            app_id: credentials.app_id,
-            app_secret: credentials.app_secret,
-          },
-          is_connected: false,
-        });
+      // user_integrations is written only server-side (no INSERT/UPDATE policy for users): store-oauth-client.
+      const { error: storeError } = await supabase.functions.invoke('store-oauth-client', {
+        body: { provider: 'facebook', credentials: { app_id: credentials.app_id, app_secret: credentials.app_secret } },
+      });
 
       if (storeError) throw storeError;
 

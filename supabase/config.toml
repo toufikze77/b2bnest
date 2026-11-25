@@ -185,6 +185,11 @@ verify_jwt = false
 [functions.store-twitter-credentials]
 verify_jwt = false
 
+# Not yet deployed (25 Nov 2026): saves a person's own OAuth app details for the Connect cards (user_integrations has no
+# user INSERT/UPDATE policy). Checks the caller's token itself, like store-twitter-credentials.
+[functions.store-oauth-client]
+verify_jwt = false
+
 [functions.trello-import]
 verify_jwt = false
 

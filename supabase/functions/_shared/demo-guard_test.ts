@@ -113,7 +113,7 @@ const REFUSE = [
   'hmrc-test-call', 'hmrc-vat-obligations', 'hmrc-vat-submit', 'hmrc-vat-return-view', 'hmrc-vat-liabilities', 'hmrc-vat-payments', 'hmrc-vat-penalties', 'data-export', 'account-delete', 'company-close', 'notion-sync', 'oauth-facebook', 'oauth-gmail-callback', 'oauth-gmail-init', 'oauth-google-calendar',
   'oauth-icloud-calendar', 'oauth-linkedin', 'oauth-onedrive', 'oauth-outlook-calendar', 'oauth-twitter', 'oauth-twitter-request',
   'send-contact-email', 'send-document-email', 'send-invitation-email', 'send-task-notification', 'share-project', 'share-task',
-  'sign-oauth-state', 'store-twitter-credentials', 'sync-note-to-email', 'trello-import', 'truelayer-integration', 'whatsapp-connect',
+  'sign-oauth-state', 'store-oauth-client', 'store-twitter-credentials', 'sync-note-to-email', 'trello-import', 'truelayer-integration', 'whatsapp-connect',
   'whatsapp-disconnect', 'workflow-execute', 'workflow-linkedin-post', 'workflow-send-email', 'workflow-twitter-post',
 ];
 const NOT_REFUSED: Record<string, string> = {

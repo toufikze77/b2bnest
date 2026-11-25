@@ -296,6 +296,20 @@ Also `false` in production with no entry yet, and left as is pending the owner's
 
 A plain deploy of any of these would turn the check on, so pass `--no-verify-jwt` when deploying them until they are recorded.
 
+**store-oauth-client (25 Nov 2026, not yet deployed).** Six Connect cards save the person's own OAuth app details: Google Calendar, Outlook Calendar, iCloud Calendar, LinkedIn, OneDrive and Facebook. They used to `upsert` into `user_integrations` from the browser. That table deliberately has no INSERT or UPDATE policy for users, so every save failed with "new row violates row-level security policy". The cards now call the new `store-oauth-client` Edge Function, built like `store-twitter-credentials`:
+- **Caller:** it checks the caller's token (`auth.getUser`) and takes the user id from the token, never from the body.
+- **Providers:** only the allowed providers, each with exactly its own fields. Google Calendar, Outlook Calendar, iCloud Calendar, LinkedIn and OneDrive need `client_id` and `client_secret`; Facebook needs `app_id` and `app_secret`.
+- **Validation** (in `validate.ts`): each field must be a non-empty string of at most 500 characters. Anything else gets a 400.
+- **Writing:** it writes with the service role, upserting on `UNIQUE (user_id, integration_name)` and sending only `metadata` and `is_connected: false`, so an existing row keeps its tokens.
+- **Logging:** credential values are never logged.
+- **Unchanged:** RLS, the grants and Disconnect (the users' DELETE policy) are not changed.
+- **Config:** `verify_jwt = false` is in `config.toml`, and the function is on the list in `src/test/edgeFunctions.test.ts`. Demo people are refused (docs/demo-readonly).
+
+Deploy:
+```powershell
+npx.cmd supabase functions deploy store-oauth-client --project-ref gvftvswyrevummbvyhxa --use-api
+```
+
 ## 2. The 18 SECURITY DEFINER functions `anon` can run
 
 **How each was checked**, on production (read-only, 9 Nov 2026):

@@ -110,7 +110,7 @@ All of them use one helper, `supabase/functions/_shared/demo-guard.ts`.
 | data-export, account-delete, company-close (HMRC P7b) | **refuse** | Downloading, deleting the account and closing a company. Refused by `guardedDenoServe` (via `serveDataRights`) before anything runs, and again in the handler and in the SQL functions. The new tables `data_rights_requests` and `_data_rights_gate` have the `a0_demo_readonly_guard` trigger. |
 | sign-oauth-state, oauth-gmail-init, oauth-twitter-request | **refuse** | Start a connection |
 | oauth-facebook, oauth-gmail-callback, oauth-google-calendar, oauth-icloud-calendar, oauth-linkedin, oauth-onedrive, oauth-outlook-calendar, oauth-twitter | **refuse** (`demoRefusal`) | OAuth callbacks. The person comes from the signed state, and the check runs before tokens are stored. |
-| store-twitter-credentials, whatsapp-connect, whatsapp-disconnect, truelayer-integration | **refuse** | Connect or disconnect |
+| store-twitter-credentials, store-oauth-client, whatsapp-connect, whatsapp-disconnect, truelayer-integration | **refuse** | Connect or disconnect |
 | trello-import, notion-sync, google-calendar-sync | **refuse** | Import or sync into the account |
 | check-subscription | not refused | Runs on page load and only syncs the plan row from Stripe. Refusing it would break every page. |
 | send-2fa-email, verify-2fa-code | not refused | Sign-in path (the person's own code) |

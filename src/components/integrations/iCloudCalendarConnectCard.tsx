@@ -62,17 +62,10 @@ const ICloudCalendarConnectCard = ({ userId }: Props) => {
     setLoading(true);
     try {
       // Store credentials first
-      const { error: storeError } = await supabase
-        .from('user_integrations')
-        .upsert({
-          user_id: userId,
-          integration_name: 'icloud_calendar',
-          metadata: {
-            client_id: credentials.client_id,
-            client_secret: credentials.client_secret,
-          },
-          is_connected: false,
-        });
+      // user_integrations is written only server-side (no INSERT/UPDATE policy for users): store-oauth-client.
+      const { error: storeError } = await supabase.functions.invoke('store-oauth-client', {
+        body: { provider: 'icloud_calendar', credentials: { client_id: credentials.client_id, client_secret: credentials.client_secret } },
+      });
 
       if (storeError) throw storeError;
 
