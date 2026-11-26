@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 import { guardedDenoServeNarrow } from '../_shared/demo-guard.ts'; // Edge Functions CORS batch A (docs/hmrc-p7d/README.md): answers carry the narrowed CORS headers (corsFor), never '*'.
 // Demo read-only: demo people get 403 (docs/demo-readonly)
 import { PROVIDER, type EventLink, type SyncTask } from './plan.ts'
-import { addCounts, emptyCounts, syncTask, syncUser, type Counts, type LinkStore } from './sync.ts'
+import { addCounts, createBudget, emptyCounts, syncTask, syncUser, type Counts, type LinkStore } from './sync.ts'
 import { googleApi } from './google.ts'
 import { syncAllRefusal } from './secret.ts'
 import { googleAccess, type Access, type StoredTokens } from './tokens.ts'
@@ -27,8 +27,9 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
 const TASK_COLUMNS = 'id,title,description,due_date,priority,status,completed_at,archived_at'
-/** sync_all stops starting new people after this long (the next run continues). */
-const SYNC_ALL_BUDGET_MS = 100_000
+/** sync_tasks and sync_all stop starting new work after this long, well inside the Edge Function's wall-clock limit
+ *  ("Sync now" again, or the next catch-up, continues; unchanged tasks are skipped, so it converges). */
+const SYNC_BUDGET_MS = 100_000
 
 guardedDenoServeNarrow()(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -180,10 +181,11 @@ async function syncTasksToCalendar(userId: string) {
   const tasks = await openTasks(userId)
   if (!tasks) return json({ error: 'Failed to fetch tasks' }, 500)
   try {
-    const counts = await syncUser(tasks, userId, g.google, linkStore(userId))
+    let remaining = 0
+    const counts = await syncUser(tasks, userId, g.google, linkStore(userId), { budget: createBudget(SYNC_BUDGET_MS), report: (r) => { remaining = r.remaining } })
     // Google rejected the refresh token during the run (a 401 then a failed refresh): ask for a reconnection.
     if (g.access.needsReconnect()) return json({ ...RECONNECT, ...counts }, 400)
-    return json(result(counts))
+    return json(result(counts, { more: remaining > 0, remaining }))
   } catch {
     return json({ error: 'Failed to sync tasks' }, 500)
   }
@@ -201,7 +203,7 @@ async function syncOneTask(userId: string, taskId: string) {
 }
 
 async function syncAll() {
-  const started = Date.now()
+  const budget = createBudget(SYNC_BUDGET_MS)
   const { data: rows, error } = await supabase.from('user_integrations').select('user_id')
     .eq('integration_name', PROVIDER).eq('is_connected', true)
   if (error) return json({ error: 'Failed to list connections' }, 500)
@@ -212,20 +214,20 @@ async function syncAll() {
   if (gone.length) await supabase.from('calendar_event_links').delete().eq('provider', PROVIDER).in('user_id', gone)
 
   let total = emptyCounts()
-  let done = 0, skippedUsers = 0, reconnectUsers = 0
+  let done = 0, skippedUsers = 0, reconnectUsers = 0, remainingTasks = 0
   for (const userId of users) {
-    if (Date.now() - started > SYNC_ALL_BUDGET_MS) break
+    if (budget.expired()) break
     const g = await googleFor(userId)
     if ('refusal' in g) { if (g.reason === 'reconnect') reconnectUsers++; else skippedUsers++; done++; continue }
     const tasks = await openTasks(userId)
     if (!tasks) { skippedUsers++; done++; continue }
     try {
-      total = addCounts(total, await syncUser(tasks, userId, g.google, linkStore(userId)))
+      total = addCounts(total, await syncUser(tasks, userId, g.google, linkStore(userId), { budget, report: (r) => { remainingTasks += r.remaining } }))
       if (g.access.needsReconnect()) reconnectUsers++
     } catch {
       total.failed++
     }
     done++
   }
-  return json(result(total, { users: done, users_skipped: skippedUsers, users_need_reconnect: reconnectUsers, more: done < users.length, links_forgotten_for: gone.length }))
+  return json(result(total, { users: done, users_skipped: skippedUsers, users_need_reconnect: reconnectUsers, more: done < users.length || remainingTasks > 0, remaining_tasks: remainingTasks, links_forgotten_for: gone.length }))
 }

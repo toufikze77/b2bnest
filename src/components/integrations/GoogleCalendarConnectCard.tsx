@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useOAuthConnect } from '@/hooks/useOAuthConnect';
 import { toast } from 'sonner';
 import { IntegrationCard } from './IntegrationCard';
 import { SyncToCalendarButton } from '@/components/IntegrationButtons';
-import { forgetCalendarLinks, GOOGLE_CALENDAR_DESCRIPTION, GOOGLE_CALENDAR_SCOPE, GOOGLE_NOT_SET_UP, resetCalendarConnectionCache } from '@/lib/calendarSync';
+import { CONNECTED_TEXT, forgetCalendarLinks, GOOGLE_CALENDAR_DESCRIPTION, GOOGLE_CALENDAR_SCOPE, GOOGLE_NOT_SET_UP, resetCalendarConnectionCache } from '@/lib/calendarSync';
 
 interface Props {
   userId: string;
@@ -52,6 +53,20 @@ const GoogleCalendarConnectCard = ({ userId }: Props) => {
   useEffect(() => {
     fetchStatus();
   }, [userId]);
+
+  // Back from Google (oauth-google-calendar redirects to ?tool=integrations&google_connected=true): say so once, then
+  // take the flag out of the address bar (React Router's replace, so the router and the address bar stay in step).
+  const location = useLocation();
+  const navigate = useNavigate();
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('google_connected') !== 'true') return;
+    toast.success(CONNECTED_TEXT);
+    resetCalendarConnectionCache();
+    params.delete('google_connected');
+    const search = params.toString();
+    navigate({ pathname: location.pathname, search: search ? `?${search}` : '' }, { replace: true });
+  }, [location.search, location.pathname, navigate]);
 
   // B2BNEST's own Google app: the person only clicks Connect and approves at Google (no Client ID or Secret to type).
   const handleConnect = async () => {

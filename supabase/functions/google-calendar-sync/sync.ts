@@ -85,18 +85,41 @@ export async function syncTask(taskId: string, task: SyncTask | null, userId: st
   return counts;
 }
 
-export interface SyncUserOptions { batchSize?: number; pauseMs?: number; sleep?: (ms: number) => Promise<void> }
+/** A time budget: true once ms have passed since it was created (shared by sync_tasks and sync_all). */
+export function createBudget(ms: number, now: () => number = Date.now) {
+  const started = now();
+  return { expired: () => now() - started > ms, elapsed: () => now() - started };
+}
+export type Budget = ReturnType<typeof createBudget>;
+
+/** Google's per-person rate limit is why this stays small. */
+export const DEFAULT_CONCURRENCY = 5;
+
+export interface SyncUserOptions {
+  batchSize?: number;
+  pauseMs?: number;
+  sleep?: (ms: number) => Promise<void>;
+  /** Tasks in flight at once within a batch (default 5). */
+  concurrency?: number;
+  /** No new task is started once it has expired; the rest are reported as remaining. */
+  budget?: { expired(): boolean };
+  /** How many tasks were not started because the budget ran out (0 when everything ran). */
+  report?: (r: { remaining: number }) => void;
+}
 
 /**
  * Everything for one person. tasks: their open tasks with a due date (anything not in it is finished, deleted or has no
  * date, so its event goes). If listing Google's marked events fails, nothing is deleted on Google's side.
+ * Batches of 25 with a short pause between them; within a batch, up to 5 tasks at a time. Each task is handled exactly
+ * as before (syncOne), so the decisions and the counts don't depend on the order.
  */
 export async function syncUser(tasks: SyncTask[], userId: string, google: GoogleApi, links: LinkStore, opts: SyncUserOptions = {}): Promise<Counts> {
   const counts = emptyCounts();
   const batch = opts.batchSize ?? 25;
+  const concurrency = Math.max(1, Math.min(opts.concurrency ?? DEFAULT_CONCURRENCY, batch));
   const sleep = opts.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
   const listed = await google.listMarked();
-  if (!listed.ok) { counts.failed++; return counts; }
+  if (!listed.ok) { counts.failed++; opts.report?.({ remaining: 0 }); return counts; }
   const marked = new Map<string, string[]>();
   for (const m of listed.value) marked.set(m.taskId, [...(marked.get(m.taskId) ?? []), m.eventId]);
   const byTask = new Map((await links.all()).map((l) => [l.task_id, l]));
@@ -106,10 +129,22 @@ export async function syncUser(tasks: SyncTask[], userId: string, google: Google
     ...wanted.map((t): [string, SyncTask] => [t.id, t]),
     ...[...new Set([...byTask.keys(), ...marked.keys()])].filter((id) => !wantedIds.has(id)).map((id): [string, null] => [id, null]),
   ];
-  for (let i = 0; i < work.length; i++) {
-    if (i > 0 && i % batch === 0) await sleep(opts.pauseMs ?? 250);
-    const [id, task] = work[i];
-    await syncOne(id, task, byTask.get(id) ?? null, marked.get(id) ?? [], userId, google, links, counts);
+  let started = 0;
+  let stopped = false;
+  for (let from = 0; from < work.length && !stopped; from += batch) {
+    if (from > 0) await sleep(opts.pauseMs ?? 250);
+    const chunk = work.slice(from, from + batch);
+    let next = 0;
+    const worker = async () => {
+      while (next < chunk.length) {
+        if (opts.budget?.expired()) { stopped = true; return; }
+        const [id, task] = chunk[next++];
+        started++;
+        await syncOne(id, task, byTask.get(id) ?? null, marked.get(id) ?? [], userId, google, links, counts);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(concurrency, chunk.length) }, worker));
   }
+  opts.report?.({ remaining: work.length - started });
   return counts;
 }

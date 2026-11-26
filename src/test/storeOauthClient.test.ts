@@ -66,3 +66,10 @@ describe('the Connect cards save through store-oauth-client', () => {
     expect(src).toContain(`provider: '${provider}'`);
   });
 });
+
+describe('the Google callback returns to the Integrations tab', () => {
+  it('redirects to /business-tools?tool=integrations&google_connected=true (SITE_URL, localhost fallback as before)', () => {
+    const src = fs.readFileSync(path.resolve(__dirname, '../../supabase/functions/oauth-google-calendar/index.ts'), 'utf8');
+    expect(src).toContain("`${Deno.env.get('SITE_URL') || 'http://localhost:5173'}/business-tools?tool=integrations&google_connected=true`");
+  });
+});
