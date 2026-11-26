@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { googleCalendarConnected, syncNow } from '@/lib/calendarSync';
+import { googleCalendarConnected, SYNCING_TEXT, syncNow } from '@/lib/calendarSync';
 import { Button } from '@/components/ui/button';
 import { Loader2, CalendarCheck, BookText, TrelloIcon, PlugZap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -43,7 +43,7 @@ export function SyncToCalendarButton({ onlyWhenConnected = false, onReconnectNee
     <div className="flex flex-wrap items-center gap-2">
       <Button variant="outline" size="sm" onClick={() => { void handleSync(); }} disabled={loading} className="flex items-center gap-2">
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarCheck className="w-4 h-4" />}
-        {loading ? 'Syncing…' : 'Sync now'}
+        {loading ? SYNCING_TEXT : 'Sync now'}
       </Button>
       {message && <span role="status" className={message.ok ? 'text-xs text-muted-foreground' : 'text-xs text-destructive'}>{message.text}</span>}
     </div>

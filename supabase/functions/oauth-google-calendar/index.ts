@@ -124,12 +124,12 @@ Deno.serve(async (req) => {
 
     console.log('Google Calendar integration successful for user:', userId)
 
-    // Redirect back to the app
+    // Back to where the person started: Business tools, Integrations tab (the card shows "Google Calendar connected").
     return new Response(null, {
       status: 302,
       headers: {
         ...corsHeaders,
-        'Location': `${Deno.env.get('SITE_URL') || 'http://localhost:5173'}/business-tools?google_connected=true`,
+        'Location': `${Deno.env.get('SITE_URL') || 'http://localhost:5173'}/business-tools?tool=integrations&google_connected=true`,
       },
     })
 

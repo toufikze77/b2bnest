@@ -221,3 +221,74 @@ describe('google client: 401 and 429', () => {
     expect(decodeURIComponent(url)).toContain(`privateExtendedProperty=${MARK_TASK}=a`);
   });
 });
+
+describe('speed and time budget', () => {
+  /** A fake calendar whose calls take a little time, counting how many are in flight at once. */
+  function slowGoogle(delayMs = 5) {
+    const g = fakeGoogle();
+    let inFlight = 0; let max = 0;
+    const wrap = <A extends unknown[], R>(fn: (...a: A) => Promise<R>) => async (...a: A) => {
+      inFlight++; max = Math.max(max, inFlight);
+      await new Promise((r) => setTimeout(r, delayMs));
+      try { return await fn(...a); } finally { inFlight--; }
+    };
+    g.insert = wrap(g.insert.bind(g)); g.patch = wrap(g.patch.bind(g)); g.remove = wrap(g.remove.bind(g));
+    return Object.assign(g, { maxInFlight: () => max });
+  }
+  it('never more than 5 calls to Google in flight at once', async () => {
+    const google = slowGoogle(); const links = fakeLinks();
+    await syncUser(Array.from({ length: 40 }, (_, i) => task(`t${i}`)), U, google, links, noPause);
+    expect(google.maxInFlight()).toBe(5);
+    expect(google.events.size).toBe(40);
+  });
+  it('the same task list gives the same counts with 5 at a time as one at a time', async () => {
+    const tasks = Array.from({ length: 30 }, (_, i) => task(`t${i}`, i % 3 === 0 ? { title: 'A' } : {}));
+    const run = async (concurrency: number) => {
+      const google = slowGoogle(1); const links = fakeLinks();
+      const first = await syncUser(tasks, U, google, links, { ...noPause, concurrency });
+      const edited = tasks.map((t, i) => (i % 4 === 0 ? { ...t, title: `${t.title} edited` } : t)).filter((_, i) => i % 5 !== 0);
+      const second = await syncUser(edited, U, google, links, { ...noPause, concurrency });
+      return { first, second, events: google.events.size, links: links.rows.size };
+    };
+    const one = await run(1);
+    const five = await run(5);
+    expect(five).toEqual(one);
+    expect(one.second).toEqual({ created: 0, updated: 6, skipped: 18, deleted: 6, failed: 0 });
+  });
+  it('when the budget runs out: no new task starts, the rest is reported; the next run finishes without duplicates', async () => {
+    const google = fakeGoogle(); const links = fakeLinks();
+    const tasks = Array.from({ length: 50 }, (_, i) => task(`t${i}`));
+    let started = 0; let remaining = -1;
+    const budget = { expired: () => started >= 20 };
+    const counting = { ...google, insert: async (e: Parameters<GoogleApi['insert']>[0]) => { started++; return google.insert(e); } } as GoogleApi;
+    const first = await syncUser(tasks, U, counting, links, { ...noPause, budget, report: (r) => { remaining = r.remaining; } });
+    expect(first.created).toBe(20);
+    expect(remaining).toBe(30);
+    let remaining2 = -1;
+    const second = await syncUser(tasks, U, google, links, { ...noPause, report: (r) => { remaining2 = r.remaining; } });
+    expect(second).toEqual({ created: 30, updated: 0, skipped: 20, deleted: 0, failed: 0 });
+    expect(remaining2).toBe(0);
+    expect(google.events.size).toBe(50);
+    expect(new Set([...google.events.values()].map((e) => e.private[MARK_TASK])).size).toBe(50);
+  });
+  it('createBudget expires after its time', async () => {
+    const { createBudget } = await import('../../supabase/functions/google-calendar-sync/sync');
+    let t = 1000;
+    const b = createBudget(100, () => t);
+    expect(b.expired()).toBe(false);
+    t = 1100; expect(b.expired()).toBe(false);
+    t = 1101; expect(b.expired()).toBe(true);
+  });
+  it('several calls hitting 401 at once share one token refresh, then all succeed', async () => {
+    let refreshes = 0;
+    const fetchFn = (async (_url: string, init: RequestInit) => {
+      const auth = String((init.headers as Record<string, string>).Authorization);
+      await new Promise((r) => setTimeout(r, 2));
+      return auth === 'Bearer old' ? new Response('', { status: 401 }) : new Response(JSON.stringify({ id: 'e' }), { status: 200 });
+    }) as unknown as typeof fetch;
+    const g = googleApi({ token: 'old', userId: U, refresh: async () => { refreshes++; await new Promise((r) => setTimeout(r, 5)); return 'new'; }, fetchFn, sleep: async () => {} });
+    const results = await Promise.all(Array.from({ length: 5 }, () => g.insert(buildEvent(task('a'), U))));
+    expect(results.every((r) => r.ok)).toBe(true);
+    expect(refreshes).toBe(1);
+  });
+});

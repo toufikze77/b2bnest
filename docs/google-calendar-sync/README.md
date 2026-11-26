@@ -127,6 +127,22 @@ The existing secrets `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (B2BNEST's ow
   - `invalid_client` (our own secret is wrong) or an outage only fails that run and never disconnects anyone.
 - **People who connected earlier with their own Client ID:** their next refresh is rejected, so they are asked to reconnect once. Their old events carry markers and are reused, so there are no duplicates.
 
+## Speed, time budget and the return to the Integrations tab (26 Nov 2026)
+- **Five at a time:** a sync handles up to **5 tasks at a time** within each batch of 25, with the same short pause between batches.
+  - Google's per-person rate limit is the reason not to go higher.
+  - Each task is still handled exactly as before (the same decisions, the same counters, one link row per task).
+  - The 429/503 retry is per call.
+  - When several calls get a 401 at once, they share **one** token refresh and then retry.
+- **Time budget:** `sync_tasks` ("Sync now") and `sync_all` share one helper (`createBudget` in `sync.ts`), set to about 100 seconds, inside the Edge Function's wall-clock limit.
+  - After that, no new task is started. `sync_tasks` answers `{ success: true, …counts, more: true, remaining: N }`.
+  - The button then shows "Synced N so far, M remain – press Sync now again". A second press continues: unchanged tasks are skipped, so it converges without duplicates.
+  - `sync_all` reports `remaining_tasks`, and the next catch-up continues.
+- **While syncing,** the button says "Syncing… this can take a minute the first time".
+- **The return to the Integrations tab:**
+  - After approving on Google, the callback sends the person to `/business-tools?tool=integrations&google_connected=true`, the Integrations tab where they started.
+  - The card shows "Google Calendar connected. Your tasks with a due date will appear in it." once, then removes `google_connected` from the address bar with React Router's replace (a `history.replaceState` that keeps the router in step).
+  - The card's own `redirectPath` is not used by this callback.
+
 ## Limits and later
 - **Events from the old code** (before this change) carry no marker, so they can't be recognised. People who used the old sync may have old timed events to remove by hand once.
 - **Only the person's own tasks** (`user_id`) are synced, not tasks assigned to them by others.

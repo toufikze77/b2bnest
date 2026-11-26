@@ -45,6 +45,12 @@ export function syncSummary(c: CalendarCounts): string {
 
 export const SYNC_FAILED = 'Could not sync with Google Calendar. Please try again.';
 export const RECONNECT_TEXT = 'Please reconnect Google Calendar';
+export const SYNCING_TEXT = 'Syncing… this can take a minute the first time';
+export const CONNECTED_TEXT = 'Google Calendar connected. Your tasks with a due date will appear in it.';
+
+/** The time budget ran out before every task was done: what was done so far, and what is left. */
+export const partialSummary = (c: CalendarCounts, remaining: number) =>
+  `Synced ${c.created} so far, ${remaining} remain – press Sync now again`;
 
 /** Only events: create, change and delete the events made for tasks, and find them again by their private marker. */
 export const GOOGLE_CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events';
@@ -53,7 +59,7 @@ export const GOOGLE_CALENDAR_DESCRIPTION =
 export const GOOGLE_NOT_SET_UP = "Google Calendar can't be connected yet: B2BNEST's Google sign-in isn't set up. Please tell us at info@b2bnest.online.";
 
 /** The "Sync now" button: every task of the signed-in person. */
-export async function syncNow(): Promise<{ ok: true; counts: CalendarCounts; text: string } | { ok: false; text: string; reconnect?: boolean }> {
+export async function syncNow(): Promise<{ ok: true; counts: CalendarCounts; text: string; remaining: number } | { ok: false; text: string; reconnect?: boolean }> {
   try {
     const { data, error } = await supabase.functions.invoke('google-calendar-sync', { body: { action: 'sync_tasks' } });
     if (error || !data?.success) {
@@ -70,7 +76,9 @@ export async function syncNow(): Promise<{ ok: true; counts: CalendarCounts; tex
       created: Number(data.created) || 0, updated: Number(data.updated) || 0, skipped: Number(data.skipped) || 0,
       deleted: Number(data.deleted) || 0, failed: Number(data.failed) || 0,
     };
-    return { ok: true, counts, text: syncSummary(counts) };
+    // A big first sync stops starting new tasks after about 100 seconds; pressing again continues (unchanged ones are skipped).
+    const remaining = data.more ? Math.max(0, Number(data.remaining) || 0) : 0;
+    return { ok: true, counts, remaining, text: remaining > 0 ? partialSummary(counts, remaining) : syncSummary(counts) };
   } catch {
     return { ok: false, text: SYNC_FAILED };
   }

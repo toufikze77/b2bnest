@@ -16,28 +16,35 @@ export interface GoogleDeps {
 
 export function googleApi(deps: GoogleDeps): GoogleApi {
   let token = deps.token;
-  let refreshed = false;
+  // One refresh shared by every call in flight (up to 5 at once): a 401 waits for it, then retries with the new token.
+  let refreshing: Promise<string | null> | null = null;
+  const freshToken = (used: string): Promise<string | null> => {
+    if (token !== used) return Promise.resolve(token);
+    if (!refreshing) refreshing = deps.refresh().then((t) => { if (t) token = t; return t; });
+    return refreshing;
+  };
   const fetchFn = deps.fetchFn ?? fetch;
   const sleep = deps.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
 
   async function call(method: string, url: string, body?: unknown): Promise<GoogleResult<Record<string, unknown> | null>> {
+    let retriedAuth = false;
     for (let attempt = 0; attempt < 4; attempt++) {
       let res: Response;
+      const used = token;
       try {
         res = await fetchFn(url, {
           method,
-          headers: { Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+          headers: { Authorization: `Bearer ${used}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
           ...(body ? { body: JSON.stringify(body) } : {}),
         });
       } catch {
         return { ok: false, status: 0 };
       }
-      if (res.status === 401 && !refreshed) {
-        refreshed = true;
+      if (res.status === 401 && !retriedAuth) {
+        retriedAuth = true;
         await res.body?.cancel();
-        const next = await deps.refresh();
+        const next = await freshToken(used);
         if (!next) return { ok: false, status: 401 };
-        token = next;
         continue;
       }
       if ((res.status === 429 || res.status === 503) && attempt < 2) {

@@ -59,7 +59,7 @@ describe('one task after a change', () => {
 
 describe('Sync now', () => {
   it('shows "Synced 3, updated 1, removed 0" (the function now returns success and the counts)', async () => {
-    expect(await syncNow()).toEqual({ ok: true, counts: { created: 3, updated: 1, skipped: 4, deleted: 0, failed: 0 }, text: 'Synced 3, updated 1, removed 0' });
+    expect(await syncNow()).toEqual({ ok: true, counts: { created: 3, updated: 1, skipped: 4, deleted: 0, failed: 0 }, remaining: 0, text: 'Synced 3, updated 1, removed 0' });
     expect(st.invoke).toHaveBeenCalledWith('google-calendar-sync', { body: { action: 'sync_tasks' } });
     expect(syncSummary({ created: 0, updated: 0, skipped: 0, deleted: 2, failed: 1 })).toBe('Synced 0, updated 0, removed 2, 1 failed');
   });
@@ -74,6 +74,13 @@ describe('Sync now', () => {
     expect(await syncNow()).toEqual({ ok: false, text: 'Please reconnect Google Calendar', reconnect: true });
     st.invoke.mockResolvedValueOnce({ data: { error: 'Google Calendar needs to be reconnected', reconnect: true }, error: null } as never);
     expect(await syncNow()).toEqual({ ok: false, text: 'Please reconnect Google Calendar', reconnect: true });
+  });
+  it('a big first sync that ran out of time: "Synced N so far, M remain – press Sync now again"', async () => {
+    st.invoke.mockResolvedValueOnce({ data: { success: true, created: 168, updated: 0, skipped: 0, deleted: 0, failed: 0, more: true, remaining: 32 }, error: null } as never);
+    expect(await syncNow()).toEqual({ ok: true, counts: { created: 168, updated: 0, skipped: 0, deleted: 0, failed: 0 }, remaining: 32,
+      text: 'Synced 168 so far, 32 remain – press Sync now again' });
+    st.invoke.mockResolvedValueOnce({ data: { success: true, created: 32, updated: 0, skipped: 168, deleted: 0, failed: 0, more: false, remaining: 0 }, error: null } as never);
+    expect((await syncNow()).text).toBe('Synced 32, updated 0, removed 0');
   });
   it('the Google scope is calendar events only', () => {
     expect(GOOGLE_CALENDAR_SCOPE).toBe('https://www.googleapis.com/auth/calendar.events');
