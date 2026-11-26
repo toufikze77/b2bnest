@@ -205,12 +205,13 @@ describe('google client: 401 and 429', () => {
     expect(await g.insert(buildEvent(task('a'), U))).toEqual({ ok: true, value: 'evt1' });
     expect(seen).toEqual(['Bearer old', 'Bearer new']);
   });
-  it('429: waits and retries (at most twice), then succeeds', async () => {
+  it('429: waits (Retry-After) and retries, then succeeds', async () => {
     let n = 0; const waits: number[] = [];
     const fetchFn = (async () => (++n < 3 ? new Response('slow down', { status: 429, headers: { 'Retry-After': '1' } }) : ok({}))) as unknown as typeof fetch;
     const g = googleApi({ token: 't', userId: U, refresh: async () => null, fetchFn, sleep: async (ms) => { waits.push(ms); } });
     expect((await g.patch('evt1', buildEvent(task('a'), U))).ok).toBe(true);
-    expect(waits).toEqual([1000, 1000]);
+    // Only the retry waits (the write spacing waits are under a second).
+    expect(waits.filter((w) => w >= 1000)).toEqual([1000, 1000]);
   });
   it('searches by both private markers (this person and this task)', async () => {
     let url = '';
@@ -235,10 +236,10 @@ describe('speed and time budget', () => {
     g.insert = wrap(g.insert.bind(g)); g.patch = wrap(g.patch.bind(g)); g.remove = wrap(g.remove.bind(g));
     return Object.assign(g, { maxInFlight: () => max });
   }
-  it('never more than 5 calls to Google in flight at once', async () => {
+  it('never more than 2 calls to Google in flight at once (the default since the rate-limit failures)', async () => {
     const google = slowGoogle(); const links = fakeLinks();
     await syncUser(Array.from({ length: 40 }, (_, i) => task(`t${i}`)), U, google, links, noPause);
-    expect(google.maxInFlight()).toBe(5);
+    expect(google.maxInFlight()).toBe(2);
     expect(google.events.size).toBe(40);
   });
   it('the same task list gives the same counts with 5 at a time as one at a time', async () => {
@@ -290,5 +291,162 @@ describe('speed and time budget', () => {
     const results = await Promise.all(Array.from({ length: 5 }, () => g.insert(buildEvent(task('a'), U))));
     expect(results.every((r) => r.ok)).toBe(true);
     expect(refreshes).toBe(1);
+  });
+});
+
+describe('rate limits, visibility, duplicates and edits (after #118)', () => {
+  const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+  const googleError = (status: number, reason: string) => json({ error: { code: status, message: 'x', errors: [{ reason, domain: 'usageLimits' }] } }, status);
+  /** A fake clock: sleep moves it forward. */
+  function clock() {
+    let t = 0;
+    return { now: () => t, sleep: async (ms: number) => { t += ms; } };
+  }
+
+  it('403 rateLimitExceeded for 3 calls, then success: retried with backoff, counted as created', async () => {
+    const c = clock(); let n = 0; const waits: number[] = [];
+    const fetchFn = (async () => (++n <= 3 ? googleError(403, 'rateLimitExceeded') : json({ id: 'evt1' }))) as unknown as typeof fetch;
+    const logs: string[] = [];
+    const g = googleApi({ token: 't', userId: U, refresh: async () => null, fetchFn, now: c.now, random: () => 0, log: (l) => logs.push(l),
+      sleep: async (ms) => { if (ms >= 1000) waits.push(ms); await c.sleep(ms); } });
+    const links = fakeLinks();
+    const counts = await syncTask('a', task('a'), U, { ...g, findByTask: async () => ({ ok: true, value: [] }) }, links);
+    expect(counts).toMatchObject({ created: 1, failed: 0 });
+    expect(waits).toEqual([1000, 2000, 4000]);
+    expect(logs).toEqual([]);
+    expect(g.failureSummary?.()).toEqual({ failures: {}, firstError: null });
+  });
+  it('403 rateLimitExceeded every time: 4 retries (1, 2, 4, 8 s), then failed with the reason logged and returned', async () => {
+    const c = clock(); const waits: number[] = []; const logs: string[] = [];
+    const fetchFn = (async () => googleError(403, 'userRateLimitExceeded')) as unknown as typeof fetch;
+    const g = googleApi({ token: 't', userId: U, refresh: async () => null, fetchFn, now: c.now, random: () => 0, log: (l) => logs.push(l),
+      sleep: async (ms) => { if (ms >= 1000) waits.push(ms); await c.sleep(ms); } });
+    expect(await g.insert(buildEvent(task('a'), U))).toEqual({ ok: false, status: 403, reason: 'userRateLimitExceeded' });
+    expect(waits).toEqual([1000, 2000, 4000, 8000]);
+    expect(logs).toEqual(['google-calendar-sync: insert failed (POST 403 userRateLimitExceeded)']);
+    expect(g.failureSummary?.()).toEqual({ failures: { userRateLimitExceeded: 1 }, firstError: 'userRateLimitExceeded' });
+  });
+  it('403 insufficientPermissions: no retry, the reason is surfaced, and the log has no token, title or description', async () => {
+    const c = clock(); let n = 0; const logs: string[] = [];
+    const fetchFn = (async () => { n++; return googleError(403, 'insufficientPermissions'); }) as unknown as typeof fetch;
+    const g = googleApi({ token: 'secret-token', userId: U, refresh: async () => null, fetchFn, now: c.now, sleep: c.sleep, log: (l) => logs.push(l) });
+    const r = await g.patch('evt1', buildEvent(task('a', { title: 'Private title', description: 'Private notes' }), U));
+    expect(r).toEqual({ ok: false, status: 403, reason: 'insufficientPermissions' });
+    expect(n).toBe(1);
+    expect(logs.join(' ')).not.toMatch(/secret-token|Private/);
+    expect(g.failureSummary?.().firstError).toBe('insufficientPermissions');
+  });
+  it('Retry-After is honoured (capped at 10 s)', async () => {
+    const c = clock(); let n = 0; const waits: number[] = [];
+    const fetchFn = (async () => (++n === 1 ? new Response('', { status: 429, headers: { 'Retry-After': '30' } }) : json({}))) as unknown as typeof fetch;
+    const g = googleApi({ token: 't', userId: U, refresh: async () => null, fetchFn, now: c.now, sleep: async (ms) => { if (ms >= 1000) waits.push(ms); await c.sleep(ms); } });
+    expect((await g.remove('evt1')).ok).toBe(true);
+    expect(waits).toEqual([10000]);
+  });
+  /** Virtual time: sleeps resolve in time order, overlapping like real ones (run() drives the timers). */
+  function virtualTime() {
+    let t = 0;
+    const timers: { at: number; seq: number; fn: () => void }[] = [];
+    let seq = 0;
+    const sleep = (ms: number) => new Promise<void>((res) => { timers.push({ at: t + Math.max(0, ms), seq: seq++, fn: res }); });
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    async function run<T>(p: Promise<T>): Promise<T> {
+      let done = false;
+      void p.finally(() => { done = true; });
+      while (!done) {
+        await tick();
+        if (done || !timers.length) continue;
+        timers.sort((x, y) => x.at - y.at || x.seq - y.seq);
+        const next = timers.shift()!;
+        t = Math.max(t, next.at);
+        next.fn();
+      }
+      return p;
+    }
+    return { now: () => t, sleep, run };
+  }
+
+  it('write calls start at least 300 ms apart, shared by the workers; at most 2 in flight', async () => {
+    const c = virtualTime(); const starts: number[] = []; let inFlight = 0; let max = 0; let id = 0;
+    const fetchFn = (async (_u: string, init: RequestInit) => {
+      if (init.method !== 'GET') starts.push(c.now());
+      inFlight++; max = Math.max(max, inFlight);
+      await c.sleep(50);
+      inFlight--;
+      return init.method === 'GET' ? json({ items: [] }) : json({ id: `e${++id}` });
+    }) as unknown as typeof fetch;
+    const g = googleApi({ token: 't', userId: U, refresh: async () => null, fetchFn, now: c.now, sleep: c.sleep });
+    await c.run(syncUser(Array.from({ length: 12 }, (_, i) => task(`t${i}`)), U, g, fakeLinks(), { sleep: c.sleep, now: c.now }));
+    expect(starts).toHaveLength(12);
+    for (let i = 1; i < starts.length; i++) expect(starts[i] - starts[i - 1]).toBeGreaterThanOrEqual(300);
+    expect(max).toBeLessThanOrEqual(2);
+  });
+  it('a marked event that Google lists only after a delay: no duplicate (looked up again before inserting)', async () => {
+    const google = fakeGoogle(); const links = fakeLinks();
+    // An event made a moment ago by another run: not in the first listing yet, found by its marker later.
+    google.events.set('evtLate', { summary: '📋 Task a', start: { date: '2026-12-01' }, end: { date: '2026-12-02' }, colorId: '5', private: { [MARK_TASK]: 'a', [MARK_USER]: U } });
+    const realList = google.listMarked.bind(google);
+    google.listMarked = async () => { const r = await realList(); return r.ok ? { ok: true, value: r.value.filter((x) => x.eventId !== 'evtLate') } : r; };
+    let t = 0;
+    const counts = await syncUser([task('a')], U, google, links, { sleep: async () => {}, now: () => { t += 61_000; return t; } });
+    expect(counts).toMatchObject({ created: 0, updated: 1 });
+    expect(google.calls.filter((x) => x === 'insert')).toEqual([]);
+    expect(links.rows.get('a')?.external_event_id).toBe('evtLate');
+  });
+  it('an insert whose answer was lost (network error) but which Google made: found by its marker, linked, not duplicated', async () => {
+    const google = fakeGoogle(); const links = fakeLinks();
+    const realInsert = google.insert.bind(google);
+    google.insert = async (e) => { await realInsert(e); return { ok: false, status: 0, reason: 'network' }; };
+    expect(await syncUser([task('a')], U, google, links, noPause)).toMatchObject({ created: 1, failed: 0 });
+    expect(google.events.size).toBe(1);
+    expect(await syncUser([task('a')], U, google, links, noPause)).toMatchObject({ created: 0, skipped: 1 });
+    expect(google.events.size).toBe(1);
+  });
+  it('a link save that fails once is retried once', async () => {
+    const google = fakeGoogle(); const links = fakeLinks();
+    let fails = 1; const realSave = links.save;
+    links.save = async (l) => { if (fails-- > 0) return false; return realSave(l); };
+    await syncUser([task('a')], U, google, links, noPause);
+    expect(links.rows.get('a')).toBeDefined();
+  });
+  it('an edited title is PATCHed by sync_task and by sync_tasks (the content hash changes)', async () => {
+    for (const how of ['one', 'all'] as const) {
+      const google = fakeGoogle(); const links = fakeLinks();
+      await syncTask('a', task('a'), U, google, links);
+      const id = links.rows.get('a')!.external_event_id;
+      const edited = task('a', { title: 'New title' });
+      expect(contentHash(edited)).not.toBe(links.rows.get('a')!.content_hash);
+      google.calls.length = 0;
+      const r = how === 'one' ? await syncTask('a', edited, U, google, links) : await syncUser([edited], U, google, links, noPause);
+      expect(r).toMatchObject({ updated: 1, created: 0, failed: 0 });
+      expect(google.calls).toEqual([`patch:${id}`]);
+      expect(google.events.get(id)?.summary).toBe('📋 New title');
+    }
+  });
+  it('after Disconnect + Connect (no links), existing marked events are adopted: no inserts, the duplicate removed', async () => {
+    const google = fakeGoogle(); const links = fakeLinks();
+    const ev = (taskId: string) => ({ summary: `📋 Task ${taskId}`, start: { date: '2026-12-01' }, end: { date: '2026-12-02' }, colorId: '5', private: { [MARK_TASK]: taskId, [MARK_USER]: U } });
+    google.events.set('e1', ev('a')); google.events.set('e2', ev('a')); google.events.set('e3', ev('b'));
+    const r = await syncUser([task('a'), task('b')], U, google, links, noPause);
+    expect(google.calls.filter((x) => x === 'insert')).toEqual([]);
+    expect(r).toMatchObject({ created: 0, updated: 2, deleted: 1, failed: 0 });
+    expect([...google.events.keys()].sort()).toEqual(['e1', 'e3']);
+    expect(links.rows.get('a')?.external_event_id).toBe('e1');
+  });
+  it('Fix duplicates: keeps the linked event (else the oldest), deletes the rest, links the kept one', async () => {
+    const { repairDuplicates } = await import('../../supabase/functions/google-calendar-sync/sync');
+    const google = fakeGoogle(); const links = fakeLinks();
+    const ev = (taskId: string) => ({ summary: 'x', start: { date: '2026-12-01' }, end: { date: '2026-12-02' }, colorId: '5', private: { [MARK_TASK]: taskId, [MARK_USER]: U } });
+    google.events.set('a1', ev('a')); google.events.set('a2', ev('a')); google.events.set('a3', ev('a'));
+    google.events.set('b1', ev('b')); google.events.set('b2', ev('b'));
+    google.events.set('c1', ev('c'));
+    links.rows.set('a', { task_id: 'a', external_event_id: 'a2', content_hash: 'h' });
+    const created: Record<string, string> = { b1: '2026-11-26T10:00:05Z', b2: '2026-11-26T10:00:01Z' };
+    const realList = google.listMarked.bind(google);
+    google.listMarked = async () => { const r = await realList(); return r.ok ? { ok: true, value: r.value.map((x) => ({ ...x, created: created[x.eventId] })) } : r; };
+    expect(await repairDuplicates(google, links)).toEqual({ removed: 3, failed: 0, relinked: 1 });
+    expect([...google.events.keys()].sort()).toEqual(['a2', 'b2', 'c1']);
+    expect(links.rows.get('b')?.external_event_id).toBe('b2');
+    expect(links.rows.get('a')?.external_event_id).toBe('a2');
   });
 });

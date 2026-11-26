@@ -14,7 +14,7 @@ vi.mock('@/integrations/supabase/client', () => ({
   },
 }));
 
-import { forgetCalendarLinks, GOOGLE_CALENDAR_SCOPE, googleCalendarConnected, resetCalendarConnectionCache, syncNow, syncSummary, syncTaskToCalendar, SYNC_FAILED } from './calendarSync';
+import { failureNote, forgetCalendarLinks, GOOGLE_CALENDAR_SCOPE, repairDuplicatesNow, googleCalendarConnected, resetCalendarConnectionCache, syncNow, syncSummary, syncTaskToCalendar, SYNC_FAILED } from './calendarSync';
 import { resetDemoMode, setDemoNow } from '@/lib/demoMode';
 
 beforeEach(() => { resetCalendarConnectionCache(); st.session = { user: { id: 'u1' } }; });
@@ -81,6 +81,22 @@ describe('Sync now', () => {
       text: 'Synced 168 so far, 32 remain – press Sync now again' });
     st.invoke.mockResolvedValueOnce({ data: { success: true, created: 32, updated: 0, skipped: 168, deleted: 0, failed: 0, more: false, remaining: 0 }, error: null } as never);
     expect((await syncNow()).text).toBe('Synced 32, updated 0, removed 0');
+  });
+  it('failures say what Google said, with advice for a rate limit', async () => {
+    st.invoke.mockResolvedValueOnce({ data: { success: true, created: 0, updated: 0, skipped: 0, deleted: 0, failed: 198, failures: { rateLimitExceeded: 198 }, firstError: 'rateLimitExceeded' }, error: null } as never);
+    expect((await syncNow()).text).toBe('Synced 0, updated 0, removed 0. 198 failed (Google said: rateLimitExceeded). Wait a minute and press Sync now again.');
+    st.invoke.mockResolvedValueOnce({ data: { success: true, created: 2, updated: 0, skipped: 0, deleted: 0, failed: 1, firstError: 'insufficientPermissions' }, error: null } as never);
+    expect((await syncNow()).text).toBe('Synced 2, updated 0, removed 0. 1 failed (Google said: insufficientPermissions).');
+    expect(failureNote(0, 'x')).toBe('');
+  });
+  it('Fix duplicates: "Removed N duplicate events"', async () => {
+    st.invoke.mockResolvedValueOnce({ data: { success: true, removed: 4, failed: 0, relinked: 2 }, error: null } as never);
+    expect(await repairDuplicatesNow()).toEqual({ ok: true, text: 'Removed 4 duplicate events' });
+    expect(st.invoke).toHaveBeenLastCalledWith('google-calendar-sync', { body: { action: 'repair_duplicates' } });
+    st.invoke.mockResolvedValueOnce({ data: { success: true, removed: 1, failed: 0 }, error: null } as never);
+    expect((await repairDuplicatesNow()).text).toBe('Removed 1 duplicate event');
+    st.invoke.mockResolvedValueOnce({ data: null, error: { message: 'boom' } } as never);
+    expect((await repairDuplicatesNow()).ok).toBe(false);
   });
   it('the Google scope is calendar events only', () => {
     expect(GOOGLE_CALENDAR_SCOPE).toBe('https://www.googleapis.com/auth/calendar.events');

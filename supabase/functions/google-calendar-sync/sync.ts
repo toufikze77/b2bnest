@@ -1,22 +1,26 @@
 // Google Calendar sync: carrying out the decisions (plan.ts) against Google and the link table. No Deno or network
 // imports: Google and the links are passed in, so the Edge Function uses the real ones and the Vitest uses fakes.
 import { buildEvent, decide, GONE_PREFIX, wantsEvent, type EventLink, type SyncTask } from './plan.ts';
+import { GOOGLE_LIMITS } from './limits.ts';
 
-/** A Google answer: ok, or the HTTP status (0 for a network failure). */
-export type GoogleResult<T = unknown> = { ok: true; value: T } | { ok: false; status: number };
+/** A Google answer: ok, or the HTTP status (0 for a network failure) and Google's reason when there was one. */
+export type GoogleResult<T = unknown> = { ok: true; value: T } | { ok: false; status: number; reason?: string };
 export interface GoogleApi {
   insert(event: ReturnType<typeof buildEvent>): Promise<GoogleResult<string>>;
   patch(eventId: string, event: ReturnType<typeof buildEvent>): Promise<GoogleResult>;
   remove(eventId: string): Promise<GoogleResult>;
   /** This person's events carrying the marker of one task. */
   findByTask(taskId: string): Promise<GoogleResult<string[]>>;
-  /** All of this person's marked events: event id and task id. */
-  listMarked(): Promise<GoogleResult<{ eventId: string; taskId: string }[]>>;
+  /** All of this person's marked events: event id, task id and (from Google) when it was created. */
+  listMarked(): Promise<GoogleResult<{ eventId: string; taskId: string; created?: string }[]>>;
+  /** Failures so far by Google's reason, and the first one (the real client; fakes may leave it out). */
+  failureSummary?(): { failures: Record<string, number>; firstError: string | null };
 }
 export interface LinkStore {
   get(taskId: string): Promise<EventLink | null>;
   all(): Promise<EventLink[]>;
-  save(link: EventLink): Promise<void>;
+  /** false when the row could not be saved (retried once by syncOne). */
+  save(link: EventLink): Promise<boolean | void>;
   remove(taskId: string): Promise<void>;
 }
 export interface Counts { created: number; updated: number; skipped: number; deleted: number; failed: number }
@@ -26,11 +30,25 @@ export const addCounts = (a: Counts, b: Counts): Counts =>
 
 /** The status of a failed answer (works without strict null checks too). */
 export const statusOf = (r: GoogleResult<unknown>): number => ('status' in r ? r.status : 0);
+export const reasonOf = (r: GoogleResult<unknown>): string | undefined => ('reason' in r ? r.reason : undefined);
+/** An answer that may have been lost after Google acted on it (network failure or a 5xx). */
+const mayHaveHappened = (status: number) => status === 0 || status >= 500;
+
+/** Save a link; if that fails, try once more (the event exists, so a lost link must not cause a duplicate later). */
+async function saveLink(links: LinkStore, link: EventLink): Promise<void> {
+  if ((await links.save(link)) !== false) return;
+  if ((await links.save(link)) === false) console.error('google-calendar-sync: link not saved after a retry (the next sync finds the event by its marker)');
+}
+
+export interface SyncOneOptions {
+  /** Look the task's marker up again right before an insert (the first listing may be stale). */
+  freshMarks?: () => Promise<string[] | null>;
+}
 const gone = (status: number) => status === 404 || status === 410;
 
 /** One task: decide, then call Google and update the link. Never throws for a Google refusal (it counts as failed). */
 export async function syncOne(taskId: string, task: SyncTask | null, link: EventLink | null, marked: string[], userId: string,
-  google: GoogleApi, links: LinkStore, counts: Counts): Promise<void> {
+  google: GoogleApi, links: LinkStore, counts: Counts, opts: SyncOneOptions = {}): Promise<void> {
   const d = decide(task, link, marked);
   const dropExtras = async (ids: string[]) => {
     for (const id of ids) {
@@ -52,9 +70,27 @@ export async function syncOne(taskId: string, task: SyncTask | null, link: Event
       return;
     }
     case 'create': {
+      // No duplicate from a stale listing: if the marker shows an event now, reuse it instead of inserting.
+      if (!link && opts.freshMarks) {
+        const fresh = await opts.freshMarks();
+        if (fresh && fresh.length) return syncOne(taskId, task, null, fresh, userId, google, links, counts);
+      }
       const r = await google.insert(buildEvent(task as SyncTask, userId));
-      if (!r.ok) { counts.failed++; return; }
-      await links.save({ task_id: taskId, external_event_id: r.value, content_hash: d.hash });
+      if (!r.ok) {
+        // The answer may have been lost after Google created the event: look for it before giving up.
+        if (mayHaveHappened(statusOf(r))) {
+          const found = await google.findByTask(taskId);
+          if (found.ok && found.value.length) {
+            await saveLink(links, { task_id: taskId, external_event_id: found.value[0], content_hash: d.hash });
+            counts.created++;
+            await dropExtras([...found.value.slice(1), ...d.dropEventIds]);
+            return;
+          }
+        }
+        counts.failed++;
+        return;
+      }
+      await saveLink(links, { task_id: taskId, external_event_id: r.value, content_hash: d.hash });
       counts.created++;
       await dropExtras(d.dropEventIds);
       return;
@@ -63,12 +99,12 @@ export async function syncOne(taskId: string, task: SyncTask | null, link: Event
       const r = await google.patch(d.eventId, buildEvent(task as SyncTask, userId));
       if (!r.ok && gone(statusOf(r))) {
         // Deleted in Google: don't recreate it; skip this task until it changes (decide() reads the "gone:" hash).
-        await links.save({ task_id: taskId, external_event_id: d.eventId, content_hash: GONE_PREFIX + d.hash });
+        await saveLink(links, { task_id: taskId, external_event_id: d.eventId, content_hash: GONE_PREFIX + d.hash });
         counts.skipped++;
         return;
       }
       if (!r.ok) { counts.failed++; return; }
-      await links.save({ task_id: taskId, external_event_id: d.eventId, content_hash: d.hash });
+      await saveLink(links, { task_id: taskId, external_event_id: d.eventId, content_hash: d.hash });
       counts.updated++;
       await dropExtras(d.dropEventIds);
       return;
@@ -92,8 +128,8 @@ export function createBudget(ms: number, now: () => number = Date.now) {
 }
 export type Budget = ReturnType<typeof createBudget>;
 
-/** Google's per-person rate limit is why this stays small. */
-export const DEFAULT_CONCURRENCY = 5;
+/** Google's per-person rate limit is why this stays small (see limits.ts). */
+export const DEFAULT_CONCURRENCY = GOOGLE_LIMITS.concurrency;
 
 export interface SyncUserOptions {
   batchSize?: number;
@@ -105,12 +141,14 @@ export interface SyncUserOptions {
   budget?: { expired(): boolean };
   /** How many tasks were not started because the budget ran out (0 when everything ran). */
   report?: (r: { remaining: number }) => void;
+  now?: () => number;
 }
 
 /**
  * Everything for one person. tasks: their open tasks with a due date (anything not in it is finished, deleted or has no
  * date, so its event goes). If listing Google's marked events fails, nothing is deleted on Google's side.
- * Batches of 25 with a short pause between them; within a batch, up to 5 tasks at a time. Each task is handled exactly
+ * Batches of 25 with a short pause between them; within a batch, up to GOOGLE_LIMITS.concurrency (2) tasks at a time,
+ * and Google's own client spaces the write calls. Each task is handled exactly
  * as before (syncOne), so the decisions and the counts don't depend on the order.
  */
 export async function syncUser(tasks: SyncTask[], userId: string, google: GoogleApi, links: LinkStore, opts: SyncUserOptions = {}): Promise<Counts> {
@@ -118,8 +156,16 @@ export async function syncUser(tasks: SyncTask[], userId: string, google: Google
   const batch = opts.batchSize ?? 25;
   const concurrency = Math.max(1, Math.min(opts.concurrency ?? DEFAULT_CONCURRENCY, batch));
   const sleep = opts.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
+  const now = opts.now ?? Date.now;
   const listed = await google.listMarked();
   if (!listed.ok) { counts.failed++; opts.report?.({ remaining: 0 }); return counts; }
+  const listedAt = now();
+  // Google's listing can lag a few seconds behind; once it is old, look a task's marker up again before inserting.
+  const freshMarks = (id: string) => async () => {
+    if (now() - listedAt <= GOOGLE_LIMITS.staleListMs) return null;
+    const f = await google.findByTask(id);
+    return f.ok ? f.value : null;
+  };
   const marked = new Map<string, string[]>();
   for (const m of listed.value) marked.set(m.taskId, [...(marked.get(m.taskId) ?? []), m.eventId]);
   const byTask = new Map((await links.all()).map((l) => [l.task_id, l]));
@@ -140,11 +186,41 @@ export async function syncUser(tasks: SyncTask[], userId: string, google: Google
         if (opts.budget?.expired()) { stopped = true; return; }
         const [id, task] = chunk[next++];
         started++;
-        await syncOne(id, task, byTask.get(id) ?? null, marked.get(id) ?? [], userId, google, links, counts);
+        await syncOne(id, task, byTask.get(id) ?? null, marked.get(id) ?? [], userId, google, links, counts, { freshMarks: freshMarks(id) });
       }
     };
     await Promise.all(Array.from({ length: Math.min(concurrency, chunk.length) }, worker));
   }
   opts.report?.({ remaining: work.length - started });
   return counts;
+}
+
+/**
+ * "Fix duplicates": for every task with more than one marked event, keep one (the event the link names, else the
+ * oldest created) and delete the others, then make sure a link names the kept one. A new link gets a hash that never
+ * matches, so the next sync rewrites the event once to the task's current content.
+ */
+export async function repairDuplicates(google: GoogleApi, links: LinkStore): Promise<{ removed: number; failed: number; relinked: number }> {
+  const out = { removed: 0, failed: 0, relinked: 0 };
+  const listed = await google.listMarked();
+  if (!listed.ok) { out.failed++; return out; }
+  const byTask = new Map<string, { eventId: string; created?: string }[]>();
+  for (const m of listed.value) byTask.set(m.taskId, [...(byTask.get(m.taskId) ?? []), m]);
+  const linkFor = new Map((await links.all()).map((l) => [l.task_id, l]));
+  for (const [taskId, evs] of byTask) {
+    if (evs.length < 2) continue;
+    const link = linkFor.get(taskId);
+    const linked = link && evs.find((e) => e.eventId === link.external_event_id);
+    const keep = linked ?? [...evs].sort((a, b) => (a.created ?? '').localeCompare(b.created ?? ''))[0];
+    for (const e of evs) {
+      if (e.eventId === keep.eventId) continue;
+      const r = await google.remove(e.eventId);
+      if (r.ok || gone(statusOf(r))) out.removed++; else out.failed++;
+    }
+    if (!link || link.external_event_id !== keep.eventId) {
+      await saveLink(links, { task_id: taskId, external_event_id: keep.eventId, content_hash: 'repair:rewrite' });
+      out.relinked++;
+    }
+  }
+  return out;
 }

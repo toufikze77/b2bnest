@@ -44,6 +44,16 @@ export function syncSummary(c: CalendarCounts): string {
 }
 
 export const SYNC_FAILED = 'Could not sync with Google Calendar. Please try again.';
+
+/** Google's "slow down" reasons: the advice is to wait and press again. */
+const RATE_REASONS = new Set(['rateLimitExceeded', 'userRateLimitExceeded', 'quotaExceeded', 'calendarUsageLimitsExceeded']);
+/** "198 failed (Google said: rateLimitExceeded). Wait a minute and press Sync now again." */
+export function failureNote(failed: number, firstError: string | null | undefined): string {
+  if (!failed) return '';
+  if (!firstError) return ` ${failed} failed.`;
+  const advice = RATE_REASONS.has(firstError) ? ' Wait a minute and press Sync now again.' : '';
+  return ` ${failed} failed (Google said: ${firstError}).${advice}`;
+}
 export const RECONNECT_TEXT = 'Please reconnect Google Calendar';
 export const SYNCING_TEXT = 'Syncing… this can take a minute the first time';
 export const CONNECTED_TEXT = 'Google Calendar connected. Your tasks with a due date will appear in it.';
@@ -78,7 +88,11 @@ export async function syncNow(): Promise<{ ok: true; counts: CalendarCounts; tex
     };
     // A big first sync stops starting new tasks after about 100 seconds; pressing again continues (unchanged ones are skipped).
     const remaining = data.more ? Math.max(0, Number(data.remaining) || 0) : 0;
-    return { ok: true, counts, remaining, text: remaining > 0 ? partialSummary(counts, remaining) : syncSummary(counts) };
+    const firstError = typeof data.firstError === 'string' ? data.firstError : null;
+    const main = remaining > 0 ? partialSummary(counts, remaining) : syncSummary({ ...counts, failed: firstError ? 0 : counts.failed });
+    // With Google's reason, the failures read "N failed (Google said: …)" instead of ", N failed".
+    const text = firstError && counts.failed ? `${main}.${failureNote(counts.failed, firstError)}` : main;
+    return { ok: true, counts, remaining, text };
   } catch {
     return { ok: false, text: SYNC_FAILED };
   }
@@ -99,5 +113,23 @@ export async function forgetCalendarLinks(): Promise<void> {
     if (error) console.warn('Google Calendar: links not cleared now; the next automatic sync clears them.', error.message);
   } catch (e) {
     console.warn('Google Calendar: links not cleared now; the next automatic sync clears them.', e instanceof Error ? e.message : e);
+  }
+}
+
+/** "Fix duplicates": keep one event per task in Google Calendar and delete the copies. */
+export async function repairDuplicatesNow(): Promise<{ ok: boolean; text: string }> {
+  try {
+    const { data, error } = await supabase.functions.invoke('google-calendar-sync', { body: { action: 'repair_duplicates' } });
+    if (error || !data?.success) {
+      const body = String(data?.error ?? '') + (await errorText(error));
+      if (/"reconnect":\s*true|needs to be reconnected/i.test(body)) return { ok: false, text: RECONNECT_TEXT };
+      return { ok: false, text: 'Could not check for duplicates. Please try again.' };
+    }
+    const removed = Number(data.removed) || 0;
+    const failed = Number(data.failed) || 0;
+    const text = `Removed ${removed} duplicate event${removed === 1 ? '' : 's'}`;
+    return { ok: true, text: failed ? `${text}.${failureNote(failed, typeof data.firstError === 'string' ? data.firstError : null)}` : text };
+  } catch {
+    return { ok: false, text: 'Could not check for duplicates. Please try again.' };
   }
 }
