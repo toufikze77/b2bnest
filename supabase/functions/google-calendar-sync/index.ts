@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 import { guardedDenoServeNarrow } from '../_shared/demo-guard.ts'; // Edge Functions CORS batch A (docs/hmrc-p7d/README.md): answers carry the narrowed CORS headers (corsFor), never '*'.
 // Demo read-only: demo people get 403 (docs/demo-readonly)
 import { PROVIDER, type EventLink, type SyncTask } from './plan.ts'
-import { addCounts, createBudget, emptyCounts, syncTask, syncUser, type Counts, type LinkStore } from './sync.ts'
+import { addCounts, createBudget, emptyCounts, repairDuplicates, syncTask, syncUser, type Counts, type GoogleApi, type LinkStore } from './sync.ts'
 import { googleApi } from './google.ts'
 import { syncAllRefusal } from './secret.ts'
 import { googleAccess, type Access, type StoredTokens } from './tokens.ts'
@@ -11,6 +11,7 @@ import { googleAccess, type Access, type StoredTokens } from './tokens.ts'
 //   sync_tasks              the signed-in person's tasks (the "Sync now" button)
 //   sync_task (create_event) one task, after it was created, edited, completed or deleted in the app
 //   forget_links            Google Calendar was disconnected: drop this person's links (their events are left alone)
+//   repair_duplicates       "Fix duplicates": keep one event per task, delete the others, link the kept one
 //   sync_all                every connected person; only with the x-calendar-sync-secret header (pg_cron), never a sign-in
 
 const corsHeaders = {
@@ -74,6 +75,14 @@ guardedDenoServeNarrow()(async (req) => {
       return await syncOneTask(user_id, task_id)
     }
 
+    if (action === 'repair_duplicates') {
+      const g = await googleFor(user_id)
+      if ('refusal' in g) return g.refusal
+      const r = await repairDuplicates(g.google, linkStore(user_id))
+      if (g.access.needsReconnect()) return json(RECONNECT, 400)
+      return json({ success: true, ...r, ...failureInfo(g.google) })
+    }
+
     if (action === 'forget_links') {
       const { error } = await supabase.from('calendar_event_links').delete().eq('user_id', user_id).eq('provider', PROVIDER)
       if (error) {
@@ -109,8 +118,10 @@ function linkStore(userId: string): LinkStore {
       const { error } = await supabase.from('calendar_event_links').upsert(
         { user_id: userId, provider: PROVIDER, task_id: link.task_id, external_event_id: link.external_event_id, content_hash: link.content_hash, synced_at: new Date().toISOString() },
         { onConflict: 'user_id,task_id,provider' })
-      // The task was deleted meanwhile (foreign key): nothing to keep.
-      if (error && error.code !== '23503') console.error('google-calendar-sync: link not saved', error.code)
+      // The task was deleted meanwhile (foreign key): nothing to keep, and nothing to retry.
+      if (error && error.code === '23503') return true
+      if (error) console.error('google-calendar-sync: link not saved', error.code)
+      return !error
     },
     async remove(taskId) {
       await supabase.from('calendar_event_links').delete().eq('user_id', userId).eq('provider', PROVIDER).eq('task_id', taskId)
@@ -174,6 +185,11 @@ async function openTasks(userId: string): Promise<SyncTask[] | null> {
 }
 
 const result = (c: Counts, extra: Record<string, unknown> = {}) => ({ success: true, ...c, ...extra })
+/** Why calls failed, by Google's reason, and the first one ("Sync now" shows it). */
+const failureInfo = (google: GoogleApi) => {
+  const f = google.failureSummary?.() ?? { failures: {}, firstError: null }
+  return { failures: f.failures, firstError: f.firstError }
+}
 
 async function syncTasksToCalendar(userId: string) {
   const g = await googleFor(userId)
@@ -185,7 +201,7 @@ async function syncTasksToCalendar(userId: string) {
     const counts = await syncUser(tasks, userId, g.google, linkStore(userId), { budget: createBudget(SYNC_BUDGET_MS), report: (r) => { remaining = r.remaining } })
     // Google rejected the refresh token during the run (a 401 then a failed refresh): ask for a reconnection.
     if (g.access.needsReconnect()) return json({ ...RECONNECT, ...counts }, 400)
-    return json(result(counts, { more: remaining > 0, remaining }))
+    return json(result(counts, { more: remaining > 0, remaining, ...failureInfo(g.google) }))
   } catch {
     return json({ error: 'Failed to sync tasks' }, 500)
   }
@@ -199,7 +215,7 @@ async function syncOneTask(userId: string, taskId: string) {
   // Not found: deleted (or not this person's). Its event, if any, is found by its marker and removed.
   const counts = await syncTask(taskId, (data as SyncTask | null) ?? null, userId, g.google, linkStore(userId))
   if (g.access.needsReconnect()) return json({ ...RECONNECT, ...counts }, 400)
-  return json(result(counts))
+  return json(result(counts, failureInfo(g.google)))
 }
 
 async function syncAll() {
@@ -215,6 +231,8 @@ async function syncAll() {
 
   let total = emptyCounts()
   let done = 0, skippedUsers = 0, reconnectUsers = 0, remainingTasks = 0
+  const failures: Record<string, number> = {}
+  let firstError: string | null = null
   for (const userId of users) {
     if (budget.expired()) break
     const g = await googleFor(userId)
@@ -224,10 +242,13 @@ async function syncAll() {
     try {
       total = addCounts(total, await syncUser(tasks, userId, g.google, linkStore(userId), { budget, report: (r) => { remainingTasks += r.remaining } }))
       if (g.access.needsReconnect()) reconnectUsers++
+      const f = failureInfo(g.google)
+      for (const [k, n] of Object.entries(f.failures)) failures[k] = (failures[k] ?? 0) + n
+      firstError ??= f.firstError
     } catch {
       total.failed++
     }
     done++
   }
-  return json(result(total, { users: done, users_skipped: skippedUsers, users_need_reconnect: reconnectUsers, more: done < users.length || remainingTasks > 0, remaining_tasks: remainingTasks, links_forgotten_for: gone.length }))
+  return json(result(total, { users: done, users_skipped: skippedUsers, users_need_reconnect: reconnectUsers, more: done < users.length || remainingTasks > 0, remaining_tasks: remainingTasks, links_forgotten_for: gone.length, failures, firstError }))
 }

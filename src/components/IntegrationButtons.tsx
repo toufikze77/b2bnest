@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { googleCalendarConnected, SYNCING_TEXT, syncNow } from '@/lib/calendarSync';
+import { googleCalendarConnected, repairDuplicatesNow, SYNCING_TEXT, syncNow } from '@/lib/calendarSync';
 import { Button } from '@/components/ui/button';
 import { Loader2, CalendarCheck, BookText, TrelloIcon, PlugZap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,6 +38,14 @@ export function SyncToCalendarButton({ onlyWhenConnected = false, onReconnectNee
     // The connection was marked not connected by the function: the card shows Connect again.
     if (!r.ok && 'reconnect' in r && r.reconnect) onReconnectNeeded?.();
   };
+  const handleRepair = async () => {
+    setLoading(true);
+    setMessage(null);
+    const r = await repairDuplicatesNow();
+    setLoading(false);
+    setMessage(r);
+    if (r.ok) toast.success(r.text); else toast.error(r.text);
+  };
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -45,6 +53,7 @@ export function SyncToCalendarButton({ onlyWhenConnected = false, onReconnectNee
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarCheck className="w-4 h-4" />}
         {loading ? SYNCING_TEXT : 'Sync now'}
       </Button>
+      <Button variant="link" size="sm" className="h-auto px-1 text-xs" disabled={loading} onClick={() => { void handleRepair(); }}>Fix duplicates</Button>
       {message && <span role="status" className={message.ok ? 'text-xs text-muted-foreground' : 'text-xs text-destructive'}>{message.text}</span>}
     </div>
   );

@@ -143,6 +143,30 @@ The existing secrets `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (B2BNEST's ow
   - The card shows "Google Calendar connected. Your tasks with a due date will appear in it." once, then removes `google_connected` from the address bar with React Router's replace (a `history.replaceState` that keeps the router in step).
   - The card's own `redirectPath` is not used by this callback.
 
+## Rate limits, visibility and duplicates (26 Nov 2026, after #118)
+- **What went wrong:**
+  - With 5 calls at once and no spacing, Google answered most writes with **HTTP 403 `rateLimitExceeded`**. Only 429 and 503 were retried, so they failed, and nothing was logged.
+  - The edited task that "did not update" was one of those failed PATCHes. The edit path does call the sync, and the hash changes with the title; a test covers this.
+- **Limits** (all in `limits.ts`):
+  - 2 calls at once;
+  - write calls (insert, patch, delete) start at least 300 ms apart, shared by the workers;
+  - "slow down" answers are retried after 1, 2, 4 and 8 s (plus up to 250 ms of jitter), or after Google's `Retry-After` (at most 10 s). That covers 429, 503, and 403 with `rateLimitExceeded`, `userRateLimitExceeded`, `quotaExceeded` or `calendarUsageLimitsExceeded`.
+  - Any other 403 (for example `insufficientPermissions`) is final.
+- **Visibility:**
+  - Every final failure logs one line, for example `google-calendar-sync: insert failed (POST 403 userRateLimitExceeded)`. It never contains a token, title or description.
+  - The answer includes `failures: { reason: count }` and `firstError`.
+  - "Sync now" shows, for example, "198 failed (Google said: rateLimitExceeded). Wait a minute and press Sync now again."
+- **No duplicates from lost answers or a lagging listing:**
+  - In a full sync, a task's marker is looked up again just before an insert once the first listing is over 60 seconds old.
+  - After an insert whose answer was lost (a network error or 5xx), the marker is checked before counting a failure.
+  - A failed link save is retried once.
+- **Fix duplicates** (`repair_duplicates`, signed-in person only; also a link under "Sync now"):
+  - for each task with several marked events, it keeps the linked one (else the oldest created) and deletes the rest;
+  - it links the kept one; the next sync then rewrites it once.
+- **After Disconnect + Connect,** existing marked events are adopted: no inserts, and extra copies are removed.
+- **Archive and restore** in Project management now also sync the task. Before, an archived task kept its event until the next full sync.
+- **Remaining risk:** two syncs for the same person at the same moment (for example "Sync now" plus an edit's single-task sync) can still both insert for a brand-new task. "Fix duplicates" repairs that. A per-person lock would need SQL, so it is left as a follow-up.
+
 ## Limits and later
 - **Events from the old code** (before this change) carry no marker, so they can't be recognised. People who used the old sync may have old timed events to remove by hand once.
 - **Only the person's own tasks** (`user_id`) are synced, not tasks assigned to them by others.

@@ -1619,12 +1619,14 @@ const ProjectManagement = () => {
     const { error } = await supabase.from('todos' as any).update({ archived_at: new Date().toISOString() }).eq('id', taskId);
     if (error) { toast({ title: 'Archive failed', description: error.message, variant: 'destructive' }); return; }
     toast({ title: 'Task archived' });
+    void syncTaskToCalendar(taskId); // archived: its Google Calendar event is removed
     await loadTasks();
   };
   const unarchiveTask = async (taskId: string) => {
     const { error } = await supabase.from('todos' as any).update({ archived_at: null }).eq('id', taskId);
     if (error) { toast({ title: 'Unarchive failed', description: error.message, variant: 'destructive' }); return; }
     toast({ title: 'Task restored' });
+    void syncTaskToCalendar(taskId);
     await loadTasks();
   };
 
