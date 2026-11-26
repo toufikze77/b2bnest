@@ -4,9 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useOAuthConnect } from '@/hooks/useOAuthConnect';
 import { toast } from 'sonner';
 import { IntegrationCard } from './IntegrationCard';
-import { ConnectionModal } from './ConnectionModal';
 import { SyncToCalendarButton } from '@/components/IntegrationButtons';
-import { forgetCalendarLinks } from '@/lib/calendarSync';
+import { forgetCalendarLinks, GOOGLE_CALENDAR_DESCRIPTION, GOOGLE_CALENDAR_SCOPE, GOOGLE_NOT_SET_UP, resetCalendarConnectionCache } from '@/lib/calendarSync';
 
 interface Props {
   userId: string;
@@ -16,7 +15,6 @@ const GoogleCalendarConnectCard = ({ userId }: Props) => {
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(false);
   const [userInfo, setUserInfo] = useState<any>(null);
-  const [showModal, setShowModal] = useState(false);
   const { initiateOAuth } = useOAuthConnect();
 
   const fetchStatus = async () => {
@@ -55,35 +53,28 @@ const GoogleCalendarConnectCard = ({ userId }: Props) => {
     fetchStatus();
   }, [userId]);
 
-  const handleConnect = async (credentials?: Record<string, string>) => {
-    if (!credentials?.client_id || !credentials?.client_secret) {
-      toast.error('Please provide both Client ID and Client Secret');
-      return;
-    }
-
+  // B2BNEST's own Google app: the person only clicks Connect and approves at Google (no Client ID or Secret to type).
+  const handleConnect = async () => {
     setLoading(true);
     try {
-      // Store credentials first
-      // user_integrations is written only server-side (no INSERT/UPDATE policy for users): store-oauth-client.
-      const { error: storeError } = await supabase.functions.invoke('store-oauth-client', {
-        body: { provider: 'google_calendar', credentials: { client_id: credentials.client_id, client_secret: credentials.client_secret } },
-      });
-
-      if (storeError) throw storeError;
-
-      // Initiate OAuth with user's client ID
+      const { data: config, error } = await supabase.functions.invoke('get-oauth-config', { body: { provider: 'google' } });
+      const clientId = !error && typeof config?.clientId === 'string' ? config.clientId : '';
+      if (!clientId) {
+        toast.error(GOOGLE_NOT_SET_UP);
+        return;
+      }
+      resetCalendarConnectionCache();
       await initiateOAuth({
         provider: 'google_calendar',
         redirectPath: '/business-tools?integration=google_calendar',
-        scope: 'https://www.googleapis.com/auth/calendar',
+        scope: GOOGLE_CALENDAR_SCOPE,
         prompt: 'consent',
         accessType: 'offline',
-        clientId: credentials.client_id,
+        clientId,
       });
-      
-      setShowModal(false);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to connect Google Calendar');
+    } catch (error) {
+      console.error('Error starting the Google Calendar connection:', error);
+      toast.error('Could not start the connection. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -118,22 +109,16 @@ const GoogleCalendarConnectCard = ({ userId }: Props) => {
       <IntegrationCard
         icon={Calendar}
         title="Google Calendar"
-        description="Connect your Google Calendar to sync events and manage schedules"
+        description={GOOGLE_CALENDAR_DESCRIPTION}
         connected={connected}
         loading={loading}
         userInfo={userInfo}
-        onConnect={() => setShowModal(true)}
+        onConnect={() => { void handleConnect(); }}
         onDisconnect={handleDisconnect}
         docsUrl="https://developers.google.com/calendar"
-        extra={<SyncToCalendarButton />}
+        extra={<SyncToCalendarButton onReconnectNeeded={() => { resetCalendarConnectionCache(); void fetchStatus(); }} />}
       />
-      
-      <ConnectionModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        provider="google_calendar"
-        onConnect={handleConnect}
-      />
+
     </>
   );
 };

@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
  * Google Calendar "Sync now" (docs/google-calendar-sync/README.md): every task of the signed-in person, then
  * "Synced 3, updated 1, removed 0" or the error. onlyWhenConnected: shown only when Google Calendar is connected.
  */
-export function SyncToCalendarButton({ onlyWhenConnected = false }: { userId?: string; onlyWhenConnected?: boolean }) {
+export function SyncToCalendarButton({ onlyWhenConnected = false, onReconnectNeeded }: { userId?: string; onlyWhenConnected?: boolean; onReconnectNeeded?: () => void }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [visible, setVisible] = useState(!onlyWhenConnected);
@@ -35,6 +35,8 @@ export function SyncToCalendarButton({ onlyWhenConnected = false }: { userId?: s
     setLoading(false);
     setMessage({ ok: r.ok, text: r.text });
     if (r.ok) toast.success(r.text); else toast.error(r.text);
+    // The connection was marked not connected by the function: the card shows Connect again.
+    if (!r.ok && 'reconnect' in r && r.reconnect) onReconnectNeeded?.();
   };
 
   return (

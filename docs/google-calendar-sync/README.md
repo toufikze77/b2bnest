@@ -46,7 +46,7 @@
   - Only events with **this person's** marker are listed and deleted, so another B2BNEST account on the same Google calendar is never touched.
 - **Deleted in Google** (decided): when an edit's PATCH gets 404 or 410, the event is **not recreated**. The link is kept with `content_hash = "gone:<hash>"`, and the task is skipped while it stays the same. If the task changes later, it gets a new event; if it is finished, the link is just removed.
 - **Google errors:**
-  - 401: the token is refreshed once, through the existing `refreshIntegrationToken` (the `getValidToken` path), and the call is tried again.
+  - 401: the token is refreshed once (see "Tokens and connecting" below), and the call is tried again.
   - 429 or 503: it waits (Retry-After, at most 5 seconds) and tries up to twice more.
   - Tasks are processed in batches of 25, with a short pause between batches.
   - If Google can't list the marked events, the run stops before changing anything.
@@ -104,7 +104,28 @@
 4. **Publish the front end.**
 5. **Put the same secret value in Vault** as `calendar_sync_cron_secret`, then apply `schedule.sql`. The job runs every 15 minutes, at :07, :22, :37 and :52.
 
-The existing secrets `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `ENCRYPTION_SECRET` are used as before.
+The existing secrets `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (B2BNEST's own Google app) must be set. Google Calendar no longer uses `ENCRYPTION_SECRET` (see below).
+
+## Tokens and connecting (26 Nov 2026)
+- **Why "Sync now" said "not connected":** the OAuth callback stores tokens with the database function
+  `store_integration_tokens`, while `shared/token-refresh.ts` decrypted them with an app-side key from `ENCRYPTION_SECRET`.
+  That key can't read the database's format, and it isn't set in production.
+- **Reading tokens:** the function now reads them with `get_integration_tokens(p_integration_name, p_user_id)`.
+  - It uses the service role; `assert_self` and `mfa_ok` let the service role through, as `workflow-linkedin-post` relies on.
+  - It returns tokens only while `is_connected` is true.
+- **Writing tokens back:** after a refresh, `store_integration_tokens` writes them, with two precautions:
+  - That function replaces the metadata and the refresh token, so the existing metadata (email, name, picture, scope) is merged in.
+  - The old refresh token is passed again when Google sends no new one.
+  - It also sets `connected_at` and writes a `token_created` audit row each time (unchanged database behaviour).
+- **Which client refreshes:** B2BNEST's own Google app (`GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`), the same app that issued the token.
+  - **Connect** goes straight to Google using the client id from `get-oauth-config`. People no longer type a Client ID or Secret.
+  - The callback exchanges the code with the platform client only, and no longer stores `client_id`.
+  - The scope is `https://www.googleapis.com/auth/calendar.events` (events only; no calendar settings).
+- **A refresh Google rejects** (`invalid_grant`, or `unauthorized_client` for a token issued to another client):
+  - The connection is marked `is_connected = false` (that column only), so the card offers Connect again.
+  - The function answers `{ "error": "Google Calendar needs to be reconnected", "reconnect": true }`, and "Sync now" shows "Please reconnect Google Calendar".
+  - `invalid_client` (our own secret is wrong) or an outage only fails that run and never disconnects anyone.
+- **People who connected earlier with their own Client ID:** their next refresh is rejected, so they are asked to reconnect once. Their old events carry markers and are reused, so there are no duplicates.
 
 ## Limits and later
 - **Events from the old code** (before this change) carry no marker, so they can't be recognised. People who used the old sync may have old timed events to remove by hand once.

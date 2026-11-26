@@ -42,10 +42,21 @@ describe('store-oauth-client: validate', () => {
   });
 });
 
+describe('Google Calendar uses B2BNEST’s own Google app (no Client ID or Secret to type)', () => {
+  it('its card neither asks for credentials nor stores them, and asks only for calendar events', () => {
+    const src = fs.readFileSync(path.resolve(__dirname, '../components/integrations/GoogleCalendarConnectCard.tsx'), 'utf8');
+    expect(src).not.toMatch(/\.from\(\s*['"]user_integrations['"]\s*\)\s*\.upsert/);
+    expect(src).not.toContain('store-oauth-client');
+    expect(src).not.toContain('ConnectionModal');
+    expect(src).toContain("invoke('get-oauth-config'");
+    expect(src).toContain('GOOGLE_CALENDAR_SCOPE');
+  });
+});
+
 describe('the Connect cards save through store-oauth-client', () => {
   const dir = path.resolve(__dirname, '../components/integrations');
   const cards: [string, string][] = [
-    ['GoogleCalendarConnectCard.tsx', 'google_calendar'], ['OutlookCalendarConnectCard.tsx', 'outlook_calendar'], ['iCloudCalendarConnectCard.tsx', 'icloud_calendar'],
+    ['OutlookCalendarConnectCard.tsx', 'outlook_calendar'], ['iCloudCalendarConnectCard.tsx', 'icloud_calendar'],
     ['LinkedInConnectCard.tsx', 'linkedin'], ['OneDriveConnectCard.tsx', 'onedrive'], ['FacebookConnectCard.tsx', 'facebook'],
   ];
   it.each(cards)('%s has no browser upsert into user_integrations and invokes store-oauth-client for %s', (file, provider) => {

@@ -1,11 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
-import { getValidToken, refreshIntegrationToken } from '../shared/token-refresh.ts'
 import { guardedDenoServeNarrow } from '../_shared/demo-guard.ts'; // Edge Functions CORS batch A (docs/hmrc-p7d/README.md): answers carry the narrowed CORS headers (corsFor), never '*'.
 // Demo read-only: demo people get 403 (docs/demo-readonly)
 import { PROVIDER, type EventLink, type SyncTask } from './plan.ts'
 import { addCounts, emptyCounts, syncTask, syncUser, type Counts, type LinkStore } from './sync.ts'
 import { googleApi } from './google.ts'
 import { syncAllRefusal } from './secret.ts'
+import { googleAccess, type Access, type StoredTokens } from './tokens.ts'
 // Google Calendar sync (docs/google-calendar-sync/README.md): one all-day event per open task with a due date, kept in
 // step through calendar_event_links (service role only). Actions:
 //   sync_tasks              the signed-in person's tasks (the "Sync now" button)
@@ -117,11 +117,48 @@ function linkStore(userId: string): LinkStore {
   }
 }
 
-/** Google for one person, or null when Google Calendar isn't connected. */
-async function googleFor(userId: string) {
-  const token = await getValidToken(userId, PROVIDER)
-  if (!token) return null
-  return googleApi({ token, userId, refresh: () => refreshIntegrationToken(userId, 'google_calendar') })
+// Tokens: get_integration_tokens / store_integration_tokens (service role), not shared/token-refresh.ts, whose app-side
+// key (ENCRYPTION_SECRET) can't read what the OAuth callback stores. Refresh: B2BNEST's own Google app.
+const tokenDeps = {
+  async readTokens(userId: string): Promise<StoredTokens | null> {
+    const { data, error } = await supabase.rpc('get_integration_tokens', { p_integration_name: PROVIDER, p_user_id: userId })
+    if (error) { console.error('google-calendar-sync: tokens unreadable', error.code); return null }
+    const row = (Array.isArray(data) ? data[0] : data) as StoredTokens | undefined
+    return row ?? null
+  },
+  async readMetadata(userId: string) {
+    const { data } = await supabase.from('user_integrations').select('metadata').eq('user_id', userId).eq('integration_name', PROVIDER).maybeSingle()
+    return (data as { metadata?: unknown } | null)?.metadata ?? null
+  },
+  async storeTokens(userId: string, t: { accessToken: string; refreshToken: string; expiresAt: string | null; metadata: Record<string, unknown> }) {
+    const { error } = await supabase.rpc('store_integration_tokens', {
+      p_integration_name: PROVIDER, p_access_token: t.accessToken, p_refresh_token: t.refreshToken,
+      p_expires_at: t.expiresAt, p_metadata: t.metadata, p_user_id: userId,
+    })
+    if (error) console.error('google-calendar-sync: tokens not saved', error.code)
+    return !error
+  },
+  async markDisconnected(userId: string) {
+    // Only is_connected: the card then offers Connect again. The tokens stay until the person reconnects or disconnects.
+    const { error } = await supabase.from('user_integrations').update({ is_connected: false }).eq('user_id', userId).eq('integration_name', PROVIDER)
+    if (error) console.error('google-calendar-sync: could not mark Google Calendar as disconnected', error.code)
+  },
+  fetchFn: fetch,
+  clientId: Deno.env.get('GOOGLE_CLIENT_ID'),
+  clientSecret: Deno.env.get('GOOGLE_CLIENT_SECRET'),
+}
+
+const RECONNECT = { error: 'Google Calendar needs to be reconnected', reconnect: true }
+
+/** Google for one person, or the answer to give when it can't be used. */
+async function googleFor(userId: string): Promise<{ google: ReturnType<typeof googleApi>; access: Extract<Access, { ok: true }> } | { refusal: Response; reason: string }> {
+  const access = await googleAccess(userId, tokenDeps)
+  if (!access.ok) {
+    if (access.reason === 'reconnect') return { refusal: json(RECONNECT, 400), reason: access.reason }
+    if (access.reason === 'not_connected') return { refusal: json({ error: 'Google Calendar not connected' }, 400), reason: access.reason }
+    return { refusal: json({ error: 'Could not reach Google Calendar. Please try again.' }, 502), reason: access.reason }
+  }
+  return { google: googleApi({ token: access.token, userId, refresh: access.refresh }), access }
 }
 
 /** Open tasks with a due date of one person (the ones that should have an event). */
@@ -138,24 +175,29 @@ async function openTasks(userId: string): Promise<SyncTask[] | null> {
 const result = (c: Counts, extra: Record<string, unknown> = {}) => ({ success: true, ...c, ...extra })
 
 async function syncTasksToCalendar(userId: string) {
-  const google = await googleFor(userId)
-  if (!google) return json({ error: 'Google Calendar not connected' }, 400)
+  const g = await googleFor(userId)
+  if ('refusal' in g) return g.refusal
   const tasks = await openTasks(userId)
   if (!tasks) return json({ error: 'Failed to fetch tasks' }, 500)
   try {
-    return json(result(await syncUser(tasks, userId, google, linkStore(userId))))
+    const counts = await syncUser(tasks, userId, g.google, linkStore(userId))
+    // Google rejected the refresh token during the run (a 401 then a failed refresh): ask for a reconnection.
+    if (g.access.needsReconnect()) return json({ ...RECONNECT, ...counts }, 400)
+    return json(result(counts))
   } catch {
     return json({ error: 'Failed to sync tasks' }, 500)
   }
 }
 
 async function syncOneTask(userId: string, taskId: string) {
-  const google = await googleFor(userId)
-  if (!google) return json({ error: 'Google Calendar not connected' }, 400)
+  const g = await googleFor(userId)
+  if ('refusal' in g) return g.refusal
   const { data, error } = await supabase.from('todos').select(TASK_COLUMNS).eq('id', taskId).eq('user_id', userId).maybeSingle()
   if (error) return json({ error: 'Failed to fetch task' }, 500)
   // Not found: deleted (or not this person's). Its event, if any, is found by its marker and removed.
-  return json(result(await syncTask(taskId, (data as SyncTask | null) ?? null, userId, google, linkStore(userId))))
+  const counts = await syncTask(taskId, (data as SyncTask | null) ?? null, userId, g.google, linkStore(userId))
+  if (g.access.needsReconnect()) return json({ ...RECONNECT, ...counts }, 400)
+  return json(result(counts))
 }
 
 async function syncAll() {
@@ -170,18 +212,20 @@ async function syncAll() {
   if (gone.length) await supabase.from('calendar_event_links').delete().eq('provider', PROVIDER).in('user_id', gone)
 
   let total = emptyCounts()
-  let done = 0, skippedUsers = 0
+  let done = 0, skippedUsers = 0, reconnectUsers = 0
   for (const userId of users) {
     if (Date.now() - started > SYNC_ALL_BUDGET_MS) break
-    const google = await googleFor(userId)
-    const tasks = google ? await openTasks(userId) : null
-    if (!google || !tasks) { skippedUsers++; done++; continue }
+    const g = await googleFor(userId)
+    if ('refusal' in g) { if (g.reason === 'reconnect') reconnectUsers++; else skippedUsers++; done++; continue }
+    const tasks = await openTasks(userId)
+    if (!tasks) { skippedUsers++; done++; continue }
     try {
-      total = addCounts(total, await syncUser(tasks, userId, google, linkStore(userId)))
+      total = addCounts(total, await syncUser(tasks, userId, g.google, linkStore(userId)))
+      if (g.access.needsReconnect()) reconnectUsers++
     } catch {
       total.failed++
     }
     done++
   }
-  return json(result(total, { users: done, users_skipped: skippedUsers, more: done < users.length, links_forgotten_for: gone.length }))
+  return json(result(total, { users: done, users_skipped: skippedUsers, users_need_reconnect: reconnectUsers, more: done < users.length, links_forgotten_for: gone.length }))
 }

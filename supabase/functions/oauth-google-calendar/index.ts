@@ -43,43 +43,25 @@ Deno.serve(async (req) => {
     // Demo read-only: never store a connection for a demo person (docs/demo-readonly).
     { const demo = await demoRefusal(userId, corsHeaders); if (demo) return demo; }
 
-    // Initialize Supabase client to get user's stored credentials
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Get user's stored Google credentials
-    const { data: integration, error: integrationError } = await supabase
-      .from('user_integrations')
-      .select('metadata')
-      .eq('user_id', userId)
-      .eq('integration_name', 'google_calendar')
-      .single()
-
-    if (integrationError || !integration?.metadata) {
-      console.error('Failed to get user credentials:', integrationError)
-      return new Response(
-        JSON.stringify({ error: 'User credentials not found. Please reconnect.' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const metadata = typeof integration.metadata === 'string' 
-      ? JSON.parse(integration.metadata) 
-      : integration.metadata
-
-    const clientId = metadata.client_id || Deno.env.get('GOOGLE_CLIENT_ID')
-    const clientSecret = metadata.client_secret || Deno.env.get('GOOGLE_CLIENT_SECRET')
+    // B2BNEST's own Google app only (the same client the Connect button used, from get-oauth-config). People no
+    // longer enter a Client ID or Secret, and nothing is read from user_integrations.metadata.
+    const clientId = Deno.env.get('GOOGLE_CLIENT_ID')
+    const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET')
 
     if (!clientId || !clientSecret) {
+      console.error('oauth-google-calendar: GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are not set')
       return new Response(
         JSON.stringify({ error: 'Missing credentials' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Exchange code for access token using user's credentials
+    // Exchange code for access token with B2BNEST's Google app
     const googleTokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: {
@@ -104,13 +86,13 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Get user info
+    // Which Google account (shown on the card). Needs the "email" scope; if it isn't granted, the card shows no address.
     const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: {
         'Authorization': `Bearer ${googleData.access_token}`,
       },
     })
-    const userInfo = await userInfoResponse.json()
+    const userInfo = userInfoResponse.ok ? await userInfoResponse.json().catch(() => ({})) : {}
 
     // Calculate expiration
     const expiresAt = googleData.expires_in 
@@ -128,7 +110,6 @@ Deno.serve(async (req) => {
         name: userInfo.name,
         picture: userInfo.picture,
         scope: googleData.scope,
-        client_id: clientId, // Keep client_id for token refresh
       },
       p_user_id: userId
     })
