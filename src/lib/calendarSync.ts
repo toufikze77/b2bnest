@@ -44,13 +44,26 @@ export function syncSummary(c: CalendarCounts): string {
 }
 
 export const SYNC_FAILED = 'Could not sync with Google Calendar. Please try again.';
+export const RECONNECT_TEXT = 'Please reconnect Google Calendar';
+
+/** Only events: create, change and delete the events made for tasks, and find them again by their private marker. */
+export const GOOGLE_CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events';
+export const GOOGLE_CALENDAR_DESCRIPTION =
+  'Adds your tasks with a due date to your Google Calendar: Google lets B2BNEST see and edit events in your calendars, and B2BNEST only creates, updates and removes the events for your tasks.';
+export const GOOGLE_NOT_SET_UP = "Google Calendar can't be connected yet: B2BNEST's Google sign-in isn't set up. Please tell us at info@b2bnest.online.";
 
 /** The "Sync now" button: every task of the signed-in person. */
-export async function syncNow(): Promise<{ ok: true; counts: CalendarCounts; text: string } | { ok: false; text: string }> {
+export async function syncNow(): Promise<{ ok: true; counts: CalendarCounts; text: string } | { ok: false; text: string; reconnect?: boolean }> {
   try {
     const { data, error } = await supabase.functions.invoke('google-calendar-sync', { body: { action: 'sync_tasks' } });
     if (error || !data?.success) {
-      const notConnected = /not connected/i.test(String(data?.error ?? '')) || /not connected/i.test(await errorText(error));
+      const body = String(data?.error ?? '') + (data?.reconnect ? ' "reconnect":true' : '') + (await errorText(error));
+      // Google refused the saved sign-in (for example a connection made earlier with a person's own Client ID).
+      if (/"reconnect":\s*true|needs to be reconnected/i.test(body)) {
+        resetCalendarConnectionCache();
+        return { ok: false, text: RECONNECT_TEXT, reconnect: true };
+      }
+      const notConnected = /not connected/i.test(body);
       return { ok: false, text: notConnected ? 'Google Calendar is not connected.' : SYNC_FAILED };
     }
     const counts: CalendarCounts = {

@@ -14,7 +14,7 @@ vi.mock('@/integrations/supabase/client', () => ({
   },
 }));
 
-import { forgetCalendarLinks, googleCalendarConnected, resetCalendarConnectionCache, syncNow, syncSummary, syncTaskToCalendar, SYNC_FAILED } from './calendarSync';
+import { forgetCalendarLinks, GOOGLE_CALENDAR_SCOPE, googleCalendarConnected, resetCalendarConnectionCache, syncNow, syncSummary, syncTaskToCalendar, SYNC_FAILED } from './calendarSync';
 import { resetDemoMode, setDemoNow } from '@/lib/demoMode';
 
 beforeEach(() => { resetCalendarConnectionCache(); st.session = { user: { id: 'u1' } }; });
@@ -68,6 +68,15 @@ describe('Sync now', () => {
     expect(await syncNow()).toEqual({ ok: false, text: SYNC_FAILED });
     st.invoke.mockResolvedValueOnce({ data: null, error: { message: 'x', context: { json: async () => ({ error: 'Google Calendar not connected' }) } } } as never);
     expect(await syncNow()).toEqual({ ok: false, text: 'Google Calendar is not connected.' });
+  });
+  it('Google refused the saved sign-in: "Please reconnect Google Calendar" (reconnect flag in the body, or in the error)', async () => {
+    st.invoke.mockResolvedValueOnce({ data: null, error: { message: 'x', context: { json: async () => ({ error: 'Google Calendar needs to be reconnected', reconnect: true }) } } } as never);
+    expect(await syncNow()).toEqual({ ok: false, text: 'Please reconnect Google Calendar', reconnect: true });
+    st.invoke.mockResolvedValueOnce({ data: { error: 'Google Calendar needs to be reconnected', reconnect: true }, error: null } as never);
+    expect(await syncNow()).toEqual({ ok: false, text: 'Please reconnect Google Calendar', reconnect: true });
+  });
+  it('the Google scope is calendar events only', () => {
+    expect(GOOGLE_CALENDAR_SCOPE).toBe('https://www.googleapis.com/auth/calendar.events');
   });
 });
 
